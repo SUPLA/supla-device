@@ -32,7 +32,9 @@ struct InstanceCalcfgSession {
   uint32_t sessionId = 0;
   uint32_t lastActivityMs = 0;
   uint8_t instanceId = 0;
+  bool upgrade = false;
   uint32_t definitionId = 0;
+  uint16_t fromDefinitionVersion = 0;
   uint16_t definitionVersion = 0;
   uint16_t paramsSize = 0;
   uint16_t receivedSize = 0;

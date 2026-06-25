@@ -183,6 +183,31 @@ Supla::Suplet::ChannelDefinition relayChannels[] = {
      nullptr},
 };
 
+Supla::Suplet::ChannelDefinition relayChannelsWithExtra[] = {
+    {1,
+     Supla::Suplet::ChannelKind::VirtualRelay,
+     SUPLA_CHANNELFNC_POWERSWITCH,
+     nullptr},
+    {3,
+     Supla::Suplet::ChannelKind::VirtualRelay,
+     SUPLA_CHANNELFNC_POWERSWITCH,
+     nullptr},
+};
+
+Supla::Suplet::ChannelDefinition relayChannelsChangedFunction[] = {
+    {1,
+     Supla::Suplet::ChannelKind::VirtualRelay,
+     SUPLA_CHANNELFNC_LIGHTSWITCH,
+     nullptr},
+};
+
+Supla::Suplet::ChannelDefinition relayChannelsMissingOld[] = {
+    {3,
+     Supla::Suplet::ChannelKind::VirtualRelay,
+     SUPLA_CHANNELFNC_POWERSWITCH,
+     nullptr},
+};
+
 Supla::Suplet::ChannelDefinition binaryChannels[] = {
     {2,
      Supla::Suplet::ChannelKind::VirtualBinarySensor,
@@ -241,6 +266,36 @@ Supla::Suplet::Definition makeParameterizedRelayDefinition() {
   auto definition = makeRelayDefinition();
   definition.parameters = relayParameters;
   definition.parameterCount = 3;
+  return definition;
+}
+
+Supla::Suplet::Definition makeRelayDefinitionVersion(uint16_t version) {
+  auto definition = makeRelayDefinition();
+  definition.definitionVersion = version;
+  return definition;
+}
+
+Supla::Suplet::Definition makeRelayDefinitionVersionWithExtra(
+    uint16_t version) {
+  auto definition = makeRelayDefinitionVersion(version);
+  definition.channels = relayChannelsWithExtra;
+  definition.channelCount = 2;
+  return definition;
+}
+
+Supla::Suplet::Definition makeRelayDefinitionVersionWithChangedFunction(
+    uint16_t version) {
+  auto definition = makeRelayDefinitionVersion(version);
+  definition.channels = relayChannelsChangedFunction;
+  definition.channelCount = 1;
+  return definition;
+}
+
+Supla::Suplet::Definition makeRelayDefinitionVersionMissingOldChannel(
+    uint16_t version) {
+  auto definition = makeRelayDefinitionVersion(version);
+  definition.channels = relayChannelsMissingOld;
+  definition.channelCount = 1;
   return definition;
 }
 
@@ -345,6 +400,254 @@ TEST(SupletServerConfigTests, AppliesPrivateInstanceParams) {
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->configSize, strlen(params));
   EXPECT_EQ(memcmp(record->config, params, strlen(params)), 0);
+}
+
+TEST(SupletServerConfigTests, UpgradesInstanceToNewerAddOnlyDefinition) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  auto v1 = makeRelayDefinitionVersion(1);
+  auto v2 = makeRelayDefinitionVersionWithExtra(2);
+  ASSERT_TRUE(registry.add(&v1, 4));
+  ASSERT_TRUE(registry.add(&v2, 4));
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+
+  ASSERT_EQ(handler.applyInstanceParams(80,
+                                        v1.definitionId,
+                                        v1.definitionVersion,
+                                        nullptr,
+                                        0),
+            Supla::Suplet::ServerConfigResult::Applied);
+  auto record = manager.getInstanceTable()->findByInstanceId(80);
+  ASSERT_NE(record, nullptr);
+  ASSERT_TRUE(record->channelMap.add(1, 12));
+  handler.clearRuntimeRefreshRequired();
+
+  EXPECT_EQ(handler.applyInstanceUpgrade(80,
+                                         v1.definitionId,
+                                         v1.definitionVersion,
+                                         v2.definitionVersion,
+                                         nullptr,
+                                         0),
+            Supla::Suplet::ServerConfigResult::Applied);
+  EXPECT_TRUE(handler.isRuntimeRefreshRequired());
+
+  record = manager.getInstanceTable()->findByInstanceId(80);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->definitionVersion, 2);
+  EXPECT_EQ(record->channelMap.getChannelNumber(1), 12);
+  EXPECT_EQ(record->channelMap.getChannelNumber(3),
+            Supla::Suplet::kInvalidChannelNumber);
+}
+
+TEST(SupletServerConfigTests, RejectsUpgradeWhenInstanceIsMissing) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  auto v1 = makeRelayDefinitionVersion(1);
+  auto v2 = makeRelayDefinitionVersionWithExtra(2);
+  ASSERT_TRUE(registry.add(&v1, 4));
+  ASSERT_TRUE(registry.add(&v2, 4));
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+
+  EXPECT_EQ(handler.applyInstanceUpgrade(80,
+                                         v1.definitionId,
+                                         v1.definitionVersion,
+                                         v2.definitionVersion,
+                                         nullptr,
+                                         0),
+            Supla::Suplet::ServerConfigResult::InstanceNotFound);
+}
+
+TEST(SupletServerConfigTests, RejectsUpgradeFromMismatchedVersion) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  auto v1 = makeRelayDefinitionVersion(1);
+  auto v2 = makeRelayDefinitionVersionWithExtra(2);
+  ASSERT_TRUE(registry.add(&v1, 4));
+  ASSERT_TRUE(registry.add(&v2, 4));
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  ASSERT_EQ(handler.applyInstanceParams(80,
+                                        v1.definitionId,
+                                        v1.definitionVersion,
+                                        nullptr,
+                                        0),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  EXPECT_EQ(handler.applyInstanceUpgrade(80,
+                                         v1.definitionId,
+                                         2,
+                                         3,
+                                         nullptr,
+                                         0),
+            Supla::Suplet::ServerConfigResult::VersionMismatch);
+}
+
+TEST(SupletServerConfigTests, RejectsUpgradeToSameOrLowerVersion) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  auto v1 = makeRelayDefinitionVersion(1);
+  ASSERT_TRUE(registry.add(&v1, 4));
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  ASSERT_EQ(handler.applyInstanceParams(80,
+                                        v1.definitionId,
+                                        v1.definitionVersion,
+                                        nullptr,
+                                        0),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  EXPECT_EQ(handler.applyInstanceUpgrade(80,
+                                         v1.definitionId,
+                                         v1.definitionVersion,
+                                         v1.definitionVersion,
+                                         nullptr,
+                                         0),
+            Supla::Suplet::ServerConfigResult::InvalidArgument);
+}
+
+TEST(SupletServerConfigTests, RejectsUpgradeWhenTargetDefinitionIsMissing) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  auto v1 = makeRelayDefinitionVersion(1);
+  ASSERT_TRUE(registry.add(&v1, 4));
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  ASSERT_EQ(handler.applyInstanceParams(80,
+                                        v1.definitionId,
+                                        v1.definitionVersion,
+                                        nullptr,
+                                        0),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  EXPECT_EQ(handler.applyInstanceUpgrade(80,
+                                         v1.definitionId,
+                                         v1.definitionVersion,
+                                         2,
+                                         nullptr,
+                                         0),
+            Supla::Suplet::ServerConfigResult::DefinitionNotFound);
+}
+
+TEST(SupletServerConfigTests, RejectsUpgradeRemovingOldChannelId) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  auto v1 = makeRelayDefinitionVersion(1);
+  auto v2 = makeRelayDefinitionVersionMissingOldChannel(2);
+  ASSERT_TRUE(registry.add(&v1, 4));
+  ASSERT_TRUE(registry.add(&v2, 4));
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  ASSERT_EQ(handler.applyInstanceParams(80,
+                                        v1.definitionId,
+                                        v1.definitionVersion,
+                                        nullptr,
+                                        0),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  EXPECT_EQ(handler.applyInstanceUpgrade(80,
+                                         v1.definitionId,
+                                         v1.definitionVersion,
+                                         v2.definitionVersion,
+                                         nullptr,
+                                         0),
+            Supla::Suplet::ServerConfigResult::TopologyChangeNotAllowed);
+}
+
+TEST(SupletServerConfigTests, RejectsUpgradeChangingOldChannelFunction) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  auto v1 = makeRelayDefinitionVersion(1);
+  auto v2 = makeRelayDefinitionVersionWithChangedFunction(2);
+  ASSERT_TRUE(registry.add(&v1, 4));
+  ASSERT_TRUE(registry.add(&v2, 4));
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  ASSERT_EQ(handler.applyInstanceParams(80,
+                                        v1.definitionId,
+                                        v1.definitionVersion,
+                                        nullptr,
+                                        0),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  EXPECT_EQ(handler.applyInstanceUpgrade(80,
+                                         v1.definitionId,
+                                         v1.definitionVersion,
+                                         v2.definitionVersion,
+                                         nullptr,
+                                         0),
+            Supla::Suplet::ServerConfigResult::TopologyChangeNotAllowed);
+}
+
+TEST(SupletServerConfigTests, UpgradeKeepsCreateOnlyParamsAndUpdatesEditable) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  auto v1 = makeParameterizedRelayDefinition();
+  v1.definitionVersion = 1;
+  auto v2 = makeParameterizedRelayDefinition();
+  v2.definitionVersion = 2;
+  ASSERT_TRUE(registry.add(&v1, 4));
+  ASSERT_TRUE(registry.add(&v2, 4));
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+
+  const char paramsV1[] =
+      "{\"relay.count\":2,\"mode\":\"avg\",\"host\":\"192.168.1.50\"}";
+  const char paramsV2[] =
+      "{\"relay.count\":2,\"mode\":\"max\",\"host\":\"192.168.1.51\"}";
+  ASSERT_EQ(handler.applyInstanceParams(80,
+                                        v1.definitionId,
+                                        v1.definitionVersion,
+                                        paramsV1,
+                                        strlen(paramsV1)),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  EXPECT_EQ(handler.applyInstanceUpgrade(80,
+                                         v1.definitionId,
+                                         v1.definitionVersion,
+                                         v2.definitionVersion,
+                                         paramsV2,
+                                         strlen(paramsV2)),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  auto record = manager.getInstanceTable()->findByInstanceId(80);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->definitionVersion, 2);
+  EXPECT_EQ(record->configSize, strlen(paramsV2));
+  EXPECT_EQ(memcmp(record->config, paramsV2, strlen(paramsV2)), 0);
+}
+
+TEST(SupletServerConfigTests, RejectsCreateOnlyParamChangeOnUpgrade) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  auto v1 = makeParameterizedRelayDefinition();
+  v1.definitionVersion = 1;
+  auto v2 = makeParameterizedRelayDefinition();
+  v2.definitionVersion = 2;
+  ASSERT_TRUE(registry.add(&v1, 4));
+  ASSERT_TRUE(registry.add(&v2, 4));
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+
+  const char paramsV1[] =
+      "{\"relay.count\":2,\"mode\":\"avg\",\"host\":\"192.168.1.50\"}";
+  const char paramsV2[] =
+      "{\"relay.count\":3,\"mode\":\"max\",\"host\":\"192.168.1.51\"}";
+  ASSERT_EQ(handler.applyInstanceParams(80,
+                                        v1.definitionId,
+                                        v1.definitionVersion,
+                                        paramsV1,
+                                        strlen(paramsV1)),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  EXPECT_EQ(handler.applyInstanceUpgrade(80,
+                                         v1.definitionId,
+                                         v1.definitionVersion,
+                                         v2.definitionVersion,
+                                         paramsV2,
+                                         strlen(paramsV2)),
+            Supla::Suplet::ServerConfigResult::CreateOnlyParamChanged);
 }
 
 TEST(SupletServerConfigTests, RejectsInvalidPrivateInstanceParams) {

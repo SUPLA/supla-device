@@ -237,6 +237,77 @@ int sendSupletInstanceParamsCalcfg(SuplaDeviceClass *sd,
   return sd->handleCalcfgFromServer(&request, result);
 }
 
+int sendSupletInstanceUpgradeCalcfg(SuplaDeviceClass *sd,
+                                    uint8_t instanceId,
+                                    uint32_t definitionId,
+                                    uint16_t fromDefinitionVersion,
+                                    uint16_t toDefinitionVersion,
+                                    const char *paramsJson,
+                                    uint16_t paramsSize,
+                                    TDS_DeviceCalCfgResult *result) {
+  if (sd == nullptr || paramsJson == nullptr || result == nullptr) {
+    return SUPLA_CALCFG_RESULT_FALSE;
+  }
+
+  uint8_t sha[32] = {};
+  makeDeviceTestSha(paramsJson, paramsSize, sha);
+
+  TSD_DeviceCalCfgRequest request = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_BEGIN;
+  TCalCfg_SupletInstanceUpgradeBegin begin = {};
+  begin.SessionId = 5432;
+  begin.InstanceId = instanceId;
+  begin.DefinitionId = definitionId;
+  begin.FromDefinitionVersion = fromDefinitionVersion;
+  begin.ToDefinitionVersion = toDefinitionVersion;
+  begin.ParamsSize = paramsSize;
+  memcpy(begin.ParamsSha256, sha, sizeof(sha));
+  request.DataSize = sizeof(begin);
+  memcpy(request.Data, &begin, sizeof(begin));
+  int calcfgResult = sd->handleCalcfgFromServer(&request, result);
+  if (calcfgResult != SUPLA_CALCFG_RESULT_DONE) {
+    return calcfgResult;
+  }
+
+  uint16_t offset = 0;
+  while (offset < paramsSize) {
+    const uint8_t size =
+        paramsSize - offset > SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
+            ? SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
+            : static_cast<uint8_t>(paramsSize - offset);
+    request = {};
+    *result = {};
+    request.ChannelNumber = -1;
+    request.SuperUserAuthorized = 1;
+    request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_CHUNK;
+    TCalCfg_SupletInstanceChunk chunk = {};
+    chunk.SessionId = begin.SessionId;
+    chunk.Offset = offset;
+    chunk.Size = size;
+    memcpy(chunk.Data, paramsJson + offset, size);
+    request.DataSize = offsetof(TCalCfg_SupletInstanceChunk, Data) + size;
+    memcpy(request.Data, &chunk, request.DataSize);
+    calcfgResult = sd->handleCalcfgFromServer(&request, result);
+    if (calcfgResult != SUPLA_CALCFG_RESULT_DONE) {
+      return calcfgResult;
+    }
+    offset += size;
+  }
+
+  request = {};
+  *result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_COMMIT;
+  TCalCfg_SupletSessionRequest commit = {};
+  commit.SessionId = begin.SessionId;
+  request.DataSize = sizeof(commit);
+  memcpy(request.Data, &commit, sizeof(commit));
+  return sd->handleCalcfgFromServer(&request, result);
+}
+
 const uint8_t relayId = 1;
 
 Supla::Suplet::Definition makeRelayDefinition(
@@ -1425,6 +1496,53 @@ TEST_F(SuplaDeviceSupletStartupTests,
   EXPECT_EQ(configChunk.TotalSize, strlen(params));
   EXPECT_EQ(configChunk.Size, 20);
   EXPECT_EQ(memcmp(configChunk.Data, params, configChunk.Size), 0);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests, CalcfgUpgradesInstanceVersion) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+
+  auto v1 = makeParameterizedRelayDefinition(6005);
+  v1.definitionVersion = 1;
+  auto v2 = makeParameterizedRelayDefinition(6005);
+  v2.definitionVersion = 2;
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&v1, 4));
+  ASSERT_TRUE(registry.add(&v2, 4));
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  const char paramsV1[] = "{\"relay.count\":1,\"host\":\"192.168.1.50\"}";
+  TDS_DeviceCalCfgResult result = {};
+  ASSERT_EQ(sendSupletInstanceParamsCalcfg(&sd,
+                                           91,
+                                           v1.definitionId,
+                                           v1.definitionVersion,
+                                           paramsV1,
+                                           strlen(paramsV1),
+                                           &result),
+            SUPLA_CALCFG_RESULT_DONE);
+
+  const char paramsV2[] = "{\"relay.count\":1,\"host\":\"192.168.1.51\"}";
+  result = {};
+  EXPECT_EQ(sendSupletInstanceUpgradeCalcfg(&sd,
+                                            91,
+                                            v1.definitionId,
+                                            v1.definitionVersion,
+                                            v2.definitionVersion,
+                                            paramsV2,
+                                            strlen(paramsV2),
+                                            &result),
+            SUPLA_CALCFG_RESULT_DONE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
+
+  auto record = manager.getInstanceTable()->findByInstanceId(91);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->definitionVersion, 2);
+  EXPECT_EQ(record->configSize, strlen(paramsV2));
+  EXPECT_EQ(memcmp(record->config, paramsV2, strlen(paramsV2)), 0);
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,

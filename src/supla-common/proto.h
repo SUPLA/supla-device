@@ -2223,6 +2223,10 @@ typedef struct {
 #define SUPLA_CALCFG_CMD_SUPLET_INSTANCE_COMMIT 9610    // FDEV
 #define SUPLA_CALCFG_CMD_SUPLET_INSTANCE_REMOVE 9620    // FDEV
 #define SUPLA_CALCFG_CMD_SUPLET_INSTANCE_ABORT 9630     // FDEV
+#define SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_BEGIN 9640   // FDEV
+#define SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_CHUNK 9650   // FDEV
+#define SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_COMMIT 9660  // FDEV
+#define SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_ABORT 9670   // FDEV
 
 #define SUPLA_CALCFG_DATATYPE_RS_SETTINGS 1000
 #define SUPLA_CALCFG_DATATYPE_FB_SETTINGS 1100  // v. >= 17
@@ -2318,6 +2322,8 @@ typedef struct {
 #define SUPLA_CALCFG_SUPLET_RESULT_TOPOLOGY_CHANGE_NOT_ALLOWED 14
 #define SUPLA_CALCFG_SUPLET_RESULT_DEFINITION_CANNOT_BE_CHANGED 15
 #define SUPLA_CALCFG_SUPLET_RESULT_INVALID_DEFINITION 16
+#define SUPLA_CALCFG_SUPLET_RESULT_INSTANCE_NOT_FOUND 17
+#define SUPLA_CALCFG_SUPLET_RESULT_VERSION_MISMATCH 18
 
 #define SUPLA_CALCFG_SUPLET_PHASE_NONE 0
 #define SUPLA_CALCFG_SUPLET_PHASE_VALIDATE 1
@@ -2529,6 +2535,21 @@ typedef struct {
   unsigned char Flags;
   unsigned char Reserved4;
 } TCalCfg_SupletInstanceBegin;  // FDEV
+
+typedef struct {
+  unsigned _supla_int_t SessionId;
+  unsigned char InstanceId;
+  unsigned char Reserved1;
+  unsigned char Reserved2;
+  unsigned char Reserved3;
+  unsigned _supla_int_t DefinitionId;
+  unsigned _supla_int16_t FromDefinitionVersion;
+  unsigned _supla_int16_t ToDefinitionVersion;
+  unsigned _supla_int16_t ParamsSize;
+  unsigned char ParamsSha256[32];
+  unsigned char Flags;
+  unsigned char Reserved4;
+} TCalCfg_SupletInstanceUpgradeBegin;  // FDEV
 
 typedef struct {
   unsigned _supla_int_t SessionId;

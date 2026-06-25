@@ -934,6 +934,35 @@ const Supla::Suplet::Definition *findDefinitionOnDemand(
   return definition;
 }
 
+const Supla::Suplet::ChannelDefinition *findChannelDefinition(
+    const Supla::Suplet::Definition &definition, uint8_t channelId) {
+  for (uint8_t i = 0; i < definition.channelCount; i++) {
+    if (definition.channels[i].channelId == channelId) {
+      return &definition.channels[i];
+    }
+  }
+  return nullptr;
+}
+
+bool isAddOnlyUpgradeCompatible(const Supla::Suplet::Definition &from,
+                                const Supla::Suplet::Definition &to) {
+  if (from.definitionId != to.definitionId || from.category != to.category ||
+      from.kind != to.kind || from.channelCount > to.channelCount) {
+    return false;
+  }
+
+  for (uint8_t i = 0; i < from.channelCount; i++) {
+    const auto &oldChannel = from.channels[i];
+    const auto *newChannel = findChannelDefinition(to, oldChannel.channelId);
+    if (newChannel == nullptr || newChannel->kind != oldChannel.kind ||
+        newChannel->defaultFunction != oldChannel.defaultFunction) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 bool isDefinitionUsed(const Supla::Suplet::Manager *manager,
                       uint32_t definitionId,
                       uint16_t definitionVersion) {
@@ -1533,6 +1562,111 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
   return ServerConfigResult::Applied;
 }
 
+ServerConfigResult ServerConfigHandler::applyInstanceUpgrade(
+    uint8_t instanceId,
+    uint32_t definitionId,
+    uint16_t fromDefinitionVersion,
+    uint16_t toDefinitionVersion,
+    const char *paramsJson,
+    uint16_t paramsSize) {
+  if (manager == nullptr || instanceId == 0 || definitionId == 0 ||
+      fromDefinitionVersion == 0 || toDefinitionVersion == 0 ||
+      toDefinitionVersion <= fromDefinitionVersion ||
+      paramsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
+      (paramsSize > 0 && paramsJson == nullptr)) {
+    return ServerConfigResult::InvalidArgument;
+  }
+
+  auto table = manager->getInstanceTable();
+  const InstanceRecord *existing =
+      table == nullptr ? nullptr : table->findByInstanceId(instanceId);
+  if (existing == nullptr) {
+    return ServerConfigResult::InstanceNotFound;
+  }
+  if (existing->definitionId != definitionId) {
+    return ServerConfigResult::TopologyChangeNotAllowed;
+  }
+  if (existing->definitionVersion != fromDefinitionVersion) {
+    return ServerConfigResult::VersionMismatch;
+  }
+
+  ScopedJsonDefinition oldDownloadedDefinition;
+  ScopedJsonDefinition newDownloadedDefinition;
+  bool ramError = false;
+  const Definition *oldDefinition = findDefinitionOnDemand(
+      registry,
+      downloadedDefinitions,
+      definitionCache,
+      definitionId,
+      fromDefinitionVersion,
+      &oldDownloadedDefinition,
+      &ramError,
+      nullptr);
+  if (oldDefinition == nullptr) {
+    return ramError ? ServerConfigResult::StorageError
+                    : ServerConfigResult::DefinitionNotFound;
+  }
+
+  uint8_t maxInstances = 0;
+  const Definition *newDefinition = findDefinitionOnDemand(
+      registry,
+      downloadedDefinitions,
+      definitionCache,
+      definitionId,
+      toDefinitionVersion,
+      &newDownloadedDefinition,
+      &ramError,
+      &maxInstances);
+  if (newDefinition == nullptr) {
+    return ramError ? ServerConfigResult::StorageError
+                    : ServerConfigResult::DefinitionNotFound;
+  }
+
+  if (!isAddOnlyUpgradeCompatible(*oldDefinition, *newDefinition)) {
+    return ServerConfigResult::TopologyChangeNotAllowed;
+  }
+
+  bool createOnlyChanged = false;
+  InstanceRecord existingWithConfig = {};
+  existing = loadExistingConfigIfNeeded(manager, existing, &existingWithConfig);
+  if (existing == nullptr) {
+    return ServerConfigResult::StorageError;
+  }
+  if (!validateParamsJson(paramsJson,
+                          paramsSize,
+                          *newDefinition,
+                          existing,
+                          &createOnlyChanged)) {
+    return createOnlyChanged ? ServerConfigResult::CreateOnlyParamChanged
+                             : ServerConfigResult::InvalidConfig;
+  }
+
+  InstanceRecord record = {};
+  record.instanceId = instanceId;
+  record.definitionId = definitionId;
+  record.definitionVersion = toDefinitionVersion;
+  if (!record.setConfig(reinterpret_cast<const uint8_t *>(paramsJson),
+                        paramsSize)) {
+    return ServerConfigResult::InvalidArgument;
+  }
+
+  if (!isInstanceLimitAvailable(
+          manager, record, definitionId, toDefinitionVersion, maxInstances)) {
+    return ServerConfigResult::InstanceLimitExceeded;
+  }
+
+  if (!manager->canUpsertInstanceFromDefinition(record, *newDefinition)) {
+    return ServerConfigResult::ChannelLimitExceeded;
+  }
+
+  if (!manager->upsertInstanceFromDefinition(record, *newDefinition)) {
+    return ServerConfigResult::StorageError;
+  }
+
+  runtimeRefreshRequired = true;
+  return ServerConfigResult::Applied;
+}
+
 ServerConfigResult ServerConfigHandler::validateAssignmentJson(
     const char *assignmentJson,
     uint32_t definitionId,
@@ -1651,6 +1785,106 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
   }
 
   if (!manager->canUpsertInstanceFromDefinition(record, *definition)) {
+    return ServerConfigResult::ChannelLimitExceeded;
+  }
+
+  return ServerConfigResult::Applied;
+}
+
+ServerConfigResult ServerConfigHandler::validateInstanceUpgrade(
+    uint8_t instanceId,
+    uint32_t definitionId,
+    uint16_t fromDefinitionVersion,
+    uint16_t toDefinitionVersion,
+    const char *paramsJson,
+    uint16_t paramsSize) const {
+  if (manager == nullptr || instanceId == 0 || definitionId == 0 ||
+      fromDefinitionVersion == 0 || toDefinitionVersion == 0 ||
+      toDefinitionVersion <= fromDefinitionVersion ||
+      paramsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
+      (paramsSize > 0 && paramsJson == nullptr)) {
+    return ServerConfigResult::InvalidArgument;
+  }
+
+  auto table = manager->getInstanceTable();
+  const InstanceRecord *existing =
+      table == nullptr ? nullptr : table->findByInstanceId(instanceId);
+  if (existing == nullptr) {
+    return ServerConfigResult::InstanceNotFound;
+  }
+  if (existing->definitionId != definitionId) {
+    return ServerConfigResult::TopologyChangeNotAllowed;
+  }
+  if (existing->definitionVersion != fromDefinitionVersion) {
+    return ServerConfigResult::VersionMismatch;
+  }
+
+  ScopedJsonDefinition oldDownloadedDefinition;
+  ScopedJsonDefinition newDownloadedDefinition;
+  bool ramError = false;
+  const Definition *oldDefinition = findDefinitionOnDemand(
+      registry,
+      downloadedDefinitions,
+      definitionCache,
+      definitionId,
+      fromDefinitionVersion,
+      &oldDownloadedDefinition,
+      &ramError,
+      nullptr);
+  if (oldDefinition == nullptr) {
+    return ramError ? ServerConfigResult::StorageError
+                    : ServerConfigResult::DefinitionNotFound;
+  }
+
+  uint8_t maxInstances = 0;
+  const Definition *newDefinition = findDefinitionOnDemand(
+      registry,
+      downloadedDefinitions,
+      definitionCache,
+      definitionId,
+      toDefinitionVersion,
+      &newDownloadedDefinition,
+      &ramError,
+      &maxInstances);
+  if (newDefinition == nullptr) {
+    return ramError ? ServerConfigResult::StorageError
+                    : ServerConfigResult::DefinitionNotFound;
+  }
+
+  if (!isAddOnlyUpgradeCompatible(*oldDefinition, *newDefinition)) {
+    return ServerConfigResult::TopologyChangeNotAllowed;
+  }
+
+  bool createOnlyChanged = false;
+  InstanceRecord existingWithConfig = {};
+  existing = loadExistingConfigIfNeeded(manager, existing, &existingWithConfig);
+  if (existing == nullptr) {
+    return ServerConfigResult::StorageError;
+  }
+  if (!validateParamsJson(paramsJson,
+                          paramsSize,
+                          *newDefinition,
+                          existing,
+                          &createOnlyChanged)) {
+    return createOnlyChanged ? ServerConfigResult::CreateOnlyParamChanged
+                             : ServerConfigResult::InvalidConfig;
+  }
+
+  InstanceRecord record = {};
+  record.instanceId = instanceId;
+  record.definitionId = definitionId;
+  record.definitionVersion = toDefinitionVersion;
+  if (!record.setConfig(reinterpret_cast<const uint8_t *>(paramsJson),
+                        paramsSize)) {
+    return ServerConfigResult::InvalidArgument;
+  }
+
+  if (!isInstanceLimitAvailable(
+          manager, record, definitionId, toDefinitionVersion, maxInstances)) {
+    return ServerConfigResult::InstanceLimitExceeded;
+  }
+
+  if (!manager->canUpsertInstanceFromDefinition(record, *newDefinition)) {
     return ServerConfigResult::ChannelLimitExceeded;
   }
 

@@ -44,6 +44,8 @@ enum class ServerConfigResult : uint8_t {
   DefinitionCannotBeChanged = 12,
   InstanceLimitExceeded = 13,
   ChannelLimitExceeded = 14,
+  InstanceNotFound = 15,
+  VersionMismatch = 16,
 };
 
 struct CachedDefinitionDetails {
@@ -111,6 +113,12 @@ class ServerConfigHandler {
                                          const char *paramsJson,
                                          uint16_t paramsSize,
                                          uint8_t *appliedInstanceId = nullptr);
+  ServerConfigResult applyInstanceUpgrade(uint8_t instanceId,
+                                          uint32_t definitionId,
+                                          uint16_t fromDefinitionVersion,
+                                          uint16_t toDefinitionVersion,
+                                          const char *paramsJson,
+                                          uint16_t paramsSize);
   ServerConfigResult validateAssignmentJson(
       const char *assignmentJson,
       uint32_t definitionId,
@@ -121,6 +129,12 @@ class ServerConfigHandler {
       uint16_t definitionVersion,
       const char *paramsJson,
       uint16_t paramsSize) const;
+  ServerConfigResult validateInstanceUpgrade(uint8_t instanceId,
+                                             uint32_t definitionId,
+                                             uint16_t fromDefinitionVersion,
+                                             uint16_t toDefinitionVersion,
+                                             const char *paramsJson,
+                                             uint16_t paramsSize) const;
   ServerConfigResult applyCommandJson(const char *commandJson);
   ServerConfigResult validateCommandJson(const char *commandJson) const;
   ServerConfigResult removeAssignment(uint8_t instanceId);

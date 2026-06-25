@@ -55,6 +55,10 @@ uint8_t supletDetailFromServerResult(Supla::Suplet::ServerConfigResult result) {
       return SUPLA_CALCFG_SUPLET_RESULT_CREATE_ONLY_PARAM_CHANGED;
     case Supla::Suplet::ServerConfigResult::TopologyChangeNotAllowed:
       return SUPLA_CALCFG_SUPLET_RESULT_TOPOLOGY_CHANGE_NOT_ALLOWED;
+    case Supla::Suplet::ServerConfigResult::InstanceNotFound:
+      return SUPLA_CALCFG_SUPLET_RESULT_INSTANCE_NOT_FOUND;
+    case Supla::Suplet::ServerConfigResult::VersionMismatch:
+      return SUPLA_CALCFG_SUPLET_RESULT_VERSION_MISMATCH;
     case Supla::Suplet::ServerConfigResult::Busy:
       return SUPLA_CALCFG_SUPLET_RESULT_BUSY;
     case Supla::Suplet::ServerConfigResult::StorageError:
@@ -91,6 +95,7 @@ int calcfgResultFromServerResult(Supla::Suplet::ServerConfigResult result) {
     case Supla::Suplet::ServerConfigResult::Removed:
       return SUPLA_CALCFG_RESULT_DONE;
     case Supla::Suplet::ServerConfigResult::DefinitionNotFound:
+    case Supla::Suplet::ServerConfigResult::InstanceNotFound:
       return SUPLA_CALCFG_RESULT_ID_NOT_EXISTS;
     case Supla::Suplet::ServerConfigResult::DefinitionNotSupported:
       return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
@@ -911,7 +916,70 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       return SUPLA_CALCFG_RESULT_DONE;
     }
 
-    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_CHUNK: {
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_BEGIN: {
+      if (request->DataSize != sizeof(TCalCfg_SupletInstanceUpgradeBegin)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      if (supletCalcfgSession != nullptr && supletCalcfgSession->active) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_BUSY,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletInstanceUpgradeBegin begin = {};
+      memcpy(&begin, request->Data, sizeof(begin));
+      if (begin.SessionId == 0 || begin.InstanceId == 0 ||
+          begin.DefinitionId == 0 || begin.FromDefinitionVersion == 0 ||
+          begin.ToDefinitionVersion == 0 ||
+          begin.ToDefinitionVersion <= begin.FromDefinitionVersion ||
+          begin.ParamsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE,
+                         begin.InstanceId,
+                         begin.DefinitionId,
+                         begin.ToDefinitionVersion,
+                         begin.ParamsSize,
+                         SUPLA_SUPLET_MAX_CONFIG_SIZE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      supletCalcfgSession = beginInstanceCalcfgSession();
+      if (supletCalcfgSession == nullptr) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_RAM_LIMIT_EXCEEDED,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE,
+                         begin.InstanceId,
+                         begin.DefinitionId,
+                         begin.ToDefinitionVersion);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      supletCalcfgSession->active = true;
+      supletCalcfgSession->upgrade = true;
+      supletCalcfgSession->sessionId = begin.SessionId;
+      supletCalcfgSession->lastActivityMs = nowMs;
+      supletCalcfgSession->instanceId = begin.InstanceId;
+      supletCalcfgSession->definitionId = begin.DefinitionId;
+      supletCalcfgSession->fromDefinitionVersion =
+          begin.FromDefinitionVersion;
+      supletCalcfgSession->definitionVersion = begin.ToDefinitionVersion;
+      supletCalcfgSession->paramsSize = begin.ParamsSize;
+      memcpy(supletCalcfgSession->expectedSha256,
+             begin.ParamsSha256,
+             sizeof(supletCalcfgSession->expectedSha256));
+      fillSupletResult(result,
+                       SUPLA_CALCFG_SUPLET_RESULT_OK,
+                       SUPLA_CALCFG_SUPLET_PHASE_VALIDATE,
+                       begin.InstanceId,
+                       begin.DefinitionId,
+                       begin.ToDefinitionVersion);
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_CHUNK:
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_CHUNK: {
       const size_t headerSize = offsetof(TCalCfg_SupletInstanceChunk, Data);
       if (request->DataSize < headerSize ||
           request->DataSize > sizeof(TCalCfg_SupletInstanceChunk)) {
@@ -922,7 +990,10 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       }
       TCalCfg_SupletInstanceChunk chunk = {};
       memcpy(&chunk, request->Data, request->DataSize);
+      const bool requestIsUpgrade =
+          request->Command == SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_CHUNK;
       if (supletCalcfgSession == nullptr || !supletCalcfgSession->active ||
+          supletCalcfgSession->upgrade != requestIsUpgrade ||
           chunk.SessionId != supletCalcfgSession->sessionId ||
           chunk.Size > SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE ||
           request->DataSize != headerSize + chunk.Size ||
@@ -958,7 +1029,8 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       return SUPLA_CALCFG_RESULT_DONE;
     }
 
-    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_COMMIT: {
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_COMMIT:
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_COMMIT: {
       if (request->DataSize != sizeof(TCalCfg_SupletSessionRequest)) {
         fillSupletResult(result,
                          SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
@@ -967,7 +1039,10 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       }
       TCalCfg_SupletSessionRequest sessionRequest = {};
       memcpy(&sessionRequest, request->Data, sizeof(sessionRequest));
+      const bool requestIsUpgrade =
+          request->Command == SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_COMMIT;
       if (supletCalcfgSession == nullptr || !supletCalcfgSession->active ||
+          supletCalcfgSession->upgrade != requestIsUpgrade ||
           sessionRequest.SessionId != supletCalcfgSession->sessionId ||
           supletCalcfgSession->receivedSize !=
               supletCalcfgSession->paramsSize) {
@@ -999,13 +1074,22 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       }
       supletCalcfgSession->params[supletCalcfgSession->paramsSize] = '\0';
       uint8_t appliedInstanceId = supletCalcfgSession->instanceId;
-      auto serverResult = supletServerConfigHandler->applyInstanceParams(
-          supletCalcfgSession->instanceId,
-          supletCalcfgSession->definitionId,
-          supletCalcfgSession->definitionVersion,
-          reinterpret_cast<const char *>(supletCalcfgSession->params),
-          supletCalcfgSession->paramsSize,
-          &appliedInstanceId);
+      auto serverResult =
+          supletCalcfgSession->upgrade
+              ? supletServerConfigHandler->applyInstanceUpgrade(
+                    supletCalcfgSession->instanceId,
+                    supletCalcfgSession->definitionId,
+                    supletCalcfgSession->fromDefinitionVersion,
+                    supletCalcfgSession->definitionVersion,
+                    reinterpret_cast<const char *>(supletCalcfgSession->params),
+                    supletCalcfgSession->paramsSize)
+              : supletServerConfigHandler->applyInstanceParams(
+                    supletCalcfgSession->instanceId,
+                    supletCalcfgSession->definitionId,
+                    supletCalcfgSession->definitionVersion,
+                    reinterpret_cast<const char *>(supletCalcfgSession->params),
+                    supletCalcfgSession->paramsSize,
+                    &appliedInstanceId);
       fillSupletResult(result,
                        supletDetailFromServerResult(serverResult),
                        SUPLA_CALCFG_SUPLET_PHASE_SAVE_INSTANCE,
@@ -1035,7 +1119,8 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       return calcfgResultFromServerResult(serverResult);
     }
 
-    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_ABORT: {
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_ABORT:
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_ABORT: {
       if (request->DataSize != sizeof(TCalCfg_SupletSessionRequest)) {
         fillSupletResult(result,
                          SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
@@ -1044,7 +1129,10 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       }
       TCalCfg_SupletSessionRequest sessionRequest = {};
       memcpy(&sessionRequest, request->Data, sizeof(sessionRequest));
+      const bool requestIsUpgrade =
+          request->Command == SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_ABORT;
       if (supletCalcfgSession != nullptr && supletCalcfgSession->active &&
+          supletCalcfgSession->upgrade == requestIsUpgrade &&
           sessionRequest.SessionId == supletCalcfgSession->sessionId) {
         clearInstanceCalcfgSession();
         supletCalcfgSession = nullptr;

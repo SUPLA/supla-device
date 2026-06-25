@@ -138,6 +138,10 @@ const char *serverConfigResultToString(
       return "DefinitionNotFound";
     case Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged:
       return "DefinitionCannotBeChanged";
+    case Supla::Suplet::ServerConfigResult::InstanceNotFound:
+      return "InstanceNotFound";
+    case Supla::Suplet::ServerConfigResult::VersionMismatch:
+      return "VersionMismatch";
   }
 
   return "Unknown";
@@ -175,6 +179,16 @@ const char *supletKindToString(Supla::Suplet::Kind kind) {
     default:
       return "unknown";
   }
+}
+
+const char *supletDefinitionSourceToString(uint8_t source) {
+  switch (source) {
+    case SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_BUILTIN:
+      return "builtin";
+    case SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_CACHED:
+      return "cached";
+  }
+  return "unknown";
 }
 
 void logSupletCapabilities(
@@ -260,6 +274,10 @@ const char *supletResultDetailToString(uint8_t value) {
       return "DefinitionCannotBeChanged";
     case SUPLA_CALCFG_SUPLET_RESULT_INVALID_DEFINITION:
       return "InvalidDefinition";
+    case SUPLA_CALCFG_SUPLET_RESULT_INSTANCE_NOT_FOUND:
+      return "InstanceNotFound";
+    case SUPLA_CALCFG_SUPLET_RESULT_VERSION_MISMATCH:
+      return "VersionMismatch";
   }
 
   return "Unknown";
@@ -476,6 +494,8 @@ struct FifoCalcfgCommand {
   uint32_t instanceId = 0;
   uint32_t definitionId = 0;
   uint32_t definitionVersion = 0;
+  uint32_t fromDefinitionVersion = 0;
+  uint32_t toDefinitionVersion = 0;
   char definitionJson[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1] = {};
   char paramsJson[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
 };
@@ -536,6 +556,14 @@ bool parseFifoCalcfgCommand(const char *json, FifoCalcfgCommand *command) {
       }
     } else if (equalText(key, "definitionVersion")) {
       if (!reader.readUInt32(&command->definitionVersion)) {
+        return false;
+      }
+    } else if (equalText(key, "fromDefinitionVersion")) {
+      if (!reader.readUInt32(&command->fromDefinitionVersion)) {
+        return false;
+      }
+    } else if (equalText(key, "toDefinitionVersion")) {
+      if (!reader.readUInt32(&command->toDefinitionVersion)) {
         return false;
       }
     } else if (equalText(key, "definitionJson")) {
@@ -909,8 +937,14 @@ class SupletFifoInput {
     //  "definitionVersion":1,"definitionJson":"{...}"}
     // {"calcfg":"removeDefinition","definitionId":2000,
     //  "definitionVersion":1}
+    // {"calcfg":"getDefinitionList"}
+    // {"calcfg":"getDefinitionConfig","definitionId":2000,
+    //  "definitionVersion":1}
     // {"calcfg":"upsertInstance","instanceId":1,"definitionId":2000,
     //  "definitionVersion":1,"paramsJson":"{}"}
+    // {"calcfg":"upgradeInstance","instanceId":1,"definitionId":2000,
+    //  "fromDefinitionVersion":1,"toDefinitionVersion":2,
+    //  "paramsJson":"{}"}
     // {"calcfg":"getInstanceCount"}
     // {"calcfg":"getInstanceList"}
     // {"calcfg":"getInstanceInfo","instanceId":1}
@@ -946,8 +980,20 @@ class SupletFifoInput {
       processCalcfgRemoveDefinition(command);
       return;
     }
+    if (equalText(command.operation, "getDefinitionList")) {
+      processCalcfgGetDefinitionList();
+      return;
+    }
+    if (equalText(command.operation, "getDefinitionConfig")) {
+      processCalcfgGetDefinitionConfig(command);
+      return;
+    }
     if (equalText(command.operation, "upsertInstance")) {
       processCalcfgUpsertInstance(command);
+      return;
+    }
+    if (equalText(command.operation, "upgradeInstance")) {
+      processCalcfgUpgradeInstance(command);
       return;
     }
     if (equalText(command.operation, "getInstanceCount")) {
@@ -1048,6 +1094,124 @@ class SupletFifoInput {
                     "definition.remove");
   }
 
+  void processCalcfgGetDefinitionList() {
+    uint8_t offset = 0;
+    uint8_t total = 0;
+    do {
+      TCalCfg_SupletListRequest request = {};
+      request.Offset = offset;
+      request.Limit = SUPLA_CALCFG_SUPLET_DEFINITION_LIST_MAX_ITEMS;
+      TDS_DeviceCalCfgResult result = {};
+      int resultCode =
+          sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_GET_DEFINITION_LIST,
+                          &request,
+                          sizeof(request),
+                          &result,
+                          "definition.list");
+      if (resultCode != SUPLA_CALCFG_RESULT_TRUE ||
+          result.DataSize != sizeof(TCalCfg_SupletDefinitionList)) {
+        return;
+      }
+      TCalCfg_SupletDefinitionList list = {};
+      memcpy(&list, result.Data, sizeof(list));
+      total = list.Total;
+      SUPLA_LOG_INFO(
+          "Suplet FIFO CALCFG definition.list data: offset=%u, count=%u, "
+          "total=%u",
+          list.Offset,
+          list.Count,
+          list.Total);
+      for (uint8_t i = 0; i < list.Count; i++) {
+        const auto &item = list.Items[i];
+        SUPLA_LOG_INFO(
+            "Suplet FIFO CALCFG definition.list[%u]: definition=%u/%u, "
+            "category=%s, kind=%s, schema=%u, handler=%u, maxInstances=%u, "
+            "source=%s, jsonSize=%u",
+            static_cast<unsigned>(list.Offset + i),
+            item.DefinitionId,
+            item.DefinitionVersion,
+            supletCategoryToString(
+                static_cast<Supla::Suplet::Category>(item.Category)),
+            supletKindToString(static_cast<Supla::Suplet::Kind>(item.Kind)),
+            item.SchemaVersion,
+            item.HandlerVersion,
+            item.MaxInstances,
+            supletDefinitionSourceToString(item.Source),
+            item.JsonSize);
+        logSha256Hex("Suplet FIFO CALCFG definition.list jsonSha256=",
+                     item.JsonSha256);
+      }
+      offset = static_cast<uint8_t>(offset + list.Count);
+      if (list.Count == 0) {
+        break;
+      }
+    } while (offset < total);
+  }
+
+  void processCalcfgGetDefinitionConfig(const FifoCalcfgCommand &command) {
+    if (command.definitionId == 0 || command.definitionVersion == 0 ||
+        command.definitionVersion > UINT16_MAX) {
+      SUPLA_LOG_WARNING(
+          "Suplet FIFO CALCFG getDefinitionConfig invalid arguments");
+      return;
+    }
+
+    std::string json;
+    uint16_t offset = 0;
+    uint16_t totalSize = 0;
+    uint8_t source = 0;
+    while (true) {
+      TCalCfg_SupletDefinitionConfigRequest request = {};
+      request.DefinitionId = command.definitionId;
+      request.DefinitionVersion =
+          static_cast<uint16_t>(command.definitionVersion);
+      request.Offset = offset;
+      request.MaxSize = SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE;
+      TDS_DeviceCalCfgResult result = {};
+      int resultCode =
+          sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_GET_DEFINITION_CONFIG,
+                          &request,
+                          sizeof(request),
+                          &result,
+                          "definition.config");
+      if (resultCode != SUPLA_CALCFG_RESULT_TRUE ||
+          result.DataSize <
+              offsetof(TCalCfg_SupletDefinitionConfigChunk, Data)) {
+        return;
+      }
+      TCalCfg_SupletDefinitionConfigChunk chunk = {};
+      memcpy(&chunk, result.Data, result.DataSize);
+      if (chunk.DefinitionId != command.definitionId ||
+          chunk.DefinitionVersion != command.definitionVersion ||
+          result.DataSize !=
+              offsetof(TCalCfg_SupletDefinitionConfigChunk, Data) +
+                  chunk.Size) {
+        SUPLA_LOG_WARNING(
+            "Suplet FIFO CALCFG definition.config malformed chunk");
+        return;
+      }
+      if (offset == 0) {
+        totalSize = chunk.TotalSize;
+        source = chunk.Source;
+        json.reserve(totalSize);
+      }
+      json.append(chunk.Data, chunk.Size);
+      offset += chunk.Size;
+      if (offset >= chunk.TotalSize || chunk.Size == 0) {
+        break;
+      }
+    }
+
+    SUPLA_LOG_INFO(
+        "Suplet FIFO CALCFG definition.config data: definition=%u/%u, "
+        "source=%s, size=%u, json=%s",
+        command.definitionId,
+        command.definitionVersion,
+        supletDefinitionSourceToString(source),
+        totalSize,
+        json.c_str());
+  }
+
   void processCalcfgUpsertInstance(const FifoCalcfgCommand &command) {
     const uint16_t paramsSize = strlen(command.paramsJson);
     if (command.definitionId == 0 ||
@@ -1107,6 +1271,75 @@ class SupletFifoInput {
                     sizeof(commit),
                     nullptr,
                     "instance.commit");
+  }
+
+  void processCalcfgUpgradeInstance(const FifoCalcfgCommand &command) {
+    const uint16_t paramsSize = strlen(command.paramsJson);
+    if (command.definitionId == 0 || command.instanceId == 0 ||
+        command.instanceId > UINT8_MAX ||
+        command.fromDefinitionVersion == 0 ||
+        command.toDefinitionVersion == 0 ||
+        command.fromDefinitionVersion > UINT16_MAX ||
+        command.toDefinitionVersion > UINT16_MAX ||
+        command.toDefinitionVersion <= command.fromDefinitionVersion) {
+      SUPLA_LOG_WARNING("Suplet FIFO CALCFG upgradeInstance invalid arguments");
+      return;
+    }
+
+    uint32_t sessionId =
+        command.sessionId == 0 ? nextFifoCalcfgSessionId() : command.sessionId;
+    uint8_t sha256[32] = {};
+    calculateSha256(command.paramsJson, paramsSize, sha256);
+
+    TCalCfg_SupletInstanceUpgradeBegin begin = {};
+    begin.SessionId = sessionId;
+    begin.InstanceId = static_cast<uint8_t>(command.instanceId);
+    begin.DefinitionId = command.definitionId;
+    begin.FromDefinitionVersion =
+        static_cast<uint16_t>(command.fromDefinitionVersion);
+    begin.ToDefinitionVersion =
+        static_cast<uint16_t>(command.toDefinitionVersion);
+    begin.ParamsSize = paramsSize;
+    memcpy(begin.ParamsSha256, sha256, sizeof(sha256));
+    if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_BEGIN,
+                        &begin,
+                        sizeof(begin),
+                        nullptr,
+                        "instance.upgrade.begin") != SUPLA_CALCFG_RESULT_DONE) {
+      return;
+    }
+
+    uint16_t offset = 0;
+    while (offset < paramsSize) {
+      uint8_t chunkSize =
+          paramsSize - offset > SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
+              ? SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
+              : static_cast<uint8_t>(paramsSize - offset);
+      TCalCfg_SupletInstanceChunk chunk = {};
+      chunk.SessionId = sessionId;
+      chunk.Offset = offset;
+      chunk.Size = chunkSize;
+      memcpy(chunk.Data, command.paramsJson + offset, chunkSize);
+      uint32_t payloadSize =
+          offsetof(TCalCfg_SupletInstanceChunk, Data) + chunkSize;
+      if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_CHUNK,
+                          &chunk,
+                          payloadSize,
+                          nullptr,
+                          "instance.upgrade.chunk") !=
+          SUPLA_CALCFG_RESULT_DONE) {
+        return;
+      }
+      offset += chunkSize;
+    }
+
+    TCalCfg_SupletSessionRequest commit = {};
+    commit.SessionId = sessionId;
+    sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_COMMIT,
+                    &commit,
+                    sizeof(commit),
+                    nullptr,
+                    "instance.upgrade.commit");
   }
 
   void processCalcfgGetInstanceCount() {

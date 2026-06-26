@@ -20,8 +20,10 @@
 #include <simple_time.h>
 #include <supla/parser/parser.h>
 #include <supla/sensor/binary_parsed.h>
+#include <supla/sensor/general_purpose_measurement_parsed.h>
 #include <supla/source/source.h>
 
+#include <cmath>
 #include <string>
 #include <variant>
 
@@ -48,10 +50,11 @@ class FakeSd4linuxParser : public Supla::Parser::Parser {
 
   bool validAfterRefresh = true;
   std::variant<int, bool, std::string> stateValue = 1;
+  double numericValue = 12.0;
   int refreshCount = 0;
 
   double getValue(const std::string &) override {
-    return 0;
+    return numericValue;
   }
 
   std::variant<int, bool, std::string> getStateValue(
@@ -259,6 +262,34 @@ TEST_F(Sd4linuxParserStateTests,
   EXPECT_EQ(parser.refreshCount, 2);
 }
 
+TEST_F(Sd4linuxParserStateTests,
+       GeneralPurposeMeasurementReturnsNanWhenStateIsNotActive) {
+  SimpleTime time;
+  FakeSd4linuxSource source;
+  FakeSd4linuxParser parser(&source);
+  parser.setRefreshTime(5000);
+  parser.stateValue = std::string("ready");
+  parser.numericValue = 67.0;
+
+  Supla::Sensor::GeneralPurposeMeasurementParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::Value, "progress");
+  sensor.setMapping(Supla::Parser::State, "state");
+  sensor.setOnValues({std::string("running")});
+  sensor.setChannelStateOnline(false);
+
+  time.advance(101);
+
+  EXPECT_TRUE(std::isnan(sensor.getValue()));
+  EXPECT_TRUE(sensor.getChannel()->isStateOnline());
+  EXPECT_EQ(parser.refreshCount, 1);
+
+  parser.stateValue = std::string("running");
+
+  EXPECT_EQ(sensor.getValue(), 67.0);
+  EXPECT_TRUE(sensor.getChannel()->isStateOnline());
+  EXPECT_EQ(parser.refreshCount, 1);
+}
+
 TEST_F(Sd4linuxParserStateTests, ReadsBinaryStateFromBoolValues) {
   SimpleTime time;
   FakeSd4linuxSource source;
@@ -314,6 +345,30 @@ TEST_F(Sd4linuxParserStateTests, ReadsBinaryStateFromTextValues) {
   sensor.iterateAlways();
   EXPECT_FALSE(sensor.getValue());
   EXPECT_FALSE(sensor.getChannel()->getValueBool());
+}
+
+TEST_F(Sd4linuxParserStateTests,
+       StateOnValuesTreatsOtherValidValuesAsOff) {
+  SimpleTime time;
+  FakeSd4linuxSource source;
+  FakeSd4linuxParser parser(&source);
+  Supla::Sensor::BinaryParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::State, "state");
+  sensor.setOnValues({std::string("running")});
+  sensor.setUseOfflineOnInvalidState(true);
+
+  parser.stateValue = std::string("running");
+  sensor.onInit();
+  EXPECT_TRUE(sensor.getValue());
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+  EXPECT_TRUE(sensor.getChannel()->isStateOnline());
+
+  parser.stateValue = std::string("ready");
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getValue());
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+  EXPECT_TRUE(sensor.getChannel()->isStateOnline());
 }
 
 TEST_F(Sd4linuxParserStateTests,

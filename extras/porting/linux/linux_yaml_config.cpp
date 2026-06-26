@@ -58,6 +58,7 @@
 #include <supla/sensor/wind_parsed.h>
 #include <supla/source/cmd.h>
 #include <supla/source/file.h>
+#include <supla/source/http.h>
 #include <supla/source/mqtt_src.h>
 #include <supla/source/source.h>
 #include <supla/tools.h>
@@ -586,6 +587,12 @@ bool Supla::LinuxYamlConfig::getMqttClientFileCA(char* result) const {
 bool Supla::LinuxYamlConfig::loadChannels() {
   try {
     Supla::Linux::initExtensions();
+    if (!loadTopLevelSources(config["sources"])) {
+      return false;
+    }
+    if (!loadTopLevelParsers(config["parsers"])) {
+      return false;
+    }
     if (config["channels"]) {
       auto channels = config["channels"];
       int channelCount = 0;
@@ -619,6 +626,101 @@ bool Supla::LinuxYamlConfig::loadChannels() {
   return false;
 }
 
+bool Supla::LinuxYamlConfig::loadTopLevelSources(
+    const YAML::Node& sourcesNode) {
+  if (!sourcesNode) {
+    return true;
+  }
+  if (!sourcesNode.IsMap()) {
+    SUPLA_LOG_ERROR("Config: \"sources\" section has to be a map");
+    return false;
+  }
+
+  for (const auto& sourceEntry : sourcesNode) {
+    std::string name = sourceEntry.first.as<std::string>();
+    if (name.empty()) {
+      SUPLA_LOG_ERROR("Config: empty source name in \"sources\" section");
+      return false;
+    }
+    if (!sourceEntry.second.IsMap()) {
+      SUPLA_LOG_ERROR("Config: source \"%s\" has to be a map", name.c_str());
+      return false;
+    }
+    if (!addSourceWithName(sourceEntry.second, name)) {
+      SUPLA_LOG_ERROR("Config: adding source \"%s\" failed", name.c_str());
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::loadTopLevelParsers(
+    const YAML::Node& parsersNode) {
+  if (!parsersNode) {
+    return true;
+  }
+  if (!parsersNode.IsMap()) {
+    SUPLA_LOG_ERROR("Config: \"parsers\" section has to be a map");
+    return false;
+  }
+
+  for (const auto& parserEntry : parsersNode) {
+    std::string name = parserEntry.first.as<std::string>();
+    if (name.empty()) {
+      SUPLA_LOG_ERROR("Config: empty parser name in \"parsers\" section");
+      return false;
+    }
+    if (!parserEntry.second.IsMap()) {
+      SUPLA_LOG_ERROR("Config: parser \"%s\" has to be a map", name.c_str());
+      return false;
+    }
+    if (parserEntry.second["name"]) {
+      SUPLA_LOG_ERROR(
+          "Config: parser \"%s\" can't define \"name\" parameter",
+          name.c_str());
+      return false;
+    }
+    if (parserEntry.second["use"]) {
+      SUPLA_LOG_ERROR(
+          "Config: parser \"%s\" can't define \"use\" parameter",
+          name.c_str());
+      return false;
+    }
+    if (!parserEntry.second["source"]) {
+      SUPLA_LOG_ERROR(
+          "Config: parser \"%s\" has no \"source\" parameter",
+          name.c_str());
+      return false;
+    }
+    if (!parserEntry.second["source"].IsScalar()) {
+      SUPLA_LOG_ERROR(
+          "Config: parser \"%s\" source has to be a source name",
+          name.c_str());
+      return false;
+    }
+
+    std::string sourceName = parserEntry.second["source"].as<std::string>();
+    auto source = findSource(sourceName);
+    if (!source) {
+      SUPLA_LOG_ERROR(
+          "Config: parser \"%s\" references unknown source \"%s\"",
+          name.c_str(),
+          sourceName.c_str());
+      return false;
+    }
+
+    YAML::Node parser = YAML::Clone(parserEntry.second);
+    parser.remove("source");
+    if (!addParserWithName(parser, name, source)) {
+      SUPLA_LOG_ERROR("Config: adding parser \"%s\" failed", name.c_str());
+      return false;
+    }
+  }
+
+  return true;
+}
+
 bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
                                           int channelIndex) {
   if (channelIndex >= SUPLA_CHANNELMAXCOUNT) {
@@ -637,7 +739,14 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
 
     if (ch["source"]) {
       paramCount++;
-      if (!(source = addSource(ch["source"]))) {
+      if (ch["source"].IsScalar()) {
+        source = findSource(ch["source"].as<std::string>());
+        if (!source) {
+          SUPLA_LOG_ERROR("Config: can't find source with \"name\"=\"%s\"",
+                          ch["source"].as<std::string>().c_str());
+          return false;
+        }
+      } else if (!(source = addSource(ch["source"]))) {
         SUPLA_LOG_ERROR("Adding source failed");
         return false;
       }
@@ -645,11 +754,17 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
 
     if (ch["parser"]) {
       paramCount++;
-      if (!(parser = addParser(ch["parser"], source))) {
+      if (ch["parser"].IsScalar()) {
+        parser = findParser(ch["parser"].as<std::string>());
+        if (!parser) {
+          SUPLA_LOG_ERROR("Config: can't find parser with \"name\"=\"%s\"",
+                          ch["parser"].as<std::string>().c_str());
+          return false;
+        }
+      } else if (!(parser = addParser(ch["parser"], source))) {
         SUPLA_LOG_ERROR("Adding parser failed");
         return false;
       }
-      parserCount++;
     }
 
     if (ch["output"]) {
@@ -1480,6 +1595,10 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeasurementParsed(
     gpm->setDefaultUnitAfterValue(unit.c_str());
   }
 
+  if (!addStateParser(ch, gpm, parser, false)) {
+    return false;
+  }
+
   return addCommonParametersParsed(ch, gpm, parser);
 }
 
@@ -1595,6 +1714,45 @@ bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
     paramCount++;
     double multiplier = ch[Supla::Multiplier].as<double>();
     ic->setMultiplier(Supla::Parser::Counter, multiplier);
+  }
+  if (ch["default_impulses_per_unit"]) {
+    paramCount++;
+    auto impulsesPerUnit = ch["default_impulses_per_unit"].as<uint32_t>();
+    if (impulsesPerUnit == 0) {
+      SUPLA_LOG_ERROR(
+          "Channel[%d] config: default_impulses_per_unit has to be > 0",
+          channelNumber);
+      return false;
+    }
+    ic->setDefaultImpulsesPerUnit(impulsesPerUnit);
+  }
+  if (ch[Supla::DefaultFunction]) {
+    paramCount++;
+    std::string function = ch[Supla::DefaultFunction].as<std::string>();
+    if (function == "electricity_meter" || function == "energy_meter") {
+      ic->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_IC_ELECTRICITY_METER);
+    } else if (function == "gas_meter") {
+      ic->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_IC_GAS_METER);
+    } else if (function == "water_meter") {
+      ic->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_IC_WATER_METER);
+    } else if (function == "heat_meter") {
+      ic->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_IC_HEAT_METER);
+    } else if (function == "events") {
+      ic->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_IC_EVENTS);
+    } else if (function == "seconds") {
+      ic->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_IC_SECONDS);
+    } else {
+      SUPLA_LOG_ERROR("Channel[%d] config: unknown default function \"%s\"",
+                      channelNumber,
+                      function.c_str());
+      return false;
+    }
+  }
+  if (ch[Supla::DefaultFunctionNumber]) {
+    paramCount++;
+    int32_t functionNumber = ch[Supla::DefaultFunctionNumber].as<int32_t>();
+    ic->getChannel()->setDefaultFunction(functionNumber);
   }
 
   return addCommonParametersParsed(ch, ic, parser);
@@ -1755,14 +1913,75 @@ bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
   return addCommonParametersParsed(ch, binary, parser);
 }
 
+Supla::Source::Source* Supla::LinuxYamlConfig::findSource(
+    const std::string& name) {
+  if (sourceNames.count(name)) {
+    return sources[sourceNames[name]];
+  }
+  return nullptr;
+}
+
+Supla::Parser::Parser* Supla::LinuxYamlConfig::findParser(
+    const std::string& name) {
+  if (parserNames.count(name)) {
+    return parsers[parserNames[name]];
+  }
+  return nullptr;
+}
+
+Supla::Source::Source* Supla::LinuxYamlConfig::addSourceWithName(
+    const YAML::Node& source,
+    const std::string& name) {
+  if (source["name"]) {
+    SUPLA_LOG_ERROR("Config: source \"%s\" can't define \"name\" parameter",
+                    name.c_str());
+    return nullptr;
+  }
+  if (source["use"]) {
+    SUPLA_LOG_ERROR("Config: source \"%s\" can't define \"use\" parameter",
+                    name.c_str());
+    return nullptr;
+  }
+  if (sourceNames.count(name)) {
+    SUPLA_LOG_ERROR("Config: duplicated source name \"%s\"", name.c_str());
+    return nullptr;
+  }
+
+  YAML::Node namedSource = YAML::Clone(source);
+  namedSource["name"] = name;
+  return addSource(namedSource);
+}
+
+Supla::Parser::Parser* Supla::LinuxYamlConfig::addParserWithName(
+    const YAML::Node& parser,
+    const std::string& name,
+    Supla::Source::Source* src) {
+  if (parser["name"]) {
+    SUPLA_LOG_ERROR("Config: parser \"%s\" can't define \"name\" parameter",
+                    name.c_str());
+    return nullptr;
+  }
+  if (parser["use"]) {
+    SUPLA_LOG_ERROR("Config: parser \"%s\" can't define \"use\" parameter",
+                    name.c_str());
+    return nullptr;
+  }
+  if (parserNames.count(name)) {
+    SUPLA_LOG_ERROR("Config: duplicated parser name \"%s\"", name.c_str());
+    return nullptr;
+  }
+
+  YAML::Node namedParser = YAML::Clone(parser);
+  namedParser["name"] = name;
+  return addParser(namedParser, src);
+}
+
 Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
     const YAML::Node& parser, Supla::Source::Source* src) {
   Supla::Parser::Parser* prs = nullptr;
   if (parser["use"]) {
     std::string use = parser["use"].as<std::string>();
-    if (parserNames.count(use)) {
-      prs = parsers[parserNames[use]];
-    }
+    prs = findParser(use);
     if (!prs) {
       SUPLA_LOG_ERROR("Config: can't find parser with \"name\"=\"%s\"",
                       use.c_str());
@@ -1776,9 +1995,13 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
     return prs;
   }
 
+  std::string name;
   if (parser["name"]) {
-    std::string name = parser["name"].as<std::string>();
-    parserNames[name] = parserCount;
+    name = parser["name"].as<std::string>();
+    if (parserNames.count(name)) {
+      SUPLA_LOG_ERROR("Config: duplicated parser name \"%s\"", name.c_str());
+      return nullptr;
+    }
   }
 
   if (!src) {
@@ -1806,6 +2029,9 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
   }
 
   parsers[parserCount] = prs;
+  if (!name.empty()) {
+    parserNames[name] = parserCount;
+  }
   parserCount++;
   return prs;
 }
@@ -1866,9 +2092,7 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
   Supla::Source::Source* src = nullptr;
   if (source["use"]) {
     std::string use = source["use"].as<std::string>();
-    if (sourceNames.count(use)) {
-      src = sources[sourceNames[use]];
-    }
+    src = findSource(use);
     if (!src) {
       SUPLA_LOG_ERROR("Config: can't find source with \"name\"=\"%s\"",
                       use.c_str());
@@ -1882,9 +2106,13 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
     return src;
   }
 
+  std::string name;
   if (source["name"]) {
-    std::string name = source["name"].as<std::string>();
-    sourceNames[name] = sourceCount;
+    name = source["name"].as<std::string>();
+    if (sourceNames.count(name)) {
+      SUPLA_LOG_ERROR("Config: duplicated source name \"%s\"", name.c_str());
+      return nullptr;
+    }
   }
 
   if (source["type"]) {
@@ -1918,6 +2146,79 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
         allSubTopics.push_back(base_state_topic);
       }
       src = new Supla::Source::Mqtt(*this, allSubTopics, qos);
+    } else if (type == "HTTP") {
+      if (!source["url"]) {
+        SUPLA_LOG_ERROR("Config: 'url' not defined for 'HTTP' source");
+        return nullptr;
+      }
+
+      std::string method = source["method"].as<std::string>("GET");
+      if (method != "GET") {
+        SUPLA_LOG_ERROR("Config: unsupported HTTP source method \"%s\"",
+                        method.c_str());
+        return nullptr;
+      }
+
+      std::string url = source["url"].as<std::string>();
+      if (url.empty()) {
+        SUPLA_LOG_ERROR("Config: empty 'url' for 'HTTP' source");
+        return nullptr;
+      }
+
+      std::map<std::string, std::string> headers;
+      if (source["headers"]) {
+        headers = source["headers"].as<std::map<std::string, std::string>>();
+      }
+
+      std::string authType = "none";
+      std::string tokenFile;
+      if (source["auth"]) {
+        authType = source["auth"]["type"].as<std::string>("none");
+        if (authType == "bearer_file") {
+          if (!source["auth"]["token_file"]) {
+            SUPLA_LOG_ERROR(
+                "Config: 'token_file' not defined for HTTP bearer_file auth");
+            return nullptr;
+          }
+          tokenFile = source["auth"]["token_file"].as<std::string>();
+          if (tokenFile.empty()) {
+            SUPLA_LOG_ERROR("Config: empty HTTP bearer token_file");
+            return nullptr;
+          }
+        } else if (authType != "none") {
+          SUPLA_LOG_ERROR("Config: unsupported HTTP auth type \"%s\"",
+                          authType.c_str());
+          return nullptr;
+        }
+      }
+
+      int refreshTimeMs = source["refresh_time_ms"].as<int>(30000);
+      if (refreshTimeMs < 10) {
+        SUPLA_LOG_ERROR("Config: HTTP refresh_time_ms has to be >= 10");
+        return nullptr;
+      }
+
+      int timeoutMs = source["timeout_ms"].as<int>(10000);
+      if (timeoutMs <= 0) {
+        SUPLA_LOG_ERROR("Config: HTTP timeout_ms has to be > 0");
+        return nullptr;
+      }
+
+      int expirationTimeSec = source["expiration_time_sec"].as<int>(10 * 60);
+      if (expirationTimeSec < 0) {
+        SUPLA_LOG_ERROR("Config: HTTP expiration_time_sec has to be >= 0");
+        return nullptr;
+      }
+
+      src = new Supla::Source::Http(
+          method,
+          url,
+          headers,
+          authType,
+          tokenFile,
+          static_cast<unsigned int>(refreshTimeMs),
+          static_cast<unsigned int>(timeoutMs),
+          static_cast<unsigned int>(expirationTimeSec));
     } else {
       SUPLA_LOG_ERROR("Config: unknown source type \"%s\"", type.c_str());
       return nullptr;
@@ -1929,6 +2230,9 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
   }
 
   sources[sourceCount] = src;
+  if (!name.empty()) {
+    sourceNames[name] = sourceCount;
+  }
   sourceCount++;
 
   return src;

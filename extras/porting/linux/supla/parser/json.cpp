@@ -31,6 +31,7 @@ Supla::Parser::Json::~Json() {
 
 bool Supla::Parser::Json::refreshSource() {
   valid = false;
+  sourceValid = false;
   if (source) {
     std::string sourceContent = source->getContent();
 
@@ -46,6 +47,7 @@ bool Supla::Parser::Json::refreshSource() {
       return valid;
     }
 
+    sourceValid = true;
     valid = true;
   }
   return valid;
@@ -55,7 +57,17 @@ bool Supla::Parser::Json::isValid() {
   return valid;
 }
 
+bool Supla::Parser::Json::isSourceValid() {
+  return sourceValid;
+}
+
 double Supla::Parser::Json::getValue(const std::string& key) {
+  if (!sourceValid) {
+    valid = false;
+    return 0;
+  }
+
+  valid = true;
   try {
     const nlohmann::json* valuePtr = nullptr;
 
@@ -131,6 +143,12 @@ double Supla::Parser::Json::getValue(const std::string& key) {
 
 std::variant<int, bool, std::string> Supla::Parser::Json::getStateValue(
     const std::string& key) {
+  if (!sourceValid) {
+    valid = false;
+    return 0;
+  }
+
+  valid = true;
   try {
     if (key[0] == '/') {
       return json[nlohmann::json::json_pointer(key)].get<bool>();

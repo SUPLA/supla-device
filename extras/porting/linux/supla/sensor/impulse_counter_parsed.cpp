@@ -22,18 +22,18 @@
 Supla::Sensor::ImpulseCounterParsed::ImpulseCounterParsed(
     Supla::Parser::Parser *parser)
     : SensorParsed(parser) {
-  channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
 }
 
 void Supla::Sensor::ImpulseCounterParsed::iterateAlways() {
   if (millis() - lastReadTime > 10000) {
     lastReadTime = millis();
-    channel.setNewValue(getValue());
+    setCounter(getValue());
   }
 }
 
 void Supla::Sensor::ImpulseCounterParsed::onInit() {
-  channel.setNewValue(getValue());
+  VirtualImpulseCounter::onInit();
+  setCounter(getValue());
 }
 
 uint64_t Supla::Sensor::ImpulseCounterParsed::getValue() {

@@ -18,12 +18,12 @@
 
 #include "virtual_impulse_counter.h"
 
+#include <string.h>
 #include <supla/actions.h>
+#include <supla/events.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
-#include <supla/events.h>
-#include <string.h>
 
 using Supla::Sensor::VirtualImpulseCounter;
 
@@ -54,12 +54,13 @@ void VirtualImpulseCounter::onLoadState() {
 }
 
 void VirtualImpulseCounter::setCounter(uint64_t value) {
+  if (counter != value) {
+    SUPLA_LOG_DEBUG("VirtualImpulseCounter[%d] - set counter to %d",
+                    channel.getChannelNumber(),
+                    static_cast<int>(value));
+  }
   counter = value;
   channel.setNewValue(value);
-  SUPLA_LOG_DEBUG(
-            "VirtualImpulseCounter[%d] - set counter to %d",
-            channel.getChannelNumber(),
-            static_cast<int>(counter));
 }
 
 void VirtualImpulseCounter::incCounter() {
@@ -115,6 +116,13 @@ void VirtualImpulseCounter::setForceStateSaveOnChange(bool value) {
   forceStateSaveOnChange = value;
 }
 
+void VirtualImpulseCounter::setDefaultImpulsesPerUnit(
+    uint32_t impulsesPerUnit) {
+  if (impulsesPerUnit > 0) {
+    defaultImpulsesPerUnit = impulsesPerUnit;
+  }
+}
+
 Supla::ApplyConfigResult VirtualImpulseCounter::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
   if (result->ConfigSize == 0) {
@@ -136,12 +144,12 @@ void VirtualImpulseCounter::fillChannelConfig(void *channelConfig,
                                               uint8_t configType) {
   if (size && channelConfig) {
     if (configType == SUPLA_CONFIG_TYPE_DEFAULT) {
-      // init default impulse counter config with 1000 impulses per unit
+      // init default impulse counter config
       *size = sizeof(TChannelConfig_ImpulseCounter);
       TChannelConfig_ImpulseCounter *config =
-        reinterpret_cast<TChannelConfig_ImpulseCounter *>(channelConfig);
+          reinterpret_cast<TChannelConfig_ImpulseCounter *>(channelConfig);
       memset(config, 0, sizeof(TChannelConfig_ImpulseCounter));
-      config->ImpulsesPerUnit = 1000;
+      config->ImpulsesPerUnit = defaultImpulsesPerUnit;
     }
   }
 }

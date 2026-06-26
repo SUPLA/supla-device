@@ -43,9 +43,11 @@ class Json : public Parser {
 
   bool isBasedOnIndex() override;
   bool isValid() override;
+  bool isSourceValid() override;
 
  protected:
   bool valid = false;
+  bool sourceValid = false;
   std::map<std::string, int> keys;
 
   nlohmann::json json;
@@ -53,4 +55,3 @@ class Json : public Parser {
 };  // namespace Parser
 };  // namespace Supla
 #endif  // EXTRAS_PORTING_LINUX_SUPLA_PARSER_JSON_H_
-

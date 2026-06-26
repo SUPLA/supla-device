@@ -87,7 +87,7 @@ bool SensorParsedBase::refreshParserSource(bool updateChannelState) {
       return false;
     }
     if (parser->refreshParserSource()) {
-      if (!parser->isValid()) {
+      if (!parser->isSourceValid()) {
         return false;
       }
       if (updateChannelState) {
@@ -190,6 +190,8 @@ int SensorParsedBase::getStateValue(bool updateChannelState) {
           if (std::find(stateOnValues.begin(), stateOnValues.end(), value) !=
               stateOnValues.end()) {
             state = 1;
+          } else if (value != std::variant<int, bool, std::string>(-1)) {
+            state = 0;
           }
         }
         if (state == -1) {

@@ -21,6 +21,8 @@
 #include <supla/log_wrapper.h>
 #include <cmath>
 
+#include "binary_parsed.h"
+
 using Supla::Sensor::GeneralPurposeMeasurementParsed;
 
 GeneralPurposeMeasurementParsed::GeneralPurposeMeasurementParsed(
@@ -30,6 +32,16 @@ GeneralPurposeMeasurementParsed::GeneralPurposeMeasurementParsed(
 
 double GeneralPurposeMeasurementParsed::getValue() {
   double value = NAN;
+
+  if (isParameterConfigured(Supla::Parser::State)) {
+    int state = getStateValue(false);
+    if (state != 1) {
+      if (state == 0) {
+        setChannelStateOnline(true);
+      }
+      return NAN;
+    }
+  }
 
   if (isParameterConfigured(Supla::Parser::Value)) {
     if (refreshParserSource()) {
@@ -46,5 +58,3 @@ double GeneralPurposeMeasurementParsed::getValue() {
   }
   return value;
 }
-
-

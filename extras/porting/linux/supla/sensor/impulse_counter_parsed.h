@@ -19,8 +19,8 @@
 #ifndef EXTRAS_PORTING_LINUX_SUPLA_SENSOR_IMPULSE_COUNTER_PARSED_H_
 #define EXTRAS_PORTING_LINUX_SUPLA_SENSOR_IMPULSE_COUNTER_PARSED_H_
 
-#include <supla/channel_element.h>
 #include <supla/parser/parser.h>
+#include <supla/sensor/virtual_impulse_counter.h>
 
 #include <string>
 
@@ -33,7 +33,7 @@ const char Counter[] = "counter";
 
 namespace Sensor {
 
-class ImpulseCounterParsed : public SensorParsed<ChannelElement> {
+class ImpulseCounterParsed : public SensorParsed<VirtualImpulseCounter> {
  public:
   explicit ImpulseCounterParsed(Supla::Parser::Parser *);
 

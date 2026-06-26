@@ -45,6 +45,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(json googletest)
 
+find_package(CURL REQUIRED)
+
 file(GLOB TEST_SRC CONFIGURE_DEPENDS
   UptimeTests/*.cpp
   ChannelTests/*.cpp
@@ -93,10 +95,12 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/control/cmd_roller_shutter.cpp
   ../porting/linux/supla/control/rgbcct_parsed.cpp
   ../porting/linux/supla/control/action_trigger_parsed.cpp
+  ../porting/linux/supla/source/http.cpp
   ../porting/linux/supla/parser/json.cpp
   ../porting/linux/supla/parser/parser.cpp
   ../porting/linux/supla/sensor/sensor_parsed.cpp
   ../porting/linux/supla/sensor/binary_parsed.cpp
+  ../porting/linux/supla/sensor/general_purpose_measurement_parsed.cpp
   ../porting/linux/supla/sensor/impulse_counter_parsed.cpp
   ../porting/linux/supla/sensor/thermometer_parsed.cpp
   ../porting/linux/supla/payload/payload.cpp
@@ -143,6 +147,7 @@ target_link_libraries(supladevicetests
 target_link_libraries(sd4linuxtests
   PRIVATE
     supladevicelib
+    CURL::libcurl
     nlohmann_json::nlohmann_json
     gtest
     gmock

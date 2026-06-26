@@ -882,11 +882,29 @@ three extra configuration options:\
 `source` defines from where supla-device will get data for `parser` to parsed
 channel. It should be defined as a sub element of a channel.
 
+Common sources can also be defined once in the top-level `sources` map. The map
+key is a source name and the value is the same source configuration that can be
+used inside a channel:
+
+    sources:
+      shared_file:
+        type: File
+        file: temp.txt
+
+Channels can then reference it with either short form:
+
+    source: shared_file
+
+or the older explicit form:
+
+    source:
+      use: shared_file
+
 `source` have one common mandatory parameter `type` which defines type
 of used source. There is also optional `name` parameter. If you name your
 source, then it can be reused for multiple parsers.
 
-There are three supported parser types:
+There are four supported source types:
 1. `File` - use file as an input. File name is provided by `file` parameter and
 additionally you can define `expiration_time_sec` parameter. If last modification
 time of a file is older than `expiration_time_sec` then this source will be
@@ -906,11 +924,37 @@ In order to disable time expiration check, please set `expiration_time_sec` to 0
    When the connection to the MQTT broker is lost, all channels using `MQTT` source
    will be automatically set to offline state. They return to online state once the
    connection is restored and data is received.
+4. `HTTP` - use HTTP/HTTPS GET response body as an input. It supports static
+   headers, `auth.type: none`, `auth.type: bearer_file`, `refresh_time_ms`,
+   `timeout_ms` and `expiration_time_sec`. HTTP source keeps the last successful
+   response in memory and returns cached content until `refresh_time_ms` expires.
+   Failed requests don't clear the cache. If cached content is older than
+   `expiration_time_sec`, the source is considered invalid. More details and an
+   example are available in `http_source/README.md`.
 
 ## Parsed channel `parser` parameter
 
 Parser takes text input from previously defined `source` and converts it to
 value which can be used for a parsed channel value.
+
+Common parsers can also be defined once in the top-level `parsers` map. The map
+key is a parser name. Top-level parser definitions reference a top-level source
+with `source`:
+
+    parsers:
+      shared_json:
+        type: Json
+        source: shared_file
+        refresh_time_ms: 1000
+
+Channels can then reference the parser with either short form:
+
+    parser: shared_json
+
+or the older explicit form:
+
+    parser:
+      use: shared_json
 
 There are two parsers defined:
 1. `Simple` - it takes input from source and try to convert each line of text
@@ -1031,6 +1075,14 @@ Mandatory parameter: `counter` - defines key/index by which data is fetched
 from `parser`.
 Optional parameter: `multiplier` - defines multiplier for fetched value
 (you can put any floating point number).
+Optional parameter: `default_impulses_per_unit` - defines default impulse
+counter channel configuration sent to the server. It doesn't scale parser
+value locally. For example, use `1000` when raw counter is in Wh and the
+function should report kWh, or `1000000` when raw counter is in ml and the
+function should report m3.
+Optional parameter: `default_function` - defines default impulse counter
+function. Supported values: `electricity_meter`, `energy_meter`, `gas_meter`,
+`water_meter`, `heat_meter`, `events`, `seconds`.
 
 ### `BinaryParsed`
 
@@ -1232,6 +1284,9 @@ Optional parameters:
 0, 1, 2, 3, 4.
 * `default_unit_before_value` - defines unit displayed before value (you can put any string up to 14 bytes).
 * `default_unit_after_value` - defines unit displayed after value (you can put any string up to 14 bytes).
+* `state` and `state_on_values` - optionally define a parser state key and
+  values for which the measurement is active. When state is configured and the
+  current state doesn't match, the channel reports `NaN` value and stays online.
 
 ### `GeneralPurposeMeterParsed`
 Add channel with "general purpose meter" type.

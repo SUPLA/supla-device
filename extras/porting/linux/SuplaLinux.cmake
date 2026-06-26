@@ -3,6 +3,7 @@ include_guard()
 include(FetchContent)
 
 find_package(OpenSSL REQUIRED)
+find_package(CURL REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 set(SUPLA_LINUX_EXTENSION_DIRS "" CACHE STRING
@@ -60,6 +61,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
 
   ${SUPLA_LINUX_PORT_DIR}/supla/source/cmd.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/source/file.cpp
+  ${SUPLA_LINUX_PORT_DIR}/supla/source/http.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/source/mqtt_src.cpp
 
   ${SUPLA_LINUX_PORT_DIR}/supla/parser/parser.cpp
@@ -235,6 +237,7 @@ function(supla_linux target_name)
     nlohmann_json::nlohmann_json
     cxxopts::cxxopts
     OpenSSL::SSL
+    CURL::libcurl
     yaml-cpp
     mqttc
     OpenSSL::Crypto

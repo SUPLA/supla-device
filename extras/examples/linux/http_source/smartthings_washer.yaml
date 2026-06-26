@@ -1,0 +1,96 @@
+# Example supla-device config file for Linux device
+# https://github.com/SUPLA/supla-device
+#
+# Replace DEVICE_ID, server, mail and token_file before use.
+
+name: SmartThings washer HTTP source example
+log_level: debug
+proto_verbose_log: false
+state_files_path: "/var/local/supla-device/smartthings-washer"
+security_level: 0
+
+supla:
+  server: svrXX.supla.org
+  mail: user@example.com
+  proto: 23
+
+sources:
+  st_washer:
+    type: HTTP
+    method: GET
+    url: "https://api.smartthings.com/v1/devices/DEVICE_ID/status"
+    headers:
+      Accept: "application/json"
+    auth:
+      type: bearer_file
+      token_file: "/etc/supla/smartthings-token"
+    refresh_time_ms: 30000
+    timeout_ms: 10000
+    expiration_time_sec: 180
+
+parsers:
+  st_washer_json:
+    type: Json
+    source: st_washer
+    refresh_time_ms: 1000
+
+channels:
+  - type: BinaryParsed
+    name: washer_working
+    initial_caption: "Washer working"
+    default_function: binary
+
+    parser: st_washer_json
+
+    state: "/components/main/samsungce.washerOperatingState/operatingState/value"
+    state_on_values: ["running"]
+    timeout_s: 180
+
+  - type: GeneralPurposeMeasurementParsed
+    name: washer_remaining_time
+    initial_caption: "Washer remaining time"
+    default_unit_after_value: "min"
+    default_value_precision: 0
+
+    parser: st_washer_json
+
+    value: "/components/main/samsungce.washerOperatingState/remainingTime/value"
+    state: "/components/main/samsungce.washerOperatingState/operatingState/value"
+    state_on_values: ["running"]
+
+  - type: GeneralPurposeMeasurementParsed
+    name: washer_progress
+    initial_caption: "Washer progress"
+    default_unit_after_value: "%"
+    default_value_precision: 0
+
+    parser: st_washer_json
+
+    value: "/components/main/samsungce.washerOperatingState/progress/value"
+    state: "/components/main/samsungce.washerOperatingState/operatingState/value"
+    state_on_values: ["running"]
+
+  # Energy and water capability names may differ between SmartThings washer
+  # models. Verify paths with:
+  # curl -H "Authorization: Bearer $(cat /etc/supla/smartthings-token)" \
+  #   "https://api.smartthings.com/v1/devices/DEVICE_ID/status" | jq '.components.main'
+
+  - type: ImpulseCounterParsed
+    name: washer_energy
+    initial_caption: "Washer energy"
+    default_function: electricity_meter
+    default_impulses_per_unit: 1000
+
+    parser: st_washer_json
+
+    counter: "/components/main/powerConsumptionReport/powerConsumption/value/energy"
+
+  - type: ImpulseCounterParsed
+    name: washer_water
+    initial_caption: "Washer water"
+    default_function: water_meter
+    default_impulses_per_unit: 1000000
+
+    parser: st_washer_json
+
+    counter: "/components/main/samsungce.waterConsumptionReport/waterConsumption/value/cumulativeAmount"

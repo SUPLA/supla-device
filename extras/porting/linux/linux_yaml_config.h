@@ -145,7 +145,16 @@ class LinuxYamlConfig : public KeyValue {
                                   Supla::Element* element);
 
  protected:
+  bool loadTopLevelSources(const YAML::Node& sourcesNode);
+  bool loadTopLevelParsers(const YAML::Node& parsersNode);
   bool parseChannel(const YAML::Node& ch, int channelNumber);
+  Supla::Source::Source* findSource(const std::string& name);
+  Supla::Parser::Parser* findParser(const std::string& name);
+  Supla::Source::Source* addSourceWithName(const YAML::Node& source,
+                                           const std::string& name);
+  Supla::Parser::Parser* addParserWithName(const YAML::Node& parser,
+                                           const std::string& name,
+                                           Supla::Source::Source* src);
   Supla::Parser::Parser* addParser(const YAML::Node& parser,
                                    Supla::Source::Source* src);
   Supla::Source::Source* addSource(const YAML::Node& ch);

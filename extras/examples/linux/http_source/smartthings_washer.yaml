@@ -44,7 +44,6 @@ channels:
 
     state: "/components/main/samsungce.washerOperatingState/operatingState/value"
     state_on_values: ["running"]
-    timeout_s: 180
 
   - type: GeneralPurposeMeasurementParsed
     name: washer_remaining_time

@@ -45,7 +45,20 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(json googletest)
 
-find_package(CURL REQUIRED)
+option(SUPLA_TEST_ENABLE_CURL_HTTP
+  "Enable sd4linux HTTP source tests when CURL is available" ON)
+option(SUPLA_TEST_REQUIRE_CURL
+  "Fail test configuration when CURL is missing" OFF)
+
+find_package(CURL QUIET)
+set(SUPLA_TEST_CURL_HTTP_ENABLED OFF)
+if(CURL_FOUND AND SUPLA_TEST_ENABLE_CURL_HTTP)
+  set(SUPLA_TEST_CURL_HTTP_ENABLED ON)
+elseif(SUPLA_TEST_REQUIRE_CURL)
+  message(FATAL_ERROR
+    "CURL is required for sd4linux HTTP source tests. "
+    "Install libcurl development package or disable SUPLA_TEST_REQUIRE_CURL.")
+endif()
 
 file(GLOB TEST_SRC CONFIGURE_DEPENDS
   UptimeTests/*.cpp
@@ -83,6 +96,11 @@ file(GLOB SD4LINUX_TEST_SRC CONFIGURE_DEPENDS
   LinuxPortTests/*.cpp
   )
 
+if(NOT SUPLA_TEST_CURL_HTTP_ENABLED)
+  list(REMOVE_ITEM SD4LINUX_TEST_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/LinuxPortTests/sd4linux_http_source_tests.cpp)
+endif()
+
 list(APPEND TEST_SRC ../../src/supla-common/proto_check.cpp)
 
 file(GLOB DOUBLE_SRC CONFIGURE_DEPENDS doubles/*.cpp)
@@ -95,7 +113,6 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/control/cmd_roller_shutter.cpp
   ../porting/linux/supla/control/rgbcct_parsed.cpp
   ../porting/linux/supla/control/action_trigger_parsed.cpp
-  ../porting/linux/supla/source/http.cpp
   ../porting/linux/supla/parser/json.cpp
   ../porting/linux/supla/parser/parser.cpp
   ../porting/linux/supla/sensor/sensor_parsed.cpp
@@ -105,6 +122,10 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/sensor/thermometer_parsed.cpp
   ../porting/linux/supla/payload/payload.cpp
   )
+
+if(SUPLA_TEST_CURL_HTTP_ENABLED)
+  list(APPEND SD4LINUX_PORT_SRC ../porting/linux/supla/source/http.cpp)
+endif()
 
 add_library(supladevicelib SHARED)
 supla_device(supladevicelib)
@@ -147,12 +168,17 @@ target_link_libraries(supladevicetests
 target_link_libraries(sd4linuxtests
   PRIVATE
     supladevicelib
-    CURL::libcurl
     nlohmann_json::nlohmann_json
     gtest
     gmock
     gtest_main
   )
+
+if(SUPLA_TEST_CURL_HTTP_ENABLED)
+  target_link_libraries(sd4linuxtests PRIVATE CURL::libcurl)
+  target_compile_definitions(sd4linuxtests
+    PRIVATE SUPLA_LINUX_HTTP_SOURCE_ENABLED)
+endif()
 
 add_test(NAME supladevicetests COMMAND supladevicetests)
 add_test(NAME sd4linuxtests COMMAND sd4linuxtests)

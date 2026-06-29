@@ -14,7 +14,14 @@ https://cloud.supla.org.
 
 For Debian based distributions:
 
-    sudo apt install git libssl-dev build-essential libyaml-cpp-dev cmake
+    sudo apt install git libssl-dev libcurl4-openssl-dev build-essential libyaml-cpp-dev cmake
+
+The `libcurl4-openssl-dev` package is required for `source.type: HTTP`.
+If sd4linux is built without CURL, HTTP sources are not available and YAML
+configuration using `type: HTTP` will be rejected at startup. HTTP source
+support is enabled by default when CURL is found. Use
+`SUPLA_LINUX_ENABLE_HTTP_SOURCE` to control this feature and
+`SUPLA_LINUX_REQUIRE_CURL` to make missing CURL a configuration error.
 
 ## Get supla-device sources
 

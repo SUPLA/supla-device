@@ -58,7 +58,9 @@
 #include <supla/sensor/wind_parsed.h>
 #include <supla/source/cmd.h>
 #include <supla/source/file.h>
+#ifdef SUPLA_LINUX_HTTP_SOURCE_ENABLED
 #include <supla/source/http.h>
+#endif
 #include <supla/source/mqtt_src.h>
 #include <supla/source/source.h>
 #include <supla/tools.h>
@@ -2147,6 +2149,12 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       }
       src = new Supla::Source::Mqtt(*this, allSubTopics, qos);
     } else if (type == "HTTP") {
+#ifndef SUPLA_LINUX_HTTP_SOURCE_ENABLED
+      SUPLA_LOG_ERROR(
+          "Config: HTTP source support was not built. Install libcurl "
+          "development package and enable SUPLA_LINUX_ENABLE_HTTP_SOURCE.");
+      return nullptr;
+#else
       if (!source["url"]) {
         SUPLA_LOG_ERROR("Config: 'url' not defined for 'HTTP' source");
         return nullptr;
@@ -2219,6 +2227,7 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
           static_cast<unsigned int>(refreshTimeMs),
           static_cast<unsigned int>(timeoutMs),
           static_cast<unsigned int>(expirationTimeSec));
+#endif
     } else {
       SUPLA_LOG_ERROR("Config: unknown source type \"%s\"", type.c_str());
       return nullptr;

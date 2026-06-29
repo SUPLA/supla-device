@@ -1,5 +1,15 @@
 # sd4linux HTTP Source
 
+This example requires sd4linux built with HTTP source support. On Debian based
+distributions install the CURL development package before building:
+
+```sh
+sudo apt install libcurl4-openssl-dev
+```
+
+If sd4linux is built without CURL, `source.type: HTTP` is unavailable and the
+configuration will be rejected at startup.
+
 `HTTP` source fetches a remote HTTP or HTTPS response body and passes it as text
 to the existing parser pipeline. It does not parse JSON by itself; use
 `parser.type: Json` and existing parsed channel mappings for that.

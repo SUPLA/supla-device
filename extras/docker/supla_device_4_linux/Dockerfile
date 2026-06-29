@@ -7,6 +7,7 @@ RUN apt-get update -y \
     && apt-get install -y \
     git \
     libssl-dev \
+    libcurl4-openssl-dev \
     build-essential \
     libyaml-cpp-dev \
     cmake \

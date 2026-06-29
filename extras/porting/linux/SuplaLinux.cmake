@@ -3,8 +3,22 @@ include_guard()
 include(FetchContent)
 
 find_package(OpenSSL REQUIRED)
-find_package(CURL REQUIRED)
 find_package(yaml-cpp REQUIRED)
+
+option(SUPLA_LINUX_ENABLE_HTTP_SOURCE
+  "Enable sd4linux HTTP source support when CURL is available" ON)
+option(SUPLA_LINUX_REQUIRE_CURL
+  "Fail configuration when sd4linux HTTP source support needs CURL but CURL is missing" OFF)
+
+find_package(CURL QUIET)
+set(SUPLA_LINUX_HTTP_SOURCE_ENABLED OFF)
+if(CURL_FOUND AND SUPLA_LINUX_ENABLE_HTTP_SOURCE)
+  set(SUPLA_LINUX_HTTP_SOURCE_ENABLED ON)
+elseif(SUPLA_LINUX_REQUIRE_CURL)
+  message(FATAL_ERROR
+    "CURL is required for sd4linux HTTP source support. "
+    "Install libcurl development package or disable SUPLA_LINUX_REQUIRE_CURL.")
+endif()
 
 set(SUPLA_LINUX_EXTENSION_DIRS "" CACHE STRING
   "Semicolon-separated sd4linux extension directories")
@@ -61,7 +75,6 @@ set(SUPLA_DEVICE_LINUX_SRCS
 
   ${SUPLA_LINUX_PORT_DIR}/supla/source/cmd.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/source/file.cpp
-  ${SUPLA_LINUX_PORT_DIR}/supla/source/http.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/source/mqtt_src.cpp
 
   ${SUPLA_LINUX_PORT_DIR}/supla/parser/parser.cpp
@@ -112,6 +125,12 @@ set(SUPLA_DEVICE_LINUX_SRCS
 
   ${SUPLA_LINUX_PORT_DIR}/linux_log.c
 )
+
+if(SUPLA_LINUX_HTTP_SOURCE_ENABLED)
+  list(APPEND SUPLA_DEVICE_LINUX_SRCS
+    ${SUPLA_LINUX_PORT_DIR}/supla/source/http.cpp
+  )
+endif()
 
 function(supla_linux_register_extension)
   cmake_parse_arguments(EXTENSION
@@ -233,11 +252,15 @@ function(supla_linux target_name)
 
   target_compile_definitions(${target_name} PUBLIC SUPLA_LINUX SUPLA_DEVICE)
 
+  if(SUPLA_LINUX_HTTP_SOURCE_ENABLED)
+    target_compile_definitions(${target_name}
+      PUBLIC SUPLA_LINUX_HTTP_SOURCE_ENABLED)
+  endif()
+
   target_link_libraries(${target_name} PUBLIC
     nlohmann_json::nlohmann_json
     cxxopts::cxxopts
     OpenSSL::SSL
-    CURL::libcurl
     yaml-cpp
     mqttc
     OpenSSL::Crypto
@@ -245,4 +268,8 @@ function(supla_linux target_name)
     ${CMAKE_DL_LIBS}
     ${SUPLA_LINUX_EXTENSION_LIBRARIES}
   )
+
+  if(SUPLA_LINUX_HTTP_SOURCE_ENABLED)
+    target_link_libraries(${target_name} PUBLIC CURL::libcurl)
+  endif()
 endfunction()

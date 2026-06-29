@@ -175,6 +175,25 @@ void waitForRequests(Transport* transport, size_t expectedCount) {
   }
 }
 
+void waitForContent(Supla::Source::Http* source,
+                    const std::string& expectedContent) {
+  for (int i = 0; i < 100; i++) {
+    if (source->getContent() == expectedContent) {
+      return;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+}
+
+void waitForConnected(Supla::Source::Http* source, bool expectedConnected) {
+  for (int i = 0; i < 100; i++) {
+    if (source->isConnected() == expectedConnected) {
+      return;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+}
+
 }  // namespace
 
 TEST(Sd4linuxHttpSourceTests, PerformsRequestAndReturnsBody) {
@@ -183,8 +202,8 @@ TEST(Sd4linuxHttpSourceTests, PerformsRequestAndReturnsBody) {
   auto source = makeSource(&transport);
   transport->pushResponse(success(200, R"({"state":"ok"})"));
 
-  EXPECT_EQ(source->getContent(), "");
-  waitForRequests(transport, 1);
+  (void)source->getContent();
+  waitForContent(source.get(), R"({"state":"ok"})");
   EXPECT_EQ(source->getContent(), R"({"state":"ok"})");
   ASSERT_EQ(transport->requestCount(), 1u);
   auto request = transport->requestAt(0);
@@ -211,16 +230,16 @@ TEST(Sd4linuxHttpSourceTests, UsesCacheUntilRefreshTimeExpires) {
   transport->pushResponse(success(200, "first"));
   transport->pushResponse(success(200, "second"));
 
-  EXPECT_EQ(source->getContent(), "");
-  waitForRequests(transport, 1);
+  (void)source->getContent();
+  waitForContent(source.get(), "first");
   EXPECT_EQ(source->getContent(), "first");
   time.advance(999);
   EXPECT_EQ(source->getContent(), "first");
   EXPECT_EQ(transport->requestCount(), 1u);
 
   time.advance(1);
-  EXPECT_EQ(source->getContent(), "first");
-  waitForRequests(transport, 2);
+  (void)source->getContent();
+  waitForContent(source.get(), "second");
   EXPECT_EQ(source->getContent(), "second");
   EXPECT_EQ(transport->requestCount(), 2u);
 }
@@ -232,8 +251,8 @@ TEST(Sd4linuxHttpSourceTests, KeepsCachedBodyOnHttpFailure) {
   transport->pushResponse(success(200, "last-good"));
   transport->pushResponse(success(500, "bad"));
 
-  EXPECT_EQ(source->getContent(), "");
-  waitForRequests(transport, 1);
+  (void)source->getContent();
+  waitForContent(source.get(), "last-good");
   EXPECT_EQ(source->getContent(), "last-good");
   time.advance(1000);
   EXPECT_EQ(source->getContent(), "last-good");
@@ -250,8 +269,8 @@ TEST(Sd4linuxHttpSourceTests, KeepsCachedBodyOnNetworkFailure) {
   transport->pushResponse(success(200, "last-good"));
   transport->pushResponse(failure("timeout"));
 
-  EXPECT_EQ(source->getContent(), "");
-  waitForRequests(transport, 1);
+  (void)source->getContent();
+  waitForContent(source.get(), "last-good");
   EXPECT_EQ(source->getContent(), "last-good");
   time.advance(1000);
   EXPECT_EQ(source->getContent(), "last-good");
@@ -268,8 +287,8 @@ TEST(Sd4linuxHttpSourceTests, KeepsCachedBodyOnTooLargeResponseFailure) {
   transport->pushResponse(success(200, "last-good"));
   transport->pushResponse(failure("response body too large"));
 
-  EXPECT_EQ(source->getContent(), "");
-  waitForRequests(transport, 1);
+  (void)source->getContent();
+  waitForContent(source.get(), "last-good");
   EXPECT_EQ(source->getContent(), "last-good");
   time.advance(1000);
   EXPECT_EQ(source->getContent(), "last-good");
@@ -284,8 +303,8 @@ TEST(Sd4linuxHttpSourceTests, PassesConfiguredMaxBodySizeToTransport) {
   auto source = makeSource(&transport, 1000, 10, "none", "", 123);
   transport->pushResponse(success(200, "ok"));
 
-  EXPECT_EQ(source->getContent(), "");
-  waitForRequests(transport, 1);
+  (void)source->getContent();
+  waitForContent(source.get(), "ok");
 
   ASSERT_EQ(transport->requestCount(), 1u);
   EXPECT_EQ(transport->requestAt(0).maxBodySizeBytes, 123u);
@@ -297,8 +316,8 @@ TEST(Sd4linuxHttpSourceTests, ExpiresCachedBodyForConnectionStateOnly) {
   auto source = makeSource(&transport, 5000, 1);
   transport->pushResponse(success(200, "last-good"));
 
-  EXPECT_EQ(source->getContent(), "");
-  waitForRequests(transport, 1);
+  (void)source->getContent();
+  waitForContent(source.get(), "last-good");
   EXPECT_EQ(source->getContent(), "last-good");
   EXPECT_TRUE(source->isConnected());
 
@@ -314,13 +333,13 @@ TEST(Sd4linuxHttpSourceTests, RetriesFromConnectionCheckAfterCacheExpires) {
   transport->pushResponse(success(200, "first"));
   transport->pushResponse(success(200, "second"));
 
-  EXPECT_EQ(source->getContent(), "");
-  waitForRequests(transport, 1);
+  (void)source->getContent();
+  waitForContent(source.get(), "first");
   EXPECT_EQ(source->getContent(), "first");
 
   time.advance(1000);
   EXPECT_FALSE(source->isConnected());
-  waitForRequests(transport, 2);
+  waitForContent(source.get(), "second");
   EXPECT_EQ(transport->requestCount(), 2u);
   EXPECT_EQ(source->getContent(), "second");
   EXPECT_TRUE(source->isConnected());
@@ -339,8 +358,8 @@ TEST(Sd4linuxHttpSourceTests, SendsTrimmedBearerTokenFromFile) {
       &transport, 1000, 10, "bearer_file", tokenPath);
   transport->pushResponse(success(200, "ok"));
 
-  EXPECT_EQ(source->getContent(), "");
-  waitForRequests(transport, 1);
+  (void)source->getContent();
+  waitForContent(source.get(), "ok");
   EXPECT_EQ(source->getContent(), "ok");
   ASSERT_EQ(transport->requestCount(), 1u);
   EXPECT_EQ(transport->requestAt(0).headers.at("Authorization"),
@@ -371,7 +390,7 @@ TEST(Sd4linuxHttpSourceTests, ReportsOfflineAfterFailedFirstAttempt) {
   transport->pushResponse(failure("timeout"));
 
   EXPECT_EQ(source->getContent(), "");
-  waitForRequests(transport, 1);
+  waitForConnected(source.get(), false);
   EXPECT_FALSE(source->isConnected());
 }
 

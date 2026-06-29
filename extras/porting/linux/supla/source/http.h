@@ -30,11 +30,14 @@
 
 namespace Supla::Source {
 
+constexpr unsigned int HTTP_SOURCE_DEFAULT_MAX_BODY_SIZE_BYTES = 1024 * 1024;
+
 struct HttpRequest {
   std::string method = "GET";
   std::string url;
   std::map<std::string, std::string> headers;
   unsigned int timeoutMs = 10000;
+  unsigned int maxBodySizeBytes = HTTP_SOURCE_DEFAULT_MAX_BODY_SIZE_BYTES;
 };
 
 struct HttpResponse {
@@ -57,6 +60,17 @@ class CurlHttpTransport : public HttpTransport {
 
 class Http : public Source {
  public:
+  Http(const std::string& method,
+       const std::string& url,
+       const std::map<std::string, std::string>& headers,
+       const std::string& authType,
+       const std::string& tokenFile,
+       unsigned int refreshTimeMs,
+       unsigned int timeoutMs,
+       unsigned int expirationTimeSec,
+       unsigned int maxBodySizeBytes,
+       std::unique_ptr<HttpTransport> transport =
+           std::unique_ptr<HttpTransport>(new CurlHttpTransport()));
   Http(const std::string& method,
        const std::string& url,
        const std::map<std::string, std::string>& headers,
@@ -89,6 +103,7 @@ class Http : public Source {
   unsigned int refreshTimeMs = 30000;
   unsigned int timeoutMs = 10000;
   unsigned int expirationTimeSec = 10 * 60;
+  unsigned int maxBodySizeBytes = HTTP_SOURCE_DEFAULT_MAX_BODY_SIZE_BYTES;
   std::unique_ptr<HttpTransport> transport;
   std::thread worker;
   mutable std::mutex mutex;

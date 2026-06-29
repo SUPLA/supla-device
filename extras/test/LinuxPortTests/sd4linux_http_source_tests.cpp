@@ -140,7 +140,9 @@ std::unique_ptr<Supla::Source::Http> makeSource(
     unsigned int refreshTimeMs = 1000,
     unsigned int expirationTimeSec = 10,
     const std::string& authType = "none",
-    const std::string& tokenFile = "") {
+    const std::string& tokenFile = "",
+    unsigned int maxBodySizeBytes =
+        Supla::Source::HTTP_SOURCE_DEFAULT_MAX_BODY_SIZE_BYTES) {
   return std::unique_ptr<Supla::Source::Http>(new Supla::Source::Http(
       "GET",
       "https://example.test/status",
@@ -150,6 +152,7 @@ std::unique_ptr<Supla::Source::Http> makeSource(
       refreshTimeMs,
       5000,
       expirationTimeSec,
+      maxBodySizeBytes,
       makeTransport(transportPtr)));
 }
 
@@ -188,6 +191,8 @@ TEST(Sd4linuxHttpSourceTests, PerformsRequestAndReturnsBody) {
   EXPECT_EQ(request.method, "GET");
   EXPECT_EQ(request.url, "https://example.test/status");
   EXPECT_EQ(request.headers.at("Accept"), "application/json");
+  EXPECT_EQ(request.maxBodySizeBytes,
+            Supla::Source::HTTP_SOURCE_DEFAULT_MAX_BODY_SIZE_BYTES);
   EXPECT_TRUE(source->isConnected());
 }
 
@@ -254,6 +259,36 @@ TEST(Sd4linuxHttpSourceTests, KeepsCachedBodyOnNetworkFailure) {
   EXPECT_EQ(source->getContent(), "last-good");
   EXPECT_TRUE(source->isConnected());
   EXPECT_EQ(transport->requestCount(), 2u);
+}
+
+TEST(Sd4linuxHttpSourceTests, KeepsCachedBodyOnTooLargeResponseFailure) {
+  SimpleTime time;
+  FakeHttpTransport* transport = nullptr;
+  auto source = makeSource(&transport);
+  transport->pushResponse(success(200, "last-good"));
+  transport->pushResponse(failure("response body too large"));
+
+  EXPECT_EQ(source->getContent(), "");
+  waitForRequests(transport, 1);
+  EXPECT_EQ(source->getContent(), "last-good");
+  time.advance(1000);
+  EXPECT_EQ(source->getContent(), "last-good");
+  waitForRequests(transport, 2);
+  EXPECT_EQ(source->getContent(), "last-good");
+  EXPECT_TRUE(source->isConnected());
+}
+
+TEST(Sd4linuxHttpSourceTests, PassesConfiguredMaxBodySizeToTransport) {
+  SimpleTime time;
+  FakeHttpTransport* transport = nullptr;
+  auto source = makeSource(&transport, 1000, 10, "none", "", 123);
+  transport->pushResponse(success(200, "ok"));
+
+  EXPECT_EQ(source->getContent(), "");
+  waitForRequests(transport, 1);
+
+  ASSERT_EQ(transport->requestCount(), 1u);
+  EXPECT_EQ(transport->requestAt(0).maxBodySizeBytes, 123u);
 }
 
 TEST(Sd4linuxHttpSourceTests, ExpiresCachedBodyForConnectionStateOnly) {
@@ -374,4 +409,49 @@ TEST(Sd4linuxHttpSourceTests, StartsNewRequestAfterLongRunningRequestFinishes) {
   EXPECT_EQ(transportPtr->requestCount(), 2u);
 
   transportPtr->releaseOne();
+}
+
+TEST(Sd4linuxHttpSourceTests, CurlTransportRejectsBodyLargerThanLimit) {
+  const std::string bodyPath = "/tmp/sd4linux_http_source_body_limit.txt";
+  {
+    std::ofstream bodyFile(bodyPath);
+    bodyFile << "abcdef";
+  }
+
+  Supla::Source::CurlHttpTransport transport;
+  Supla::Source::HttpRequest request;
+  request.method = "GET";
+  request.url = "file://" + bodyPath;
+  request.timeoutMs = 5000;
+  request.maxBodySizeBytes = 3;
+
+  auto response = transport.perform(request);
+
+  EXPECT_FALSE(response.transportOk);
+  EXPECT_EQ(response.body, "");
+  EXPECT_EQ(response.error, "response body too large");
+
+  std::remove(bodyPath.c_str());
+}
+
+TEST(Sd4linuxHttpSourceTests, CurlTransportAcceptsBodyWithinLimit) {
+  const std::string bodyPath = "/tmp/sd4linux_http_source_body_ok.txt";
+  {
+    std::ofstream bodyFile(bodyPath);
+    bodyFile << "abcdef";
+  }
+
+  Supla::Source::CurlHttpTransport transport;
+  Supla::Source::HttpRequest request;
+  request.method = "GET";
+  request.url = "file://" + bodyPath;
+  request.timeoutMs = 5000;
+  request.maxBodySizeBytes = 6;
+
+  auto response = transport.perform(request);
+
+  EXPECT_TRUE(response.transportOk);
+  EXPECT_EQ(response.body, "abcdef");
+
+  std::remove(bodyPath.c_str());
 }

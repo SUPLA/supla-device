@@ -27,6 +27,7 @@
 #include <cinttypes>
 #include <cstdint>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -35,10 +36,28 @@
 
 namespace {
 
+struct ResponseBodyWriter {
+  std::string* body = nullptr;
+  size_t maxBodySizeBytes = 0;
+  bool tooLarge = false;
+};
+
 size_t writeResponseBody(char* ptr, size_t size, size_t nmemb, void* userdata) {
-  auto* body = static_cast<std::string*>(userdata);
-  body->append(ptr, size * nmemb);
-  return size * nmemb;
+  auto* writer = static_cast<ResponseBodyWriter*>(userdata);
+  if (size != 0 && nmemb > std::numeric_limits<size_t>::max() / size) {
+    writer->tooLarge = true;
+    return 0;
+  }
+
+  size_t bytes = size * nmemb;
+  if (writer->body->size() > writer->maxBodySizeBytes ||
+      bytes > writer->maxBodySizeBytes - writer->body->size()) {
+    writer->tooLarge = true;
+    return 0;
+  }
+
+  writer->body->append(ptr, bytes);
+  return bytes;
 }
 
 std::string trim(std::string value) {
@@ -77,8 +96,14 @@ HttpResponse CurlHttpTransport::perform(const HttpRequest& request) {
   curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS,
                    curlLong(request.timeoutMs));
   curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, curlLong(request.timeoutMs));
+  ResponseBodyWriter bodyWriter = {
+      &response.body, request.maxBodySizeBytes, false};
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeResponseBody);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response.body);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &bodyWriter);
+  curl_easy_setopt(
+      curl,
+      CURLOPT_MAXFILESIZE_LARGE,
+      static_cast<curl_off_t>(request.maxBodySizeBytes));
   curl_easy_setopt(curl, CURLOPT_USERAGENT, "supla-device-sd4linux/1.0");
 
   if (request.method == "GET") {
@@ -106,7 +131,11 @@ HttpResponse CurlHttpTransport::perform(const HttpRequest& request) {
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
   response.statusCode = responseCode;
 
-  if (result == CURLE_OK) {
+  if (bodyWriter.tooLarge || result == CURLE_FILESIZE_EXCEEDED) {
+    response.body.clear();
+    response.body.shrink_to_fit();
+    response.error = "response body too large";
+  } else if (result == CURLE_OK) {
     response.transportOk = true;
   } else if (errorBuffer[0] != '\0') {
     response.error = errorBuffer;
@@ -130,6 +159,7 @@ Http::Http(const std::string& method,
            unsigned int refreshTimeMs,
            unsigned int timeoutMs,
            unsigned int expirationTimeSec,
+           unsigned int maxBodySizeBytes,
            std::unique_ptr<HttpTransport> transport)
     : method(method),
       url(url),
@@ -139,7 +169,29 @@ Http::Http(const std::string& method,
       refreshTimeMs(refreshTimeMs),
       timeoutMs(timeoutMs),
       expirationTimeSec(expirationTimeSec),
+      maxBodySizeBytes(maxBodySizeBytes),
       transport(std::move(transport)) {
+}
+
+Http::Http(const std::string& method,
+           const std::string& url,
+           const std::map<std::string, std::string>& headers,
+           const std::string& authType,
+           const std::string& tokenFile,
+           unsigned int refreshTimeMs,
+           unsigned int timeoutMs,
+           unsigned int expirationTimeSec,
+           std::unique_ptr<HttpTransport> transport)
+    : Http(method,
+           url,
+           headers,
+           authType,
+           tokenFile,
+           refreshTimeMs,
+           timeoutMs,
+           expirationTimeSec,
+           HTTP_SOURCE_DEFAULT_MAX_BODY_SIZE_BYTES,
+           std::move(transport)) {
 }
 
 Http::~Http() {
@@ -229,6 +281,7 @@ void Http::startFetch(uint32_t now) {
   request.url = url;
   request.headers = headers;
   request.timeoutMs = timeoutMs;
+  request.maxBodySizeBytes = maxBodySizeBytes;
 
   if (authType == "bearer_file") {
     std::string token;

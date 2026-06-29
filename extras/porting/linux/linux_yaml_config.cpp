@@ -2218,6 +2218,13 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
         return nullptr;
       }
 
+      int maxBodySizeBytes = source["max_body_size_bytes"].as<int>(
+          Supla::Source::HTTP_SOURCE_DEFAULT_MAX_BODY_SIZE_BYTES);
+      if (maxBodySizeBytes <= 0) {
+        SUPLA_LOG_ERROR("Config: HTTP max_body_size_bytes has to be > 0");
+        return nullptr;
+      }
+
       src = new Supla::Source::Http(
           method,
           url,
@@ -2226,7 +2233,8 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
           tokenFile,
           static_cast<unsigned int>(refreshTimeMs),
           static_cast<unsigned int>(timeoutMs),
-          static_cast<unsigned int>(expirationTimeSec));
+          static_cast<unsigned int>(expirationTimeSec),
+          static_cast<unsigned int>(maxBodySizeBytes));
 #endif
     } else {
       SUPLA_LOG_ERROR("Config: unknown source type \"%s\"", type.c_str());

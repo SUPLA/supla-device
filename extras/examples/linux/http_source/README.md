@@ -23,6 +23,7 @@ Supported in this PoC:
 - `refresh_time_ms`
 - `timeout_ms`
 - `expiration_time_sec`
+- `max_body_size_bytes`
 
 Example:
 
@@ -40,6 +41,7 @@ sources:
     refresh_time_ms: 30000
     timeout_ms: 10000
     expiration_time_sec: 180
+    max_body_size_bytes: 1048576
 
 parsers:
   st_washer_json:
@@ -54,12 +56,14 @@ channels:
     state_on_values: ["running"]
 ```
 
-The source keeps the last successful response body in memory. Calls before
-`refresh_time_ms` expires return the cached body and do not issue another HTTP
-request. Failed requests keep the previous cached body. When the cached body is
-older than `expiration_time_sec`, channels using this source can report offline
-through the existing `isConnected()` path. Set `expiration_time_sec: 0` to
-disable expiration.
+The source keeps the last successful response body in memory. Response bodies
+are limited by `max_body_size_bytes`; the default is 1048576 bytes. Larger
+responses are rejected during download and do not replace the previous cached
+body. Calls before `refresh_time_ms` expires return the cached body and do not
+issue another HTTP request. Failed requests keep the previous cached body. When
+the cached body is older than `expiration_time_sec`, channels using this source
+can report offline through the existing `isConnected()` path. Set
+`expiration_time_sec: 0` to disable expiration.
 
 Bearer tokens are read from `token_file`, trimmed, and sent as:
 

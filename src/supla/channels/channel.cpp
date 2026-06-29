@@ -753,6 +753,18 @@ void Channel::setValidityTimeSec(uint32_t timeSec) {
   validityTimeSec = timeSec;
 }
 
+void Channel::clearValue() {
+  const int8_t emptyValue[SUPLA_CHANNELVALUE_SIZE] = {};
+  const bool valueChanged =
+      memcmp(value, emptyValue, SUPLA_CHANNELVALUE_SIZE) != 0;
+  const bool validityChanged = validityTimeSec != 0;
+  memcpy(value, emptyValue, SUPLA_CHANNELVALUE_SIZE);
+  validityTimeSec = 0;
+  if (valueChanged || validityChanged) {
+    setSendValue();
+  }
+}
+
 bool Channel::isSleepingEnabled() {
   return validityTimeSec > 0;
 }

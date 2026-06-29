@@ -31,12 +31,17 @@ namespace Protocol {
 class SuplaSrpc;
 }  // namespace Protocol
 
+enum class ElementMode : uint8_t {
+  Registered,
+  Detached,
+};
+
 /**
  * Base class for all elements of SuplaDevice
  */
 class Element {
  public:
-  Element();
+  explicit Element(ElementMode mode = ElementMode::Registered);
   virtual ~Element();
   /**
    * Returns first Element (based on creation order)
@@ -367,6 +372,15 @@ class Element {
   virtual Channel *getSecondaryChannel();
 
   /**
+   * Returns pointer to the channel matching channelNumber.
+   *
+   * @return pointer to primary/secondary channel, nullptr if not owned by this
+   * element
+   */
+  const Channel *getChannelByChannelNumber(int channelNumber) const;
+  Channel *getChannelByChannelNumber(int channelNumber);
+
+  /**
    * Generates key used for Config
    *
    * Adds "x_" prefix to the key where x is a channel number. Output is
@@ -441,6 +455,7 @@ class Element {
  protected:
   static Element *firstPtr;
   static bool invalidatePtr;
+  bool registeredElement = true;
   Element *nextPtr = nullptr;
 };
 

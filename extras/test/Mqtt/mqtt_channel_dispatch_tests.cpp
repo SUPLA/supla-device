@@ -26,6 +26,7 @@
 #include <simple_time.h>
 #include <supla/actions.h>
 #include <supla/control/hvac_base.h>
+#include <supla/control/relay_roller_shutter_pair.h>
 #include <supla/protocol/mqtt.h>
 #include <supla/protocol/mqtt/hvac_mqtt.h>
 #include <supla/sensor/electricity_meter.h>
@@ -1096,6 +1097,39 @@ TEST_F(MqttChannelDispatchTests, publishHADiscoveryCoversRelaySwitchVariants) {
 }
 
 TEST_F(MqttChannelDispatchTests,
+       publishHADiscoveryUsesRelayRollerShutterPairSecondaryChannel) {
+  SuplaDeviceClass sd;
+  StrictMock<MqttTestMock> mqtt(&sd);
+  initMqtt(sd, mqtt);
+
+  Supla::Control::RelayRollerShutterPair pair(1, 2);
+  pair.getSecondaryChannel()->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+  mqtt.test_setChannelsCount(255);
+
+  const int channelNumber = pair.getSecondaryChannelNumber();
+  auto payload = baseDiscoveryPayload(channelNumber);
+  payload["name"] = std::string("#") + std::to_string(channelNumber) + " " +
+                    Supla::getRelayChannelName(SUPLA_CHANNELFNC_POWERSWITCH);
+  payload["uniq_id"] = std::string("supla_") + kExpectedObjectPrefix + "_" +
+                       std::to_string(channelNumber) + "_0";
+  payload["qos"] = 0;
+  payload["ret"] = false;
+  payload["opt"] = false;
+  payload["stat_t"] = "~/state/on";
+  payload["cmd_t"] = "~/set/on";
+  payload["pl_on"] = "true";
+  payload["pl_off"] = "false";
+
+  EXPECT_CALL(mqtt,
+              publishTest(StrEq(expectedDiscoveryTopic(
+                              "switch", channelNumber, 0)),
+                          JsonEq(jsonToString(payload)),
+                          0,
+                          true));
+  mqtt.publishHADiscovery(channelNumber);
+}
+
+TEST_F(MqttChannelDispatchTests,
        publishHADiscoveryCoversRollerShutterVariants) {
   SuplaDeviceClass sd;
   StrictMock<MqttTestMock> mqtt(&sd);
@@ -2098,4 +2132,36 @@ TEST_F(MqttChannelDispatchTests, processDataCoversControlTypes) {
                                              "set/temperature_setpoint"))
                            .c_str(),
                        "19.5"));
+}
+
+TEST_F(MqttChannelDispatchTests,
+       processDataRoutesRelayRollerShutterPairSecondaryRelayTopic) {
+  SuplaDeviceClass sd;
+  StrictMock<MqttTestMock> mqtt(&sd);
+  initMqtt(sd, mqtt);
+  DigitalInterfaceMock ioMock;
+  const int gpio0 = 1;
+  const int gpio1 = 2;
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  mqtt.test_setChannelsCount(255);
+
+  ASSERT_EQ(Supla::Element::getElementByChannelNumber(
+                pair.getSecondaryChannelNumber()),
+            &pair);
+  ASSERT_FALSE(pair.getSecondaryChannel()->isRollerShutterRelayType());
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(2);
+  EXPECT_CALL(ioMock, pinMode(gpio0, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(2);
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  pair.onInit();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 1)).Times(0);
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
+
+  EXPECT_TRUE(mqtt.processData(
+      (expectedChannelTopic(pair.getSecondaryChannelNumber(), "set/on"))
+          .c_str(),
+      "true"));
+  EXPECT_FALSE(pair.getChannel()->getValueBool());
+  EXPECT_TRUE(pair.getSecondaryChannel()->getValueBool());
 }

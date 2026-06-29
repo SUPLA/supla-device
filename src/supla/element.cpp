@@ -31,7 +31,11 @@ class SuplaSrpc;
 Element *Element::firstPtr = nullptr;
 bool Element::invalidatePtr = false;
 
-Element::Element() {
+Element::Element(ElementMode mode)
+    : registeredElement(mode == ElementMode::Registered) {
+  if (!registeredElement) {
+    return;
+  }
   if (firstPtr == nullptr) {
     firstPtr = this;
   } else {
@@ -40,6 +44,9 @@ Element::Element() {
 }
 
 Element::~Element() {
+  if (!registeredElement) {
+    return;
+  }
   invalidatePtr = true;
   if (begin() == this) {
     firstPtr = next();
@@ -72,7 +79,8 @@ Element *Element::getElementByChannelNumber(int channelNumber) {
   }
 
   Element *element = begin();
-  while (element != nullptr && element->getChannelNumber() != channelNumber) {
+  while (element != nullptr && element->getChannelNumber() != channelNumber &&
+         element->getSecondaryChannelNumber() != channelNumber) {
     element = element->next();
   }
 
@@ -212,6 +220,42 @@ Channel *Element::getChannel() {
 }
 
 Channel *Element::getSecondaryChannel() {
+  return nullptr;
+}
+
+const Channel *Element::getChannelByChannelNumber(int channelNumber) const {
+  if (channelNumber < 0) {
+    return nullptr;
+  }
+
+  auto channel = getChannel();
+  if (channel && channel->getChannelNumber() == channelNumber) {
+    return channel;
+  }
+
+  channel = getSecondaryChannel();
+  if (channel && channel->getChannelNumber() == channelNumber) {
+    return channel;
+  }
+
+  return nullptr;
+}
+
+Channel *Element::getChannelByChannelNumber(int channelNumber) {
+  if (channelNumber < 0) {
+    return nullptr;
+  }
+
+  auto channel = getChannel();
+  if (channel && channel->getChannelNumber() == channelNumber) {
+    return channel;
+  }
+
+  channel = getSecondaryChannel();
+  if (channel && channel->getChannelNumber() == channelNumber) {
+    return channel;
+  }
+
   return nullptr;
 }
 

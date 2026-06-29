@@ -272,6 +272,25 @@ TEST(Sd4linuxHttpSourceTests, ExpiresCachedBodyForConnectionStateOnly) {
   EXPECT_FALSE(source->isConnected());
 }
 
+TEST(Sd4linuxHttpSourceTests, RetriesFromConnectionCheckAfterCacheExpires) {
+  SimpleTime time;
+  FakeHttpTransport* transport = nullptr;
+  auto source = makeSource(&transport, 1000, 1);
+  transport->pushResponse(success(200, "first"));
+  transport->pushResponse(success(200, "second"));
+
+  EXPECT_EQ(source->getContent(), "");
+  waitForRequests(transport, 1);
+  EXPECT_EQ(source->getContent(), "first");
+
+  time.advance(1000);
+  EXPECT_FALSE(source->isConnected());
+  waitForRequests(transport, 2);
+  EXPECT_EQ(transport->requestCount(), 2u);
+  EXPECT_EQ(source->getContent(), "second");
+  EXPECT_TRUE(source->isConnected());
+}
+
 TEST(Sd4linuxHttpSourceTests, SendsTrimmedBearerTokenFromFile) {
   SimpleTime time;
   const std::string tokenPath = "/tmp/sd4linux_http_source_token.txt";

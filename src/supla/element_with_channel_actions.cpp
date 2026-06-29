@@ -37,6 +37,10 @@ class SuplaSrpc;
 using Supla::ConfigTypesBitmap;
 using Supla::ApplyConfigResult;
 
+Supla::ElementWithChannelActions::ElementWithChannelActions(ElementMode mode)
+    : Element(mode) {
+}
+
 void ConfigTypesBitmap::clear(int configType) {
   set(configType, false);
 }

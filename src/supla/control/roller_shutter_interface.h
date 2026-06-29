@@ -312,6 +312,12 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   void setMotorProblem(bool value);
 
  protected:
+  RollerShutterInterface(bool tiltFunctionsEnabled,
+                         Supla::Channel &externalChannel,
+                         ElementMode mode);
+  void loadRollerShutterConfigOnly();
+  void purgeRollerShutterConfigOnly();
+
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
     bool asInternal = true;

@@ -90,6 +90,25 @@ RollerShutterInterface::RollerShutterInterface(bool tiltFunctionsSupported) {
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
+RollerShutterInterface::RollerShutterInterface(
+    bool tiltFunctionsSupported,
+    Supla::Channel &externalChannel,
+    ElementMode mode)
+    : ChannelElement(externalChannel, mode) {
+  channel.setType(SUPLA_CHANNELTYPE_RELAY);
+  channel.setFuncList(SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER |
+                      SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW |
+                      SUPLA_BIT_FUNC_TERRACE_AWNING |
+                      SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR |
+                      SUPLA_BIT_FUNC_CURTAIN | SUPLA_BIT_FUNC_PROJECTOR_SCREEN);
+  if (tiltFunctionsSupported) {
+    addTiltFunctions();
+  }
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+}
+
 RollerShutterInterface::~RollerShutterInterface() {
   ButtonListElement *currentElement = buttonList;
   while (currentElement) {
@@ -977,11 +996,17 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
 
 void RollerShutterInterface::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
-  bool print = false;
   if (cfg) {
     loadFunctionFromConfig();
     loadConfigChangeFlag();
+    loadRollerShutterConfigOnly();
+  }
+}
 
+void RollerShutterInterface::loadRollerShutterConfigOnly() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  bool print = false;
+  if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     // RollerShutter config is common for all roller shutter and facade blind
     // functions
@@ -1247,6 +1272,10 @@ void RollerShutterInterface::setRsConfigTimeMarginValue(int8_t value) {
 
 void RollerShutterInterface::purgeConfig() {
   Supla::ChannelElement::purgeConfig();
+  purgeRollerShutterConfigOnly();
+}
+
+void RollerShutterInterface::purgeRollerShutterConfigOnly() {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};

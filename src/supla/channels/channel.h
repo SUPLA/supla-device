@@ -284,6 +284,7 @@ class Channel : public LocalAction {
   uint32_t getActionTriggerCaps();
 
   void setValidityTimeSec(uint32_t timeSec);
+  void clearValue();
   virtual void sendUpdate();
   virtual TSuplaChannelExtendedValue *getExtValue();
   // Returns true when value was properly converted to EM value.

@@ -80,6 +80,9 @@ class SuplaSrpc;
 
 class ElementWithChannelActions : public Element, public LocalAction {
  public:
+  explicit ElementWithChannelActions(
+      ElementMode mode = ElementMode::Registered);
+
   // Override local action methods in order to delegate execution to Channel
   void addAction(uint16_t action,
       ActionHandler &client,  // NOLINT(runtime/references)

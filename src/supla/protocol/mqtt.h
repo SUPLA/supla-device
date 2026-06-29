@@ -139,19 +139,24 @@ class Mqtt : public ProtocolLayer {
   bool processData(const char *topic, const char *payload);
   void processRelayRequest(const char *topic,
                            const char *payload,
-                           Supla::Element *element);
+                           Supla::Element *element,
+                           Supla::Channel *channel);
   void processRGBWRequest(const char *topic,
                           const char *payload,
-                          Supla::Element *element);
+                          Supla::Element *element,
+                          int channelNumber);
   void processRGBRequest(const char *topic,
                          const char *payload,
-                         Supla::Element *element);
+                         Supla::Element *element,
+                         int channelNumber);
   void processDimmerRequest(const char *topic,
                             const char *payload,
-                            Supla::Element *element);
+                            Supla::Element *element,
+                            int channelNumber);
   void processRollerShutterRequest(const char *topic,
                                    const char *payload,
-                                   Supla::Element *element);
+                                   Supla::Element *element,
+                                   int channelNumber);
 
  protected:
   void generateClientId(char result[MQTT_CLIENTID_MAX_SIZE]);
@@ -160,7 +165,9 @@ class Mqtt : public ProtocolLayer {
   void publishDeviceStatus(bool onRegistration = false);
   void publishHADiscovery(int channel);
   void publishHADiscoveryRelay(Supla::Element *);
+  void publishHADiscoveryRelay(Supla::Element *, Supla::Channel *);
   void publishHADiscoveryRelayImpulse(Supla::Element *);
+  void publishHADiscoveryRelayImpulse(Supla::Element *, Supla::Channel *);
   void publishHADiscoveryThermometer(Supla::Element *);
   void publishHADiscoveryHumidity(Supla::Element *);
   void publishHADiscoveryActionTrigger(Supla::Element *);

@@ -196,6 +196,11 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isCyclicMode() const;
 
  protected:
+  Relay(Supla::Io::IoPin outputPin,
+        _supla_int_t functions,
+        Supla::Channel &externalChannel,
+        ElementMode mode);
+
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
     ButtonListElement *next = nullptr;
@@ -206,6 +211,8 @@ class Relay : public ChannelElement, public ActionHandler {
   virtual void setNewChannelValue(bool value);
 
   void saveConfig() const;
+  void loadRelayConfigOnly();
+  void purgeRelayConfigOnly();
   void updateTimerValue();
   void emitCountdownTimerActionIfNeeded();
   void updateRelayHvacAggregator();

@@ -86,6 +86,12 @@ class RollerShutter : public RollerShutterInterface {
                          int newTilt = UNKNOWN_POSITION) override;
 
  protected:
+  RollerShutter(Supla::Io::IoPin pinUp,
+                Supla::Io::IoPin pinDown,
+                bool tiltFunctionsEnabled,
+                Supla::Channel &externalChannel,
+                ElementMode mode);
+
   virtual void stopMovement();
   virtual void relayDownOn();
   virtual void relayUpOn();

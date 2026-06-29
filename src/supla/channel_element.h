@@ -19,6 +19,8 @@
 
 #include <supla/channels/channel.h>
 
+#include <new>
+
 #include "element_with_channel_actions.h"
 
 namespace Supla {
@@ -26,11 +28,16 @@ namespace Supla {
 class ChannelElement : public ElementWithChannelActions {
  public:
   explicit ChannelElement(int channelNumber = -1);
+  ~ChannelElement() override;
   Channel *getChannel() override;
   const Channel *getChannel() const override;
 
  protected:
-  Channel channel;
+  ChannelElement(Channel &externalChannel, ElementMode mode);
+
+  alignas(Channel) unsigned char ownedChannelStorage[sizeof(Channel)] = {};
+  Channel &channel;
+  bool ownsChannel = false;
 };
 
 };  // namespace Supla

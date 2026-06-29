@@ -468,7 +468,7 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
     SUPLA_LOG_DEBUG("Mqtt: can't find element for channel %d", channel);
     return;
   }
-  auto ch = element->getChannel();
+  auto ch = element->getChannelByChannelNumber(channel);
   if (ch == nullptr) {
     SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
     return;
@@ -658,7 +658,7 @@ void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
     SUPLA_LOG_DEBUG("Mqtt: can't find element for channel %d", channel);
     return;
   }
-  auto ch = element->getChannel();
+  auto ch = element->getChannelByChannelNumber(channel);
   if (ch == nullptr) {
     SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
     return;
@@ -873,7 +873,7 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
     SUPLA_LOG_DEBUG("Mqtt: can't find element for channel %d", channel);
     return;
   }
-  auto ch = element->getChannel();
+  auto ch = element->getChannelByChannelNumber(channel);
   if (ch == nullptr) {
     SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
     return;
@@ -980,7 +980,7 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
     return false;
   }
 
-  auto ch = element->getChannel();
+  auto ch = element->getChannelByChannelNumber(channel);
   if (ch == nullptr) {
     SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
     return false;
@@ -989,22 +989,22 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
     // Relay
     case SUPLA_CHANNELTYPE_RELAY: {
       if (ch->isRollerShutterRelayType()) {
-        processRollerShutterRequest(part, payload, element);
+        processRollerShutterRequest(part, payload, element, channel);
       } else {
-        processRelayRequest(part, payload, element);
+        processRelayRequest(part, payload, element, ch);
       }
       break;
     }
     case SUPLA_CHANNELTYPE_DIMMER: {
-      processDimmerRequest(part, payload, element);
+      processDimmerRequest(part, payload, element, channel);
       break;
     }
     case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER: {
-      processRGBWRequest(part, payload, element);
+      processRGBWRequest(part, payload, element, channel);
       break;
     }
     case SUPLA_CHANNELTYPE_DIMMERANDRGBLED: {
-      processRGBWRequest(part, payload, element);
+      processRGBWRequest(part, payload, element, channel);
       break;
     }
     case SUPLA_CHANNELTYPE_HVAC: {
@@ -1058,7 +1058,7 @@ void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
     SUPLA_LOG_DEBUG("Mqtt: can't find element for channel %d", channel);
     return;
   }
-  auto ch = element->getChannel();
+  auto ch = element->getChannelByChannelNumber(channel);
   if (ch == nullptr) {
     SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
     return;
@@ -1070,7 +1070,7 @@ void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
       if (ch->isRollerShutterRelayType()) {
         publishHADiscoveryRollerShutter(element);
       } else {
-        publishHADiscoveryRelay(element);
+        publishHADiscoveryRelay(element, ch);
       }
       break;
     }
@@ -1245,12 +1245,21 @@ void Mqtt::publishHADiscoveryRelayImpulse(Supla::Element *element) {
   }
 
   auto ch = element->getChannel();
+  publishHADiscoveryRelayImpulse(element, ch);
+}
+
+void Mqtt::publishHADiscoveryRelayImpulse(Supla::Element *element,
+                                          Supla::Channel *ch) {
+  if (element == nullptr) {
+    return;
+  }
+
   if (ch == nullptr) {
     return;
   }
 
   char objectId[30] = {};
-  generateObjectId(objectId, element->getChannelNumber(), 0);
+  generateObjectId(objectId, ch->getChannelNumber(), 0);
 
   MqttTopic topic;
   auto chFunction = ch->getDefaultFunction();
@@ -1324,7 +1333,7 @@ void Mqtt::publishHADiscoveryRelayImpulse(Supla::Element *element) {
                  getManufacturer(Supla::RegisterDevice::getManufacturerId()),
                  Supla::RegisterDevice::getName(),
                  Supla::RegisterDevice::getSoftVer(),
-                 element->getChannelNumber(),
+                 ch->getChannelNumber(),
                  Supla::getRelayChannelName(chFunction),
                  objectId,
                  getDeviceClassStr(deviceClass)) +
@@ -1349,12 +1358,21 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
   }
 
   auto ch = element->getChannel();
+  publishHADiscoveryRelay(element, ch);
+}
+
+void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element,
+                                                    Supla::Channel *ch) {
+  if (element == nullptr) {
+    return;
+  }
+
   if (ch == nullptr) {
     return;
   }
 
   char objectId[30] = {};
-  generateObjectId(objectId, element->getChannelNumber(), 0);
+  generateObjectId(objectId, ch->getChannelNumber(), 0);
 
   MqttTopic topic;
   auto chFunction = ch->getDefaultFunction();
@@ -1364,7 +1382,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
     case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR:
     case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK:
     case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
-      publishHADiscoveryRelayImpulse(element);
+      publishHADiscoveryRelayImpulse(element, ch);
       return;
     }
     case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH:
@@ -1420,7 +1438,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
                  getManufacturer(Supla::RegisterDevice::getManufacturerId()),
                  Supla::RegisterDevice::getName(),
                  Supla::RegisterDevice::getSoftVer(),
-                 element->getChannelNumber(),
+                 ch->getChannelNumber(),
                  Supla::getRelayChannelName(chFunction),
                  objectId,
                  getDeviceClassStr(deviceClass)) +
@@ -2509,8 +2527,12 @@ void Mqtt::publishHADiscoveryDimmer(Supla::Element *element) {
 
 void Mqtt::processRelayRequest(const char *part,
                                const char *payload,
-                               Supla::Element *element) {
+                               Supla::Element *element,
+                               Supla::Channel *channel) {
   TSD_SuplaChannelNewValue newValue = {};
+  if (channel != nullptr) {
+    newValue.ChannelNumber = channel->getChannelNumber();
+  }
   element->fillSuplaChannelNewValue(&newValue);
 
   if (strcmp(part, "set/on") == 0) {
@@ -2528,7 +2550,8 @@ void Mqtt::processRelayRequest(const char *part,
       newValue.value[0] = 0;
       element->handleNewValueFromServer(&newValue);
     } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
-      newValue.value[0] = element->getChannel()->getValueBool() ? 0 : 1;
+      newValue.value[0] =
+          channel != nullptr && channel->getValueBool() ? 0 : 1;
       element->handleNewValueFromServer(&newValue);
     } else {
       SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
@@ -2540,8 +2563,10 @@ void Mqtt::processRelayRequest(const char *part,
 
 void Mqtt::processRollerShutterRequest(const char *part,
                                        const char *payload,
-                                       Supla::Element *element) {
+                                       Supla::Element *element,
+                                       int channelNumber) {
   TSD_SuplaChannelNewValue newValue = {};
+  newValue.ChannelNumber = channelNumber;
   element->fillSuplaChannelNewValue(&newValue);
 
   newValue.value[0] = -1;  // position setting (-1 ignores it)
@@ -2573,9 +2598,7 @@ void Mqtt::processRollerShutterRequest(const char *part,
                strncmpInsensitive(payload, "recalibrate", 12) == 0) {
       // recalibrate
       TSD_DeviceCalCfgRequest request = {};
-      if (element->getChannel() != nullptr) {
-        request.ChannelNumber = element->getChannel()->getChannelNumber();
-      }
+      request.ChannelNumber = channelNumber;
       request.Command = SUPLA_CALCFG_CMD_RECALIBRATE;
       request.SuperUserAuthorized = 1;
       element->handleCalcfgFromServer(&request);
@@ -2589,8 +2612,10 @@ void Mqtt::processRollerShutterRequest(const char *part,
 
 void Mqtt::processRGBWRequest(const char *part,
                               const char *payload,
-                              Supla::Element *element) {
+                              Supla::Element *element,
+                              int channelNumber) {
   TSD_SuplaChannelNewValue newValue = {};
+  newValue.ChannelNumber = channelNumber;
   element->fillSuplaChannelNewValue(&newValue);
 
   if (strcmp(part, "set/color_brightness") == 0) {
@@ -2648,8 +2673,10 @@ void Mqtt::processRGBWRequest(const char *part,
 
 void Mqtt::processRGBRequest(const char *part,
                              const char *payload,
-                             Supla::Element *element) {
+                             Supla::Element *element,
+                             int channelNumber) {
   TSD_SuplaChannelNewValue newValue = {};
+  newValue.ChannelNumber = channelNumber;
   element->fillSuplaChannelNewValue(&newValue);
 
   if (strcmp(part, "set/color_brightness") == 0) {
@@ -2688,8 +2715,10 @@ void Mqtt::processRGBRequest(const char *part,
 
 void Mqtt::processDimmerRequest(const char *part,
                                 const char *payload,
-                                Supla::Element *element) {
+                                Supla::Element *element,
+                                int channelNumber) {
   TSD_SuplaChannelNewValue newValue = {};
+  newValue.ChannelNumber = channelNumber;
   element->fillSuplaChannelNewValue(&newValue);
 
   if (strcmp(part, "set/brightness") == 0) {

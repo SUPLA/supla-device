@@ -68,6 +68,19 @@ Relay::Relay(Supla::Io::IoPin outputPin, _supla_int_t functions)
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
+Relay::Relay(Supla::Io::IoPin outputPin,
+             _supla_int_t functions,
+             Supla::Channel &externalChannel,
+             ElementMode mode)
+    : ChannelElement(externalChannel, mode), outputPin(outputPin) {
+  this->outputPin.setMode(OUTPUT);
+  channel.setType(SUPLA_CHANNELTYPE_RELAY);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  channel.setFuncList(functions);
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+}
+
 Relay::Relay(Supla::Io::Base *io,
              int pin,
              bool highIsOn,
@@ -94,6 +107,13 @@ void Relay::onLoadConfig(SuplaDeviceClass *) {
   if (cfg) {
     loadFunctionFromConfig();
     loadConfigChangeFlag();
+  }
+  loadRelayConfigOnly();
+}
+
+void Relay::loadRelayConfigOnly() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
     updateRelayHvacAggregator();
 
     if (overcurrentMaxAllowed > 0) {
@@ -1084,6 +1104,10 @@ void Relay::saveConfig() const {
 
 void Relay::purgeConfig() {
   Supla::ChannelElement::purgeConfig();
+  purgeRelayConfigOnly();
+}
+
+void Relay::purgeRelayConfigOnly() {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};

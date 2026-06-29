@@ -14,15 +14,16 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <supla/channel_element.h>
-#include <supla/events.h>
-#include <supla/actions.h>
-#include <supla/action_handler.h>
-#include <supla/condition.h>
-#include <supla_srpc_layer_mock.h>
+#include <gtest/gtest.h>
 #include <simple_time.h>
+#include <supla/action_handler.h>
+#include <supla/actions.h>
+#include <supla/channel_element.h>
+#include <supla/condition.h>
+#include <supla/events.h>
+#include <supla_srpc_layer_mock.h>
+
 #include "supla/element_with_channel_actions.h"
 
 class ActionHandlerMock : public Supla::ActionHandler {
@@ -30,6 +31,62 @@ class ActionHandlerMock : public Supla::ActionHandler {
   MOCK_METHOD(void, handleAction, (int, int), (override));
 };
 
+namespace {
+
+class ExternalChannelElement : public Supla::ChannelElement {
+ public:
+  ExternalChannelElement(Supla::Channel &channel, Supla::ElementMode mode)
+      : Supla::ChannelElement(channel, mode) {
+  }
+};
+
+}  // namespace
+
+TEST(ChannelElementTests, OwnsChannelByDefault) {
+  Supla::Channel::resetToDefaults();
+
+  Supla::ChannelElement element;
+
+  ASSERT_NE(element.getChannel(), nullptr);
+  EXPECT_EQ(element.getChannelNumber(), 0);
+  EXPECT_EQ(Supla::Channel::Begin(), element.getChannel());
+  EXPECT_EQ(Supla::Element::getElementByChannelNumber(0), &element);
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST(ChannelElementTests, UsesExternalChannelWithoutDuplicateRegistration) {
+  Supla::Channel::resetToDefaults();
+
+  Supla::Channel externalChannel;
+  ExternalChannelElement element(externalChannel,
+                                 Supla::ElementMode::Registered);
+
+  EXPECT_EQ(element.getChannel(), &externalChannel);
+  EXPECT_EQ(element.getChannelNumber(), 0);
+  EXPECT_EQ(Supla::Channel::Begin(), &externalChannel);
+  EXPECT_EQ(Supla::Channel::Last(), &externalChannel);
+  EXPECT_EQ(Supla::Element::getElementByChannelNumber(0), &element);
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST(ChannelElementTests, DetachedExternalChannelElementIsNotRegistered) {
+  Supla::Channel::resetToDefaults();
+
+  auto elementBefore = Supla::Element::begin();
+  auto lastElementBefore = Supla::Element::last();
+  auto lookupBefore = Supla::Element::getElementByChannelNumber(0);
+  Supla::Channel externalChannel;
+  ExternalChannelElement element(externalChannel, Supla::ElementMode::Detached);
+
+  EXPECT_EQ(element.getChannel(), &externalChannel);
+  EXPECT_EQ(Supla::Element::getElementByChannelNumber(0), lookupBefore);
+  EXPECT_EQ(Supla::Element::begin(), elementBefore);
+  EXPECT_EQ(Supla::Element::last(), lastElementBefore);
+
+  Supla::Channel::resetToDefaults();
+}
 
 TEST(ChannelElementTests, ActionDelegationToChannel) {
   Supla::Channel::resetToDefaults();
@@ -111,7 +168,6 @@ class TestingChannelElement : public Supla::ChannelElement {
     return Supla::ApplyConfigResult::DataError;
   }
 
-
   void fillChannelConfig(void *buf, int *size, uint8_t index) override {
     *size = 0;
 
@@ -126,7 +182,6 @@ class TestingChannelElement : public Supla::ChannelElement {
     cfg[3] = 3;
     *size = 4;
   }
-
 };
 
 using ::testing::_;
@@ -150,7 +205,7 @@ TEST(ChannelElementTests, ConfigExchangeNoConfigOnServer) {
       srpc,
       setChannelConfig(
           0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_DEFAULT))
-          .WillOnce(Return(true));
+      .WillOnce(Return(true));
 
   element.setUsedConfigTypes(ct);
 
@@ -170,7 +225,7 @@ TEST(ChannelElementTests, ConfigExchangeNoConfigOnServer) {
   config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
 
   EXPECT_EQ(element.handleChannelConfig(&config, false),
-      SUPLA_CONFIG_RESULT_TRUE);
+            SUPLA_CONFIG_RESULT_TRUE);
 
   for (int i = 0; i < 10; i++) {
     time.advance(500);
@@ -188,7 +243,7 @@ TEST(ChannelElementTests, ConfigExchangeNoConfigOnServer) {
 
   config.ConfigSize = 4;
   EXPECT_EQ(element.handleChannelConfig(&config, false),
-      SUPLA_CONFIG_RESULT_TRUE);
+            SUPLA_CONFIG_RESULT_TRUE);
 }
 
 TEST(ChannelElementTests, ConfigExchange2xNoConfigOnServer) {
@@ -210,8 +265,7 @@ TEST(ChannelElementTests, ConfigExchange2xNoConfigOnServer) {
       srpc,
       setChannelConfig(
           0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_DEFAULT))
-          .WillOnce(Return(true));
-
+      .WillOnce(Return(true));
 
   element.setUsedConfigTypes(ct);
 
@@ -231,7 +285,7 @@ TEST(ChannelElementTests, ConfigExchange2xNoConfigOnServer) {
   config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
 
   EXPECT_EQ(element.handleChannelConfig(&config, false),
-      SUPLA_CONFIG_RESULT_TRUE);
+            SUPLA_CONFIG_RESULT_TRUE);
 
   for (int i = 0; i < 10; i++) {
     time.advance(500);
@@ -260,7 +314,7 @@ TEST(ChannelElementTests, ConfigExchange2xNoConfigOnServer) {
       srpc,
       setChannelConfig(
           0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_EXTENDED))
-          .WillOnce(Return(true));
+      .WillOnce(Return(true));
 
   for (int i = 0; i < 10; i++) {
     time.advance(500);

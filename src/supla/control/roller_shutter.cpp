@@ -62,6 +62,20 @@ RollerShutter::RollerShutter(Supla::Io::IoPin pinUp,
   channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
 }
 
+RollerShutter::RollerShutter(Supla::Io::IoPin pinUp,
+                             Supla::Io::IoPin pinDown,
+                             bool tiltFunctionsEnabled,
+                             Supla::Channel &externalChannel,
+                             ElementMode mode)
+    : RollerShutterInterface(tiltFunctionsEnabled, externalChannel, mode),
+      pinUp(pinUp),
+      pinDown(pinDown) {
+  this->pinUp.setMode(OUTPUT);
+  this->pinDown.setMode(OUTPUT);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
+}
+
 RollerShutter::RollerShutter(int pinUp,
                              int pinDown,
                              bool highIsOn,

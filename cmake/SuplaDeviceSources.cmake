@@ -161,6 +161,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/light_relay.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/pin_status_led.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay_roller_shutter_pair.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay_hvac_aggregator.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgb_base.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgb_leds.cpp

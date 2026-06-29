@@ -163,16 +163,36 @@ std::string Http::getContent() {
 bool Http::isConnected() {
   joinFinishedWorker();
 
-  std::lock_guard<std::mutex> lock(mutex);
-  if (!hasAttempted) {
+  uint32_t now = millis();
+  bool hasAttemptedSnapshot = false;
+  bool hasSuccessfulResponseSnapshot = false;
+  bool expired = false;
+
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    hasAttemptedSnapshot = hasAttempted;
+    hasSuccessfulResponseSnapshot = hasSuccessfulResponse;
+    if (hasSuccessfulResponseSnapshot) {
+      expired = hasExpired(now);
+    }
+  }
+
+  if (!hasAttemptedSnapshot) {
     return true;
   }
 
-  if (!hasSuccessfulResponse) {
+  if (!hasSuccessfulResponseSnapshot) {
+    if (shouldFetch(now)) {
+      startFetch(now);
+    }
     return false;
   }
 
-  return !hasExpired(millis());
+  if (expired && shouldFetch(now)) {
+    startFetch(now);
+  }
+
+  return !expired;
 }
 
 bool Http::shouldFetch(uint32_t now) const {

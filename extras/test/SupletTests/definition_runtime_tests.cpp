@@ -32,14 +32,19 @@ class SupletRuntimeFixture : public testing::Test {
   SimpleTime time;
 
   void SetUp() override {
+    cleanupElements();
     Supla::Channel::resetToDefaults();
   }
 
   void TearDown() override {
+    cleanupElements();
+    Supla::Channel::resetToDefaults();
+  }
+
+  void cleanupElements() {
     while (Supla::Element::begin() != nullptr) {
       delete Supla::Element::begin();
     }
-    Supla::Channel::resetToDefaults();
   }
 };
 

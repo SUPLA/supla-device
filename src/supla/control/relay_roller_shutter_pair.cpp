@@ -114,6 +114,23 @@ bool ManagedRelay::iterateConnected() {
   return Relay::iterateConnected();
 }
 
+bool ManagedRelay::setAndSaveFunction(uint32_t channelFunction) {
+  bool wasImpulseFunction = isImpulseFunction();
+  bool wasStaircaseFunction = isStaircaseFunction();
+  bool functionChanged = Relay::setAndSaveFunction(channelFunction);
+
+  if (!isFullyInitialized()) {
+    if (isStaircaseFunction() && !wasStaircaseFunction) {
+      storedTurnOnDurationMs = defaultStaircaseDurationMs;
+    }
+    if (isImpulseFunction() && !wasImpulseFunction) {
+      storedTurnOnDurationMs = defaultImpulseDurationMs;
+    }
+  }
+
+  return functionChanged;
+}
+
 ManagedRollerShutter::ManagedRollerShutter(Supla::Io::IoPin pinUp,
                                            Supla::Io::IoPin pinDown,
                                            bool tiltFunctionsEnabled,
@@ -630,7 +647,14 @@ void RelayRollerShutterPair::fillChannelConfig(void *channelConfig,
 }
 
 bool RelayRollerShutterPair::setAndSaveFunction(uint32_t channelFunction) {
-  return ElementWithChannelActions::setAndSaveFunction(channelFunction);
+  auto previousFunction = primaryChannel.getDefaultFunction();
+  bool functionChanged = relay0.setAndSaveFunction(channelFunction);
+
+  if (functionChanged) {
+    onFunctionChange(previousFunction, channelFunction);
+  }
+
+  return functionChanged;
 }
 
 }  // namespace Control

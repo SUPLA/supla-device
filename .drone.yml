@@ -109,7 +109,7 @@ steps:
   - cmake --build build
   - /bin/bash -c "[ -f build/supla-freertos-example ] && true || false"
 
-- name: linux_compilation_check
+- name: sd4linux_compilation_check
 # Linux compilation requires generic linux toolset for compilation and building
 # which is also part of our freertos docker, so we just reuse it here
   image: devel/freertos

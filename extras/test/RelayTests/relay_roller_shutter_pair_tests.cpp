@@ -298,6 +298,85 @@ TEST_F(RelayRollerShutterPairFixture,
 }
 
 TEST_F(RelayRollerShutterPairFixture,
+       RemotePrimaryFunctionChangeToImpulseSetsDefaultTurnOnDuration) {
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  expectRelayInitOff();
+  pair.onInit();
+
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = 0;
+  config.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEGATE;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.handleChannelConfig(&config, false);
+
+  TSD_SuplaChannelNewValue value = {};
+  value.ChannelNumber = 0;
+  pair.fillSuplaChannelNewValue(&value);
+
+  EXPECT_EQ(500u, value.DurationMS);
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       RemotePrimaryFunctionChangeToImpulseDoesNotLatchOutputOn) {
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  expectRelayInitOff();
+  pair.onInit();
+
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = 0;
+  config.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEGATE;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.handleChannelConfig(&config, false);
+
+  TSD_SuplaChannelNewValue value = {};
+  value.ChannelNumber = 0;
+  value.value[0] = 1;
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 1));
+  ASSERT_EQ(pair.handleNewValueFromServer(&value), 1);
+
+  time.advance(501);
+  EXPECT_CALL(ioMock, digitalRead(gpio0)).WillRepeatedly(Return(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  pair.iterateAlways();
+  EXPECT_FALSE(pair.getChannel()->getValueBool());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       RemoteRollerFunctionChangeToImpulseSetsDefaultTurnOnDuration) {
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  EXPECT_CALL(ioMock, pinMode(gpio0, OUTPUT));
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  pair.onInit();
+
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = 0;
+  config.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEGATE;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.handleChannelConfig(&config, false);
+
+  TSD_SuplaChannelNewValue value = {};
+  value.ChannelNumber = 0;
+  pair.fillSuplaChannelNewValue(&value);
+
+  EXPECT_EQ(500u, value.DurationMS);
+  EXPECT_FALSE(pair.getChannel()->getValueBool());
+  EXPECT_FALSE(pair.getSecondaryChannel()->getValueBool());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
        SwitchingRelayToRollerForcesBothOutputsOffAndDisablesSecondary) {
   Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
   expectRelayInitOff();

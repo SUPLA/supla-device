@@ -43,6 +43,7 @@ class ManagedRelay : public Relay {
       override;
   void iterateAlways() override;
   bool iterateConnected() override;
+  bool setAndSaveFunction(uint32_t channelFunction) override;
 
  private:
   bool runtimeActive = true;

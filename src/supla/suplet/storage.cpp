@@ -261,7 +261,7 @@ bool Storage::loadIndex(InstanceTable *table) {
     InstanceRecord record = {};
     uint8_t activeVariant = kDeletedSlot;
     if (loadActiveVariant(
-            static_cast<uint8_t>(i), &activeVariant, &record, false)) {
+            static_cast<uint8_t>(i), &activeVariant, &record, false, false)) {
       if (!table->add(record)) {
         table->clear();
         return false;
@@ -335,13 +335,14 @@ bool Storage::erase() {
 
 bool Storage::loadInstance(uint8_t instanceId, InstanceRecord *record) {
   uint8_t activeVariant = kDeletedSlot;
-  return loadActiveVariant(instanceId, &activeVariant, record, true);
+  return loadActiveVariant(instanceId, &activeVariant, record, true, true);
 }
 
 bool Storage::loadActiveVariant(uint8_t instanceId,
                                 uint8_t *activeVariant,
                                 InstanceRecord *record,
-                                bool loadConfig) {
+                                bool loadConfig,
+                                bool cleanup) {
   if (record == nullptr) {
     return false;
   }
@@ -353,15 +354,17 @@ bool Storage::loadActiveVariant(uint8_t instanceId,
       currentActiveVariant == kDeletedSlot ||
       (currentActiveVariant != kVariantA &&
        currentActiveVariant != kVariantB)) {
-    if (slotExists(instanceId)) {
+    if (cleanup && slotExists(instanceId)) {
       cleanupLoadedInstance(instanceId, kDeletedSlot, kDeletedSlot);
     }
     return false;
   }
 
   if (loadVariant(instanceId, currentActiveVariant, record, loadConfig)) {
-    cleanupLoadedInstance(
-        instanceId, currentActiveVariant, currentActiveVariant);
+    if (cleanup) {
+      cleanupLoadedInstance(
+          instanceId, currentActiveVariant, currentActiveVariant);
+    }
     if (activeVariant != nullptr) {
       *activeVariant = currentActiveVariant;
     }
@@ -370,14 +373,18 @@ bool Storage::loadActiveVariant(uint8_t instanceId,
 
   uint8_t fallbackVariant = otherVariant(currentActiveVariant);
   if (loadVariant(instanceId, fallbackVariant, record, loadConfig)) {
-    cleanupLoadedInstance(instanceId, currentActiveVariant, fallbackVariant);
+    if (cleanup) {
+      cleanupLoadedInstance(instanceId, currentActiveVariant, fallbackVariant);
+    }
     if (activeVariant != nullptr) {
       *activeVariant = fallbackVariant;
     }
     return true;
   }
 
-  cleanupLoadedInstance(instanceId, currentActiveVariant, kDeletedSlot);
+  if (cleanup) {
+    cleanupLoadedInstance(instanceId, currentActiveVariant, kDeletedSlot);
+  }
   return false;
 }
 

@@ -213,7 +213,7 @@ bool DefinitionCache::erase(uint32_t definitionId, uint16_t definitionVersion) {
 
 bool DefinitionCache::contains(uint32_t definitionId,
                                uint16_t definitionVersion) const {
-  return findSlot(definitionId, definitionVersion, false) >= 0;
+  return findSlot(definitionId, definitionVersion, true) >= 0;
 }
 
 bool DefinitionCache::getInfo(uint8_t index, CachedDefinitionInfo *info) const {
@@ -429,7 +429,7 @@ bool DefinitionCache::loadAndRepairActiveHeader(uint8_t index,
   if (!makeActKey(index, actKey, sizeof(actKey)) ||
       !config->getUInt8(actKey, &currentVariant) ||
       !isValidVariant(currentVariant)) {
-    if (slotExists(index)) {
+    if (variantExists(index, kVariantA) || variantExists(index, kVariantB)) {
       const_cast<DefinitionCache *>(this)->eraseSlot(index);
     }
     return false;

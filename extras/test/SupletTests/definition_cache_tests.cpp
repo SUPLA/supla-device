@@ -488,3 +488,23 @@ TEST(SupletDefinitionCacheTests, OrphanedSlotWithoutActiveMarkerIsCleaned) {
   EXPECT_TRUE(config.blobs.empty());
   EXPECT_TRUE(config.uint8Values.empty());
 }
+
+TEST(SupletDefinitionCacheTests,
+     LegacySlotWithoutActiveMarkerIsNotDeletedByRepairLookup) {
+  InMemoryConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+
+  const char legacyHeader[] = "legacy-header";
+  const char legacyChunk[] = "{\"definitionId\":42,\"definitionVersion\":7}";
+  ASSERT_TRUE(config.setBlob("spld0", legacyHeader, sizeof(legacyHeader)));
+  ASSERT_TRUE(config.setBlob("spld0c0", legacyChunk, sizeof(legacyChunk)));
+  ASSERT_EQ(config.blobs.count("spld0"), 1u);
+  ASSERT_EQ(config.blobs.count("spld0c0"), 1u);
+
+  Supla::Suplet::CachedDefinitionInfo info = {};
+  EXPECT_FALSE(cache.getInfoAndRepair(0, &info));
+  EXPECT_EQ(config.blobs.count("spld0"), 1u);
+  EXPECT_EQ(config.blobs.count("spld0c0"), 1u);
+  EXPECT_EQ(config.uint8Values.count("spld0_act"), 0u);
+}

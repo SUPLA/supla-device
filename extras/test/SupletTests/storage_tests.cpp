@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include <supla/storage/config.h>
@@ -71,7 +72,7 @@ class InMemoryConfig : public Supla::Config {
 
   bool getBlob(const char *key, char *value, size_t blobSize) override {
     if (key == nullptr || value == nullptr || blobs.count(key) == 0 ||
-        blobs[key].size() != blobSize) {
+        blobs[key].size() != blobSize || unreadableBlobs.count(key) > 0) {
       return false;
     }
     memcpy(value, blobs[key].data(), blobSize);
@@ -142,6 +143,7 @@ class InMemoryConfig : public Supla::Config {
   std::map<std::string, std::vector<char>> blobs;
   std::map<std::string, uint8_t> uint8Values;
   std::map<std::string, std::string> strings;
+  std::set<std::string> unreadableBlobs;
   int commitCount = 0;
 };
 
@@ -259,6 +261,41 @@ TEST(SupletStorageTests, LoadsIndexWithoutConfigPayload) {
   ASSERT_NE(fullRecord.config, nullptr);
   EXPECT_EQ(fullRecord.configSize, 3);
   EXPECT_EQ(fullRecord.config[0], 9);
+}
+
+TEST(SupletStorageTests,
+     LoadIndexDoesNotEraseFallbackWhenActiveConfigPayloadIsUnreadable) {
+  InMemoryConfig config;
+  Supla::Suplet::Storage storage(&config);
+  Supla::Suplet::InstanceTable table;
+
+  ASSERT_TRUE(table.add(makeRecord(1, 10)));
+  ASSERT_TRUE(storage.save(table));
+  auto fallbackBlobs = config.blobs;
+
+  table.clear();
+  ASSERT_TRUE(table.add(makeRecord(1, 20)));
+  ASSERT_TRUE(storage.save(table));
+  ASSERT_EQ(config.uint8Values["1_splt_act"], 2);
+
+  config.blobs["1_splt_1"] = fallbackBlobs["1_splt_1"];
+  config.blobs["1_splt_1_ch"] = fallbackBlobs["1_splt_1_ch"];
+  config.blobs["1_splt_1_cfg"] = fallbackBlobs["1_splt_1_cfg"];
+  config.unreadableBlobs.insert("1_splt_2_cfg");
+
+  Supla::Suplet::InstanceTable index;
+  ASSERT_TRUE(storage.loadIndex(&index));
+  ASSERT_NE(index.findByInstanceId(1), nullptr);
+  EXPECT_TRUE(hasBlob(config, "1_splt_1"));
+  EXPECT_TRUE(hasBlob(config, "1_splt_1_cfg"));
+  EXPECT_TRUE(hasBlob(config, "1_splt_2"));
+  EXPECT_TRUE(hasBlob(config, "1_splt_2_cfg"));
+
+  Supla::Suplet::InstanceRecord loaded;
+  ASSERT_TRUE(storage.loadInstance(1, &loaded));
+  EXPECT_EQ(loaded.channelMap.getChannelNumber(0xA1), 10);
+  EXPECT_EQ(config.uint8Values["1_splt_act"], 1);
+  EXPECT_FALSE(hasBlob(config, "1_splt_2"));
 }
 
 TEST(SupletStorageTests, UpsertAlternatesVariantsAndDeletesOldVariant) {

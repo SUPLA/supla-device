@@ -341,6 +341,31 @@ const char downloadedAssignmentJson[] =
 "\"definitionVersion\":1"
 "}";
 
+const char conflictingDownloadedDefinitionJson[] =
+"{"
+"\"schemaVersion\":1,"
+"\"handlerVersion\":1,"
+"\"definitionId\":1701,"
+"\"definitionVersion\":1,"
+"\"maxInstances\":3,"
+"\"category\":\"virtual\","
+"\"kind\":\"virtualRelay\","
+"\"channels\":[{"
+"\"channelId\":1,"
+"\"key\":\"relay\","
+"\"kind\":\"virtualRelay\","
+"\"function\":\"powerSwitch\","
+"\"caption\":\"Changed\""
+"}]"
+"}";
+
+void forceDownloadedDefinitionActiveVariantToMissingB(InMemoryConfig *config) {
+  ASSERT_NE(config, nullptr);
+  config->uint8Values["spld0_act"] = 2;
+  config->blobs.erase("spld0_2");
+  config->blobs.erase("spld0_2c0");
+}
+
 }  // namespace
 
 TEST(SupletServerConfigTests, AppliesBuiltInAssignmentAndRequestsRefresh) {
@@ -947,30 +972,14 @@ TEST(SupletServerConfigTests, ReplacesUnusedConflictingDownloadedDefinition) {
       handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
       Supla::Suplet::ServerConfigResult::Applied);
 
-  const char conflictingJson[] =
-      "{"
-      "\"schemaVersion\":1,"
-      "\"handlerVersion\":1,"
-      "\"definitionId\":1701,"
-      "\"definitionVersion\":1,"
-      "\"maxInstances\":3,"
-      "\"category\":\"virtual\","
-      "\"kind\":\"virtualRelay\","
-      "\"channels\":[{"
-      "\"channelId\":1,"
-      "\"key\":\"relay\","
-      "\"kind\":\"virtualRelay\","
-      "\"function\":\"powerSwitch\","
-      "\"caption\":\"Changed\""
-      "}]"
-      "}";
-  makeSha(&shaProvider, conflictingJson, sha);
-  EXPECT_EQ(handler.saveDownloadedDefinition(1701, 1, conflictingJson, sha),
+  makeSha(&shaProvider, conflictingDownloadedDefinitionJson, sha);
+  EXPECT_EQ(handler.saveDownloadedDefinition(
+                1701, 1, conflictingDownloadedDefinitionJson, sha),
             Supla::Suplet::ServerConfigResult::Applied);
 
   char storedJson[1024] = {};
   ASSERT_TRUE(cache.load(1701, 1, storedJson, sizeof(storedJson)));
-  EXPECT_STREQ(storedJson, conflictingJson);
+  EXPECT_STREQ(storedJson, conflictingDownloadedDefinitionJson);
   Supla::Suplet::JsonDefinition loadedDefinition;
   ASSERT_TRUE(downloadedDefinitions.load(cache, 1701, 1, &loadedDefinition));
   EXPECT_STREQ(loadedDefinition.getDefinition()->channels[0].caption,
@@ -996,25 +1005,89 @@ TEST(SupletServerConfigTests,
       handler.applyAssignmentJson(downloadedAssignmentJson, 1701, 1),
       Supla::Suplet::ServerConfigResult::Applied);
 
-  const char conflictingJson[] =
-      "{"
-      "\"schemaVersion\":1,"
-      "\"handlerVersion\":1,"
-      "\"definitionId\":1701,"
-      "\"definitionVersion\":1,"
-      "\"maxInstances\":3,"
-      "\"category\":\"virtual\","
-      "\"kind\":\"virtualRelay\","
-      "\"channels\":[{"
-      "\"channelId\":1,"
-      "\"key\":\"relay\","
-      "\"kind\":\"virtualRelay\","
-      "\"function\":\"powerSwitch\","
-      "\"caption\":\"Changed\""
-      "}]"
-      "}";
-  makeSha(&shaProvider, conflictingJson, sha);
-  EXPECT_EQ(handler.saveDownloadedDefinition(1701, 1, conflictingJson, sha),
+  makeSha(&shaProvider, conflictingDownloadedDefinitionJson, sha);
+  EXPECT_EQ(handler.saveDownloadedDefinition(
+                1701, 1, conflictingDownloadedDefinitionJson, sha),
+            Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged);
+
+  char storedJson[1024] = {};
+  ASSERT_TRUE(cache.load(1701, 1, storedJson, sizeof(storedJson)));
+  EXPECT_STREQ(storedJson, downloadedDefinitionJson);
+}
+
+TEST(SupletServerConfigTests,
+     RejectsChangingUsedDownloadedDefinitionWhenActiveCacheVariantIsStale) {
+  InMemoryConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  uint8_t sha[32] = {};
+  makeSha(&shaProvider, downloadedDefinitionJson, sha);
+  ASSERT_EQ(
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_EQ(
+      handler.applyAssignmentJson(downloadedAssignmentJson, 1701, 1),
+      Supla::Suplet::ServerConfigResult::Applied);
+
+  forceDownloadedDefinitionActiveVariantToMissingB(&config);
+
+  makeSha(&shaProvider, conflictingDownloadedDefinitionJson, sha);
+  EXPECT_EQ(handler.saveDownloadedDefinition(
+                1701, 1, conflictingDownloadedDefinitionJson, sha),
+            Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged);
+
+  char storedJson[1024] = {};
+  ASSERT_TRUE(cache.load(1701, 1, storedJson, sizeof(storedJson)));
+  EXPECT_STREQ(storedJson, downloadedDefinitionJson);
+}
+
+TEST(SupletServerConfigTests,
+     RejectsStagedChangingUsedDownloadedDefWhenActiveCacheVariantIsStale) {
+  InMemoryConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  uint8_t sha[32] = {};
+  makeSha(&shaProvider, downloadedDefinitionJson, sha);
+  ASSERT_EQ(
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_EQ(
+      handler.applyAssignmentJson(downloadedAssignmentJson, 1701, 1),
+      Supla::Suplet::ServerConfigResult::Applied);
+
+  forceDownloadedDefinitionActiveVariantToMissingB(&config);
+
+  makeSha(&shaProvider, conflictingDownloadedDefinitionJson, sha);
+  Supla::Suplet::DefinitionCacheHandle handle = {};
+  ASSERT_EQ(handler.beginStagedDownloadedDefinition(
+                1701,
+                1,
+                strlen(conflictingDownloadedDefinitionJson),
+                sha,
+                &handle),
+            Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_TRUE(cache.writeStagedChunk(
+      handle,
+      0,
+      reinterpret_cast<const uint8_t *>(conflictingDownloadedDefinitionJson),
+      strlen(conflictingDownloadedDefinitionJson)));
+
+  EXPECT_EQ(handler.commitStagedDownloadedDefinition(
+                handle,
+                1701,
+                1,
+                strlen(conflictingDownloadedDefinitionJson),
+                sha),
             Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged);
 
   char storedJson[1024] = {};

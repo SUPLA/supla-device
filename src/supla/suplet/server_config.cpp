@@ -983,6 +983,26 @@ bool isDefinitionUsed(const Supla::Suplet::Manager *manager,
   return false;
 }
 
+bool findCachedDefinitionAndRepair(Supla::Suplet::DefinitionCache *cache,
+                                   uint32_t definitionId,
+                                   uint16_t definitionVersion,
+                                   Supla::Suplet::CachedDefinitionInfo *info) {
+  if (cache == nullptr || info == nullptr || definitionId == 0 ||
+      definitionVersion == 0) {
+    return false;
+  }
+  for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
+    Supla::Suplet::CachedDefinitionInfo current = {};
+    if (cache->getInfoAndRepair(i, &current) &&
+        current.definitionId == definitionId &&
+        current.definitionVersion == definitionVersion) {
+      *info = current;
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
 namespace Supla {
@@ -1133,22 +1153,9 @@ ServerConfigResult ServerConfigHandler::saveDownloadedDefinition(
     return ServerConfigResult::DefinitionCannotBeChanged;
   }
 
-  if (definitionCache->contains(definitionId, definitionVersion)) {
-    CachedDefinitionInfo info = {};
-    bool foundInfo = false;
-    for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
-      CachedDefinitionInfo current = {};
-      if (definitionCache->getInfo(i, &current) &&
-          current.definitionId == definitionId &&
-          current.definitionVersion == definitionVersion) {
-        info = current;
-        foundInfo = true;
-        break;
-      }
-    }
-    if (!foundInfo) {
-      return ServerConfigResult::StorageError;
-    }
+  CachedDefinitionInfo info = {};
+  if (findCachedDefinitionAndRepair(
+          definitionCache, definitionId, definitionVersion, &info)) {
     if (memcmp(info.sha256, sha256, sizeof(info.sha256)) != 0) {
       if (manager == nullptr || manager->getInstanceTable() == nullptr) {
         return ServerConfigResult::DefinitionCannotBeChanged;
@@ -1264,22 +1271,9 @@ ServerConfigResult ServerConfigHandler::commitStagedDownloadedDefinition(
   }
   delete[] definitionJson;
 
-  if (definitionCache->contains(definitionId, definitionVersion)) {
-    CachedDefinitionInfo info = {};
-    bool foundInfo = false;
-    for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
-      CachedDefinitionInfo current = {};
-      if (definitionCache->getInfo(i, &current) &&
-          current.definitionId == definitionId &&
-          current.definitionVersion == definitionVersion) {
-        info = current;
-        foundInfo = true;
-        break;
-      }
-    }
-    if (!foundInfo) {
-      return ServerConfigResult::StorageError;
-    }
+  CachedDefinitionInfo info = {};
+  if (findCachedDefinitionAndRepair(
+          definitionCache, definitionId, definitionVersion, &info)) {
     if (memcmp(info.sha256, sha256, sizeof(info.sha256)) != 0) {
       if (manager == nullptr || manager->getInstanceTable() == nullptr ||
           isDefinitionUsed(manager, definitionId, definitionVersion)) {

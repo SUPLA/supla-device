@@ -110,7 +110,8 @@ class Storage {
   bool loadActiveVariant(uint8_t instanceId,
                          uint8_t *activeVariant,
                          InstanceRecord *record,
-                         bool loadConfig);
+                         bool loadConfig,
+                         bool cleanup);
   bool saveVariant(const InstanceRecord &record, uint8_t variant);
   bool eraseVariant(uint8_t instanceId, uint8_t variant);
   bool eraseInstance(uint8_t instanceId);

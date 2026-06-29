@@ -302,7 +302,7 @@ steps:
         - pull_request
   depends_on: [tests, esp_idf_compilation_check,
                freertos_linux_compilation_check,
-               linux_compilation_check,
+               sd4linux_compilation_check,
                arduino_esp32_compilation_check_part_1,
                arduino_esp32_compilation_check_part_2,
                arduino_esp32_compilation_check_part_3,

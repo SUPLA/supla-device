@@ -12,8 +12,10 @@
 <area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="182,45,149,80,145,77,178,41"/>
 <area shape="rect" id="Node000006" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="230,168,373,193"/>
 <area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="279,206,238,243,235,239,275,202"/>
-<area shape="rect" id="Node000008" href="$classSupla_1_1Control_1_1BistableRollerShutter.html" title=" " alt="" coords="138,404,292,444"/>
-<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="218,371,218,403,212,403,212,371"/>
-<area shape="rect" id="Node000009" href="$classSupla_1_1Control_1_1TrippleButtonRollerShutter.html" title=" " alt="" coords="123,492,307,533"/>
-<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="218,460,218,492,212,492,212,460"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1Control_1_1BistableRollerShutter.html" title=" " alt="" coords="39,404,194,444"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="190,368,142,405,139,401,186,364"/>
+<area shape="rect" id="Node000010" href="$classSupla_1_1Control_1_1ManagedRollerShutter.html" title=" " alt="" coords="217,404,410,444"/>
+<area shape="poly" id="edge9_Node000007_Node000010" title=" " alt="" coords="244,364,291,401,288,405,240,368"/>
+<area shape="rect" id="Node000009" href="$classSupla_1_1Control_1_1TrippleButtonRollerShutter.html" title=" " alt="" coords="24,492,208,533"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="119,460,119,492,114,492,114,460"/>
 </map>

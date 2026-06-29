@@ -1,0 +1,12 @@
+<map id="Supla::Control::RelayRollerShutterPair" name="Supla::Control::RelayRollerShutterPair">
+<area shape="rect" id="Node000001" title=" " alt="" coords="189,230,361,271"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="185,140,365,181"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="278,196,278,230,272,230,272,196"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,14,113,40"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="93,46,244,137,241,142,90,50"/>
+<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="129,15,136,20,139,27,131,38,114,42,112,37,129,33,134,27,132,23,126,20"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="210,14,340,40"/>
+<area shape="poly" id="edge4_Node000002_Node000004" title=" " alt="" coords="278,56,278,139,272,139,272,56"/>
+<area shape="rect" id="Node000005" href="$structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="364,14,536,40"/>
+<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="423,51,303,142,300,137,420,47"/>
+</map>

@@ -222,30 +222,31 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>  <span class="keywordtype">bool</span> loadActiveVariant(uint8_t instanceId,</div>
 <div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                         uint8_t *activeVariant,</div>
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>                         <a class="code hl_struct" href="structSupla_1_1Suplet_1_1InstanceRecord.html">InstanceRecord</a> *record,</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>                         <span class="keywordtype">bool</span> loadConfig);</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>  <span class="keywordtype">bool</span> saveVariant(<span class="keyword">const</span> <a class="code hl_struct" href="structSupla_1_1Suplet_1_1InstanceRecord.html">InstanceRecord</a> &amp;record, uint8_t variant);</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>  <span class="keywordtype">bool</span> eraseVariant(uint8_t instanceId, uint8_t variant);</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>  <span class="keywordtype">bool</span> eraseInstance(uint8_t instanceId);</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>  <span class="keywordtype">bool</span> cleanupLoadedInstance(uint8_t instanceId,</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>                             uint8_t activeVariant,</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>                             uint8_t loadedVariant);</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>  <span class="keywordtype">bool</span> slotExists(uint8_t instanceId) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>  <span class="keywordtype">void</span> makeActKey(uint8_t instanceId, <span class="keywordtype">char</span> *output) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>  <span class="keywordtype">void</span> makeHeaderKey(uint8_t instanceId, uint8_t variant, <span class="keywordtype">char</span> *output) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>  <span class="keywordtype">void</span> makeChannelMapKey(uint8_t instanceId,</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>                         uint8_t variant,</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>                         <span class="keywordtype">char</span> *output) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>  <span class="keywordtype">void</span> makeConfigKey(uint8_t instanceId, uint8_t variant, <span class="keywordtype">char</span> *output) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>  <span class="keywordtype">bool</span> readBlobExact(<span class="keyword">const</span> <span class="keywordtype">char</span> *key, <span class="keywordtype">char</span> *output, <span class="keywordtype">size_t</span> expectedSize) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span> </div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>  <a class="code hl_class" href="classSupla_1_1Config.html">Supla::Config</a> *config = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>};</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>                         <span class="keywordtype">bool</span> loadConfig,</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                         <span class="keywordtype">bool</span> cleanup);</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>  <span class="keywordtype">bool</span> saveVariant(<span class="keyword">const</span> <a class="code hl_struct" href="structSupla_1_1Suplet_1_1InstanceRecord.html">InstanceRecord</a> &amp;record, uint8_t variant);</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>  <span class="keywordtype">bool</span> eraseVariant(uint8_t instanceId, uint8_t variant);</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>  <span class="keywordtype">bool</span> eraseInstance(uint8_t instanceId);</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>  <span class="keywordtype">bool</span> cleanupLoadedInstance(uint8_t instanceId,</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>                             uint8_t activeVariant,</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                             uint8_t loadedVariant);</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>  <span class="keywordtype">bool</span> slotExists(uint8_t instanceId) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>  <span class="keywordtype">void</span> makeActKey(uint8_t instanceId, <span class="keywordtype">char</span> *output) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>  <span class="keywordtype">void</span> makeHeaderKey(uint8_t instanceId, uint8_t variant, <span class="keywordtype">char</span> *output) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>  <span class="keywordtype">void</span> makeChannelMapKey(uint8_t instanceId,</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>                         uint8_t variant,</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>                         <span class="keywordtype">char</span> *output) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>  <span class="keywordtype">void</span> makeConfigKey(uint8_t instanceId, uint8_t variant, <span class="keywordtype">char</span> *output) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>  <span class="keywordtype">bool</span> readBlobExact(<span class="keyword">const</span> <span class="keywordtype">char</span> *key, <span class="keywordtype">char</span> *output, <span class="keywordtype">size_t</span> expectedSize) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span> </div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>  <a class="code hl_class" href="classSupla_1_1Config.html">Supla::Config</a> *config = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>};</div>
 </div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span> </div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>}  <span class="comment">// namespace Suplet</span></div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>}  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span> </div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SUPLET_STORAGE_H_</span></div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span> </div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>}  <span class="comment">// namespace Suplet</span></div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>}  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span> </div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SUPLET_STORAGE_H_</span></div>
 <div class="ttc" id="aclassSupla_1_1Config_html"><div class="ttname"><a href="classSupla_1_1Config.html">Supla::Config</a></div><div class="ttdef"><b>Definition</b> config.h:59</div></div>
 <div class="ttc" id="aclassSupla_1_1Suplet_1_1ChannelMap_html"><div class="ttname"><a href="classSupla_1_1Suplet_1_1ChannelMap.html">Supla::Suplet::ChannelMap</a></div><div class="ttdef"><b>Definition</b> channel_map.h:40</div></div>
 <div class="ttc" id="aclassSupla_1_1Suplet_1_1InstanceTable_html"><div class="ttname"><a href="classSupla_1_1Suplet_1_1InstanceTable.html">Supla::Suplet::InstanceTable</a></div><div class="ttdef"><b>Definition</b> storage.h:51</div></div>

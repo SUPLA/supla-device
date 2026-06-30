@@ -19,6 +19,8 @@
 #include <supla/channels/channel.h>
 #include <supla/protocol/protocol_layer.h>
 
+#include <string.h>
+
 namespace Supla {
 
 void AtChannel::sendUpdate() {
@@ -33,7 +35,11 @@ void AtChannel::sendUpdate() {
            proto = proto->next()) {
         proto->sendActionTrigger(static_cast<uint8_t>(channelNumber), actionId);
       }
+      if (actionToSend || valueUpdatePending) {
+        setSendValue();
+      }
     } else {
+      valueUpdatePending = false;
       Channel::sendUpdate();
     }
   } else {
@@ -45,7 +51,7 @@ uint32_t AtChannel::popAction() {
   for (int i = 0; i < 32; i++) {
     if (actionToSend & (1 << i)) {
       actionToSend ^= (1 << i);
-      if (actionToSend == 0) {
+      if (actionToSend == 0 && !valueUpdatePending) {
         clearSendValue();
       }
       return (1 << i);
@@ -64,11 +70,35 @@ void AtChannel::activateAction(uint32_t action) {
 }
 
 void AtChannel::setRelatedChannel(uint8_t relatedChannel) {
-  actionTriggerProperties.relatedChannelNumber = relatedChannel + 1;
+  TActionTriggerProperties properties = actionTriggerProperties;
+  properties.relatedChannelNumber = relatedChannel + 1;
+  setActionTriggerProperties(properties);
 }
 
 void AtChannel::setDisablesLocalOperation(uint32_t actions) {
-  actionTriggerProperties.disablesLocalOperation = actions;
+  TActionTriggerProperties properties = actionTriggerProperties;
+  properties.disablesLocalOperation = actions;
+  setActionTriggerProperties(properties);
+}
+
+void AtChannel::enableValueUpdates() {
+  valueUpdatesEnabled = true;
+  valueUpdatePending = false;
+  clearSendValue();
+}
+
+void AtChannel::setActionTriggerProperties(
+    const TActionTriggerProperties &properties) {
+  char rawValue[SUPLA_CHANNELVALUE_SIZE] = {};
+  memcpy(rawValue, &properties, sizeof(properties));
+
+  if (setNewValue(rawValue)) {
+    if (valueUpdatesEnabled) {
+      valueUpdatePending = true;
+    } else {
+      clearSendValue();
+    }
+  }
 }
 
 };  // namespace Supla

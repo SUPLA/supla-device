@@ -17,6 +17,8 @@
 
 namespace Supla {
 namespace Control {
+class ActionTrigger;
+class Button;
 
 class ManagedRelay : public Relay {
  public:
@@ -33,6 +35,7 @@ class ManagedRelay : public Relay {
   // be loaded by the owner before this method is called.
   void loadEngineConfigOnly();
   void purgeEngineConfigOnly();
+  void setupButtonActions(Button *button);
 
   void turnOn(_supla_int_t duration = 0) override;
   void turnOff(_supla_int_t duration = 0) override;
@@ -65,6 +68,7 @@ class ManagedRollerShutter : public RollerShutter {
   // be loaded by the owner before this method is called.
   void loadEngineConfigOnly();
   void purgeEngineConfigOnly();
+  void setupButtonActions(Button *button, bool upButton, bool asInternal);
 
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue)
       override;
@@ -107,6 +111,20 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
                          _supla_int_t relayFunctions =
                              (0xFF ^
                               SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
+  ~RelayRollerShutterPair() override;
+
+  void attach(Button *primaryButton, Button *secondaryButton,
+              bool asInternal = true);
+  void attach(Button *primaryButton,
+              Button *secondaryButton,
+              ActionTrigger *primaryActionTrigger,
+              ActionTrigger *secondaryActionTrigger,
+              bool asInternal = true);
+  void attach(Button *button, bool primaryOrUp, bool asInternal = true);
+  void attach(Button *button,
+              ActionTrigger *actionTrigger,
+              bool primaryOrUp,
+              bool asInternal = true);
 
   Channel *getChannel() override;
   const Channel *getChannel() const override;
@@ -154,6 +172,14 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
   static _supla_int_t primaryFunctions(_supla_int_t relayFunctions,
                                        bool tiltFunctionsEnabled);
 
+  struct ButtonListElement {
+    Button *button = nullptr;
+    ActionTrigger *actionTrigger = nullptr;
+    bool primaryOrUp = true;
+    bool asInternal = true;
+    ButtonListElement *next = nullptr;
+  };
+
   bool isPrimaryRollerFunction() const;
   bool isRollerFunction(uint32_t function) const;
   bool isPrimaryChannel(int channelNumber) const;
@@ -163,6 +189,14 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
   void applyRuntimeMode();
   ElementWithChannelActions *primaryActiveEngine();
   const ElementWithChannelActions *primaryActiveEngine() const;
+  void rebuildButtonActions();
+  void rebuildButtonActionsThreadSafe();
+  void appendButton(Button *button,
+                    ActionTrigger *actionTrigger,
+                    bool primaryOrUp,
+                    bool asInternal);
+  void setupButtonAction(ButtonListElement *buttonListElement);
+  void updateActionTriggerRelatedChannel(ButtonListElement *buttonListElement);
 
   Channel primaryChannel;
   Channel secondaryChannel;
@@ -172,6 +206,8 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
   ManagedRollerShutter rollerShutter;
 
   bool rollerModeActive = false;
+  bool buttonActionsInitialized = false;
+  ButtonListElement *buttonList = nullptr;
 };
 
 }  // namespace Control

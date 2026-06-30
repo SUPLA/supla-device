@@ -73,6 +73,10 @@ class LocalAction {
 
   static void DeleteActionsHandledBy(const ActionHandler *client);
   static void DeleteActionsTriggeredBy(const LocalAction *action);
+  static void DeleteAction(const LocalAction *trigger,
+                           const ActionHandler *client,
+                           uint16_t event,
+                           uint16_t action);
   static void NullifyActionsHandledBy(const ActionHandler *client);
 
   // action and event are internally uint16_t type, however -1 is used

@@ -11,14 +11,18 @@
 #include <gtest/gtest.h>
 #include <arduino_mock.h>
 #include <config_mock.h>
+#include <protocol_layer_mock.h>
 #include <simple_time.h>
 #include <storage_mock.h>
 #include <supla/channel.h>
+#include <supla/control/action_trigger.h>
+#include <supla/control/button.h>
 #include <supla/control/relay_roller_shutter_pair.h>
 #include <supla/device/register_device.h>
 #include <supla/io.h>
 
 using ::testing::_;
+using ::testing::AnyNumber;
 using ::testing::DoAll;
 using ::testing::Return;
 using ::testing::SetArgPointee;
@@ -31,6 +35,8 @@ class RelayRollerShutterPairFixture : public testing::Test {
   SimpleTime time;
   int gpio0 = 1;
   int gpio1 = 2;
+  int button0Gpio = 10;
+  int button1Gpio = 11;
 
   void SetUp() override {
     Supla::Channel::resetToDefaults();
@@ -48,8 +54,24 @@ class RelayRollerShutterPairFixture : public testing::Test {
     EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
   }
 
+  void expectButtonInit() {
+    EXPECT_CALL(ioMock, pinMode(button0Gpio, INPUT)).Times(testing::AtLeast(1));
+    EXPECT_CALL(ioMock, pinMode(button1Gpio, INPUT)).Times(testing::AtLeast(1));
+    EXPECT_CALL(ioMock, digitalRead(button0Gpio)).WillRepeatedly(Return(0));
+    EXPECT_CALL(ioMock, digitalRead(button1Gpio)).WillRepeatedly(Return(0));
+    EXPECT_CALL(ioMock, digitalRead(gpio0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(ioMock, digitalRead(gpio1)).WillRepeatedly(Return(0));
+  }
+
   const int8_t *channelValue(int channelNumber) {
     return Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  }
+
+  TActionTriggerProperties *actionTriggerProperties(
+      Supla::Control::ActionTrigger *actionTrigger) {
+    return reinterpret_cast<TActionTriggerProperties *>(
+        Supla::RegisterDevice::getChannelValuePtr(
+            actionTrigger->getChannelNumber()));
   }
 };
 
@@ -84,6 +106,299 @@ TEST_F(RelayRollerShutterPairFixture,
   EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
   EXPECT_EQ(pair.handleNewValueFromServer(&value), 1);
   EXPECT_TRUE(pair.getSecondaryChannel()->getValueBool());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       AttachedButtonsControlRelaysInRelayMode) {
+  Supla::Control::Button primaryButton(button0Gpio);
+  Supla::Control::Button secondaryButton(button1Gpio);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  pair.attach(&primaryButton, &secondaryButton);
+
+  expectButtonInit();
+  expectRelayInitOff();
+  pair.onInit();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 1));
+  primaryButton.runAction(Supla::CONDITIONAL_ON_PRESS);
+  EXPECT_TRUE(pair.getChannel()->getValueBool());
+  EXPECT_FALSE(pair.getSecondaryChannel()->getValueBool());
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
+  secondaryButton.runAction(Supla::CONDITIONAL_ON_PRESS);
+  EXPECT_TRUE(pair.getSecondaryChannel()->getValueBool());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       AttachedButtonsControlRollerShutterInRollerMode) {
+  Supla::Control::Button primaryButton(button0Gpio);
+  Supla::Control::Button secondaryButton(button1Gpio);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  pair.attach(&primaryButton, &secondaryButton);
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+
+  expectButtonInit();
+  EXPECT_CALL(ioMock, pinMode(gpio0, OUTPUT));
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  pair.onInit();
+
+  primaryButton.runAction(Supla::CONDITIONAL_ON_PRESS);
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 1)).Times(testing::AtLeast(1));
+  pair.onTimer();
+  EXPECT_FALSE(pair.getSecondaryChannel()->getValueBool());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       AttachedButtonsFollowRuntimeFunctionSwitch) {
+  Supla::Control::Button primaryButton(button0Gpio);
+  Supla::Control::Button secondaryButton(button1Gpio);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  pair.attach(&primaryButton, &secondaryButton);
+
+  expectButtonInit();
+  expectRelayInitOff();
+  pair.onInit();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 1));
+  primaryButton.runAction(Supla::CONDITIONAL_ON_PRESS);
+  EXPECT_TRUE(pair.getChannel()->getValueBool());
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+
+  primaryButton.runAction(Supla::CONDITIONAL_ON_PRESS);
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 1)).Times(testing::AtLeast(1));
+  pair.onTimer();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
+  secondaryButton.runAction(Supla::CONDITIONAL_ON_PRESS);
+  EXPECT_TRUE(pair.getSecondaryChannel()->getValueBool());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       AttachedActionTriggersFollowRelayModeButtonProfile) {
+  Supla::Control::Button primaryButton(button0Gpio);
+  Supla::Control::Button secondaryButton(button1Gpio);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, true);
+  Supla::Control::ActionTrigger primaryAt;
+  Supla::Control::ActionTrigger secondaryAt;
+  primaryAt.setAlwaysUseOnClick1();
+  secondaryAt.setAlwaysUseOnClick1();
+  pair.attach(&primaryButton, &secondaryButton, &primaryAt, &secondaryAt);
+
+  expectButtonInit();
+  expectRelayInitOff();
+  pair.onInit();
+  primaryAt.onInit();
+  secondaryAt.onInit();
+
+  EXPECT_EQ(primaryAt.getChannel()->getActionTriggerCaps(),
+            SUPLA_ACTION_CAP_TURN_ON | SUPLA_ACTION_CAP_TURN_OFF |
+                SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
+                SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
+                SUPLA_ACTION_CAP_SHORT_PRESS_x3 |
+                SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
+                SUPLA_ACTION_CAP_SHORT_PRESS_x5);
+  EXPECT_EQ(actionTriggerProperties(&primaryAt)->disablesLocalOperation,
+            SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  EXPECT_EQ(actionTriggerProperties(&secondaryAt)->disablesLocalOperation,
+            SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  EXPECT_EQ(actionTriggerProperties(&primaryAt)->relatedChannelNumber,
+            pair.getChannelNumber() + 1);
+  EXPECT_EQ(actionTriggerProperties(&secondaryAt)->relatedChannelNumber,
+            pair.getSecondaryChannelNumber() + 1);
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       AttachedActionTriggersFollowRollerModeButtonProfile) {
+  Supla::Control::Button primaryButton(button0Gpio);
+  Supla::Control::Button secondaryButton(button1Gpio);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, true);
+  Supla::Control::ActionTrigger primaryAt;
+  Supla::Control::ActionTrigger secondaryAt;
+  primaryAt.setAlwaysUseOnClick1();
+  secondaryAt.setAlwaysUseOnClick1();
+  pair.attach(&primaryButton, &secondaryButton, &primaryAt, &secondaryAt);
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+
+  expectButtonInit();
+  EXPECT_CALL(ioMock, pinMode(gpio0, OUTPUT));
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  pair.onInit();
+  primaryAt.onInit();
+  secondaryAt.onInit();
+
+  EXPECT_EQ(actionTriggerProperties(&primaryAt)->disablesLocalOperation,
+            SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  EXPECT_EQ(actionTriggerProperties(&secondaryAt)->disablesLocalOperation,
+            SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  EXPECT_EQ(actionTriggerProperties(&primaryAt)->relatedChannelNumber,
+            pair.getChannelNumber() + 1);
+  EXPECT_EQ(actionTriggerProperties(&secondaryAt)->relatedChannelNumber,
+            pair.getChannelNumber() + 1);
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       AttachedActionTriggersRebuildOnRuntimeFunctionSwitch) {
+  Supla::Control::Button primaryButton(button0Gpio);
+  Supla::Control::Button secondaryButton(button1Gpio);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, true);
+  Supla::Control::ActionTrigger primaryAt;
+  Supla::Control::ActionTrigger secondaryAt;
+  primaryAt.setAlwaysUseOnClick1();
+  secondaryAt.setAlwaysUseOnClick1();
+  pair.attach(&primaryButton, &secondaryButton, &primaryAt, &secondaryAt);
+
+  expectButtonInit();
+  expectRelayInitOff();
+  pair.onInit();
+  primaryAt.onInit();
+  secondaryAt.onInit();
+  ASSERT_EQ(actionTriggerProperties(&secondaryAt)->disablesLocalOperation,
+            SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  ASSERT_EQ(actionTriggerProperties(&secondaryAt)->relatedChannelNumber,
+            pair.getSecondaryChannelNumber() + 1);
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  EXPECT_EQ(actionTriggerProperties(&secondaryAt)->disablesLocalOperation,
+            SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  EXPECT_EQ(actionTriggerProperties(&secondaryAt)->relatedChannelNumber,
+            pair.getChannelNumber() + 1);
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_EQ(actionTriggerProperties(&secondaryAt)->disablesLocalOperation,
+            SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  EXPECT_EQ(actionTriggerProperties(&secondaryAt)->relatedChannelNumber,
+            pair.getSecondaryChannelNumber() + 1);
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       AttachedActionTriggersSendChannelValueOnRuntimeFunctionSwitch) {
+  ProtocolLayerMock protoMock;
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _))
+      .Times(AnyNumber());
+  EXPECT_CALL(protoMock, getChannelConfig(_, _)).Times(AnyNumber());
+
+  Supla::Control::Button primaryButton(button0Gpio);
+  Supla::Control::Button secondaryButton(button1Gpio);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, true);
+  Supla::Control::ActionTrigger primaryAt;
+  Supla::Control::ActionTrigger secondaryAt;
+  primaryAt.setAlwaysUseOnClick1();
+  secondaryAt.setAlwaysUseOnClick1();
+  pair.attach(&primaryButton, &secondaryButton, &primaryAt, &secondaryAt);
+
+  expectButtonInit();
+  expectRelayInitOff();
+  pair.onInit();
+  primaryAt.onInit();
+  secondaryAt.onInit();
+  primaryAt.onRegistered(nullptr);
+  secondaryAt.onRegistered(nullptr);
+  primaryAt.iterateConnected();
+  secondaryAt.iterateConnected();
+  testing::Mock::VerifyAndClearExpectations(&protoMock);
+
+  TActionTriggerProperties expected = {};
+  expected.relatedChannelNumber = pair.getChannelNumber() + 1;
+  expected.disablesLocalOperation =
+      SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x1;
+  EXPECT_CALL(protoMock,
+              sendChannelValueChanged(secondaryAt.getChannelNumber(),
+                                      _,
+                                      0,
+                                      0))
+      .WillOnce([&expected](uint8_t,
+                            int8_t *value,
+                            unsigned char,
+                            uint32_t) {
+        EXPECT_EQ(0, memcmp(value, &expected, sizeof(expected)));
+      });
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  secondaryAt.iterateConnected();
+
+  testing::Mock::VerifyAndClearExpectations(&protoMock);
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _))
+      .Times(AnyNumber());
+  primaryAt.iterateConnected();
+  secondaryAt.iterateConnected();
+  testing::Mock::VerifyAndClearExpectations(&protoMock);
+
+  expected.relatedChannelNumber = pair.getSecondaryChannelNumber() + 1;
+  expected.disablesLocalOperation = SUPLA_ACTION_CAP_SHORT_PRESS_x1;
+  EXPECT_CALL(protoMock,
+              sendChannelValueChanged(secondaryAt.getChannelNumber(),
+                                      _,
+                                      0,
+                                      0))
+      .WillOnce([&expected](uint8_t,
+                            int8_t *value,
+                            unsigned char,
+                            uint32_t) {
+        EXPECT_EQ(0, memcmp(value, &expected, sizeof(expected)));
+      });
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+  secondaryAt.iterateConnected();
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       SeparatelyAttachedActionTriggerRebuildsOnServerConfigAfterModeSwitch) {
+  Supla::Control::Button primaryButton(button0Gpio);
+  Supla::Control::Button secondaryButton(button1Gpio);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, true);
+  Supla::Control::ActionTrigger primaryAt;
+  primaryAt.setAlwaysUseOnClick1();
+  pair.attach(&primaryButton, &secondaryButton);
+  primaryAt.attach(primaryButton);
+  primaryAt.setRelatedChannel(pair);
+
+  expectButtonInit();
+  expectRelayInitOff();
+  pair.onInit();
+  primaryAt.onInit();
+  ASSERT_EQ(actionTriggerProperties(&primaryAt)->disablesLocalOperation,
+            SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger actionTriggerConfig = {};
+  actionTriggerConfig.ActiveActions = 0;
+  memcpy(config.Config,
+         &actionTriggerConfig,
+         sizeof(TChannelConfig_ActionTrigger));
+  primaryAt.handleChannelConfig(&config);
+
+  EXPECT_EQ(actionTriggerProperties(&primaryAt)->disablesLocalOperation,
+            SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x1);
 }
 
 TEST_F(RelayRollerShutterPairFixture,

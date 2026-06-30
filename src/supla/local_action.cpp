@@ -262,6 +262,22 @@ void LocalAction::DeleteActionsTriggeredBy(const LocalAction *trigger) {
   }
 }
 
+void LocalAction::DeleteAction(const LocalAction *trigger,
+                               const ActionHandler *client,
+                               uint16_t event,
+                               uint16_t action) {
+  auto ptr = ActionHandlerClient::begin;
+  while (ptr) {
+    auto next = ptr->next;
+    if (ptr->trigger == trigger && ptr->client == client &&
+        ptr->onEvent == event && ptr->action == action) {
+      delete ptr;
+      next = ActionHandlerClient::begin;
+    }
+    ptr = next;
+  }
+}
+
 void LocalAction::NullifyActionsHandledBy(const ActionHandler *client) {
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {

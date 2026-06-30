@@ -73,6 +73,7 @@ class ActionTrigger : public Element, public ActionHandler {
   void onLoadState() override;
   void onSaveState() override;
 
+  void rebuildForAttachedButton();
   void disableATCapability(uint32_t capToDisable);
   void enableStateStorage();
 
@@ -94,6 +95,8 @@ class ActionTrigger : public Element, public ActionHandler {
   Supla::Control::Button *attachedButton = nullptr;
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;
   Supla::ActionHandlerClient *localHandlerForDisabledAt = nullptr;
+  Supla::ActionHandler *localHandlerClient = nullptr;
+  uint16_t localHandlerAction = 0;
   uint32_t activeActionsFromServer = 0;
   uint32_t disablesLocalOperation = 0;
   uint32_t disabledCapabilities = 0;
@@ -104,6 +107,7 @@ class ActionTrigger : public Element, public ActionHandler {
   bool storageEnabled = false;
   bool alwaysUseOnClick1 = false;
   bool enabled = true;
+  bool localHandlerSwitchConfigured = false;
 };
 
 }  // namespace Control

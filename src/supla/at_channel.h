@@ -30,9 +30,14 @@ class AtChannel : public Channel {
   uint32_t popAction();
   void setRelatedChannel(uint8_t channelNumber);
   void setDisablesLocalOperation(uint32_t actions);
+  void enableValueUpdates();
 
  protected:
+  void setActionTriggerProperties(const TActionTriggerProperties &properties);
+
   uint32_t actionToSend = 0;
+  bool valueUpdatePending = false;
+  bool valueUpdatesEnabled = false;
 };
 
 };  // namespace Supla

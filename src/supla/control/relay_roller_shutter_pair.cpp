@@ -9,6 +9,11 @@
 
 #include "relay_roller_shutter_pair.h"
 
+#include <SuplaDevice.h>
+#include <supla/auto_lock.h>
+#include <supla/control/action_trigger.h>
+#include <supla/control/button.h>
+#include <supla/local_action.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
@@ -50,6 +55,24 @@ void ManagedRelay::loadEngineConfigOnly() {
 
 void ManagedRelay::purgeEngineConfigOnly() {
   Relay::purgeRelayConfigOnly();
+}
+
+void ManagedRelay::setupButtonActions(Button *button) {
+  if (button == nullptr) {
+    return;
+  }
+
+  button->onInit();
+  if (button->isMonostable()) {
+    button->addAction(Supla::TOGGLE, this, Supla::CONDITIONAL_ON_PRESS);
+  } else if (button->isBistable()) {
+    button->addAction(Supla::TOGGLE_WITH_POSTPONED_COMM,
+                      this,
+                      Supla::CONDITIONAL_ON_CHANGE);
+  } else if (button->isMotionSensor() || button->isCentral()) {
+    button->addAction(Supla::TURN_ON, this, Supla::ON_PRESS);
+    button->addAction(Supla::TURN_OFF, this, Supla::ON_RELEASE);
+  }
 }
 
 void ManagedRelay::turnOn(_supla_int_t duration) {
@@ -163,6 +186,12 @@ void ManagedRollerShutter::loadEngineConfigOnly() {
 
 void ManagedRollerShutter::purgeEngineConfigOnly() {
   RollerShutter::purgeRollerShutterConfigOnly();
+}
+
+void ManagedRollerShutter::setupButtonActions(Button *button,
+                                              bool upButton,
+                                              bool asInternal) {
+  RollerShutter::setupButtonActions(button, upButton, asInternal);
 }
 
 int32_t ManagedRollerShutter::handleNewValueFromServer(
@@ -284,6 +313,56 @@ RelayRollerShutterPair::RelayRollerShutterPair(int output0,
                              relayFunctions) {
 }
 
+RelayRollerShutterPair::~RelayRollerShutterPair() {
+  auto currentElement = buttonList;
+  while (currentElement) {
+    auto nextElement = currentElement->next;
+    delete currentElement;
+    currentElement = nextElement;
+  }
+}
+
+void RelayRollerShutterPair::attach(Button *primaryButton,
+                                    Button *secondaryButton,
+                                    bool asInternal) {
+  attach(primaryButton, nullptr, true, asInternal);
+  attach(secondaryButton, nullptr, false, asInternal);
+}
+
+void RelayRollerShutterPair::attach(Button *primaryButton,
+                                    Button *secondaryButton,
+                                    ActionTrigger *primaryActionTrigger,
+                                    ActionTrigger *secondaryActionTrigger,
+                                    bool asInternal) {
+  attach(primaryButton, primaryActionTrigger, true, asInternal);
+  attach(secondaryButton, secondaryActionTrigger, false, asInternal);
+}
+
+void RelayRollerShutterPair::attach(Button *button,
+                                    bool primaryOrUp,
+                                    bool asInternal) {
+  attach(button, nullptr, primaryOrUp, asInternal);
+}
+
+void RelayRollerShutterPair::attach(Button *button,
+                                    ActionTrigger *actionTrigger,
+                                    bool primaryOrUp,
+                                    bool asInternal) {
+  if (button == nullptr) {
+    return;
+  }
+
+  SUPLA_LOG_DEBUG("RelayRS pair[%d] attaching button %d, %s, %s",
+                  primaryChannel.getChannelNumber(),
+                  button->getButtonNumber(),
+                  primaryOrUp ? "primary/up" : "secondary/down",
+                  asInternal ? "internal" : "external");
+  appendButton(button, actionTrigger, primaryOrUp, asInternal);
+  if (buttonActionsInitialized) {
+    rebuildButtonActionsThreadSafe();
+  }
+}
+
 Supla::Io::IoPin RelayRollerShutterPair::makeOutputPin(Supla::Io::Base *io,
                                                        int pin,
                                                        bool highIsOn) {
@@ -392,6 +471,9 @@ void RelayRollerShutterPair::switchToRelayMode() {
   primaryChannel.setNewValue(false);
   secondaryChannel.clearValue();
   secondaryChannel.setNewValue(false);
+  if (buttonActionsInitialized) {
+    rebuildButtonActionsThreadSafe();
+  }
 }
 
 void RelayRollerShutterPair::switchToRollerMode() {
@@ -406,6 +488,9 @@ void RelayRollerShutterPair::switchToRollerMode() {
   rollerShutter.forcePublishValue();
   secondaryChannel.clearValue();
   secondaryChannel.setStateOnlineAndNotAvailable();
+  if (buttonActionsInitialized) {
+    rebuildButtonActionsThreadSafe();
+  }
 }
 
 ElementWithChannelActions *RelayRollerShutterPair::primaryActiveEngine() {
@@ -419,6 +504,91 @@ RelayRollerShutterPair::primaryActiveEngine() const {
   return isPrimaryRollerFunction()
              ? static_cast<const ElementWithChannelActions *>(&rollerShutter)
              : static_cast<const ElementWithChannelActions *>(&relay0);
+}
+
+void RelayRollerShutterPair::appendButton(Button *button,
+                                          ActionTrigger *actionTrigger,
+                                          bool primaryOrUp,
+                                          bool asInternal) {
+  auto lastButtonListElement = buttonList;
+  while (lastButtonListElement && lastButtonListElement->next) {
+    lastButtonListElement = lastButtonListElement->next;
+  }
+
+  if (lastButtonListElement) {
+    lastButtonListElement->next = new ButtonListElement;
+    lastButtonListElement = lastButtonListElement->next;
+  } else {
+    lastButtonListElement = new ButtonListElement;
+  }
+
+  lastButtonListElement->button = button;
+  lastButtonListElement->actionTrigger = actionTrigger;
+  lastButtonListElement->primaryOrUp = primaryOrUp;
+  lastButtonListElement->asInternal = asInternal;
+  if (actionTrigger) {
+    actionTrigger->attach(button);
+  }
+
+  if (buttonList == nullptr) {
+    buttonList = lastButtonListElement;
+  }
+}
+
+void RelayRollerShutterPair::setupButtonAction(
+    ButtonListElement *buttonListElement) {
+  if (buttonListElement == nullptr || buttonListElement->button == nullptr) {
+    return;
+  }
+
+  auto button = buttonListElement->button;
+  if (isPrimaryRollerFunction()) {
+    rollerShutter.setupButtonActions(button,
+                                     buttonListElement->primaryOrUp,
+                                     buttonListElement->asInternal);
+  } else if (buttonListElement->primaryOrUp) {
+    relay0.setupButtonActions(button);
+  } else {
+    relay1.setupButtonActions(button);
+  }
+}
+
+void RelayRollerShutterPair::updateActionTriggerRelatedChannel(
+    ButtonListElement *buttonListElement) {
+  if (buttonListElement == nullptr ||
+      buttonListElement->actionTrigger == nullptr) {
+    return;
+  }
+
+  if (isPrimaryRollerFunction() || buttonListElement->primaryOrUp) {
+    buttonListElement->actionTrigger->setRelatedChannel(primaryChannel);
+  } else {
+    buttonListElement->actionTrigger->setRelatedChannel(secondaryChannel);
+  }
+}
+
+void RelayRollerShutterPair::rebuildButtonActions() {
+  Supla::LocalAction::DeleteActionsHandledBy(&relay0);
+  Supla::LocalAction::DeleteActionsHandledBy(&relay1);
+  Supla::LocalAction::DeleteActionsHandledBy(&rollerShutter);
+
+  for (auto buttonListElement = buttonList; buttonListElement;
+       buttonListElement = buttonListElement->next) {
+    updateActionTriggerRelatedChannel(buttonListElement);
+    setupButtonAction(buttonListElement);
+  }
+
+  for (auto buttonListElement = buttonList; buttonListElement;
+       buttonListElement = buttonListElement->next) {
+    if (buttonListElement->actionTrigger) {
+      buttonListElement->actionTrigger->rebuildForAttachedButton();
+    }
+  }
+}
+
+void RelayRollerShutterPair::rebuildButtonActionsThreadSafe() {
+  Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
+  rebuildButtonActions();
 }
 
 int32_t RelayRollerShutterPair::handleNewValueFromServer(
@@ -583,6 +753,8 @@ void RelayRollerShutterPair::onSaveState() {
 
 void RelayRollerShutterPair::onInit() {
   applyRuntimeMode();
+  buttonActionsInitialized = true;
+  rebuildButtonActionsThreadSafe();
   if (isPrimaryRollerFunction()) {
     rollerShutter.onInit();
   } else {

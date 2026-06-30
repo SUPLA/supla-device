@@ -24,16 +24,24 @@
 #include <hal/gpio_types.h>
 #include <esp_attr.h>
 #include <esp_intr_alloc.h>
+#include <freertos/FreeRTOS.h>
 
 using Supla::InterruptAcToDcIo;
 
 namespace {
-static volatile uint8_t gpioInterrupts[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
+static volatile uint8_t
+gpioInterruptCounts[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
+static portMUX_TYPE gpioInterruptCountsMux = portMUX_INITIALIZER_UNLOCKED;
 
 void IRAM_ATTR interruptHandler(void* arg) {
   uint32_t gpioNum = reinterpret_cast<uint32_t>(arg);
   if (gpioNum < INTERRUPT_AC_TO_DC_IO_MAX_GPIOS) {
-    gpioInterrupts[gpioNum] = 1;
+    portENTER_CRITICAL_ISR(&gpioInterruptCountsMux);
+    uint8_t interruptCount = gpioInterruptCounts[gpioNum];
+    if (interruptCount < 255) {
+      gpioInterruptCounts[gpioNum] = interruptCount + 1;
+    }
+    portEXIT_CRITICAL_ISR(&gpioInterruptCountsMux);
   }
 }
 
@@ -49,7 +57,8 @@ InterruptAcToDcIo::~InterruptAcToDcIo() {
 }
 
 void InterruptAcToDcIo::addGpio(int gpio,
-                                int32_t minOffTimeoutMs) {
+                                int32_t minOffTimeoutMs,
+                                uint8_t minQuietBeforeNextActivityMs) {
   if (isInitialized()) {
     SUPLA_LOG_ERROR("InterruptAcToDcIo already initialized - can't add GPIO");
     return;
@@ -61,6 +70,7 @@ void InterruptAcToDcIo::addGpio(int gpio,
   }
 
   gpioMinOffTimeout[gpio] = minOffTimeoutMs;
+  gpioMinQuietBeforeNextActivityMs[gpio] = minQuietBeforeNextActivityMs;
   if (minOffTimeoutMs > initCounter) {
     initCounter = minOffTimeoutMs;
   }
@@ -127,6 +137,13 @@ bool InterruptAcToDcIo::isReady() const {
   return initialized && initCounter == 0;
 }
 
+uint8_t InterruptAcToDcIo::getMaxInterruptBurst(uint32_t elapsedMs) const {
+  uint32_t maxBurst = INTERRUPT_AC_TO_DC_IO_MAX_BURST_BASE +
+      (elapsedMs + INTERRUPT_AC_TO_DC_IO_MAX_BURST_PER_MS_DIVISOR - 1) /
+          INTERRUPT_AC_TO_DC_IO_MAX_BURST_PER_MS_DIVISOR;
+  return maxBurst > 255 ? 255 : static_cast<uint8_t>(maxBurst);
+}
+
 int InterruptAcToDcIo::customDigitalRead(int channelNumber, uint8_t pin) {
   if (!isInitialized()) {
     SUPLA_LOG_ERROR("InterruptAcToDcIo: not initialized");
@@ -140,6 +157,15 @@ int InterruptAcToDcIo::customDigitalRead(int channelNumber, uint8_t pin) {
 
 void InterruptAcToDcIo::onFastTimer() {
   uint32_t now = millis();
+  uint32_t elapsedMs = 1;
+  if (lastFastTimerTimestampMs != 0) {
+    elapsedMs = now - lastFastTimerTimestampMs;
+    if (elapsedMs == 0) {
+      elapsedMs = 1;
+    }
+  }
+  lastFastTimerTimestampMs = now;
+  uint8_t maxInterruptBurst = getMaxInterruptBurst(elapsedMs);
 
   if (initCounter > 0) {
     initCounter--;
@@ -149,16 +175,37 @@ void InterruptAcToDcIo::onFastTimer() {
     if (gpioState[i] == 255) {
       continue;
     }
-    if (gpioInterrupts[i] == 1) {
-      gpioInterrupts[i] = 0;
-      if (gpioState[i] == 0) {
-        gpioState[i] = 2;
-      } else if (gpioState[i] == 2) {
-        // for "AC" case we update to ON after second interrupt
-        SUPLA_LOG_DEBUG(" *** GPIO %d is ON (AC) ***", i);
-        gpioState[i] = 1;
+    portENTER_CRITICAL(&gpioInterruptCountsMux);
+    uint8_t interruptCount = gpioInterruptCounts[i];
+    if (interruptCount > 0) {
+      gpioInterruptCounts[i] = 0;
+    }
+    portEXIT_CRITICAL(&gpioInterruptCountsMux);
+
+    if (interruptCount > 0) {
+      // A valid activity packet starts after a quiet period. Fast edges inside
+      // one packet are ignored, but they extend the quiet-period measurement.
+      bool tooManyInterrupts = interruptCount > maxInterruptBurst;
+      bool acceptActivity = false;
+      if (!tooManyInterrupts &&
+          (gpioRawActivitySeen[i] == 0 ||
+           now - gpioLastRawTimestampMs[i] >
+               gpioMinQuietBeforeNextActivityMs[i])) {
+        acceptActivity = true;
       }
-      gpioLastTimestampMs[i] = now;
+      gpioRawActivitySeen[i] = 1;
+      gpioLastRawTimestampMs[i] = now;
+
+      if (acceptActivity) {
+        if (gpioState[i] == 0) {
+          gpioState[i] = 2;
+        } else if (gpioState[i] == 2) {
+          // for "AC" case we update to ON after second activity packet
+          SUPLA_LOG_DEBUG(" *** GPIO %d is ON (AC) ***", i);
+          gpioState[i] = 1;
+        }
+        gpioLastTimestampMs[i] = now;
+      }
       continue;
     }
     if (gpioLastTimestampMs[i] != 0 &&

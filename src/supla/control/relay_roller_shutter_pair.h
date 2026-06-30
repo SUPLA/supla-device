@@ -64,6 +64,7 @@ class ManagedRollerShutter : public RollerShutter {
   void setRuntimeActive(bool active);
   void forceStopAndSwitchOff();
   void forcePublishValue();
+  bool markCalibrationLostAfterRelayMode();
   // Loads roller-specific config only. The shared channel function must already
   // be loaded by the owner before this method is called.
   void loadEngineConfigOnly();

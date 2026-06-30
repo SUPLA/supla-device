@@ -24,6 +24,7 @@
 using ::testing::_;
 using ::testing::AnyNumber;
 using ::testing::DoAll;
+using ::testing::Invoke;
 using ::testing::Return;
 using ::testing::SetArgPointee;
 using ::testing::StrEq;
@@ -771,4 +772,50 @@ TEST_F(RelayRollerShutterPairFixture,
 
   EXPECT_EQ(0, memcmp(channelValue(0), expected, SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(pair.getChannel()->isUpdateReady());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       SwitchingRelayToRollerDoesNotRestoreStoredRollerPosition) {
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  uint8_t restoredRollerState[] = {
+      0x88, 0x13, 0x00, 0x00,  // closing time 5000 ms
+      0x88, 0x13, 0x00, 0x00,  // opening time 5000 ms
+      40                       // current position
+  };
+
+  storage.defaultInitialization(4 + 1 + 4 + 1 + sizeof(restoredRollerState));
+  EXPECT_CALL(storage, readStorage(_, _, 4, _))
+      .Times(2)
+      .WillRepeatedly(Return(0));
+  EXPECT_CALL(storage, readStorage(_, _, 1, _))
+      .Times(2)
+      .WillRepeatedly(Return(0));
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(restoredRollerState), _))
+      .WillOnce(DoAll(Invoke([&restoredRollerState](
+                                 unsigned int,
+                                 unsigned char *data,
+                                 unsigned int,
+                                 bool) {
+                        memcpy(data,
+                               restoredRollerState,
+                               sizeof(restoredRollerState));
+                        return sizeof(restoredRollerState);
+                      })));
+  EXPECT_CALL(storage, scheduleSave(5000, 1000));
+  pair.onLoadState();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+
+  auto value = reinterpret_cast<const TDSC_RollerShutterValue *>(
+      channelValue(0));
+  EXPECT_EQ(UNKNOWN_POSITION, value->position);
+
+  TChannelConfig_RollerShutter channelConfig = {};
+  int size = 0;
+  pair.fillChannelConfig(&channelConfig, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(sizeof(TChannelConfig_RollerShutter), size);
+  EXPECT_EQ(5000, channelConfig.OpeningTimeMS);
+  EXPECT_EQ(5000, channelConfig.ClosingTimeMS);
 }

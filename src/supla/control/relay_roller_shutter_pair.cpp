@@ -180,6 +180,24 @@ void ManagedRollerShutter::forcePublishValue() {
   RollerShutter::iterateAlways();
 }
 
+bool ManagedRollerShutter::markCalibrationLostAfterRelayMode() {
+  bool stateChanged = getCurrentPosition() != UNKNOWN_POSITION ||
+      (isTiltFunctionEnabled() && getCurrentTilt() != UNKNOWN_POSITION) ||
+      isCalibrationInProgress() ||
+      ((openingTimeMs != 0 || closingTimeMs != 0) && !getCalibrate());
+
+  if (!stateChanged) {
+    return false;
+  }
+
+  targetPosition = STOP_POSITION;
+  targetTilt = UNKNOWN_POSITION;
+  newTargetPositionAvailable = false;
+  currentDirection = Directions::STOP_DIR;
+  setCalibrationNeeded();
+  return true;
+}
+
 void ManagedRollerShutter::loadEngineConfigOnly() {
   RollerShutter::loadRollerShutterConfigOnly();
 }
@@ -460,6 +478,9 @@ void RelayRollerShutterPair::applyRuntimeMode() {
 
 void RelayRollerShutterPair::switchToRelayMode() {
   rollerShutter.forceStopAndSwitchOff();
+  if (rollerShutter.markCalibrationLostAfterRelayMode()) {
+    Supla::Storage::ScheduleSave(5000, 1000);
+  }
   relay0.forceOff();
   relay1.forceOff();
   rollerModeActive = false;
@@ -738,6 +759,10 @@ void RelayRollerShutterPair::onLoadState() {
   rollerShutter.onLoadState();
   relay0.setStorageMode(false);
   relay1.setStorageMode(false);
+  if (!isPrimaryRollerFunction() &&
+      rollerShutter.markCalibrationLostAfterRelayMode()) {
+    Supla::Storage::ScheduleSave(5000, 1000);
+  }
   applyRuntimeMode();
 }
 

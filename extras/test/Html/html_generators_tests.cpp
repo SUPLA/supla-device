@@ -39,6 +39,7 @@
 #include <supla/network/html/button_refresh.h>
 #include <supla/network/html/button_type_parameters.h>
 #include <supla/network/html/channel_correction.h>
+#include <supla/network/html/channel_function_parameters.h>
 #include <supla/network/html/container_parameters.h>
 #include <supla/network/html/custom_checkbox_parameter.h>
 #include <supla/network/html/custom_parameter.h>
@@ -74,6 +75,7 @@
 #include <supla/network/html/volume_parameters.h>
 #include <supla/network/network.h>
 #include <supla/network/web_sender.h>
+#include <supla/control/relay_roller_shutter_pair.h>
 #include <supla/sensor/binary_base.h>
 #include <supla/sensor/container.h>
 #include <supla/sensor/electricity_meter.h>
@@ -1316,6 +1318,245 @@ TEST_F(HtmlCaptureTest, RollerShutterParametersRendersBasicFields) {
   EXPECT_THAT(sendHtml, HasSubstr("Full closing time (sec.)"));
   EXPECT_THAT(sendHtml, HasSubstr("value=\"12.3\""));
   EXPECT_THAT(sendHtml, HasSubstr("value=\"45.6\""));
+}
+
+TEST_F(HtmlCaptureTest, RollerShutterParametersCanHideChannelFunctionField) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::RollerShutter rs(-1, -1);
+  rs.getChannel()->setChannelNumber(7);
+  rs.getChannel()->setDefaultFunction(
+      SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::RollerShutterParameters param(&rs);
+  param.setShowChannelFunction(false);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("Roller shutter #7"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("name=\"7_fnc\"")));
+  EXPECT_THAT(sendHtml, HasSubstr("Full opening time (sec.)"));
+}
+
+TEST_F(HtmlCaptureTest, RollerShutterParametersAcceptsDefaultTimeMargin) {
+  NiceMock<ConfigMock> cfg;
+
+  Supla::Control::RollerShutter rs(-1, -1);
+  rs.getChannel()->setChannelNumber(7);
+  rs.setRsConfigTimeMarginEnabled(true);
+  rs.setRsConfigTimeMarginValue(5);
+
+  Supla::Html::RollerShutterParameters param(&rs);
+
+  EXPECT_TRUE(param.handleResponse("7_rs_margin", "-1"));
+  EXPECT_EQ(rs.getTimeMargin(), -1);
+}
+
+TEST_F(HtmlCaptureTest,
+       RollerShutterParametersCanUseDynamicFunctionVisibility) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::RollerShutter rs(-1, -1);
+  rs.getChannel()->setChannelNumber(7);
+  rs.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::RollerShutterParameters param(&rs);
+  param.setShowChannelFunction(false);
+  param.setRenderContainer(false);
+  param.setDynamicVisibilityFromChannelFunction(true);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("Light switch #7")));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"rs_params_7\""));
+  EXPECT_THAT(sendHtml, HasSubstr("document.getElementById('7_fnc')"));
+  EXPECT_THAT(sendHtml, HasSubstr("addEventListener('change',u)"));
+  EXPECT_THAT(sendHtml, HasSubstr("Full opening time (sec.)"));
+}
+
+TEST_F(HtmlCaptureTest, ChannelFunctionParametersRenderRelayRollerPairFields) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1, -1);
+
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::ChannelFunctionParameters param(&pair);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"0_fnc\""));
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"1_fnc\""));
+  EXPECT_THAT(sendHtml, HasSubstr("Channel #0 default function"));
+  EXPECT_THAT(sendHtml, HasSubstr("Channel #1 default function"));
+  EXPECT_THAT(sendHtml, HasSubstr(">Light switch</option>"));
+  EXPECT_THAT(sendHtml, HasSubstr(">Roller shutter</option>"));
+  EXPECT_THAT(sendHtml, HasSubstr(">Facade blind</option>"));
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest,
+       ChannelFunctionParametersCanRenderPairChannelsSeparately) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1, -1);
+
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::ChannelFunctionParameters primaryParam(
+      &pair,
+      nullptr,
+      nullptr,
+      Supla::Html::ChannelFunctionParameters::ChannelScope::Primary);
+  primaryParam.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"0_fnc\""));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("name=\"1_fnc\"")));
+  EXPECT_THAT(sendHtml, HasSubstr("Channel #0 default function"));
+
+  sendHtml.clear();
+  Supla::Html::ChannelFunctionParameters secondaryParam(
+      &pair,
+      nullptr,
+      nullptr,
+      Supla::Html::ChannelFunctionParameters::ChannelScope::Secondary);
+  secondaryParam.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("name=\"0_fnc\"")));
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"1_fnc\""));
+  EXPECT_THAT(sendHtml, HasSubstr("Channel #1 default function"));
+  EXPECT_THAT(sendHtml, HasSubstr(">Light switch</option>"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr(">Roller shutter</option>")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr(">Facade blind</option>")));
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest,
+       ChannelFunctionParametersSetRelayRollerPairToRollerAndLight) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1, -1);
+  Supla::Html::ChannelFunctionParameters param(&pair);
+
+  EXPECT_CALL(cfg,
+              setInt32(StrEq("0_fnc"),
+                       SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setInt32(StrEq("1_fnc"), SUPLA_CHANNELFNC_LIGHTSWITCH))
+      .WillOnce(Return(true));
+
+  char functionValue[12] = {};
+  snprintf(functionValue,
+           sizeof(functionValue),
+           "%d",
+           SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  EXPECT_TRUE(param.handleResponse("0_fnc", functionValue));
+
+  EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  EXPECT_EQ(pair.getSecondaryChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_TRUE(pair.isInRollerShutterMode());
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest, ChannelFunctionParametersSetRelayRollerPairSecondary) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1, -1);
+  Supla::Html::ChannelFunctionParameters param(&pair);
+
+  EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_LIGHTSWITCH))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setInt32(StrEq("1_fnc"), SUPLA_CHANNELFNC_POWERSWITCH))
+      .WillOnce(Return(true));
+
+  char functionValue[12] = {};
+  snprintf(functionValue,
+           sizeof(functionValue),
+           "%d",
+           SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_TRUE(param.handleResponse("1_fnc", functionValue));
+
+  EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_EQ(pair.getSecondaryChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_TRUE(pair.isInRelayMode());
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest,
+       ChannelFunctionParametersRejectUnsupportedPairFunction) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1,
+                                              -1,
+                                              true,
+                                              true,
+                                              SUPLA_BIT_FUNC_LIGHTSWITCH);
+  Supla::Html::ChannelFunctionParameters param(&pair);
+
+  EXPECT_CALL(cfg, setInt32(_, _)).Times(0);
+
+  char functionValue[12] = {};
+  snprintf(functionValue,
+           sizeof(functionValue),
+           "%d",
+           SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_TRUE(param.handleResponse("0_fnc", functionValue));
+
+  EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_EQ(pair.getSecondaryChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest, ChannelFunctionParametersSetSimpleRelayFunction) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  Supla::Control::Relay relay(-1);
+  Supla::Html::ChannelFunctionParameters param(&relay);
+
+  EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_LIGHTSWITCH))
+      .WillOnce(Return(true));
+
+  char functionValue[12] = {};
+  snprintf(functionValue,
+           sizeof(functionValue),
+           "%d",
+           SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_TRUE(param.handleResponse("0_fnc", functionValue));
+
+  EXPECT_EQ(relay.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+
+  Supla::Channel::resetToDefaults();
 }
 
 TEST_F(HtmlCaptureTest, HvacParametersRendersBasicThermostatFields) {

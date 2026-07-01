@@ -144,6 +144,16 @@ TEST_F(RelayRollerShutterPairFixture, DefaultsToTwoLightSwitches) {
 }
 
 TEST_F(RelayRollerShutterPairFixture,
+       ExposesManagedRollerShutterForConfigurationUi) {
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  const Supla::Control::RelayRollerShutterPair *constPair = &pair;
+
+  ASSERT_NE(pair.getRollerShutter(), nullptr);
+  EXPECT_EQ(pair.getRollerShutter()->getChannel(), pair.getChannel());
+  EXPECT_EQ(constPair->getRollerShutter()->getChannel(), pair.getChannel());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
        BoardCodeCanOverrideDefaultFunctionsToRollerShutterAndLight) {
   Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
 

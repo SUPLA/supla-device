@@ -38,9 +38,17 @@ class RollerShutterParameters : public HtmlElement {
   bool handleResponse(const char* key, const char* value) override;
 
   void setRsPtr(Supla::Control::RollerShutter *rs);
+  void setShowChannelFunction(bool show);
+  void setRenderContainer(bool render);
+  void setShowOnlyForRollerFunction(bool showOnly);
+  void setDynamicVisibilityFromChannelFunction(bool enabled);
 
  protected:
   Supla::Control::RollerShutter *rs = nullptr;
+  bool showChannelFunction = true;
+  bool renderContainer = true;
+  bool showOnlyForRollerFunction = false;
+  bool dynamicVisibilityFromChannelFunction = false;
 };
 
 };  // namespace Html

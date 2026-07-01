@@ -7,7 +7,7 @@
  of the License, or (at your option) any later version.
 */
 
-#include "relay_roller_shutter_pair.h"
+#include <supla/control/relay_roller_shutter_pair.h>
 
 #include <SuplaDevice.h>
 #include <supla/auto_lock.h>
@@ -338,6 +338,14 @@ RelayRollerShutterPair::~RelayRollerShutterPair() {
     delete currentElement;
     currentElement = nextElement;
   }
+}
+
+RollerShutter *RelayRollerShutterPair::getRollerShutter() {
+  return &rollerShutter;
+}
+
+const RollerShutter *RelayRollerShutterPair::getRollerShutter() const {
+  return &rollerShutter;
 }
 
 void RelayRollerShutterPair::attach(Button *primaryButton,

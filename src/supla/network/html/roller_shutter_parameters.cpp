@@ -17,13 +17,14 @@
 */
 
 #ifndef ARDUINO_ARCH_AVR
-#include "roller_shutter_parameters.h"
+#include <supla/network/html/roller_shutter_parameters.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <supla/channels/channel.h>
 #include <supla/control/roller_shutter.h>
 #include <supla/log_wrapper.h>
+#include <supla/network/html/channel_function_parameters.h>
 #include <supla/network/web_sender.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
@@ -32,6 +33,66 @@
 #include "supla/storage/config_tags.h"
 
 using Supla::Html::RollerShutterParameters;
+
+namespace {
+
+bool isRollerShutterFunction(uint32_t function) {
+  switch (function) {
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW:
+    case SUPLA_CHANNELFNC_TERRACE_AWNING:
+    case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR:
+    case SUPLA_CHANNELFNC_CURTAIN:
+    case SUPLA_CHANNELFNC_PROJECTOR_SCREEN:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND:
+    case SUPLA_CHANNELFNC_VERTICAL_BLIND:
+      return true;
+  }
+  return false;
+}
+
+void sendDynamicVisibilityScript(Supla::WebSender *sender,
+                                 const char *containerId,
+                                 const char *functionSelectId) {
+  if (sender == nullptr || containerId == nullptr ||
+      functionSelectId == nullptr) {
+    return;
+  }
+
+  char script[560] = {};
+  snprintf(script,
+           sizeof(script),
+           "<script>"
+           "(function(){"
+           "function u(){"
+           "var s=document.getElementById('%s'),"
+           "b=document.getElementById('%s');"
+           "if(!s||!b)return;"
+           "var v=s.value;"
+           "b.style.display=("
+           "v=='%d'||v=='%d'||v=='%d'||v=='%d'||v=='%d'||v=='%d'||"
+           "v=='%d'||v=='%d')?'block':'none';"
+           "}"
+           "var s=document.getElementById('%s');"
+           "if(s){s.addEventListener('change',u);}"
+           "u();"
+           "})();"
+           "</script>",
+           functionSelectId,
+           containerId,
+           SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER,
+           SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW,
+           SUPLA_CHANNELFNC_TERRACE_AWNING,
+           SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR,
+           SUPLA_CHANNELFNC_CURTAIN,
+           SUPLA_CHANNELFNC_PROJECTOR_SCREEN,
+           SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND,
+           SUPLA_CHANNELFNC_VERTICAL_BLIND,
+           functionSelectId);
+  sender->send(script);
+}
+
+}  // namespace
 
 RollerShutterParameters::RollerShutterParameters(
     Supla::Control::RollerShutter* rs)
@@ -43,6 +104,23 @@ RollerShutterParameters::~RollerShutterParameters() {
 
 void RollerShutterParameters::setRsPtr(Supla::Control::RollerShutter* rs) {
   this->rs = rs;
+}
+
+void RollerShutterParameters::setShowChannelFunction(bool show) {
+  showChannelFunction = show;
+}
+
+void RollerShutterParameters::setRenderContainer(bool render) {
+  renderContainer = render;
+}
+
+void RollerShutterParameters::setShowOnlyForRollerFunction(bool showOnly) {
+  showOnlyForRollerFunction = showOnly;
+}
+
+void RollerShutterParameters::setDynamicVisibilityFromChannelFunction(
+    bool enabled) {
+  dynamicVisibilityFromChannelFunction = enabled;
 }
 
 void RollerShutterParameters::send(Supla::WebSender* sender) {
@@ -75,69 +153,44 @@ void RollerShutterParameters::send(Supla::WebSender* sender) {
 
   char key[16] = {};
   int32_t channelFunc = rs->getChannel()->getDefaultFunction();
+  if (showOnlyForRollerFunction && !dynamicVisibilityFromChannelFunction &&
+      !isRollerShutterFunction(channelFunc)) {
+    return;
+  }
 
-  char tmp[100] = {};
-  snprintf(tmp,
-           sizeof(tmp),
-           "%s #%d",
-           Supla::getRelayChannelName(channelFunc),
-           rs->getChannelNumber());
+  if (renderContainer) {
+    char tmp[100] = {};
+    snprintf(tmp,
+             sizeof(tmp),
+             "%s #%d",
+             Supla::getRelayChannelName(channelFunc),
+             rs->getChannelNumber());
 
-  sender->send("</div><div class=\"box\">");
-  sender->tag("h3").body(tmp);
+    sender->send("</div><div class=\"box\">");
+    sender->tag("h3").body(tmp);
+  }
 
-  rs->generateKey(key, Supla::ConfigTag::ChannelFunctionTag);
-  emitSelectField(key, "Channel function", [&]() {
-    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER)) {
-      sender->selectOption(
-          SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER,
-          Supla::getRelayChannelName(
-              SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER),
-          channelFunc == SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
-    }
-    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW)) {
-      sender->selectOption(
-          SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW,
-          Supla::getRelayChannelName(SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW),
-          channelFunc == SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW);
-    }
-    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_TERRACE_AWNING)) {
-      sender->selectOption(
-          SUPLA_CHANNELFNC_TERRACE_AWNING,
-          Supla::getRelayChannelName(SUPLA_CHANNELFNC_TERRACE_AWNING),
-          channelFunc == SUPLA_CHANNELFNC_TERRACE_AWNING);
-    }
-    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR)) {
-      sender->selectOption(
-          SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR,
-          Supla::getRelayChannelName(SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR),
-          channelFunc == SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR);
-    }
-    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CURTAIN)) {
-      sender->selectOption(SUPLA_CHANNELFNC_CURTAIN,
-                           Supla::getRelayChannelName(SUPLA_CHANNELFNC_CURTAIN),
-                           channelFunc == SUPLA_CHANNELFNC_CURTAIN);
-    }
-    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_PROJECTOR_SCREEN)) {
-      sender->selectOption(
-          SUPLA_CHANNELFNC_PROJECTOR_SCREEN,
-          Supla::getRelayChannelName(SUPLA_CHANNELFNC_PROJECTOR_SCREEN),
-          channelFunc == SUPLA_CHANNELFNC_PROJECTOR_SCREEN);
-    }
-    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND)) {
-      sender->selectOption(
-          SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND,
-          Supla::getRelayChannelName(
-              SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND),
-          channelFunc == SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
-    }
-    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_VERTICAL_BLIND)) {
-      sender->selectOption(
-          SUPLA_CHANNELFNC_VERTICAL_BLIND,
-          Supla::getRelayChannelName(SUPLA_CHANNELFNC_VERTICAL_BLIND),
-          channelFunc == SUPLA_CHANNELFNC_VERTICAL_BLIND);
-    }
-  });
+  if (showChannelFunction) {
+    rs->generateKey(key, Supla::ConfigTag::ChannelFunctionTag);
+    Supla::Html::ChannelFunctionParameters::renderSelectField(
+        sender, rs->getChannel(), key, "Channel function");
+  }
+
+  char dynamicContainerId[24] = {};
+  char dynamicFunctionKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  if (dynamicVisibilityFromChannelFunction) {
+    rs->generateKey(dynamicFunctionKey, Supla::ConfigTag::ChannelFunctionTag);
+    snprintf(dynamicContainerId,
+             sizeof(dynamicContainerId),
+             "rs_params_%d",
+             rs->getChannelNumber());
+    char container[80] = {};
+    snprintf(container,
+             sizeof(container),
+             "<div id=\"%s\">",
+             dynamicContainerId);
+    sender->send(container);
+  }
 
   if (rs->getMotorUpsideDown() != 0) {
     rs->generateKey(key, Supla::ConfigTag::RollerShutterMotorUpsideDownTag);
@@ -231,6 +284,11 @@ void RollerShutterParameters::send(Supla::WebSender* sender) {
           .finish();
     });
   }
+
+  if (dynamicVisibilityFromChannelFunction) {
+    sender->send("</div>");
+    sendDynamicVisibilityScript(sender, dynamicContainerId, dynamicFunctionKey);
+  }
 }
 
 bool RollerShutterParameters::handleResponse(const char* key,
@@ -239,12 +297,17 @@ bool RollerShutterParameters::handleResponse(const char* key,
   if (rs == nullptr || rs->getChannel() == nullptr || cfg == nullptr) {
     return false;
   }
+  if (showOnlyForRollerFunction &&
+      !dynamicVisibilityFromChannelFunction &&
+      !isRollerShutterFunction(rs->getChannel()->getDefaultFunction())) {
+    return false;
+  }
 
   char keyMatch[16] = {};
   rs->generateKey(keyMatch, Supla::ConfigTag::ChannelFunctionTag);
 
   // channel function
-  if (strcmp(key, keyMatch) == 0) {
+  if (showChannelFunction && strcmp(key, keyMatch) == 0) {
     int32_t channelFunc = stringToUInt(value);
     if (rs->isFunctionSupported(channelFunc)) {
       rs->setAndSaveFunction(channelFunc);
@@ -272,7 +335,7 @@ bool RollerShutterParameters::handleResponse(const char* key,
 
   rs->generateKey(keyMatch, Supla::ConfigTag::RollerShutterTimeMarginTag);
   if (strcmp(key, keyMatch) == 0) {
-    int32_t timeMargin = stringToUInt(value);
+    int32_t timeMargin = stringToInt(value);
     rs->setRsConfigTimeMarginValue(timeMargin);
     return true;
   }

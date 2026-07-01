@@ -183,6 +183,7 @@ void InterruptAcToDcIo::onFastTimer() {
     portEXIT_CRITICAL(&gpioInterruptCountsMux);
 
     if (interruptCount > 0) {
+//      SUPLA_LOG_DEBUG("GPIO %d INTR COUNT %d", i, interruptCount);
       // A valid activity packet starts after a quiet period. Fast edges inside
       // one packet are ignored, but they extend the quiet-period measurement.
       bool tooManyInterrupts = interruptCount > maxInterruptBurst;

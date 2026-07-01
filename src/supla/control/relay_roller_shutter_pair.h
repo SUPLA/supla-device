@@ -136,6 +136,8 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
   bool isInRollerShutterMode() const;
   bool setDefaultFunctions(uint32_t primaryFunction,
                            uint32_t secondaryFunction);
+  RollerShutter *getRollerShutter();
+  const RollerShutter *getRollerShutter() const;
 
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *value) override;
   void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override;

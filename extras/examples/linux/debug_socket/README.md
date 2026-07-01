@@ -39,6 +39,26 @@ Results are returned as JSON lines on the same socket. CALCFG commands are
 injected locally with `SuplaDevice.handleCalcfgFromServer()` and do not send a
 reply to the SUPLA server.
 
+## Stream SUPLA Logs Over TCP
+
+The same insecure debug build can stream live SUPLA logs to a TCP client. This
+is live-only: a client receives logs emitted after it connects, without backlog.
+
+```sh
+extras/examples/linux/build/supla-device-linux \
+  --config extras/examples/linux/supla-device.yaml \
+  --debug-log-port 7778 \
+  --debug
+```
+
+Connect from another shell:
+
+```sh
+nc 127.0.0.1 7778
+```
+
+Use `--debug-log-port 0` or omit the option to keep the TCP log stream disabled.
+
 ## Suplet CALCFG Examples
 
 Save a downloaded virtual relay definition:

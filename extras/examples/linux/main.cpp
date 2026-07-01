@@ -21,6 +21,7 @@
 #include <supla/control/rgb_leds.h>
 #include <supla/control/rgbw_leds.h>
 #include <supla/control/virtual_relay.h>
+#include <supla/debug/debug_log_tcp_server.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/version.h>
@@ -107,6 +108,9 @@ int main(int argc, char *argv[]) {
         "debug-socket",
         "Read insecure debug command JSON lines from Unix socket path",
         cxxopts::value<std::string>()->default_value(""))(
+        "debug-log-port",
+        "Stream SUPLA logs over insecure TCP port, 0 disables",
+        cxxopts::value<uint16_t>()->default_value("0"))(
         "d,daemon", "Run in daemon mode (run in background and log to syslog)")(
         "s,service", "Run as a service (log to syslog but don't fork)")(
         "h,help", "Show this help")("v,version", "Show version");
@@ -207,11 +211,15 @@ int main(int argc, char *argv[]) {
       SUPLA_LOG_ERROR("Debug socket init failed. Exit");
       exit(1);
     }
+    Supla::Debug::DebugLogTcpServer debugLogServer(
+        result["debug-log-port"].as<uint16_t>());
+    debugLogServer.begin();
 
     Supla::LinuxMqttClient::start();
 
     while (st_app_terminate == 0) {
       iterateLinuxDebugSocket();
+      debugLogServer.iterate();
       SuplaDevice.iterate();
       delay(10);
     }

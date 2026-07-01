@@ -28,6 +28,7 @@
 #include <supla/control/roller_shutter.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/device/status_led.h>
+#include <supla/debug/debug_log_tcp_server.h>
 #include <supla/time.h>
 
 // Supla extras/porting/esp-idf files - specific to ESP-IDF and ESP8266 RTOS
@@ -104,12 +105,20 @@ void cpp_main(void* param) {
   SUPLA_LOG_DEBUG("Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
   SUPLA_LOG_DEBUG("port tick period %d", portTICK_PERIOD_MS);
 
+#if SUPLA_INSECURE_DEBUG_INTERFACE
+  Supla::Debug::DebugLogTcpServer debugLogServer(7778);
+  debugLogServer.begin();
+#endif
+
   unsigned int lastTime = 0;
   unsigned int lastTimeHeap = 0;
   int lastFreeHeap = 0;
 
   while (true) {
     SuplaDevice.iterate();
+#if SUPLA_INSECURE_DEBUG_INTERFACE
+    debugLogServer.iterate();
+#endif
     if (millis() - lastTime > 10) {
       lastTime = millis();
       delay(1);

@@ -24,6 +24,7 @@
 #include <syslog.h>
 #include <time.h>
 
+#include <supla/debug/debug_log.h>
 #include <supla-common/log.h>
 
 extern int runAsDaemon;
@@ -106,4 +107,6 @@ void supla_vlog(int __pri, const char *message) {
     printf("\033[0m\n");
     fflush(stdout);
   }
+
+  supla_debug_log_write(__pri, message);
 }

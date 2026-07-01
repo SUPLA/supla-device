@@ -90,6 +90,7 @@ file(GLOB TEST_SRC CONFIGURE_DEPENDS
   SwUpdateTests/*.cpp
   ModbusTests/*.cpp
   SupletTests/*.cpp
+  DebugTests/*.cpp
   )
 
 file(GLOB SD4LINUX_TEST_SRC CONFIGURE_DEPENDS
@@ -188,6 +189,15 @@ supla_apply_warnings(supladevicetests)
 supla_apply_warnings(sd4linuxtests)
 supla_apply_warnings(supladevicelib)
 
-target_compile_definitions(supladevicetests PRIVATE SUPLA_TEST)
-target_compile_definitions(sd4linuxtests PRIVATE SUPLA_TEST)
-target_compile_definitions(supladevicelib PRIVATE SUPLA_TEST)
+target_compile_definitions(supladevicetests PRIVATE
+  SUPLA_TEST
+  SUPLA_INSECURE_DEBUG_INTERFACE=1
+)
+target_compile_definitions(sd4linuxtests PRIVATE
+  SUPLA_TEST
+  SUPLA_INSECURE_DEBUG_INTERFACE=1
+)
+target_compile_definitions(supladevicelib PRIVATE
+  SUPLA_TEST
+  SUPLA_INSECURE_DEBUG_INTERFACE=1
+)

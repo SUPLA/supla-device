@@ -63,11 +63,12 @@ void supla_logf(int __pri, const __FlashStringHelper *__fmt, ...);
 #ifdef SUPLA_DEVICE_ESP32
 #include <esp_log.h>
 extern const char *SUPLA_TAG;
+void supla_device_logf(int __pri, const char *__fmt, ...);
 #ifndef SUPLA_LOG_VERBOSE
 #define SUPLA_LOG_VERBOSE(arg_format, ...) \
             do { \
               if (SUPLA_LOG_IS_ENABLED(LOG_VERBOSE)) { \
-                ESP_LOGV(SUPLA_TAG, arg_format, ## __VA_ARGS__); \
+                supla_device_logf(LOG_VERBOSE, arg_format, ## __VA_ARGS__); \
               } \
             } while (0)
 #endif
@@ -76,7 +77,7 @@ extern const char *SUPLA_TAG;
 #define SUPLA_LOG_DEBUG(arg_format, ...) \
             do { \
               if (SUPLA_LOG_IS_ENABLED(LOG_DEBUG)) { \
-                ESP_LOGD(SUPLA_TAG, arg_format, ## __VA_ARGS__); \
+                supla_device_logf(LOG_DEBUG, arg_format, ## __VA_ARGS__); \
               } \
             } while (0)
 #endif
@@ -85,7 +86,7 @@ extern const char *SUPLA_TAG;
 #define SUPLA_LOG_INFO(arg_format, ...) \
             do { \
               if (SUPLA_LOG_IS_ENABLED(LOG_INFO)) { \
-                ESP_LOGI(SUPLA_TAG, arg_format, ## __VA_ARGS__); \
+                supla_device_logf(LOG_INFO, arg_format, ## __VA_ARGS__); \
               } \
             } while (0)
 #endif
@@ -94,7 +95,7 @@ extern const char *SUPLA_TAG;
 #define SUPLA_LOG_WARNING(arg_format, ...) \
             do { \
               if (SUPLA_LOG_IS_ENABLED(LOG_WARNING)) { \
-                ESP_LOGW(SUPLA_TAG, arg_format, ## __VA_ARGS__); \
+                supla_device_logf(LOG_WARNING, arg_format, ## __VA_ARGS__); \
               } \
             } while (0)
 #endif
@@ -103,7 +104,7 @@ extern const char *SUPLA_TAG;
 #define SUPLA_LOG_ERROR(arg_format, ...) \
             do { \
               if (SUPLA_LOG_IS_ENABLED(LOG_ERR)) { \
-                ESP_LOGE(SUPLA_TAG, arg_format, ## __VA_ARGS__); \
+                supla_device_logf(LOG_ERR, arg_format, ## __VA_ARGS__); \
               } \
             } while (0)
 #endif

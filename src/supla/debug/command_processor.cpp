@@ -25,10 +25,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <supla-common/proto.h>
-#include <supla/sha256.h>
 #include <supla/suplet/config.h>
 
 #if SUPLA_SUPLET_ENABLED
+#include <supla/sha256.h>
 #include <supla/suplet/server_config.h>
 #endif
 
@@ -275,17 +275,6 @@ char *allocString(size_t size) {
   return result;
 }
 
-void calculateSha256(const char *data, uint16_t dataSize, uint8_t *output) {
-  if (output == nullptr) {
-    return;
-  }
-  Supla::Sha256 sha256;
-  if (data != nullptr && dataSize > 0) {
-    sha256.update(reinterpret_cast<const uint8_t *>(data), dataSize);
-  }
-  sha256.digest(output, 32);
-}
-
 }  // namespace
 
 namespace Supla {
@@ -414,6 +403,18 @@ bool CommandProcessor::parseCommand(const char *json, Command *command) {
 void CommandProcessor::processCommand(const Command &command,
                                       ResponseWriter *writer) {
 #if SUPLA_SUPLET_ENABLED
+  auto calculateSha256 = [](const char *data, uint16_t dataSize,
+                            uint8_t *output) {
+    if (output == nullptr) {
+      return;
+    }
+    Supla::Sha256 sha256;
+    if (data != nullptr && dataSize > 0) {
+      sha256.update(reinterpret_cast<const uint8_t *>(data), dataSize);
+    }
+    sha256.digest(output, 32);
+  };
+
   auto sendLocalCalcfg =
       [&](uint32_t commandId, const void *data, uint32_t dataSize,
           const char *op, TDS_DeviceCalCfgResult **output = nullptr) -> int {

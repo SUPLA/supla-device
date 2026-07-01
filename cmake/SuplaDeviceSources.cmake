@@ -58,6 +58,8 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/security_logger.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/debug/command_processor.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/debug/debug_log.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/debug/debug_log_tcp_server.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/modbus/modbus_configurator.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/modbus/modbus_client_handler.cpp

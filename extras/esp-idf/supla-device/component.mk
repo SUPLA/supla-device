@@ -21,6 +21,9 @@ COMPONENT_OBJS := \
   ../../../src/supla/io.o \
   ../../../src/supla/local_action.o \
   ../../../src/supla/log_wrapper.o \
+  ../../../src/supla/debug/command_processor.o \
+  ../../../src/supla/debug/debug_log.o \
+  ../../../src/supla/debug/debug_log_tcp_server.o \
   ../../../src/supla/time.o \
   ../../../src/supla/timer.o \
   ../../../src/supla/tools.o \

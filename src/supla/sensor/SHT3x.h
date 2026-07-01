@@ -57,7 +57,7 @@ class SHT3x : public ThermHygroMeter {
         SHT3XD_REPEATABILITY_LOW, SHT3XD_MODE_CLOCK_STRETCH, 50);
 
     if (result.error != SHT3XD_NO_ERROR) {
-	  SUPLA_LOG_ERROR("SHT [ERROR] Code #", result.error);
+	  SUPLA_LOG_ERROR("SHT [ERROR] Code # %d", result.error);
       retryCount++;
       if (retryCount > 3) {
         retryCount = 0;

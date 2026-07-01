@@ -18,6 +18,7 @@
 
 #ifdef ARDUINO
 #include "MAXThermocouple.h"
+#include <supla/log_wrapper.h>
 
 namespace Supla {
 namespace Sensor {
@@ -42,7 +43,7 @@ double MAXThermocouple::getValue() {
 
     if ((value & 0x4) ||
         (value <= 0)) {  // this means there is no probe connected to Max6675
-      Serial.println(F("Max6675 Error"));
+      SUPLA_LOG_ERROR("Max6675 Error");
       return TEMPERATURE_NOT_AVAILABLE;
     }
     value >>= 3;
@@ -51,7 +52,7 @@ double MAXThermocouple::getValue() {
 
   } else {  // MAX31855
     if (value & 0x7) {
-      Serial.println(F("Max31855 Error"));
+      SUPLA_LOG_ERROR("Max31855 Error");
       return TEMPERATURE_NOT_AVAILABLE;
     } else {
       //      uint16_t _internTemp = (value >> 4) & 0xfff;

@@ -28,6 +28,8 @@
 
 #include "therm_hygro_meter.h"
 
+#include <supla/log_wrapper.h>
+
 namespace Supla {
 namespace Sensor {
 class SHT3x : public ThermHygroMeter {
@@ -55,8 +57,7 @@ class SHT3x : public ThermHygroMeter {
         SHT3XD_REPEATABILITY_LOW, SHT3XD_MODE_CLOCK_STRETCH, 50);
 
     if (result.error != SHT3XD_NO_ERROR) {
-      Serial.print(F("SHT [ERROR] Code #"));
-      Serial.println(result.error);
+	  SUPLA_LOG_ERROR("SHT [ERROR] Code #", result.error);
       retryCount++;
       if (retryCount > 3) {
         retryCount = 0;

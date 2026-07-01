@@ -60,23 +60,22 @@ class Si7021 : public ThermHygroMeter {
   void onInit() {
     sensor.begin();
 
-    SUPLA_LOG_INFO("Found model ");
     switch (sensor.getModel()) {
       case SI_Engineering_Samples:
-        SUPLA_LOG_INFO("SI engineering samples");
+        SUPLA_LOG_INFO("Found model: SI engineering samples");
         break;
       case SI_7013:
-        SUPLA_LOG_INFO("Si7013");
+        SUPLA_LOG_INFO("Found model: Si7013");
         break;
       case SI_7020:
-        SUPLA_LOG_INFO("Si7020");
+        SUPLA_LOG_INFO("Found model: Si7020");
         break;
       case SI_7021:
-        SUPLA_LOG_INFO("Si7021");
+        SUPLA_LOG_INFO("Found model: Si7021");
         break;
       case SI_UNKNOWN:
       default:
-        SUPLA_LOG_INFO("Unknown");
+        SUPLA_LOG_INFO("Unknown model");
     }
 
     channel.setNewValue(getTemp(), getHumi());

@@ -90,6 +90,25 @@ TEST_F(RelayRollerShutterPairFixture,
   EXPECT_EQ(pair.getChannelByChannelNumber(101), pair.getSecondaryChannel());
 }
 
+TEST_F(RelayRollerShutterPairFixture, ReportsCurrentMode) {
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(AnyNumber());
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(AnyNumber());
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+
+  EXPECT_TRUE(pair.isInRelayMode());
+  EXPECT_FALSE(pair.isInRollerShutterMode());
+
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+
+  EXPECT_FALSE(pair.isInRelayMode());
+  EXPECT_TRUE(pair.isInRollerShutterMode());
+
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  EXPECT_TRUE(pair.isInRelayMode());
+  EXPECT_FALSE(pair.isInRollerShutterMode());
+}
+
 TEST_F(RelayRollerShutterPairFixture,
        ServerValuesInRelayModeControlSeparateOutputs) {
   Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);

@@ -132,6 +132,9 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
   Channel *getSecondaryChannel() override;
   const Channel *getSecondaryChannel() const override;
 
+  bool isInRelayMode() const;
+  bool isInRollerShutterMode() const;
+
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *value) override;
   void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override;
   bool getRemainingCountdownTimerSec(uint32_t *remainingSec) const override;

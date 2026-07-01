@@ -432,6 +432,14 @@ const Channel *RelayRollerShutterPair::getSecondaryChannel() const {
   return &secondaryChannel;
 }
 
+bool RelayRollerShutterPair::isInRelayMode() const {
+  return !isPrimaryRollerFunction();
+}
+
+bool RelayRollerShutterPair::isInRollerShutterMode() const {
+  return isPrimaryRollerFunction();
+}
+
 bool RelayRollerShutterPair::isRollerFunction(uint32_t function) const {
   switch (function) {
     case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER:

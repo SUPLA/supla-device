@@ -20,8 +20,8 @@
 
 #if SUPLA_INSECURE_DEBUG_INTERFACE
 
-#include <cstdarg>
 #include <cstdio>
+#include <cstdarg>
 #include <supla-common/log.h>
 
 namespace {

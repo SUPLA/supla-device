@@ -16,6 +16,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <supla/debug/debug_log.h>
+
 const char *SUPLA_TAG = "SUPLA";
 
 #ifdef SUPLA_DEVICE_ESP32
@@ -24,7 +26,6 @@ const char *SUPLA_TAG = "SUPLA";
 
 #include <esp_log.h>
 #include <supla-common/log.h>
-#include <supla/debug/debug_log.h>
 
 void supla_device_logf(int __pri, const char *__fmt, ...) {
   if (__fmt == NULL || !supla_log_is_enabled(__pri)) {

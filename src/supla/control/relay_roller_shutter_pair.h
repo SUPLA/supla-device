@@ -134,6 +134,9 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
 
   bool isInRelayMode() const;
   bool isInRollerShutterMode() const;
+  RelayRollerShutterPair &setDefaultStateOn();
+  RelayRollerShutterPair &setDefaultStateOff();
+  RelayRollerShutterPair &setDefaultStateRestore();
   bool setDefaultFunctions(uint32_t primaryFunction,
                            uint32_t secondaryFunction);
   RollerShutter *getRollerShutter();

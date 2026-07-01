@@ -205,6 +205,32 @@ TEST_F(RelayRollerShutterPairFixture, ReportsCurrentMode) {
   EXPECT_FALSE(pair.isInRollerShutterMode());
 }
 
+TEST_F(RelayRollerShutterPairFixture, RestoresManagedRelayStatesOnInit) {
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, false);
+  pair.setDefaultStateRestore();
+
+  storage.defaultInitialization(4 + 1 + 4 + 1 + 9);
+  EXPECT_CALL(storage, readStorage(_, _, 4, _))
+      .Times(2)
+      .WillRepeatedly(Return(0));
+  EXPECT_CALL(storage, readStorage(_, _, 1, _))
+      .Times(2)
+      .WillOnce(DoAll(SetArgPointee<1>(RELAY_FLAGS_ON), Return(1)))
+      .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)));
+  EXPECT_CALL(storage, readStorage(_, _, 9, _)).WillOnce(Return(0));
+
+  pair.onLoadState();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 1)).Times(2);
+  EXPECT_CALL(ioMock, pinMode(gpio0, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(2);
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  pair.onInit();
+
+  EXPECT_TRUE(pair.getChannel()->getValueBool());
+  EXPECT_FALSE(pair.getSecondaryChannel()->getValueBool());
+}
+
 TEST_F(RelayRollerShutterPairFixture,
        ServerValuesInRelayModeControlSeparateOutputs) {
   Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);

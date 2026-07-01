@@ -448,6 +448,24 @@ bool RelayRollerShutterPair::isInRollerShutterMode() const {
   return isPrimaryRollerFunction();
 }
 
+RelayRollerShutterPair &RelayRollerShutterPair::setDefaultStateOn() {
+  relay0.setDefaultStateOn();
+  relay1.setDefaultStateOn();
+  return *this;
+}
+
+RelayRollerShutterPair &RelayRollerShutterPair::setDefaultStateOff() {
+  relay0.setDefaultStateOff();
+  relay1.setDefaultStateOff();
+  return *this;
+}
+
+RelayRollerShutterPair &RelayRollerShutterPair::setDefaultStateRestore() {
+  relay0.setDefaultStateRestore();
+  relay1.setDefaultStateRestore();
+  return *this;
+}
+
 bool RelayRollerShutterPair::setDefaultFunctions(
     uint32_t primaryFunction,
     uint32_t secondaryFunction) {

@@ -181,6 +181,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9c47968465fda43036496332eb0b2f73" id="r_a9c47968465fda43036496332eb0b2f73"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a9c47968465fda43036496332eb0b2f73">handleResponse</a> (const char *key, const char *value) override</td></tr>
 <tr class="memitem:a6373e48ff4da551e6eb677767f7cf592" id="r_a6373e48ff4da551e6eb677767f7cf592"><td class="memItemLeft"><a id="a6373e48ff4da551e6eb677767f7cf592" name="a6373e48ff4da551e6eb677767f7cf592"></a>
 void&#160;</td><td class="memItemRight"><b>setRsPtr</b> (<a class="el" href="classSupla_1_1Control_1_1RollerShutter.html">Supla::Control::RollerShutter</a> *rs)</td></tr>
+<tr class="memitem:a94db17dcf263143ecdb4a4de6369082d" id="r_a94db17dcf263143ecdb4a4de6369082d"><td class="memItemLeft"><a id="a94db17dcf263143ecdb4a4de6369082d" name="a94db17dcf263143ecdb4a4de6369082d"></a>
+void&#160;</td><td class="memItemRight"><b>setShowChannelFunction</b> (bool show)</td></tr>
+<tr class="memitem:a19d598922e1187bef55372f61a5d2c41" id="r_a19d598922e1187bef55372f61a5d2c41"><td class="memItemLeft"><a id="a19d598922e1187bef55372f61a5d2c41" name="a19d598922e1187bef55372f61a5d2c41"></a>
+void&#160;</td><td class="memItemRight"><b>setRenderContainer</b> (bool render)</td></tr>
+<tr class="memitem:a73dab3e8ace38168df11a2fdf642c9a1" id="r_a73dab3e8ace38168df11a2fdf642c9a1"><td class="memItemLeft"><a id="a73dab3e8ace38168df11a2fdf642c9a1" name="a73dab3e8ace38168df11a2fdf642c9a1"></a>
+void&#160;</td><td class="memItemRight"><b>setShowOnlyForRollerFunction</b> (bool showOnly)</td></tr>
+<tr class="memitem:ae430cb7cffc71fd55bfe8d23b5bea51e" id="r_ae430cb7cffc71fd55bfe8d23b5bea51e"><td class="memItemLeft"><a id="ae430cb7cffc71fd55bfe8d23b5bea51e" name="ae430cb7cffc71fd55bfe8d23b5bea51e"></a>
+void&#160;</td><td class="memItemRight"><b>setDynamicVisibilityFromChannelFunction</b> (bool enabled)</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1HtmlElement"><td colspan="2">Public Member Functions inherited from <a class="el" href="classSupla_1_1HtmlElement.html">Supla::HtmlElement</a></td></tr>
 <tr class="memitem:abc89cd583470d3b569249e5fc85337bb pub_methods_classSupla_1_1HtmlElement" id="r_abc89cd583470d3b569249e5fc85337bb"><td class="memItemLeft">
 HtmlElement *&#160;</td><td class="memItemRight"><b>next</b> ()</td></tr>
@@ -193,6 +201,14 @@ virtual void&#160;</td><td class="memItemRight"><b>onProcessingEnd</b> ()</td></
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a9dd18a509c9a7e8787fbbabbe660759f" id="r_a9dd18a509c9a7e8787fbbabbe660759f"><td class="memItemLeft"><a id="a9dd18a509c9a7e8787fbbabbe660759f" name="a9dd18a509c9a7e8787fbbabbe660759f"></a>
 <a class="el" href="classSupla_1_1Control_1_1RollerShutter.html">Supla::Control::RollerShutter</a> *&#160;</td><td class="memItemRight"><b>rs</b> = nullptr</td></tr>
+<tr class="memitem:ac9f7f78f9fea345a52c2798133ca8416" id="r_ac9f7f78f9fea345a52c2798133ca8416"><td class="memItemLeft"><a id="ac9f7f78f9fea345a52c2798133ca8416" name="ac9f7f78f9fea345a52c2798133ca8416"></a>
+bool&#160;</td><td class="memItemRight"><b>showChannelFunction</b> = true</td></tr>
+<tr class="memitem:ab0a5c77bde26becd5f82a797a5ac2374" id="r_ab0a5c77bde26becd5f82a797a5ac2374"><td class="memItemLeft"><a id="ab0a5c77bde26becd5f82a797a5ac2374" name="ab0a5c77bde26becd5f82a797a5ac2374"></a>
+bool&#160;</td><td class="memItemRight"><b>renderContainer</b> = true</td></tr>
+<tr class="memitem:a2a3fd28d2cf4aca3e0a27fbadb872432" id="r_a2a3fd28d2cf4aca3e0a27fbadb872432"><td class="memItemLeft"><a id="a2a3fd28d2cf4aca3e0a27fbadb872432" name="a2a3fd28d2cf4aca3e0a27fbadb872432"></a>
+bool&#160;</td><td class="memItemRight"><b>showOnlyForRollerFunction</b> = false</td></tr>
+<tr class="memitem:ab667cdf4735d6a108392616e1d43fc4e" id="r_ab667cdf4735d6a108392616e1d43fc4e"><td class="memItemLeft"><a id="ab667cdf4735d6a108392616e1d43fc4e" name="ab667cdf4735d6a108392616e1d43fc4e"></a>
+bool&#160;</td><td class="memItemRight"><b>dynamicVisibilityFromChannelFunction</b> = false</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1HtmlElement"><td colspan="2">Protected Attributes inherited from <a class="el" href="classSupla_1_1HtmlElement.html">Supla::HtmlElement</a></td></tr>
 <tr class="memitem:ac7551ddb937ac9e3ca6059d9eb804952 pro_attribs_classSupla_1_1HtmlElement" id="r_ac7551ddb937ac9e3ca6059d9eb804952"><td class="memItemLeft">
 HtmlElement *&#160;</td><td class="memItemRight"><b>nextPtr</b> = nullptr</td></tr>

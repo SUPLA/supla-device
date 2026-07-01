@@ -197,13 +197,38 @@ void InterruptAcToDcIo::onFastTimer() {
       gpioRawActivitySeen[i] = 1;
       gpioLastRawTimestampMs[i] = now;
 
+      if (tooManyInterrupts) {
+        if (gpioState[i] == 1 || gpioState[i] == 2) {
+          gpioLastTimestampMs[i] = now;
+        }
+        continue;
+      }
+
       if (acceptActivity) {
         if (gpioState[i] == 0) {
           gpioState[i] = 2;
+          gpioAcCandidateFirstTimestampMs[i] = now;
+          gpioAcCandidatePackets[i] = 1;
         } else if (gpioState[i] == 2) {
-          // for "AC" case we update to ON after second activity packet
-          SUPLA_LOG_DEBUG(" *** GPIO %d is ON (AC) ***", i);
-          gpioState[i] = 1;
+          uint32_t candidateSpanMs =
+              now - gpioAcCandidateFirstTimestampMs[i];
+          if (gpioAcCandidatePackets[i] == 0 ||
+              candidateSpanMs > INTERRUPT_AC_TO_DC_IO_AC_ON_WINDOW_MS) {
+            gpioAcCandidateFirstTimestampMs[i] = now;
+            gpioAcCandidatePackets[i] = 1;
+            candidateSpanMs = 0;
+          } else if (gpioAcCandidatePackets[i] < 255) {
+            gpioAcCandidatePackets[i]++;
+          }
+
+          if (gpioAcCandidatePackets[i] >=
+                  INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_PACKETS &&
+              candidateSpanMs >= INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_SPAN_MS) {
+            SUPLA_LOG_DEBUG(" *** GPIO %d is ON (AC) ***", i);
+            gpioState[i] = 1;
+            gpioAcCandidatePackets[i] = 0;
+            gpioAcCandidateFirstTimestampMs[i] = 0;
+          }
         }
         gpioLastTimestampMs[i] = now;
       }
@@ -212,6 +237,8 @@ void InterruptAcToDcIo::onFastTimer() {
     if (gpioLastTimestampMs[i] != 0 &&
         now - gpioLastTimestampMs[i] > gpioMinOffTimeout[i]) {
       gpioLastTimestampMs[i] = 0;
+      gpioAcCandidatePackets[i] = 0;
+      gpioAcCandidateFirstTimestampMs[i] = 0;
       if (gpio_get_level(static_cast<gpio_num_t>(i)) == offStateLevel) {
         gpioState[i] = 0;
         SUPLA_LOG_DEBUG(" *** GPIO %d is OFF ***", i);

@@ -1,3 +1,13 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="$structSupla_1_1NumericInputSpec.html" title=" " alt="" coords="5,5,174,31"/>
+<area shape="rect" id="Node000000" href="$classSupla_1_1Network.html" title=" " alt="" coords="5,80,115,106"/>
+<area shape="rect" id="Node000001" href="$classSupla_1_1LAN.html" title=" " alt="" coords="163,55,250,80"/>
+<area shape="poly" id="edge236_Node000000_Node000001" title=" " alt="" coords="130,78,162,72,162,78,131,83"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Wifi.html" title=" " alt="" coords="166,104,247,130"/>
+<area shape="poly" id="edge239_Node000000_Node000004" title=" " alt="" coords="131,102,166,108,165,113,130,107"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1ESPETH.html" title=" " alt="" coords="309,5,421,31"/>
+<area shape="poly" id="edge237_Node000001_Node000002" title=" " alt="" coords="264,47,320,29,322,34,266,52"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ESPETHSPI.html" title=" " alt="" coords="298,55,432,80"/>
+<area shape="poly" id="edge238_Node000001_Node000003" title=" " alt="" coords="266,65,298,65,298,70,266,70"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1ESPWifi.html" title=" " alt="" coords="312,104,419,130"/>
+<area shape="poly" id="edge240_Node000004_Node000005" title=" " alt="" coords="263,114,311,114,311,120,263,120"/>
 </map>

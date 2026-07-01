@@ -86,7 +86,7 @@
 #include <memory>
 #include <string>
 
-#include "suplet_fifo.h"
+#include "debug_socket.h"
 
 // reguired by linux_log.c
 int logLevel = LOG_INFO;
@@ -104,8 +104,8 @@ int main(int argc, char *argv[]) {
         "c,config",
         "Config file name",
         cxxopts::value<std::string>()->default_value("etc/supla-device.yaml"))(
-        "suplet-fifo",
-        "Read suplet command JSON lines from FIFO path",
+        "debug-socket",
+        "Read insecure debug command JSON lines from Unix socket path",
         cxxopts::value<std::string>()->default_value(""))(
         "d,daemon", "Run in daemon mode (run in background and log to syslog)")(
         "s,service", "Run as a service (log to syslog but don't fork)")(
@@ -203,15 +203,15 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
-    if (!initLinuxSupletFifo(result["suplet-fifo"].as<std::string>())) {
-      SUPLA_LOG_ERROR("Suplet FIFO init failed. Exit");
+    if (!initLinuxDebugSocket(result["debug-socket"].as<std::string>())) {
+      SUPLA_LOG_ERROR("Debug socket init failed. Exit");
       exit(1);
     }
 
     Supla::LinuxMqttClient::start();
 
     while (st_app_terminate == 0) {
-      iterateLinuxSupletFifo();
+      iterateLinuxDebugSocket();
       SuplaDevice.iterate();
       delay(10);
     }

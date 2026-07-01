@@ -205,6 +205,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/general_purpose_channel_base.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/general_purpose_measurement.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/general_purpose_meter.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/general_purpose_text.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/memory_variable_driver.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/virtual_binary.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/ntc10k.cpp

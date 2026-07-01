@@ -47,6 +47,7 @@ enum class ChannelType : uint8_t {
   GENERAL_PURPOSE_METER,
   ACTIONTRIGGER,
   CONTAINER,
+  GENERAL_PURPOSE_TEXT,
 };
 
 uint32_t channelTypeToProtoType(ChannelType type);

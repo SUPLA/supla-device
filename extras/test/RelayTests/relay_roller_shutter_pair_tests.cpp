@@ -90,6 +90,92 @@ TEST_F(RelayRollerShutterPairFixture,
   EXPECT_EQ(pair.getChannelByChannelNumber(101), pair.getSecondaryChannel());
 }
 
+TEST_F(RelayRollerShutterPairFixture,
+       DefaultFunctionListIncludesTiltRollerFunctions) {
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+
+  EXPECT_TRUE(pair.getChannel()->getFuncList() &
+              SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND);
+  EXPECT_TRUE(pair.getChannel()->getFuncList() & SUPLA_BIT_FUNC_VERTICAL_BLIND);
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       DisabledTiltFunctionListExcludesTiltRollerFunctions) {
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, false);
+
+  EXPECT_FALSE(pair.getChannel()->getFuncList() &
+               SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND);
+  EXPECT_FALSE(pair.getChannel()->getFuncList() &
+               SUPLA_BIT_FUNC_VERTICAL_BLIND);
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       CustomRelayFunctionListIsAppliedToPrimaryAndSecondaryChannels) {
+  const _supla_int_t relayFunctions =
+      SUPLA_BIT_FUNC_LIGHTSWITCH | SUPLA_BIT_FUNC_POWERSWITCH |
+      SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER;
+
+  Supla::Control::RelayRollerShutterPair pair(gpio0,
+                                              gpio1,
+                                              true,
+                                              true,
+                                              relayFunctions);
+
+  const _supla_int_t relayOnlyFunctions =
+      SUPLA_BIT_FUNC_LIGHTSWITCH | SUPLA_BIT_FUNC_POWERSWITCH;
+
+  EXPECT_EQ(pair.getSecondaryChannel()->getFuncList(), relayOnlyFunctions);
+  EXPECT_TRUE(pair.getChannel()->getFuncList() & SUPLA_BIT_FUNC_LIGHTSWITCH);
+  EXPECT_TRUE(pair.getChannel()->getFuncList() & SUPLA_BIT_FUNC_POWERSWITCH);
+  EXPECT_TRUE(pair.getChannel()->getFuncList() &
+              SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER);
+  EXPECT_TRUE(pair.getChannel()->getFuncList() &
+              SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND);
+}
+
+TEST_F(RelayRollerShutterPairFixture, DefaultsToTwoLightSwitches) {
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+
+  EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_EQ(pair.getSecondaryChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_TRUE(pair.isInRelayMode());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       BoardCodeCanOverrideDefaultFunctionsToRollerShutterAndLight) {
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+
+  EXPECT_TRUE(pair.setDefaultFunctions(
+      SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER,
+      SUPLA_CHANNELFNC_LIGHTSWITCH));
+
+  EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  EXPECT_EQ(pair.getSecondaryChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_TRUE(pair.isInRollerShutterMode());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       BoardDefaultFunctionOverrideRejectsUnsupportedFunction) {
+  const _supla_int_t relayFunctions = SUPLA_BIT_FUNC_LIGHTSWITCH;
+  Supla::Control::RelayRollerShutterPair pair(gpio0,
+                                              gpio1,
+                                              true,
+                                              true,
+                                              relayFunctions);
+
+  EXPECT_FALSE(pair.setDefaultFunctions(SUPLA_CHANNELFNC_POWERSWITCH,
+                                        SUPLA_CHANNELFNC_LIGHTSWITCH));
+
+  EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_EQ(pair.getSecondaryChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+}
+
 TEST_F(RelayRollerShutterPairFixture, ReportsCurrentMode) {
   EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(AnyNumber());
   EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(AnyNumber());
@@ -132,7 +218,7 @@ TEST_F(RelayRollerShutterPairFixture,
        AttachedButtonsControlRelaysInRelayMode) {
   Supla::Control::Button primaryButton(button0Gpio);
   Supla::Control::Button secondaryButton(button1Gpio);
-  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, false);
   pair.attach(&primaryButton, &secondaryButton);
 
   expectButtonInit();
@@ -153,7 +239,7 @@ TEST_F(RelayRollerShutterPairFixture,
        AttachedButtonsControlRollerShutterInRollerMode) {
   Supla::Control::Button primaryButton(button0Gpio);
   Supla::Control::Button secondaryButton(button1Gpio);
-  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, false);
   pair.attach(&primaryButton, &secondaryButton);
 
   EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
@@ -177,7 +263,7 @@ TEST_F(RelayRollerShutterPairFixture,
        AttachedButtonsFollowRuntimeFunctionSwitch) {
   Supla::Control::Button primaryButton(button0Gpio);
   Supla::Control::Button secondaryButton(button1Gpio);
-  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, false);
   pair.attach(&primaryButton, &secondaryButton);
 
   expectButtonInit();
@@ -795,7 +881,7 @@ TEST_F(RelayRollerShutterPairFixture,
 
 TEST_F(RelayRollerShutterPairFixture,
        SwitchingRelayToRollerDoesNotRestoreStoredRollerPosition) {
-  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1, true, false);
   uint8_t restoredRollerState[] = {
       0x88, 0x13, 0x00, 0x00,  // closing time 5000 ms
       0x88, 0x13, 0x00, 0x00,  // opening time 5000 ms

@@ -283,8 +283,8 @@ RelayRollerShutterPair::RelayRollerShutterPair(
     bool tiltFunctionsEnabled,
     _supla_int_t relayFunctions)
     : ElementWithChannelActions(ElementMode::Registered),
-      relay0(output0, primaryChannel, relayFunctions),
-      relay1(output1, secondaryChannel, relayFunctions),
+      relay0(output0, primaryChannel, relayOnlyFunctions(relayFunctions)),
+      relay1(output1, secondaryChannel, relayOnlyFunctions(relayFunctions)),
       rollerShutter(output0, output1, tiltFunctionsEnabled, primaryChannel) {
   relayFunctions = relayOnlyFunctions(relayFunctions);
   primaryChannel.setType(SUPLA_CHANNELTYPE_RELAY);
@@ -294,13 +294,13 @@ RelayRollerShutterPair::RelayRollerShutterPair(
   primaryChannel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   primaryChannel.setFlag(SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS);
   primaryChannel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
-  primaryChannel.setDefaultFunction(0);
+  primaryChannel.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
 
   secondaryChannel.setType(SUPLA_CHANNELTYPE_RELAY);
   secondaryChannel.setFuncList(relayFunctions);
   secondaryChannel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
   secondaryChannel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
-  secondaryChannel.setDefaultFunction(0);
+  secondaryChannel.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
 
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
   applyRuntimeMode();
@@ -438,6 +438,35 @@ bool RelayRollerShutterPair::isInRelayMode() const {
 
 bool RelayRollerShutterPair::isInRollerShutterMode() const {
   return isPrimaryRollerFunction();
+}
+
+bool RelayRollerShutterPair::setDefaultFunctions(
+    uint32_t primaryFunction,
+    uint32_t secondaryFunction) {
+  if (!primaryChannel.isFunctionValid(primaryFunction) ||
+      !secondaryChannel.isFunctionValid(secondaryFunction)) {
+    return false;
+  }
+
+  const bool functionChanged =
+      primaryChannel.getDefaultFunction() != primaryFunction ||
+      secondaryChannel.getDefaultFunction() != secondaryFunction;
+
+  primaryChannel.setDefaultFunction(primaryFunction);
+  secondaryChannel.setDefaultFunction(secondaryFunction);
+
+  if (buttonActionsInitialized && functionChanged) {
+    if (isRollerFunction(primaryFunction)) {
+      switchToRollerMode();
+    } else {
+      switchToRelayMode();
+    }
+    rebuildButtonActionsThreadSafe();
+  } else {
+    applyRuntimeMode();
+  }
+
+  return true;
 }
 
 bool RelayRollerShutterPair::isRollerFunction(uint32_t function) const {

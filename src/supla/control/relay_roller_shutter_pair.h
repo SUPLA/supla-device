@@ -93,7 +93,7 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
  public:
   RelayRollerShutterPair(Supla::Io::IoPin output0,
                          Supla::Io::IoPin output1,
-                         bool tiltFunctionsEnabled = false,
+                         bool tiltFunctionsEnabled = true,
                          _supla_int_t relayFunctions =
                              (0xFF ^
                               SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
@@ -101,14 +101,14 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
                          int output0,
                          int output1,
                          bool highIsOn = true,
-                         bool tiltFunctionsEnabled = false,
+                         bool tiltFunctionsEnabled = true,
                          _supla_int_t relayFunctions =
                              (0xFF ^
                               SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
   RelayRollerShutterPair(int output0,
                          int output1,
                          bool highIsOn = true,
-                         bool tiltFunctionsEnabled = false,
+                         bool tiltFunctionsEnabled = true,
                          _supla_int_t relayFunctions =
                              (0xFF ^
                               SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
@@ -134,6 +134,8 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
 
   bool isInRelayMode() const;
   bool isInRollerShutterMode() const;
+  bool setDefaultFunctions(uint32_t primaryFunction,
+                           uint32_t secondaryFunction);
 
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *value) override;
   void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override;

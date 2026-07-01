@@ -26,6 +26,8 @@
 
 #include "therm_hygro_meter.h"
 
+#include <supla/log_wrapper.h>
+
 namespace Supla {
 namespace Sensor {
 class Si7021 : public ThermHygroMeter {
@@ -58,23 +60,22 @@ class Si7021 : public ThermHygroMeter {
   void onInit() {
     sensor.begin();
 
-    Serial.print(F("Found model "));
     switch (sensor.getModel()) {
       case SI_Engineering_Samples:
-        Serial.print(F("SI engineering samples"));
+        SUPLA_LOG_INFO("Found model: SI engineering samples");
         break;
       case SI_7013:
-        Serial.print(F("Si7013"));
+        SUPLA_LOG_INFO("Found model: Si7013");
         break;
       case SI_7020:
-        Serial.print(F("Si7020"));
+        SUPLA_LOG_INFO("Found model: Si7020");
         break;
       case SI_7021:
-        Serial.print(F("Si7021"));
+        SUPLA_LOG_INFO("Found model: Si7021");
         break;
       case SI_UNKNOWN:
       default:
-        Serial.print(F("Unknown"));
+        SUPLA_LOG_INFO("Unknown model");
     }
 
     channel.setNewValue(getTemp(), getHumi());

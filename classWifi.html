@@ -100,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classWifi-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Wifi Class Reference</div></div>
@@ -195,6 +196,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a20aede5142879f733639c4b3e3ed7a9e" id="r_a20aede5142879f733639c4b3e3ed7a9e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a20aede5142879f733639c4b3e3ed7a9e">setPassword</a> (const char *wifiPassword) override</td></tr>
 <tr class="memitem:a345568b21a517e0dd0f6ac08f8c1aab6" id="r_a345568b21a517e0dd0f6ac08f8c1aab6"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a345568b21a517e0dd0f6ac08f8c1aab6">isWifiConfigRequired</a> () override</td></tr>
 <tr class="memitem:af0cbc84cfbddbfedf89845292004d3e5" id="r_af0cbc84cfbddbfedf89845292004d3e5"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="#af0cbc84cfbddbfedf89845292004d3e5">getIntfName</a> () const override</td></tr>
+<tr class="memitem:a7710dea5ee9932cd3d8d21241a9ed8a7" id="r_a7710dea5ee9932cd3d8d21241a9ed8a7"><td class="memItemLeft"><a id="a7710dea5ee9932cd3d8d21241a9ed8a7" name="a7710dea5ee9932cd3d8d21241a9ed8a7"></a>
+virtual void&#160;</td><td class="memItemRight"><b>startConfigModeScan</b> ()</td></tr>
+<tr class="memitem:aef0391b01930ec0f0aaff9060f3706b5" id="r_aef0391b01930ec0f0aaff9060f3706b5"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#aef0391b01930ec0f0aaff9060f3706b5">iterate</a> () override</td></tr>
 <tr class="memitem:aee26a52c79cda5dd880834c1ca305dfb" id="r_aee26a52c79cda5dd880834c1ca305dfb"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aee26a52c79cda5dd880834c1ca305dfb">onLoadConfig</a> () override</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1Network"><td colspan="2">Public Member Functions inherited from <a class="el" href="classSupla_1_1Network.html">Supla::Network</a></td></tr>
 <tr class="memitem:a84d18dab98dd552c9f8bb66a983b910d pub_methods_classSupla_1_1Network" id="r_a84d18dab98dd552c9f8bb66a983b910d"><td class="memItemLeft">
@@ -231,8 +235,6 @@ const <a class="el" href="structSupla_1_1NetifConfigBlob.html">NetifConfigBlob</
 virtual <a class="el" href="classSupla_1_1Client.html">Supla::Client</a> *&#160;</td><td class="memItemRight"><b>createClient</b> ()</td></tr>
 <tr class="memitem:a07e0612e016a8c8e01a1ed657ca69985 pub_methods_classSupla_1_1Network" id="r_a07e0612e016a8c8e01a1ed657ca69985"><td class="memItemLeft">
 virtual bool&#160;</td><td class="memItemRight"><b>isReady</b> ()=0</td></tr>
-<tr class="memitem:a7c47d9a9b29a3aafa911b7eb4f716740 pub_methods_classSupla_1_1Network" id="r_a7c47d9a9b29a3aafa911b7eb4f716740"><td class="memItemLeft">
-virtual bool&#160;</td><td class="memItemRight"><b>iterate</b> ()</td></tr>
 <tr class="memitem:aebb9384972515161b3f21948f09c153f pub_methods_classSupla_1_1Network" id="r_aebb9384972515161b3f21948f09c153f"><td class="memItemLeft">
 virtual void&#160;</td><td class="memItemRight"><b>fillStateData</b> (<a class="el" href="structTDSC__ChannelState.html">TDSC_ChannelState</a> *channelState)</td></tr>
 <tr class="memitem:ab3764ebf5e48d22015a93cace217fdb8 pub_methods_classSupla_1_1Network" id="r_ab3764ebf5e48d22015a93cace217fdb8"><td class="memItemLeft">
@@ -248,12 +250,23 @@ enum IntfType&#160;</td><td class="memItemRight"><b>getIntfType</b> () const</td
 <tr class="memitem:aac2fca66b1cb47e550995d8832bbacc2 pub_methods_classSupla_1_1Network" id="r_aac2fca66b1cb47e550995d8832bbacc2"><td class="memItemLeft">
 bool&#160;</td><td class="memItemRight"><b>isIntfDisabledInConfig</b> () const</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pro-methods" class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:ab327bcd37b7ff015da8c15025db87a28" id="r_ab327bcd37b7ff015da8c15025db87a28"><td class="memItemLeft"><a id="ab327bcd37b7ff015da8c15025db87a28" name="ab327bcd37b7ff015da8c15025db87a28"></a>
+void&#160;</td><td class="memItemRight"><b>requestConfigModeScanIfDue</b> ()</td></tr>
+<tr class="memitem:aeea509ab763a142816ee26e5d586bdcb" id="r_aeea509ab763a142816ee26e5d586bdcb"><td class="memItemLeft"><a id="aeea509ab763a142816ee26e5d586bdcb" name="aeea509ab763a142816ee26e5d586bdcb"></a>
+virtual bool&#160;</td><td class="memItemRight"><b>isConfigModeScanInProgress</b> () const</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:ab68590df9ac97a7a21ccfb0e947cf789" id="r_ab68590df9ac97a7a21ccfb0e947cf789"><td class="memItemLeft"><a id="ab68590df9ac97a7a21ccfb0e947cf789" name="ab68590df9ac97a7a21ccfb0e947cf789"></a>
 char&#160;</td><td class="memItemRight"><b>ssid</b> [MAX_SSID_SIZE] = {}</td></tr>
 <tr class="memitem:a181421be000d4f71151fbc0192b5b20c" id="r_a181421be000d4f71151fbc0192b5b20c"><td class="memItemLeft"><a id="a181421be000d4f71151fbc0192b5b20c" name="a181421be000d4f71151fbc0192b5b20c"></a>
 char&#160;</td><td class="memItemRight"><b>password</b> [MAX_WIFI_PASSWORD_SIZE] = {}</td></tr>
+<tr class="memitem:a7e1368cf33c7ea48ee5b4ea606c867c9" id="r_a7e1368cf33c7ea48ee5b4ea606c867c9"><td class="memItemLeft"><a id="a7e1368cf33c7ea48ee5b4ea606c867c9" name="a7e1368cf33c7ea48ee5b4ea606c867c9"></a>
+uint32_t&#160;</td><td class="memItemRight"><b>lastConfigModeScanStartMs</b> = 0</td></tr>
+<tr class="memitem:ab56db88db579929add10a3dfc3f805c0" id="r_ab56db88db579929add10a3dfc3f805c0"><td class="memItemLeft"><a id="ab56db88db579929add10a3dfc3f805c0" name="ab56db88db579929add10a3dfc3f805c0"></a>
+bool&#160;</td><td class="memItemRight"><b>configModeScanStartRecorded</b> = false</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Network"><td colspan="2">Protected Attributes inherited from <a class="el" href="classSupla_1_1Network.html">Supla::Network</a></td></tr>
 <tr class="memitem:ae58d514b19c4f1784963be5a73dab627 pro_attribs_classSupla_1_1Network" id="r_ae58d514b19c4f1784963be5a73dab627"><td class="memItemLeft">
 Network *&#160;</td><td class="memItemRight"><b>nextNetIntf</b> = nullptr</td></tr>
@@ -381,6 +394,33 @@ static enum DeviceMode&#160;</td><td class="memItemRight"><b>mode</b> = DEVICE_M
       <table class="memname">
         <tr>
           <td class="memname">bool Wifi::isWifiConfigRequired </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Network.html">Supla::Network</a>.</p>
+
+</div>
+</div>
+<a id="aef0391b01930ec0f0aaff9060f3706b5" name="aef0391b01930ec0f0aaff9060f3706b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef0391b01930ec0f0aaff9060f3706b5">&#9670;&#160;</a></span>iterate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Wifi::iterate </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>

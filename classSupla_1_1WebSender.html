@@ -165,8 +165,8 @@ template&lt;typename Fn&gt; </td></tr>
 <tr class="memitem:a78596bcebcc8759d0b0c32613f7aca54" id="r_a78596bcebcc8759d0b0c32613f7aca54"><td class="memItemLeft"><a id="a78596bcebcc8759d0b0c32613f7aca54" name="a78596bcebcc8759d0b0c32613f7aca54"></a>
 void&#160;</td><td class="memItemRight"><b>labelFor</b> (const char *id, const char *text)</td></tr>
 <tr class="memdesc:a78596bcebcc8759d0b0c32613f7aca54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a <span class="tt">&lt;label for="..."&gt;...&lt;/label&gt;</span> pair. <br /></td></tr>
-<tr class="memitem:adc3259e1fa292015b378bbcfd6983423" id="r_adc3259e1fa292015b378bbcfd6983423"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adc3259e1fa292015b378bbcfd6983423">textInput</a> (const char *name, const char *id, const char *value=nullptr, int maxLength=-1)</td></tr>
-<tr class="memdesc:adc3259e1fa292015b378bbcfd6983423"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a text input control.  <br /></td></tr>
+<tr class="memitem:a924b3ca68a243e5cd56a83e99a59d4da" id="r_a924b3ca68a243e5cd56a83e99a59d4da"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a924b3ca68a243e5cd56a83e99a59d4da">textInput</a> (const char *name, const char *id, const char *value=nullptr, int maxLength=-1, const char *listId=nullptr, const char *onInput=nullptr, const char *onChange=nullptr)</td></tr>
+<tr class="memdesc:a924b3ca68a243e5cd56a83e99a59d4da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a text input control.  <br /></td></tr>
 <tr class="memitem:ad650dda25b418ffd36d7a6ca596b0836" id="r_ad650dda25b418ffd36d7a6ca596b0836"><td class="memItemLeft"><a id="ad650dda25b418ffd36d7a6ca596b0836" name="ad650dda25b418ffd36d7a6ca596b0836"></a>
 void&#160;</td><td class="memItemRight"><b>passwordInput</b> (const char *name, const char *id)</td></tr>
 <tr class="memdesc:ad650dda25b418ffd36d7a6ca596b0836"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a password input control. <br /></td></tr>
@@ -466,8 +466,8 @@ template&lt;typename Fn&gt; </div>
 
 </div>
 </div>
-<a id="adc3259e1fa292015b378bbcfd6983423" name="adc3259e1fa292015b378bbcfd6983423"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc3259e1fa292015b378bbcfd6983423">&#9670;&#160;</a></span>textInput()</h2>
+<a id="a924b3ca68a243e5cd56a83e99a59d4da" name="a924b3ca68a243e5cd56a83e99a59d4da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a924b3ca68a243e5cd56a83e99a59d4da">&#9670;&#160;</a></span>textInput()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -490,7 +490,22 @@ template&lt;typename Fn&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>maxLength</em></span><span class="paramdefsep"> = </span><span class="paramdefval">-1</span>&#160;)</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>maxLength</em></span><span class="paramdefsep"> = </span><span class="paramdefval">-1</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>listId</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>onInput</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>onChange</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">

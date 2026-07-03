@@ -6,5 +6,7 @@ var searchData=
   ['weight_3',['Weight',['../classSupla_1_1Sensor_1_1Weight.html',1,'Supla::Sensor::Weight'],['../classWeight.html',1,'Weight']]],
   ['wifi_4',['Wifi',['../classSupla_1_1Wifi.html',1,'Supla::Wifi'],['../classWifi.html',1,'Wifi']]],
   ['wifiparameters_5',['WifiParameters',['../classSupla_1_1Html_1_1WifiParameters.html',1,'Supla::Html']]],
-  ['wind_6',['Wind',['../classSupla_1_1Sensor_1_1Wind.html',1,'Supla::Sensor']]]
+  ['wifiscanresult_6',['WifiScanResult',['../structSupla_1_1WifiScanResult.html',1,'Supla']]],
+  ['wifiscanresultcache_7',['WifiScanResultCache',['../classSupla_1_1WifiScanResultCache.html',1,'Supla']]],
+  ['wind_8',['Wind',['../classSupla_1_1Sensor_1_1Wind.html',1,'Supla::Sensor']]]
 ];

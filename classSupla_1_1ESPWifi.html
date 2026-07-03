@@ -105,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classSupla_1_1ESPWifi-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Supla::ESPWifi Class Reference</div></div>
@@ -200,6 +201,8 @@ Public Member Functions</h2></td></tr>
 &#160;</td><td class="memItemRight"><b>ESPWifi</b> (const char *wifiSsid=nullptr, const char *wifiPassword=nullptr, unsigned char *ip=nullptr)</td></tr>
 <tr class="memitem:a53963c0ed965bf72496a9ef9a36cd943" id="r_a53963c0ed965bf72496a9ef9a36cd943"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a53963c0ed965bf72496a9ef9a36cd943">isReady</a> () override</td></tr>
 <tr class="memitem:a0ecd3e79296ea957c3c1a44afc7a260b" id="r_a0ecd3e79296ea957c3c1a44afc7a260b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0ecd3e79296ea957c3c1a44afc7a260b">setup</a> () override</td></tr>
+<tr class="memitem:a626e840c077714c786ac125977017c8b" id="r_a626e840c077714c786ac125977017c8b"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a626e840c077714c786ac125977017c8b">iterate</a> () override</td></tr>
+<tr class="memitem:a3b0994c5e2cc636f3cb993503a23a45c" id="r_a3b0994c5e2cc636f3cb993503a23a45c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3b0994c5e2cc636f3cb993503a23a45c">startConfigModeScan</a> () override</td></tr>
 <tr class="memitem:a388d84d6d676dae9ca459c01b293a8f5" id="r_a388d84d6d676dae9ca459c01b293a8f5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a388d84d6d676dae9ca459c01b293a8f5">disable</a> () override</td></tr>
 <tr class="memitem:ad89f4f6486d4e100228856f519ad5879" id="r_ad89f4f6486d4e100228856f519ad5879"><td class="memItemLeft"><a id="ad89f4f6486d4e100228856f519ad5879" name="ad89f4f6486d4e100228856f519ad5879"></a>
 void&#160;</td><td class="memItemRight"><b>enableSSL</b> (bool value)</td></tr>
@@ -215,6 +218,7 @@ void&#160;</td><td class="memItemRight"><b>enableSSL</b> (bool value)</td></tr>
 <tr class="memitem:a20aede5142879f733639c4b3e3ed7a9e pub_methods_classSupla_1_1Wifi" id="r_a20aede5142879f733639c4b3e3ed7a9e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Wifi.html#a20aede5142879f733639c4b3e3ed7a9e">setPassword</a> (const char *wifiPassword) override</td></tr>
 <tr class="memitem:a345568b21a517e0dd0f6ac08f8c1aab6 pub_methods_classSupla_1_1Wifi" id="r_a345568b21a517e0dd0f6ac08f8c1aab6"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Wifi.html#a345568b21a517e0dd0f6ac08f8c1aab6">isWifiConfigRequired</a> () override</td></tr>
 <tr class="memitem:af0cbc84cfbddbfedf89845292004d3e5 pub_methods_classSupla_1_1Wifi" id="r_af0cbc84cfbddbfedf89845292004d3e5"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Wifi.html#af0cbc84cfbddbfedf89845292004d3e5">getIntfName</a> () const override</td></tr>
+<tr class="memitem:aef0391b01930ec0f0aaff9060f3706b5 pub_methods_classSupla_1_1Wifi" id="r_aef0391b01930ec0f0aaff9060f3706b5"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Wifi.html#aef0391b01930ec0f0aaff9060f3706b5">iterate</a> () override</td></tr>
 <tr class="memitem:aee26a52c79cda5dd880834c1ca305dfb pub_methods_classSupla_1_1Wifi" id="r_aee26a52c79cda5dd880834c1ca305dfb"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Wifi.html#aee26a52c79cda5dd880834c1ca305dfb">onLoadConfig</a> () override</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1Network"><td colspan="2">Public Member Functions inherited from <a class="el" href="classSupla_1_1Network.html">Supla::Network</a></td></tr>
 <tr class="memitem:a84d18dab98dd552c9f8bb66a983b910d pub_methods_classSupla_1_1Network" id="r_a84d18dab98dd552c9f8bb66a983b910d"><td class="memItemLeft">
@@ -239,8 +243,6 @@ bool&#160;</td><td class="memItemRight"><b>hasStaticIpConfig</b> () const</td></
 const <a class="el" href="structSupla_1_1NetifConfigBlob.html">NetifConfigBlob</a> &amp;&#160;</td><td class="memItemRight"><b>getNetifConfig</b> () const</td></tr>
 <tr class="memitem:a0a4636a1008b1540fa926bb31a732988 pub_methods_classSupla_1_1Network" id="r_a0a4636a1008b1540fa926bb31a732988"><td class="memItemLeft">
 virtual <a class="el" href="classSupla_1_1Client.html">Supla::Client</a> *&#160;</td><td class="memItemRight"><b>createClient</b> ()</td></tr>
-<tr class="memitem:a7c47d9a9b29a3aafa911b7eb4f716740 pub_methods_classSupla_1_1Network" id="r_a7c47d9a9b29a3aafa911b7eb4f716740"><td class="memItemLeft">
-virtual bool&#160;</td><td class="memItemRight"><b>iterate</b> ()</td></tr>
 <tr class="memitem:ab3764ebf5e48d22015a93cace217fdb8 pub_methods_classSupla_1_1Network" id="r_ab3764ebf5e48d22015a93cace217fdb8"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>clearTimeCounters</b> ()</td></tr>
 <tr class="memitem:a2b271c67adc2198c2d2d295a52e69e06 pub_methods_classSupla_1_1Network" id="r_a2b271c67adc2198c2d2d295a52e69e06"><td class="memItemLeft">
@@ -306,15 +308,30 @@ static void&#160;</td><td class="memItemRight"><b>printData</b> (const char *pre
 <tr class="memitem:a488e4bbf8212c3102aa2df2924454a99 pub_static_methods_classSupla_1_1Network" id="r_a488e4bbf8212c3102aa2df2924454a99"><td class="memItemLeft">
 static void&#160;</td><td class="memItemRight"><b>setSSLEnabled</b> (bool enabled)</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pro-methods" class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a893b4d0bdcf94906e4cb735d973e9d05" id="r_a893b4d0bdcf94906e4cb735d973e9d05"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a893b4d0bdcf94906e4cb735d973e9d05">isConfigModeScanInProgress</a> () const override</td></tr>
+<tr class="inherit_header pro_methods_classSupla_1_1Wifi"><td colspan="2">Protected Member Functions inherited from <a class="el" href="classSupla_1_1Wifi.html">Supla::Wifi</a></td></tr>
+<tr class="memitem:ab327bcd37b7ff015da8c15025db87a28 pro_methods_classSupla_1_1Wifi" id="r_ab327bcd37b7ff015da8c15025db87a28"><td class="memItemLeft">
+void&#160;</td><td class="memItemRight"><b>requestConfigModeScanIfDue</b> ()</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:afc85d88e683413c653d70581d31c0ab9" id="r_afc85d88e683413c653d70581d31c0ab9"><td class="memItemLeft"><a id="afc85d88e683413c653d70581d31c0ab9" name="afc85d88e683413c653d70581d31c0ab9"></a>
 bool&#160;</td><td class="memItemRight"><b>wifiConfigured</b> = false</td></tr>
+<tr class="memitem:ae3904659046bdde1ee81ff7fbe6a768e" id="r_ae3904659046bdde1ee81ff7fbe6a768e"><td class="memItemLeft"><a id="ae3904659046bdde1ee81ff7fbe6a768e" name="ae3904659046bdde1ee81ff7fbe6a768e"></a>
+bool&#160;</td><td class="memItemRight"><b>configModeScanInProgress</b> = false</td></tr>
+<tr class="memitem:a167fe1dd6efaae6fc640367f62b5f6ef" id="r_a167fe1dd6efaae6fc640367f62b5f6ef"><td class="memItemLeft"><a id="a167fe1dd6efaae6fc640367f62b5f6ef" name="a167fe1dd6efaae6fc640367f62b5f6ef"></a>
+bool&#160;</td><td class="memItemRight"><b>allowDisable</b> = false</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Wifi"><td colspan="2">Protected Attributes inherited from <a class="el" href="classSupla_1_1Wifi.html">Supla::Wifi</a></td></tr>
 <tr class="memitem:ab68590df9ac97a7a21ccfb0e947cf789 pro_attribs_classSupla_1_1Wifi" id="r_ab68590df9ac97a7a21ccfb0e947cf789"><td class="memItemLeft">
 char&#160;</td><td class="memItemRight"><b>ssid</b> [MAX_SSID_SIZE] = {}</td></tr>
 <tr class="memitem:a181421be000d4f71151fbc0192b5b20c pro_attribs_classSupla_1_1Wifi" id="r_a181421be000d4f71151fbc0192b5b20c"><td class="memItemLeft">
 char&#160;</td><td class="memItemRight"><b>password</b> [MAX_WIFI_PASSWORD_SIZE] = {}</td></tr>
+<tr class="memitem:a7e1368cf33c7ea48ee5b4ea606c867c9 pro_attribs_classSupla_1_1Wifi" id="r_a7e1368cf33c7ea48ee5b4ea606c867c9"><td class="memItemLeft">
+uint32_t&#160;</td><td class="memItemRight"><b>lastConfigModeScanStartMs</b> = 0</td></tr>
+<tr class="memitem:ab56db88db579929add10a3dfc3f805c0 pro_attribs_classSupla_1_1Wifi" id="r_ab56db88db579929add10a3dfc3f805c0"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>configModeScanStartRecorded</b> = false</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Network"><td colspan="2">Protected Attributes inherited from <a class="el" href="classSupla_1_1Network.html">Supla::Network</a></td></tr>
 <tr class="memitem:ae58d514b19c4f1784963be5a73dab627 pro_attribs_classSupla_1_1Network" id="r_ae58d514b19c4f1784963be5a73dab627"><td class="memItemLeft">
 Network *&#160;</td><td class="memItemRight"><b>nextNetIntf</b> = nullptr</td></tr>
@@ -492,6 +509,33 @@ static enum DeviceMode&#160;</td><td class="memItemRight"><b>mode</b> = DEVICE_M
 
 </div>
 </div>
+<a id="a893b4d0bdcf94906e4cb735d973e9d05" name="a893b4d0bdcf94906e4cb735d973e9d05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a893b4d0bdcf94906e4cb735d973e9d05">&#9670;&#160;</a></span>isConfigModeScanInProgress()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::ESPWifi::isConfigModeScanInProgress </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel override">override</span><span class="mlabel protected">protected</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Wifi.html">Supla::Wifi</a>.</p>
+
+</div>
+</div>
 <a id="a53963c0ed965bf72496a9ef9a36cd943" name="a53963c0ed965bf72496a9ef9a36cd943"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a53963c0ed965bf72496a9ef9a36cd943">&#9670;&#160;</a></span>isReady()</h2>
 
@@ -519,6 +563,33 @@ static enum DeviceMode&#160;</td><td class="memItemRight"><b>mode</b> = DEVICE_M
 
 </div>
 </div>
+<a id="a626e840c077714c786ac125977017c8b" name="a626e840c077714c786ac125977017c8b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a626e840c077714c786ac125977017c8b">&#9670;&#160;</a></span>iterate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::ESPWifi::iterate </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Network.html">Supla::Network</a>.</p>
+
+</div>
+</div>
 <a id="a0ecd3e79296ea957c3c1a44afc7a260b" name="a0ecd3e79296ea957c3c1a44afc7a260b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0ecd3e79296ea957c3c1a44afc7a260b">&#9670;&#160;</a></span>setup()</h2>
 
@@ -543,6 +614,33 @@ static enum DeviceMode&#160;</td><td class="memItemRight"><b>mode</b> = DEVICE_M
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classSupla_1_1Network.html">Supla::Network</a>.</p>
+
+</div>
+</div>
+<a id="a3b0994c5e2cc636f3cb993503a23a45c" name="a3b0994c5e2cc636f3cb993503a23a45c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b0994c5e2cc636f3cb993503a23a45c">&#9670;&#160;</a></span>startConfigModeScan()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::ESPWifi::startConfigModeScan </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Wifi.html">Supla::Wifi</a>.</p>
 
 </div>
 </div>

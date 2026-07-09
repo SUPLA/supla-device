@@ -28,8 +28,6 @@
 #include "../supla_lib_config.h"
 #include "network.h"
 
-// TODO(klew): change logs to supla_log
-
 namespace Supla {
 class ENC28J60 : public Supla::Network {
  public:
@@ -47,7 +45,7 @@ class ENC28J60 : public Supla::Network {
 
   void setup() override {
     setSSLEnabled(false);  // no SSL support on Arduino MEGA target
-    Serial.println(F("Connecting to network..."));
+    SUPLA_LOG_INFO("Connecting to network...");
     if (useLocalIp) {
       Ethernet.begin(mac, localIp);
       isDeviceReady = true;
@@ -55,14 +53,14 @@ class ENC28J60 : public Supla::Network {
       isDeviceReady = Ethernet.begin(mac) == 1;
     }
 
-    Serial.print(F("localIP: "));
-    Serial.println(Ethernet.localIP());
-    Serial.print(F("subnetMask: "));
-    Serial.println(Ethernet.subnetMask());
-    Serial.print(F("gatewayIP: "));
-    Serial.println(Ethernet.gatewayIP());
-    Serial.print(F("dnsServerIP: "));
-    Serial.println(Ethernet.dnsServerIP());
+    IPAddress localIP = Ethernet.localIP();
+    IPAddress subnetMaskIP = Ethernet.subnetMask();
+    IPAddress gatewayIP = Ethernet.gatewayIP();
+    IPAddress dnsServerIP = Ethernet.dnsServerIP();
+    SUPLA_LOG_INFO("localIP: %d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+    SUPLA_LOG_INFO("subnetMaskIP: %d.%d.%d.%d", subnetMaskIP[0], subnetMaskIP[1], subnetMaskIP[2], subnetMaskIP[3]);
+    SUPLA_LOG_INFO("gatewayIP: %d.%d.%d.%d", gatewayIP[0], gatewayIP[1], gatewayIP[2], gatewayIP[3]);
+    SUPLA_LOG_INFO("dnsServerIP: %d.%d.%d.%d", dnsServerIP[0], dnsServerIP[1], dnsServerIP[2], dnsServerIP[3]);
   }
 
  protected:

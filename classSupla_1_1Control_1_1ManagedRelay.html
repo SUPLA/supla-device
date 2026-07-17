@@ -206,7 +206,8 @@ void&#160;</td><td class="memItemRight"><b>setupButtonActions</b> (<a class="el"
 <tr class="memdesc:aa18a99783f3362763225588b7d405e7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration.  <br /></td></tr>
 <tr class="memitem:a466b520bb4d22dea1056cc50988e6317" id="r_a466b520bb4d22dea1056cc50988e6317"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a466b520bb4d22dea1056cc50988e6317">iterateConnected</a> () override</td></tr>
 <tr class="memdesc:a466b520bb4d22dea1056cc50988e6317"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration when device is connected and registered to Supla server or other protocol.  <br /></td></tr>
-<tr class="memitem:ae79b48c0d750b7e6ba6976c9c3c8be11" id="r_ae79b48c0d750b7e6ba6976c9c3c8be11"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ae79b48c0d750b7e6ba6976c9c3c8be11">setAndSaveFunction</a> (uint32_t channelFunction) override</td></tr>
+<tr class="memitem:a3e43de368225cee9c5600ef1fbab761c" id="r_a3e43de368225cee9c5600ef1fbab761c"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a3e43de368225cee9c5600ef1fbab761c">setRuntimeFunction</a> (uint32_t channelFunction) override</td></tr>
+<tr class="memdesc:a3e43de368225cee9c5600ef1fbab761c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets channel's function at runtime.  <br /></td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1Control_1_1Relay"><td colspan="2">Public Member Functions inherited from <a class="el" href="classSupla_1_1Control_1_1Relay.html">Supla::Control::Relay</a></td></tr>
 <tr class="memitem:a8ac1f33043ada4602de506c426bd4e34 pub_methods_classSupla_1_1Control_1_1Relay" id="r_a8ac1f33043ada4602de506c426bd4e34"><td class="memItemLeft">
 &#160;</td><td class="memItemRight"><b>Relay</b> (<a class="el" href="structSupla_1_1Io_1_1IoPin.html">Supla::Io::IoPin</a> outputPin, _supla_int_t functions=(0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER))</td></tr>
@@ -291,6 +292,8 @@ void&#160;</td><td class="memItemRight"><b>setTurnOffWhenEmptyAggregator</b> (bo
 <tr class="memdesc:a87e5de6a050e60902657ed6a60f4a27e pub_methods_classSupla_1_1Control_1_1Relay"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set default duration for staircase timer function.  <br /></td></tr>
 <tr class="memitem:a56b9a3505014105aaed55e41c411c31b pub_methods_classSupla_1_1Control_1_1Relay" id="r_a56b9a3505014105aaed55e41c411c31b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Control_1_1Relay.html#a56b9a3505014105aaed55e41c411c31b">setDefaultImpulseDurationMs</a> (uint16_t durationMs)</td></tr>
 <tr class="memdesc:a56b9a3505014105aaed55e41c411c31b pub_methods_classSupla_1_1Control_1_1Relay"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set default duration for impulse functions (controlling gate, door etc.).  <br /></td></tr>
+<tr class="memitem:a006648dd472c9ffa97fe7fb52c0187fd pub_methods_classSupla_1_1Control_1_1Relay" id="r_a006648dd472c9ffa97fe7fb52c0187fd"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Control_1_1Relay.html#a006648dd472c9ffa97fe7fb52c0187fd">setRuntimeFunction</a> (uint32_t channelFunction) override</td></tr>
+<tr class="memdesc:a006648dd472c9ffa97fe7fb52c0187fd pub_methods_classSupla_1_1Control_1_1Relay"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets channel's function at runtime.  <br /></td></tr>
 <tr class="memitem:acf2b51fc0b858940b4585e3bfa9122e9 pub_methods_classSupla_1_1Control_1_1Relay" id="r_acf2b51fc0b858940b4585e3bfa9122e9"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Control_1_1Relay.html#acf2b51fc0b858940b4585e3bfa9122e9">setAndSaveFunction</a> (uint32_t channelFunction) override</td></tr>
 <tr class="memitem:a0423904d3d5f1cc49f42fa0c46e149a7 pub_methods_classSupla_1_1Control_1_1Relay" id="r_a0423904d3d5f1cc49f42fa0c46e149a7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Control_1_1Relay.html#a0423904d3d5f1cc49f42fa0c46e149a7">setRestartTimerOnToggle</a> (bool restart)</td></tr>
 <tr class="memdesc:a0423904d3d5f1cc49f42fa0c46e149a7 pub_methods_classSupla_1_1Control_1_1Relay"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set restart timer on toggle for staircase and impulse functions.  <br /></td></tr>
@@ -720,8 +723,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="ae79b48c0d750b7e6ba6976c9c3c8be11" name="ae79b48c0d750b7e6ba6976c9c3c8be11"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae79b48c0d750b7e6ba6976c9c3c8be11">&#9670;&#160;</a></span>setAndSaveFunction()</h2>
+<a id="a3e43de368225cee9c5600ef1fbab761c" name="a3e43de368225cee9c5600ef1fbab761c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e43de368225cee9c5600ef1fbab761c">&#9670;&#160;</a></span>setRuntimeFunction()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -730,9 +733,9 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool Supla::Control::ManagedRelay::setAndSaveFunction </td>
+          <td class="memname">bool Supla::Control::ManagedRelay::setRuntimeFunction </td>
           <td>(</td>
-          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>channelFunction</em></span></td><td>)</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>newFunction</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -743,7 +746,17 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a>.</p>
+<p>Sets channel's function at runtime. </p>
+<p>Elements which require additional runtime setup after a function change should override this method. The default implementation calls <a class="el" href="classSupla_1_1Element.html#a1f2dea71cf84c6eb0c6bd2f6bfcaf93a" title="Sets channel&#39;s function.">setFunction()</a>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">newFunction</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if function was changed, false otherwise </dd></dl>
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#ac7954a50705016549c2a427ec8cfe689">Supla::Element</a>.</p>
 
 </div>
 </div>

@@ -177,6 +177,8 @@ RelayRollerShutterPair &amp;&#160;</td><td class="memItemRight"><b>setDefaultSta
 RelayRollerShutterPair &amp;&#160;</td><td class="memItemRight"><b>setPreloadStateOnSoftReset</b> (bool enabled=true)</td></tr>
 <tr class="memitem:a756d6c0a1ce273a86730e21e26abaea6" id="r_a756d6c0a1ce273a86730e21e26abaea6"><td class="memItemLeft"><a id="a756d6c0a1ce273a86730e21e26abaea6" name="a756d6c0a1ce273a86730e21e26abaea6"></a>
 bool&#160;</td><td class="memItemRight"><b>setDefaultFunctions</b> (uint32_t primaryFunction, uint32_t secondaryFunction)</td></tr>
+<tr class="memitem:a3319a08dfc7cc50a8e6b7621740e6d05" id="r_a3319a08dfc7cc50a8e6b7621740e6d05"><td class="memItemLeft"><a id="a3319a08dfc7cc50a8e6b7621740e6d05" name="a3319a08dfc7cc50a8e6b7621740e6d05"></a>
+bool&#160;</td><td class="memItemRight"><b>setRuntimeFunctions</b> (uint32_t primaryFunction, uint32_t secondaryFunction)</td></tr>
 <tr class="memitem:a580b2317b5b3129ab0d6eadbdce3e271" id="r_a580b2317b5b3129ab0d6eadbdce3e271"><td class="memItemLeft"><a id="a580b2317b5b3129ab0d6eadbdce3e271" name="a580b2317b5b3129ab0d6eadbdce3e271"></a>
 <a class="el" href="classSupla_1_1Control_1_1RollerShutter.html">RollerShutter</a> *&#160;</td><td class="memItemRight"><b>getRollerShutter</b> ()</td></tr>
 <tr class="memitem:a687147ab75aed021d7da2565ff669234" id="r_a687147ab75aed021d7da2565ff669234"><td class="memItemLeft"><a id="a687147ab75aed021d7da2565ff669234" name="a687147ab75aed021d7da2565ff669234"></a>
@@ -304,6 +306,8 @@ virtual bool&#160;</td><td class="memItemRight"><b>disableActionsInConfigMode</b
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-methods" class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
+<tr class="memitem:ae36ae2593e66d2446dc5cc1c027fbe89" id="r_ae36ae2593e66d2446dc5cc1c027fbe89"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ae36ae2593e66d2446dc5cc1c027fbe89">setRuntimeFunction</a> (uint32_t channelFunction) override</td></tr>
+<tr class="memdesc:ae36ae2593e66d2446dc5cc1c027fbe89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets channel's function at runtime.  <br /></td></tr>
 <tr class="memitem:ac0638a684c57e4f04ce0a641113ba015" id="r_ac0638a684c57e4f04ce0a641113ba015"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ac0638a684c57e4f04ce0a641113ba015">setAndSaveFunction</a> (uint32_t channelFunction) override</td></tr>
 <tr class="inherit_header pro_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2">Protected Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
 <tr class="memitem:a98a63ff2a87cc055363607d0757d668d pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a98a63ff2a87cc055363607d0757d668d"><td class="memItemLeft">
@@ -1140,6 +1144,43 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="ae36ae2593e66d2446dc5cc1c027fbe89" name="ae36ae2593e66d2446dc5cc1c027fbe89"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae36ae2593e66d2446dc5cc1c027fbe89">&#9670;&#160;</a></span>setRuntimeFunction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::Control::RelayRollerShutterPair::setRuntimeFunction </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>newFunction</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel protected">protected</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Sets channel's function at runtime. </p>
+<p>Elements which require additional runtime setup after a function change should override this method. The default implementation calls <a class="el" href="classSupla_1_1Element.html#a1f2dea71cf84c6eb0c6bd2f6bfcaf93a" title="Sets channel&#39;s function.">setFunction()</a>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">newFunction</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if function was changed, false otherwise </dd></dl>
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#ac7954a50705016549c2a427ec8cfe689">Supla::Element</a>.</p>
 
 </div>
 </div>

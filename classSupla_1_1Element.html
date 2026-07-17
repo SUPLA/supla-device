@@ -318,6 +318,8 @@ virtual <a class="el" href="classChannel.html">Channel</a> *&#160;</td><td class
 <tr class="memdesc:ae0d75f1ed53558d5f47c485209195c3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets default channel's function.  <br /></td></tr>
 <tr class="memitem:a1f2dea71cf84c6eb0c6bd2f6bfcaf93a" id="r_a1f2dea71cf84c6eb0c6bd2f6bfcaf93a"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a1f2dea71cf84c6eb0c6bd2f6bfcaf93a">setFunction</a> (uint32_t newFunction)</td></tr>
 <tr class="memdesc:a1f2dea71cf84c6eb0c6bd2f6bfcaf93a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets channel's function.  <br /></td></tr>
+<tr class="memitem:ac7954a50705016549c2a427ec8cfe689" id="r_ac7954a50705016549c2a427ec8cfe689"><td class="memItemLeft">virtual bool&#160;</td><td class="memItemRight"><a class="el" href="#ac7954a50705016549c2a427ec8cfe689">setRuntimeFunction</a> (uint32_t newFunction)</td></tr>
+<tr class="memdesc:ac7954a50705016549c2a427ec8cfe689"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets channel's function at runtime.  <br /></td></tr>
 <tr class="memitem:a0221bc2346873fca90d653197bc0b30a" id="r_a0221bc2346873fca90d653197bc0b30a"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#a0221bc2346873fca90d653197bc0b30a">onFunctionChange</a> (uint32_t currentFunction, uint32_t newFunction)</td></tr>
 <tr class="memdesc:a0221bc2346873fca90d653197bc0b30a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called when channel function changes.  <br /></td></tr>
 </table><table class="memberdecls">
@@ -1718,6 +1720,43 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="ac7954a50705016549c2a427ec8cfe689" name="ac7954a50705016549c2a427ec8cfe689"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7954a50705016549c2a427ec8cfe689">&#9670;&#160;</a></span>setRuntimeFunction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::Element::setRuntimeFunction </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>newFunction</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Sets channel's function at runtime. </p>
+<p>Elements which require additional runtime setup after a function change should override this method. The default implementation calls <a class="el" href="#a1f2dea71cf84c6eb0c6bd2f6bfcaf93a" title="Sets channel&#39;s function.">setFunction()</a>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">newFunction</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if function was changed, false otherwise </dd></dl>
+
+<p>Reimplemented in <a class="el" href="classRelay.html#a006648dd472c9ffa97fe7fb52c0187fd">Relay</a>, <a class="el" href="classSupla_1_1Control_1_1ManagedRelay.html#a3e43de368225cee9c5600ef1fbab761c">Supla::Control::ManagedRelay</a>, <a class="el" href="classSupla_1_1Control_1_1Relay.html#a006648dd472c9ffa97fe7fb52c0187fd">Supla::Control::Relay</a>, and <a class="el" href="classSupla_1_1Control_1_1RelayRollerShutterPair.html#ae36ae2593e66d2446dc5cc1c027fbe89">Supla::Control::RelayRollerShutterPair</a>.</p>
 
 </div>
 </div>

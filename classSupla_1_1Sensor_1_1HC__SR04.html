@@ -132,9 +132,9 @@ Collaboration diagram for Supla::Sensor::HC_SR04:</div>
 <div class="dyncontent">
 <div class="center"><img src="classSupla_1_1Sensor_1_1HC__SR04__coll__graph.png" border="0" usemap="#aSupla_1_1Sensor_1_1HC__SR04_coll__map" loading="lazy" alt="Collaboration graph"/></div>
 <map name="aSupla_1_1Sensor_1_1HC__SR04_coll__map" id="aSupla_1_1Sensor_1_1HC__SR04_coll__map">
-<area shape="rect" title=" " alt="" coords="1060,199,1226,225"/>
+<area shape="rect" title=" " alt="" coords="1077,227,1242,253"/>
 <area shape="rect" href="classSupla_1_1Sensor_1_1Distance.html" title=" " alt="" coords="853,199,1011,225"/>
-<area shape="poly" title=" " alt="" coords="1026,210,1060,210,1060,215,1026,215"/>
+<area shape="poly" title=" " alt="" coords="1027,221,1077,227,1076,233,1026,226"/>
 <area shape="rect" href="classSupla_1_1ChannelElement.html" title=" " alt="" coords="649,199,803,225"/>
 <area shape="poly" title=" " alt="" coords="819,210,852,210,852,215,819,215"/>
 <area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="368,129,548,170"/>
@@ -154,13 +154,15 @@ Collaboration diagram for Supla::Sensor::HC_SR04:</div>
 <area shape="poly" title=" " alt="" coords="190,270,404,271,404,276,190,275"/>
 <area shape="rect" href="structTHVACValue.html" title=" " alt="" coords="42,313,141,338"/>
 <area shape="poly" title=" " alt="" coords="157,319,245,312,343,299,409,284,410,290,344,304,246,317,157,325"/>
+<area shape="rect" href="classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="878,249,986,274"/>
+<area shape="poly" title=" " alt="" coords="1001,258,1053,255,1086,251,1086,256,1053,260,1001,264"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a2e7d52705396f1f82e68e6fa9c059fb5" id="r_a2e7d52705396f1f82e68e6fa9c059fb5"><td class="memItemLeft"><a id="a2e7d52705396f1f82e68e6fa9c059fb5" name="a2e7d52705396f1f82e68e6fa9c059fb5"></a>
-&#160;</td><td class="memItemRight"><b>HC_SR04</b> (int8_t trigPin, int8_t echoPin, int16_t minIn=0, int16_t maxIn=500, int16_t minOut=0, int16_t maxOut=500)</td></tr>
+<tr class="memitem:ad770c510c4efc008284c18843158e3b7" id="r_ad770c510c4efc008284c18843158e3b7"><td class="memItemLeft"><a id="ad770c510c4efc008284c18843158e3b7" name="ad770c510c4efc008284c18843158e3b7"></a>
+&#160;</td><td class="memItemRight"><b>HC_SR04</b> (int8_t trigPin, int8_t echoPin, int16_t minIn=0, int16_t maxIn=500, int16_t minOut=0, int16_t maxOut=500, <a class="el" href="classSupla_1_1Io_1_1Base.html">Supla::Io::Base</a> *io=nullptr)</td></tr>
 <tr class="memitem:ad3c653db5321c9cbb84d30e066195f82" id="r_ad3c653db5321c9cbb84d30e066195f82"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ad3c653db5321c9cbb84d30e066195f82">onInit</a> ()</td></tr>
 <tr class="memdesc:ad3c653db5321c9cbb84d30e066195f82"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin().  <br /></td></tr>
 <tr class="memitem:a4f2759fea74649ce98068e0f4135d61d" id="r_a4f2759fea74649ce98068e0f4135d61d"><td class="memItemLeft">virtual double&#160;</td><td class="memItemRight"><a class="el" href="#a4f2759fea74649ce98068e0f4135d61d">getValue</a> ()</td></tr>
@@ -322,6 +324,8 @@ char&#160;</td><td class="memItemRight"><b>failCount</b></td></tr>
 uint64_t&#160;</td><td class="memItemRight"><b>readouts</b> [5]</td></tr>
 <tr class="memitem:a32baa6bba81e27c85f2cb8d1a0e7bb91" id="r_a32baa6bba81e27c85f2cb8d1a0e7bb91"><td class="memItemLeft"><a id="a32baa6bba81e27c85f2cb8d1a0e7bb91" name="a32baa6bba81e27c85f2cb8d1a0e7bb91"></a>
 int&#160;</td><td class="memItemRight"><b>index</b></td></tr>
+<tr class="memitem:ac8ffd68095f3e7963952babf67ac5975" id="r_ac8ffd68095f3e7963952babf67ac5975"><td class="memItemLeft"><a id="ac8ffd68095f3e7963952babf67ac5975" name="ac8ffd68095f3e7963952babf67ac5975"></a>
+<a class="el" href="classSupla_1_1Io_1_1Base.html">Supla::Io::Base</a> *&#160;</td><td class="memItemRight"><b>io</b></td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Sensor_1_1Distance"><td colspan="2">Protected Attributes inherited from <a class="el" href="classSupla_1_1Sensor_1_1Distance.html">Supla::Sensor::Distance</a></td></tr>
 <tr class="memitem:ad8693f72a84bea47b65dba6a7c7fb3bb pro_attribs_classSupla_1_1Sensor_1_1Distance" id="r_ad8693f72a84bea47b65dba6a7c7fb3bb"><td class="memItemLeft">
 uint32_t&#160;</td><td class="memItemRight"><b>lastReadTime</b> = 0</td></tr>

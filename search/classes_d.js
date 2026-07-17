@@ -18,9 +18,10 @@ var searchData=
   ['modbusserialconfig_15',['ModbusSerialConfig',['../structModbusSerialConfig.html',1,'']]],
   ['mqtt_16',['Mqtt',['../classMqtt.html',1,'Mqtt'],['../classSupla_1_1Protocol_1_1Mqtt.html',1,'Supla::Protocol::Mqtt']]],
   ['mqttchannelhandler_17',['MqttChannelHandler',['../classSupla_1_1Protocol_1_1MqttChannelHandler.html',1,'Supla::Protocol']]],
-  ['mqtttopic_18',['MqttTopic',['../classSupla_1_1Protocol_1_1MqttTopic.html',1,'Supla::Protocol']]],
-  ['multidshandler_19',['MultiDsHandler',['../classSupla_1_1Sensor_1_1MultiDsHandler.html',1,'Supla::Sensor']]],
-  ['multidshandlerbase_20',['MultiDsHandlerBase',['../classMultiDsHandlerBase.html',1,'MultiDsHandlerBase'],['../classSupla_1_1Sensor_1_1MultiDsHandlerBase.html',1,'Supla::Sensor::MultiDsHandlerBase']]],
-  ['multidssensor_21',['MultiDsSensor',['../classMultiDsSensor.html',1,'MultiDsSensor'],['../classSupla_1_1Sensor_1_1MultiDsSensor.html',1,'Supla::Sensor::MultiDsSensor']]],
-  ['mutex_22',['Mutex',['../classSupla_1_1Mutex.html',1,'Supla']]]
+  ['mqtthandlerregistry_18',['MqttHandlerRegistry',['../classSupla_1_1Protocol_1_1MqttHandlerRegistry.html',1,'Supla::Protocol']]],
+  ['mqtttopic_19',['MqttTopic',['../classSupla_1_1Protocol_1_1MqttTopic.html',1,'Supla::Protocol']]],
+  ['multidshandler_20',['MultiDsHandler',['../classSupla_1_1Sensor_1_1MultiDsHandler.html',1,'Supla::Sensor']]],
+  ['multidshandlerbase_21',['MultiDsHandlerBase',['../classMultiDsHandlerBase.html',1,'MultiDsHandlerBase'],['../classSupla_1_1Sensor_1_1MultiDsHandlerBase.html',1,'Supla::Sensor::MultiDsHandlerBase']]],
+  ['multidssensor_22',['MultiDsSensor',['../classMultiDsSensor.html',1,'MultiDsSensor'],['../classSupla_1_1Sensor_1_1MultiDsSensor.html',1,'Supla::Sensor::MultiDsSensor']]],
+  ['mutex_23',['Mutex',['../classSupla_1_1Mutex.html',1,'Supla']]]
 ];

@@ -1,0 +1,2608 @@
+{
+  "scenarios": [
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR",
+      "channel_type": "SUPLA_CHANNELTYPE_BINARYSENSOR",
+      "description": "Closed door sensor state",
+      "id": "binary_sensor.door.closed_state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "closed",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR",
+      "channel_type": "SUPLA_CHANNELTYPE_BINARYSENSOR",
+      "description": "Open door sensor state",
+      "id": "binary_sensor.door.open_state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "open",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_FLOOD_SENSOR",
+      "channel_type": "SUPLA_CHANNELTYPE_BINARYSENSOR",
+      "description": "On state for an on-off binary sensor",
+      "id": "binary_sensor.flood.on_state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "ON",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "",
+      "channel_type": "device",
+      "description": "Device availability and connection state topics",
+      "id": "device.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "true",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/state/connected"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/state/connection_uptime"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0.0.0",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/state/ip"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/state/mac"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/state/uptime"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "",
+      "channel_type": "device",
+      "description": "Wi-Fi signal diagnostic topics",
+      "id": "device.wifi_signal",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/state/connection_uptime"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "-67",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/state/rssi"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/state/uptime"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "73",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/state/wifi_signal_strength"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_DIMMER",
+      "channel_type": "SUPLA_CHANNELTYPE_DIMMER",
+      "description": "Dimmer command topics",
+      "id": "dimmer.commands",
+      "operations": [
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/execute_action"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/brightness"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_DIMMER",
+      "channel_type": "SUPLA_CHANNELTYPE_DIMMER",
+      "description": "Dimmer state topics",
+      "id": "dimmer.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "42",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/brightness"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "true",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/on"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING",
+      "channel_type": "SUPLA_CHANNELTYPE_DIMMERANDRGBLED",
+      "description": "Dimmer and RGB controller command topics",
+      "id": "dimmer_rgb.commands",
+      "operations": [
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/execute_action/dimmer"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/execute_action/rgb"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/brightness"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/color"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/color_brightness"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING",
+      "channel_type": "SUPLA_CHANNELTYPE_DIMMERANDRGBLED",
+      "description": "Dimmer and RGB controller state topics",
+      "id": "dimmer_rgb.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "8",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/brightness"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "5,6,7",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/color"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "11",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/color_brightness"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "true",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/dimmer/on"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "true",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/rgb/on"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_ELECTRICITY_METER",
+      "channel_type": "SUPLA_CHANNELTYPE_ELECTRICITY_METER",
+      "description": "Basic total and per-phase electricity meter state topics",
+      "id": "electricity_meter.basic_state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "200.000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_active",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_active",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_active",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_apparent",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_apparent",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.300",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_apparent",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_reactive",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.100",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_reactive",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_reactive",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0100",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_active_energy",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_active_energy",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_active_energy",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0100",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/total_forward_active_energy"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_ELECTRICITY_METER",
+      "channel_type": "SUPLA_CHANNELTYPE_ELECTRICITY_METER",
+      "description": "Electricity meter energy totals and global measurements",
+      "id": "electricity_meter.energy_and_global_state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "false",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/current_phase_sequence_clockwise"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0100",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_active_energy",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_active_energy",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_active_energy",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0200",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_active_energy",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_active_energy",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_active_energy",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0100",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/total_forward_active_energy"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0300",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/total_forward_balanced_active_energy"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0200",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/total_reverse_active_energy"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0400",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/total_reverse_balanced_active_energy"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "120.0",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/voltage_phase_angle_12"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "240.0",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/voltage_phase_angle_13"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "true",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/voltage_phase_sequence_clockwise"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_ELECTRICITY_METER",
+      "channel_type": "SUPLA_CHANNELTYPE_ELECTRICITY_METER",
+      "description": "Optional per-phase electricity meter measurements",
+      "id": "electricity_meter.per_phase_state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "1.234",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/current",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/current",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/current",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "50.00",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/frequency",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "50.00",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/frequency",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "50.00",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/frequency",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "12.3",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/phase_angle",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/phase_angle",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/phase_angle",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.99",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_factor",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.00",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_factor",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.00",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/power_factor",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0300",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_reactive_energy",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_reactive_energy",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_reactive_energy",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0200",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_active_energy",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_active_energy",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_active_energy",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0400",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_reactive_energy",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_reactive_energy",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0000",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_reactive_energy",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "230.00",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/voltage",
+          "variables": {
+            "phase": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.00",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/voltage",
+          "variables": {
+            "phase": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.00",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/phases/{phase}/voltage",
+          "variables": {
+            "phase": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "0.0200",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/state/total_reverse_active_energy"
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_ACTIONTRIGGER",
+      "channel_type": "SUPLA_CHANNELTYPE_ACTIONTRIGGER",
+      "description": "Home Assistant discovery for action trigger capabilities",
+      "id": "home_assistant.action_trigger.all_capabilities",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"automation_type\":\"trigger\",\"topic\":\"prefix/supla/devices/my-device-0405ab/channels/0/button_long_press\",\"type\":\"button_long_press\",\"subtype\":\"button_1\",\"payload\":\"button_long_press\",\"qos\":0,\"ret\":false}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/device_automation/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"automation_type\":\"trigger\",\"topic\":\"prefix/supla/devices/my-device-0405ab/channels/0/button_short_press\",\"type\":\"button_short_press\",\"subtype\":\"button_1\",\"payload\":\"button_short_press\",\"qos\":0,\"ret\":false}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/device_automation/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"automation_type\":\"trigger\",\"topic\":\"prefix/supla/devices/my-device-0405ab/channels/0/button_double_press\",\"type\":\"button_double_press\",\"subtype\":\"button_1\",\"payload\":\"button_double_press\",\"qos\":0,\"ret\":false}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/device_automation/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"automation_type\":\"trigger\",\"topic\":\"prefix/supla/devices/my-device-0405ab/channels/0/button_triple_press\",\"type\":\"button_triple_press\",\"subtype\":\"button_1\",\"payload\":\"button_triple_press\",\"qos\":0,\"ret\":false}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/device_automation/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"automation_type\":\"trigger\",\"topic\":\"prefix/supla/devices/my-device-0405ab/channels/0/button_quadruple_press\",\"type\":\"button_quadruple_press\",\"subtype\":\"button_1\",\"payload\":\"button_quadruple_press\",\"qos\":0,\"ret\":false}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/device_automation/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 4
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"automation_type\":\"trigger\",\"topic\":\"prefix/supla/devices/my-device-0405ab/channels/0/button_quintuple_press\",\"type\":\"button_quintuple_press\",\"subtype\":\"button_1\",\"payload\":\"button_quintuple_press\",\"qos\":0,\"ret\":false}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/device_automation/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 5
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"automation_type\":\"trigger\",\"topic\":\"prefix/supla/devices/my-device-0405ab/channels/0/button_turn_on\",\"type\":\"button_turn_on\",\"subtype\":\"button_1\",\"payload\":\"button_turn_on\",\"qos\":0,\"ret\":false}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/device_automation/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 6
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"automation_type\":\"trigger\",\"topic\":\"prefix/supla/devices/my-device-0405ab/channels/0/button_turn_off\",\"type\":\"button_turn_off\",\"subtype\":\"button_1\",\"payload\":\"button_turn_off\",\"qos\":0,\"ret\":false}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/device_automation/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 7
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR",
+      "channel_type": "SUPLA_CHANNELTYPE_BINARYSENSOR",
+      "description": "Home Assistant discovery for binary sensor variants",
+      "id": "home_assistant.binary_sensor.variants",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Alarm armament sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Binary sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Container level sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Door sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\",\"dev_cla\":\"door\",\"payload_on\":\"open\",\"payload_off\":\"closed\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Flood sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\",\"dev_cla\":\"moisture\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Garage door sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\",\"dev_cla\":\"garage_door\",\"payload_on\":\"open\",\"payload_off\":\"closed\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Gate sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\",\"dev_cla\":\"garage_door\",\"payload_on\":\"open\",\"payload_off\":\"closed\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Gateway sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\",\"dev_cla\":\"door\",\"payload_on\":\"open\",\"payload_off\":\"closed\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Hotel card sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Liquid sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\",\"dev_cla\":\"moisture\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Mail sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Motion sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Roller shutter sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\",\"dev_cla\":\"window\",\"payload_on\":\"open\",\"payload_off\":\"closed\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Roof window sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\",\"dev_cla\":\"window\",\"payload_on\":\"open\",\"payload_off\":\"closed\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Window sensor\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state\",\"dev_cla\":\"window\",\"payload_on\":\"open\",\"payload_off\":\"closed\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_DIMMER",
+      "channel_type": "SUPLA_CHANNELTYPE_DIMMER",
+      "description": "Home Assistant discovery for a dimmer",
+      "id": "home_assistant.dimmer",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/4\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"Dimmer\",\"uniq_id\":\"supla_000000000000_4_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/execute_action\",\"pl_on\":\"TURN_ON\",\"pl_off\":\"TURN_OFF\",\"stat_val_tpl\":\"{% if value == \\\"true\\\" %}TURN_ON{% else %}TURN_OFF{% endif %}\",\"on_cmd_type\":\"last\",\"bri_cmd_t\":\"~/set/brightness\",\"bri_scl\":100,\"bri_stat_t\":\"~/state/brightness\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/light/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING",
+      "channel_type": "SUPLA_CHANNELTYPE_DIMMERANDRGBLED",
+      "description": "Home Assistant discovery for combined dimmer and RGB entities",
+      "id": "home_assistant.dimmer_rgb",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/6\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"Dimmer\",\"uniq_id\":\"supla_000000000000_6_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/dimmer/on\",\"cmd_t\":\"~/execute_action/dimmer\",\"pl_on\":\"TURN_ON\",\"pl_off\":\"TURN_OFF\",\"stat_val_tpl\":\"{% if value == \\\"true\\\" %}TURN_ON{% else %}TURN_OFF{% endif %}\",\"on_cmd_type\":\"last\",\"bri_cmd_t\":\"~/set/brightness\",\"bri_scl\":100,\"bri_stat_t\":\"~/state/brightness\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/light/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/6\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"RGB Lighting\",\"uniq_id\":\"supla_000000000000_6_1\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/rgb/on\",\"cmd_t\":\"~/execute_action/rgb\",\"pl_on\":\"TURN_ON\",\"pl_off\":\"TURN_OFF\",\"stat_val_tpl\":\"{% if value == \\\"true\\\" %}TURN_ON{% else %}TURN_OFF{% endif %}\",\"on_cmd_type\":\"last\",\"bri_cmd_t\":\"~/set/color_brightness\",\"bri_scl\":100,\"bri_stat_t\":\"~/state/color_brightness\",\"rgb_stat_t\":\"~/state/color\",\"rgb_cmd_t\":\"~/set/color\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/light/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 1
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_ELECTRICITY_METER",
+      "channel_type": "SUPLA_CHANNELTYPE_ELECTRICITY_METER",
+      "description": "Home Assistant discovery for an electricity meter",
+      "id": "home_assistant.electricity_meter",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total forward active energy)\",\"uniq_id\":\"supla_000000000000_0_1\",\"qos\":0,\"unit_of_meas\": \"kWh\",\"stat_t\":\"~/state/total_forward_active_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 1
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total reverse active energy)\",\"uniq_id\":\"supla_000000000000_0_2\",\"qos\":0,\"unit_of_meas\": \"kWh\",\"stat_t\":\"~/state/total_reverse_active_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 2
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total forward balanced active energy)\",\"uniq_id\":\"supla_000000000000_0_3\",\"qos\":0,\"unit_of_meas\": \"kWh\",\"stat_t\":\"~/state/total_forward_balanced_active_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 3
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total reverse balanced active energy)\",\"uniq_id\":\"supla_000000000000_0_4\",\"qos\":0,\"unit_of_meas\": \"kWh\",\"stat_t\":\"~/state/total_reverse_balanced_active_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 4
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total forward active energy - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_5\",\"qos\":0,\"unit_of_meas\": \"kWh\",\"stat_t\":\"~/state/phases/1/total_forward_active_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 5
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total reverse active energy - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_6\",\"qos\":0,\"unit_of_meas\": \"kWh\",\"stat_t\":\"~/state/phases/1/total_reverse_active_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 6
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total forward reactive energy - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_7\",\"qos\":0,\"unit_of_meas\": \"kvarh\",\"stat_t\":\"~/state/phases/1/total_forward_reactive_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"reactive_energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 7
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total reverse reactive energy - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_8\",\"qos\":0,\"unit_of_meas\": \"kvarh\",\"stat_t\":\"~/state/phases/1/total_reverse_reactive_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"reactive_energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 8
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Frequency - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_9\",\"qos\":0,\"unit_of_meas\": \"Hz\",\"stat_t\":\"~/state/phases/1/frequency\",\"stat_cla\":\"measurement\",\"dev_cla\":\"frequency\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 9
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Voltage - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_10\",\"qos\":0,\"unit_of_meas\": \"V\",\"stat_t\":\"~/state/phases/1/voltage\",\"stat_cla\":\"measurement\",\"dev_cla\":\"voltage\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 10
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Current - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_11\",\"qos\":0,\"unit_of_meas\": \"A\",\"stat_t\":\"~/state/phases/1/current\",\"stat_cla\":\"measurement\",\"dev_cla\":\"current\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 11
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power active - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_12\",\"qos\":0,\"unit_of_meas\": \"W\",\"stat_t\":\"~/state/phases/1/power_active\",\"stat_cla\":\"measurement\",\"dev_cla\":\"power\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 12
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power reactive - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_13\",\"qos\":0,\"unit_of_meas\": \"var\",\"stat_t\":\"~/state/phases/1/power_reactive\",\"stat_cla\":\"measurement\",\"dev_cla\":\"reactive_power\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 13
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power apparent - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_14\",\"qos\":0,\"unit_of_meas\": \"VA\",\"stat_t\":\"~/state/phases/1/power_apparent\",\"stat_cla\":\"measurement\",\"dev_cla\":\"apparent_power\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 14
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power factor - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_15\",\"qos\":0,\"unit_of_meas\": \"\",\"stat_t\":\"~/state/phases/1/power_factor\",\"stat_cla\":\"measurement\",\"dev_cla\":\"power_factor\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 15
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Phase angle - Phase 1)\",\"uniq_id\":\"supla_000000000000_0_16\",\"qos\":0,\"unit_of_meas\": \"°\",\"stat_t\":\"~/state/phases/1/phase_angle\",\"stat_cla\":\"measurement\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 16
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total forward active energy - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_17\",\"qos\":0,\"unit_of_meas\": \"kWh\",\"stat_t\":\"~/state/phases/2/total_forward_active_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 17
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total reverse active energy - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_18\",\"qos\":0,\"unit_of_meas\": \"kWh\",\"stat_t\":\"~/state/phases/2/total_reverse_active_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 18
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total forward reactive energy - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_19\",\"qos\":0,\"unit_of_meas\": \"kvarh\",\"stat_t\":\"~/state/phases/2/total_forward_reactive_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"reactive_energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 19
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total reverse reactive energy - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_20\",\"qos\":0,\"unit_of_meas\": \"kvarh\",\"stat_t\":\"~/state/phases/2/total_reverse_reactive_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"reactive_energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 20
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Frequency - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_21\",\"qos\":0,\"unit_of_meas\": \"Hz\",\"stat_t\":\"~/state/phases/2/frequency\",\"stat_cla\":\"measurement\",\"dev_cla\":\"frequency\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 21
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Voltage - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_22\",\"qos\":0,\"unit_of_meas\": \"V\",\"stat_t\":\"~/state/phases/2/voltage\",\"stat_cla\":\"measurement\",\"dev_cla\":\"voltage\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 22
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Current - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_23\",\"qos\":0,\"unit_of_meas\": \"A\",\"stat_t\":\"~/state/phases/2/current\",\"stat_cla\":\"measurement\",\"dev_cla\":\"current\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 23
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power active - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_24\",\"qos\":0,\"unit_of_meas\": \"W\",\"stat_t\":\"~/state/phases/2/power_active\",\"stat_cla\":\"measurement\",\"dev_cla\":\"power\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 24
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power reactive - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_25\",\"qos\":0,\"unit_of_meas\": \"var\",\"stat_t\":\"~/state/phases/2/power_reactive\",\"stat_cla\":\"measurement\",\"dev_cla\":\"reactive_power\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 25
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power apparent - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_26\",\"qos\":0,\"unit_of_meas\": \"VA\",\"stat_t\":\"~/state/phases/2/power_apparent\",\"stat_cla\":\"measurement\",\"dev_cla\":\"apparent_power\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 26
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power factor - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_27\",\"qos\":0,\"unit_of_meas\": \"\",\"stat_t\":\"~/state/phases/2/power_factor\",\"stat_cla\":\"measurement\",\"dev_cla\":\"power_factor\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 27
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Phase angle - Phase 2)\",\"uniq_id\":\"supla_000000000000_0_28\",\"qos\":0,\"unit_of_meas\": \"°\",\"stat_t\":\"~/state/phases/2/phase_angle\",\"stat_cla\":\"measurement\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 28
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total forward active energy - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_29\",\"qos\":0,\"unit_of_meas\": \"kWh\",\"stat_t\":\"~/state/phases/3/total_forward_active_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 29
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total reverse active energy - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_30\",\"qos\":0,\"unit_of_meas\": \"kWh\",\"stat_t\":\"~/state/phases/3/total_reverse_active_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 30
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total forward reactive energy - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_31\",\"qos\":0,\"unit_of_meas\": \"kvarh\",\"stat_t\":\"~/state/phases/3/total_forward_reactive_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"reactive_energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 31
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Total reverse reactive energy - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_32\",\"qos\":0,\"unit_of_meas\": \"kvarh\",\"stat_t\":\"~/state/phases/3/total_reverse_reactive_energy\",\"stat_cla\":\"total_increasing\",\"dev_cla\":\"reactive_energy\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 32
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Frequency - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_33\",\"qos\":0,\"unit_of_meas\": \"Hz\",\"stat_t\":\"~/state/phases/3/frequency\",\"stat_cla\":\"measurement\",\"dev_cla\":\"frequency\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 33
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Voltage - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_34\",\"qos\":0,\"unit_of_meas\": \"V\",\"stat_t\":\"~/state/phases/3/voltage\",\"stat_cla\":\"measurement\",\"dev_cla\":\"voltage\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 34
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Current - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_35\",\"qos\":0,\"unit_of_meas\": \"A\",\"stat_t\":\"~/state/phases/3/current\",\"stat_cla\":\"measurement\",\"dev_cla\":\"current\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 35
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power active - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_36\",\"qos\":0,\"unit_of_meas\": \"W\",\"stat_t\":\"~/state/phases/3/power_active\",\"stat_cla\":\"measurement\",\"dev_cla\":\"power\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 36
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power reactive - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_37\",\"qos\":0,\"unit_of_meas\": \"var\",\"stat_t\":\"~/state/phases/3/power_reactive\",\"stat_cla\":\"measurement\",\"dev_cla\":\"reactive_power\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 37
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power apparent - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_38\",\"qos\":0,\"unit_of_meas\": \"VA\",\"stat_t\":\"~/state/phases/3/power_apparent\",\"stat_cla\":\"measurement\",\"dev_cla\":\"apparent_power\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 38
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Power factor - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_39\",\"qos\":0,\"unit_of_meas\": \"\",\"stat_t\":\"~/state/phases/3/power_factor\",\"stat_cla\":\"measurement\",\"dev_cla\":\"power_factor\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 39
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Electricity Meter (Phase angle - Phase 3)\",\"uniq_id\":\"supla_000000000000_0_40\",\"qos\":0,\"unit_of_meas\": \"°\",\"stat_t\":\"~/state/phases/3/phase_angle\",\"stat_cla\":\"measurement\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 40
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_HVAC_THERMOSTAT",
+      "channel_type": "SUPLA_CHANNELTYPE_HVAC",
+      "description": "Home Assistant discovery for a cool thermostat",
+      "id": "home_assistant.hvac.thermostat_cool",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Thermostat\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"action_topic\":\"~/state/action\",\"current_temperature_topic\":\"prefix/supla/devices/my-device-0405ab/channels/-1/state/temperature\",\"current_humidity_topic\":\"None\",\"max_temp\":\"-327.68\",\"min_temp\":\"-327.68\",\"modes\":[\"off\",\"auto\",\"cool\"],\"mode_stat_t\":\"~/state/mode\",\"mode_command_topic\":\"~/execute_action\",\"power_command_topic\":\"~/execute_action\",\"payload_off\":\"turn_off\",\"payload_on\":\"turn_on\",\"temperature_unit\":\"C\",\"temp_step\":\"0.1\",\"temperature_command_topic\":\"~/set/temperature_setpoint\",\"temperature_state_topic\":\"~/state/temperature_setpoint\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/climate/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_HVAC_THERMOSTAT",
+      "channel_type": "SUPLA_CHANNELTYPE_HVAC",
+      "description": "Home Assistant discovery for a heat thermostat",
+      "id": "home_assistant.hvac.thermostat_heat",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Thermostat\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"action_topic\":\"~/state/action\",\"current_temperature_topic\":\"prefix/supla/devices/my-device-0405ab/channels/-1/state/temperature\",\"current_humidity_topic\":\"None\",\"max_temp\":\"-327.68\",\"min_temp\":\"-327.68\",\"modes\":[\"off\",\"auto\",\"heat\"],\"mode_stat_t\":\"~/state/mode\",\"mode_command_topic\":\"~/execute_action\",\"power_command_topic\":\"~/execute_action\",\"payload_off\":\"turn_off\",\"payload_on\":\"turn_on\",\"temperature_unit\":\"C\",\"temp_step\":\"0.1\",\"temperature_command_topic\":\"~/set/temperature_setpoint\",\"temperature_state_topic\":\"~/state/temperature_setpoint\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/climate/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL",
+      "channel_type": "SUPLA_CHANNELTYPE_HVAC",
+      "description": "Home Assistant discovery for a heat-cool thermostat",
+      "id": "home_assistant.hvac.thermostat_heat_cool",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Thermostat\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"action_topic\":\"~/state/action\",\"current_temperature_topic\":\"prefix/supla/devices/my-device-0405ab/channels/-1/state/temperature\",\"current_humidity_topic\":\"None\",\"max_temp\":\"-327.68\",\"min_temp\":\"-327.68\",\"modes\":[\"off\",\"auto\",\"heat\",\"cool\",\"heat_cool\"],\"mode_stat_t\":\"~/state/mode\",\"mode_command_topic\":\"~/execute_action\",\"power_command_topic\":\"~/execute_action\",\"payload_off\":\"turn_off\",\"payload_on\":\"turn_on\",\"temperature_unit\":\"C\",\"temp_step\":\"0.1\",\"temperature_high_command_topic\":\"~/set/temperature_setpoint_cool/\",\"temperature_high_state_topic\":\"~/state/temperature_setpoint_cool/\",\"temperature_low_command_topic\":\"~/set/temperature_setpoint_heat/\",\"temperature_low_state_topic\":\"~/state/temperature_setpoint_heat/\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/climate/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_CONTROLLINGTHEGATE",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "Home Assistant discovery for impulse relay variants",
+      "id": "home_assistant.relay.impulse_variants",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Door lock\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/set/on\",\"payload_open\":\"true\",\"payload_close\":null,\"payload_stop\":null,\"dev_cla\":\"door\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Garage door\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/set/on\",\"payload_open\":\"true\",\"payload_close\":null,\"payload_stop\":null,\"dev_cla\":\"garage_door\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Gate\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/set/on\",\"payload_open\":\"true\",\"payload_close\":null,\"payload_stop\":null,\"dev_cla\":\"gate\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Gateway lock\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/set/on\",\"payload_open\":\"true\",\"payload_close\":null,\"payload_stop\":null,\"dev_cla\":\"door\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_POWERSWITCH",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "Home Assistant discovery for switch relay variants",
+      "id": "home_assistant.relay.switch_variants",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Light switch\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/set/on\",\"pl_on\":\"true\",\"pl_off\":\"false\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/light/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Heater/cooling switch\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/set/on\",\"pl_on\":\"true\",\"pl_off\":\"false\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/switch/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Power switch\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/set/on\",\"pl_on\":\"true\",\"pl_off\":\"false\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/switch/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Pump switch\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/set/on\",\"pl_on\":\"true\",\"pl_off\":\"false\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/switch/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_RGBLIGHTING",
+      "channel_type": "SUPLA_CHANNELTYPE_RGBLEDCONTROLLER",
+      "description": "Home Assistant discovery for an RGB controller",
+      "id": "home_assistant.rgb",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/5\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"RGB Lighting\",\"uniq_id\":\"supla_000000000000_5_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/execute_action\",\"pl_on\":\"TURN_ON\",\"pl_off\":\"TURN_OFF\",\"stat_val_tpl\":\"{% if value == \\\"true\\\" %}TURN_ON{% else %}TURN_OFF{% endif %}\",\"on_cmd_type\":\"last\",\"bri_cmd_t\":\"~/set/color_brightness\",\"bri_scl\":100,\"bri_stat_t\":\"~/state/color_brightness\",\"rgb_stat_t\":\"~/state/color\",\"rgb_cmd_t\":\"~/set/color\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/light/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "Home Assistant discovery for cover function variants",
+      "id": "home_assistant.roller_shutter.variants",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Curtain\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"cmd_t\":\"~/execute_action\",\"pl_open\":\"REVEAL\",\"pl_cls\":\"SHUT\",\"pl_stop\":\"STOP\",\"set_pos_t\":\"~/set/closing_percentage\",\"pos_t\":\"~/state/shut\",\"pos_open\":0,\"pos_clsd\":100,\"pos_tpl\":\"{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}\",\"dev_cla\":\"curtain\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Facade blind\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"cmd_t\":\"~/execute_action\",\"pl_open\":\"REVEAL\",\"pl_cls\":\"SHUT\",\"pl_stop\":\"STOP\",\"set_pos_t\":\"~/set/closing_percentage\",\"pos_t\":\"~/state/shut\",\"pos_open\":0,\"pos_clsd\":100,\"pos_tpl\":\"{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}\",\"tilt_cmd_t\":\"~/set/tilt\",\"tilt_status_t\":\"~/state/tilt\",\"tilt_min\":100,\"tilt_max\":0,\"tilt_opened_value\":0,\"tilt_closed_value\":100,\"tilt_status_tpl\":\"{% if int(value, default=0) <= 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}\",\"dev_cla\":\"shutter\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Projector screen\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"cmd_t\":\"~/execute_action\",\"pl_open\":\"REVEAL\",\"pl_cls\":\"SHUT\",\"pl_stop\":\"STOP\",\"set_pos_t\":\"~/set/closing_percentage\",\"pos_t\":\"~/state/shut\",\"pos_open\":0,\"pos_clsd\":100,\"pos_tpl\":\"{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}\",\"dev_cla\":\"shade\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Roller garage door\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"cmd_t\":\"~/execute_action\",\"pl_open\":\"REVEAL\",\"pl_cls\":\"SHUT\",\"pl_stop\":\"STOP\",\"set_pos_t\":\"~/set/closing_percentage\",\"pos_t\":\"~/state/shut\",\"pos_open\":0,\"pos_clsd\":100,\"pos_tpl\":\"{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}\",\"dev_cla\":\"garage_door\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Roller shutter\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"cmd_t\":\"~/execute_action\",\"pl_open\":\"REVEAL\",\"pl_cls\":\"SHUT\",\"pl_stop\":\"STOP\",\"set_pos_t\":\"~/set/closing_percentage\",\"pos_t\":\"~/state/shut\",\"pos_open\":0,\"pos_clsd\":100,\"pos_tpl\":\"{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}\",\"dev_cla\":\"shutter\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Roof window\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"cmd_t\":\"~/execute_action\",\"pl_open\":\"REVEAL\",\"pl_cls\":\"SHUT\",\"pl_stop\":\"STOP\",\"set_pos_t\":\"~/set/closing_percentage\",\"pos_t\":\"~/state/shut\",\"pos_open\":0,\"pos_clsd\":100,\"pos_tpl\":\"{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}\",\"dev_cla\":\"window\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Terrace awning\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"cmd_t\":\"~/execute_action\",\"pl_open\":\"REVEAL\",\"pl_cls\":\"SHUT\",\"pl_stop\":\"STOP\",\"set_pos_t\":\"~/set/closing_percentage\",\"pos_t\":\"~/state/shut\",\"pos_open\":0,\"pos_clsd\":100,\"pos_tpl\":\"{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}\",\"dev_cla\":\"awning\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Vertical blind\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"cmd_t\":\"~/execute_action\",\"pl_open\":\"REVEAL\",\"pl_cls\":\"SHUT\",\"pl_stop\":\"STOP\",\"set_pos_t\":\"~/set/closing_percentage\",\"pos_t\":\"~/state/shut\",\"pos_open\":0,\"pos_clsd\":100,\"pos_tpl\":\"{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}\",\"tilt_cmd_t\":\"~/set/tilt\",\"tilt_status_t\":\"~/state/tilt\",\"tilt_min\":100,\"tilt_max\":0,\"tilt_opened_value\":0,\"tilt_closed_value\":100,\"tilt_status_tpl\":\"{% if int(value, default=0) <= 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}\",\"dev_cla\":\"shutter\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/light/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/switch/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "0",
+      "channel_type": "SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR",
+      "description": "Home Assistant discovery for temperature and humidity entities",
+      "id": "home_assistant.therm_hygro",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/3\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#3 Humidity\",\"dev_cla\":\"humidity\",\"stat_cla\":\"measurement\",\"unit_of_meas\":\"%\",\"uniq_id\":\"supla_000000000000_3_0\",\"expire_after\":30,\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/humidity\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/3\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#3 Temperature\",\"uniq_id\":\"supla_000000000000_3_1\",\"dev_cla\":\"temperature\",\"unit_of_meas\":\"°C\",\"stat_cla\":\"measurement\",\"expire_after\":30,\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/temperature\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 1
+          }
+        }
+      ]
+    },
+    {
+      "category": "home_assistant",
+      "channel_function": "0",
+      "channel_type": "SUPLA_CHANNELTYPE_THERMOMETER",
+      "description": "Home Assistant discovery for a temperature sensor",
+      "id": "home_assistant.thermometer",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/2\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#2 Temperature\",\"uniq_id\":\"supla_000000000000_2_0\",\"dev_cla\":\"temperature\",\"unit_of_meas\":\"°C\",\"stat_cla\":\"measurement\",\"expire_after\":30,\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/temperature\"}",
+          "qos": 0,
+          "retain": true,
+          "topic": "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config",
+          "variables": {
+            "sub_id": 0
+          }
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_NONE",
+      "channel_type": "SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR",
+      "description": "Humidity and temperature state topics",
+      "id": "humidity_temperature.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "55.00",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/humidity"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "21.50",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL",
+      "channel_type": "SUPLA_CHANNELTYPE_HVAC",
+      "description": "HVAC off action and mode state",
+      "id": "hvac.off.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "off",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/action"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "off",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/mode"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint_cool"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint_heat"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_HVAC_THERMOSTAT",
+      "channel_type": "SUPLA_CHANNELTYPE_HVAC",
+      "description": "Cool thermostat state topics",
+      "id": "hvac.thermostat_cool.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "cooling",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/action"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "cool",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/mode"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "23.00",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint_cool"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint_heat"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_HVAC_THERMOSTAT",
+      "channel_type": "SUPLA_CHANNELTYPE_HVAC",
+      "description": "Heat thermostat state topics",
+      "id": "hvac.thermostat_heat.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "idle",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/action"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "heat",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/mode"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "19.50",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint_cool"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint_heat"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL",
+      "channel_type": "SUPLA_CHANNELTYPE_HVAC",
+      "description": "Scheduled heat-cool thermostat without setpoints",
+      "id": "hvac.thermostat_heat_cool.auto_without_setpoints",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "idle",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/action"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "auto",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/mode"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint_cool"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint_heat"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL",
+      "channel_type": "SUPLA_CHANNELTYPE_HVAC",
+      "description": "Basic heat-cool thermostat command topics",
+      "id": "hvac.thermostat_heat_cool.commands",
+      "operations": [
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/execute_action"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/temperature_setpoint"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/temperature_setpoint_cool"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/temperature_setpoint_heat"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL",
+      "channel_type": "SUPLA_CHANNELTYPE_HVAC",
+      "description": "Basic heat-cool thermostat state topics",
+      "id": "hvac.thermostat_heat_cool.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "heating",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/action"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "heat_cool",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/mode"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "23.00",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint_cool"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "21.00",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature_setpoint_heat"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_CONTROLLINGTHEGATE",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "State topic for an impulse gate relay",
+      "id": "relay.impulse_gate.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "closed",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/on"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_LIGHTSWITCH",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "State topic for a light switch relay",
+      "id": "relay.light_switch.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "false",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/on"
+        }
+      ]
+    },
+    {
+      "category": "mixed",
+      "channel_function": "SUPLA_CHANNELFNC_LIGHTSWITCH",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "Relay state with obsolete retained topic cleanup",
+      "id": "relay.pair.cleanup_unused_state",
+      "operations": [
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/is_calibrating"
+        },
+        {
+          "category": "public",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "true",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/on"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/shut"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/tilt"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_POWERSWITCH",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "Command topics for a power switch relay",
+      "id": "relay.power_switch.commands",
+      "operations": [
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/execute_action"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/on"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_POWERSWITCH",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "State topics for a power switch relay",
+      "id": "relay.power_switch.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "true",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/on"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_RGBLIGHTING",
+      "channel_type": "SUPLA_CHANNELTYPE_RGBLEDCONTROLLER",
+      "description": "RGB controller command topics",
+      "id": "rgb.commands",
+      "operations": [
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/execute_action"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/color"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/color_brightness"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_RGBLIGHTING",
+      "channel_type": "SUPLA_CHANNELTYPE_RGBLEDCONTROLLER",
+      "description": "RGB controller state topics",
+      "id": "rgb.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "1,2,3",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/color"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "4",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/color_brightness"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "true",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/on"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "Roller shutter command topics",
+      "id": "roller_shutter.commands",
+      "operations": [
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/execute_action"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/closing_percentage"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/tilt"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "Facade blind state topics including tilt",
+      "id": "roller_shutter.facade_blind.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "false",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/is_calibrating"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/on"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "40",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/shut"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "60",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/tilt"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "Roller shutter state topics",
+      "id": "roller_shutter.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "false",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/is_calibrating"
+        },
+        {
+          "category": "cleanup",
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/on"
+        },
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "33",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/shut"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_NONE",
+      "channel_type": "SUPLA_CHANNELTYPE_THERMOMETER",
+      "description": "Thermometer state topics",
+      "id": "thermometer.state",
+      "operations": [
+        {
+          "direction": "device_to_broker",
+          "operation": "publish",
+          "payload_example": "21.50",
+          "qos": 0,
+          "retain": true,
+          "topic": "{prefix}/channels/{channel}/state/temperature"
+        }
+      ]
+    }
+  ],
+  "schema_version": 1
+}

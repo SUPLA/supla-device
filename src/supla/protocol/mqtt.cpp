@@ -2194,7 +2194,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryEM(Supla::Element *element) {
   if (ElectricityMeter::isFwdBalancedActEnergyUsed(extEMValue)) {
     publishHADiscoveryEMParameter(element,
                                   parameterId,
-                                  "total_forward_active_energy_balanced",
+                                  "total_forward_balanced_active_energy",
                                   "kWh",
                                   Supla::Protocol::HAStateClass_TotalIncreasing,
                                   Supla::Protocol::HADeviceClass_Energy);
@@ -2204,7 +2204,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryEM(Supla::Element *element) {
   if (ElectricityMeter::isRvrBalancedActEnergyUsed(extEMValue)) {
     publishHADiscoveryEMParameter(element,
                                   parameterId,
-                                  "total_reverse_active_energy_balanced",
+                                  "total_reverse_balanced_active_energy",
                                   "kWh",
                                   Supla::Protocol::HAStateClass_TotalIncreasing,
                                   Supla::Protocol::HADeviceClass_Energy);

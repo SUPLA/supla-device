@@ -27,6 +27,15 @@ steps:
   - cmake ..
   - make -j32
 
+- name: mqtt_documentation
+  image: devel/freertos
+  pull: never
+  depends_on:
+  - tests_compilation
+  commands:
+  - extras/tools/mqtt-docgen/generate.sh
+  - git diff --exit-code -- extras/docs/mqtt/observed.json docs/mqtt/topics.md docs/mqtt/topics.pl.md docs/mqtt/home-assistant-discovery.md docs/mqtt/home-assistant-discovery.pl.md
+
 - name: tests
   image: devel/freertos
   pull: never

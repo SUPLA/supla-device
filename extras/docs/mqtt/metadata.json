@@ -1,0 +1,719 @@
+{
+  "schema_version": 1,
+  "topics": {
+    "{prefix}/channels/{channel}/set/brightness": {
+      "title": "Set brightness",
+      "payload_type": "integer",
+      "range": "0..100",
+      "description": "Sets the channel brightness.",
+      "availability": "Dimmer-capable channels.",
+      "optional": false,
+      "tested_payloads": [
+        "55",
+        "77"
+      ],
+      "confirmed_by_tests": [
+        "MqttChannelDispatchTests.processDataCoversControlTypes"
+      ]
+    },
+    "{prefix}/channels/{channel}/set/on": {
+      "title": "Set relay state",
+      "payload_type": "string",
+      "allowed_values": [
+        "true",
+        "1",
+        "yes",
+        "false",
+        "0",
+        "no"
+      ],
+      "description": "Changes a switch-like relay output. Matching is case-insensitive.",
+      "availability": "Switch-like relay functions.",
+      "optional": false,
+      "compatibility": "The current parser treats any value other than `1`, `yes`, or `true` as OFF. Integrations should use only the documented values.",
+      "tested_payloads": [
+        "true",
+        "false",
+        "1",
+        "0",
+        "YES",
+        "FALSE"
+      ],
+      "confirmed_by_tests": [
+        "MqttProcessDataTests.relaySetOnTests"
+      ]
+    },
+    "{prefix}/channels/{channel}/state": {
+      "title": "Binary sensor state",
+      "payload_type": "string",
+      "allowed_values": [
+        "open",
+        "closed",
+        "ON",
+        "OFF"
+      ],
+      "description": "Current binary sensor state; vocabulary depends on the channel function.",
+      "availability": "Binary sensor channels with a configured function.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/state/brightness": {
+      "title": "Brightness state",
+      "payload_type": "integer",
+      "range": "0..100",
+      "description": "Current dimmer brightness.",
+      "availability": "Dimmer-capable channels.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/state/humidity": {
+      "title": "Humidity",
+      "payload_type": "number",
+      "unit": "%",
+      "description": "Current relative humidity.",
+      "availability": "Humidity and temperature sensors with a valid humidity reading.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/on": {
+      "title": "On state",
+      "payload_type": "boolean",
+      "allowed_values": [
+        "true",
+        "false"
+      ],
+      "description": "Current on/off state.",
+      "availability": "Switch, dimmer, or RGB channels as applicable.",
+      "optional": false,
+      "overrides": {
+        "relay.power_switch.state": {
+          "availability": "Power-switch and light-switch relay channels."
+        },
+        "relay.light_switch.state": {
+          "availability": "Power-switch and light-switch relay channels."
+        },
+        "relay.pair.cleanup_unused_state": {
+          "availability": "Power-switch and light-switch relay channels."
+        },
+        "relay.impulse_gate.state": {
+          "title": "Impulse relay state",
+          "payload_type": "string",
+          "allowed_values": [
+            "closed"
+          ],
+          "description": "Idle state reported by an impulse gate, garage-door, or lock relay.",
+          "availability": "Impulse relay functions."
+        },
+        "dimmer.state": {
+          "availability": "Dimmer-capable channels."
+        },
+        "rgb.state": {
+          "availability": "RGB-capable channels."
+        }
+      }
+    },
+    "{prefix}/channels/{channel}/state/temperature": {
+      "title": "Temperature",
+      "payload_type": "number",
+      "unit": "°C",
+      "description": "Current temperature reading.",
+      "availability": "Temperature-capable sensors with a valid reading.",
+      "optional": true
+    },
+    "homeassistant/climate/supla/000000000000_{channel}_{sub_id}/config": {
+      "title": "HVAC discovery configuration",
+      "payload_type": "json",
+      "description": "Home Assistant MQTT discovery configuration for an HVAC channel.",
+      "availability": "HVAC thermostat channels.",
+      "optional": false
+    },
+    "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config": {
+      "title": "Sensor discovery configuration",
+      "payload_type": "json",
+      "description": "Home Assistant MQTT discovery configuration for a temperature, humidity, or electricity meter sensor.",
+      "availability": "Temperature, humidity, and electricity meter sensor channels.",
+      "optional": false
+    },
+    "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config": {
+      "title": "Cover discovery configuration",
+      "payload_type": "json",
+      "description": "Home Assistant MQTT discovery configuration for a cover or impulse relay channel.",
+      "availability": "Cover functions and impulse relay functions.",
+      "optional": false
+    },
+    "homeassistant/switch/supla/000000000000_{channel}_{sub_id}/config": {
+      "title": "Switch discovery configuration",
+      "payload_type": "json",
+      "description": "Home Assistant MQTT discovery configuration for a switch relay channel.",
+      "availability": "Switch-like relay functions.",
+      "optional": false
+    },
+    "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config": {
+      "title": "Binary sensor discovery configuration",
+      "payload_type": "json",
+      "description": "Home Assistant MQTT discovery configuration for a binary sensor channel.",
+      "availability": "Binary sensor channels with a configured function.",
+      "optional": false
+    },
+    "homeassistant/device_automation/supla/000000000000_{channel}_{sub_id}/config": {
+      "title": "Action trigger discovery configuration",
+      "payload_type": "json",
+      "description": "Home Assistant MQTT discovery configuration for an action trigger capability.",
+      "availability": "Action trigger channels.",
+      "optional": false
+    },
+    "homeassistant/light/supla/000000000000_{channel}_{sub_id}/config": {
+      "title": "Light discovery configuration",
+      "payload_type": "json",
+      "description": "Home Assistant MQTT discovery configuration for a light relay channel.",
+      "availability": "Light-switch relay functions.",
+      "optional": false
+    },
+    "{prefix}/state/connected": {
+      "title": "Connection state",
+      "payload_type": "boolean",
+      "allowed_values": [
+        "true",
+        "false"
+      ],
+      "description": "MQTT availability state of the device.",
+      "availability": "All MQTT-enabled devices.",
+      "optional": false
+    },
+    "{prefix}/state/uptime": {
+      "title": "Device uptime",
+      "payload_type": "integer",
+      "unit": "s",
+      "description": "Device uptime in seconds.",
+      "availability": "All MQTT-enabled devices.",
+      "optional": false
+    },
+    "{prefix}/state/ip": {
+      "title": "IP address",
+      "payload_type": "string",
+      "example": "192.0.2.10",
+      "description": "IPv4 address reported by the active network interface.",
+      "availability": "Published during MQTT registration.",
+      "optional": false
+    },
+    "{prefix}/state/mac": {
+      "title": "MAC address",
+      "payload_type": "string",
+      "example": "01:02:03:04:05:AB",
+      "description": "Main device MAC address in colon-separated hexadecimal form.",
+      "availability": "Published during MQTT registration.",
+      "optional": false
+    },
+    "{prefix}/state/connection_uptime": {
+      "title": "Connection uptime",
+      "payload_type": "integer",
+      "unit": "s",
+      "description": "Time since the current connection was established.",
+      "availability": "Devices that do not use sleeping mode.",
+      "optional": true
+    },
+    "{prefix}/state/rssi": {
+      "title": "Wi-Fi RSSI",
+      "payload_type": "integer",
+      "unit": "dBm",
+      "description": "Received Wi-Fi signal strength reported by the device.",
+      "availability": "Wi-Fi interfaces that expose RSSI.",
+      "optional": true
+    },
+    "{prefix}/state/wifi_signal_strength": {
+      "title": "Wi-Fi signal strength",
+      "payload_type": "integer",
+      "unit": "%",
+      "range": "0..100",
+      "description": "Normalized Wi-Fi signal strength reported by the device.",
+      "availability": "Wi-Fi interfaces that expose signal strength.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/execute_action": {
+      "title": "Execute action",
+      "payload_type": "string",
+      "description": "Executes a channel-specific action such as switching, toggling, moving, or changing HVAC mode.",
+      "availability": "Controllable relay, cover, dimmer, RGB, or HVAC channels.",
+      "optional": false,
+      "overrides": {
+        "relay.power_switch.commands": {
+          "title": "Execute relay action",
+          "allowed_values": [
+            "turn_on",
+            "turn_off",
+            "toggle"
+          ],
+          "description": "Switches the relay on, off, or toggles its current state. Matching is case-insensitive.",
+          "availability": "Power-switch relay channels.",
+          "tested_payloads": [
+            "turn_on",
+            "turn_off",
+            "toggle"
+          ],
+          "confirmed_by_tests": [
+            "MqttProcessDataTests.executeActionTests"
+          ]
+        },
+        "roller_shutter.commands": {
+          "title": "Execute roller shutter action",
+          "allowed_values": [
+            "reveal",
+            "shut",
+            "stop",
+            "calibrate",
+            "recalibrate"
+          ],
+          "description": "Opens, closes, stops, or recalibrates the roller shutter. Matching is case-insensitive.",
+          "availability": "Roller shutters and compatible cover functions."
+        },
+        "dimmer.commands": {
+          "title": "Execute dimmer action",
+          "allowed_values": [
+            "turn_on",
+            "turn_off",
+            "toggle"
+          ],
+          "description": "Switches the dimmer on, off, or toggles its current state. Matching is case-insensitive.",
+          "availability": "Dimmer-capable channels."
+        },
+        "rgb.commands": {
+          "title": "Execute RGB action",
+          "allowed_values": [
+            "turn_on",
+            "turn_off",
+            "toggle"
+          ],
+          "description": "Switches the RGB output on, off, or toggles its current state. Matching is case-insensitive.",
+          "availability": "RGB-capable channels."
+        },
+        "hvac.thermostat_heat_cool.commands": {
+          "title": "Execute HVAC action",
+          "allowed_values": [
+            "turn_on",
+            "turn_off",
+            "off",
+            "toggle",
+            "auto",
+            "heat",
+            "cool",
+            "heat_cool"
+          ],
+          "description": "Changes the operating state or mode of a heat-cool thermostat. Matching is case-insensitive.",
+          "availability": "Heat-cool HVAC thermostat channels."
+        }
+      }
+    },
+    "{prefix}/channels/{channel}/execute_action/dimmer": {
+      "title": "Execute dimmer action",
+      "payload_type": "string",
+      "allowed_values": [
+        "turn_on",
+        "turn_off",
+        "toggle"
+      ],
+      "description": "Controls the dimmer part of a combined dimmer and RGB channel.",
+      "availability": "Combined dimmer and RGB channels.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/execute_action/rgb": {
+      "title": "Execute RGB action",
+      "payload_type": "string",
+      "allowed_values": [
+        "turn_on",
+        "turn_off",
+        "toggle"
+      ],
+      "description": "Controls the RGB part of a combined dimmer and RGB channel.",
+      "availability": "Combined dimmer and RGB channels.",
+      "optional": false,
+      "tested_payloads": [
+        "turn_off"
+      ],
+      "confirmed_by_tests": [
+        "MqttChannelDispatchTests.processDataCoversControlTypes"
+      ]
+    },
+    "{prefix}/channels/{channel}/set/closing_percentage": {
+      "title": "Set closing percentage",
+      "payload_type": "integer",
+      "range": "0..100",
+      "unit": "%",
+      "description": "Sets the cover position, where 0 is fully open and 100 is fully closed.",
+      "availability": "Roller shutters and compatible cover functions.",
+      "optional": false,
+      "tested_payloads": [
+        "10"
+      ],
+      "confirmed_by_tests": [
+        "MqttChannelDispatchTests.processDataCoversControlTypes"
+      ]
+    },
+    "{prefix}/channels/{channel}/set/tilt": {
+      "title": "Set tilt",
+      "payload_type": "integer",
+      "range": "0..100",
+      "unit": "%",
+      "description": "Sets the slat tilt percentage.",
+      "availability": "Cover functions with tilt support.",
+      "optional": true,
+      "tested_payloads": [
+        "20"
+      ],
+      "confirmed_by_tests": [
+        "MqttChannelDispatchTests.processDataCoversControlTypes"
+      ]
+    },
+    "{prefix}/channels/{channel}/set/color": {
+      "title": "Set RGB color",
+      "payload_type": "string",
+      "description": "Sets an RGB color as comma-separated red, green, and blue values in the 0..255 range.",
+      "availability": "RGB-capable channels.",
+      "optional": false,
+      "tested_payloads": [
+        "1,2,3",
+        "9,8,7"
+      ],
+      "confirmed_by_tests": [
+        "MqttChannelDispatchTests.processDataCoversControlTypes"
+      ]
+    },
+    "{prefix}/channels/{channel}/set/color_brightness": {
+      "title": "Set color brightness",
+      "payload_type": "integer",
+      "range": "0..100",
+      "unit": "%",
+      "description": "Sets RGB color brightness without changing the color.",
+      "availability": "RGB-capable channels.",
+      "optional": false,
+      "tested_payloads": [
+        "44",
+        "66"
+      ],
+      "confirmed_by_tests": [
+        "MqttChannelDispatchTests.processDataCoversControlTypes"
+      ]
+    },
+    "{prefix}/channels/{channel}/set/temperature_setpoint": {
+      "title": "Set temperature setpoint",
+      "payload_type": "number",
+      "unit": "°C",
+      "description": "Sets the active heating or cooling setpoint according to the HVAC channel configuration.",
+      "availability": "HVAC thermostat channels.",
+      "optional": true,
+      "tested_payloads": [
+        "19.5"
+      ],
+      "confirmed_by_tests": [
+        "MqttChannelDispatchTests.processDataCoversControlTypes"
+      ]
+    },
+    "{prefix}/channels/{channel}/set/temperature_setpoint_heat": {
+      "title": "Set heating setpoint",
+      "payload_type": "number",
+      "unit": "°C",
+      "description": "Sets the heating temperature setpoint.",
+      "availability": "HVAC channels with a heating setpoint.",
+      "optional": true,
+      "tested_payloads": [
+        "18.5"
+      ],
+      "confirmed_by_tests": [
+        "MqttChannelDispatchTests.processDataCoversControlTypes"
+      ]
+    },
+    "{prefix}/channels/{channel}/set/temperature_setpoint_cool": {
+      "title": "Set cooling setpoint",
+      "payload_type": "number",
+      "unit": "°C",
+      "description": "Sets the cooling temperature setpoint.",
+      "availability": "HVAC channels with a cooling setpoint.",
+      "optional": true,
+      "tested_payloads": [
+        "22.5"
+      ],
+      "confirmed_by_tests": [
+        "MqttChannelDispatchTests.processDataCoversControlTypes"
+      ]
+    },
+    "{prefix}/channels/{channel}/state/action": {
+      "title": "HVAC action",
+      "payload_type": "string",
+      "allowed_values": [
+        "off",
+        "idle",
+        "heating",
+        "cooling"
+      ],
+      "description": "Current operating action of the HVAC controller.",
+      "availability": "HVAC channels.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/state/mode": {
+      "title": "HVAC mode",
+      "payload_type": "string",
+      "allowed_values": [
+        "off",
+        "auto",
+        "heat",
+        "cool",
+        "heat_cool"
+      ],
+      "description": "Current HVAC operating mode.",
+      "availability": "HVAC channels.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/state/temperature_setpoint": {
+      "title": "Temperature setpoint",
+      "payload_type": "number",
+      "unit": "°C",
+      "description": "Current single HVAC temperature setpoint.",
+      "availability": "HVAC functions using one setpoint.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/temperature_setpoint_heat": {
+      "title": "Heating setpoint",
+      "payload_type": "number",
+      "unit": "°C",
+      "description": "Current heating temperature setpoint.",
+      "availability": "HVAC functions with separate heating and cooling setpoints.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/temperature_setpoint_cool": {
+      "title": "Cooling setpoint",
+      "payload_type": "number",
+      "unit": "°C",
+      "description": "Current cooling temperature setpoint.",
+      "availability": "HVAC functions with separate heating and cooling setpoints.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/is_calibrating": {
+      "title": "Calibration state",
+      "payload_type": "boolean",
+      "allowed_values": [
+        "true",
+        "false"
+      ],
+      "description": "Indicates whether cover calibration is in progress.",
+      "availability": "Roller shutters and compatible cover functions.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/state/shut": {
+      "title": "Closing percentage",
+      "payload_type": "integer",
+      "range": "0..100",
+      "unit": "%",
+      "description": "Current cover position, where 0 is fully open and 100 is fully closed.",
+      "availability": "Roller shutters and compatible cover functions.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/state/color": {
+      "title": "RGB color",
+      "payload_type": "string",
+      "description": "Current RGB color as comma-separated red, green, and blue values.",
+      "availability": "RGB-capable channels.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/state/color_brightness": {
+      "title": "Color brightness",
+      "payload_type": "integer",
+      "range": "0..100",
+      "unit": "%",
+      "description": "Current RGB color brightness.",
+      "availability": "RGB-capable channels.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/state/dimmer/on": {
+      "title": "Dimmer on state",
+      "payload_type": "boolean",
+      "allowed_values": [
+        "true",
+        "false"
+      ],
+      "description": "Current on/off state of the dimmer part.",
+      "availability": "Combined dimmer and RGB channels.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/state/rgb/on": {
+      "title": "RGB on state",
+      "payload_type": "boolean",
+      "allowed_values": [
+        "true",
+        "false"
+      ],
+      "description": "Current on/off state of the RGB part.",
+      "availability": "Combined dimmer and RGB channels.",
+      "optional": false
+    },
+    "{prefix}/channels/{channel}/state/total_forward_active_energy": {
+      "title": "Total forward active energy",
+      "payload_type": "number",
+      "unit": "kWh",
+      "description": "Total imported active energy across all phases.",
+      "availability": "Electricity meters reporting forward active energy.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/total_reverse_active_energy": {
+      "title": "Total reverse active energy",
+      "payload_type": "number",
+      "unit": "kWh",
+      "description": "Total exported active energy across all phases.",
+      "availability": "Electricity meters reporting reverse active energy.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/total_forward_balanced_active_energy": {
+      "title": "Total balanced forward active energy",
+      "payload_type": "number",
+      "unit": "kWh",
+      "description": "Total imported active energy balanced across phases.",
+      "availability": "Electricity meters reporting balanced forward active energy.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/total_reverse_balanced_active_energy": {
+      "title": "Total balanced reverse active energy",
+      "payload_type": "number",
+      "unit": "kWh",
+      "description": "Total exported active energy balanced across phases.",
+      "availability": "Electricity meters reporting balanced reverse active energy.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/voltage_phase_angle_12": {
+      "title": "Voltage phase angle 12",
+      "payload_type": "number",
+      "unit": "°",
+      "description": "Voltage phase angle between phases 1 and 2.",
+      "availability": "Electricity meters reporting voltage phase angles.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/voltage_phase_angle_13": {
+      "title": "Voltage phase angle 13",
+      "payload_type": "number",
+      "unit": "°",
+      "description": "Voltage phase angle between phases 1 and 3.",
+      "availability": "Electricity meters reporting voltage phase angles.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/voltage_phase_sequence_clockwise": {
+      "title": "Voltage phase sequence",
+      "payload_type": "boolean",
+      "allowed_values": [
+        "true",
+        "false"
+      ],
+      "description": "Whether the voltage phase sequence is clockwise.",
+      "availability": "Electricity meters reporting voltage phase sequence.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/current_phase_sequence_clockwise": {
+      "title": "Current phase sequence",
+      "payload_type": "boolean",
+      "allowed_values": [
+        "true",
+        "false"
+      ],
+      "description": "Whether the current phase sequence is clockwise.",
+      "availability": "Electricity meters reporting current phase sequence.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_active_energy": {
+      "title": "Phase forward active energy",
+      "payload_type": "number",
+      "unit": "kWh",
+      "description": "Imported active energy for one phase.",
+      "availability": "Electricity meters reporting per-phase forward active energy.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_active_energy": {
+      "title": "Phase reverse active energy",
+      "payload_type": "number",
+      "unit": "kWh",
+      "description": "Exported active energy for one phase.",
+      "availability": "Electricity meters reporting per-phase reverse active energy.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_reactive_energy": {
+      "title": "Phase forward reactive energy",
+      "payload_type": "number",
+      "unit": "kvarh",
+      "description": "Imported reactive energy for one phase.",
+      "availability": "Electricity meters reporting per-phase forward reactive energy.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_reactive_energy": {
+      "title": "Phase reverse reactive energy",
+      "payload_type": "number",
+      "unit": "kvarh",
+      "description": "Exported reactive energy for one phase.",
+      "availability": "Electricity meters reporting per-phase reverse reactive energy.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/voltage": {
+      "title": "Phase voltage",
+      "payload_type": "number",
+      "unit": "V",
+      "description": "Voltage measured on one phase.",
+      "availability": "Electricity meters reporting per-phase voltage.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/current": {
+      "title": "Phase current",
+      "payload_type": "number",
+      "unit": "A",
+      "description": "Current measured on one phase.",
+      "availability": "Electricity meters reporting per-phase current.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/power_factor": {
+      "title": "Phase power factor",
+      "payload_type": "number",
+      "description": "Power factor measured on one phase.",
+      "availability": "Electricity meters reporting per-phase power factor.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/phase_angle": {
+      "title": "Phase angle",
+      "payload_type": "number",
+      "unit": "°",
+      "description": "Phase angle measured on one phase.",
+      "availability": "Electricity meters reporting per-phase phase angle.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/frequency": {
+      "title": "Phase frequency",
+      "payload_type": "number",
+      "unit": "Hz",
+      "description": "Frequency measured on one phase.",
+      "availability": "Electricity meters reporting per-phase frequency.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/power_active": {
+      "title": "Active power",
+      "payload_type": "number",
+      "unit": "W",
+      "description": "Current active power for one phase.",
+      "availability": "Electricity meters reporting per-phase active power.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/power_reactive": {
+      "title": "Reactive power",
+      "payload_type": "number",
+      "unit": "var",
+      "description": "Current reactive power for one phase.",
+      "availability": "Electricity meters reporting per-phase reactive power.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/phases/{phase}/power_apparent": {
+      "title": "Apparent power",
+      "payload_type": "number",
+      "unit": "VA",
+      "description": "Current apparent power for one phase.",
+      "availability": "Electricity meters reporting per-phase apparent power.",
+      "optional": true
+    },
+    "{prefix}/channels/{channel}/state/tilt": {
+      "title": "Tilt position",
+      "payload_type": "integer",
+      "range": "0..100",
+      "unit": "%",
+      "description": "Current slat tilt position.",
+      "availability": "Cover functions with tilt support.",
+      "optional": true
+    }
+  }
+}

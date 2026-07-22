@@ -215,6 +215,28 @@ std::string MqttDocumentationRecorder::normalizeTopic(
       normalized.replace(
           channelPosition, channel.size(), "/channels/{channel}");
     }
+
+    const std::string discoveryChannel =
+        "_" + std::to_string(activeScenario_->channelNumber) + "_";
+    const auto discoveryChannelPosition = normalized.find(discoveryChannel);
+    if (normalized.starts_with("homeassistant/") &&
+        discoveryChannelPosition != std::string::npos) {
+      normalized.replace(discoveryChannelPosition,
+                         discoveryChannel.size(),
+                         "_{channel}_");
+      const auto subIdPosition = discoveryChannelPosition + 11;
+      const auto configPosition = normalized.find("/config", subIdPosition);
+      if (configPosition != std::string::npos &&
+          subIdPosition < configPosition) {
+        if (variables != nullptr) {
+          (*variables)["sub_id"] = std::stoi(
+              normalized.substr(subIdPosition, configPosition - subIdPosition));
+        }
+        normalized.replace(subIdPosition,
+                           configPosition - subIdPosition,
+                           "{sub_id}");
+      }
+    }
   }
 
   const std::string phases = "/phases/";

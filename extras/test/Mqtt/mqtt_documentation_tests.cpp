@@ -11,10 +11,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
 #include <utility>
+
+#include <nlohmann/json.hpp>
 
 #include "../doubles/mqtt_documentation.h"
 #include "../doubles/mqtt_mock.h"
@@ -152,6 +153,26 @@ TEST(MqttDocumentationTests, NormalizesOnlyKnownPrefixChannelAndPhase) {
   EXPECT_EQ(2, operations[0].variables.at("phase"));
   EXPECT_EQ("{prefix}/channels/17/state/number/123", operations[1].topic);
   EXPECT_TRUE(operations[1].variables.empty());
+}
+
+TEST(MqttDocumentationTests, NormalizesHomeAssistantDiscoveryChannel) {
+  MqttDocumentationRecorder recorder;
+  auto scenarioMetadata = metadata("home_assistant.hvac", 7);
+  scenarioMetadata.category = "home_assistant";
+  {
+    MqttDocumentationScenario scenario(recorder, scenarioMetadata);
+    recorder.recordPublish(
+        "homeassistant/climate/supla/device_7_0/config",
+        "{}",
+        0,
+        true);
+  }
+
+  const auto &operation =
+      recorder.scenarios().at("home_assistant.hvac").operations.at(0);
+  EXPECT_EQ("homeassistant/climate/supla/device_{channel}_{sub_id}/config",
+            operation.topic);
+  EXPECT_EQ(0, operation.variables.at("sub_id"));
 }
 
 TEST(MqttDocumentationTests, MixedScenarioKeepsPublicAndCleanupOperations) {

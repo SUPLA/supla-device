@@ -909,6 +909,155 @@ TEST_F(HtmlCaptureTest, RelayParametersRendersThresholdInput) {
             "</div>");
 }
 
+TEST_F(HtmlCaptureTest,
+       RelayParametersHideThresholdInputWithoutOvercurrentSupport) {
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
+
+  expectAllSendCalls(sender);
+
+  Supla::Html::RelayParameters param(&relay);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("oc_thr")));
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"0_on_dur\""));
+}
+
+TEST_F(HtmlCaptureTest, RelayParametersRenderTurnOnDurationForTimedFunction) {
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
+  relay.setStoredTurnOnDurationMs(12500);
+
+  expectAllSendCalls(sender);
+
+  Supla::Html::RelayParameters param(&relay);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"0_on_dur\""));
+  EXPECT_THAT(sendHtml, HasSubstr("Turn-on duration (sec.)"));
+  EXPECT_THAT(sendHtml, HasSubstr("min=\"0.1\""));
+  EXPECT_THAT(sendHtml, HasSubstr("max=\"3600\""));
+  EXPECT_THAT(sendHtml, HasSubstr("step=\"0.1\""));
+  EXPECT_THAT(sendHtml, HasSubstr("value=\"12.5\""));
+}
+
+TEST_F(HtmlCaptureTest, RelayParametersHideTurnOnDurationForLightSwitch) {
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+
+  expectAllSendCalls(sender);
+
+  Supla::Html::RelayParameters param(&relay);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("on_dur")));
+}
+
+TEST_F(HtmlCaptureTest,
+       RelayParametersDynamicallyShowTurnOnDurationFromChannelFunction) {
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+
+  expectAllSendCalls(sender);
+
+  Supla::Html::RelayParameters param(&relay);
+  param.setDynamicTimeVisibilityFromChannelFunction(true);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"relay_time_0\""));
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"0_on_dur\""));
+  EXPECT_THAT(sendHtml, HasSubstr("document.getElementById('0_fnc')"));
+  EXPECT_THAT(sendHtml, HasSubstr("disabled=!on"));
+  EXPECT_THAT(sendHtml, HasSubstr("DOMContentLoaded"));
+}
+
+TEST_F(HtmlCaptureTest, RelayParametersSaveTurnOnDurationAfterProcessing) {
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  relay.setStoredTurnOnDurationMs(500);
+  Supla::Html::RelayParameters param(&relay);
+
+  EXPECT_TRUE(param.handleResponse("0_on_dur", "1.2"));
+  EXPECT_EQ(500u, relay.getStoredTurnOnDurationMs());
+
+  param.onProcessingEnd();
+
+  EXPECT_EQ(1200u, relay.getStoredTurnOnDurationMs());
+}
+
+TEST_F(HtmlCaptureTest,
+       RelayParametersApplyDurationAfterFunctionRegardlessOfPostOrder) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.setStoredTurnOnDurationMs(0);
+  Supla::Html::RelayParameters relayParam(&relay);
+  Supla::Html::ChannelFunctionParameters functionParam(&relay);
+
+  EXPECT_CALL(cfg,
+              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_STAIRCASETIMER))
+      .WillOnce(Return(true));
+
+  EXPECT_TRUE(relayParam.handleResponse("0_on_dur", "10"));
+  EXPECT_TRUE(functionParam.handleResponse("0_fnc", "300"));
+  relayParam.onProcessingEnd();
+
+  EXPECT_EQ(SUPLA_CHANNELFNC_STAIRCASETIMER,
+            relay.getChannel()->getDefaultFunction());
+  EXPECT_EQ(10000u, relay.getStoredTurnOnDurationMs());
+}
+
+TEST_F(HtmlCaptureTest, RelayParametersIgnoreDurationForNonTimedFunction) {
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.setStoredTurnOnDurationMs(0);
+  Supla::Html::RelayParameters param(&relay);
+
+  EXPECT_TRUE(param.handleResponse("0_on_dur", "1"));
+  param.onProcessingEnd();
+
+  EXPECT_EQ(0u, relay.getStoredTurnOnDurationMs());
+}
+
+TEST_F(HtmlCaptureTest, RelayRollerShutterPairExposesBothRelayEngines) {
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1, -1);
+
+  auto primaryRelay = pair.getPrimaryRelay();
+  auto secondaryRelay = pair.getSecondaryRelay();
+
+  ASSERT_NE(nullptr, primaryRelay);
+  ASSERT_NE(nullptr, secondaryRelay);
+  EXPECT_EQ(pair.getChannel(), primaryRelay->getChannel());
+  EXPECT_EQ(pair.getSecondaryChannel(), secondaryRelay->getChannel());
+
+  primaryRelay->setDefaultFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
+  secondaryRelay->setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  Supla::Html::RelayParameters primaryParam(primaryRelay);
+  Supla::Html::RelayParameters secondaryParam(secondaryRelay);
+
+  EXPECT_TRUE(primaryParam.handleResponse("0_on_dur", "10"));
+  EXPECT_TRUE(secondaryParam.handleResponse("1_on_dur", "0.5"));
+  primaryParam.onProcessingEnd();
+  secondaryParam.onProcessingEnd();
+
+  EXPECT_EQ(10000u, primaryRelay->getStoredTurnOnDurationMs());
+  EXPECT_EQ(500u, secondaryRelay->getStoredTurnOnDurationMs());
+  Supla::Channel::resetToDefaults();
+}
+
 TEST_F(HtmlCaptureTest, TimeParametersRendersClockControls) {
   ConfigMock cfg;
   SenderMock sender;

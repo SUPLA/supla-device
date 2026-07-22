@@ -510,6 +510,9 @@ const char *Supla::getRelayChannelName(int channelFunction) {
     case SUPLA_CHANNELFNC_LIGHTSWITCH: {
       return "Light switch";
     }
+    case SUPLA_CHANNELFNC_STAIRCASETIMER: {
+      return "Staircase timer";
+    }
     case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE: {
       return "Gate";
     }

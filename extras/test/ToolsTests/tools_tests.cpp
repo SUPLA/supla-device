@@ -16,6 +16,7 @@
 
 #include <limits.h>
 #include <gtest/gtest.h>
+#include <supla-common/proto.h>
 #include <supla/tools.h>
 
 TEST(ToolsTests, isArrayEmptyTests) {
@@ -37,6 +38,11 @@ TEST(ToolsTests, isArrayEmptyTests) {
 
   EXPECT_FALSE(isArrayEmpty(buf4, 1000));
   EXPECT_TRUE(isArrayEmpty(buf5, 1000));
+}
+
+TEST(ToolsTests, relayChannelNameForStaircaseTimer) {
+  EXPECT_STREQ("Staircase timer",
+               Supla::getRelayChannelName(SUPLA_CHANNELFNC_STAIRCASETIMER));
 }
 
 TEST(ToolsTests, adjustRangeTests) {

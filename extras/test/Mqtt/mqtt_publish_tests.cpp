@@ -27,6 +27,8 @@
 #include <supla/sensor/electricity_meter.h>
 #include <simple_time.h>
 
+#include "../doubles/mqtt_mock.h"
+
 using testing::_;
 using ::testing::SetArrayArgument;
 using ::testing::DoAll;
@@ -45,20 +47,10 @@ class MqttPublishTests : public ::testing::Test {
 };
 
 
-class MqttPublishMock : public Supla::Protocol::Mqtt {
+class MqttPublishMock : public MqttMock {
  public:
-  explicit MqttPublishMock(SuplaDeviceClass *sdc) : Supla::Protocol::Mqtt(sdc) {
+  explicit MqttPublishMock(SuplaDeviceClass *sdc) : MqttMock(sdc) {
   }
-
-  void disconnect() override {
-  }
-
-  bool iterate(uint32_t) override {
-    return false;
-  }
-
-  MOCK_METHOD(void, publishImp, (const char *, const char *, int, bool));
-  MOCK_METHOD(void, subscribeImp, (const char *, int));
 
   void test_generateClientId(char result[MQTT_CLIENTID_MAX_SIZE]) {
     generateClientId(result);
@@ -108,69 +100,69 @@ TEST_F(MqttPublishTests, powerBelow20kW) {
                "testowy_prefix/supla/devices/my-device-0405ab");
 
   EXPECT_CALL(mqtt,
-              publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+              publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                          "channels/0/state/total_forward_active_energy"),
                          StrEq("0.0100"),
                          0,
                          false));
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/1/total_forward_active_energy"),
                  StrEq("0.0100"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/2/total_forward_active_energy"),
                  StrEq("0.0000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/3/total_forward_active_energy"),
                  StrEq("0.0000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/1/power_active"),
                  StrEq("200.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/2/power_active"),
                  StrEq("0.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/3/power_active"),
                  StrEq("0.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/1/power_reactive"),
                  StrEq("0.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/2/power_reactive"),
                  StrEq("0.100"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/3/power_reactive"),
                  StrEq("0.000"),
                  0,
@@ -178,27 +170,38 @@ TEST_F(MqttPublishTests, powerBelow20kW) {
 
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/1/power_apparent"),
                  StrEq("0.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/2/power_apparent"),
                  StrEq("0.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/3/power_apparent"),
                  StrEq("0.300"),
                  0,
                  false));
 
-  mqtt.publishExtendedChannelState(0);
+  {
+    MQTT_DOC_SCENARIO(
+        mqtt.documentationRecorder(),
+        "electricity_meter.basic_state",
+        "Basic total and per-phase electricity meter state topics",
+        SUPLA_CHANNELTYPE_ELECTRICITY_METER,
+        SUPLA_CHANNELFNC_ELECTRICITY_METER,
+        0,
+        "public",
+        "testowy_prefix/supla/devices/my-device-0405ab");
+    mqtt.publishExtendedChannelState(0);
+  }
 }
 
 TEST_F(MqttPublishTests, powerAbove20kW) {
@@ -240,69 +243,69 @@ TEST_F(MqttPublishTests, powerAbove20kW) {
                "testowy_prefix/supla/devices/my-device-0405ab");
 
   EXPECT_CALL(mqtt,
-              publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+              publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                          "channels/0/state/total_forward_active_energy"),
                          StrEq("0.0100"),
                          0,
                          false));
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/1/total_forward_active_energy"),
                  StrEq("0.0100"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/2/total_forward_active_energy"),
                  StrEq("0.0000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/3/total_forward_active_energy"),
                  StrEq("0.0000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/1/power_active"),
                  StrEq("200000.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/2/power_active"),
                  StrEq("0.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/3/power_active"),
                  StrEq("0.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/1/power_reactive"),
                  StrEq("0.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/2/power_reactive"),
                  StrEq("300000.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/3/power_reactive"),
                  StrEq("0.000"),
                  0,
@@ -310,21 +313,21 @@ TEST_F(MqttPublishTests, powerAbove20kW) {
 
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/1/power_apparent"),
                  StrEq("0.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/2/power_apparent"),
                  StrEq("0.000"),
                  0,
                  false));
 
   EXPECT_CALL(mqtt,
-      publishImp(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
+      publishTest(StrEq("testowy_prefix/supla/devices/my-device-0405ab/"
                  "channels/0/state/phases/3/power_apparent"),
                  StrEq("400000.000"),
                  0,

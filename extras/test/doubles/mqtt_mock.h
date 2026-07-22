@@ -19,10 +19,13 @@
 #ifndef EXTRAS_TEST_DOUBLES_MQTT_MOCK_H_
 #define EXTRAS_TEST_DOUBLES_MQTT_MOCK_H_
 
+#include <SuplaDevice.h>
 #include <gmock/gmock.h>
 #include <supla/protocol/mqtt.h>
-#include <SuplaDevice.h>
+
 #include <string>
+
+#include "mqtt_documentation.h"
 
 class MqttInterface : public Supla::Protocol::Mqtt {
  public:
@@ -33,10 +36,15 @@ class MqttInterface : public Supla::Protocol::Mqtt {
                            std::string paload,
                            int qos,
                            bool retain) = 0;
-  void publishImp(const char *topic,
-                  const char *payload,
-                  int qos,
-                  bool retain);
+  void publishImp(const char *topic, const char *payload, int qos, bool retain);
+  virtual void subscribeTest(std::string topic, int qos) = 0;
+  void subscribeImp(const char *topic, int qos) override;
+  MqttDocumentationRecorder &documentationRecorder();
+
+  void setDocumentationRecorder(MqttDocumentationRecorder *recorder);
+
+ private:
+  MqttDocumentationRecorder *documentationRecorder_;
 };
 
 class MqttMock : public MqttInterface {
@@ -50,7 +58,7 @@ class MqttMock : public MqttInterface {
               publishTest,
               (std::string topic, std::string payload, int qos, bool retain),
               (override));
-  MOCK_METHOD(void, subscribeImp, (const char *topic, int qos), (override));
+  MOCK_METHOD(void, subscribeTest, (std::string topic, int qos), (override));
   MOCK_METHOD(void, disconnect, (), (override));
   MOCK_METHOD(bool, iterate, (uint32_t _millis), (override));
 };

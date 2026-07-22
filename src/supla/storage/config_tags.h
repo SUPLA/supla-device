@@ -71,6 +71,7 @@ const char FacadeBlindTiltControlTypeTag[] = "fb_type";
 const char TiltConfigTag[] = "tilt_cfg";
 
 const char RelayOvercurrentThreshold[] = "oc_thr";
+const char RelayTurnOnDuration[] = "on_dur";
 
 const char HvacCfgTag[] = "hvac_cfg";
 const char HvacWeeklyCfgTag[] = "hvac_weekly";
@@ -128,6 +129,7 @@ static_assert(sizeof(TiltConfigTag) < 12);
 static_assert(sizeof(FacadeBlindTiltingTimeTag) < 12);
 static_assert(sizeof(FacadeBlindTiltControlTypeTag) < 12);
 static_assert(sizeof(RelayOvercurrentThreshold) < 12);
+static_assert(sizeof(RelayTurnOnDuration) < 12);
 static_assert(sizeof(HvacCfgTag) < 12);
 static_assert(sizeof(HvacWeeklyCfgTag) <= 12);
 static_assert(sizeof(HvacAltWeeklyCfgTag) <= 13);

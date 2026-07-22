@@ -142,6 +142,10 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
                            uint32_t secondaryFunction);
   bool setRuntimeFunctions(uint32_t primaryFunction,
                            uint32_t secondaryFunction);
+  Relay *getPrimaryRelay();
+  const Relay *getPrimaryRelay() const;
+  Relay *getSecondaryRelay();
+  const Relay *getSecondaryRelay() const;
   RollerShutter *getRollerShutter();
   const RollerShutter *getRollerShutter() const;
 

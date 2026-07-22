@@ -340,6 +340,22 @@ RelayRollerShutterPair::~RelayRollerShutterPair() {
   }
 }
 
+Relay *RelayRollerShutterPair::getPrimaryRelay() {
+  return &relay0;
+}
+
+const Relay *RelayRollerShutterPair::getPrimaryRelay() const {
+  return &relay0;
+}
+
+Relay *RelayRollerShutterPair::getSecondaryRelay() {
+  return &relay1;
+}
+
+const Relay *RelayRollerShutterPair::getSecondaryRelay() const {
+  return &relay1;
+}
+
 RollerShutter *RelayRollerShutterPair::getRollerShutter() {
   return &rollerShutter;
 }

@@ -1,0 +1,426 @@
+{
+  "schema_version": 1,
+  "ui": {
+    "document_title": "Topiki MQTT",
+    "language_switcher": "Języki: [English](topics.md) · **Polski**",
+    "channel_types_and_functions": "Typy i funkcje kanałów",
+    "channel_type": "Typ kanału",
+    "channel_types": "Typy kanałów",
+    "channel_function": "Funkcja kanału",
+    "channel_functions": "Funkcje kanału",
+    "subscribed_topics": "Subskrybowane topiki",
+    "published_topics": "Publikowane topiki",
+    "other_topics": "Pozostałe topiki",
+    "topic": "Topik",
+    "payload_type": "Typ payloadu",
+    "allowed_values": "Dozwolone wartości",
+    "range": "Zakres",
+    "unit": "Jednostka",
+    "availability": "Dostępność",
+    "not_documented": "Brak opisu.",
+    "example": "Przykład",
+    "examples": "Przykłady",
+    "ha_title": "Home Assistant Discovery",
+    "ha_separate": "Ruch Home Assistant Discovery jest generowany oddzielnie od publicznego API MQTT.",
+    "ha_empty": "Mechanizm przechwytywania Home Assistant Discovery jest dostępny, ale nie dodano jeszcze scenariuszy discovery.",
+    "ha_no_topics": "W tej wersji nie udokumentowano topików discovery."
+  },
+  "intro": [
+    "Ten dokument opisuje topiki MQTT udostępniane przez urządzenia SUPLA ",
+    "pracujące w trybie MQTT.",
+    "",
+    "`{prefix}` oznacza `[custom-prefix/]supla/devices/{hostname}`. ",
+    "`{channel}` jest numerem kanału. ",
+    "`{phase}` jest numerem fazy licznika energii elektrycznej.",
+    "",
+    "Topiki w sekcji **Subskrybowane topiki** przyjmują polecenia wysyłane do urządzenia. ",
+    "Topiki w sekcji **Publikowane topiki** zawierają stany i pomiary publikowane przez urządzenie.",
+    "",
+    "Dokładny zestaw dostępnych topików zależy od konfiguracji urządzenia, ",
+    "typów i funkcji kanałów oraz obsługiwanych pomiarów.",
+    ""
+  ],
+  "sections": {
+    "Device": "Urządzenie",
+    "Relay": "Przekaźnik",
+    "Roller shutter": "Roleta",
+    "Dimmer": "Ściemniacz",
+    "RGB controller": "Sterownik RGB",
+    "Dimmer and RGB controller": "Sterownik ściemniacza i RGB",
+    "Thermometer": "Termometr",
+    "Humidity and temperature sensor": "Czujnik wilgotności i temperatury",
+    "HVAC": "HVAC",
+    "Electricity meter": "Licznik energii elektrycznej",
+    "Binary sensor": "Czujnik binarny",
+    "Channel": "Kanał"
+  },
+  "metadata": {
+    "topics": {
+      "{prefix}/channels/{channel}/set/brightness": {
+        "title": "Ustaw jasność",
+        "description": "Ustawia jasność kanału.",
+        "availability": "Kanały obsługujące ściemnianie."
+      },
+      "{prefix}/channels/{channel}/set/on": {
+        "title": "Ustaw stan przekaźnika",
+        "description": "Zmienia stan wyjścia przekaźnikowego. Wielkość liter nie ma znaczenia.",
+        "availability": "Kanały z funkcją przekaźnika.",
+        "compatibility": "Obecny parser interpretuje każdą wartość inną niż `1`, `yes` lub `true` jako OFF. Integracje powinny używać wyłącznie udokumentowanych wartości."
+      },
+      "{prefix}/channels/{channel}/state": {
+        "title": "Stan czujnika binarnego",
+        "description": "Bieżący stan czujnika binarnego; używane wartości zależą od funkcji kanału.",
+        "availability": "Kanały czujników binarnych ze skonfigurowaną funkcją."
+      },
+      "{prefix}/channels/{channel}/state/brightness": {
+        "title": "Stan jasności",
+        "description": "Bieżąca jasność ściemniacza.",
+        "availability": "Kanały obsługujące ściemnianie."
+      },
+      "{prefix}/channels/{channel}/state/humidity": {
+        "title": "Wilgotność",
+        "description": "Bieżąca wilgotność względna.",
+        "availability": "Czujniki wilgotności i temperatury z prawidłowym odczytem wilgotności."
+      },
+      "{prefix}/channels/{channel}/state/on": {
+        "title": "Stan włączenia",
+        "description": "Bieżący stan włączenia lub wyłączenia.",
+        "availability": "Kanały przekaźników, ściemniaczy lub RGB, zależnie od konfiguracji.",
+        "overrides": {
+          "relay.power_switch.state": {
+            "availability": "Kanały przekaźnikowe z funkcją wyłącznika zasilania lub światła."
+          },
+          "relay.light_switch.state": {
+            "availability": "Kanały przekaźnikowe z funkcją wyłącznika zasilania lub światła."
+          },
+          "relay.pair.cleanup_unused_state": {
+            "availability": "Kanały przekaźnikowe z funkcją wyłącznika zasilania lub światła."
+          },
+          "relay.impulse_gate.state": {
+            "title": "Stan przekaźnika impulsowego",
+            "description": "Stan spoczynkowy zgłaszany przez przekaźnik impulsowy bramy, garażu lub zamka.",
+            "availability": "Funkcje przekaźników impulsowych."
+          },
+          "dimmer.state": {
+            "availability": "Kanały obsługujące ściemnianie."
+          },
+          "rgb.state": {
+            "availability": "Kanały obsługujące RGB."
+          }
+        }
+      },
+      "{prefix}/channels/{channel}/state/temperature": {
+        "title": "Temperatura",
+        "description": "Bieżący odczyt temperatury.",
+        "availability": "Czujniki temperatury z prawidłowym odczytem."
+      },
+      "homeassistant/climate/supla/000000000000_{channel}_{sub_id}/config": {
+        "title": "Konfiguracja discovery HVAC",
+        "description": "Konfiguracja MQTT Discovery Home Assistanta dla kanału HVAC.",
+        "availability": "Kanały termostatów HVAC."
+      },
+      "homeassistant/sensor/supla/000000000000_{channel}_{sub_id}/config": {
+        "title": "Konfiguracja discovery czujnika",
+        "description": "Konfiguracja MQTT Discovery Home Assistanta dla czujnika temperatury, wilgotności lub licznika energii.",
+        "availability": "Kanały czujników temperatury, wilgotności i liczników energii."
+      },
+      "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config": {
+        "title": "Konfiguracja discovery osłony",
+        "description": "Konfiguracja MQTT Discovery Home Assistanta dla kanału osłony lub przekaźnika impulsowego.",
+        "availability": "Funkcje osłon i przekaźników impulsowych."
+      },
+      "homeassistant/switch/supla/000000000000_{channel}_{sub_id}/config": {
+        "title": "Konfiguracja discovery przełącznika",
+        "description": "Konfiguracja MQTT Discovery Home Assistanta dla kanału przekaźnika przełączającego.",
+        "availability": "Funkcje przekaźników przełączających."
+      },
+      "homeassistant/binary_sensor/supla/000000000000_{channel}_{sub_id}/config": {
+        "title": "Konfiguracja discovery czujnika binarnego",
+        "description": "Konfiguracja MQTT Discovery Home Assistanta dla kanału czujnika binarnego.",
+        "availability": "Kanały czujników binarnych ze skonfigurowaną funkcją."
+      },
+      "homeassistant/device_automation/supla/000000000000_{channel}_{sub_id}/config": {
+        "title": "Konfiguracja discovery wyzwalacza akcji",
+        "description": "Konfiguracja MQTT Discovery Home Assistanta dla możliwości wyzwalacza akcji.",
+        "availability": "Kanały wyzwalaczy akcji."
+      },
+      "homeassistant/light/supla/000000000000_{channel}_{sub_id}/config": {
+        "title": "Konfiguracja discovery światła",
+        "description": "Konfiguracja MQTT Discovery Home Assistanta dla kanału przekaźnika światła.",
+        "availability": "Funkcje przekaźników światła."
+      },
+      "{prefix}/state/connected": {
+        "title": "Stan połączenia",
+        "description": "Stan dostępności urządzenia przez MQTT.",
+        "availability": "Wszystkie urządzenia z włączonym MQTT."
+      },
+      "{prefix}/state/uptime": {
+        "title": "Czas pracy urządzenia",
+        "description": "Czas pracy urządzenia w sekundach.",
+        "availability": "Wszystkie urządzenia z włączonym MQTT."
+      },
+      "{prefix}/state/ip": {
+        "title": "Adres IP",
+        "description": "Adres IPv4 zgłaszany przez aktywny interfejs sieciowy.",
+        "availability": "Publikowany podczas rejestracji MQTT."
+      },
+      "{prefix}/state/mac": {
+        "title": "Adres MAC",
+        "description": "Główny adres MAC urządzenia w zapisie szesnastkowym rozdzielonym dwukropkami.",
+        "availability": "Publikowany podczas rejestracji MQTT."
+      },
+      "{prefix}/state/connection_uptime": {
+        "title": "Czas trwania połączenia",
+        "description": "Czas od nawiązania bieżącego połączenia.",
+        "availability": "Urządzenia, które nie pracują w trybie uśpienia."
+      },
+      "{prefix}/state/rssi": {
+        "title": "RSSI Wi-Fi",
+        "description": "Poziom odbieranego sygnału Wi-Fi zgłaszany przez urządzenie.",
+        "availability": "Interfejsy Wi-Fi udostępniające RSSI."
+      },
+      "{prefix}/state/wifi_signal_strength": {
+        "title": "Siła sygnału Wi-Fi",
+        "description": "Znormalizowana siła sygnału Wi-Fi zgłaszana przez urządzenie.",
+        "availability": "Interfejsy Wi-Fi udostępniające siłę sygnału."
+      },
+      "{prefix}/channels/{channel}/execute_action": {
+        "title": "Wykonaj akcję",
+        "description": "Wykonuje akcję właściwą dla typu kanału.",
+        "availability": "Sterowalne kanały przekaźników, rolet, ściemniaczy, RGB lub HVAC.",
+        "overrides": {
+          "relay.power_switch.commands": {
+            "title": "Wykonaj akcję przekaźnika",
+            "description": "Włącza, wyłącza lub przełącza bieżący stan przekaźnika. Wielkość liter nie ma znaczenia.",
+            "availability": "Kanały przekaźnikowe z funkcją wyłącznika zasilania."
+          },
+          "roller_shutter.commands": {
+            "title": "Wykonaj akcję rolety",
+            "description": "Otwiera, zamyka, zatrzymuje lub ponownie kalibruje roletę. Wielkość liter nie ma znaczenia.",
+            "availability": "Rolety i zgodne funkcje osłon."
+          },
+          "dimmer.commands": {
+            "title": "Wykonaj akcję ściemniacza",
+            "description": "Włącza, wyłącza lub przełącza bieżący stan ściemniacza. Wielkość liter nie ma znaczenia.",
+            "availability": "Kanały obsługujące ściemnianie."
+          },
+          "rgb.commands": {
+            "title": "Wykonaj akcję RGB",
+            "description": "Włącza, wyłącza lub przełącza bieżący stan wyjścia RGB. Wielkość liter nie ma znaczenia.",
+            "availability": "Kanały obsługujące RGB."
+          },
+          "hvac.thermostat_heat_cool.commands": {
+            "title": "Wykonaj akcję HVAC",
+            "description": "Zmienia stan pracy lub tryb termostatu grzanie-chłodzenie. Wielkość liter nie ma znaczenia.",
+            "availability": "Kanały termostatów HVAC z funkcją grzania i chłodzenia."
+          }
+        }
+      },
+      "{prefix}/channels/{channel}/execute_action/dimmer": {
+        "title": "Wykonaj akcję ściemniacza",
+        "description": "Steruje częścią ściemniacza w połączonym kanale ściemniacza i RGB.",
+        "availability": "Połączone kanały ściemniacza i RGB."
+      },
+      "{prefix}/channels/{channel}/execute_action/rgb": {
+        "title": "Wykonaj akcję RGB",
+        "description": "Steruje częścią RGB w połączonym kanale ściemniacza i RGB.",
+        "availability": "Połączone kanały ściemniacza i RGB."
+      },
+      "{prefix}/channels/{channel}/set/closing_percentage": {
+        "title": "Ustaw procent zamknięcia",
+        "description": "Ustawia pozycję osłony, gdzie 0 oznacza pełne otwarcie, a 100 pełne zamknięcie.",
+        "availability": "Rolety i zgodne funkcje osłon."
+      },
+      "{prefix}/channels/{channel}/set/tilt": {
+        "title": "Ustaw nachylenie",
+        "description": "Ustawia procentowe nachylenie lameli.",
+        "availability": "Funkcje osłon obsługujące nachylenie lameli."
+      },
+      "{prefix}/channels/{channel}/set/color": {
+        "title": "Ustaw kolor RGB",
+        "description": "Ustawia kolor RGB jako rozdzielone przecinkami wartości czerwonej, zielonej i niebieskiej z zakresu 0..255.",
+        "availability": "Kanały obsługujące RGB."
+      },
+      "{prefix}/channels/{channel}/set/color_brightness": {
+        "title": "Ustaw jasność koloru",
+        "description": "Ustawia jasność koloru RGB bez zmiany koloru.",
+        "availability": "Kanały obsługujące RGB."
+      },
+      "{prefix}/channels/{channel}/set/temperature_setpoint": {
+        "title": "Ustaw temperaturę zadaną",
+        "description": "Ustawia aktywną temperaturę zadaną grzania lub chłodzenia zgodnie z konfiguracją kanału HVAC.",
+        "availability": "Kanały termostatów HVAC."
+      },
+      "{prefix}/channels/{channel}/set/temperature_setpoint_heat": {
+        "title": "Ustaw temperaturę zadaną grzania",
+        "description": "Ustawia temperaturę zadaną grzania.",
+        "availability": "Kanały HVAC z temperaturą zadaną grzania."
+      },
+      "{prefix}/channels/{channel}/set/temperature_setpoint_cool": {
+        "title": "Ustaw temperaturę zadaną chłodzenia",
+        "description": "Ustawia temperaturę zadaną chłodzenia.",
+        "availability": "Kanały HVAC z temperaturą zadaną chłodzenia."
+      },
+      "{prefix}/channels/{channel}/state/action": {
+        "title": "Akcja HVAC",
+        "description": "Bieżąca akcja wykonywana przez sterownik HVAC.",
+        "availability": "Kanały HVAC."
+      },
+      "{prefix}/channels/{channel}/state/mode": {
+        "title": "Tryb HVAC",
+        "description": "Bieżący tryb pracy HVAC.",
+        "availability": "Kanały HVAC."
+      },
+      "{prefix}/channels/{channel}/state/temperature_setpoint": {
+        "title": "Temperatura zadana",
+        "description": "Bieżąca pojedyncza temperatura zadana HVAC.",
+        "availability": "Funkcje HVAC korzystające z jednej temperatury zadanej."
+      },
+      "{prefix}/channels/{channel}/state/temperature_setpoint_heat": {
+        "title": "Temperatura zadana grzania",
+        "description": "Bieżąca temperatura zadana grzania.",
+        "availability": "Funkcje HVAC z oddzielnymi temperaturami zadanymi grzania i chłodzenia."
+      },
+      "{prefix}/channels/{channel}/state/temperature_setpoint_cool": {
+        "title": "Temperatura zadana chłodzenia",
+        "description": "Bieżąca temperatura zadana chłodzenia.",
+        "availability": "Funkcje HVAC z oddzielnymi temperaturami zadanymi grzania i chłodzenia."
+      },
+      "{prefix}/channels/{channel}/state/is_calibrating": {
+        "title": "Stan kalibracji",
+        "description": "Informuje, czy trwa kalibracja osłony.",
+        "availability": "Rolety i zgodne funkcje osłon."
+      },
+      "{prefix}/channels/{channel}/state/shut": {
+        "title": "Procent zamknięcia",
+        "description": "Bieżąca pozycja osłony, gdzie 0 oznacza pełne otwarcie, a 100 pełne zamknięcie.",
+        "availability": "Rolety i zgodne funkcje osłon."
+      },
+      "{prefix}/channels/{channel}/state/color": {
+        "title": "Kolor RGB",
+        "description": "Bieżący kolor RGB jako rozdzielone przecinkami wartości czerwonej, zielonej i niebieskiej.",
+        "availability": "Kanały obsługujące RGB."
+      },
+      "{prefix}/channels/{channel}/state/color_brightness": {
+        "title": "Jasność koloru",
+        "description": "Bieżąca jasność koloru RGB.",
+        "availability": "Kanały obsługujące RGB."
+      },
+      "{prefix}/channels/{channel}/state/dimmer/on": {
+        "title": "Stan włączenia ściemniacza",
+        "description": "Bieżący stan włączenia części ściemniacza.",
+        "availability": "Połączone kanały ściemniacza i RGB."
+      },
+      "{prefix}/channels/{channel}/state/rgb/on": {
+        "title": "Stan włączenia RGB",
+        "description": "Bieżący stan włączenia części RGB.",
+        "availability": "Połączone kanały ściemniacza i RGB."
+      },
+      "{prefix}/channels/{channel}/state/total_forward_active_energy": {
+        "title": "Całkowita pobrana energia czynna",
+        "description": "Całkowita pobrana energia czynna ze wszystkich faz.",
+        "availability": "Liczniki energii raportujące pobraną energię czynną."
+      },
+      "{prefix}/channels/{channel}/state/total_reverse_active_energy": {
+        "title": "Całkowita oddana energia czynna",
+        "description": "Całkowita oddana energia czynna ze wszystkich faz.",
+        "availability": "Liczniki energii raportujące oddaną energię czynną."
+      },
+      "{prefix}/channels/{channel}/state/total_forward_balanced_active_energy": {
+        "title": "Całkowita zbilansowana pobrana energia czynna",
+        "description": "Całkowita pobrana energia czynna zbilansowana między fazami.",
+        "availability": "Liczniki energii raportujące zbilansowaną pobraną energię czynną."
+      },
+      "{prefix}/channels/{channel}/state/total_reverse_balanced_active_energy": {
+        "title": "Całkowita zbilansowana oddana energia czynna",
+        "description": "Całkowita oddana energia czynna zbilansowana między fazami.",
+        "availability": "Liczniki energii raportujące zbilansowaną oddaną energię czynną."
+      },
+      "{prefix}/channels/{channel}/state/voltage_phase_angle_12": {
+        "title": "Kąt fazowy napięcia 12",
+        "description": "Kąt fazowy napięcia między fazami 1 i 2.",
+        "availability": "Liczniki energii raportujące kąty fazowe napięcia."
+      },
+      "{prefix}/channels/{channel}/state/voltage_phase_angle_13": {
+        "title": "Kąt fazowy napięcia 13",
+        "description": "Kąt fazowy napięcia między fazami 1 i 3.",
+        "availability": "Liczniki energii raportujące kąty fazowe napięcia."
+      },
+      "{prefix}/channels/{channel}/state/voltage_phase_sequence_clockwise": {
+        "title": "Sekwencja faz napięcia",
+        "description": "Informuje, czy sekwencja faz napięcia jest zgodna z ruchem wskazówek zegara.",
+        "availability": "Liczniki energii raportujące sekwencję faz napięcia."
+      },
+      "{prefix}/channels/{channel}/state/current_phase_sequence_clockwise": {
+        "title": "Sekwencja faz prądu",
+        "description": "Informuje, czy sekwencja faz prądu jest zgodna z ruchem wskazówek zegara.",
+        "availability": "Liczniki energii raportujące sekwencję faz prądu."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_active_energy": {
+        "title": "Pobrana energia czynna fazy",
+        "description": "Pobrana energia czynna dla jednej fazy.",
+        "availability": "Liczniki energii raportujące pobraną energię czynną dla poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_active_energy": {
+        "title": "Oddana energia czynna fazy",
+        "description": "Oddana energia czynna dla jednej fazy.",
+        "availability": "Liczniki energii raportujące oddaną energię czynną dla poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/total_forward_reactive_energy": {
+        "title": "Pobrana energia bierna fazy",
+        "description": "Pobrana energia bierna dla jednej fazy.",
+        "availability": "Liczniki energii raportujące pobraną energię bierną dla poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/total_reverse_reactive_energy": {
+        "title": "Oddana energia bierna fazy",
+        "description": "Oddana energia bierna dla jednej fazy.",
+        "availability": "Liczniki energii raportujące oddaną energię bierną dla poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/voltage": {
+        "title": "Napięcie fazy",
+        "description": "Napięcie zmierzone na jednej fazie.",
+        "availability": "Liczniki energii raportujące napięcie poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/current": {
+        "title": "Prąd fazy",
+        "description": "Prąd zmierzony na jednej fazie.",
+        "availability": "Liczniki energii raportujące prąd poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/power_factor": {
+        "title": "Współczynnik mocy fazy",
+        "description": "Współczynnik mocy zmierzony na jednej fazie.",
+        "availability": "Liczniki energii raportujące współczynnik mocy poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/phase_angle": {
+        "title": "Kąt fazowy",
+        "description": "Kąt fazowy zmierzony na jednej fazie.",
+        "availability": "Liczniki energii raportujące kąty fazowe poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/frequency": {
+        "title": "Częstotliwość fazy",
+        "description": "Częstotliwość zmierzona na jednej fazie.",
+        "availability": "Liczniki energii raportujące częstotliwość poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/power_active": {
+        "title": "Moc czynna",
+        "description": "Bieżąca moc czynna jednej fazy.",
+        "availability": "Liczniki energii raportujące moc czynną dla poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/power_reactive": {
+        "title": "Moc bierna",
+        "description": "Bieżąca moc bierna jednej fazy.",
+        "availability": "Liczniki energii raportujące moc bierną dla poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/phases/{phase}/power_apparent": {
+        "title": "Moc pozorna",
+        "description": "Bieżąca moc pozorna jednej fazy.",
+        "availability": "Liczniki energii raportujące moc pozorną dla poszczególnych faz."
+      },
+      "{prefix}/channels/{channel}/state/tilt": {
+        "title": "Pozycja nachylenia",
+        "description": "Bieżąca pozycja nachylenia lameli.",
+        "availability": "Funkcje osłon obsługujące nachylenie lameli."
+      }
+    }
+  }
+}

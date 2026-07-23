@@ -41,6 +41,14 @@ using ::testing::Return;
 class SuplaDeviceTests : public ::testing::Test {
  protected:
   SimpleTime time;
+
+  void expectNetworkAndConfigInit(NetworkMockWithMac &net,
+                                  ConfigMock &config,
+                                  int setupCalls) {
+    EXPECT_CALL(config, init()).WillOnce(Return(false));
+    EXPECT_CALL(net, setup()).Times(setupCalls);
+  }
+
   virtual void SetUp() {
     if (SuplaDevice.getClock()) {
       delete SuplaDevice.getClock();
@@ -126,6 +134,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
 
+  expectNetworkAndConfigInit(net, config, 2);
+
   sd.setInitialMode(Supla::InitialMode::StartInCfgMode);
   button.addAction(1, localHandler, event);
   button.addAction(2, configHandler, event, true);
@@ -152,6 +162,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
 
+  expectNetworkAndConfigInit(net, config, 2);
+
   sd.setInitialMode(Supla::InitialMode::StartInCfgMode);
   button.addAction(1, localHandler, event);
   button.addAction(2, configHandler, event, true);
@@ -177,6 +189,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock localHandler;
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
+
+  expectNetworkAndConfigInit(net, config, 2);
 
   sd.setInitialMode(Supla::InitialMode::StartInCfgMode);
   button.addAction(1, localHandler, event);
@@ -206,6 +220,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
 
+  expectNetworkAndConfigInit(net, config, 2);
+
   sd.setInitialMode(Supla::InitialMode::StartInNotConfiguredMode);
   button.addAction(1, localHandler, event);
   button.addAction(2, configHandler, event, true);
@@ -232,6 +248,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
 
+  expectNetworkAndConfigInit(net, config, 2);
+
   sd.setInitialMode(Supla::InitialMode::StartInNotConfiguredMode);
   button.addAction(1, localHandler, event);
   button.addAction(2, configHandler, event, true);
@@ -256,6 +274,8 @@ TEST_F(SuplaDeviceTests, OtherInitialModesAlwaysDisableActionsInConfigMode) {
   LocalActionHandlerMock localHandler;
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
+
+  expectNetworkAndConfigInit(net, config, 2);
 
   sd.setInitialMode(Supla::InitialMode::StartOffline);
   button.addAction(1, localHandler, event);
@@ -282,6 +302,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock localHandler;
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
+
+  expectNetworkAndConfigInit(net, config, 2);
 
   sd.setInitialMode(Supla::InitialMode::StartOffline);
   button.addAction(1, localHandler, event);
@@ -311,6 +333,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
 
+  expectNetworkAndConfigInit(net, config, 2);
+
   sd.setInitialMode(Supla::InitialMode::StartWithCfgModeThenOffline);
   button.addAction(1, localHandler, event);
   button.addAction(2, configHandler, event, true);
@@ -338,6 +362,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock localHandler;
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
+
+  expectNetworkAndConfigInit(net, config, 3);
 
   sd.setInitialMode(Supla::InitialMode::StartWithCfgModeThenOffline);
   button.addAction(1, localHandler, event);
@@ -379,6 +405,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
 
+  expectNetworkAndConfigInit(net, config, 2);
+
   sd.setInitialMode(Supla::InitialMode::StartWithCfgModeThenOffline);
   sd.setCfgModeStateForTest(Supla::CfgModeState::Done);
   button.addAction(1, localHandler, event);
@@ -405,6 +433,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock localHandler;
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
+
+  expectNetworkAndConfigInit(net, config, 2);
 
   sd.setInitialMode(Supla::InitialMode::StartWithCfgModeThenOffline);
   button.addAction(1, localHandler, event);
@@ -447,6 +477,8 @@ TEST_F(SuplaDeviceTests,
   LocalActionHandlerMock localHandler;
   LocalActionHandlerMock configHandler;
   constexpr int event = 11;
+
+  expectNetworkAndConfigInit(net, config, 2);
 
   sd.setInitialMode(Supla::InitialMode::StartWithCfgModeThenOffline);
   button.addAction(1, localHandler, event);

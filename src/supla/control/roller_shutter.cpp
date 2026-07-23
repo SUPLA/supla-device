@@ -531,8 +531,12 @@ void RollerShutter::calculateCurrentPositionAndTilt() {
 }
 
 void RollerShutter::setTargetPosition(int newPosition, int newTilt) {
+  // Position adjustment requires nonzero movement times. They may legitimately
+  // be unavailable for channels with
+  // SUPLA_CHANNEL_FLAG_TIME_SETTING_NOT_AVAILABLE.
   if (isTiltConfigured() && newTilt > UNKNOWN_POSITION &&
-      newPosition > UNKNOWN_POSITION && isCalibrated() &&
+      newPosition > UNKNOWN_POSITION && isCalibrated() && openingTimeMs != 0 &&
+      closingTimeMs != 0 &&
       tiltConfig.tiltControlType ==
           SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING) {
     SUPLA_LOG_DEBUG("RS[%d] new target position before adjustment %d, tilt %d",

@@ -409,6 +409,33 @@ TEST_F(RollerShutterFixture,
             static_cast<int>(Supla::Control::Directions::STOP_DIR));
 }
 
+TEST_F(RollerShutterFixture,
+       facadeBlindServerTargetWithUnavailableMovementTimesPreservesRequest) {
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown, true, true);
+
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setTiltingTime(1000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+  rs.getChannel()->setFlag(SUPLA_CHANNEL_FLAG_TIME_SETTING_NOT_AVAILABLE);
+  rs.setCurrentPosition(50, 50);
+
+  EXPECT_TRUE(rs.isCalibrated());
+  EXPECT_EQ(rs.getOpeningTimeMs(), 0);
+  EXPECT_EQ(rs.getClosingTimeMs(), 0);
+  EXPECT_TRUE(rs.isTiltConfigured());
+
+  TSD_SuplaChannelNewValue newValue = {};
+  newValue.value[0] = 70;  // normalized position: 60
+  newValue.value[1] = 70;  // normalized tilt: 60
+  newValue.DurationMS = 0;
+
+  rs.handleNewValueFromServer(&newValue);
+
+  EXPECT_EQ(rs.getTargetPosition(), 60);
+  EXPECT_EQ(rs.getTargetTilt(), 60);
+}
+
 TEST_F(RollerShutterFixture, movementTests) {
   StorageMock storage;
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);

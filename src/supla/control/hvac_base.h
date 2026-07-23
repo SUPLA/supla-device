@@ -495,8 +495,12 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // returns true if forced off should be set
   bool getForcedOffSensorState();
   bool isSensorTempValid(_supla_int16_t temperature) const;
-  bool checkOverheatProtection(_supla_int16_t t);
-  bool checkAntifreezeProtection(_supla_int16_t t);
+  bool checkOverheatProtection(_supla_int16_t t, _supla_int16_t tAux);
+  bool checkAntifreezeProtection(_supla_int16_t t, _supla_int16_t tAux);
+  bool isAuxMinLimitReached(_supla_int16_t tAux) const;
+  bool isAuxMaxLimitReached(_supla_int16_t tAux) const;
+  // This only handles normal auxiliary regulation. Its return value ends the
+  // normal-control phase, not the higher-priority protection/user handling.
   bool checkAuxProtection(_supla_int16_t t);
   bool isAuxProtectionEnabled() const;
   bool processWeeklySchedule();

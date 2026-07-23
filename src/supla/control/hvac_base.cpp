@@ -760,22 +760,19 @@ void HvacBase::iterateAlways() {
   }
   lastTemperature = tMain;
 
-  if (checkAuxProtection(tAux)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler protection exit",
-                    getChannelNumber());
-    channel.setHvacFlagAntifreezeOverheatActive(false);
-    updateChannelState();
-    return;
-  }
+  // Auxiliary regulation must not affect protection evaluation. Keep its
+  // previous state only for the normal auxiliary regulation below, where it
+  // is used by the hysteresis evaluator.
+  const bool auxWasForcingOutput = forcedByAux;
   forcedByAux = false;
 
-  if (checkOverheatProtection(tMain)) {
+  if (checkOverheatProtection(tMain, tAux)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: overheat protection exit", getChannelNumber());
     updateChannelState();
     return;
   }
 
-  if (checkAntifreezeProtection(tMain)) {
+  if (checkAntifreezeProtection(tMain, tAux)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: antifreeze protection exit", getChannelNumber());
     updateChannelState();
     return;
@@ -794,6 +791,25 @@ void HvacBase::iterateAlways() {
   } else {
     channel.setHvacFlagForcedOffBySensor(false);
   }
+
+  // OFF is a user-level request. It must be retried on later iterations when
+  // setOutput() deferred the transition because of MinOnTimeS.
+  if (channel.getHvacMode() == SUPLA_HVAC_MODE_OFF) {
+    setOutput(0, false);
+    updateChannelState();
+    return;
+  }
+
+  // Auxiliary min/max is normal regulation at this point. It must not be
+  // allowed to hide the higher-priority forced-off and OFF handling above.
+  forcedByAux = auxWasForcingOutput;
+  if (checkAuxProtection(tAux)) {
+    SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler auxiliary regulation exit",
+                    getChannelNumber());
+    updateChannelState();
+    return;
+  }
+  forcedByAux = false;
 
   switch (channel.getHvacMode()) {
     case SUPLA_HVAC_MODE_HEAT_COOL: {
@@ -3311,7 +3327,8 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
                  channel.getHvacModeCstr());
 }
 
-bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
+bool HvacBase::checkAntifreezeProtection(_supla_int16_t t,
+                                         _supla_int16_t tAux) {
   // antifreeze can be used when it is enabled, and when current function and
   // subfunction allows heating
   if (isAntiFreezeAndHeatProtectionEnabled() &&
@@ -3323,6 +3340,12 @@ bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
 
     auto outputValue = evaluateHeatOutputValue(t, tFreeze);
     if (outputValue > 0) {
+      // An auxiliary maximum is allowed to constrain protection heating. Do
+      // not report this as active protection when the request is blocked.
+      if (isAuxMaxLimitReached(tAux)) {
+        setOutput(0, false);
+        return false;
+      }
       setOutput(outputValue, false);
       channel.setHvacFlagAntifreezeOverheatActive(true);
       return true;
@@ -3331,7 +3354,8 @@ bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
   return false;
 }
 
-bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
+bool HvacBase::checkOverheatProtection(_supla_int16_t t,
+                                       _supla_int16_t tAux) {
   // overheat can be used when it is enabled, and when current function and
   // subfunction allows cooling
   if (isAntiFreezeAndHeatProtectionEnabled() &&
@@ -3343,6 +3367,12 @@ bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
 
     auto outputValue = evaluateCoolOutputValue(t, tOverheat);
     if (outputValue < 0) {
+      // An auxiliary minimum is allowed to constrain protection cooling. Do
+      // not report this as active protection when the request is blocked.
+      if (isAuxMinLimitReached(tAux)) {
+        setOutput(0, false);
+        return false;
+      }
       setOutput(outputValue, false);
       channel.setHvacFlagAntifreezeOverheatActive(true);
       return true;
@@ -3369,6 +3399,50 @@ bool HvacBase::isAuxProtectionEnabled() const {
   return true;
 }
 
+bool HvacBase::isAuxMinLimitReached(_supla_int16_t tAux) const {
+  if (!isAuxProtectionEnabled() || !isSensorTempValid(tAux)) {
+    return false;
+  }
+
+  auto tAuxMin = getTemperatureAuxMinSetpoint();
+  if (!isSensorTempValid(tAuxMin)) {
+    return false;
+  }
+
+  auto hysteresis = getCurrentHysteresis(true);
+  const auto algorithm = getUsedAlgorithm(true);
+  if (algorithm == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE) {
+    hysteresis >>= 1;
+  } else if (algorithm == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST) {
+    hysteresis = 0;
+  }
+
+  return static_cast<int32_t>(tAux) <
+         static_cast<int32_t>(tAuxMin) - hysteresis;
+}
+
+bool HvacBase::isAuxMaxLimitReached(_supla_int16_t tAux) const {
+  if (!isAuxProtectionEnabled() || !isSensorTempValid(tAux)) {
+    return false;
+  }
+
+  auto tAuxMax = getTemperatureAuxMaxSetpoint();
+  if (!isSensorTempValid(tAuxMax)) {
+    return false;
+  }
+
+  auto hysteresis = getCurrentHysteresis(true);
+  const auto algorithm = getUsedAlgorithm(true);
+  if (algorithm == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE) {
+    hysteresis >>= 1;
+  } else if (algorithm == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST) {
+    hysteresis = 0;
+  }
+
+  return static_cast<int32_t>(tAux) >
+         static_cast<int32_t>(tAuxMax) + hysteresis;
+}
+
 bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   if (!isAuxProtectionEnabled()) {
     return false;
@@ -3379,12 +3453,7 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   if (isSensorTempValid(tAuxMin)) {
     auto outputValue = evaluateHeatOutputValue(t, tAuxMin, true);
     if (outputValue > 0) {
-      if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF ||
-          channel.isHvacFlagCooling()) {
-        setOutput(outputValue, false);
-      } else if (isModeSupported(SUPLA_HVAC_MODE_HEAT)) {
-        return false;
-      }
+      setOutput(outputValue, false);
       forcedByAux = true;
       return true;
     }
@@ -3393,12 +3462,7 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   if (isSensorTempValid(tAuxMax)) {
     auto outputValue = evaluateCoolOutputValue(t, tAuxMax, true);
     if (outputValue < 0) {
-      if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF ||
-          channel.isHvacFlagHeating()) {
-        setOutput(outputValue, false);
-      } else if (isModeSupported(SUPLA_HVAC_MODE_COOL)) {
-        return false;
-      }
+      setOutput(outputValue, false);
       forcedByAux = true;
       return true;
     }

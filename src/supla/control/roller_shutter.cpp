@@ -164,6 +164,11 @@ void RollerShutter::switchOffRelays() {
 }
 
 void RollerShutter::onTimer() {
+  if (!pinUp.isSet() || !pinDown.isSet()) {
+    switchOffRelays();
+    return;
+  }
+
   if (doNothingTime != 0 &&
       millis() - doNothingTime <
           500) {  // doNothingTime time is used when we change

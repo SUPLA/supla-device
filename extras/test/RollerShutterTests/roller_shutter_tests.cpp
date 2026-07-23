@@ -142,6 +142,75 @@ TEST_F(RollerShutterFixture, unsetIoPinsDoNothing) {
   rs.onInit();
 }
 
+TEST_F(RollerShutterFixture,
+       incompleteConfigurationWithUpPinUnsetDoesNotStartMovementOrCalibration) {
+  SuplaIoMock ioUp;
+  SuplaIoMock ioDown;
+  Supla::Control::RollerShutter rs(MakeOutputPin(&ioUp, -1, true),
+                                   MakeOutputPin(&ioDown, gpioDown, true));
+
+  EXPECT_CALL(ioUp, customDigitalWrite(_, _, _)).Times(0);
+  EXPECT_CALL(ioUp, customPinMode(_, _, _)).Times(0);
+  EXPECT_CALL(ioDown, customDigitalWrite(0, gpioDown, LOW)).Times(AtLeast(1));
+  EXPECT_CALL(ioDown, customDigitalWrite(0, gpioDown, HIGH)).Times(0);
+  EXPECT_CALL(ioDown, customPinMode(0, gpioDown, OUTPUT));
+
+  rs.onInit();
+  rs.setRsConfigMotorUpsideDownValue(2);
+  EXPECT_EQ(rs.getMotorUpsideDown(), 2);
+
+  rs.handleAction(0, Supla::MOVE_UP);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+
+  rs.handleAction(0, Supla::MOVE_DOWN);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+
+  rs.setOpenCloseTime(10000, 10000);
+  rs.triggerCalibration();
+  rs.onTimer();
+  EXPECT_FALSE(rs.isCalibrationInProgress());
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+}
+
+TEST_F(
+    RollerShutterFixture,
+    incompleteConfigurationWithDownPinUnsetDoesNotStartMovementOrCalibration) {
+  SuplaIoMock ioUp;
+  SuplaIoMock ioDown;
+  Supla::Control::RollerShutter rs(MakeOutputPin(&ioUp, gpioUp, true),
+                                   MakeOutputPin(&ioDown, -1, true));
+
+  EXPECT_CALL(ioDown, customDigitalWrite(_, _, _)).Times(0);
+  EXPECT_CALL(ioDown, customPinMode(_, _, _)).Times(0);
+  EXPECT_CALL(ioUp, customDigitalWrite(0, gpioUp, LOW)).Times(AtLeast(1));
+  EXPECT_CALL(ioUp, customDigitalWrite(0, gpioUp, HIGH)).Times(0);
+  EXPECT_CALL(ioUp, customPinMode(0, gpioUp, OUTPUT));
+
+  rs.onInit();
+
+  rs.handleAction(0, Supla::MOVE_DOWN);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+
+  rs.handleAction(0, Supla::MOVE_UP);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+
+  rs.setOpenCloseTime(10000, 10000);
+  rs.triggerCalibration();
+  rs.onTimer();
+  EXPECT_FALSE(rs.isCalibrationInProgress());
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+}
+
 #pragma pack(push, 1)
 struct RollerShutterStateDataTests {
   uint32_t closingTimeMs;

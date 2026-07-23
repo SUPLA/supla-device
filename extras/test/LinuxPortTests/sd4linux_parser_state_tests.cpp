@@ -415,3 +415,49 @@ TEST_F(Sd4linuxParserStateTests,
 
   EXPECT_TRUE(sensor.getChannel()->getValueBool());
 }
+
+TEST_F(Sd4linuxParserStateTests,
+       InvalidStateDoesNotResetTimeoutSuppression) {
+  SimpleTime time;
+  FakeSd4linuxSource source;
+  FakeSd4linuxParser parser(&source);
+  Supla::Sensor::BinaryParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::State, "state");
+  sensor.setTimeoutDs(25);
+
+  parser.stateValue = 1;
+  sensor.onInit();
+  ASSERT_TRUE(sensor.getChannel()->getValueBool());
+
+  for (int i = 0; i < 26; ++i) {
+    time.advance(100);
+    sensor.iterateAlways();
+  }
+
+  ASSERT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 1;
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = -1;
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 1;
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 0;
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 1;
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+}

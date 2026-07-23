@@ -33,6 +33,10 @@ void Supla::Sensor::BinaryParsed::onInit() {
 
 bool Supla::Sensor::BinaryParsed::getValue() {
   int result = getStateValue(false);
+  if (result < 0) {
+    return false;
+  }
+
   if (lastState != result) {
     clearedByTimeout = false;
     if (result == 1) {
@@ -44,7 +48,7 @@ bool Supla::Sensor::BinaryParsed::getValue() {
     return false;
   }
 
-  setLastState(result == 1);
+  setLastState(result);
   return result == 1;
 }
 

@@ -127,6 +127,7 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/sensor/impulse_counter_parsed.cpp
   ../porting/linux/supla/sensor/thermometer_parsed.cpp
   ../porting/linux/supla/payload/payload.cpp
+  ../porting/linux/supla/output/cmd.cpp
   )
 
 if(SUPLA_TEST_CURL_HTTP_ENABLED)

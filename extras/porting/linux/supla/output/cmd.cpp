@@ -19,6 +19,7 @@
 #include <supla/log_wrapper.h>
 
 #include <cstdio>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -34,23 +35,44 @@ static bool replaceFirst(std::string& s,
   return true;
 }
 
-static std::string buildCmd(std::string_view cmdLine, std::string_view arg) {
-  std::string cmd(cmdLine);
+static std::optional<std::string> quoteShellArgument(
+    std::string_view rawArgument) {
+  if (rawArgument.find('\0') != std::string_view::npos) {
+    return std::nullopt;
+  }
 
-  if (replaceFirst(cmd, "{}", arg)) {
+  std::string quotedArgument;
+  quotedArgument.reserve(rawArgument.size() + 2);
+  quotedArgument.push_back('\'');
+  for (const char character : rawArgument) {
+    if (character == '\'') {
+      quotedArgument += "'\\''";
+    } else {
+      quotedArgument.push_back(character);
+    }
+  }
+  quotedArgument.push_back('\'');
+  return quotedArgument;
+}
+
+static std::string buildCmd(std::string_view trustedCmdTemplate,
+                            std::string_view encodedArgumentList) {
+  std::string cmd(trustedCmdTemplate);
+
+  if (replaceFirst(cmd, "{}", encodedArgumentList)) {
     return cmd;
   }
-  if (replaceFirst(cmd, "%s", arg)) {
+  if (replaceFirst(cmd, "%s", encodedArgumentList)) {
     return cmd;
   }
-  if (replaceFirst(cmd, "%d", arg)) {
+  if (replaceFirst(cmd, "%d", encodedArgumentList)) {
     return cmd;
   }
 
   if (!cmd.empty() && cmd.back() != ' ') {
     cmd.push_back(' ');
   }
-  cmd.append(arg);
+  cmd.append(encodedArgumentList);
   return cmd;
 }
 
@@ -73,35 +95,41 @@ Supla::Output::Cmd::~Cmd() {
 
 bool Supla::Output::Cmd::putContent(int payload) {
   if (cmdLine.empty()) return false;
-  return execCmd(buildCmd(cmdLine, std::to_string(payload)));
+
+  const auto encodedArgument = quoteShellArgument(std::to_string(payload));
+  return encodedArgument && execCmd(buildCmd(cmdLine, *encodedArgument));
 }
 
 bool Supla::Output::Cmd::putContent(bool payload) {
   if (cmdLine.empty()) return false;
 
-  const char* val = payload ? "true" : "false";
-  return execCmd(buildCmd(cmdLine, val));
+  const auto encodedArgument = quoteShellArgument(payload ? "true" : "false");
+  return encodedArgument && execCmd(buildCmd(cmdLine, *encodedArgument));
 }
 
 bool Supla::Output::Cmd::putContent(const std::string& payload) {
   if (cmdLine.empty()) return false;
 
-  return execCmd(buildCmd(cmdLine, payload));
+  const auto encodedArgument = quoteShellArgument(payload);
+  return encodedArgument && execCmd(buildCmd(cmdLine, *encodedArgument));
 }
 
 bool Supla::Output::Cmd::putContent(const std::vector<int>& payload) {
   if (cmdLine.empty()) return false;
 
-  std::string payloadStr;
-  payloadStr.reserve(payload.size() * 12);
+  std::string encodedArgumentList;
+  encodedArgumentList.reserve(payload.size() * 12);
 
   for (size_t i = 0; i < payload.size(); ++i) {
     if (i) {
-      payloadStr.push_back(' ');
+      encodedArgumentList.push_back(' ');
     }
-    payloadStr += std::to_string(payload[i]);
+    const auto encodedArgument = quoteShellArgument(std::to_string(payload[i]));
+    if (!encodedArgument) {
+      return false;
+    }
+    encodedArgumentList += *encodedArgument;
   }
 
-  return execCmd(buildCmd(cmdLine, payloadStr));
+  return execCmd(buildCmd(cmdLine, encodedArgumentList));
 }
-

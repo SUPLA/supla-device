@@ -836,6 +836,13 @@ There are three supported parser types:
 3. `MQTT` - use published topic to MQTT broker. A published topic name containing
 control information is provided by `control_topic`.
 
+`Cmd` uses a trusted shell command template. The template supports `{}`, `%s`,
+and `%d`; only the first matching placeholder is replaced. If no placeholder
+is present, the payload is appended as an argument. A string payload is passed
+as one safely shell-quoted argument, while elements of a `vector<int>` are
+passed as separate arguments. Payload data is never interpreted as shell
+syntax, so shell operators in the payload are treated as ordinary characters.
+
 ### `payload` parameter
 `payload` converts channel state change values to the values to be published to 
 a predefined `output`. I.e. in CustomRelay turn on/off commands are published

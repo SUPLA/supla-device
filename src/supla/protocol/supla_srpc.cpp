@@ -58,6 +58,14 @@ bool Supla::Protocol::SuplaSrpc::isSuplaSSLEnabled = true;
 static const char wrongCert[] = "SUPLA";
 
 namespace {
+Supla::Client *createNetworkClient() {
+  auto network = Supla::Network::Instance();
+  if (network != nullptr) {
+    return network->createClient();
+  }
+  return Supla::ClientBuilder();
+}
+
 void logRawHexDump(const char *direction,
                    int callId,
                    const char *callName,
@@ -1193,14 +1201,10 @@ void Supla::Protocol::SuplaSrpc::setNetworkClient(Supla::Client *newClient) {
 
 void Supla::Protocol::SuplaSrpc::initClient() {
   if (client == nullptr) {
-    if (Supla::Network::Instance()) {
-      client = Supla::Network::Instance()->createClient();
-    } else {
-      client = Supla::ClientBuilder();
-      if (client == nullptr) {
-        SUPLA_LOG_ERROR("Failed to create client");
-        return;
-      }
+    client = createNetworkClient();
+    if (client == nullptr) {
+      SUPLA_LOG_ERROR("Failed to create SRPC network client");
+      return;
     }
   }
   client->setSdc(sdc);
@@ -1350,11 +1354,17 @@ void Supla::Protocol::SuplaSrpc::onInit() {
 
 _supla_int_t Supla::dataRead(void *buf, _supla_int_t count, void *userParams) {
   auto srpcLayer = reinterpret_cast<Supla::Protocol::SuplaSrpc *>(userParams);
+  if (srpcLayer == nullptr || srpcLayer->client == nullptr) {
+    return 0;
+  }
   return srpcLayer->client->read(reinterpret_cast<uint8_t *>(buf), count);
 }
 
 _supla_int_t Supla::dataWrite(void *buf, _supla_int_t count, void *userParams) {
   auto srpcLayer = reinterpret_cast<Supla::Protocol::SuplaSrpc *>(userParams);
+  if (srpcLayer == nullptr || srpcLayer->client == nullptr) {
+    return 0;
+  }
   _supla_int_t r =
       srpcLayer->client->write(reinterpret_cast<uint8_t *>(buf), count);
   if (r > 0) {
@@ -1925,7 +1935,12 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     SUPLA_LOG_INFO("Supla server name not set. Trying to get it from AD");
     // fetch json from https://autodiscover.supla.org/users/email@host
     const char server[] = "iot.autodiscover.supla.org";
-    auto adClient = Supla::ClientBuilder();
+    auto adClient = createNetworkClient();
+    if (adClient == nullptr) {
+      SUPLA_LOG_ERROR("Failed to create autodiscovery network client");
+      waitForIterate = 1000;
+      return false;
+    }
     adClient->setSSLEnabled(true);
     adClient->setCACert(::suplaCACert);
 
@@ -1973,6 +1988,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
 
       adClient->stop();
       delete adClient;
+      adClient = nullptr;
 
       SUPLA_LOG_DEBUG("Data: %s", buf);
 
@@ -2021,6 +2037,9 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
 
     } else {
       SUPLA_LOG_DEBUG("AD connection failed");
+      adClient->stop();
+      delete adClient;
+      adClient = nullptr;
       waitForIterate = 1000;
       return false;
     }
@@ -2036,6 +2055,10 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
 
   if (client == nullptr) {
     initClient();
+  }
+  if (client == nullptr) {
+    waitForIterate = 1000;
+    return false;
   }
   // Establish connection with Supla server
   if (!client->connected()) {
@@ -2299,6 +2322,9 @@ bool Supla::Protocol::SuplaSrpc::isEnabled() {
 
 void Supla::Protocol::SuplaSrpc::sendChannelStateResult(int32_t receiverId,
                                                         uint8_t channelNo) {
+  if (client == nullptr) {
+    return;
+  }
   TDSC_ChannelState state = {};
   state.ReceiverID = receiverId;
   state.ChannelNumber = channelNo;

@@ -57,6 +57,7 @@ TrippleButtonRollerShutter::TrippleButtonRollerShutter(
     Supla::Io::IoPin pinDown,
     Supla::Io::IoPin pinStop)
     : BistableRollerShutter(pinUp, pinDown), pinStop(pinStop) {
+  this->pinStop.setMode(OUTPUT);
 }
 
 TrippleButtonRollerShutter::~TrippleButtonRollerShutter() {

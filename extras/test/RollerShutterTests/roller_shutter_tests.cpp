@@ -504,6 +504,32 @@ TEST_F(RollerShutterFixture, trippleButtonIoPinConstructorUsesSeparateIo) {
   rs.onInit();
 }
 
+TEST_F(RollerShutterFixture, trippleButtonIoPinConstructorSetsStopOutputMode) {
+  SuplaIoMock ioMockUp;
+  SuplaIoMock ioMockDown;
+  SuplaIoMock ioMockStop;
+
+  const int gpioStop = 3;
+  Supla::Io::IoPin pinStop(gpioStop, &ioMockStop);
+  pinStop.setActiveHigh(false);
+
+  Supla::Control::TrippleButtonRollerShutter rs(
+      Supla::Io::IoPin(gpioUp, &ioMockUp),
+      Supla::Io::IoPin(gpioDown, &ioMockDown),
+      pinStop);
+
+  ::testing::InSequence seq;
+
+  EXPECT_CALL(ioMockStop, customDigitalWrite(0, gpioStop, HIGH));
+  EXPECT_CALL(ioMockStop, customPinMode(0, gpioStop, OUTPUT));
+  EXPECT_CALL(ioMockUp, customDigitalWrite(0, gpioUp, LOW));
+  EXPECT_CALL(ioMockUp, customPinMode(0, gpioUp, OUTPUT));
+  EXPECT_CALL(ioMockDown, customDigitalWrite(0, gpioDown, LOW));
+  EXPECT_CALL(ioMockDown, customPinMode(0, gpioDown, OUTPUT));
+
+  rs.onInit();
+}
+
 TEST_F(RollerShutterFixture, movementByServerTests) {
   StorageMock storage;
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);

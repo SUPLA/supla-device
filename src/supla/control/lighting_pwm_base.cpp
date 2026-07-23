@@ -1013,8 +1013,8 @@ void LightingPwmBase::onFastTimer() {
     const uint32_t minBrightness =
         ratioToHwValue(minBrightnessRatio, maxHwValue);
     float white2Fraction = 1.0 * hardware.whiteTemperature / maxHwValue;
-    white2Brightness = adjBrightness * white2Fraction * warmWhiteGain;
-    white1Brightness = adjBrightness * (1.0 - white2Fraction) * coldWhiteGain;
+    white2Brightness = adjBrightness * white2Fraction * coldWhiteGain;
+    white1Brightness = adjBrightness * (1.0 - white2Fraction) * warmWhiteGain;
     if (white1Brightness > 0 && white1Brightness < minBrightness) {
       white1Brightness = minBrightness;
     }

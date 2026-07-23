@@ -34,6 +34,15 @@ class RgbCctBaseForTest : public Supla::Control::LightingPwmBase {
               setRGBCCTValueOnDevice,
               (uint32_t[5], int),
               (override));
+
+  void setCctGainsForTest(float warmGain, float coldGain) {
+    warmWhiteGain = warmGain;
+    coldWhiteGain = coldGain;
+  }
+
+  void setMaxHwValueForTest(int value) {
+    setMaxHwValue(value);
+  }
 };
 
 void setRGBCCTValues(TRGBW_Value *value,
@@ -223,6 +232,51 @@ TEST(RgbCctTests, BasicTests) {
   EXPECT_EQ(ch->getValueColorBrightness(), 40);
   EXPECT_EQ(ch->getValueBrightness(), 50);
   EXPECT_EQ(ch->getValueWhiteTemperature(), 60);
+}
+
+TEST(RgbCctTests, CctGainMappingUsesWarmAndColdChannels) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  RgbCctBaseForTest rgb;
+
+  rgb.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER_CCT);
+  rgb.setMaxHwValueForTest(1000);
+  rgb.setCctGainsForTest(0.25f, 2.0f);
+  rgb.setFadeEffectTime(0);
+
+  time.advance(1000);
+  rgb.onInit();
+
+  TSD_SuplaChannelNewValue msg = {};
+  setRGBCCTValues(reinterpret_cast<TRGBW_Value *>(msg.value),
+                  0,
+                  0,
+                  0,
+                  0,
+                  100,
+                  25,
+                  0,
+                  RGBW_COMMAND_NOT_SET);
+  rgb.handleNewValueFromServer(&msg);
+
+  uint32_t output[5] = {};
+  int usedOutputs = 0;
+  EXPECT_CALL(rgb, setRGBCCTValueOnDevice(_, 2))
+      .WillOnce([&](uint32_t values[5], int used) {
+        for (int i = 0; i < used; i++) {
+          output[i] = values[i];
+        }
+        usedOutputs = used;
+      });
+
+  time.advance(1);
+  rgb.onFastTimer();
+  time.advance(1);
+  rgb.onFastTimer();
+
+  EXPECT_EQ(usedOutputs, 2);
+  EXPECT_EQ(output[0], 187U);
+  EXPECT_EQ(output[1], 500U);
 }
 
 TEST(RgbCctTests, LegacyStorageMigrationIsOptIn) {

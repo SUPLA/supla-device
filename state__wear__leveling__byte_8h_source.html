@@ -214,31 +214,32 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span> <span class="keyword">private</span>:</div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>  uint16_t getSizeValue(uint16_t availableSize) <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>  <span class="keywordtype">void</span> checkIfIsEnoughSpaceForState();</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>  uint32_t getFirstSlotAddress() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>  uint32_t getNextSlotAddress(uint32_t slotAddress) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>  uint32_t slotSize() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>  uint32_t updateStateEntryAddress();</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>  <span class="keywordtype">bool</span> isDataDifferent(uint32_t firstAddress, uint32_t secondAddress, <span class="keywordtype">int</span> size);</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>  uint32_t sectionOffset = 0;</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>  uint32_t reservedSize;</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>  uint32_t elementStateSize = 0;</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>  uint32_t stateSlotNewSize = 0;</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>  uint32_t currentStateOffset = 0;</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>  uint16_t crc = 0;   <span class="comment">// value calculated on each save/read</span></div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>  <span class="keywordtype">bool</span> elementStateCrcCValid = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>  <span class="keywordtype">bool</span> dryRun = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>  <span class="keywordtype">bool</span> storageStateOk = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>  <span class="keywordtype">bool</span> initDone = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>  <span class="keywordtype">bool</span> dataChanged = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>  <span class="keywordtype">int</span> repeatBeforeSwitchToAnotherSlot = 0;</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span> </div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>  uint16_t writeCount = 0;</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>  uint32_t currentSlotAddress = 0;</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>};</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>  <span class="keywordtype">bool</span> isStateEntryAddressValid(<span class="keyword">const</span> StateEntryAddress &amp;entry) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>  uint32_t getFirstSlotAddress() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>  uint32_t getNextSlotAddress(uint32_t slotAddress) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>  uint64_t slotSize() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>  uint32_t updateStateEntryAddress();</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>  <span class="keywordtype">bool</span> isDataDifferent(uint32_t firstAddress, uint32_t secondAddress, <span class="keywordtype">int</span> size);</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>  uint32_t sectionOffset = 0;</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>  uint32_t reservedSize;</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>  uint32_t elementStateSize = 0;</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>  uint32_t stateSlotNewSize = 0;</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>  uint32_t currentStateOffset = 0;</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>  uint16_t crc = 0;   <span class="comment">// value calculated on each save/read</span></div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>  <span class="keywordtype">bool</span> elementStateCrcCValid = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>  <span class="keywordtype">bool</span> dryRun = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>  <span class="keywordtype">bool</span> storageStateOk = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>  <span class="keywordtype">bool</span> initDone = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>  <span class="keywordtype">bool</span> dataChanged = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>  <span class="keywordtype">int</span> repeatBeforeSwitchToAnotherSlot = 0;</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span> </div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>  uint16_t writeCount = 0;</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>  uint32_t currentSlotAddress = 0;</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>};</div>
 </div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span> </div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>}  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_STORAGE_STATE_WEAR_LEVELING_BYTE_H_</span></div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span> </div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>}  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_STORAGE_STATE_WEAR_LEVELING_BYTE_H_</span></div>
 <div class="ttc" id="astructSupla_1_1SectionPreamble_html"><div class="ttname"><a href="structSupla_1_1SectionPreamble.html">Supla::SectionPreamble</a></div><div class="ttdef"><b>Definition</b> storage.h:162</div></div>
 <div class="ttc" id="astructSupla_1_1StateEntryAddress_html"><div class="ttname"><a href="structSupla_1_1StateEntryAddress.html">Supla::StateEntryAddress</a></div><div class="ttdef"><b>Definition</b> state_wear_leveling_byte.h:65</div></div>
 <div class="ttc" id="astructSupla_1_1StateWlByteHeader_html"><div class="ttname"><a href="structSupla_1_1StateWlByteHeader.html">Supla::StateWlByteHeader</a></div><div class="ttdef"><b>Definition</b> state_wear_leveling_byte.h:74</div></div>

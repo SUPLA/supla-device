@@ -415,6 +415,30 @@ TEST_F(ActionTriggerTests, ActionsShouldAddCaps) {
                 SUPLA_ACTION_CAP_SHORT_PRESS_x5);
 }
 
+TEST_F(ActionTriggerTests,
+       PreserveCapabilitiesWithoutAttachedButtonOnChannelConfig) {
+  Supla::Control::ActionTrigger at;
+
+  at.activateAction(Supla::SEND_AT_TURN_ON);
+  EXPECT_EQ(at.getChannel()->getActionTriggerCaps(),
+            SUPLA_ACTION_CAP_TURN_ON);
+
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger actionTriggerConfig = {};
+  actionTriggerConfig.ActiveActions = 0;
+  memcpy(config.Config, &actionTriggerConfig, sizeof(actionTriggerConfig));
+
+  at.handleChannelConfig(&config);
+  EXPECT_EQ(at.getChannel()->getActionTriggerCaps(),
+            SUPLA_ACTION_CAP_TURN_ON);
+
+  at.rebuildForAttachedButton();
+  EXPECT_EQ(at.getChannel()->getActionTriggerCaps(),
+            SUPLA_ACTION_CAP_TURN_ON);
+}
+
 TEST_F(ActionTriggerTests, RelatedChannel) {
   SrpcMock srpc;
   ignoreAtValueUpdates(&srpc);

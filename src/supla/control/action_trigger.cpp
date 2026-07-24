@@ -360,6 +360,11 @@ void Supla::Control::ActionTrigger::onInit() {
 }
 
 void Supla::Control::ActionTrigger::rebuildForAttachedButton() {
+  if (!attachedButton) {
+    parseActiveActionsFromServer();
+    return;
+  }
+
   if (attachedButton && localHandlerSwitchConfigured && localHandlerClient) {
     Supla::LocalAction::DeleteAction(attachedButton,
                                      localHandlerClient,

@@ -49,23 +49,27 @@ SelectInputParameter::SelectInputParameter(const char* paramTag,
 }
 
 void SelectInputParameter::setTag(const char* tagValue) {
-  auto size = strlen(tagValue);
-  if (size >= SUPLA_CONFIG_MAX_KEY_SIZE) {
-    size = SUPLA_CONFIG_MAX_KEY_SIZE - 1;
-    SUPLA_LOG_WARNING("Tag too long: \"%s\"; truncating", tagValue);
-  }
-
   if (tag != nullptr) {
     delete []tag;
     tag = nullptr;
   }
 
-  if (tagValue == nullptr || size == 0) {
+  if (tagValue == nullptr) {
+    return;
+  }
+
+  auto size = strnlen(tagValue, SUPLA_CONFIG_MAX_KEY_SIZE);
+  if (size >= SUPLA_CONFIG_MAX_KEY_SIZE) {
+    size = SUPLA_CONFIG_MAX_KEY_SIZE - 1;
+    SUPLA_LOG_WARNING("Tag too long: \"%s\"; truncating", tagValue);
+  }
+  if (size == 0) {
     return;
   }
 
   tag = new char[size + 1];
-  strncpy(tag, tagValue, size + 1);
+  memcpy(tag, tagValue, size);
+  tag[size] = '\0';
 }
 
 void SelectInputParameter::setLabel(const char *labelValue) {

@@ -38,29 +38,38 @@ CustomCheckboxParameter::CustomCheckboxParameter(const char* paramTag,
 }
 
 void CustomCheckboxParameter::setTag(const char* tagValue) {
+  if (tag != nullptr) {
+    delete []tag;
+    tag = nullptr;
+  }
+  if (tagValue == nullptr) {
+    return;
+  }
+
   auto size = strnlen(tagValue, SUPLA_CONFIG_MAX_KEY_SIZE);
   if (size >= SUPLA_CONFIG_MAX_KEY_SIZE) {
     size = SUPLA_CONFIG_MAX_KEY_SIZE - 1;
     SUPLA_LOG_WARNING("Tag too long: \"%s\"; truncating", tagValue);
   }
-  if (tag != nullptr) {
-    delete []tag;
-    tag = nullptr;
-  }
-  if (tagValue == nullptr || size == 0) {
+  if (size == 0) {
     return;
   }
   tag = new char[size + 1];
-  strncpy(tag, tagValue, size + 1);
+  memcpy(tag, tagValue, size);
+  tag[size] = '\0';
 }
 
 void CustomCheckboxParameter::setLabel(const char *labelValue) {
-  auto size = strnlen(labelValue, MAX_LABEL_SIZE);
   if (label != nullptr) {
     delete []label;
     label = nullptr;
   }
-  if (labelValue == nullptr || size == 0) {
+  if (labelValue == nullptr) {
+    return;
+  }
+
+  auto size = strnlen(labelValue, MAX_LABEL_SIZE);
+  if (size == 0) {
     return;
   }
   if (size < MAX_LABEL_SIZE) {

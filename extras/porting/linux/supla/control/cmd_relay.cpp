@@ -72,10 +72,11 @@ bool Supla::Control::CmdRelay::isOn() {
     if (result == 1) {
       newState = true;
     } else if (result != -1) {
-     result = 0;
+      result = 0;
     }
   } else {
     newState = Supla::Control::VirtualRelay::isOn();
+    result = newState ? 1 : 0;
   }
 
   setLastState(result);

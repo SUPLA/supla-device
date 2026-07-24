@@ -102,9 +102,10 @@ class StateWearLevelingByte : public StateStorageInterface {
  private:
   uint16_t getSizeValue(uint16_t availableSize) override;
   void checkIfIsEnoughSpaceForState();
+  bool isStateEntryAddressValid(const StateEntryAddress &entry) const;
   uint32_t getFirstSlotAddress() const;
   uint32_t getNextSlotAddress(uint32_t slotAddress) const;
-  uint32_t slotSize() const;
+  uint64_t slotSize() const;
   uint32_t updateStateEntryAddress();
   bool isDataDifferent(uint32_t firstAddress, uint32_t secondAddress, int size);
   uint32_t sectionOffset = 0;

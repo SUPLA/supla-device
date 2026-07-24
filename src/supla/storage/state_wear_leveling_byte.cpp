@@ -48,22 +48,68 @@ void StateWearLevelingByte::initSectionPreamble(SectionPreamble *preamble) {
   }
 }
 
-uint32_t StateWearLevelingByte::slotSize() const {
-  return elementStateSize + sizeof(StateWlByteHeader);
+uint64_t StateWearLevelingByte::slotSize() const {
+  return static_cast<uint64_t>(elementStateSize) +
+         sizeof(StateWlByteHeader);
 }
 
 uint32_t StateWearLevelingByte::getFirstSlotAddress() const {
-  return sectionOffset + sizeof(Supla::SectionPreamble) +
-         2 * sizeof(StateEntryAddress);
+  const uint64_t firstSlotAddress =
+      static_cast<uint64_t>(sectionOffset) +
+      sizeof(Supla::SectionPreamble) + 2 * sizeof(StateEntryAddress);
+  if (firstSlotAddress > UINT32_MAX) {
+    return 0;
+  }
+  return static_cast<uint32_t>(firstSlotAddress);
 }
 
 uint32_t StateWearLevelingByte::getNextSlotAddress(uint32_t slotAddress) const {
-  uint32_t nextAddress = slotAddress + slotSize();
-  if (nextAddress + slotSize() > sectionOffset + reservedSize) {
-    nextAddress = getFirstSlotAddress();
+  // The caller must pass a legal slot address for the current layout.
+  // Addresses loaded from metadata have to pass
+  // isStateEntryAddressValid() first.
+  const uint64_t nextAddress = static_cast<uint64_t>(slotAddress) +
+                               slotSize();
+  const uint64_t sectionEnd = static_cast<uint64_t>(sectionOffset) +
+                              reservedSize;
+  if (nextAddress > UINT32_MAX || nextAddress + slotSize() > sectionEnd) {
+    return getFirstSlotAddress();
   }
 
-  return nextAddress;
+  return static_cast<uint32_t>(nextAddress);
+}
+
+bool StateWearLevelingByte::isStateEntryAddressValid(
+    const StateEntryAddress &entry) const {
+  const uint64_t sectionBegin = sectionOffset;
+  const uint64_t firstSlotAddress =
+      sectionBegin + sizeof(Supla::SectionPreamble) +
+      2 * sizeof(StateEntryAddress);
+  const uint64_t sectionEnd = sectionBegin + reservedSize;
+  const uint64_t currentSlotSize =
+      static_cast<uint64_t>(entry.elementStateSize) +
+      sizeof(StateWlByteHeader);
+
+  if (sectionEnd > UINT32_MAX || firstSlotAddress > UINT32_MAX ||
+      sectionEnd < firstSlotAddress ||
+      currentSlotSize <= sizeof(StateWlByteHeader)) {
+    return false;
+  }
+
+  const uint64_t spaceForSlots = sectionEnd - firstSlotAddress;
+  if (spaceForSlots / currentSlotSize < 2) {
+    return false;
+  }
+
+  const uint64_t entryAddress = entry.address;
+  if (entryAddress < firstSlotAddress || entryAddress > sectionEnd) {
+    return false;
+  }
+
+  if (currentSlotSize > sectionEnd - entryAddress) {
+    return false;
+  }
+
+  return (entryAddress - firstSlotAddress) % currentSlotSize == 0;
 }
 
 uint32_t StateWearLevelingByte::updateStateEntryAddress() {
@@ -134,14 +180,32 @@ bool StateWearLevelingByte::writeSectionPreamble() {
 }
 
 bool StateWearLevelingByte::initFromStorage() {
-  initDone = true;
+  initDone = false;
+  storageStateOk = false;
+  elementStateCrcCValid = false;
+  elementStateSize = 0;
+  currentSlotAddress = 0;
+  stateSlotNewSize = 0;
+  currentStateOffset = 0;
+  writeCount = 0;
 
   // Read state entry addresses
   StateEntryAddress stateEntryAddressMain = {};
   StateEntryAddress stateEntryAddressBackup = {};
 
-  uint32_t currentOffset =
-      sectionOffset + sizeof(Supla::SectionPreamble);
+  const uint64_t entriesOffset =
+      static_cast<uint64_t>(sectionOffset) + sizeof(Supla::SectionPreamble);
+  const uint64_t entriesEnd =
+      entriesOffset + 2 * sizeof(StateEntryAddress);
+  const uint64_t sectionEnd =
+      static_cast<uint64_t>(sectionOffset) + reservedSize;
+  if (entriesEnd > UINT32_MAX || sectionEnd > UINT32_MAX ||
+      sectionEnd < entriesEnd) {
+    SUPLA_LOG_WARNING("Storage: state entry address range overflow");
+    return false;
+  }
+
+  uint32_t currentOffset = static_cast<uint32_t>(entriesOffset);
 
   currentOffset +=
       readStorage(currentOffset,
@@ -165,38 +229,60 @@ bool StateWearLevelingByte::initFromStorage() {
       sizeof(stateEntryAddressBackup.address) +
           sizeof(stateEntryAddressBackup.elementStateSize));
 
-  if (crcMain != stateEntryAddressMain.crc &&
-      crcBackup != stateEntryAddressBackup.crc) {
-    SUPLA_LOG_WARNING("Storage: invalid CRC for both state entries");
-    return false;
+  const bool mainCrcValid = crcMain == stateEntryAddressMain.crc;
+  const bool backupCrcValid = crcBackup == stateEntryAddressBackup.crc;
+  const bool mainEntryValid =
+      mainCrcValid && isStateEntryAddressValid(stateEntryAddressMain);
+  const bool backupEntryValid =
+      backupCrcValid && isStateEntryAddressValid(stateEntryAddressBackup);
+
+  const bool entriesConflict =
+      mainEntryValid && backupEntryValid &&
+      stateEntryAddressMain.address == stateEntryAddressBackup.address &&
+      stateEntryAddressMain.elementStateSize !=
+          stateEntryAddressBackup.elementStateSize;
+
+  if ((!mainEntryValid && !backupEntryValid) || entriesConflict) {
+    if (entriesConflict) {
+      SUPLA_LOG_WARNING("Storage: conflicting state entry metadata");
+    } else {
+      SUPLA_LOG_WARNING("Storage: invalid state entry metadata");
+    }
+
+    // Treat invalid state metadata like a state layout mismatch. The state
+    // won't be loaded, but the normal size-check and save path can rebuild
+    // this section without clearing any other storage sections.
+    currentSlotAddress = getFirstSlotAddress();
+    checkIfIsEnoughSpaceForState();
+    return storageStateOk;
   }
 
-  currentSlotAddress = getFirstSlotAddress();
-
-  if (crcMain == stateEntryAddressMain.crc &&
-      crcBackup == stateEntryAddressBackup.crc &&
-      stateEntryAddressMain.address == stateEntryAddressBackup.address) {
-    // both state address copies are the same - OK
-      currentSlotAddress = stateEntryAddressMain.address;
-      elementStateSize = stateEntryAddressMain.elementStateSize;
+  uint32_t selectedSlotAddress = 0;
+  uint16_t selectedElementStateSize = 0;
+  if (!mainEntryValid) {
+    selectedSlotAddress = stateEntryAddressBackup.address;
+    selectedElementStateSize = stateEntryAddressBackup.elementStateSize;
   } else {
-    // one of state address copies is different or crc is not valid
-    if (crcMain == stateEntryAddressMain.crc) {
-      // first init data from main copy (when crc is valid)
-      currentSlotAddress = stateEntryAddressMain.address;
+    selectedSlotAddress = stateEntryAddressMain.address;
+    selectedElementStateSize = stateEntryAddressMain.elementStateSize;
+
+    if (backupEntryValid &&
+        stateEntryAddressMain.elementStateSize ==
+            stateEntryAddressBackup.elementStateSize) {
+      // Both entries have already passed CRC and structural validation.
+      // A backup entry pointing to the next slot means that power was lost
+      // while switching the metadata copies.
       elementStateSize = stateEntryAddressMain.elementStateSize;
-    }
-    if (crcBackup == stateEntryAddressBackup.crc) {
-      if (currentSlotAddress == 0 || getNextSlotAddress(currentSlotAddress) ==
+      if (getNextSlotAddress(stateEntryAddressMain.address) ==
           stateEntryAddressBackup.address) {
-        // init data from backup copy (when crc is valid and address points
-        // to next slot) - probably there was power failure during state
-        // write
-        currentSlotAddress = stateEntryAddressBackup.address;
-        elementStateSize = stateEntryAddressBackup.elementStateSize;
+        selectedSlotAddress = stateEntryAddressBackup.address;
+        selectedElementStateSize = stateEntryAddressBackup.elementStateSize;
       }
     }
   }
+
+  currentSlotAddress = selectedSlotAddress;
+  elementStateSize = selectedElementStateSize;
 
   // State entry address is read, so we read data from current slot address
   StateWlByteHeader currentStateWlByteHeader = {};
@@ -267,6 +353,12 @@ bool StateWearLevelingByte::initFromStorage() {
 
   crc = 0;
   checkIfIsEnoughSpaceForState();
+  if (!storageStateOk) {
+    elementStateCrcCValid = false;
+    return false;
+  }
+
+  initDone = true;
 
   // increment writeCount (it contain writeCount value for next write)
   writeCount++;
@@ -450,31 +542,50 @@ bool StateWearLevelingByte::finalizeSizeCheck() {
         "configuration");
 
     elementStateSize = stateSlotNewSize;
+    elementStateCrcCValid = false;
     writeCount = 0;
+    currentSlotAddress = getFirstSlotAddress();
     currentStateOffset = getFirstSlotAddress();
+    initDone = false;
+    checkIfIsEnoughSpaceForState();
     return false;
   }
   return true;
 }
 
 void StateWearLevelingByte::checkIfIsEnoughSpaceForState() {
-  int stateSlotSize = sizeof(StateWlByteHeader) + elementStateSize;
   storageStateOk = false;
-  int stateSlotsCount = 0;
+  const uint64_t metadataSize = sizeof(Supla::SectionPreamble) +
+                                2 * sizeof(StateEntryAddress);
+  // A zero-sized state is used while creating a fresh section, before the
+  // element configuration has been measured. Metadata entries with size zero
+  // are still rejected by isStateEntryAddressValid().
+  const uint64_t stateSlotSize = elementStateSize == 0
+                                     ? sizeof(StateWlByteHeader)
+                                     : slotSize();
+  const uint64_t sectionEnd = static_cast<uint64_t>(sectionOffset) +
+                              reservedSize;
+  const uint64_t firstSlotAddress =
+      static_cast<uint64_t>(sectionOffset) + metadataSize;
 
-  if (reservedSize > 2 * sizeof(StateEntryAddress) + stateSlotSize) {
-    uint32_t spaceForState = (reservedSize - 2 * sizeof(StateEntryAddress));
-    stateSlotsCount = spaceForState / stateSlotSize;
+  if (reservedSize < metadataSize ||
+      (elementStateSize > 0 && stateSlotSize <= sizeof(StateWlByteHeader)) ||
+      sectionEnd > UINT32_MAX || firstSlotAddress > UINT32_MAX ||
+      sectionEnd < firstSlotAddress) {
+    return;
   }
 
-  if (stateSlotsCount > 1) {
+  const uint64_t spaceForState = reservedSize - metadataSize;
+  const uint64_t stateSlotsCount = spaceForState / stateSlotSize;
+
+  if (stateSlotsCount >= 2) {
 //  SUPLA_LOG_DEBUG("StateWearLevelingByte: slots count: %d", stateSlotsCount);
     if (stateSlotsCount < 20) {
       SUPLA_LOG_WARNING(
           "StateWearLevelingByte: low amount of slots available: %d",
-          stateSlotsCount);
+          static_cast<int>(stateSlotsCount));
     }
-    repeatBeforeSwitchToAnotherSlot = stateSlotsCount;
+    repeatBeforeSwitchToAnotherSlot = static_cast<int>(stateSlotsCount);
     if (stateSlotsCount % 2 == 0) {
       repeatBeforeSwitchToAnotherSlot++;
     }

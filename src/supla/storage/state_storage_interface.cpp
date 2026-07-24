@@ -97,7 +97,9 @@ bool StateStorageInterface::loadPreambles(uint32_t storageStartingOffset,
 
     if (sectionType == section.type) {
       initSectionPreamble(&section);
-      initFromStorage();
+      if (!initFromStorage()) {
+        return false;
+      }
     } else {
       SUPLA_LOG_WARNING("Storage: section type mismatch %d != %d", sectionType,
           section.type);

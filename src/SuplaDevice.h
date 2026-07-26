@@ -82,6 +82,9 @@ namespace Supla {
 class Clock;
 class Mutex;
 class Element;
+namespace Device {
+class SwUpdateObserver;
+}
 
 // 10 days
 constexpr uint32_t AutomaticOtaCheckInterval = (10ULL * 24 * 60 * 60 * 1000);
@@ -412,6 +415,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    * @param valueMin inactivity timeout in minutes. Use 0 to disable
    */
   void setLeaveCfgModeAfterInactivityMin(int valueMin);
+  uint32_t getCfgModeInactivityTimeLeftMs() const;
+  void setSwUpdateObserver(Supla::Device::SwUpdateObserver *observer);
 
   /**
    * Checks if leave configuration mode after inactivity is enabled.
@@ -550,6 +555,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
+  Supla::Device::SwUpdateObserver *swUpdateObserver = nullptr;
   Supla::Device::ChannelConflictResolverList *channelConflictResolvers =
       nullptr;
 #if SUPLA_SUPLET_ENABLED

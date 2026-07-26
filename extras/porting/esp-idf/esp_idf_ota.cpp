@@ -509,6 +509,12 @@ void Supla::EspIdfOta::iterate() {
     return;
   }
 
+  int64_t contentLength = esp_http_client_get_content_length(client);
+  uint32_t totalBytes = contentLength > 0 && contentLength <= UINT32_MAX
+                            ? static_cast<uint32_t>(contentLength)
+                            : 0;
+  notifyProgress(0, totalBytes);
+
   // Start fetching bin file and perform update
   const esp_partition_t *updatePartition = NULL;
 
@@ -535,6 +541,7 @@ void Supla::EspIdfOta::iterate() {
   SUPLA_LOG_DEBUG("Getting file from server...");
   int bytesRead = 0;
   int bytesReadPrinted = 0;
+  int bytesReadNotified = 0;
   while (true) {
     int dataRead = esp_http_client_read(
         client, reinterpret_cast<char *>(otaBuffer), BUFFER_SIZE);
@@ -544,6 +551,10 @@ void Supla::EspIdfOta::iterate() {
       return;
     } else if (dataRead > 0) {
       bytesRead += dataRead;
+      if (bytesRead - bytesReadNotified > 64 * 1024) {
+        notifyProgress(bytesRead, totalBytes);
+        bytesReadNotified = bytesRead;
+      }
       if (bytesRead - bytesReadPrinted > 1024 * 100) {
         bytesReadPrinted = bytesRead;
         SUPLA_LOG_DEBUG("SW update: downloaded %d bytes...", bytesRead);
@@ -611,6 +622,8 @@ void Supla::EspIdfOta::iterate() {
   }
   delete[] otaBuffer;
   otaBuffer = nullptr;
+  notifyProgress(binSize, totalBytes);
+  notifyFinished(true);
   return;
 }
 
@@ -718,6 +731,7 @@ void Supla::EspIdfOta::fail(const char *reason) {
   }
 
   log(reason);
+  notifyFinished(false, reason);
   abort = true;
 }
 

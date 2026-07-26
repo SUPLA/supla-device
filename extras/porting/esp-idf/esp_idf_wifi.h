@@ -46,6 +46,9 @@ class EspIdfWifi : public Supla::Wifi {
   void setIpReady(bool ready);
   void setIpv4Addr(uint32_t ip);
   void setWifiConnected(bool state);
+  void setLastDisconnectReason(int reason);
+  bool isAccessPointConnected() const;
+  int getLastDisconnectReason() const;
   bool isIpSetupTimeout() override;
 
   bool isInConfigMode();
@@ -73,6 +76,7 @@ class EspIdfWifi : public Supla::Wifi {
   uint8_t lastChannel = 0;
   int lastReasons[SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX] = {};
   int lastReasonIdx = 0;
+  int lastDisconnectReason = 0;
   uint32_t connectedToWifiTimestamp = 0;
   int maxTxPower = -1;
   bool configModeScanInProgress = false;

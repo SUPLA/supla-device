@@ -148,6 +148,7 @@ static void eventHandler(void *arg,
         if (thisNetIntfPtr) {
           thisNetIntfPtr->setIpReady(false);
           thisNetIntfPtr->setWifiConnected(false);
+          thisNetIntfPtr->setLastDisconnectReason(data->reason);
           if (firstWiFiScanDone) {
             // we ignore connection error if it happens first time
             thisNetIntfPtr->logWifiReason(data->reason);
@@ -493,6 +494,21 @@ void Supla::EspIdfWifi::setIpReady(bool ready) {
 void Supla::EspIdfWifi::setWifiConnected(bool state) {
   connectedToWifiTimestamp = millis();
   isWifiConnected = state;
+  if (state) {
+    lastDisconnectReason = 0;
+  }
+}
+
+void Supla::EspIdfWifi::setLastDisconnectReason(int reason) {
+  lastDisconnectReason = reason;
+}
+
+bool Supla::EspIdfWifi::isAccessPointConnected() const {
+  return isWifiConnected;
+}
+
+int Supla::EspIdfWifi::getLastDisconnectReason() const {
+  return lastDisconnectReason;
 }
 
 void Supla::EspIdfWifi::setIpv4Addr(uint32_t ip) {

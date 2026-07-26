@@ -113,7 +113,35 @@ class ConfigModeSuplaDevice : public SuplaDeviceClass {
   Supla::CfgModeState getCfgModeStateForTest() const {
     return cfgModeState;
   }
+
+  void setCfgModeTimerForTest(uint32_t enterTimestamp,
+                              uint32_t restartTimestamp = 0) {
+    deviceMode = Supla::DEVICE_MODE_CONFIG;
+    enterConfigModeTimestamp = enterTimestamp;
+    deviceRestartTimeoutTimestamp = restartTimestamp;
+  }
 };
+
+TEST_F(SuplaDeviceTests, ReportsRemainingCfgModeInactivityTime) {
+  ConfigModeSuplaDevice sd;
+  time.advance(1000);
+  sd.setLeaveCfgModeAfterInactivityMin(5);
+  sd.setCfgModeTimerForTest(time.value);
+
+  EXPECT_EQ(sd.getCfgModeInactivityTimeLeftMs(), 300000);
+
+  time.advance(270000);
+  EXPECT_EQ(sd.getCfgModeInactivityTimeLeftMs(), 30000);
+
+  sd.restartCfgModeTimeout(false);
+  EXPECT_EQ(sd.getCfgModeInactivityTimeLeftMs(), 300000);
+}
+
+TEST_F(SuplaDeviceTests, CfgModeInactivityTimeIsUnavailableOutsideCfgMode) {
+  ConfigModeSuplaDevice sd;
+
+  EXPECT_EQ(sd.getCfgModeInactivityTimeLeftMs(), UINT32_MAX);
+}
 
 TEST_F(SuplaDeviceTests, DefaultValuesTest) {
   SuplaDeviceClass sd;

@@ -689,6 +689,7 @@ bool SuplaDeviceClass::initSwUpdateInstance(Supla::SwUpdateMode mode,
     SUPLA_LOG_WARNING("Failed to create SW update instance");
     return false;
   }
+  swUpdate->setObserver(swUpdateObserver);
 
   if (cfg) {
     if (cfg->isSwUpdateBeta()) {
@@ -2083,6 +2084,30 @@ void SuplaDeviceClass::setLeaveCfgModeAfterInactivityMin(int valueMin) {
                  valueMin,
                  valueMin == 0 ? " (disabled)" : "");
   leaveCfgModeAfterInactivityMin = valueMin;
+}
+
+uint32_t SuplaDeviceClass::getCfgModeInactivityTimeLeftMs() const {
+  if (deviceMode != Supla::DEVICE_MODE_CONFIG ||
+      !isLeaveCfgModeAfterInactivityEnabled()) {
+    return UINT32_MAX;
+  }
+  uint32_t timestamp = deviceRestartTimeoutTimestamp != 0
+                           ? deviceRestartTimeoutTimestamp
+                           : enterConfigModeTimestamp;
+  if (timestamp == 0) {
+    return UINT32_MAX;
+  }
+  uint32_t timeoutMs = leaveCfgModeAfterInactivityMin * 60ULL * 1000;
+  uint32_t elapsed = millis() - timestamp;
+  return elapsed >= timeoutMs ? 0 : timeoutMs - elapsed;
+}
+
+void SuplaDeviceClass::setSwUpdateObserver(
+    Supla::Device::SwUpdateObserver *observer) {
+  swUpdateObserver = observer;
+  if (swUpdate) {
+    swUpdate->setObserver(observer);
+  }
 }
 
 bool SuplaDeviceClass::isAutomaticFirmwareUpdateEnabled() const {

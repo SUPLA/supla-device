@@ -26,6 +26,15 @@
 namespace Supla {
 
 namespace Device {
+class SwUpdateObserver {
+ public:
+  virtual ~SwUpdateObserver() = default;
+  virtual void onSwUpdateStarted() = 0;
+  virtual void onSwUpdateProgress(uint32_t downloadedBytes,
+                                  uint32_t totalBytes) = 0;
+  virtual void onSwUpdateFinished(bool success, const char *reason) = 0;
+};
+
 class SwUpdate {
  public:
   static SwUpdate *Create(SuplaDeviceClass *sdc,
@@ -35,7 +44,11 @@ class SwUpdate {
 
   void start() {
     started = true;
+    if (observer) {
+      observer->onSwUpdateStarted();
+    }
   }
+  void setObserver(SwUpdateObserver *newObserver) { observer = newObserver; }
   virtual void iterate() = 0;
 
   void setUrl(const char *newUrl);
@@ -82,6 +95,17 @@ class SwUpdate {
                     const char *newUrl,
                     Supla::SwUpdateMode mode);
 
+  void notifyProgress(uint32_t downloadedBytes, uint32_t totalBytes) {
+    if (observer) {
+      observer->onSwUpdateProgress(downloadedBytes, totalBytes);
+    }
+  }
+  void notifyFinished(bool success, const char *reason = nullptr) {
+    if (observer) {
+      observer->onSwUpdateFinished(success, reason);
+    }
+  }
+
   bool beta = false;
   bool skipCert = false;
   bool securityOnly = false;
@@ -89,6 +113,7 @@ class SwUpdate {
   bool finished = false;
   bool abort = false;
   SuplaDeviceClass *sdc = nullptr;
+  SwUpdateObserver *observer = nullptr;
   char *updateUrl = nullptr;
   char *newVersion = nullptr;
   char *changelogUrl = nullptr;

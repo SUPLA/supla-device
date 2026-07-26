@@ -128,7 +128,7 @@ void NetworkAddressParameters::renderField(Supla::WebSender* sender,
       input.attr("value", value);
     }
     input.finish();
-  });
+  }, "form-field sensitive");
 }
 
 void NetworkAddressParameters::send(Supla::WebSender* sender) {

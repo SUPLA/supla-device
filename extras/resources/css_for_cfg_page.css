@@ -311,3 +311,59 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 thead th{border-bottom:2px solid #e6e8eb;padding:8px}
 td{padding:10px 8px;border-bottom:1px solid #f0f1f3;vertical-align:middle}
 
+.sensitive {
+  transition: filter .15s ease;
+}
+
+.privacy-mode .sensitive {
+  filter: blur(7px);
+  pointer-events: none;
+  user-select: none;
+}
+
+#privacy-toggle {
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #222;
+  box-shadow: 0 2px 8px rgb(0 0 0 / .3);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#privacy-toggle svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#privacy-toggle .icon-eye-off {
+  display: none;
+}
+
+#privacy-toggle[aria-pressed="true"] .icon-eye {
+  display: none;
+}
+
+#privacy-toggle[aria-pressed="true"] .icon-eye-off {
+  display: block;
+}
+
+#privacy-toggle:active {
+  transform: scale(.94);
+}

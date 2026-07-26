@@ -95,7 +95,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               input.attr("value", buf);
             }
             input.finish();
-          });
+          }, "form-field sensitive");
 
           sender->send(
               "<script>"
@@ -175,7 +175,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                 input.attr("value", buf);
               }
               input.finish();
-            });
+            }, "form-field sensitive");
 
             sender->send(
                 "<script>"
@@ -302,7 +302,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                 input.attr("value", buf);
               }
               input.finish();
-            });
+            }, "form-field sensitive");
 
             sender->formField([&]() {
               sender->labelFor("mqttpasswd", "Password (required, max 255)");
@@ -312,7 +312,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                   .attr("name", "mqttpasswd")
                   .attr("id", "mqttpasswd")
                   .finish();
-            });
+            }, "form-field sensitive");
 
             sender->formField([&]() {
               sender->labelFor("mqttprefix", "Topic prefix");
@@ -411,7 +411,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               input.attr("value", buf);
             }
             input.finish();
-          });
+          }, "form-field sensitive");
 
           sender->formField([&]() {
             sender->labelFor("mqttpasswd", "Password (required, max 255)");
@@ -420,7 +420,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                 .attr("name", "mqttpasswd")
                 .attr("id", "mqttpasswd")
                 .finish();
-          });
+          }, "form-field sensitive");
 
           sender->formField([&]() {
             sender->labelFor("mqttprefix", "Topic prefix");

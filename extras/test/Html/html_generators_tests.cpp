@@ -28,6 +28,7 @@
 #include <supla/control/hvac_base.h>
 #include <supla/control/lighting_pwm_base.h>
 #include <supla/control/relay.h>
+#include <supla/control/relay_roller_shutter_pair.h>
 #include <supla/control/roller_shutter.h>
 #include <supla/device/register_device.h>
 #include <supla/device/security_logger.h>
@@ -76,7 +77,6 @@
 #include <supla/network/html/volume_parameters.h>
 #include <supla/network/network.h>
 #include <supla/network/web_sender.h>
-#include <supla/control/relay_roller_shutter_pair.h>
 #include <supla/sensor/binary_base.h>
 #include <supla/sensor/container.h>
 #include <supla/sensor/electricity_meter.h>
@@ -338,9 +338,10 @@ TEST_F(HtmlCaptureTest, HideShowContainerGeneratesToggledSection) {
   EXPECT_THAT(
       sendHtml,
       HasSubstr("document.getElementById(&quot;" + id + "_link&quot;)"));
-  EXPECT_THAT(sendHtml, HasSubstr("<div id=\"" + id +
-                                  "\" style=\"display:none\"><input "
-                                  "id=\"hidden_payload\" /></div>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<div id=\"" + id +
+                        "\" style=\"display:none\"><input "
+                        "id=\"hidden_payload\" /></div>"));
 }
 
 TEST_F(HtmlCaptureTest, SecurityLogListWithoutLoggerShowsEmptyState) {
@@ -693,6 +694,9 @@ TEST_F(HtmlCaptureTest, ProtocolParametersRendersSimpleProtocolSelector) {
   EXPECT_THAT(sendHtml, HasSubstr("<option value=\"1\""));
   EXPECT_THAT(sendHtml, HasSubstr(">MQTT</option>"));
   EXPECT_THAT(sendHtml, HasSubstr("onchange=\"protocolChanged()\""));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<div class=\"form-field sensitive\"><label "
+                        "for=\"eml\">E-mail</label>"));
 }
 
 TEST_F(HtmlCaptureTest, SwUpdateRendersSimpleFirmwareSelector) {
@@ -1006,8 +1010,7 @@ TEST_F(HtmlCaptureTest,
   Supla::Html::RelayParameters relayParam(&relay);
   Supla::Html::ChannelFunctionParameters functionParam(&relay);
 
-  EXPECT_CALL(cfg,
-              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_STAIRCASETIMER))
+  EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_STAIRCASETIMER))
       .WillOnce(Return(true));
 
   EXPECT_TRUE(relayParam.handleResponse("0_on_dur", "10"));
@@ -1610,9 +1613,9 @@ TEST_F(HtmlCaptureTest,
   Supla::Control::RelayRollerShutterPair pair(-1, -1);
   Supla::Html::ChannelFunctionParameters param(&pair);
 
-  EXPECT_CALL(cfg,
-              setInt32(StrEq("0_fnc"),
-                       SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER))
+  EXPECT_CALL(
+      cfg,
+      setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER))
       .WillOnce(Return(true));
   EXPECT_CALL(cfg, setInt32(StrEq("1_fnc"), SUPLA_CHANNELFNC_LIGHTSWITCH))
       .WillOnce(Return(true));
@@ -1646,10 +1649,8 @@ TEST_F(HtmlCaptureTest, ChannelFunctionParametersSetRelayRollerPairSecondary) {
       .WillOnce(Return(true));
 
   char functionValue[12] = {};
-  snprintf(functionValue,
-           sizeof(functionValue),
-           "%d",
-           SUPLA_CHANNELFNC_POWERSWITCH);
+  snprintf(
+      functionValue, sizeof(functionValue), "%d", SUPLA_CHANNELFNC_POWERSWITCH);
   EXPECT_TRUE(param.handleResponse("1_fnc", functionValue));
 
   EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
@@ -1665,20 +1666,15 @@ TEST_F(HtmlCaptureTest,
        ChannelFunctionParametersRejectUnsupportedPairFunction) {
   NiceMock<ConfigMock> cfg;
   Supla::Channel::resetToDefaults();
-  Supla::Control::RelayRollerShutterPair pair(-1,
-                                              -1,
-                                              true,
-                                              true,
-                                              SUPLA_BIT_FUNC_LIGHTSWITCH);
+  Supla::Control::RelayRollerShutterPair pair(
+      -1, -1, true, true, SUPLA_BIT_FUNC_LIGHTSWITCH);
   Supla::Html::ChannelFunctionParameters param(&pair);
 
   EXPECT_CALL(cfg, setInt32(_, _)).Times(0);
 
   char functionValue[12] = {};
-  snprintf(functionValue,
-           sizeof(functionValue),
-           "%d",
-           SUPLA_CHANNELFNC_POWERSWITCH);
+  snprintf(
+      functionValue, sizeof(functionValue), "%d", SUPLA_CHANNELFNC_POWERSWITCH);
   EXPECT_TRUE(param.handleResponse("0_fnc", functionValue));
 
   EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
@@ -1698,9 +1694,8 @@ TEST_F(HtmlCaptureTest,
   const int gpio = 7;
   int outputState = 0;
   ON_CALL(io, digitalWrite(gpio, _))
-      .WillByDefault([&outputState](uint8_t, uint8_t value) {
-        outputState = value;
-      });
+      .WillByDefault(
+          [&outputState](uint8_t, uint8_t value) { outputState = value; });
   ON_CALL(io, digitalRead(gpio)).WillByDefault([&outputState](uint8_t) {
     return outputState;
   });
@@ -1752,13 +1747,11 @@ TEST_F(HtmlCaptureTest,
   int outputState0 = 0;
   int outputState1 = 0;
   ON_CALL(io, digitalWrite(gpio0, _))
-      .WillByDefault([&outputState0](uint8_t, uint8_t value) {
-        outputState0 = value;
-      });
+      .WillByDefault(
+          [&outputState0](uint8_t, uint8_t value) { outputState0 = value; });
   ON_CALL(io, digitalWrite(gpio1, _))
-      .WillByDefault([&outputState1](uint8_t, uint8_t value) {
-        outputState1 = value;
-      });
+      .WillByDefault(
+          [&outputState1](uint8_t, uint8_t value) { outputState1 = value; });
   ON_CALL(io, digitalRead(gpio0)).WillByDefault([&outputState0](uint8_t) {
     return outputState0;
   });
@@ -1953,6 +1946,39 @@ TEST_F(HtmlCaptureTest, DeviceInfoRendersRegisterDeviceAndMainMac) {
             "</span>");
 }
 
+TEST_F(HtmlCaptureTest, HtmlGeneratorIncludesPrivacyToggleAssets) {
+  SenderMock sender;
+  expectAllSendCalls(sender);
+  Supla::HtmlGenerator generator;
+
+  generator.sendHeader(&sender);
+  EXPECT_THAT(sendHtml, HasSubstr(".sensitive{transition:filter"));
+  EXPECT_THAT(sendHtml, HasSubstr(".privacy-mode .sensitive"));
+  EXPECT_THAT(sendHtml, HasSubstr("#privacy-toggle"));
+
+  sendHtml.clear();
+  generator.sendJavascript(&sender);
+  EXPECT_THAT(sendHtml, HasSubstr("function initPrivacyToggle()"));
+  EXPECT_THAT(sendHtml, HasSubstr("function findDeviceInfoSpans()"));
+  EXPECT_THAT(sendHtml, HasSubstr("function setDeviceInfoSensitive(hidden)"));
+  EXPECT_THAT(sendHtml, HasSubstr("device-info-value"));
+  EXPECT_THAT(sendHtml, HasSubstr("document.createTreeWalker(spans[i],4"));
+  EXPECT_THAT(sendHtml, HasSubstr("range.surroundContents(value)"));
+  EXPECT_THAT(sendHtml, HasSubstr("parent.normalize()"));
+  EXPECT_THAT(sendHtml, HasSubstr("document.querySelectorAll('.sensitive')"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("document.body.classList.toggle('privacy-mode')"));
+  EXPECT_THAT(sendHtml, HasSubstr("setDeviceInfoSensitive(hidden)"));
+  EXPECT_THAT(sendHtml, HasSubstr("button.innerHTML='<svg class=\"icon-eye\""));
+  EXPECT_THAT(sendHtml, HasSubstr("class=\"icon-eye-off\""));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("button.setAttribute('aria-pressed','false')"));
+  EXPECT_THAT(
+      sendHtml,
+      HasSubstr("button.setAttribute('aria-pressed',hidden?'true':'false')"));
+  EXPECT_THAT(sendHtml, HasSubstr("button.title=hidden?'Show sensitive data'"));
+}
+
 TEST_F(HtmlCaptureTest, HeaderBeginEscapesDeviceNameInTitle) {
   resetRegisterDevice();
 
@@ -1971,5 +1997,7 @@ TEST_F(HtmlCaptureTest, HeaderBeginEscapesDeviceNameInTitle) {
       sendHtml,
       HasSubstr("<title>Device &lt;/title&gt;&lt;script&gt;alert(&apos;x&apos;)"
                 "&lt;/script&gt; &amp; &quot;quote&quot;</title>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<meta name=\"theme-color\" content=\"#00d151\">"));
   EXPECT_THAT(sendHtml, Not(HasSubstr("<script>alert('x')</script>")));
 }

@@ -314,12 +314,12 @@ void WifiParameters::send(Supla::WebSender* sender) {
         sendWifiSsidDatalist(sender);
         sendWifiScanScript(sender);
       });
-    });
+    }, "form-field sensitive");
 
     const char keyPass[] = "wpw";
     sender->labeledField(keyPass, "Password", [&]() {
       sender->passwordInput(keyPass, keyPass);
-    });
+    }, "form-field sensitive");
 
     netifParameters.send(sender);
   }

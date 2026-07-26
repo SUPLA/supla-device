@@ -697,6 +697,16 @@ TEST_F(HtmlCaptureTest, ProtocolParametersRendersSimpleProtocolSelector) {
   EXPECT_THAT(sendHtml,
               HasSubstr("<div class=\"form-field sensitive\"><label "
                         "for=\"eml\">E-mail</label>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<select name=\"mqttauth\" id=\"mqttauth\" "
+                        "onchange=\"mAuthChanged();\">"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<div class=\"form-field sensitive\"><label "
+                        "for=\"mqttuser\">Username</label>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<div class=\"form-field sensitive\"><label "
+                        "for=\"mqttpasswd\">Password (required, max 255)"
+                        "</label>"));
 }
 
 TEST_F(HtmlCaptureTest, SwUpdateRendersSimpleFirmwareSelector) {
@@ -1954,6 +1964,8 @@ TEST_F(HtmlCaptureTest, HtmlGeneratorIncludesPrivacyToggleAssets) {
   generator.sendHeader(&sender);
   EXPECT_THAT(sendHtml, HasSubstr(".sensitive{transition:filter"));
   EXPECT_THAT(sendHtml, HasSubstr(".privacy-mode .sensitive"));
+  EXPECT_THAT(sendHtml, HasSubstr(".hint.warn"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr(".help-link")));
   EXPECT_THAT(sendHtml, HasSubstr("#privacy-toggle"));
 
   sendHtml.clear();
@@ -1977,6 +1989,10 @@ TEST_F(HtmlCaptureTest, HtmlGeneratorIncludesPrivacyToggleAssets) {
       sendHtml,
       HasSubstr("button.setAttribute('aria-pressed',hidden?'true':'false')"));
   EXPECT_THAT(sendHtml, HasSubstr("button.title=hidden?'Show sensitive data'"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("function showHelp(text)")));
+  EXPECT_THAT(sendHtml, HasSubstr("t.parentNode.style.display=e"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("mauth_usr")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("mauth_pwd")));
 }
 
 TEST_F(HtmlCaptureTest, HeaderBeginEscapesDeviceNameInTitle) {

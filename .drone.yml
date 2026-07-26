@@ -18,6 +18,12 @@ kind: pipeline
 name: default
 
 steps:
+- name: html_generator_assets
+  image: devel/freertos
+  pull: never
+  commands:
+  - python3 extras/tools/generate_html_generator_styles.py --check
+
 - name: tests_compilation
   image: devel/freertos
   pull: never

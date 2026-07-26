@@ -286,6 +286,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
             sender->formField([&]() {
               sender->labelFor("mqttauth", "Auth");
               auto select = sender->selectTag("mqttauth", "mqttauth");
+              select.attr("onchange", "mAuthChanged();");
               select.body([&]() {
                 sender->selectOption(0, "NO", !cfg->isMqttAuthEnabled());
                 sender->selectOption(1, "YES", cfg->isMqttAuthEnabled());
@@ -395,6 +396,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
           sender->formField([&]() {
             sender->labelFor("mqttauth", "Auth");
             auto select = sender->selectTag("mqttauth", "mqttauth");
+            select.attr("onchange", "mAuthChanged();");
             select.body([&]() {
               sender->selectOption(0, "NO", !cfg->isMqttAuthEnabled());
               sender->selectOption(1, "YES", cfg->isMqttAuthEnabled());

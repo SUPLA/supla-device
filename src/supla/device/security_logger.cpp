@@ -32,13 +32,14 @@ SecurityLogger::SecurityLogger() {}
 SecurityLogger::~SecurityLogger() {}
 
 void SecurityLogger::log(uint32_t source, const char *log) {
-  SecurityLogEntry entry;
-  if (strnlen(log, SUPLA_SECURITY_LOG_TEXT_SIZE + 1) >
-      SUPLA_SECURITY_LOG_TEXT_SIZE) {
+  SecurityLogEntry entry = {};
+  const size_t logSize = sizeof(entry.log);
+  if (strnlen(log, logSize) == logSize) {
     SUPLA_LOG_WARNING("SecurityLogger: log too long");
   }
   entry.source = source;
-  strncpy(entry.log, log, sizeof(entry.log) - 1);
+  strncpy(entry.log, log, logSize - 1);
+  entry.log[logSize - 1] = '\0';
   entry.index = ++index;
   entry.timestamp = time(nullptr);
   entry.print();
@@ -102,10 +103,11 @@ const char *SecurityLogger::getSourceName(uint32_t source) {
 }
 
 void SecurityLogEntry::print() const {
-  SUPLA_LOG_INFO("SSLOG: %d.[%d][%s] %s",
+  SUPLA_LOG_INFO("SSLOG: %d.[%d][%s] %.*s",
                  index,
                  timestamp,
                  Supla::Device::SecurityLogger::getSourceName(source),
+                 static_cast<int>(sizeof(log)),
                  log);
 }
 
@@ -126,4 +128,3 @@ bool Supla::SecurityLogEntry::isEmpty() const {
   }
   return empty;
 }
-

@@ -836,12 +836,21 @@ There are three supported parser types:
 3. `MQTT` - use published topic to MQTT broker. A published topic name containing
 control information is provided by `control_topic`.
 
-`Cmd` uses a trusted shell command template. The template supports `{}`, `%s`,
-and `%d`; only the first matching placeholder is replaced. If no placeholder
-is present, the payload is appended as an argument. A string payload is passed
-as one safely shell-quoted argument, while elements of a `vector<int>` are
-passed as separate arguments. Payload data is never interpreted as shell
-syntax, so shell operators in the payload are treated as ordinary characters.
+`Cmd` uses a trusted command template executed by POSIX `/bin/sh`. Use portable
+POSIX shell syntax in the template; trusted redirections, pipelines, `&&`,
+`||`, command substitutions, variables and command sequences remain supported.
+The template supports `{}`, `%s`, and `%d`. Placeholder selection is ordered as
+`{}`, then `%s`, then `%d`, and only the first placeholder of the selected type
+is replaced. Ambiguous unsupported constructs, such as heredocs, arithmetic
+expansion, or comments in a no-placeholder fallback, are rejected.
+
+The payload is passed to `/bin/sh -c` as process arguments, not inserted into
+the command text and not shell-quoted into that text. For a scalar payload the
+replacement is a positional parameter (`$1`), and when there is no placeholder
+the command receives a safely appended `"$1"`. A `vector<int>` is passed as a
+list of separate positional arguments and uses `"$@"` (including when no
+placeholder is present). Payload data is therefore never interpreted as shell
+syntax; shell operators in the payload are ordinary argument characters.
 
 ### `payload` parameter
 `payload` converts channel state change values to the values to be published to 

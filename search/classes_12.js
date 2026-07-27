@@ -46,5 +46,6 @@ var searchData=
   ['suplasomfy_43',['SuplaSomfy',['../classSuplaSomfy.html',1,'']]],
   ['suplasrpc_44',['SuplaSrpc',['../classSupla_1_1Protocol_1_1SuplaSrpc.html',1,'Supla::Protocol']]],
   ['swupdate_45',['SwUpdate',['../classSupla_1_1Device_1_1SwUpdate.html',1,'Supla::Device::SwUpdate'],['../classSupla_1_1Html_1_1SwUpdate.html',1,'Supla::Html::SwUpdate']]],
-  ['swupdatebeta_46',['SwUpdateBeta',['../classSupla_1_1Html_1_1SwUpdateBeta.html',1,'Supla::Html']]]
+  ['swupdatebeta_46',['SwUpdateBeta',['../classSupla_1_1Html_1_1SwUpdateBeta.html',1,'Supla::Html']]],
+  ['swupdateobserver_47',['SwUpdateObserver',['../classSupla_1_1Device_1_1SwUpdateObserver.html',1,'Supla::Device']]]
 ];

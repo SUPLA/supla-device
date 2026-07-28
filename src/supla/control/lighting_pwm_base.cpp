@@ -21,6 +21,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <supla/io.h>
 #include <supla/auto_lock.h>
 #include <supla/control/button.h>
 #include <supla/log_wrapper.h>
@@ -1668,6 +1669,47 @@ void LightingPwmBase::setPwmResolutionBits(uint8_t resolutionBits) {
   }
 
   setMaxHwValue(static_cast<int>(hwMax));
+}
+
+uint32_t LightingPwmBase::scalePwmValueForOutput(
+    const Supla::Io::IoPin &pin, uint32_t value) const {
+  if (!pin.isSet()) {
+    return 0;
+  }
+
+  const uint32_t sourceMax = maxHwValue > 0
+                                 ? static_cast<uint32_t>(maxHwValue)
+                                 : 0;
+  if (sourceMax == 0) {
+    return 0;
+  }
+
+  if (value > sourceMax) {
+    value = sourceMax;
+  }
+
+  uint32_t outputMax = sourceMax;
+  const uint8_t pinNumber = static_cast<uint8_t>(pin.getPin());
+  if (!Supla::Io::canSetPwmResolutionBits(pinNumber, pin.io)) {
+    const uint8_t outputBits =
+        Supla::Io::defaultPwmResolutionBits(pinNumber, pin.io);
+    if (outputBits > 0 && outputBits < 32) {
+      outputMax = (1UL << outputBits) - 1;
+    } else {
+      outputMax = 0;
+    }
+  }
+
+  if (outputMax == 0) {
+    return 0;
+  }
+  if (outputMax == sourceMax) {
+    return value;
+  }
+
+  const uint64_t scaled =
+      (static_cast<uint64_t>(value) * outputMax + sourceMax / 2) / sourceMax;
+  return scaled > outputMax ? outputMax : static_cast<uint32_t>(scaled);
 }
 
 void LightingPwmBase::setPwmFrequency(uint16_t frequency) {

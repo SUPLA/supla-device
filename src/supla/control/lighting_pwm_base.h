@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+#include <supla/io/io_pin.h>
+
 #include "../action_handler.h"
 #include "../actions.h"
 #include "../channel_element.h"
@@ -286,6 +288,9 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   int getMissingGpioCount() const;
 
   void setMaxHwValue(int newMaxHwValue);
+
+  uint32_t scalePwmValueForOutput(const Supla::Io::IoPin &pin,
+                                  uint32_t value) const;
 
   void enableChannel();
   void disableChannel();

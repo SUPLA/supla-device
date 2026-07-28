@@ -21,6 +21,8 @@
 #include <supla/control/rgb_leds.h>
 #include <supla_io_mock.h>
 
+#include "legacy_pwm_test_io.h"
+
 using ::testing::Return;
 
 class TimeInterfaceStub : public TimeInterface {
@@ -142,4 +144,19 @@ TEST(RgbLedsTests, IoPinConstructorUsesSeparateIoForOutputs) {
   EXPECT_EQ(ch->getValueBlue(), 0);
   EXPECT_EQ(ch->getValueColorBrightness(), 0);
   EXPECT_EQ(ch->getValueBrightness(), 0);
+}
+
+TEST(RgbLedsTests, ScalesEveryChannelForFixedEightBitOutputs) {
+  FixedEightBitPwmIo redIo;
+  FixedEightBitPwmIo greenIo;
+  FixedEightBitPwmIo blueIo;
+  Supla::Control::RGBLeds rgb(Supla::Io::IoPin(1, &redIo),
+                              Supla::Io::IoPin(2, &greenIo),
+                              Supla::Io::IoPin(3, &blueIo));
+
+  rgb.setRGBWValueOnDevice(511, 767, 1023, 0);
+
+  EXPECT_THAT(redIo.values, ::testing::ElementsAre(127));
+  EXPECT_THAT(greenIo.values, ::testing::ElementsAre(191));
+  EXPECT_THAT(blueIo.values, ::testing::ElementsAre(255));
 }

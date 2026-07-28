@@ -47,7 +47,8 @@ void Supla::Control::DimmerLeds::setRGBWValueOnDevice(uint32_t red,
   (void)(red);
   (void)(green);
   (void)(blue);
-  brightnessPin.analogWrite(brightness);
+  brightnessPin.analogWrite(
+      scalePwmValueForOutput(brightnessPin, brightness));
 }
 
 void Supla::Control::DimmerLeds::onInit() {

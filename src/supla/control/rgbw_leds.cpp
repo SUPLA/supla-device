@@ -66,10 +66,11 @@ void Supla::Control::RGBWLeds::setRGBWValueOnDevice(uint32_t red,
                           uint32_t green,
                           uint32_t blue,
                           uint32_t brightness) {
-  redPin.analogWrite(red);
-  greenPin.analogWrite(green);
-  bluePin.analogWrite(blue);
-  brightnessPin.analogWrite(brightness);
+  redPin.analogWrite(scalePwmValueForOutput(redPin, red));
+  greenPin.analogWrite(scalePwmValueForOutput(greenPin, green));
+  bluePin.analogWrite(scalePwmValueForOutput(bluePin, blue));
+  brightnessPin.analogWrite(
+      scalePwmValueForOutput(brightnessPin, brightness));
 }
 
 void Supla::Control::RGBWLeds::onInit() {

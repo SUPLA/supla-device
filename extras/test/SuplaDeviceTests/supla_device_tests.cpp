@@ -321,8 +321,7 @@ TEST_F(SuplaDeviceTests, OtherInitialModesAlwaysDisableActionsInConfigMode) {
   button.runAction(event);
 }
 
-TEST_F(SuplaDeviceTests,
-       StartOfflineKeepsActionsDisabledWhenLeavingReentersCfgMode) {
+TEST_F(SuplaDeviceTests, StartOfflineLeavesConfigModeWithIncompleteConfig) {
   ConfigModeSuplaDevice sd;
   NetworkMockWithMac net;
   NotReadyConfigMock config;
@@ -337,7 +336,7 @@ TEST_F(SuplaDeviceTests,
   button.addAction(1, localHandler, event);
   button.addAction(2, configHandler, event, true);
 
-  EXPECT_CALL(localHandler, handleAction(event, 1)).Times(1);
+  EXPECT_CALL(localHandler, handleAction(event, 1)).Times(2);
   EXPECT_CALL(configHandler, handleAction(event, 2)).Times(3);
 
   button.runAction(event);
@@ -347,7 +346,7 @@ TEST_F(SuplaDeviceTests,
   button.runAction(event);
 
   sd.leaveConfigModeWithoutRestart();
-  EXPECT_EQ(Supla::DEVICE_MODE_CONFIG, sd.getDeviceMode());
+  EXPECT_EQ(Supla::DEVICE_MODE_OFFLINE, sd.getDeviceMode());
   button.runAction(event);
 }
 

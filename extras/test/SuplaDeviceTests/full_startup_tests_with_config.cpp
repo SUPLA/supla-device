@@ -1474,6 +1474,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
     EXPECT_CALL(statusMock, status(STATUS_MISSING_CREDENTIALS, _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_INITIALIZED, _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_OFFLINE_MODE, _)).Times(1);
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
@@ -1524,8 +1525,9 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
 
   EXPECT_CALL(timer, initTimers());
 
+  // One setup when entering config mode and one when leaving it.
   EXPECT_CALL(net, isReady()).Times(0);
-  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, setup()).Times(2);
   EXPECT_CALL(net, iterate()).Times(AtLeast(0));
   EXPECT_CALL(srpc, srpc_iterate(_)).Times(0);
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(0);
@@ -1537,6 +1539,8 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 
+  // Keep the initial config-mode timestamp non-zero in the time mock.
+  time.advance(1);
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
 
@@ -1545,6 +1549,20 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
     time.advance(100);
   }
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // Leave config mode after the five-minute inactivity timeout.
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_OFFLINE_MODE);
+
+  // A partial StartOffline configuration must not re-enter config mode.
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_OFFLINE_MODE);
 }
 
 TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidAndPassSet) {
@@ -1908,6 +1926,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoFullCfgSetWifiEnabled) {
     EXPECT_CALL(statusMock, status(STATUS_INITIALIZED, _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_REGISTER_IN_PROGRESS, _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_REGISTERED_AND_READY, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
@@ -1972,12 +1991,13 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoFullCfgSetWifiEnabled) {
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
   EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
+  EXPECT_CALL(srpc, srpc_free(_)).Times(1);
 
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
-  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, setup()).Times(3);
   EXPECT_CALL(net, iterate()).Times(AtLeast(1));
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
-  EXPECT_CALL(*client, stop()).Times(0);
+  EXPECT_CALL(*client, stop()).Times(AtLeast(1));
 
   EXPECT_CALL(*client, connected())
       .WillOnce(Return(false))
@@ -2024,6 +2044,28 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoFullCfgSetWifiEnabled) {
   }
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  // Enter config mode manually and leave it after inactivity.
+  sd.handleAction(0, Supla::ENTER_CONFIG_MODE);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // Keep the test focused on the device-mode transition after the timeout.
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(false));
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);
+  }
+  EXPECT_EQ(sd.getDeviceMode(), Supla::DEVICE_MODE_NORMAL);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getDeviceMode(), Supla::DEVICE_MODE_NORMAL);
 }
 
 TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOnEmailSet) {

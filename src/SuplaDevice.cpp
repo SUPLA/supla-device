@@ -409,9 +409,10 @@ void SuplaDeviceClass::setupDeviceMode() {
 
   switch (initialMode) {
     case Supla::InitialMode::StartOffline: {
+      const bool configModeFinished = cfgModeState == Supla::CfgModeState::Done;
       cfgModeState = Supla::CfgModeState::Done;
       if (deviceMode == Supla::DEVICE_MODE_CONFIG &&
-          configurationState.isEmpty()) {
+          (configurationState.isEmpty() || configModeFinished)) {
         deviceMode = Supla::DEVICE_MODE_OFFLINE;
       }
       break;

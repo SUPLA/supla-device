@@ -203,6 +203,8 @@ const <a class="el" href="classSupla_1_1Control_1_1RollerShutter.html">RollerShu
 <tr class="memdesc:a7349ec31b3a832096fd64960d454df3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "set channel config" reply from server.  <br /></td></tr>
 <tr class="memitem:a1c58648eb0d95a1f15a13c6af433fa36" id="r_a1c58648eb0d95a1f15a13c6af433fa36"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1c58648eb0d95a1f15a13c6af433fa36">handleChannelConfigFinished</a> () override</td></tr>
 <tr class="memdesc:a1c58648eb0d95a1f15a13c6af433fa36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "channel config finished" message from server.  <br /></td></tr>
+<tr class="memitem:a7898bb239a229c3b5279c1a5bb7ef584" id="r_a7898bb239a229c3b5279c1a5bb7ef584"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a7898bb239a229c3b5279c1a5bb7ef584">handleChannelConfigFinished</a> (int channelNumber) override</td></tr>
+<tr class="memdesc:a7898bb239a229c3b5279c1a5bb7ef584"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "channel config finished" for a specific channel.  <br /></td></tr>
 <tr class="memitem:ad79ebb15c8ea3a1499cf4c429d7e67bf" id="r_ad79ebb15c8ea3a1499cf4c429d7e67bf"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#ad79ebb15c8ea3a1499cf4c429d7e67bf">handleCalcfgFromServer</a> (<a class="el" href="structTSD__DeviceCalCfgRequest.html">TSD_DeviceCalCfgRequest</a> *request) override</td></tr>
 <tr class="memdesc:ad79ebb15c8ea3a1499cf4c429d7e67bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles CALCFG requests from server.  <br /></td></tr>
 <tr class="memitem:a26876a71d9ebc157dbf32d3eec63bc27" id="r_a26876a71d9ebc157dbf32d3eec63bc27"><td class="memItemLeft">uint32_t&#160;</td><td class="memItemRight"><a class="el" href="#a26876a71d9ebc157dbf32d3eec63bc27">getCalcfgPendingTimeoutMs</a> (<a class="el" href="structTSD__DeviceCalCfgRequest.html">TSD_DeviceCalCfgRequest</a> *request) const override</td></tr>
@@ -742,7 +744,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </div>
 </div>
 <a id="a1c58648eb0d95a1f15a13c6af433fa36" name="a1c58648eb0d95a1f15a13c6af433fa36"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c58648eb0d95a1f15a13c6af433fa36">&#9670;&#160;</a></span>handleChannelConfigFinished()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1c58648eb0d95a1f15a13c6af433fa36">&#9670;&#160;</a></span>handleChannelConfigFinished() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -768,6 +770,36 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 <p>This message informs device that server finished sending channel config for this element. </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html#a8c89bf545e7d7e52e9be05adc139e667">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="a7898bb239a229c3b5279c1a5bb7ef584" name="a7898bb239a229c3b5279c1a5bb7ef584"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7898bb239a229c3b5279c1a5bb7ef584">&#9670;&#160;</a></span>handleChannelConfigFinished() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Control::RelayRollerShutterPair::handleChannelConfigFinished </td>
+          <td>(</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>channelNumber</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Handles "channel config finished" for a specific channel. </p>
+<p>The default implementation forwards the event to the primary channel handler only when the channel belongs to this element. </p>
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html#a6579e5def30909df19c3bec2c9d84621">Supla::ElementWithChannelActions</a>.</p>
 
 </div>
 </div>

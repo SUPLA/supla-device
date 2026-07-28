@@ -252,6 +252,8 @@ virtual void&#160;</td><td class="memItemRight"><b>addAction</b> (uint16_t actio
 <tr class="memdesc:aba68b764e8099351e3ee7ab98c58eba5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration when device is connected and registered to Supla server or other protocol.  <br /></td></tr>
 <tr class="memitem:a8c89bf545e7d7e52e9be05adc139e667" id="r_a8c89bf545e7d7e52e9be05adc139e667"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a8c89bf545e7d7e52e9be05adc139e667">handleChannelConfigFinished</a> () override</td></tr>
 <tr class="memdesc:a8c89bf545e7d7e52e9be05adc139e667"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "channel config finished" message from server.  <br /></td></tr>
+<tr class="memitem:a6579e5def30909df19c3bec2c9d84621" id="r_a6579e5def30909df19c3bec2c9d84621"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6579e5def30909df19c3bec2c9d84621">handleChannelConfigFinished</a> (int channelNumber) override</td></tr>
+<tr class="memdesc:a6579e5def30909df19c3bec2c9d84621"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "channel config finished" for a specific channel.  <br /></td></tr>
 <tr class="memitem:a8144900046e92b0a0bdb5d8be3e8c2d6" id="r_a8144900046e92b0a0bdb5d8be3e8c2d6"><td class="memItemLeft">uint8_t&#160;</td><td class="memItemRight"><a class="el" href="#a8144900046e92b0a0bdb5d8be3e8c2d6">handleChannelConfig</a> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *result, bool local) override</td></tr>
 <tr class="memdesc:a8144900046e92b0a0bdb5d8be3e8c2d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "set channel config" request from server.  <br /></td></tr>
 <tr class="memitem:a6c5c3de5e18d235305a87646677919ac" id="r_a6c5c3de5e18d235305a87646677919ac"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6c5c3de5e18d235305a87646677919ac">handleSetChannelConfigResult</a> (<a class="el" href="structTSDS__SetChannelConfigResult.html">TSDS_SetChannelConfigResult</a> *result) override</td></tr>
@@ -700,7 +702,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </div>
 </div>
 <a id="a8c89bf545e7d7e52e9be05adc139e667" name="a8c89bf545e7d7e52e9be05adc139e667"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8c89bf545e7d7e52e9be05adc139e667">&#9670;&#160;</a></span>handleChannelConfigFinished()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c89bf545e7d7e52e9be05adc139e667">&#9670;&#160;</a></span>handleChannelConfigFinished() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -728,6 +730,38 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#aad55fa65c264d468865589dffb5afc1f">Supla::Element</a>.</p>
 
 <p>Reimplemented in <a class="el" href="classHvacBase.html#a6f8360be046f656c7e65e8f53b1ecc79">HvacBase</a>, <a class="el" href="classSupla_1_1Control_1_1HvacBase.html#a6f8360be046f656c7e65e8f53b1ecc79">Supla::Control::HvacBase</a>, and <a class="el" href="classSupla_1_1Control_1_1RelayRollerShutterPair.html#a1c58648eb0d95a1f15a13c6af433fa36">Supla::Control::RelayRollerShutterPair</a>.</p>
+
+</div>
+</div>
+<a id="a6579e5def30909df19c3bec2c9d84621" name="a6579e5def30909df19c3bec2c9d84621"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6579e5def30909df19c3bec2c9d84621">&#9670;&#160;</a></span>handleChannelConfigFinished() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::ElementWithChannelActions::handleChannelConfigFinished </td>
+          <td>(</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>channelNumber</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Handles "channel config finished" for a specific channel. </p>
+<p>The default implementation forwards the event to the primary channel handler only when the channel belongs to this element. </p>
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#ace659162bf97f394df9c1b847a789895">Supla::Element</a>.</p>
+
+<p>Reimplemented in <a class="el" href="classSupla_1_1Control_1_1RelayRollerShutterPair.html#a7898bb239a229c3b5279c1a5bb7ef584">Supla::Control::RelayRollerShutterPair</a>.</p>
 
 </div>
 </div>

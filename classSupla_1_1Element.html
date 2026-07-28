@@ -286,6 +286,8 @@ virtual void&#160;</td><td class="memItemRight"><b>onSoftReset</b> ()</td></tr>
 <tr class="memdesc:ac86cde5072bbf065898ed979cdf42bf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "set channel config" reply from server.  <br /></td></tr>
 <tr class="memitem:aad55fa65c264d468865589dffb5afc1f" id="r_aad55fa65c264d468865589dffb5afc1f"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#aad55fa65c264d468865589dffb5afc1f">handleChannelConfigFinished</a> ()</td></tr>
 <tr class="memdesc:aad55fa65c264d468865589dffb5afc1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "channel config finished" message from server.  <br /></td></tr>
+<tr class="memitem:ace659162bf97f394df9c1b847a789895" id="r_ace659162bf97f394df9c1b847a789895"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#ace659162bf97f394df9c1b847a789895">handleChannelConfigFinished</a> (int channelNumber)</td></tr>
+<tr class="memdesc:ace659162bf97f394df9c1b847a789895"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "channel config finished" for a specific channel.  <br /></td></tr>
 <tr class="memitem:a65a46e33354f59343c78ac33af27eef9" id="r_a65a46e33354f59343c78ac33af27eef9"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a65a46e33354f59343c78ac33af27eef9">getChannelNumber</a> () const</td></tr>
 <tr class="memdesc:a65a46e33354f59343c78ac33af27eef9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns channel number.  <br /></td></tr>
 <tr class="memitem:a66ced1e93881efe2cfc6bc776df91686" id="r_a66ced1e93881efe2cfc6bc776df91686"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a66ced1e93881efe2cfc6bc776df91686">getSecondaryChannelNumber</a> () const</td></tr>
@@ -814,7 +816,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </div>
 </div>
 <a id="aad55fa65c264d468865589dffb5afc1f" name="aad55fa65c264d468865589dffb5afc1f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad55fa65c264d468865589dffb5afc1f">&#9670;&#160;</a></span>handleChannelConfigFinished()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aad55fa65c264d468865589dffb5afc1f">&#9670;&#160;</a></span>handleChannelConfigFinished() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -840,6 +842,36 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 <p>This message informs device that server finished sending channel config for this element. </p>
 
 <p>Reimplemented in <a class="el" href="classHvacBase.html#a6f8360be046f656c7e65e8f53b1ecc79">HvacBase</a>, <a class="el" href="classSupla_1_1Control_1_1HvacBase.html#a6f8360be046f656c7e65e8f53b1ecc79">Supla::Control::HvacBase</a>, <a class="el" href="classSupla_1_1Control_1_1RelayRollerShutterPair.html#a1c58648eb0d95a1f15a13c6af433fa36">Supla::Control::RelayRollerShutterPair</a>, and <a class="el" href="classSupla_1_1ElementWithChannelActions.html#a8c89bf545e7d7e52e9be05adc139e667">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="ace659162bf97f394df9c1b847a789895" name="ace659162bf97f394df9c1b847a789895"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace659162bf97f394df9c1b847a789895">&#9670;&#160;</a></span>handleChannelConfigFinished() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Element::handleChannelConfigFinished </td>
+          <td>(</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>channelNumber</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Handles "channel config finished" for a specific channel. </p>
+<p>The default implementation forwards the event to the primary channel handler only when the channel belongs to this element. </p>
+
+<p>Reimplemented in <a class="el" href="classSupla_1_1Control_1_1RelayRollerShutterPair.html#a7898bb239a229c3b5279c1a5bb7ef584">Supla::Control::RelayRollerShutterPair</a>, and <a class="el" href="classSupla_1_1ElementWithChannelActions.html#a6579e5def30909df19c3bec2c9d84621">Supla::ElementWithChannelActions</a>.</p>
 
 </div>
 </div>

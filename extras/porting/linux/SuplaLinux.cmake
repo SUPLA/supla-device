@@ -74,6 +74,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   ${SUPLA_LINUX_PORT_DIR}/supla/custom_channel.cpp
 
   ${SUPLA_LINUX_PORT_DIR}/supla/source/cmd.cpp
+  ${SUPLA_LINUX_PORT_DIR}/supla/linux_command.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/source/file.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/source/mqtt_src.cpp
 

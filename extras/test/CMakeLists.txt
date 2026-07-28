@@ -119,6 +119,7 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/control/cmd_roller_shutter.cpp
   ../porting/linux/supla/control/rgbcct_parsed.cpp
   ../porting/linux/supla/control/action_trigger_parsed.cpp
+  ../porting/linux/supla/linux_command.cpp
   ../porting/linux/supla/parser/json.cpp
   ../porting/linux/supla/parser/parser.cpp
   ../porting/linux/supla/sensor/sensor_parsed.cpp

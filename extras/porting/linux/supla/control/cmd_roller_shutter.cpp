@@ -18,10 +18,10 @@
 
 #include "cmd_roller_shutter.h"
 
+#include <supla/linux_command.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 
-#include <cstdio>
 #include <string>
 
 Supla::Control::CmdRollerShutter::CmdRollerShutter(
@@ -32,29 +32,25 @@ Supla::Control::CmdRollerShutter::CmdRollerShutter(
 
 void Supla::Control::CmdRollerShutter::relayUpOn() {
   if (cmdUpOn.length() > 0) {
-    auto p = popen(cmdUpOn.c_str(), "r");
-    pclose(p);
+    Supla::Linux::executeCommand(cmdUpOn, "CmdRollerShutter.cmd_up_on");
   }
 }
 
 void Supla::Control::CmdRollerShutter::relayDownOn() {
   if (cmdDownOn.length() > 0) {
-    auto p = popen(cmdDownOn.c_str(), "r");
-    pclose(p);
+    Supla::Linux::executeCommand(cmdDownOn, "CmdRollerShutter.cmd_down_on");
   }
 }
 
 void Supla::Control::CmdRollerShutter::relayUpOff() {
   if (cmdUpOff.length() > 0) {
-    auto p = popen(cmdUpOff.c_str(), "r");
-    pclose(p);
+    Supla::Linux::executeCommand(cmdUpOff, "CmdRollerShutter.cmd_up_off");
   }
 }
 
 void Supla::Control::CmdRollerShutter::relayDownOff() {
   if (cmdDownOff.length() > 0) {
-    auto p = popen(cmdDownOff.c_str(), "r");
-    pclose(p);
+    Supla::Linux::executeCommand(cmdDownOff, "CmdRollerShutter.cmd_down_off");
   }
 }
 

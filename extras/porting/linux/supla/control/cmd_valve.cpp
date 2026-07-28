@@ -18,10 +18,10 @@
 
 #include "cmd_valve.h"
 
+#include <supla/linux_command.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 
-#include <cstdio>
 #include <string>
 
 Supla::Control::CmdValve::CmdValve(Supla::Parser::Parser *parser)
@@ -39,13 +39,15 @@ void Supla::Control::CmdValve::setValueOnDevice(uint8_t openLevel) {
   // we support only open/close at the moment
   if (openLevel > 0) {
     if (cmdOpen.length() > 0) {
-      auto p = popen(cmdOpen.c_str(), "r");
-      pclose(p);
+      const std::string context =
+          "CmdValve[" + std::to_string(getChannelNumber()) + "].cmd_open";
+      Supla::Linux::executeCommand(cmdOpen, context.c_str());
     }
   } else {
     if (cmdClose.length() > 0) {
-      auto p = popen(cmdClose.c_str(), "r");
-      pclose(p);
+      const std::string context =
+          "CmdValve[" + std::to_string(getChannelNumber()) + "].cmd_close";
+      Supla::Linux::executeCommand(cmdClose, context.c_str());
     }
   }
 }
@@ -73,4 +75,3 @@ void Supla::Control::CmdValve::setCmdOpen(const std::string &newCmdOpen) {
 void Supla::Control::CmdValve::setCmdClose(const std::string &newCmdClose) {
   cmdClose = newCmdClose;
 }
-

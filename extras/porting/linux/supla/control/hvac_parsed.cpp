@@ -18,11 +18,11 @@
 
 #include "hvac_parsed.h"
 
+#include <supla/linux_command.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/control/output_interface.h>
 
-#include <cstdio>
 #include <string>
 
 using Supla::Control::HvacParsed;
@@ -59,13 +59,11 @@ void CmdOutput::setOutputValue(int value) {
   lastState = value;
   if (value == 1) {
     if (cmdOn.length() > 0) {
-      auto p = popen(cmdOn.c_str(), "r");
-      pclose(p);
+      Supla::Linux::executeCommand(cmdOn, "Hvac.cmd_on");
     }
   } else if (value == 0) {
     if (cmdOff.length() > 0) {
-      auto p = popen(cmdOff.c_str(), "r");
-      pclose(p);
+      Supla::Linux::executeCommand(cmdOff, "Hvac.cmd_off");
     }
   }
 }

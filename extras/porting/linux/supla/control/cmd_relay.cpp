@@ -18,10 +18,10 @@
 
 #include "cmd_relay.h"
 
+#include <supla/linux_command.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 
-#include <cstdio>
 #include <string>
 
 Supla::Control::CmdRelay::CmdRelay(Supla::Parser::Parser *parser,
@@ -41,8 +41,9 @@ void Supla::Control::CmdRelay::turnOn(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOn(duration);
 
   if (cmdOn.length() > 0) {
-    auto p = popen(cmdOn.c_str(), "r");
-    pclose(p);
+    const std::string context =
+        "CmdRelay[" + std::to_string(getChannelNumber()) + "].cmd_on";
+    Supla::Linux::executeCommand(cmdOn, context.c_str());
   }
 }
 
@@ -50,8 +51,9 @@ void Supla::Control::CmdRelay::turnOff(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOff(duration);
 
   if (cmdOff.length() > 0) {
-    auto p = popen(cmdOff.c_str(), "r");
-    pclose(p);
+    const std::string context =
+        "CmdRelay[" + std::to_string(getChannelNumber()) + "].cmd_off";
+    Supla::Linux::executeCommand(cmdOff, context.c_str());
   }
 }
 

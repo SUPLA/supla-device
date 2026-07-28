@@ -450,6 +450,7 @@ void Supla::EspIdfOta::iterate() {
   if (mode == Supla::SwUpdateMode::OnlyCheck) {
     abort = true;
     retryAllowed = false;
+    notifyFinished(true);
     return;
   }
   mode = Supla::SwUpdateMode::CheckAndUpdate;

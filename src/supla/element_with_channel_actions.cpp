@@ -352,6 +352,13 @@ void Supla::ElementWithChannelActions::handleChannelConfigFinished() {
   }
 }
 
+void Supla::ElementWithChannelActions::handleChannelConfigFinished(
+    int channelNumber) {
+  if (channelNumber == getChannelNumber()) {
+    handleChannelConfigFinished();
+  }
+}
+
 bool Supla::ElementWithChannelActions::iterateConnected() {
   if (!Element::iterateConnected()) {
     return false;

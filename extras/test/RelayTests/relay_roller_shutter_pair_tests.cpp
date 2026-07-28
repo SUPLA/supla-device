@@ -80,6 +80,16 @@ class RelayRollerShutterPairFixture : public testing::Test {
   }
 };
 
+class TestableRelayRollerShutterPair
+    : public Supla::Control::RelayRollerShutterPair {
+ public:
+  using Supla::Control::RelayRollerShutterPair::RelayRollerShutterPair;
+
+  void markPrimaryDefaultConfigReceived() {
+    receivedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  }
+};
+
 TEST_F(RelayRollerShutterPairFixture,
        RegistersOneElementAndFindsItByBothChannels) {
   Supla::Channel::setStartingChannelNumber(100);
@@ -92,6 +102,57 @@ TEST_F(RelayRollerShutterPairFixture,
   EXPECT_EQ(Supla::Element::getElementByChannelNumber(101), &pair);
   EXPECT_EQ(pair.getChannelByChannelNumber(100), pair.getChannel());
   EXPECT_EQ(pair.getChannelByChannelNumber(101), pair.getSecondaryChannel());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       PrimaryChannelConfigFinishedDoesNotFinishSecondaryRelay) {
+  ProtocolLayerMock protoMock;
+  TestableRelayRollerShutterPair pair(gpio0, gpio1);
+  pair.markPrimaryDefaultConfigReceived();
+
+  EXPECT_CALL(protoMock,
+              setChannelConfig(pair.getSecondaryChannelNumber(), _, _, _, _))
+      .Times(0);
+
+  pair.handleChannelConfigFinished(pair.getChannelNumber());
+
+  EXPECT_TRUE(pair.iterateConnected());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       SecondaryChannelConfigFinishedIsRoutedToSecondaryRelay) {
+  ProtocolLayerMock protoMock;
+  TestableRelayRollerShutterPair pair(gpio0, gpio1);
+  pair.markPrimaryDefaultConfigReceived();
+
+  EXPECT_CALL(protoMock,
+              setChannelConfig(pair.getSecondaryChannelNumber(),
+                               SUPLA_CHANNELFNC_LIGHTSWITCH,
+                               _,
+                               sizeof(TChannelConfig_PowerSwitch),
+                               SUPLA_CONFIG_TYPE_DEFAULT))
+      .WillOnce(Return(true));
+
+  pair.handleChannelConfigFinished(pair.getSecondaryChannelNumber());
+
+  EXPECT_FALSE(pair.iterateConnected());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       SecondaryChannelConfigFinishedDoesNotFinishPrimaryRollerShutter) {
+  ProtocolLayerMock protoMock;
+  TestableRelayRollerShutterPair pair(gpio0, gpio1);
+  ASSERT_TRUE(
+      pair.setDefaultFunctions(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER,
+                               SUPLA_CHANNELFNC_LIGHTSWITCH));
+
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _))
+      .Times(AnyNumber());
+  EXPECT_CALL(protoMock, setChannelConfig(_, _, _, _, _)).Times(0);
+
+  pair.handleChannelConfigFinished(pair.getSecondaryChannelNumber());
+
+  pair.iterateConnected();
 }
 
 TEST_F(RelayRollerShutterPairFixture,

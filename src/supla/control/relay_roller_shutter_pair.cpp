@@ -802,7 +802,12 @@ void RelayRollerShutterPair::handleSetChannelConfigResult(
 
 void RelayRollerShutterPair::handleChannelConfigFinished() {
   ElementWithChannelActions::handleChannelConfigFinished();
-  if (!isPrimaryRollerFunction()) {
+}
+
+void RelayRollerShutterPair::handleChannelConfigFinished(int channelNumber) {
+  if (isPrimaryChannel(channelNumber)) {
+    ElementWithChannelActions::handleChannelConfigFinished();
+  } else if (isSecondaryChannel(channelNumber) && !isPrimaryRollerFunction()) {
     relay1.handleChannelConfigFinished();
   }
 }

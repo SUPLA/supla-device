@@ -1652,7 +1652,7 @@ void Supla::messageReceived(void *srpc,
                          request->ChannelNumber);
 
           if (element) {
-            element->handleChannelConfigFinished();
+            element->handleChannelConfigFinished(request->ChannelNumber);
           } else {
             SUPLA_LOG_WARNING(
                 "Error: couldn't find element for a requested channel [%d]",

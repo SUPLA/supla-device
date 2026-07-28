@@ -157,6 +157,7 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;
   void handleChannelConfigFinished() override;
+  void handleChannelConfigFinished(int channelNumber) override;
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
   uint32_t getCalcfgPendingTimeoutMs(
       TSD_DeviceCalCfgRequest *request) const override;

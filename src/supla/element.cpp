@@ -344,6 +344,11 @@ void Element::handleChannelConfigFinished() {
       "Element: received channel config finished, but handling is missing");
 }
 
+void Element::handleChannelConfigFinished(int channelNumber) {
+  if (channelNumber == getChannelNumber()) {
+    handleChannelConfigFinished();
+  }
+}
 
 void Element::generateKey(char *output, const char *key) const {
   Supla::Config::generateKey(output, getChannelNumber(), key);

@@ -121,6 +121,7 @@ class ElementWithChannelActions : public Element, public LocalAction {
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   bool iterateConnected() override;
   void handleChannelConfigFinished() override;
+  void handleChannelConfigFinished(int channelNumber) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *result, bool local) override;
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;

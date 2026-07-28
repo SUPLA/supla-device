@@ -328,6 +328,13 @@ class Element {
    * for this element.
    */
   virtual void handleChannelConfigFinished();
+  /**
+   * Handles "channel config finished" for a specific channel.
+   *
+   * The default implementation forwards the event to the primary channel
+   * handler only when the channel belongs to this element.
+   */
+  virtual void handleChannelConfigFinished(int channelNumber);
 
   /**
    * Returns channel number

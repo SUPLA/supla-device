@@ -131,7 +131,7 @@ Supla::EspIdfOta::~EspIdfOta() {
     otaBuffer = nullptr;
   }
   if (httpAgent) {
-    free(httpAgent);
+    delete[] httpAgent;
     httpAgent = nullptr;
   }
 }

@@ -19,6 +19,7 @@
 #include "binary_base.h"
 
 #include <supla/time.h>
+#include <supla/events.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
@@ -39,14 +40,40 @@ BinaryBase::BinaryBase() {
 BinaryBase::~BinaryBase() {
 }
 
-void BinaryBase::setInitialChannelValue(bool value) {
+void BinaryBase::beginInitialChannelValueRead() {
+  localActionState = LocalActionState::Initializing;
+  initialStateCandidatePending = false;
+}
+
+void BinaryBase::setChannelValueQuietly(bool value) {
   char channelValue[SUPLA_CHANNELVALUE_SIZE] = {};
   channelValue[0] = value;
   channel.setNewValue(channelValue);
 }
 
+void BinaryBase::setInitialChannelValue(bool value) {
+  if (localActionState != LocalActionState::Initializing) {
+    beginInitialChannelValueRead();
+  }
+  setChannelValueQuietly(value);
+  startupSyncStartTimeMs = millis();
+  localActionState = turnActionSyncOnStartup ? LocalActionState::StartupSync
+                                             : LocalActionState::Runtime;
+}
+
+void BinaryBase::notifyInputStateChangeCandidate() {
+  if (localActionState == LocalActionState::Initializing) {
+    initialStateCandidatePending = true;
+  } else if (localActionState == LocalActionState::StartupSync) {
+    initialStateCandidatePending = false;
+    startupSyncStartTimeMs = millis();
+  }
+}
+
 void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
+  localActionState = LocalActionState::LoadingConfig;
+  initialStateCandidatePending = false;
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     loadFunctionFromConfig();
@@ -192,9 +219,42 @@ Supla::ApplyConfigResult BinaryBase::applyChannelConfig(
 }
 
 void BinaryBase::iterateAlways() {
-  if (millis() - lastReadTime > readIntervalMs) {
-    lastReadTime = millis();
-    channel.setNewValue(getValue());
+  const uint32_t readTime = millis();
+  if (readTime - lastReadTime > readIntervalMs) {
+    lastReadTime = readTime;
+    const bool previousLogicalValue = channel.getValueBool();
+    const bool newRawValue = getValue();
+    const bool newLogicalValue =
+        channel.isServerInvertLogic() ? !newRawValue : newRawValue;
+
+    if (localActionState == LocalActionState::StartupSync &&
+        initialStateCandidatePending &&
+        previousLogicalValue != newLogicalValue) {
+      setChannelValueQuietly(newRawValue);
+      runAction(newLogicalValue ? Supla::ON_TURN_ON : Supla::ON_TURN_OFF);
+      initialStateCandidatePending = false;
+      localActionState = LocalActionState::Runtime;
+      return;
+    }
+
+    channel.setNewValue(newRawValue);
+
+    if (previousLogicalValue != channel.getValueBool()) {
+      // A real input transition already ran the complete set of channel
+      // actions. It also makes a later startup synchronization unnecessary.
+      initialStateCandidatePending = false;
+      localActionState = LocalActionState::Runtime;
+      return;
+    }
+
+    const uint32_t now = millis();
+    if (localActionState == LocalActionState::StartupSync &&
+        now - startupSyncStartTimeMs >= config.filteringTimeMs) {
+      runAction(channel.getValueBool() ? Supla::ON_TURN_ON
+                                       : Supla::ON_TURN_OFF);
+      initialStateCandidatePending = false;
+      localActionState = LocalActionState::Runtime;
+    }
   }
 }
 
@@ -210,12 +270,41 @@ bool BinaryBase::setServerInvertLogic(bool invertLogic, bool local) {
   if (invertLogic == channel.isServerInvertLogic()) {
     return false;
   }
+  const bool previousLogicalValue = channel.getValueBool();
   channel.setServerInvertLogic(invertLogic);
+
+  if (previousLogicalValue != channel.getValueBool() &&
+      localActionState != LocalActionState::LoadingConfig &&
+      localActionState != LocalActionState::Initializing) {
+    runAction(channel.getValueBool() ? Supla::ON_TURN_ON
+                                     : Supla::ON_TURN_OFF);
+    runAction(Supla::ON_CHANGE);
+    runAction(Supla::ON_SECONDARY_CHANNEL_CHANGE);
+    initialStateCandidatePending = false;
+    localActionState = LocalActionState::Runtime;
+  }
+
   if (local) {
     triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
     saveConfig();
   }
   return true;
+}
+
+void BinaryBase::setTurnActionSyncOnStartup(bool enabled) {
+  turnActionSyncOnStartup = enabled;
+  if (!enabled) {
+    if (localActionState == LocalActionState::StartupSync) {
+      initialStateCandidatePending = false;
+      localActionState = LocalActionState::Runtime;
+    }
+    return;
+  }
+
+  if (localActionState == LocalActionState::Runtime) {
+    startupSyncStartTimeMs = millis();
+    localActionState = LocalActionState::StartupSync;
+  }
 }
 
 bool BinaryBase::setSensitivity(uint8_t sensitivity, bool local) {

@@ -77,6 +77,13 @@ class BinaryBase : public ElementWithChannelActions {
   bool setServerInvertLogic(bool invertLogic, bool local = true);
 
   /**
+   * Enable a one-time local turn action after the initial sensor value has
+   * become stable. The default is disabled to preserve the existing startup
+   * behavior.
+   */
+  void setTurnActionSyncOnStartup(bool enabled = true);
+
+  /**
    * Get the timeout in deciseconds (1 == 0.1 s). 0 - not used.
    * When timeout is used, sensor should clear it's state after configured
    * time.
@@ -185,12 +192,27 @@ class BinaryBase : public ElementWithChannelActions {
                          uint8_t configType) override;
 
  protected:
+  void beginInitialChannelValueRead();
   void setInitialChannelValue(bool value);
+  void notifyInputStateChangeCandidate();
+  void setChannelValueQuietly(bool value);
   void saveConfig();
   void printConfig();
   void printConfig(const TChannelConfig_BinarySensor *serverConfig);
+
+  enum class LocalActionState : uint8_t {
+    LoadingConfig,
+    Initializing,
+    StartupSync,
+    Runtime,
+  };
+
   uint32_t lastReadTime = 0;
   uint32_t readIntervalMs = 100;
+  uint32_t startupSyncStartTimeMs = 0;
+  LocalActionState localActionState = LocalActionState::LoadingConfig;
+  bool turnActionSyncOnStartup = false;
+  bool initialStateCandidatePending = false;
   BinarySensorChannel channel;
   BinarySensorConfig config;
 };

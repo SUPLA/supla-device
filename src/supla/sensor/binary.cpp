@@ -45,6 +45,7 @@ bool Supla::Sensor::Binary::getValue() {
     if (value != newStateCandidateValue) {
       newStateCandidateValue = value;
       lastStateChangeMs = millis();
+      notifyInputStateChangeCandidate();
       return prevValue;
     } else if (millis() - lastStateChangeMs > config.filteringTimeMs) {
       value = newStateCandidateValue;
@@ -60,5 +61,6 @@ bool Supla::Sensor::Binary::getValue() {
 
 void Supla::Sensor::Binary::onInit() {
   inputPin.pinMode(channel.getChannelNumber());
+  beginInitialChannelValueRead();
   setInitialChannelValue(getValue());
 }

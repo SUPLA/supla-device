@@ -151,10 +151,7 @@ ConfiguratorEspIdf::ConfiguratorEspIdf(int txGpio,
                                        int rxGpio,
                                        int txEnGpio,
                                        Supla::EspIdfWifi *wifi)
-    : txGpio(txGpio), rxGpio(rxGpio), txEnGpio(txEnGpio), wifi(wifi) {
-  config.role = Supla::Modbus::Role::Slave;
-  config.serial.mode = Supla::Modbus::ModeSerial::Rtu;
-}
+    : txGpio(txGpio), rxGpio(rxGpio), txEnGpio(txEnGpio), wifi(wifi) {}
 
 void ConfiguratorEspIdf::iterateAlways() {
   if (configChanged) {

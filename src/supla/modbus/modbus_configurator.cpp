@@ -28,6 +28,7 @@ using Supla::Modbus::Configurator;
 
 bool Supla::Modbus::Config::operator==(const Config &other) const {
   return (role == other.role && modbusAddress == other.modbusAddress &&
+          slaveTimeoutMs == other.slaveTimeoutMs &&
           serial.mode == other.serial.mode &&
           serial.baudrate == other.serial.baudrate &&
           serial.stopBits == other.serial.stopBits &&
@@ -37,18 +38,6 @@ bool Supla::Modbus::Config::operator==(const Config &other) const {
 
 bool Supla::Modbus::Config::operator!=(const Config &other) const {
   return !(*this == other);
-}
-
-Supla::Modbus::Config &Supla::Modbus::Config::operator=(
-    const Supla::Modbus::Config &other) {
-  role = other.role;
-  modbusAddress = other.modbusAddress;
-  serial.mode = other.serial.mode;
-  serial.baudrate = other.serial.baudrate;
-  serial.stopBits = other.serial.stopBits;
-  network.mode = other.network.mode;
-  network.port = other.network.port;
-  return *this;
 }
 
 Supla::Modbus::ConfigProperties::ConfigProperties() {

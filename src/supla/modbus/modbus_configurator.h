@@ -100,7 +100,7 @@ struct Config {
 
   bool operator==(const Config &other) const;
   bool operator!=(const Config &other) const;
-  Config &operator=(const Config &other);
+  Config &operator=(const Config &other) = default;
   bool validateAndFix(const ConfigProperties &properties);
 };
 

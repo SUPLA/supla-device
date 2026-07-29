@@ -207,6 +207,8 @@ void&#160;</td><td class="memItemRight"><b>toggle</b> ()</td></tr>
 <tr class="memdesc:a507a29ef86da4b1b983033719eb609ff pub_methods_classSupla_1_1Sensor_1_1BinaryBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the invert logic setting.  <br /></td></tr>
 <tr class="memitem:a89ab6ac48eee3b9468dbe785dd2d57c8 pub_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a89ab6ac48eee3b9468dbe785dd2d57c8"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html#a89ab6ac48eee3b9468dbe785dd2d57c8">setServerInvertLogic</a> (bool invertLogic, bool local=true)</td></tr>
 <tr class="memdesc:a89ab6ac48eee3b9468dbe785dd2d57c8 pub_methods_classSupla_1_1Sensor_1_1BinaryBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the invert logic.  <br /></td></tr>
+<tr class="memitem:ab967f00c12e6ff24fdbc45642785f19c pub_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_ab967f00c12e6ff24fdbc45642785f19c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html#ab967f00c12e6ff24fdbc45642785f19c">setTurnActionSyncOnStartup</a> (bool enabled=true)</td></tr>
+<tr class="memdesc:ab967f00c12e6ff24fdbc45642785f19c pub_methods_classSupla_1_1Sensor_1_1BinaryBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable a one-time local turn action after the initial sensor value has become stable.  <br /></td></tr>
 <tr class="memitem:aa4e14d00e7a6b7ba26220db4abd92fb8 pub_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_aa4e14d00e7a6b7ba26220db4abd92fb8"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html#aa4e14d00e7a6b7ba26220db4abd92fb8">getTimeoutDs</a> () const</td></tr>
 <tr class="memdesc:aa4e14d00e7a6b7ba26220db4abd92fb8 pub_methods_classSupla_1_1Sensor_1_1BinaryBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the timeout in deciseconds (1 == 0.1 s).  <br /></td></tr>
 <tr class="memitem:aaf67410078ab856bb091deb3712b1ea9 pub_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_aaf67410078ab856bb091deb3712b1ea9"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html#aaf67410078ab856bb091deb3712b1ea9">setTimeoutDs</a> (uint16_t timeoutDs, bool local=true)</td></tr>
@@ -358,8 +360,14 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:ad3f697f9538c038706f28a38790213e9" id="r_ad3f697f9538c038706f28a38790213e9"><td class="memItemLeft"><a id="ad3f697f9538c038706f28a38790213e9" name="ad3f697f9538c038706f28a38790213e9"></a>
 void&#160;</td><td class="memItemRight"><b>setLogicalState</b> (bool logicalState, bool fromTimeout=false)</td></tr>
 <tr class="inherit_header pro_methods_classSupla_1_1Sensor_1_1BinaryBase"><td colspan="2">Protected Member Functions inherited from <a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html">Supla::Sensor::BinaryBase</a></td></tr>
+<tr class="memitem:a1adea02c37fba171060e26940dff3607 pro_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a1adea02c37fba171060e26940dff3607"><td class="memItemLeft">
+void&#160;</td><td class="memItemRight"><b>beginInitialChannelValueRead</b> ()</td></tr>
 <tr class="memitem:af3ce04b3c641540aec172f68a7e43dc7 pro_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_af3ce04b3c641540aec172f68a7e43dc7"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>setInitialChannelValue</b> (bool value)</td></tr>
+<tr class="memitem:af6838c2157d27b65b0aab9469915b2e5 pro_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_af6838c2157d27b65b0aab9469915b2e5"><td class="memItemLeft">
+void&#160;</td><td class="memItemRight"><b>notifyInputStateChangeCandidate</b> ()</td></tr>
+<tr class="memitem:a9d6729c36b1bba78979955772fc1e527 pro_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a9d6729c36b1bba78979955772fc1e527"><td class="memItemLeft">
+void&#160;</td><td class="memItemRight"><b>setChannelValueQuietly</b> (bool value)</td></tr>
 <tr class="memitem:a4a315a79dd72a5364b9b17e59f38bc71 pro_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a4a315a79dd72a5364b9b17e59f38bc71"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>saveConfig</b> ()</td></tr>
 <tr class="memitem:a9974b32aea1ba07748877b551db48167 pro_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a9974b32aea1ba07748877b551db48167"><td class="memItemLeft">
@@ -399,6 +407,14 @@ bool&#160;</td><td class="memItemRight"><b>useConfiguredTimeout</b> = true</td><
 uint32_t&#160;</td><td class="memItemRight"><b>lastReadTime</b> = 0</td></tr>
 <tr class="memitem:ad5c16bdb23a33e77a13750f0316c034c pro_attribs_classSupla_1_1Sensor_1_1BinaryBase" id="r_ad5c16bdb23a33e77a13750f0316c034c"><td class="memItemLeft">
 uint32_t&#160;</td><td class="memItemRight"><b>readIntervalMs</b> = 100</td></tr>
+<tr class="memitem:a683a890fbe564f627503e2a55d62a99c pro_attribs_classSupla_1_1Sensor_1_1BinaryBase" id="r_a683a890fbe564f627503e2a55d62a99c"><td class="memItemLeft">
+uint32_t&#160;</td><td class="memItemRight"><b>startupSyncStartTimeMs</b> = 0</td></tr>
+<tr class="memitem:a0828923b76a9b9de8dfaa2d89a26e505 pro_attribs_classSupla_1_1Sensor_1_1BinaryBase" id="r_a0828923b76a9b9de8dfaa2d89a26e505"><td class="memItemLeft">
+LocalActionState&#160;</td><td class="memItemRight"><b>localActionState</b> = LocalActionState::LoadingConfig</td></tr>
+<tr class="memitem:adecd3d1964a05bcc416ef809113c3f17 pro_attribs_classSupla_1_1Sensor_1_1BinaryBase" id="r_adecd3d1964a05bcc416ef809113c3f17"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>turnActionSyncOnStartup</b> = false</td></tr>
+<tr class="memitem:a1e10ffce3628b81cd31394bffa00a80f pro_attribs_classSupla_1_1Sensor_1_1BinaryBase" id="r_a1e10ffce3628b81cd31394bffa00a80f"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>initialStateCandidatePending</b> = false</td></tr>
 <tr class="memitem:a2fdf0eb77bf6c74bddc20dad4dd440fa pro_attribs_classSupla_1_1Sensor_1_1BinaryBase" id="r_a2fdf0eb77bf6c74bddc20dad4dd440fa"><td class="memItemLeft">
 <a class="el" href="classBinarySensorChannel.html">BinarySensorChannel</a>&#160;</td><td class="memItemRight"><b>channel</b></td></tr>
 <tr class="memitem:a17ba5d36c8247e360596a2267e4e2413 pro_attribs_classSupla_1_1Sensor_1_1BinaryBase" id="r_a17ba5d36c8247e360596a2267e4e2413"><td class="memItemLeft">
@@ -448,6 +464,12 @@ static void&#160;</td><td class="memItemRight"><b>DeleteAction</b> (const <a cla
 static void&#160;</td><td class="memItemRight"><b>NullifyActionsHandledBy</b> (const <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> *client)</td></tr>
 <tr class="memitem:a73c46eec44d1aae91a9de59aea0415be pub_static_methods_classSupla_1_1LocalAction" id="r_a73c46eec44d1aae91a9de59aea0415be"><td class="memItemLeft">
 static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandlerClient</a> *&#160;</td><td class="memItemRight"><b>getClientListPtr</b> ()</td></tr>
+<tr class="inherit_header pro_types_classSupla_1_1Sensor_1_1BinaryBase"><td colspan="2">Protected Types inherited from <a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html">Supla::Sensor::BinaryBase</a></td></tr>
+<tr class="memitem:a6f671cdb05957b8aa2134df27c8f651a pro_types_classSupla_1_1Sensor_1_1BinaryBase" id="r_a6f671cdb05957b8aa2134df27c8f651a"><td class="memItemLeft"><a id="a6f671cdb05957b8aa2134df27c8f651a" name="a6f671cdb05957b8aa2134df27c8f651a"></a>enum class &#160;</td><td class="memItemRight"><b>LocalActionState</b> : uint8_t { <b>LoadingConfig</b>
+, <b>Initializing</b>
+, <b>StartupSync</b>
+, <b>Runtime</b>
+ }</td></tr>
 <tr class="inherit_header pro_static_attribs_classSupla_1_1Element"><td colspan="2">Static Protected Attributes inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
 <tr class="memitem:afc5f4790686c64e3f58e6000d62ec9de pro_static_attribs_classSupla_1_1Element" id="r_afc5f4790686c64e3f58e6000d62ec9de"><td class="memItemLeft">
 static Element *&#160;</td><td class="memItemRight"><b>firstPtr</b> = nullptr</td></tr>

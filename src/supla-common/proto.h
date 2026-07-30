@@ -119,7 +119,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 // CS  - client -> server
 // SC  - server -> client
 
-#define SUPLA_PROTO_VERSION 28
+#define SUPLA_PROTO_VERSION 29
 #define SUPLA_PROTO_VERSION_MIN 1
 
 #if defined(ARDUINO_ARCH_AVR) || defined(ARDUINO) || defined(SUPLA_DEVICE)
@@ -301,6 +301,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CS_CALL_GET_DEVICE_CONFIG 1240                  // ver. >= 21
 #define SUPLA_SC_CALL_DEVICE_CONFIG_UPDATE_OR_RESULT 1250     // ver. >= 21
 #define SUPLA_DS_CALL_SET_SUBDEVICE_DETAILS 1260              // ver. >= 25
+#define SUPLA_SD_CALL_DEVICE_SYNC_DONE 1270                   // ver. >= 29
 
 #define SUPLA_RESULT_RESPONSE_TIMEOUT -8
 #define SUPLA_RESULT_CANT_CONNECT_TO_HOST -7
@@ -620,7 +621,8 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
   0x8000  // ver. >= 28
 #define SUPLA_DEVICE_FLAG_CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED \
   0x10000  // ver. >= 28
-#define SUPLA_DEVICE_FLAG_SUPLET_SUPPORTED 0x20000  // FDEV
+#define SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED 0x20000           // ver. >= 29
+#define SUPLA_DEVICE_FLAG_SUPLET_SUPPORTED 0x40000              // FDEV
 
 // BIT map definition for TDS_SuplaRegisterDevice_F::ConfigFields (64 bit)
 // type: TDeviceConfig_StatusLed
@@ -647,6 +649,8 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_DEVICE_CONFIG_FIELD_MODBUS (1ULL << 9)  // v. >= 27
 // type: TDeviceConfig_FirmwareUpdate
 #define SUPLA_DEVICE_CONFIG_FIELD_FIRMWARE_UPDATE (1ULL << 10)  // v. >= 28
+// type: TDeviceConfig_ThermalProtection
+#define SUPLA_DEVICE_CONFIG_FIELD_THERMAL_PROTECTION (1ULL << 11)  // v. >= 29
 // BIT map definition for TDS_SuplaDeviceChannel_C::Flags (32 bit)
 // BIT map definition for TDS_SuplaDeviceChannel_D::Flags (64 bit)
 // BIT map definition for TDS_SuplaDeviceChannel_E::Flags (64 bit)
@@ -3359,6 +3363,17 @@ typedef struct {
   unsigned char Policy;  // SUPLA_FIRMWARE_UPDATE_POLICY_
   unsigned char Reserved[20];
 } TDeviceConfig_FirmwareUpdate;
+
+typedef struct {
+  _supla_int16_t Threshold;     // 0.1°C
+  _supla_int16_t MinThreshold;  // 0.1°C, readonly
+  _supla_int16_t MaxThreshold;  // 0.1°C, readonly
+
+  unsigned char Enabled;         // 0 - disabled, 1 - enabled
+  unsigned char DisableAllowed;  // readonly
+
+  unsigned char Reserved[8];
+} TDeviceConfig_ThermalProtection;  // v. >= 29
 
 /********************************************
  * CHANNEL CONFIG STRUCTURES

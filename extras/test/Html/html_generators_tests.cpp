@@ -73,6 +73,7 @@
 #include <supla/network/html/sw_update.h>
 #include <supla/network/html/sw_update_beta.h>
 #include <supla/network/html/text_cmd_input_parameter.h>
+#include <supla/network/html/thermal_protection_parameters.h>
 #include <supla/network/html/time_parameters.h>
 #include <supla/network/html/volume_parameters.h>
 #include <supla/network/network.h>
@@ -91,6 +92,7 @@
 using ::testing::_;
 using ::testing::EndsWith;
 using ::testing::HasSubstr;
+using ::testing::Invoke;
 using ::testing::NiceMock;
 using ::testing::Not;
 using ::testing::Return;
@@ -1446,6 +1448,70 @@ TEST_F(HtmlCaptureTest, ModbusParametersRendersSerialAndNetworkSelectors) {
               HasSubstr("<option value=\"57600\" selected>57600</option>"));
   EXPECT_THAT(sendHtml, HasSubstr("<option value=\"2\" selected>2</option>"));
   EXPECT_THAT(sendHtml, HasSubstr("<option value=\"1\" selected>TCP</option>"));
+}
+
+TEST_F(HtmlCaptureTest,
+       ThermalProtectionParametersHideEnabledWhenDisableNotAllowed) {
+  NiceMock<ConfigMock> cfg;
+  NiceMock<TimeInterfaceMock> time;
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Device::ThermalProtectionConfig storedConfig = {
+      .threshold = 215,
+      .enabled = 0,
+  };
+  const Supla::Device::ThermalProtectionProperties properties = {
+      .minThreshold = 50,
+      .maxThreshold = 300,
+      .disableAllowed = 0,
+  };
+
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq(Supla::ConfigTag::ThermalProtectionCfgTag),
+              _,
+              sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, char *blob, size_t blobSize) {
+            std::memcpy(blob, &storedConfig, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(
+      cfg,
+      setBlob(StrEq(Supla::ConfigTag::ThermalProtectionCfgTag),
+              _,
+              sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, const char *blob, size_t blobSize) {
+            std::memcpy(&storedConfig, blob, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(
+      cfg,
+      setUInt8(StrEq(Supla::ConfigTag::DeviceConfigChangeCfgTag), 1))
+      .WillOnce(Return(true));
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char *data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::ThermalProtectionParameters param(properties);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml,
+              HasSubstr("Thermal protection threshold [°C]"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("<h3>Thermal protection</h3>")));
+  EXPECT_THAT(sendHtml, HasSubstr("min=\"5\""));
+  EXPECT_THAT(sendHtml, HasSubstr("max=\"30\""));
+  EXPECT_THAT(sendHtml, HasSubstr("value=\"21.5\""));
+  EXPECT_THAT(sendHtml, HasSubstr("step=\"0.1\""));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("name=\"thermal_en\"")));
+
+  EXPECT_TRUE(param.handleResponse("thermal_thr", "22.5"));
+  param.onProcessingEnd();
+
+  EXPECT_EQ(storedConfig.threshold, 225);
+  EXPECT_EQ(storedConfig.enabled, 1);
 }
 
 TEST_F(HtmlCaptureTest, RollerShutterParametersRendersBasicFields) {

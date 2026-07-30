@@ -135,6 +135,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/roller_shutter_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/button_refresh.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/modbus_parameters.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/thermal_protection_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/binary_sensor_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/security_log_list.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/custom_text_parameter.cpp

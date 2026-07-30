@@ -22,6 +22,7 @@
 #include <supla-common/proto.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/modbus/modbus_configurator.h>
+#include <supla/device/thermal_protection_config.h>
 
 namespace Supla {
 
@@ -52,7 +53,13 @@ class RemoteDeviceConfig {
   static uint64_t HomeScreenIntToBit(int mode);
   static void SetModbusProperties(
       const Supla::Modbus::ConfigProperties &modbusProperties);
+  static void SetThermalProtectionProperties(
+      const ThermalProtectionProperties &properties);
   static void ClearResendAttemptsCounter();
+#ifdef SUPLA_TEST
+  static uint64_t GetRegisteredConfigFieldsForTests();
+  static void SetRegisteredConfigFieldsForTests(uint64_t fields);
+#endif
 
   explicit RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration = false);
   virtual ~RemoteDeviceConfig();
@@ -86,6 +93,8 @@ class RemoteDeviceConfig {
   void processHomeScreenDelayTypeConfig(
       uint64_t fieldBit, TDeviceConfig_HomeScreenOffDelayType *config);
   void processModbusConfig(uint64_t fieldBit, TDeviceConfig_Modbus *config);
+  void processThermalProtectionConfig(
+      uint64_t fieldBit, TDeviceConfig_ThermalProtection *config);
   void processFirmwareUpdateConfig(
       uint64_t fieldBit, TDeviceConfig_FirmwareUpdate *config);
 
@@ -104,6 +113,8 @@ class RemoteDeviceConfig {
   void fillHomeScreenDelayTypeConfig(
       TDeviceConfig_HomeScreenOffDelayType *config) const;
   void fillModbusConfig(TDeviceConfig_Modbus *config) const;
+  void fillThermalProtectionConfig(
+      TDeviceConfig_ThermalProtection *config) const;
   void fillFirmwareUpdateConfig(TDeviceConfig_FirmwareUpdate *config) const;
 
   bool endFlagReceived = false;
@@ -115,6 +126,7 @@ class RemoteDeviceConfig {
   static uint64_t fieldBitsUsedByDevice;
   static uint64_t homeScreenContentAvailable;
   static Supla::Modbus::ConfigProperties modbusProperties;
+  static ThermalProtectionProperties thermalProtectionProperties;
   static uint8_t resendAttempts;
 };
 

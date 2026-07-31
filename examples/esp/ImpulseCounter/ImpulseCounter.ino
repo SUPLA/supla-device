@@ -45,6 +45,8 @@
 #include <supla/storage/littlefs_config.h>
 
 // Choose where Supla should store state data in persistent memory
+// We recommend to use external FRAM memory
+// #define STORAGE_OFFSET 100
 #include <supla/storage/eeprom.h>
 Supla::Eeprom eeprom;
 // #include <supla/storage/fram_spi.h>

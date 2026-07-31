@@ -57,6 +57,7 @@
 
 // Choose where Supla should store roller shutter data in persistent memory
 // We recommend to use external FRAM memory
+// #define STORAGE_OFFSET 100
 #include <supla/storage/eeprom.h>
 Supla::Eeprom eeprom;
 // #include <supla/storage/fram_spi.h>
@@ -67,7 +68,6 @@ Supla::LittleFsConfig configSupla;
 
 Supla::Device::StatusLed statusLed(STATUS_LED_GPIO, true); // inverted state
 Supla::EspWebServer suplaServer;
-
 
 void setup() {
 

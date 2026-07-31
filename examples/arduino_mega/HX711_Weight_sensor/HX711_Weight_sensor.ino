@@ -37,6 +37,14 @@
 #define SCL_GPIO 22
 #define BUTTON_GPIO 4
 
+// Choose where Supla should store HX711 configuration data in persistent memory
+// We recommend to use external FRAM memory
+// #define STORAGE_OFFSET 100
+#include <supla/storage/eeprom.h>
+Supla::Eeprom eeprom;
+// #include <supla/storage/fram_spi.h>
+// Supla::FramSpi fram(STORAGE_OFFSET);
+
 // Choose proper network interface for your card:
 // Arduino Mega with EthernetShield W5100:
 #include <supla/network/ethernet_shield.h>
@@ -47,13 +55,6 @@ Supla::EthernetShield ethernet(mac);
 // Arduino Mega with ENC28J60:
 // #include <supla/network/ENC28J60.h>
 // Supla::ENC28J60 ethernet(mac);
-
-// Choose where Supla should store HX711 configuration data in persistent memory
-// We recommend to use external FRAM memory
-#include <supla/storage/eeprom.h>
-Supla::Eeprom eeprom;
-// #include <supla/storage/fram_spi.h>
-// Supla::FramSpi fram(STORAGE_OFFSET);
 
 void setup() {
   Serial.begin(115200);

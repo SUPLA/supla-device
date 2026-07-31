@@ -103,19 +103,18 @@ class ESPETH : public Supla::LAN {
         if (thisEth) {
           thisEth->setIpv4Addr(ETH.localIP());
         }
-        Serial.print(F("[Ethernet] local IP: "));
-        Serial.println(ETH.localIP());
-        Serial.print(F("subnetMask: "));
-        Serial.println(ETH.subnetMask());
-        Serial.print(F("gatewayIP: "));
-        Serial.println(ETH.gatewayIP());
-        Serial.print(F("ETH MAC: "));
-        Serial.println(ETH.macAddress());
+        IPAddress localIP = ETH.localIP();
+        IPAddress subnetMaskIP = ETH.subnetMask();
+        IPAddress gatewayIP = ETH.gatewayIP();
+        IPAddress macAddress = ETH.macAddress();
+        SUPLA_LOG_INFO("localIP: %d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+        SUPLA_LOG_INFO("subnetMaskIP: %d.%d.%d.%d", subnetMaskIP[0], subnetMaskIP[1], subnetMaskIP[2], subnetMaskIP[3]);
+        SUPLA_LOG_INFO("gatewayIP: %d.%d.%d.%d", gatewayIP[0], gatewayIP[1], gatewayIP[2], gatewayIP[3]);
+        SUPLA_LOG_INFO("ETH MAC: %d.%d.%d.%d", macAddress[0], macAddress[1], macAddress[2], macAddress[3]);
+        SUPLA_LOG_INFO("speed: %d Mbps", ETH.linkSpeed());
         if (ETH.fullDuplex()) {
-          Serial.print(F("FULL_DUPLEX , "));
+          SUPLA_LOG_INFO("FULL_DUPLEX");
         }
-        Serial.print(ETH.linkSpeed());
-        Serial.println(F("Mbps"));
         break;
       }
       case ARDUINO_EVENT_ETH_DISCONNECTED: {

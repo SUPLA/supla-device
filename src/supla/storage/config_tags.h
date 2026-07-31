@@ -88,6 +88,7 @@ const char EthNetifCfgTag[] = "eth_cfg";
 
 const char ModbusCfgTag[] = "modbus_cfg";
 const char ThermalProtectionCfgTag[] = "thermal_cfg";
+const char InputActivationCfgTag[] = "input_act";
 
 const char OtaModeTag[] = "ota_mode";
 
@@ -142,6 +143,7 @@ static_assert(sizeof(WifiNetifCfgTag) < 12);
 static_assert(sizeof(EthNetifCfgTag) < 12);
 static_assert(sizeof(ModbusCfgTag) < 16);
 static_assert(sizeof(ThermalProtectionCfgTag) < 16);
+static_assert(sizeof(InputActivationCfgTag) < 16);
 static_assert(sizeof(OtaModeTag) < 16);
 static_assert(sizeof(PwmFrequencyTag) < 16);
 static_assert(sizeof(DsSensorConfig) < 12);

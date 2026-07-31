@@ -57,6 +57,7 @@
 #include <supla/network/html/hide_show_container.h>
 #include <supla/network/html/home_screen_content.h>
 #include <supla/network/html/hvac_parameters.h>
+#include <supla/network/html/input_activation_parameters.h>
 #include <supla/network/html/modbus_parameters.h>
 #include <supla/network/html/power_status_led_parameters.h>
 #include <supla/network/html/protocol_parameters.h>
@@ -102,6 +103,17 @@ using ::testing::StrEq;
 class SenderMock : public Supla::WebSender {
  public:
   MOCK_METHOD(void, send, (const char*, int), (override));
+};
+
+class ConfigChangeObserver : public Supla::Element {
+ public:
+  void onDeviceConfigChange(uint64_t fieldBit) override {
+    if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_INPUT_ACTIVATION) {
+      notificationCount++;
+    }
+  }
+
+  int notificationCount = 0;
 };
 
 class HtmlCaptureTest : public ::testing::Test {
@@ -1512,6 +1524,199 @@ TEST_F(HtmlCaptureTest,
 
   EXPECT_EQ(storedConfig.threshold, 225);
   EXPECT_EQ(storedConfig.enabled, 1);
+}
+
+TEST_F(HtmlCaptureTest, InputActivationParametersRenderSupportedModes) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+  Supla::Device::InputActivationConfig storedConfig = {
+      .mode = SUPLA_DEVCFG_INPUT_ACTIVATION_VCC};
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND |
+                        SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+
+  EXPECT_CALL(cfg,
+              getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _,
+                      sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, char *blob, size_t blobSize) {
+            std::memcpy(blob, &storedConfig, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char *data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::InputActivationParameters param(properties);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("Input activation"));
+  EXPECT_THAT(sendHtml, HasSubstr("GND — SIG"));
+  EXPECT_THAT(sendHtml, HasSubstr("VCC — SIG"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("value=\"2\" selected>VCC — SIG</option>"));
+}
+
+TEST_F(
+    HtmlCaptureTest,
+    InputActivationParametersUseDefaultAndHideUnsupportedModes) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND |
+                        SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+
+  EXPECT_CALL(cfg,
+              getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _, _))
+      .WillOnce(Invoke([](const char *, char *, size_t) { return false; }));
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char *data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::InputActivationParameters param(properties);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml,
+              HasSubstr("value=\"1\" selected>GND — SIG</option>"));
+  EXPECT_THAT(sendHtml, HasSubstr("value=\"2\">VCC — SIG</option>"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("value=\"128\"")));
+}
+
+TEST_F(HtmlCaptureTest,
+       InputActivationParametersDoNotRenderSingleModeSelector) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+  EXPECT_CALL(cfg,
+              getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _, _))
+      .WillOnce(Invoke([](const char *, char *, size_t) { return false; }));
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char *data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::InputActivationParameters param(properties);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("Input activation")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("<select")));
+}
+
+TEST_F(HtmlCaptureTest, InputActivationParametersRenderVccOnlyMode) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+  };
+  EXPECT_CALL(cfg,
+              getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _, _))
+      .WillOnce(Invoke([](const char *, char *, size_t) { return false; }));
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char *data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::InputActivationParameters param(properties);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("GND — SIG")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("VCC — SIG")));
+}
+
+TEST_F(HtmlCaptureTest,
+       InputActivationParametersStoreValidChangedValueAndNotify) {
+  NiceMock<ConfigMock> cfg;
+  NiceMock<TimeInterfaceMock> time;
+  ConfigChangeObserver observer;
+  Supla::Device::InputActivationConfig storedConfig = {
+      .mode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND};
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND |
+                        SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _,
+              sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, char *blob, size_t blobSize) {
+            std::memcpy(blob, &storedConfig, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(
+      cfg,
+      setBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _,
+              sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, const char *blob, size_t blobSize) {
+            std::memcpy(&storedConfig, blob, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(cfg, setUInt8(StrEq(Supla::ConfigTag::DeviceConfigChangeCfgTag),
+                            1))
+      .WillOnce(Return(true));
+
+  Supla::Html::InputActivationParameters param(properties);
+  EXPECT_TRUE(param.handleResponse("input_act", "2"));
+  param.onProcessingEnd();
+
+  EXPECT_EQ(storedConfig.mode, SUPLA_DEVCFG_INPUT_ACTIVATION_VCC);
+  EXPECT_EQ(observer.notificationCount, 1);
+}
+
+TEST_F(HtmlCaptureTest,
+       InputActivationParametersRejectInvalidAndUnchangedValues) {
+  NiceMock<ConfigMock> cfg;
+  ConfigChangeObserver observer;
+  Supla::Device::InputActivationConfig storedConfig = {
+      .mode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND};
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND |
+                        SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _,
+              sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, char *blob, size_t blobSize) {
+            std::memcpy(blob, &storedConfig, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(cfg,
+              setBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _, _))
+      .Times(0);
+  EXPECT_CALL(cfg, setUInt8(StrEq(Supla::ConfigTag::DeviceConfigChangeCfgTag),
+                            _))
+      .Times(0);
+
+  Supla::Html::InputActivationParameters param(properties);
+  EXPECT_FALSE(param.handleResponse("input_act", "0"));
+  EXPECT_FALSE(param.handleResponse("input_act", "3"));
+  EXPECT_FALSE(param.handleResponse("input_act", "nope"));
+  EXPECT_TRUE(param.handleResponse("input_act", "1"));
+  param.onProcessingEnd();
+
+  const Supla::Device::InputActivationProperties gndOnlyProperties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+  Supla::Html::InputActivationParameters gndOnlyParam(gndOnlyProperties);
+  EXPECT_FALSE(gndOnlyParam.handleResponse("input_act", "2"));
+
+  EXPECT_EQ(storedConfig.mode, SUPLA_DEVCFG_INPUT_ACTIVATION_GND);
+  EXPECT_EQ(observer.notificationCount, 0);
 }
 
 TEST_F(HtmlCaptureTest, RollerShutterParametersRendersBasicFields) {

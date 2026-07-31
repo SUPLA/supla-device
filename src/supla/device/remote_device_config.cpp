@@ -58,6 +58,8 @@ size_t getDeviceConfigFieldSize(uint64_t fieldBit) {
       return sizeof(TDeviceConfig_FirmwareUpdate);
     case SUPLA_DEVICE_CONFIG_FIELD_THERMAL_PROTECTION:
       return sizeof(TDeviceConfig_ThermalProtection);
+    case SUPLA_DEVICE_CONFIG_FIELD_INPUT_ACTIVATION:
+      return sizeof(TDeviceConfig_InputActivation);
   }
   return 0;
 }
@@ -69,7 +71,31 @@ uint64_t RemoteDeviceConfig::homeScreenContentAvailable = 0;
 Supla::Modbus::ConfigProperties RemoteDeviceConfig::modbusProperties;
 Supla::Device::ThermalProtectionProperties
     RemoteDeviceConfig::thermalProtectionProperties;
+Supla::Device::InputActivationProperties
+    RemoteDeviceConfig::inputActivationProperties;
 uint8_t RemoteDeviceConfig::resendAttempts = 0;
+
+namespace {
+
+constexpr uint8_t InputActivationKnownModes =
+SUPLA_DEVCFG_INPUT_ACTIVATION_GND |
+SUPLA_DEVCFG_INPUT_ACTIVATION_VCC;
+
+bool isValidInputActivationMode(uint8_t mode, uint8_t availableModes) {
+  return mode != 0 && (mode & (mode - 1)) == 0 &&
+         (mode & ~InputActivationKnownModes) == 0 &&
+         (mode & availableModes) != 0;
+}
+
+bool isValidInputActivationProperties(
+    const Supla::Device::InputActivationProperties &properties) {
+  return properties.availableModes != 0 &&
+         (properties.availableModes & ~InputActivationKnownModes) == 0 &&
+         isValidInputActivationMode(properties.defaultMode,
+                                     properties.availableModes);
+}
+
+}  // namespace
 
 RemoteDeviceConfig::RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration)
     : firstDeviceConfigAfterRegistration(firstDeviceConfigAfterRegistration) {
@@ -89,6 +115,16 @@ uint64_t RemoteDeviceConfig::GetRegisteredConfigFieldsForTests() {
 
 void RemoteDeviceConfig::SetRegisteredConfigFieldsForTests(uint64_t fields) {
   fieldBitsUsedByDevice = fields;
+}
+
+Supla::Device::InputActivationProperties
+RemoteDeviceConfig::GetInputActivationPropertiesForTests() {
+  return inputActivationProperties;
+}
+
+void RemoteDeviceConfig::SetInputActivationPropertiesForTests(
+    const InputActivationProperties &properties) {
+  inputActivationProperties = properties;
 }
 #endif
 
@@ -182,6 +218,18 @@ void RemoteDeviceConfig::SetThermalProtectionProperties(
   thermalProtectionProperties = properties;
   thermalProtectionProperties.disableAllowed =
       properties.disableAllowed ? 1 : 0;
+}
+
+void RemoteDeviceConfig::SetInputActivationProperties(
+    const InputActivationProperties &properties) {
+  if (!isValidInputActivationProperties(properties)) {
+    SUPLA_LOG_WARNING(
+        "RemoteDeviceConfig: invalid input activation properties "
+        "(available=0x%02X, default=0x%02X)",
+        properties.availableModes, properties.defaultMode);
+    return;
+  }
+  inputActivationProperties = properties;
 }
 
 void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
@@ -430,6 +478,21 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
               reinterpret_cast<TDeviceConfig_ThermalProtection *>(
                   config->Config + dataIndex));
           dataIndex += sizeof(TDeviceConfig_ThermalProtection);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_INPUT_ACTIVATION: {
+          SUPLA_LOG_DEBUG("Processing InputActivation config");
+          if (dataIndex + sizeof(TDeviceConfig_InputActivation) >
+              config->ConfigSize) {
+            SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid ConfigSize");
+            resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
+            return;
+          }
+          processInputActivationConfig(
+              fieldBit,
+              reinterpret_cast<TDeviceConfig_InputActivation *>(
+                  config->Config + dataIndex));
+          dataIndex += sizeof(TDeviceConfig_InputActivation);
           break;
         }
         default: {
@@ -1043,6 +1106,24 @@ bool RemoteDeviceConfig::fillSetDeviceConfig(
           dataIndex += sizeof(TDeviceConfig_ThermalProtection);
           break;
         }
+        case SUPLA_DEVICE_CONFIG_FIELD_INPUT_ACTIVATION: {
+          SUPLA_LOG_DEBUG("Adding InputActivation config field");
+          if (!isValidInputActivationProperties(inputActivationProperties)) {
+            SUPLA_LOG_ERROR(
+                "RemoteDeviceConfig: invalid input activation properties");
+            return false;
+          }
+          if (dataIndex + sizeof(TDeviceConfig_InputActivation) >
+              SUPLA_DEVICE_CONFIG_MAXSIZE) {
+            SUPLA_LOG_ERROR("RemoteDeviceConfig: ConfigSize too big");
+            return false;
+          }
+          fillInputActivationConfig(
+              reinterpret_cast<TDeviceConfig_InputActivation *>(
+                  config->Config + dataIndex));
+          dataIndex += sizeof(TDeviceConfig_InputActivation);
+          break;
+        }
 
         default: {
           SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%X%08X",
@@ -1283,6 +1364,34 @@ void RemoteDeviceConfig::fillThermalProtectionConfig(
   }
 }
 
+void RemoteDeviceConfig::fillInputActivationConfig(
+    TDeviceConfig_InputActivation *config) const {
+  if (config == nullptr) {
+    return;
+  }
+
+  *config = {};
+  config->AvailableModes = inputActivationProperties.availableModes;
+
+  uint8_t selectedMode = inputActivationProperties.defaultMode;
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    InputActivationConfig storedConfig = {};
+    if (cfg->getBlob(
+            Supla::ConfigTag::InputActivationCfgTag,
+            reinterpret_cast<char *>(&storedConfig), sizeof(storedConfig)) &&
+        isValidInputActivationMode(storedConfig.mode,
+                                    inputActivationProperties.availableModes)) {
+      selectedMode = storedConfig.mode;
+    }
+  }
+
+  if (isValidInputActivationMode(
+          selectedMode, inputActivationProperties.availableModes)) {
+    config->Mode = selectedMode;
+  }
+}
+
 void RemoteDeviceConfig::processThermalProtectionConfig(
     uint64_t fieldBit, TDeviceConfig_ThermalProtection *config) {
   auto cfg = Supla::Storage::ConfigInstance();
@@ -1342,6 +1451,78 @@ void RemoteDeviceConfig::processThermalProtectionConfig(
     if (resendAttempts > 3) {
       SUPLA_LOG_WARNING(
           "RemoteDeviceConfig: resending thermal protection config failed "
+          "too many times");
+    } else {
+      requireSetDeviceConfigFields |= fieldBit;
+    }
+  }
+}
+
+void RemoteDeviceConfig::processInputActivationConfig(
+    uint64_t fieldBit, TDeviceConfig_InputActivation *config) {
+  auto cfg = Supla::Storage::ConfigInstance();
+  bool valid = config != nullptr && cfg != nullptr &&
+               isValidInputActivationProperties(inputActivationProperties);
+  bool propertiesMatch = false;
+
+  if (config == nullptr) {
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: null input activation config");
+  } else if (cfg == nullptr) {
+    SUPLA_LOG_WARNING(
+        "RemoteDeviceConfig: input activation storage unavailable");
+  } else if (!isValidInputActivationProperties(inputActivationProperties)) {
+    SUPLA_LOG_WARNING(
+        "RemoteDeviceConfig: invalid input activation properties");
+  } else {
+    const uint8_t incomingKnownModes =
+        config->AvailableModes & InputActivationKnownModes;
+    const bool unknownModes =
+        (config->AvailableModes & ~InputActivationKnownModes) != 0;
+    propertiesMatch =
+        incomingKnownModes == inputActivationProperties.availableModes &&
+        !unknownModes;
+
+    if (config->Mode == 0 ||
+        (config->Mode & (config->Mode - 1)) != 0 ||
+        (config->Mode & ~InputActivationKnownModes) != 0 ||
+        !isValidInputActivationMode(
+            config->Mode, inputActivationProperties.availableModes)) {
+      SUPLA_LOG_WARNING(
+          "RemoteDeviceConfig: invalid input activation mode 0x%02X",
+          config->Mode);
+      valid = false;
+    } else if (!propertiesMatch) {
+      SUPLA_LOG_WARNING(
+          "RemoteDeviceConfig: input activation properties mismatch "
+          "(0x%02X != 0x%02X)",
+          config->AvailableModes, inputActivationProperties.availableModes);
+      valid = false;
+    }
+  }
+
+  if (valid) {
+    InputActivationConfig currentConfig = {};
+    const bool configExists = cfg->getBlob(
+        Supla::ConfigTag::InputActivationCfgTag,
+        reinterpret_cast<char *>(&currentConfig), sizeof(currentConfig));
+
+    InputActivationConfig newConfig = currentConfig;
+    newConfig.mode = config->Mode;
+    if (!configExists || newConfig != currentConfig) {
+      if (cfg->setBlob(
+              Supla::ConfigTag::InputActivationCfgTag,
+              reinterpret_cast<const char *>(&newConfig), sizeof(newConfig))) {
+        cfg->saveWithDelay(1000);
+        Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+      }
+    }
+  }
+
+  if (!valid || !propertiesMatch) {
+    resendAttempts++;
+    if (resendAttempts > 3) {
+      SUPLA_LOG_WARNING(
+          "RemoteDeviceConfig: resending input activation config failed "
           "too many times");
     } else {
       requireSetDeviceConfigFields |= fieldBit;

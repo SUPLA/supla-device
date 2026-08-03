@@ -2177,8 +2177,12 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
         delete deviceConfig;
       } else {
         delete deviceConfig;
-        cfg->clearDeviceConfigChangeFlag();
-        cfg->saveWithDelay(1000);
+        delete remoteDeviceConfig;
+        remoteDeviceConfig = nullptr;
+        lastIterateTime = _millis;
+        waitForIterate = 1000;
+        SUPLA_LOG_WARNING(
+            "Failed to serialize local device config; keeping change pending");
       }
     }
 
@@ -2540,11 +2544,11 @@ void Supla::Protocol::SuplaSrpc::handleDeviceConfig(
         delete deviceConfig;
       } else {
         delete deviceConfig;
-        auto cfg = Supla::Storage::ConfigInstance();
-        if (cfg) {
-          cfg->clearDeviceConfigChangeFlag();
-          cfg->saveWithDelay(1000);
-        }
+        setDeviceConfigReceivedAfterRegistration = true;
+        delete remoteDeviceConfig;
+        remoteDeviceConfig = nullptr;
+        SUPLA_LOG_WARNING(
+            "Failed to serialize device config response; ending transaction");
       }
     } else {
       // procedure ends here, so delete the handler

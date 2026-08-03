@@ -143,6 +143,59 @@ TEST_F(InputActivationDeviceConfigTests,
   EXPECT_FALSE(remoteConfig.fillSetDeviceConfig(&output));
 }
 
+TEST_F(InputActivationDeviceConfigTests,
+       FirstRegistrationServerOnlyFieldProducesEmptySupportedResponse) {
+  NiceMock<ConfigMock> storage;
+  Supla::Device::RemoteDeviceConfig::SetInputActivationPropertiesForTests({});
+
+  TSDS_SetDeviceConfig incoming = {};
+  incoming.EndOfDataFlag = 1;
+  incoming.AvailableFields = SUPLA_DEVICE_CONFIG_FIELD_INPUT_ACTIVATION;
+
+  Supla::Device::RemoteDeviceConfig remoteConfig(true);
+  remoteConfig.processConfig(&incoming);
+
+  EXPECT_TRUE(remoteConfig.isSetDeviceConfigRequired());
+
+  TSDS_SetDeviceConfig output = {};
+  ASSERT_TRUE(remoteConfig.fillSetDeviceConfig(&output));
+  EXPECT_EQ(output.Fields, 0);
+  EXPECT_EQ(output.AvailableFields, 0);
+  EXPECT_EQ(output.ConfigSize, 0);
+}
+
+TEST_F(InputActivationDeviceConfigTests,
+       FirstRegistrationSerializesOnlySupportedMismatchedFields) {
+  NiceMock<ConfigMock> storage;
+  Supla::Device::RemoteDeviceConfig::SetInputActivationPropertiesForTests({});
+  Supla::Device::RemoteDeviceConfig::SetThermalProtectionProperties({
+      .minThreshold = 50,
+      .maxThreshold = 300,
+      .disableAllowed = 1,
+  });
+  Supla::Device::RemoteDeviceConfig::RegisterConfigField(
+      SUPLA_DEVICE_CONFIG_FIELD_THERMAL_PROTECTION);
+
+  EXPECT_CALL(storage,
+              getBlob(StrEq(Supla::ConfigTag::ThermalProtectionCfgTag), _,
+                      sizeof(Supla::Device::ThermalProtectionConfig)))
+      .WillOnce(Invoke([](const char *, char *, size_t) { return false; }));
+
+  TSDS_SetDeviceConfig incoming = {};
+  incoming.EndOfDataFlag = 1;
+  incoming.AvailableFields = SUPLA_DEVICE_CONFIG_FIELD_INPUT_ACTIVATION;
+
+  Supla::Device::RemoteDeviceConfig remoteConfig(true);
+  remoteConfig.processConfig(&incoming);
+
+  TSDS_SetDeviceConfig output = {};
+  ASSERT_TRUE(remoteConfig.fillSetDeviceConfig(&output));
+  EXPECT_EQ(output.Fields, SUPLA_DEVICE_CONFIG_FIELD_THERMAL_PROTECTION);
+  EXPECT_EQ(output.AvailableFields,
+            SUPLA_DEVICE_CONFIG_FIELD_THERMAL_PROTECTION);
+  EXPECT_EQ(output.ConfigSize, sizeof(TDeviceConfig_ThermalProtection));
+}
+
 TEST_F(InputActivationDeviceConfigTests, RegisteredFieldAcceptsGnd) {
   NiceMock<ConfigMock> storage;
   ConfigChangeObserver observer;

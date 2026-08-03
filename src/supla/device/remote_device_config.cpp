@@ -942,7 +942,7 @@ bool RemoteDeviceConfig::fillSetDeviceConfig(
   int dataIndex = 0;
   uint64_t remainingFileds = fieldBitsUsedByDevice;
   if (requireSetDeviceConfigFields != 0) {
-    remainingFileds = requireSetDeviceConfigFields;
+    remainingFileds = requireSetDeviceConfigFields & fieldBitsUsedByDevice;
   }
   uint64_t fieldBit = 1;
   while (remainingFileds != 0) {

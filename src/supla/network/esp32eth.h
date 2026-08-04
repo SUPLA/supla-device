@@ -106,11 +106,29 @@ class ESPETH : public Supla::LAN {
         IPAddress localIP = ETH.localIP();
         IPAddress subnetMaskIP = ETH.subnetMask();
         IPAddress gatewayIP = ETH.gatewayIP();
-        IPAddress macAddress = ETH.macAddress();
-        SUPLA_LOG_INFO("localIP: %d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
-        SUPLA_LOG_INFO("subnetMaskIP: %d.%d.%d.%d", subnetMaskIP[0], subnetMaskIP[1], subnetMaskIP[2], subnetMaskIP[3]);
-        SUPLA_LOG_INFO("gatewayIP: %d.%d.%d.%d", gatewayIP[0], gatewayIP[1], gatewayIP[2], gatewayIP[3]);
-        SUPLA_LOG_INFO("ETH MAC: %d.%d.%d.%d", macAddress[0], macAddress[1], macAddress[2], macAddress[3]);
+        uint8_t mac[6] = ETH.macAddress();
+        SUPLA_LOG_INFO("localIP: %d.%d.%d.%d",
+                       localIP[0],
+                       localIP[1],
+                       localIP[2],
+                       localIP[3]);
+        SUPLA_LOG_INFO("subnetMaskIP: %d.%d.%d.%d",
+                       subnetMaskIP[0],
+                       subnetMaskIP[1],
+                       subnetMaskIP[2],
+                       subnetMaskIP[3]);
+        SUPLA_LOG_INFO("gatewayIP: %d.%d.%d.%d",
+                       gatewayIP[0],
+                       gatewayIP[1],
+                       gatewayIP[2],
+                       gatewayIP[3]);
+        SUPLA_LOG_INFO("ETH MAC: %02X:%02X:%02X:%02X:%02X:%02X",
+                       mac[0],
+                       mac[1],
+                       mac[2],
+                       mac[3],
+                       mac[4],
+                       mac[5]);
         SUPLA_LOG_INFO("speed: %d Mbps", ETH.linkSpeed());
         if (ETH.fullDuplex()) {
           SUPLA_LOG_INFO("FULL_DUPLEX");

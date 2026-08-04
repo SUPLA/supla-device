@@ -131,8 +131,8 @@ TEST_F(SuplaSrpcDeviceConfigTests,
       }));
   EXPECT_CALL(storage,
               setUInt8(StrEq(Supla::ConfigTag::DeviceConfigChangeCfgTag), 0))
-      .Times(0);
-  EXPECT_CALL(storage, saveWithDelay(_)).Times(0);
+      .WillOnce(Return(true));
+  EXPECT_CALL(storage, saveWithDelay(1000)).Times(1);
   EXPECT_CALL(*client, connected()).WillRepeatedly(Return(1));
   EXPECT_CALL(srpcMock, srpc_iterate(_))
       .Times(2)
@@ -145,6 +145,7 @@ TEST_F(SuplaSrpcDeviceConfigTests,
 
   EXPECT_TRUE(protocol.iterate(1000));
   EXPECT_EQ(protocol.waitForIterateForTest(), 1000U);
+  EXPECT_TRUE(storage.isDeviceConfigChangeReadyToSend());
 
   Supla::Device::RemoteDeviceConfig::SetInputActivationPropertiesForTests({
       .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND |
@@ -160,4 +161,10 @@ TEST_F(SuplaSrpcDeviceConfigTests,
   EXPECT_FALSE(protocol.iterate(1500));
   EXPECT_TRUE(protocol.iterate(2001));
   EXPECT_TRUE(storage.isDeviceConfigChangeReadyToSend());
+
+  TSDS_SetDeviceConfigResult result = {};
+  result.Result = SUPLA_CONFIG_RESULT_TRUE;
+  protocol.handleSetDeviceConfigResult(&result);
+
+  EXPECT_FALSE(storage.isDeviceConfigChangeFlagSet());
 }

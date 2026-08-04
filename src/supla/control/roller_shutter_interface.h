@@ -34,6 +34,13 @@ namespace Supla {
 
 namespace Control {
 
+bool isValidTiltControlType(uint32_t type);
+bool requiresSeparateTiltPhase(uint8_t type);
+bool isValidFacadeBlindTiming(uint8_t type,
+                              uint32_t openingTimeMs,
+                              uint32_t closingTimeMs,
+                              uint32_t tiltingTimeMs);
+
 class Button;
 
 enum class Directions : uint8_t { STOP_DIR = 0, DOWN_DIR = 1, UP_DIR = 2 };
@@ -115,6 +122,9 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
    * @return true if tilting is configured
    */
   bool isTiltConfigured() const;
+
+  /** Check whether a tilt-only target can be executed safely. */
+  bool canExecuteTiltOnlyCommand(int tilt) const;
 
   /**
    * Check if top position (and tilt if applicable) is reached
@@ -306,6 +316,11 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   void setOpenCloseTime(uint32_t newClosingTimeMs, uint32_t newOpeningTimeMs);
   void setTiltingTime(uint32_t newTiltingTimeMs, bool local = true);
   void setTiltControlType(uint8_t newTiltControlType, bool local = true);
+  bool applyFacadeBlindTimingConfig(uint32_t openingTimeMs,
+                                    uint32_t closingTimeMs,
+                                    uint32_t tiltingTimeMs,
+                                    uint32_t tiltControlType,
+                                    bool local = true);
 
   void setCalibrationFailed(bool value);
   void setCalibrationLost(bool value);
@@ -316,6 +331,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
                          Supla::Channel &externalChannel,
                          ElementMode mode);
   void loadRollerShutterConfigOnly();
+  void validateTiltConfigAfterLoad();
   void purgeRollerShutterConfigOnly();
 
   struct ButtonListElement {
@@ -347,6 +363,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
 
   void printConfig() const;
   uint32_t getTimeMarginValue(uint32_t fullTime) const;
+  void logIgnoredTiltOnlyCommand(int tilt);
 
   uint8_t flags = 0;
 
@@ -368,6 +385,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   int16_t lastPositionBeforeMovement = UNKNOWN_POSITION;  // 0-100
   int16_t lastTiltBeforeMovement = UNKNOWN_POSITION;      // 0-100
   bool newTargetPositionAvailable = false;
+  bool invalidTiltOnlyCommandWarningLogged = false;
 
   RollerShutterConfig rsConfig;
   TiltConfig tiltConfig;
@@ -381,6 +399,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   // calibrationTime > 0 means that there is ongoing calibration
   uint32_t calibrationTime = 0;
   uint32_t lastUpdateTime = 0;
+  bool rollerShutterStateLoaded = false;
 
   static int16_t rsStorageSaveDelay;
 };

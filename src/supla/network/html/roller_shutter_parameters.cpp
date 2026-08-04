@@ -20,6 +20,7 @@
 #include <supla/network/html/roller_shutter_parameters.h>
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <supla/channels/channel.h>
 #include <supla/control/roller_shutter.h>
@@ -49,6 +50,75 @@ bool isRollerShutterFunction(uint32_t function) {
       return true;
   }
   return false;
+}
+
+bool parseTimeMs(const char* value, uint32_t* result) {
+  if (value == nullptr || result == nullptr || value[0] == 0) {
+    return false;
+  }
+
+  uint32_t wholeSeconds = 0;
+  uint32_t fraction = 0;
+  bool decimalPointFound = false;
+  bool digitFound = false;
+  bool fractionDigitFound = false;
+
+  for (const char* current = value; *current != 0; current++) {
+    if (*current >= '0' && *current <= '9') {
+      digitFound = true;
+      if (decimalPointFound) {
+        if (fractionDigitFound) {
+          return false;
+        }
+        fraction = static_cast<uint32_t>(*current - '0');
+        fractionDigitFound = true;
+      } else {
+        if (wholeSeconds > RS_MAX_OPERATION_TIME_MS / 1000 / 10) {
+          return false;
+        }
+        wholeSeconds = wholeSeconds * 10 + (*current - '0');
+      }
+    } else if (*current == '.' || *current == ',') {
+      if (decimalPointFound || !digitFound) {
+        return false;
+      }
+      decimalPointFound = true;
+    } else {
+      return false;
+    }
+  }
+
+  if (!digitFound || (decimalPointFound && !fractionDigitFound) ||
+      wholeSeconds > RS_MAX_OPERATION_TIME_MS / 1000) {
+    return false;
+  }
+
+  const uint32_t milliseconds = wholeSeconds * 1000 + fraction * 100;
+  if (milliseconds > RS_MAX_OPERATION_TIME_MS) {
+    return false;
+  }
+  *result = milliseconds;
+  return true;
+}
+
+bool parseUInt32Strict(const char* value, uint32_t* result) {
+  if (value == nullptr || result == nullptr || value[0] == 0) {
+    return false;
+  }
+
+  uint64_t parsed = 0;
+  for (const char* current = value; *current != 0; current++) {
+    if (*current < '0' || *current > '9') {
+      return false;
+    }
+    const uint32_t digit = static_cast<uint32_t>(*current - '0');
+    if (parsed > (UINT32_MAX - digit) / 10) {
+      return false;
+    }
+    parsed = parsed * 10 + digit;
+  }
+  *result = static_cast<uint32_t>(parsed);
+  return true;
 }
 
 void sendDynamicVisibilityScript(Supla::WebSender *sender,
@@ -343,35 +413,100 @@ bool RollerShutterParameters::handleResponse(const char* key,
   // open close time
   rs->generateKey(keyMatch, Supla::ConfigTag::RollerShutterOpeningTimeTag);
   if (strcmp(key, keyMatch) == 0) {
-    uint32_t time = floatStringToInt(value, 1) * 100;
-    auto closingTime = rs->getClosingTimeMs();
-    rs->setOpenCloseTime(closingTime, time);
+    uint32_t time = 0;
+    if (!parseTimeMs(value, &time)) {
+      pendingFacadeBlindTimingInvalid = true;
+    } else {
+      if (!pendingFacadeBlindTiming) {
+        pendingOpeningTimeMs = rs->getOpeningTimeMs();
+        pendingClosingTimeMs = rs->getClosingTimeMs();
+        pendingTiltingTimeMs = rs->getTiltingTimeMs();
+        pendingTiltControlType = rs->getTiltControlType();
+      }
+      pendingFacadeBlindTiming = true;
+      pendingOpeningTimeMs = time;
+    }
     return true;
   }
 
   rs->generateKey(keyMatch, Supla::ConfigTag::RollerShutterClosingTimeTag);
   if (strcmp(key, keyMatch) == 0) {
-    uint32_t time = floatStringToInt(value, 1) * 100;
-    auto openingTime = rs->getOpeningTimeMs();
-    rs->setOpenCloseTime(time, openingTime);
+    uint32_t time = 0;
+    if (!parseTimeMs(value, &time)) {
+      pendingFacadeBlindTimingInvalid = true;
+    } else {
+      if (!pendingFacadeBlindTiming) {
+        pendingOpeningTimeMs = rs->getOpeningTimeMs();
+        pendingClosingTimeMs = rs->getClosingTimeMs();
+        pendingTiltingTimeMs = rs->getTiltingTimeMs();
+        pendingTiltControlType = rs->getTiltControlType();
+      }
+      pendingFacadeBlindTiming = true;
+      pendingClosingTimeMs = time;
+    }
     return true;
   }
 
   rs->generateKey(keyMatch, Supla::ConfigTag::FacadeBlindTiltingTimeTag);
   if (strcmp(key, keyMatch) == 0) {
-    uint32_t time = floatStringToInt(value, 1) * 100;
-    rs->setTiltingTime(time);
+    uint32_t time = 0;
+    if (!parseTimeMs(value, &time)) {
+      pendingFacadeBlindTimingInvalid = true;
+    } else {
+      if (!pendingFacadeBlindTiming) {
+        pendingOpeningTimeMs = rs->getOpeningTimeMs();
+        pendingClosingTimeMs = rs->getClosingTimeMs();
+        pendingTiltingTimeMs = rs->getTiltingTimeMs();
+        pendingTiltControlType = rs->getTiltControlType();
+      }
+      pendingFacadeBlindTiming = true;
+      pendingTiltingTimeMs = time;
+    }
     return true;
   }
 
   rs->generateKey(keyMatch, Supla::ConfigTag::FacadeBlindTiltControlTypeTag);
   if (strcmp(key, keyMatch) == 0) {
-    uint32_t tiltControlType = stringToUInt(value);
-    rs->setTiltControlType(tiltControlType);
+    uint32_t tiltControlType = 0;
+    if (!parseUInt32Strict(value, &tiltControlType)) {
+      pendingFacadeBlindTimingInvalid = true;
+    } else {
+      if (!pendingFacadeBlindTiming) {
+        pendingOpeningTimeMs = rs->getOpeningTimeMs();
+        pendingClosingTimeMs = rs->getClosingTimeMs();
+        pendingTiltingTimeMs = rs->getTiltingTimeMs();
+        pendingTiltControlType = rs->getTiltControlType();
+      }
+      pendingFacadeBlindTiming = true;
+      pendingTiltControlType = tiltControlType;
+    }
     return true;
   }
 
   return false;
+}
+
+void RollerShutterParameters::onProcessingEnd() {
+  if ((pendingFacadeBlindTiming || pendingFacadeBlindTimingInvalid) &&
+      rs != nullptr) {
+    bool applied = !pendingFacadeBlindTimingInvalid;
+    if (applied && pendingFacadeBlindTiming) {
+      if (rs->isTiltFunctionEnabled()) {
+        applied = rs->applyFacadeBlindTimingConfig(pendingOpeningTimeMs,
+                                                    pendingClosingTimeMs,
+                                                    pendingTiltingTimeMs,
+                                                    pendingTiltControlType);
+      } else {
+        rs->setOpenCloseTime(pendingClosingTimeMs, pendingOpeningTimeMs);
+      }
+    }
+    if (!applied) {
+      SUPLA_LOG_WARNING("RsHtml: rejected facade blind timing configuration");
+    }
+  }
+
+  pendingFacadeBlindTiming = false;
+  pendingFacadeBlindTimingInvalid = false;
 }
 
 #endif  // ARDUINO_ARCH_AVR

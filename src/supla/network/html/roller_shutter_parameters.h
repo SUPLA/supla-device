@@ -19,6 +19,9 @@
 #ifndef SRC_SUPLA_NETWORK_HTML_ROLLER_SHUTTER_PARAMETERS_H_
 #define SRC_SUPLA_NETWORK_HTML_ROLLER_SHUTTER_PARAMETERS_H_
 
+#include <stdint.h>
+
+#include <supla-common/proto.h>
 #include <supla/network/html_element.h>
 
 namespace Supla {
@@ -36,6 +39,7 @@ class RollerShutterParameters : public HtmlElement {
   virtual ~RollerShutterParameters();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
+  void onProcessingEnd() override;
 
   void setRsPtr(Supla::Control::RollerShutter *rs);
   void setShowChannelFunction(bool show);
@@ -49,6 +53,13 @@ class RollerShutterParameters : public HtmlElement {
   bool renderContainer = true;
   bool showOnlyForRollerFunction = false;
   bool dynamicVisibilityFromChannelFunction = false;
+
+  bool pendingFacadeBlindTiming = false;
+  bool pendingFacadeBlindTimingInvalid = false;
+  uint32_t pendingOpeningTimeMs = 0;
+  uint32_t pendingClosingTimeMs = 0;
+  uint32_t pendingTiltingTimeMs = 0;
+  uint32_t pendingTiltControlType = SUPLA_TILT_CONTROL_TYPE_UNKNOWN;
 };
 
 };  // namespace Html

@@ -54,6 +54,29 @@ bool isRollerShutterFunction(uint32_t function) {
       return false;
   }
 }
+
+bool isTiltFunction(uint32_t function) {
+  return function == SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND ||
+         function == SUPLA_CHANNELFNC_VERTICAL_BLIND;
+}
+
+bool parsePercentage(const char *payload, int *percentage) {
+  if (payload == nullptr || percentage == nullptr || payload[0] == 0) {
+    return false;
+  }
+  int result = 0;
+  for (const char *current = payload; *current != 0; current++) {
+    if (*current < '0' || *current > '9') {
+      return false;
+    }
+    result = result * 10 + (*current - '0');
+    if (result > 100) {
+      return false;
+    }
+  }
+  *percentage = result;
+  return true;
+}
 }  // namespace
 
 Supla::Protocol::Mqtt::Mqtt(SuplaDeviceClass *sdc)
@@ -866,7 +889,9 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
     case SUPLA_CHANNELTYPE_RELAY: {
       if (isRollerShutterFunction(ch->getDefaultFunction())) {
         subscribe((topic / "set" / "closing_percentage").c_str());
-        subscribe((topic / "set" / "tilt").c_str());
+        if (isTiltFunction(ch->getDefaultFunction())) {
+          subscribe((topic / "set" / "tilt").c_str());
+        }
       } else {
         subscribe((topic / "set" / "on").c_str());
       }
@@ -2658,11 +2683,13 @@ void Mqtt::processRollerShutterRequest(const char *part,
     }
     element->handleNewValueFromServer(&newValue);
   } else if (strcmp(part, "set/tilt") == 0) {
-    int tilt = stringToInt(payload);
-    if (tilt >= 0 && tilt <= 100) {
-      newValue.value[1] = tilt;
+    int tilt = 0;
+    if (parsePercentage(payload, &tilt)) {
+      newValue.value[1] = tilt + 10;
+      element->handleNewValueFromServer(&newValue);
+    } else {
+      SUPLA_LOG_WARNING("Mqtt: invalid roller shutter tilt value");
     }
-    element->handleNewValueFromServer(&newValue);
   } else if (strcmp(part, "execute_action") == 0) {
     if (strncmpInsensitive(payload, "stop", 5) == 0) {
       newValue.value[0] = 0;  // STOP

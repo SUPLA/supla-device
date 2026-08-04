@@ -17,6 +17,7 @@
 */
 
 #include <arduino_mock.h>
+#include <config_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <simple_time.h>
@@ -28,6 +29,8 @@
 
 using ::testing::_;
 using ::testing::AtLeast;
+using ::testing::Return;
+using ::testing::StrEq;
 
 class RollerShutterInterfaceFixture : public testing::Test {
  public:
@@ -257,6 +260,210 @@ TEST_F(RollerShutterInterfaceFixture, facadeBlindBasicTests) {
   EXPECT_FALSE(rs.isFunctionSupported(0));
 
   EXPECT_FALSE(rs.isAutoCalibrationSupported());
+}
+
+TEST_F(RollerShutterInterfaceFixture,
+       facadeBlindTimingValidationIsModeSpecific) {
+  using Supla::Control::isValidFacadeBlindTiming;
+  using Supla::Control::isValidTiltControlType;
+
+  EXPECT_TRUE(isValidTiltControlType(SUPLA_TILT_CONTROL_TYPE_UNKNOWN));
+  EXPECT_TRUE(isValidTiltControlType(
+      SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING));
+  EXPECT_TRUE(isValidTiltControlType(
+      SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING));
+  EXPECT_TRUE(isValidTiltControlType(
+      SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED));
+  EXPECT_FALSE(isValidTiltControlType(4));
+  EXPECT_FALSE(isValidTiltControlType(255));
+  EXPECT_FALSE(isValidTiltControlType(257));
+  EXPECT_FALSE(isValidTiltControlType(UINT32_MAX));
+
+  for (uint8_t type : {SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING,
+                       SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED}) {
+    EXPECT_FALSE(isValidFacadeBlindTiming(type, 5000, 5000, 5000));
+    EXPECT_FALSE(isValidFacadeBlindTiming(type, 5000, 5001, 5000));
+    EXPECT_FALSE(isValidFacadeBlindTiming(type, 5001, 5000, 5000));
+    EXPECT_FALSE(isValidFacadeBlindTiming(type, 4999, 6000, 5000));
+    EXPECT_FALSE(isValidFacadeBlindTiming(type, 6000, 4999, 5000));
+    EXPECT_TRUE(isValidFacadeBlindTiming(type, 5001, 5001, 5000));
+  }
+
+  EXPECT_TRUE(isValidFacadeBlindTiming(
+      SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+      5000,
+      5000,
+      10000));
+  EXPECT_TRUE(isValidFacadeBlindTiming(
+      SUPLA_TILT_CONTROL_TYPE_UNKNOWN, 1, 1, RS_MAX_OPERATION_TIME_MS));
+}
+
+TEST_F(RollerShutterInterfaceFixture,
+       applyFacadeBlindConfigUsesEffectiveNegativeValuesTransactionally) {
+  Supla::Control::RollerShutterInterface rs(true);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setOpenCloseTime(5000, 5000);
+  rs.setTiltingTime(1000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+
+  TSD_ChannelConfig channelConfig = {};
+  channelConfig.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND;
+  channelConfig.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  channelConfig.ConfigSize = sizeof(TChannelConfig_FacadeBlind);
+  auto config = reinterpret_cast<TChannelConfig_FacadeBlind *>(
+      channelConfig.Config);
+  config->OpeningTimeMS = -1;
+  config->ClosingTimeMS = 6000;
+  config->TiltingTimeMS = -1;
+  config->ButtonsUpsideDown = 1;
+  config->MotorUpsideDown = 1;
+  config->TimeMargin = -1;
+  config->TiltControlType =
+      SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING;
+
+  EXPECT_EQ(rs.applyChannelConfig(&channelConfig),
+            Supla::ApplyConfigResult::Success);
+  EXPECT_EQ(rs.getOpeningTimeMs(), 5000);
+  EXPECT_EQ(rs.getClosingTimeMs(), 6000);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 1000);
+
+  config->OpeningTimeMS = 5000;
+  config->ClosingTimeMS = 5000;
+  config->TiltingTimeMS = 10000;
+  config->TiltControlType =
+      SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING;
+
+  EXPECT_EQ(rs.handleChannelConfig(&channelConfig, false),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_EQ(rs.getOpeningTimeMs(), 5000);
+  EXPECT_EQ(rs.getClosingTimeMs(), 6000);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 1000);
+  EXPECT_EQ(rs.getTiltControlType(),
+            SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING);
+
+  TChannelConfig_FacadeBlind reported = {};
+  int size = 0;
+  rs.fillChannelConfig(&reported, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(size, sizeof(reported));
+  EXPECT_EQ(reported.OpeningTimeMS, 5000);
+  EXPECT_EQ(reported.ClosingTimeMS, 6000);
+  EXPECT_EQ(reported.TiltingTimeMS, 1000);
+  EXPECT_EQ(reported.TiltControlType,
+            SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING);
+
+  config->OpeningTimeMS = 5000;
+  config->ClosingTimeMS = 5000;
+  config->TiltingTimeMS = 10000;
+  config->TiltControlType =
+      SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING;
+  EXPECT_EQ(rs.applyChannelConfig(&channelConfig),
+            Supla::ApplyConfigResult::Success);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 10000);
+  EXPECT_TRUE(rs.isTiltConfigured());
+}
+
+TEST_F(RollerShutterInterfaceFixture,
+       facadeBlindConfigValidatesEffectiveUnavailableTimes) {
+  Supla::Control::RollerShutterInterface rs(true);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setOpenCloseTime(5000, 5000);
+  rs.setTiltingTime(10000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+  rs.getChannel()->setFlag(SUPLA_CHANNEL_FLAG_TIME_SETTING_NOT_AVAILABLE);
+
+  TSD_ChannelConfig channelConfig = {};
+  channelConfig.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND;
+  channelConfig.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  channelConfig.ConfigSize = sizeof(TChannelConfig_FacadeBlind);
+  auto config = reinterpret_cast<TChannelConfig_FacadeBlind *>(
+      channelConfig.Config);
+  config->OpeningTimeMS = 20000;
+  config->ClosingTimeMS = 20000;
+  config->TiltingTimeMS = 10000;
+  config->TiltControlType =
+      SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING;
+
+  EXPECT_EQ(rs.applyChannelConfig(&channelConfig),
+            Supla::ApplyConfigResult::DataError);
+  EXPECT_EQ(rs.getOpeningTimeMs(), 5000);
+  EXPECT_EQ(rs.getClosingTimeMs(), 5000);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 10000);
+  EXPECT_EQ(rs.getTiltControlType(),
+            SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING);
+  EXPECT_TRUE(rs.isTiltConfigured());
+}
+
+TEST_F(RollerShutterInterfaceFixture,
+       invalidStoredTiltConfigIsDisabledAfterStateTimesAreLoaded) {
+  ConfigMock config;
+  StorageMock storage;
+  Supla::Control::RollerShutterInterface rs(true);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  Supla::Control::TiltConfig storedTilt = {};
+  storedTilt.tiltingTime = 5000;
+  storedTilt.tiltControlType =
+      SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING;
+
+  EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
+  EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
+      .WillOnce([](const char*, int32_t* value) {
+        *value = -1;
+        return true;
+      });
+  EXPECT_CALL(config, getUInt8(StrEq("0_cfg_chng"), _))
+      .WillOnce(Return(false));
+  EXPECT_CALL(config,
+              getBlob(StrEq("0_rs_cfg"), _,
+                      sizeof(Supla::Control::RollerShutterConfig)))
+      .WillOnce(Return(false));
+  EXPECT_CALL(config,
+              getBlob(StrEq("0_tilt_cfg"),
+                      _,
+                      sizeof(Supla::Control::TiltConfig)))
+      .WillOnce([&storedTilt](const char*, char* value, size_t size) {
+        memcpy(value, &storedTilt, size);
+        return true;
+      });
+  EXPECT_CALL(config,
+              setBlob(StrEq("0_rs_cfg"), _,
+                      sizeof(Supla::Control::RollerShutterConfig)))
+      .WillOnce(Return(false));
+  EXPECT_CALL(config,
+              setBlob(StrEq("0_tilt_cfg"),
+                      _,
+                      sizeof(Supla::Control::TiltConfig)))
+      .WillOnce(Return(false));
+
+  rs.onLoadConfig(nullptr);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 5000);
+
+#pragma pack(push, 1)
+  struct StoredState {
+    uint32_t closingTimeMs;
+    uint32_t openingTimeMs;
+    int8_t currentPosition;
+    int8_t tiltPosition;
+  } state = {5000, 5000, 0, 0};
+#pragma pack(pop)
+  storage.defaultInitialization(sizeof(state));
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(state), _))
+      .WillOnce([&state](uint32_t, unsigned char* value, int, bool) {
+        memcpy(value, &state, sizeof(state));
+        return sizeof(state);
+      });
+  Supla::Storage::LoadStateStorage();
+  rs.onLoadState();
+
+  EXPECT_EQ(rs.getTiltingTimeMs(), 0);
+  EXPECT_EQ(rs.getTiltControlType(), SUPLA_TILT_CONTROL_TYPE_UNKNOWN);
+  EXPECT_FALSE(rs.isTiltConfigured());
+  TChannelConfig_FacadeBlind reported = {};
+  int size = 0;
+  rs.fillChannelConfig(&reported, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(reported.TiltingTimeMS, 0);
+  EXPECT_EQ(reported.TiltControlType, SUPLA_TILT_CONTROL_TYPE_UNKNOWN);
 }
 
 TEST_F(RollerShutterInterfaceFixture, facadeBlindLocalMovement) {

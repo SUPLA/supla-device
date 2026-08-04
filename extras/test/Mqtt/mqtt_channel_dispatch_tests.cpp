@@ -389,6 +389,7 @@ TEST_F(MqttChannelDispatchTests, publishChannelStateCoversBasicTypes) {
   ChannelElementMock roller;
   configureRollerRelay(roller.getChannel(),
                        SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+
   TDSC_RollerShutterValue rollerValue = {};
   rollerValue.position = 33;
   roller.getChannel()->setNewValue(rollerValue);
@@ -1070,6 +1071,10 @@ TEST_F(MqttChannelDispatchTests, subscribeChannelCoversControllableTypes) {
   configureRollerRelay(roller.getChannel(),
                        SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
 
+  ChannelElementMock facadeBlind;
+  configureRollerRelay(facadeBlind.getChannel(),
+                       SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+
   ChannelElementMock dimmer;
   dimmer.getChannel()->setType(SUPLA_CHANNELTYPE_DIMMER);
 
@@ -1113,10 +1118,6 @@ TEST_F(MqttChannelDispatchTests, subscribeChannelCoversControllableTypes) {
                     0));
   EXPECT_CALL(mqtt,
               subscribeTest(StrEq(expectedChannelTopic(
-                                roller.getChannelNumber(), "set/tilt")),
-                            0));
-  EXPECT_CALL(mqtt,
-              subscribeTest(StrEq(expectedChannelTopic(
                                 roller.getChannelNumber(), "execute_action")),
                             0));
   {
@@ -1130,6 +1131,22 @@ TEST_F(MqttChannelDispatchTests, subscribeChannelCoversControllableTypes) {
                       kExpectedPrefix);
     mqtt.subscribeChannel(roller.getChannelNumber());
   }
+
+  EXPECT_CALL(mqtt,
+              subscribeTest(StrEq(expectedChannelTopic(
+                                facadeBlind.getChannelNumber(),
+                                "set/closing_percentage")),
+                            0));
+  EXPECT_CALL(mqtt,
+              subscribeTest(StrEq(expectedChannelTopic(
+                                facadeBlind.getChannelNumber(), "set/tilt")),
+                            0));
+  EXPECT_CALL(mqtt,
+              subscribeTest(StrEq(expectedChannelTopic(
+                                facadeBlind.getChannelNumber(),
+                                "execute_action")),
+                            0));
+  mqtt.subscribeChannel(facadeBlind.getChannelNumber());
 
   EXPECT_CALL(mqtt,
               subscribeTest(StrEq(expectedChannelTopic(
@@ -2927,12 +2944,35 @@ TEST_F(MqttChannelDispatchTests, processDataCoversControlTypes) {
 
   EXPECT_CALL(roller, handleNewValueFromServer(_))
       .WillOnce([](TSD_SuplaChannelNewValue *value) {
-        EXPECT_EQ(20, value->value[1]);
+        EXPECT_EQ(30, value->value[1]);
         return 0;
       });
   EXPECT_TRUE(mqtt.processData(
       (expectedChannelTopic(roller.getChannelNumber(), "set/tilt")).c_str(),
       "20"));
+
+  EXPECT_CALL(roller, handleNewValueFromServer(_))
+      .WillOnce([](TSD_SuplaChannelNewValue *value) {
+        EXPECT_EQ(10, value->value[1]);
+        return 0;
+      });
+  EXPECT_TRUE(mqtt.processData(
+      (expectedChannelTopic(roller.getChannelNumber(), "set/tilt")).c_str(),
+      "0"));
+
+  EXPECT_CALL(roller, handleNewValueFromServer(_))
+      .WillOnce([](TSD_SuplaChannelNewValue *value) {
+        EXPECT_EQ(110, value->value[1]);
+        return 0;
+      });
+  EXPECT_TRUE(mqtt.processData(
+      (expectedChannelTopic(roller.getChannelNumber(), "set/tilt")).c_str(),
+      "100"));
+
+  EXPECT_CALL(roller, handleNewValueFromServer(_)).Times(0);
+  EXPECT_TRUE(mqtt.processData(
+      (expectedChannelTopic(roller.getChannelNumber(), "set/tilt")).c_str(),
+      "malformed"));
 
   EXPECT_CALL(dimmer, handleNewValueFromServer(_))
       .WillOnce([](TSD_SuplaChannelNewValue *value) {

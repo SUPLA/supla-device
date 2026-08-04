@@ -111,6 +111,9 @@ class RollerShutter : public RollerShutterInterface {
   uint32_t doNothingTime = 0;
 
   uint32_t operationTimeoutMs = 0;
+  bool invalidTiltConfigurationWarningLogged = false;
+  bool invalidTiltConfigurationFallbackActive = false;
+  bool invalidTiltOnlyRuntimeWarningLogged = false;
 };
 
 }  // namespace Control

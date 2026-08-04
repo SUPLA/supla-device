@@ -1792,6 +1792,116 @@ TEST_F(HtmlCaptureTest, RollerShutterParametersAcceptsDefaultTimeMargin) {
 }
 
 TEST_F(HtmlCaptureTest,
+       RollerShutterParametersValidatesFacadeBlindTimingAsOneForm) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Control::RollerShutter rs(-1, -1, true, true);
+  rs.getChannel()->setChannelNumber(7);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setOpenCloseTime(5000, 5000);
+  rs.setTiltingTime(10000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+
+  Supla::Html::RollerShutterParameters param(&rs);
+  char openingKey[16] = {};
+  char closingKey[16] = {};
+  char tiltingKey[16] = {};
+  char typeKey[16] = {};
+  rs.generateKey(openingKey, Supla::ConfigTag::RollerShutterOpeningTimeTag);
+  rs.generateKey(closingKey, Supla::ConfigTag::RollerShutterClosingTimeTag);
+  rs.generateKey(tiltingKey, Supla::ConfigTag::FacadeBlindTiltingTimeTag);
+  rs.generateKey(typeKey,
+                 Supla::ConfigTag::FacadeBlindTiltControlTypeTag);
+
+  // The type arrives first and would be invalid against the old values if the
+  // fields were applied one at a time. The complete candidate is valid.
+  EXPECT_TRUE(param.handleResponse(typeKey, "1"));
+  EXPECT_TRUE(param.handleResponse(openingKey, "20"));
+  EXPECT_TRUE(param.handleResponse(closingKey, "20"));
+  EXPECT_TRUE(param.handleResponse(tiltingKey, "10"));
+  param.onProcessingEnd();
+
+  EXPECT_EQ(rs.getOpeningTimeMs(), 20000);
+  EXPECT_EQ(rs.getClosingTimeMs(), 20000);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 10000);
+  EXPECT_EQ(rs.getTiltControlType(),
+            SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING);
+
+  EXPECT_TRUE(param.handleResponse(tiltingKey, "malformed"));
+  param.onProcessingEnd();
+  EXPECT_EQ(rs.getTiltingTimeMs(), 10000);
+
+  EXPECT_TRUE(param.handleResponse(tiltingKey, "-1"));
+  param.onProcessingEnd();
+  EXPECT_EQ(rs.getTiltingTimeMs(), 10000);
+
+  EXPECT_TRUE(param.handleResponse(typeKey, "257"));
+  param.onProcessingEnd();
+  EXPECT_EQ(rs.getTiltControlType(),
+            SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING);
+
+  EXPECT_TRUE(param.handleResponse(typeKey, "4294967295"));
+  param.onProcessingEnd();
+  EXPECT_EQ(rs.getTiltControlType(),
+            SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING);
+
+  EXPECT_TRUE(param.handleResponse(openingKey, "5"));
+  EXPECT_TRUE(param.handleResponse(closingKey, "5"));
+  EXPECT_TRUE(param.handleResponse(tiltingKey, "5"));
+  param.onProcessingEnd();
+  EXPECT_EQ(rs.getOpeningTimeMs(), 20000);
+  EXPECT_EQ(rs.getClosingTimeMs(), 20000);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 10000);
+}
+
+TEST_F(HtmlCaptureTest,
+       RollerShutterParametersRejectsInvalidTimingRegardlessOfFieldOrder) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Control::RollerShutter rs(-1, -1, true, true);
+  rs.getChannel()->setChannelNumber(7);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  rs.setOpenCloseTime(20000, 20000);
+  rs.setTiltingTime(1000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+
+  Supla::Html::RollerShutterParameters param(&rs);
+  char functionKey[16] = {};
+  char openingKey[16] = {};
+  char closingKey[16] = {};
+  char tiltingKey[16] = {};
+  char typeKey[16] = {};
+  char functionValue[16] = {};
+  rs.generateKey(functionKey, Supla::ConfigTag::ChannelFunctionTag);
+  rs.generateKey(openingKey, Supla::ConfigTag::RollerShutterOpeningTimeTag);
+  rs.generateKey(closingKey, Supla::ConfigTag::RollerShutterClosingTimeTag);
+  rs.generateKey(tiltingKey, Supla::ConfigTag::FacadeBlindTiltingTimeTag);
+  rs.generateKey(typeKey,
+                 Supla::ConfigTag::FacadeBlindTiltControlTypeTag);
+  snprintf(functionValue,
+           sizeof(functionValue),
+           "%d",
+           SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+
+  EXPECT_TRUE(param.handleResponse(openingKey, "5"));
+  EXPECT_TRUE(param.handleResponse(closingKey, "5"));
+  param.handleResponse(functionKey, functionValue);
+  EXPECT_EQ(rs.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  EXPECT_TRUE(param.handleResponse(tiltingKey, "5"));
+  EXPECT_TRUE(param.handleResponse(typeKey, "1"));
+  param.onProcessingEnd();
+
+  EXPECT_EQ(rs.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  EXPECT_EQ(rs.getOpeningTimeMs(), 20000);
+  EXPECT_EQ(rs.getClosingTimeMs(), 20000);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 1000);
+  EXPECT_EQ(rs.getTiltControlType(),
+            SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING);
+}
+
+TEST_F(HtmlCaptureTest,
        RollerShutterParametersCanUseDynamicFunctionVisibility) {
   NiceMock<ConfigMock> cfg;
   SenderMock sender;

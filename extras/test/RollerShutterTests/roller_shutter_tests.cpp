@@ -67,6 +67,21 @@ class RollerShutterFixture : public testing::Test {
   }
 };
 
+class RollerShutterTestAccess : public Supla::Control::RollerShutter {
+ public:
+  using Supla::Control::RollerShutter::RollerShutter;
+
+  uint32_t getOperationTimeoutMs() const {
+    return operationTimeoutMs;
+  }
+
+  void injectTiltOnlyTarget(int tilt) {
+    targetPosition = UNKNOWN_POSITION;
+    targetTilt = tilt;
+    newTargetPositionAvailable = true;
+  }
+};
+
 TEST_F(RollerShutterFixture, basicTests) {
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);
 
@@ -960,4 +975,270 @@ TEST_F(RollerShutterFixture, applyChannelConfigClampsUnsafeTimes) {
             Supla::ApplyConfigResult::Success);
   EXPECT_EQ(rs.getClosingTimeMs(), RS_MAX_OPERATION_TIME_MS);
   EXPECT_EQ(rs.getOpeningTimeMs(), RS_MAX_OPERATION_TIME_MS);
+}
+
+TEST_F(RollerShutterFixture,
+       invalidFacadeBlindTiltTimingFallsBackToPlainFiniteMovement) {
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(AtLeast(0));
+
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown, true, true);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setOpenCloseTime(5000, 5000);
+  rs.setTiltingTime(10000, false);
+  rs.setTiltControlType(
+      SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING, false);
+  rs.setCurrentPosition(0, 0);
+
+  EXPECT_FALSE(rs.isTiltConfigured());
+  rs.onInit();
+  rs.setTargetPosition(100, 100);
+
+  for (int i = 0; i < 80; i++) {
+    rs.onTimer();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(rs.getCurrentPosition(), 100);
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+  EXPECT_EQ(rs.getTargetTilt(), UNKNOWN_POSITION);
+}
+
+TEST_F(RollerShutterFixture,
+       invalidFacadeBlindTiltOnlyDirectTargetIsIgnored) {
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(AtLeast(0));
+
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown, true, true);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setOpenCloseTime(5000, 5000);
+  rs.setTiltingTime(10000, false);
+  rs.setTiltControlType(
+      SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING, false);
+  rs.setCurrentPosition(0, 0);
+  rs.onInit();
+
+  rs.setTargetPosition(UNKNOWN_POSITION, 100);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+  EXPECT_EQ(rs.getTargetPosition(), STOP_POSITION);
+  EXPECT_EQ(rs.getTargetTilt(), UNKNOWN_POSITION);
+
+  rs.setTiltingTime(1000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+  rs.setTargetPosition(UNKNOWN_POSITION, 101);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+  EXPECT_EQ(rs.getTargetPosition(), STOP_POSITION);
+  EXPECT_EQ(rs.getTargetTilt(), UNKNOWN_POSITION);
+}
+
+TEST_F(RollerShutterFixture,
+       invalidInjectedTiltOnlyTargetIsCancelledBeforeRelayStarts) {
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(AtLeast(0));
+
+  RollerShutterTestAccess rs(gpioUp, gpioDown, true, true);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setOpenCloseTime(5000, 5000);
+  rs.setTiltingTime(1000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+  rs.setCurrentPosition(50, UNKNOWN_POSITION);
+  rs.onInit();
+  testing::Mock::VerifyAndClearExpectations(&ioMock);
+
+  EXPECT_CALL(ioMock, digitalWrite(_, 1)).Times(0);
+  EXPECT_CALL(ioMock, digitalWrite(_, 0)).Times(AtLeast(2));
+  rs.injectTiltOnlyTarget(50);
+  rs.onTimer();
+
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+  EXPECT_EQ(rs.getTargetPosition(), STOP_POSITION);
+  EXPECT_EQ(rs.getTargetTilt(), UNKNOWN_POSITION);
+  EXPECT_EQ(rs.getOperationTimeoutMs(), 0);
+}
+
+TEST_F(RollerShutterFixture,
+       standardRollerShutterIgnoresTiltOnlyTargetWhileStoppedAndMoving) {
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(AtLeast(0));
+
+  RollerShutterTestAccess rs(gpioUp, gpioDown);
+  rs.setOpenCloseTime(5000, 5000);
+  rs.setCurrentPosition(50);
+  rs.onInit();
+
+  TSD_SuplaChannelNewValue newValue = {};
+  newValue.value[0] = UNKNOWN_POSITION;
+  newValue.value[1] = 60;
+  rs.handleNewValueFromServer(&newValue);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+  EXPECT_EQ(rs.getTargetPosition(), STOP_POSITION);
+
+  rs.moveDown();
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::DOWN_DIR));
+  const int targetBeforeInvalidCommand = rs.getTargetPosition();
+  rs.handleNewValueFromServer(&newValue);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::DOWN_DIR));
+  EXPECT_EQ(rs.getTargetPosition(), targetBeforeInvalidCommand);
+  EXPECT_GT(rs.getOperationTimeoutMs(), 0);
+}
+
+TEST_F(RollerShutterFixture,
+       tiltOnlyInputRequiresConfiguredTiltAndKnownState) {
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(AtLeast(0));
+
+  TSD_SuplaChannelNewValue newValue = {};
+  newValue.value[0] = UNKNOWN_POSITION;
+  newValue.value[1] = 60;
+
+  RollerShutterTestAccess rs(gpioUp, gpioDown, true, true);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setOpenCloseTime(5000, 5000);
+  rs.setCurrentPosition(50, 50);
+  rs.onInit();
+  rs.handleNewValueFromServer(&newValue);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+  EXPECT_EQ(rs.getTargetPosition(), STOP_POSITION);
+
+  rs.moveDown();
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::DOWN_DIR));
+  const int targetBeforeInvalidCommand = rs.getTargetPosition();
+  rs.handleNewValueFromServer(&newValue);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::DOWN_DIR));
+  EXPECT_EQ(rs.getTargetPosition(), targetBeforeInvalidCommand);
+  rs.stop();
+  rs.onTimer();
+
+  rs.setTiltingTime(1000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+  rs.setCurrentPosition(50, UNKNOWN_POSITION);
+  rs.handleNewValueFromServer(&newValue);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+  EXPECT_EQ(rs.getTargetPosition(), STOP_POSITION);
+
+  rs.setCurrentPosition(UNKNOWN_POSITION, 50);
+  rs.handleNewValueFromServer(&newValue);
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+  EXPECT_EQ(rs.getTargetPosition(), STOP_POSITION);
+}
+
+TEST_F(RollerShutterFixture,
+       validTiltOnlyMovementHasFiniteTimeoutForAllModesAndDirections) {
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(AtLeast(0));
+
+  for (uint8_t type : {SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING,
+                       SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                       SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED}) {
+    for (bool moveDown : {true, false}) {
+      RollerShutterTestAccess rs(gpioUp, gpioDown, true, true);
+      rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+      rs.setOpenCloseTime(5000, 5000);
+      rs.setTiltingTime(
+          type == SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING
+              ? 10000
+              : 1000,
+          false);
+      rs.setTiltControlType(type, false);
+      const int startPosition = 50;
+      const int startTilt = moveDown ? 0 : 100;
+      const int targetTilt = moveDown ? 100 : 0;
+      rs.setCurrentPosition(startPosition, startTilt);
+      rs.onInit();
+
+      TSD_SuplaChannelNewValue newValue = {};
+      newValue.value[0] = UNKNOWN_POSITION;
+      newValue.value[1] = targetTilt + 10;
+      rs.handleNewValueFromServer(&newValue);
+      rs.onTimer();
+
+      EXPECT_EQ(rs.getCurrentDirection(),
+                static_cast<int>(moveDown
+                                     ? Supla::Control::Directions::DOWN_DIR
+                                     : Supla::Control::Directions::UP_DIR));
+      const uint32_t expectedBaseTimeout =
+          type == SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING
+              ? 10000
+              : 5000;
+      EXPECT_EQ(rs.getOperationTimeoutMs(),
+                expectedBaseTimeout + expectedBaseTimeout * 0.3);
+
+      for (int i = 0; i < 150 &&
+                          rs.getCurrentDirection() !=
+                              static_cast<int>(
+                                  Supla::Control::Directions::STOP_DIR);
+           i++) {
+        time.advance(100);
+        rs.onTimer();
+      }
+
+      EXPECT_EQ(rs.getCurrentTilt(), targetTilt);
+      EXPECT_EQ(rs.getCurrentDirection(),
+                static_cast<int>(Supla::Control::Directions::STOP_DIR));
+      EXPECT_EQ(rs.getOperationTimeoutMs(), 0);
+      if (type ==
+          SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED) {
+        EXPECT_EQ(rs.getCurrentPosition(), moveDown ? 100 : 0);
+      }
+    }
+  }
+}
+
+TEST_F(RollerShutterFixture,
+       disabledFacadeBlindTiltKeepsPositionAtEndpointsDuringMargin) {
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(AtLeast(0));
+
+  RollerShutterTestAccess rs(gpioUp, gpioDown, true, true);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setOpenCloseTime(5000, 5000);
+  rs.setTiltingTime(0, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_UNKNOWN, false);
+  rs.setCurrentPosition(100, UNKNOWN_POSITION);
+  rs.onInit();
+  rs.open();
+
+  for (int i = 0; i < 80; i++) {
+    rs.onTimer();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(rs.getCurrentPosition(), 0);
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+
+  rs.close();
+  for (int i = 0; i < 80; i++) {
+    rs.onTimer();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(rs.getCurrentPosition(), 100);
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
 }

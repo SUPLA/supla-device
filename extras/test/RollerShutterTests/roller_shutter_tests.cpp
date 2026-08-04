@@ -80,6 +80,14 @@ class RollerShutterTestAccess : public Supla::Control::RollerShutter {
     targetTilt = tilt;
     newTargetPositionAvailable = true;
   }
+
+  void activateUpRelay() {
+    relayUpOn();
+  }
+
+  void activateDownRelay() {
+    relayDownOn();
+  }
 };
 
 TEST_F(RollerShutterFixture, basicTests) {
@@ -146,6 +154,87 @@ TEST_F(RollerShutterFixture, ioPinConstructorUsesSeparateIo) {
   EXPECT_CALL(ioMockDown, customPinMode(0, gpioDown, OUTPUT));
 
   rs.onInit();
+}
+
+TEST_F(RollerShutterFixture, setPinUpDeactivatesActiveOldPinFirst) {
+  SuplaIoMock ioUp;
+  SuplaIoMock ioDown;
+  RollerShutterTestAccess rs(MakeOutputPin(&ioUp, gpioUp, true),
+                             MakeOutputPin(&ioDown, gpioDown, true));
+  constexpr int newPin = 3;
+
+  EXPECT_CALL(ioUp, customDigitalWrite(0, gpioUp, HIGH));
+  rs.activateUpRelay();
+  testing::Mock::VerifyAndClearExpectations(&ioUp);
+
+  testing::InSequence sequence;
+  EXPECT_CALL(ioUp, customDigitalWrite(0, gpioUp, LOW));
+  EXPECT_CALL(ioUp, customDigitalWrite(0, newPin, LOW));
+  EXPECT_CALL(ioUp, customPinMode(0, newPin, OUTPUT));
+
+  rs.setPinUp(newPin);
+}
+
+TEST_F(RollerShutterFixture, setPinDownDeactivatesActiveLowOldPinFirst) {
+  SuplaIoMock ioUp;
+  SuplaIoMock ioDown;
+  RollerShutterTestAccess rs(MakeOutputPin(&ioUp, gpioUp, true),
+                             MakeOutputPin(&ioDown, gpioDown, false));
+  constexpr int newPin = 3;
+
+  EXPECT_CALL(ioDown, customDigitalWrite(0, gpioDown, LOW));
+  rs.activateDownRelay();
+  testing::Mock::VerifyAndClearExpectations(&ioDown);
+
+  testing::InSequence sequence;
+  EXPECT_CALL(ioDown, customDigitalWrite(0, gpioDown, HIGH));
+  EXPECT_CALL(ioDown, customDigitalWrite(0, newPin, HIGH));
+  EXPECT_CALL(ioDown, customPinMode(0, newPin, OUTPUT));
+
+  rs.setPinDown(newPin);
+}
+
+TEST_F(RollerShutterFixture, setPinUpFromUnsetDoesNotWriteOldPin) {
+  SuplaIoMock ioUp;
+  SuplaIoMock ioDown;
+  RollerShutterTestAccess rs(MakeOutputPin(&ioUp, -1, true),
+                             MakeOutputPin(&ioDown, gpioDown, true));
+  constexpr int newPin = 3;
+
+  testing::InSequence sequence;
+  EXPECT_CALL(ioUp, customDigitalWrite(0, newPin, LOW)).Times(1);
+  EXPECT_CALL(ioUp, customPinMode(0, newPin, OUTPUT)).Times(1);
+
+  rs.setPinUp(newPin);
+}
+
+TEST_F(RollerShutterFixture, setPinUpToSamePinDoesNotAddDeactivation) {
+  SuplaIoMock ioUp;
+  SuplaIoMock ioDown;
+  RollerShutterTestAccess rs(MakeOutputPin(&ioUp, gpioUp, true),
+                             MakeOutputPin(&ioDown, gpioDown, true));
+
+  testing::InSequence sequence;
+  EXPECT_CALL(ioUp, customDigitalWrite(0, gpioUp, LOW)).Times(1);
+  EXPECT_CALL(ioUp, customPinMode(0, gpioUp, OUTPUT)).Times(1);
+
+  rs.setPinUp(gpioUp);
+}
+
+TEST_F(RollerShutterFixture, setPinUpToUnsetDeactivatesOldPinFirst) {
+  SuplaIoMock ioUp;
+  SuplaIoMock ioDown;
+  RollerShutterTestAccess rs(MakeOutputPin(&ioUp, gpioUp, true),
+                             MakeOutputPin(&ioDown, gpioDown, true));
+
+  EXPECT_CALL(ioUp, customDigitalWrite(0, gpioUp, HIGH));
+  rs.activateUpRelay();
+  testing::Mock::VerifyAndClearExpectations(&ioUp);
+
+  EXPECT_CALL(ioUp, customDigitalWrite(0, gpioUp, LOW)).Times(1);
+  EXPECT_CALL(ioUp, customPinMode(_, _, _)).Times(0);
+
+  rs.setPinUp(-1);
 }
 
 TEST_F(RollerShutterFixture, unsetIoPinsDoNothing) {

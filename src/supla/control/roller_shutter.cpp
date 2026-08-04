@@ -93,12 +93,18 @@ void RollerShutter::onInit() {
 }
 
 void RollerShutter::setPinUp(int pin) {
+  if (pinUp.isSet() && pinUp.getPin() != pin) {
+    pinUp.writeInactive(channel.getChannelNumber());
+  }
   pinUp.setPin(pin);
   pinUp.setMode(OUTPUT);
   initGpio(pinUp);
 }
 
 void RollerShutter::setPinDown(int pin) {
+  if (pinDown.isSet() && pinDown.getPin() != pin) {
+    pinDown.writeInactive(channel.getChannelNumber());
+  }
   pinDown.setPin(pin);
   pinDown.setMode(OUTPUT);
   initGpio(pinDown);

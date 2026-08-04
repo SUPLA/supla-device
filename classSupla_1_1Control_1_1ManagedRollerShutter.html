@@ -250,6 +250,9 @@ virtual&#160;</td><td class="memItemRight"><b>~RollerShutterInterface</b> ()</td
 <tr class="memdesc:a43938f4d698179f547c3da9faedb14fe pub_methods_classSupla_1_1Control_1_1RollerShutterInterface"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if tilt function is currently enabled.  <br /></td></tr>
 <tr class="memitem:afde1a56e4d7a0d0f959003a7742b02b4 pub_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_afde1a56e4d7a0d0f959003a7742b02b4"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Control_1_1RollerShutterInterface.html#afde1a56e4d7a0d0f959003a7742b02b4">isTiltConfigured</a> () const</td></tr>
 <tr class="memdesc:afde1a56e4d7a0d0f959003a7742b02b4 pub_methods_classSupla_1_1Control_1_1RollerShutterInterface"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if tilting is configured (time and control modes are set and isTiltFunctionEnabled is true).  <br /></td></tr>
+<tr class="memitem:a5fecaf50c66a0f90ce247108d7c1bdd6 pub_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a5fecaf50c66a0f90ce247108d7c1bdd6"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>canExecuteTiltOnlyCommand</b> (int tilt) const</td></tr>
+<tr class="memdesc:a5fecaf50c66a0f90ce247108d7c1bdd6 pub_methods_classSupla_1_1Control_1_1RollerShutterInterface"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check whether a tilt-only target can be executed safely. <br /></td></tr>
 <tr class="memitem:a6f2ddb15c74ad376eb0662811df02991 pub_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a6f2ddb15c74ad376eb0662811df02991"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Control_1_1RollerShutterInterface.html#a6f2ddb15c74ad376eb0662811df02991">isTopReached</a> () const</td></tr>
 <tr class="memdesc:a6f2ddb15c74ad376eb0662811df02991 pub_methods_classSupla_1_1Control_1_1RollerShutterInterface"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if top position (and tilt if applicable) is reached.  <br /></td></tr>
 <tr class="memitem:a64b31d39bcf8a04c739003c4fb92eb32 pub_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a64b31d39bcf8a04c739003c4fb92eb32"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Control_1_1RollerShutterInterface.html#a64b31d39bcf8a04c739003c4fb92eb32">isBottomReached</a> () const</td></tr>
@@ -365,6 +368,8 @@ void&#160;</td><td class="memItemRight"><b>setOpenCloseTime</b> (uint32_t newClo
 void&#160;</td><td class="memItemRight"><b>setTiltingTime</b> (uint32_t newTiltingTimeMs, bool local=true)</td></tr>
 <tr class="memitem:ac5d04b16c4e9481a49542f5798506be0 pub_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_ac5d04b16c4e9481a49542f5798506be0"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>setTiltControlType</b> (uint8_t newTiltControlType, bool local=true)</td></tr>
+<tr class="memitem:af6a480c2f532f7bc04b0821aa0762b2d pub_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_af6a480c2f532f7bc04b0821aa0762b2d"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>applyFacadeBlindTimingConfig</b> (uint32_t openingTimeMs, uint32_t closingTimeMs, uint32_t tiltingTimeMs, uint32_t tiltControlType, bool local=true)</td></tr>
 <tr class="memitem:a914a752c9e9a240605d5c560cbb12d0d pub_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a914a752c9e9a240605d5c560cbb12d0d"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>setCalibrationFailed</b> (bool value)</td></tr>
 <tr class="memitem:a09bd6c59e25728475f583ee8981186c2 pub_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a09bd6c59e25728475f583ee8981186c2"><td class="memItemLeft">
@@ -553,6 +558,8 @@ void&#160;</td><td class="memItemRight"><b>initGpio</b> (const <a class="el" hre
 &#160;</td><td class="memItemRight"><b>RollerShutterInterface</b> (bool tiltFunctionsEnabled, <a class="el" href="classSupla_1_1Channel.html">Supla::Channel</a> &amp;externalChannel, ElementMode mode)</td></tr>
 <tr class="memitem:abe0da8fbeb639bb026f69a2da3372448 pro_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_abe0da8fbeb639bb026f69a2da3372448"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>loadRollerShutterConfigOnly</b> ()</td></tr>
+<tr class="memitem:ad28bcd5707b2183b52a06abc115285d4 pro_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_ad28bcd5707b2183b52a06abc115285d4"><td class="memItemLeft">
+void&#160;</td><td class="memItemRight"><b>validateTiltConfigAfterLoad</b> ()</td></tr>
 <tr class="memitem:a868946f1ec87052d688a034402cd2f94 pro_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a868946f1ec87052d688a034402cd2f94"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>purgeRollerShutterConfigOnly</b> ()</td></tr>
 <tr class="memitem:a2e8ab6884c8760c36a6931256c03804c pro_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a2e8ab6884c8760c36a6931256c03804c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Control_1_1RollerShutterInterface.html#a2e8ab6884c8760c36a6931256c03804c">setupButtonActions</a> (<a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *button, bool upButton, bool asInternal)</td></tr>
@@ -571,6 +578,8 @@ void&#160;</td><td class="memItemRight"><b>setCalibrate</b> (bool value)</td></t
 void&#160;</td><td class="memItemRight"><b>printConfig</b> () const</td></tr>
 <tr class="memitem:a07e8d7842b538fca36f899ebd867cdde pro_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a07e8d7842b538fca36f899ebd867cdde"><td class="memItemLeft">
 uint32_t&#160;</td><td class="memItemRight"><b>getTimeMarginValue</b> (uint32_t fullTime) const</td></tr>
+<tr class="memitem:af9babefd15f47cea2853bcdf687d55b6 pro_methods_classSupla_1_1Control_1_1RollerShutterInterface" id="r_af9babefd15f47cea2853bcdf687d55b6"><td class="memItemLeft">
+void&#160;</td><td class="memItemRight"><b>logIgnoredTiltOnlyCommand</b> (int tilt)</td></tr>
 <tr class="inherit_header pro_methods_classSupla_1_1ChannelElement"><td colspan="2">Protected Member Functions inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:a11bc90f03052ef0754c4c47cc32c98e4 pro_methods_classSupla_1_1ChannelElement" id="r_a11bc90f03052ef0754c4c47cc32c98e4"><td class="memItemLeft">
 &#160;</td><td class="memItemRight"><b>ChannelElement</b> (<a class="el" href="classChannel.html">Channel</a> &amp;externalChannel, ElementMode mode)</td></tr>
@@ -600,6 +609,12 @@ uint32_t&#160;</td><td class="memItemRight"><b>lastMovementStartTime</b> = 0</td
 uint32_t&#160;</td><td class="memItemRight"><b>doNothingTime</b> = 0</td></tr>
 <tr class="memitem:a968d95c2dbf09509076cebd0f48ac8e1 pro_attribs_classSupla_1_1Control_1_1RollerShutter" id="r_a968d95c2dbf09509076cebd0f48ac8e1"><td class="memItemLeft">
 uint32_t&#160;</td><td class="memItemRight"><b>operationTimeoutMs</b> = 0</td></tr>
+<tr class="memitem:af42fec612b55ce7044a4776c1587974b pro_attribs_classSupla_1_1Control_1_1RollerShutter" id="r_af42fec612b55ce7044a4776c1587974b"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>invalidTiltConfigurationWarningLogged</b> = false</td></tr>
+<tr class="memitem:aecd0f9298dc829f6a59e58df5bfecbc3 pro_attribs_classSupla_1_1Control_1_1RollerShutter" id="r_aecd0f9298dc829f6a59e58df5bfecbc3"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>invalidTiltConfigurationFallbackActive</b> = false</td></tr>
+<tr class="memitem:a36a30a560b91a88b98eb4b2ef9a6bfdd pro_attribs_classSupla_1_1Control_1_1RollerShutter" id="r_a36a30a560b91a88b98eb4b2ef9a6bfdd"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>invalidTiltOnlyRuntimeWarningLogged</b> = false</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Control_1_1RollerShutterInterface"><td colspan="2">Protected Attributes inherited from <a class="el" href="classSupla_1_1Control_1_1RollerShutterInterface.html">Supla::Control::RollerShutterInterface</a></td></tr>
 <tr class="memitem:a4ccf9414040d93af7e5a73d18103e170 pro_attribs_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a4ccf9414040d93af7e5a73d18103e170"><td class="memItemLeft">
 uint8_t&#160;</td><td class="memItemRight"><b>flags</b> = 0</td></tr>
@@ -627,6 +642,8 @@ int16_t&#160;</td><td class="memItemRight"><b>lastPositionBeforeMovement</b> = U
 int16_t&#160;</td><td class="memItemRight"><b>lastTiltBeforeMovement</b> = UNKNOWN_POSITION</td></tr>
 <tr class="memitem:aaa228fff3f28fa744e282f6cd8bb0dc6 pro_attribs_classSupla_1_1Control_1_1RollerShutterInterface" id="r_aaa228fff3f28fa744e282f6cd8bb0dc6"><td class="memItemLeft">
 bool&#160;</td><td class="memItemRight"><b>newTargetPositionAvailable</b> = false</td></tr>
+<tr class="memitem:a7f1514cdb9317b5f326d60c7453e25c5 pro_attribs_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a7f1514cdb9317b5f326d60c7453e25c5"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>invalidTiltOnlyCommandWarningLogged</b> = false</td></tr>
 <tr class="memitem:ae6a4f2c8d0ed5698bc37a11cec1947e2 pro_attribs_classSupla_1_1Control_1_1RollerShutterInterface" id="r_ae6a4f2c8d0ed5698bc37a11cec1947e2"><td class="memItemLeft">
 <a class="el" href="structSupla_1_1Control_1_1RollerShutterConfig.html">RollerShutterConfig</a>&#160;</td><td class="memItemRight"><b>rsConfig</b></td></tr>
 <tr class="memitem:a528a83166f7d48c3bbe5b789dbbd1a35 pro_attribs_classSupla_1_1Control_1_1RollerShutterInterface" id="r_a528a83166f7d48c3bbe5b789dbbd1a35"><td class="memItemLeft">
@@ -641,6 +658,8 @@ uint32_t&#160;</td><td class="memItemRight"><b>openingTimeMs</b> = 0</td></tr>
 uint32_t&#160;</td><td class="memItemRight"><b>calibrationTime</b> = 0</td></tr>
 <tr class="memitem:abef42dacc86b7230f4f328bfd9f33159 pro_attribs_classSupla_1_1Control_1_1RollerShutterInterface" id="r_abef42dacc86b7230f4f328bfd9f33159"><td class="memItemLeft">
 uint32_t&#160;</td><td class="memItemRight"><b>lastUpdateTime</b> = 0</td></tr>
+<tr class="memitem:ae8075cf67e6e5aa2fade9843a2c5eca0 pro_attribs_classSupla_1_1Control_1_1RollerShutterInterface" id="r_ae8075cf67e6e5aa2fade9843a2c5eca0"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>rollerShutterStateLoaded</b> = false</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1ChannelElement"><td colspan="2">Protected Attributes inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:acf9492d476e221993712c956b5c020fe pro_attribs_classSupla_1_1ChannelElement" id="r_acf9492d476e221993712c956b5c020fe"><td class="memItemLeft">
 unsigned char&#160;</td><td class="memItemRight"><b>ownedChannelStorage</b> [sizeof(<a class="el" href="classChannel.html">Channel</a>)] = {}</td></tr>

@@ -183,6 +183,7 @@ Public Member Functions</h2></td></tr>
 &#160;</td><td class="memItemRight"><b>RollerShutterParameters</b> (<a class="el" href="classSupla_1_1Control_1_1RollerShutter.html">Supla::Control::RollerShutter</a> *rollerShutter=nullptr)</td></tr>
 <tr class="memitem:a1b5d0cef288a990ba5e5fa3f084bcdb1" id="r_a1b5d0cef288a990ba5e5fa3f084bcdb1"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1b5d0cef288a990ba5e5fa3f084bcdb1">send</a> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *sender) override</td></tr>
 <tr class="memitem:a9c47968465fda43036496332eb0b2f73" id="r_a9c47968465fda43036496332eb0b2f73"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a9c47968465fda43036496332eb0b2f73">handleResponse</a> (const char *key, const char *value) override</td></tr>
+<tr class="memitem:a852bfd9496683ae31567ff3419dc0718" id="r_a852bfd9496683ae31567ff3419dc0718"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a852bfd9496683ae31567ff3419dc0718">onProcessingEnd</a> () override</td></tr>
 <tr class="memitem:a6373e48ff4da551e6eb677767f7cf592" id="r_a6373e48ff4da551e6eb677767f7cf592"><td class="memItemLeft"><a id="a6373e48ff4da551e6eb677767f7cf592" name="a6373e48ff4da551e6eb677767f7cf592"></a>
 void&#160;</td><td class="memItemRight"><b>setRsPtr</b> (<a class="el" href="classSupla_1_1Control_1_1RollerShutter.html">Supla::Control::RollerShutter</a> *rs)</td></tr>
 <tr class="memitem:a94db17dcf263143ecdb4a4de6369082d" id="r_a94db17dcf263143ecdb4a4de6369082d"><td class="memItemLeft"><a id="a94db17dcf263143ecdb4a4de6369082d" name="a94db17dcf263143ecdb4a4de6369082d"></a>
@@ -198,8 +199,6 @@ void&#160;</td><td class="memItemRight"><b>setDynamicVisibilityFromChannelFuncti
 HtmlElement *&#160;</td><td class="memItemRight"><b>next</b> ()</td></tr>
 <tr class="memitem:ac63eca44afdd7d35ba6f71a96d9dae68 pub_methods_classSupla_1_1HtmlElement" id="r_ac63eca44afdd7d35ba6f71a96d9dae68"><td class="memItemLeft">
 &#160;</td><td class="memItemRight"><b>HtmlElement</b> (HtmlSection section=HTML_SECTION_FORM)</td></tr>
-<tr class="memitem:a51c7c2b2c574d458376c5d78f9726d3b pub_methods_classSupla_1_1HtmlElement" id="r_a51c7c2b2c574d458376c5d78f9726d3b"><td class="memItemLeft">
-virtual void&#160;</td><td class="memItemRight"><b>onProcessingEnd</b> ()</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -213,6 +212,18 @@ bool&#160;</td><td class="memItemRight"><b>renderContainer</b> = true</td></tr>
 bool&#160;</td><td class="memItemRight"><b>showOnlyForRollerFunction</b> = false</td></tr>
 <tr class="memitem:ab667cdf4735d6a108392616e1d43fc4e" id="r_ab667cdf4735d6a108392616e1d43fc4e"><td class="memItemLeft"><a id="ab667cdf4735d6a108392616e1d43fc4e" name="ab667cdf4735d6a108392616e1d43fc4e"></a>
 bool&#160;</td><td class="memItemRight"><b>dynamicVisibilityFromChannelFunction</b> = false</td></tr>
+<tr class="memitem:a0d2dbe2365518d88bf3d9e6a6685a37c" id="r_a0d2dbe2365518d88bf3d9e6a6685a37c"><td class="memItemLeft"><a id="a0d2dbe2365518d88bf3d9e6a6685a37c" name="a0d2dbe2365518d88bf3d9e6a6685a37c"></a>
+bool&#160;</td><td class="memItemRight"><b>pendingFacadeBlindTiming</b> = false</td></tr>
+<tr class="memitem:a2b5ab463414fd48572f8348b7c094334" id="r_a2b5ab463414fd48572f8348b7c094334"><td class="memItemLeft"><a id="a2b5ab463414fd48572f8348b7c094334" name="a2b5ab463414fd48572f8348b7c094334"></a>
+bool&#160;</td><td class="memItemRight"><b>pendingFacadeBlindTimingInvalid</b> = false</td></tr>
+<tr class="memitem:ae3856f970f6be403b0c43d7cd9368a08" id="r_ae3856f970f6be403b0c43d7cd9368a08"><td class="memItemLeft"><a id="ae3856f970f6be403b0c43d7cd9368a08" name="ae3856f970f6be403b0c43d7cd9368a08"></a>
+uint32_t&#160;</td><td class="memItemRight"><b>pendingOpeningTimeMs</b> = 0</td></tr>
+<tr class="memitem:ae432a38f79923fbb31cfbb179f875866" id="r_ae432a38f79923fbb31cfbb179f875866"><td class="memItemLeft"><a id="ae432a38f79923fbb31cfbb179f875866" name="ae432a38f79923fbb31cfbb179f875866"></a>
+uint32_t&#160;</td><td class="memItemRight"><b>pendingClosingTimeMs</b> = 0</td></tr>
+<tr class="memitem:afcd5507272113cd68870d6efaf76b96a" id="r_afcd5507272113cd68870d6efaf76b96a"><td class="memItemLeft"><a id="afcd5507272113cd68870d6efaf76b96a" name="afcd5507272113cd68870d6efaf76b96a"></a>
+uint32_t&#160;</td><td class="memItemRight"><b>pendingTiltingTimeMs</b> = 0</td></tr>
+<tr class="memitem:ae2de65aeacc45253a3d4c48c6ecd11dc" id="r_ae2de65aeacc45253a3d4c48c6ecd11dc"><td class="memItemLeft"><a id="ae2de65aeacc45253a3d4c48c6ecd11dc" name="ae2de65aeacc45253a3d4c48c6ecd11dc"></a>
+uint32_t&#160;</td><td class="memItemRight"><b>pendingTiltControlType</b> = SUPLA_TILT_CONTROL_TYPE_UNKNOWN</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1HtmlElement"><td colspan="2">Protected Attributes inherited from <a class="el" href="classSupla_1_1HtmlElement.html">Supla::HtmlElement</a></td></tr>
 <tr class="memitem:ac7551ddb937ac9e3ca6059d9eb804952 pro_attribs_classSupla_1_1HtmlElement" id="r_ac7551ddb937ac9e3ca6059d9eb804952"><td class="memItemLeft">
 HtmlElement *&#160;</td><td class="memItemRight"><b>nextPtr</b> = nullptr</td></tr>
@@ -254,6 +265,33 @@ static HtmlElement *&#160;</td><td class="memItemRight"><b>firstPtr</b> = nullpt
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>value</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1HtmlElement.html">Supla::HtmlElement</a>.</p>
+
+</div>
+</div>
+<a id="a852bfd9496683ae31567ff3419dc0718" name="a852bfd9496683ae31567ff3419dc0718"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a852bfd9496683ae31567ff3419dc0718">&#9670;&#160;</a></span>onProcessingEnd()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void RollerShutterParameters::onProcessingEnd </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>

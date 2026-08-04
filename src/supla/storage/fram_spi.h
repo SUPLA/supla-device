@@ -77,7 +77,7 @@ class FramSpi : public Storage {
 
       uint8_t sizeMax = (size > MaxLogBytes) ? MaxLogBytes : size;
 
-      char logBuffer[LogBufferSize];
+      char logBuffer[LogBufferSize] = {};
       int logSize = 0;
 
       for (uint8_t i = 0; i < sizeMax && logSize < LogBufferSize - 1; i++) {
@@ -86,7 +86,8 @@ class FramSpi : public Storage {
       }
 
       SUPLA_LOG_INFO(
-          "FRAM: Read %d bytes [%s] (offset %d)", sizeMax, logBuffer, offset);
+          "EEPROM: Read %d bytes, show first %d bytes [%s] (offset %d)",
+          size, sizeMax, logBuffer, offset);
     }
 
     return size;

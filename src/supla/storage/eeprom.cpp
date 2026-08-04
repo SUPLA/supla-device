@@ -67,7 +67,7 @@ int Eeprom::readStorage(unsigned int offset,
 
     uint8_t sizeMax = (size > MaxLogBytes) ? MaxLogBytes : size;
 
-    char logBuffer[LogBufferSize];
+    char logBuffer[LogBufferSize] = {};
     int logSize = 0;
 
     for (uint8_t i = 0; i < sizeMax && logSize < LogBufferSize - 1; i++) {
@@ -76,7 +76,8 @@ int Eeprom::readStorage(unsigned int offset,
     }
 
     SUPLA_LOG_INFO(
-        "EEPROM: Read %d bytes [%s] (offset %d)", sizeMax, logBuffer, offset);
+        "EEPROM: Read %d bytes, show first %d bytes [%s] (offset %d)",
+        size, sizeMax, logBuffer, offset);
   }
 
   return size;

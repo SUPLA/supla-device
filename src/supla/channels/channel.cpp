@@ -1638,55 +1638,55 @@ bool Channel::isFunctionValid(uint32_t function) const {
     case ChannelType::RELAY: {
       switch (function) {
         case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
-          return getFuncList() & SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK;
+          return getFuncList() & SUPLA_BIT_FUNC_CONTROLLINGTHEGATEWAYLOCK;
         }
         case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE: {
-          return getFuncList() & SUPLA_CHANNELFNC_CONTROLLINGTHEGATE;
+          return getFuncList() & SUPLA_BIT_FUNC_CONTROLLINGTHEGATE;
         }
         case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR: {
-          return getFuncList() & SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR;
+          return getFuncList() & SUPLA_BIT_FUNC_CONTROLLINGTHEGARAGEDOOR;
         }
         case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK: {
-          return getFuncList() & SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK;
+          return getFuncList() & SUPLA_BIT_FUNC_CONTROLLINGTHEDOORLOCK;
         }
         case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER: {
-          return getFuncList() & SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER;
+          return getFuncList() & SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER;
         }
         case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
-          return getFuncList() & SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW;
+          return getFuncList() & SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW;
         }
         case SUPLA_CHANNELFNC_POWERSWITCH: {
-          return getFuncList() & SUPLA_CHANNELFNC_POWERSWITCH;
+          return getFuncList() & SUPLA_BIT_FUNC_POWERSWITCH;
         }
         case SUPLA_CHANNELFNC_LIGHTSWITCH: {
-          return getFuncList() & SUPLA_CHANNELFNC_LIGHTSWITCH;
+          return getFuncList() & SUPLA_BIT_FUNC_LIGHTSWITCH;
         }
         case SUPLA_CHANNELFNC_STAIRCASETIMER: {
-          return getFuncList() & SUPLA_CHANNELFNC_STAIRCASETIMER;
+          return getFuncList() & SUPLA_BIT_FUNC_STAIRCASETIMER;
         }
         case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND: {
-          return getFuncList() & SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND;
+          return getFuncList() & SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND;
         }
         case SUPLA_CHANNELFNC_TERRACE_AWNING: {
-          return getFuncList() & SUPLA_CHANNELFNC_TERRACE_AWNING;
+          return getFuncList() & SUPLA_BIT_FUNC_TERRACE_AWNING;
         }
         case SUPLA_CHANNELFNC_PROJECTOR_SCREEN: {
-          return getFuncList() & SUPLA_CHANNELFNC_PROJECTOR_SCREEN;
+          return getFuncList() & SUPLA_BIT_FUNC_PROJECTOR_SCREEN;
         }
         case SUPLA_CHANNELFNC_CURTAIN: {
-          return getFuncList() & SUPLA_CHANNELFNC_CURTAIN;
+          return getFuncList() & SUPLA_BIT_FUNC_CURTAIN;
         }
         case SUPLA_CHANNELFNC_VERTICAL_BLIND: {
-          return getFuncList() & SUPLA_CHANNELFNC_VERTICAL_BLIND;
+          return getFuncList() & SUPLA_BIT_FUNC_VERTICAL_BLIND;
         }
         case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR: {
-          return getFuncList() & SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR;
+          return getFuncList() & SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR;
         }
         case SUPLA_CHANNELFNC_PUMPSWITCH: {
-          return getFuncList() & SUPLA_CHANNELFNC_PUMPSWITCH;
+          return getFuncList() & SUPLA_BIT_FUNC_PUMPSWITCH;
         }
         case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
-          return getFuncList() & SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH;
+          return getFuncList() & SUPLA_BIT_FUNC_HEATORCOLDSOURCESWITCH;
         }
         default: {
           return false;

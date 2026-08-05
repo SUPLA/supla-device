@@ -72,6 +72,7 @@ enum HADeviceClass {
   HADeviceClass_Curtain,
   HADeviceClass_Shutter,
   HADeviceClass_Shade,
+  HADeviceClass_GarageDoor,
 };
 
 class HvacMqttHandler;

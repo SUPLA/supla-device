@@ -1748,7 +1748,7 @@ TEST_F(MqttChannelDispatchTests, publishHADiscoveryCoversRelayImpulseVariants) {
 
   const std::vector<Case> cases = {
       {SUPLA_CHANNELFNC_CONTROLLINGTHEGATE, "gate"},
-      {SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR, "garage_door"},
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR, "garage"},
       {SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK, "door"},
       {SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK, "door"},
   };
@@ -1975,7 +1975,7 @@ TEST_F(MqttChannelDispatchTests,
        false},
       {SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR,
        SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR,
-       "garage_door",
+       "garage",
        false},
       {SUPLA_CHANNELFNC_CURTAIN, SUPLA_BIT_FUNC_CURTAIN, "curtain", false},
       {SUPLA_CHANNELFNC_PROJECTOR_SCREEN,

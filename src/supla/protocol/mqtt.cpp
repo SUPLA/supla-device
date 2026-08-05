@@ -1168,7 +1168,7 @@ void Mqtt::publishHADiscoveryBinarySensor(Supla::Element *element) {
     }
     case SUPLA_CHANNELFNC_OPENINGSENSOR_GATE:
     case SUPLA_CHANNELFNC_OPENINGSENSOR_GARAGEDOOR: {
-      deviceClass = HADeviceClass_Garage;
+      deviceClass = HADeviceClass_GarageDoor;
       break;
     }
     case SUPLA_CHANNELFNC_FLOOD_SENSOR:
@@ -2446,6 +2446,8 @@ const char *Supla::Protocol::Mqtt::getDeviceClassStr(
     case HADeviceClass_Door:
       return ",\"dev_cla\":\"door\"";
     case HADeviceClass_Garage:
+      return ",\"dev_cla\":\"garage\"";
+    case HADeviceClass_GarageDoor:
       return ",\"dev_cla\":\"garage_door\"";
     case HADeviceClass_Moisture:
       return ",\"dev_cla\":\"moisture\"";

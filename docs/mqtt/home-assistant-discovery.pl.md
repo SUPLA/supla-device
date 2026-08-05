@@ -72,7 +72,7 @@ Przykład 2:
   "payload_open": "true",
   "payload_close": null,
   "payload_stop": null,
-  "dev_cla": "garage_door"
+  "dev_cla": "garage"
 }
 ```
 
@@ -405,7 +405,7 @@ Przykład 4:
   "pos_open": 0,
   "pos_clsd": 100,
   "pos_tpl": "{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}",
-  "dev_cla": "garage_door"
+  "dev_cla": "garage"
 }
 ```
 

@@ -1703,7 +1703,7 @@
         {
           "direction": "device_to_broker",
           "operation": "publish",
-          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Garage door\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/set/on\",\"payload_open\":\"true\",\"payload_close\":null,\"payload_stop\":null,\"dev_cla\":\"garage_door\"}",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Garage door\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"stat_t\":\"~/state/on\",\"cmd_t\":\"~/set/on\",\"payload_open\":\"true\",\"payload_close\":null,\"payload_stop\":null,\"dev_cla\":\"garage\"}",
           "qos": 0,
           "retain": true,
           "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",
@@ -1851,7 +1851,7 @@
         {
           "direction": "device_to_broker",
           "operation": "publish",
-          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Roller garage door\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"cmd_t\":\"~/execute_action\",\"pl_open\":\"REVEAL\",\"pl_cls\":\"SHUT\",\"pl_stop\":\"STOP\",\"set_pos_t\":\"~/set/closing_percentage\",\"pos_t\":\"~/state/shut\",\"pos_open\":0,\"pos_clsd\":100,\"pos_tpl\":\"{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}\",\"dev_cla\":\"garage_door\"}",
+          "payload_example": "{\"avty_t\":\"prefix/supla/devices/my-device-0405ab/state/connected\",\"pl_avail\":\"true\",\"pl_not_avail\":\"false\",\"~\":\"prefix/supla/devices/my-device-0405ab/channels/0\",\"dev\":{\"ids\":\"my-device-0405ab\",\"mf\":\"Unknown\",\"name\":\"My Device\",\"sw\":\"\"},\"name\":\"#0 Roller garage door\",\"uniq_id\":\"supla_000000000000_0_0\",\"qos\":0,\"ret\":false,\"opt\":false,\"cmd_t\":\"~/execute_action\",\"pl_open\":\"REVEAL\",\"pl_cls\":\"SHUT\",\"pl_stop\":\"STOP\",\"set_pos_t\":\"~/set/closing_percentage\",\"pos_t\":\"~/state/shut\",\"pos_open\":0,\"pos_clsd\":100,\"pos_tpl\":\"{% if value is defined %}{% if value | int < 0 %}0{% elif value | int > 100 %}100{% else %}{{value | int}}{% endif %}{% else %}0{% endif %}\",\"dev_cla\":\"garage\"}",
           "qos": 0,
           "retain": true,
           "topic": "homeassistant/cover/supla/000000000000_{channel}_{sub_id}/config",

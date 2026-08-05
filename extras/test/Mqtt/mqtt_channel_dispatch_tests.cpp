@@ -1146,7 +1146,18 @@ TEST_F(MqttChannelDispatchTests, subscribeChannelCoversControllableTypes) {
                                 facadeBlind.getChannelNumber(),
                                 "execute_action")),
                             0));
-  mqtt.subscribeChannel(facadeBlind.getChannelNumber());
+  {
+    MQTT_DOC_SCENARIO(
+        mqtt.documentationRecorder(),
+        "roller_shutter.facade_blind.commands",
+        "Facade blind command topics",
+        SUPLA_CHANNELTYPE_RELAY,
+        SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND,
+        facadeBlind.getChannelNumber(),
+        "public",
+        kExpectedPrefix);
+    mqtt.subscribeChannel(facadeBlind.getChannelNumber());
+  }
 
   EXPECT_CALL(mqtt,
               subscribeTest(StrEq(expectedChannelTopic(

@@ -134,6 +134,20 @@ Włącza, wyłącza lub przełącza bieżący stan przekaźnika. Wielkość lite
 
 Przykład: `turn_on`
 
+#### Ustaw procent zamknięcia
+
+- Topik: `{prefix}/channels/{channel}/set/closing_percentage`
+- Typ payloadu: `integer`
+- Zakres: `0..100`
+- Jednostka: `%`
+- QoS: `0`
+- Retain: `false`
+- Dostępność: Rolety i zgodne funkcje osłon.
+
+Ustawia pozycję osłony, gdzie 0 oznacza pełne otwarcie, a 100 pełne zamknięcie.
+
+Przykład: `10`
+
 #### Ustaw stan przekaźnika
 
 - Topik: `{prefix}/channels/{channel}/set/on`
@@ -148,6 +162,20 @@ Zmienia stan wyjścia przekaźnikowego. Wielkość liter nie ma znaczenia.
 Obecny parser interpretuje każdą wartość inną niż `1`, `yes` lub `true` jako OFF. Integracje powinny używać wyłącznie udokumentowanych wartości.
 
 Przykład: `true`
+
+#### Ustaw nachylenie
+
+- Topik: `{prefix}/channels/{channel}/set/tilt`
+- Typ payloadu: `integer`
+- Zakres: `0..100`
+- Jednostka: `%`
+- QoS: `0`
+- Retain: `false`
+- Dostępność: Funkcje osłon obsługujące nachylenie lameli.
+
+Ustawia procentowe nachylenie lameli.
+
+Przykład: `20`
 
 ### Publikowane topiki
 
@@ -239,20 +267,6 @@ Przykład: `reveal`
 Ustawia pozycję osłony, gdzie 0 oznacza pełne otwarcie, a 100 pełne zamknięcie.
 
 Przykład: `10`
-
-#### Ustaw nachylenie
-
-- Topik: `{prefix}/channels/{channel}/set/tilt`
-- Typ payloadu: `integer`
-- Zakres: `0..100`
-- Jednostka: `%`
-- QoS: `0`
-- Retain: `false`
-- Dostępność: Funkcje osłon obsługujące nachylenie lameli.
-
-Ustawia procentowe nachylenie lameli.
-
-Przykład: `20`
 
 ### Publikowane topiki
 

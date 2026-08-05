@@ -135,6 +135,20 @@ Switches the relay on, off, or toggles its current state. Matching is case-insen
 
 Example: `turn_on`
 
+#### Set closing percentage
+
+- Topic: `{prefix}/channels/{channel}/set/closing_percentage`
+- Payload type: `integer`
+- Range: `0..100`
+- Unit: `%`
+- QoS: `0`
+- Retain: `false`
+- Availability: Roller shutters and compatible cover functions.
+
+Sets the cover position, where 0 is fully open and 100 is fully closed.
+
+Example: `10`
+
 #### Set relay state
 
 - Topic: `{prefix}/channels/{channel}/set/on`
@@ -149,6 +163,20 @@ Changes a switch-like relay output. Matching is case-insensitive.
 The current parser treats any value other than `1`, `yes`, or `true` as OFF. Integrations should use only the documented values.
 
 Example: `true`
+
+#### Set tilt
+
+- Topic: `{prefix}/channels/{channel}/set/tilt`
+- Payload type: `integer`
+- Range: `0..100`
+- Unit: `%`
+- QoS: `0`
+- Retain: `false`
+- Availability: Cover functions with tilt support.
+
+Sets the slat tilt percentage.
+
+Example: `20`
 
 ### Published topics
 
@@ -240,20 +268,6 @@ Example: `reveal`
 Sets the cover position, where 0 is fully open and 100 is fully closed.
 
 Example: `10`
-
-#### Set tilt
-
-- Topic: `{prefix}/channels/{channel}/set/tilt`
-- Payload type: `integer`
-- Range: `0..100`
-- Unit: `%`
-- QoS: `0`
-- Retain: `false`
-- Availability: Cover functions with tilt support.
-
-Sets the slat tilt percentage.
-
-Example: `20`
 
 ### Published topics
 

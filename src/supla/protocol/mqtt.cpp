@@ -2706,6 +2706,9 @@ void Mqtt::processRollerShutterRequest(const char *part,
       TSD_DeviceCalCfgRequest request = {};
       request.ChannelNumber = channelNumber;
       request.Command = SUPLA_CALCFG_CMD_RECALIBRATE;
+      // MQTT broker credentials and ACLs are the authorization boundary here.
+      // CALCFG requires this flag for recalibration, so it is set intentionally
+      // for the locally generated MQTT request.
       request.SuperUserAuthorized = 1;
       element->handleCalcfgFromServer(&request);
     } else {

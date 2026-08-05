@@ -321,7 +321,144 @@ struct RollerShutterStateDataTests {
   uint32_t openingTimeMs;
   int8_t currentPosition;  // 0 - closed; 100 - opened
 };
+
+struct RollerShutterWithTiltStateDataTests {
+  uint32_t closingTimeMs;
+  uint32_t openingTimeMs;
+  int8_t currentPosition;
+  int8_t tiltPosition;
+};
 #pragma pack(pop)
+
+TEST_F(RollerShutterFixture,
+       isCalibratedRequiresKnownPositionWithConfiguredTimes) {
+  Supla::Control::RollerShutterInterface rs;
+
+  rs.setOpenCloseTime(10000, 10000);
+  rs.setCalibrationFinished();
+
+  EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);
+  EXPECT_FALSE(rs.isCalibrationRequested());
+  EXPECT_FALSE(rs.isCalibrated());
+}
+
+TEST_F(RollerShutterFixture,
+       unknownStandardStateRequestsCalibrationAndAbsoluteOpenStartsOpening) {
+  StorageMock storage;
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown);
+
+  RollerShutterStateDataTests state = {.closingTimeMs = 10000,
+                                      .openingTimeMs = 10000,
+                                      .currentPosition = UNKNOWN_POSITION};
+  storage.defaultInitialization(sizeof(state));
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(state), _))
+      .WillOnce([&state](uint32_t, unsigned char *data, int, bool) {
+        memcpy(data, &state, sizeof(state));
+        return sizeof(state);
+      });
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
+
+  EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
+  EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
+  EXPECT_CALL(ioMock, pinMode(gpioDown, OUTPUT));
+
+  Supla::Storage::LoadStateStorage();
+  rs.onInit();
+
+  EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);
+  EXPECT_FALSE(rs.isCalibrated());
+  EXPECT_TRUE(rs.isCalibrationRequested());
+
+  TSD_SuplaChannelNewValue newValue = {};
+  newValue.DurationMS = (100 << 16) | 100;
+  newValue.value[0] = 10;  // absolute OPEN target
+
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
+  EXPECT_CALL(ioMock, digitalWrite(gpioUp, 1));
+
+  rs.handleNewValueFromServer(&newValue);
+  rs.onTimer();
+
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::UP_DIR));
+}
+
+TEST_F(RollerShutterFixture,
+       knownStandardStateRemainsCalibratedAndAbsoluteOpenStartsOpening) {
+  StorageMock storage;
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown);
+
+  RollerShutterStateDataTests state = {
+      .closingTimeMs = 10000, .openingTimeMs = 10000, .currentPosition = 50};
+  storage.defaultInitialization(sizeof(state));
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(state), _))
+      .WillOnce([&state](uint32_t, unsigned char *data, int, bool) {
+        memcpy(data, &state, sizeof(state));
+        return sizeof(state);
+      });
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
+
+  EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
+  EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
+  EXPECT_CALL(ioMock, pinMode(gpioDown, OUTPUT));
+
+  Supla::Storage::LoadStateStorage();
+  rs.onInit();
+
+  EXPECT_EQ(rs.getCurrentPosition(), 50);
+  EXPECT_TRUE(rs.isCalibrated());
+  EXPECT_FALSE(rs.isCalibrationRequested());
+
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
+  EXPECT_CALL(ioMock, digitalWrite(gpioUp, 1));
+
+  rs.open();
+  rs.onTimer();
+
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::UP_DIR));
+}
+
+TEST_F(RollerShutterFixture,
+       unknownTiltStateRequestsCalibrationAndClearsRestoredTilt) {
+  StorageMock storage;
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown, true, true);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setTiltingTime(1000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+
+  RollerShutterWithTiltStateDataTests state = {
+      .closingTimeMs = 10000,
+      .openingTimeMs = 10000,
+      .currentPosition = UNKNOWN_POSITION,
+      .tiltPosition = 40};
+  storage.defaultInitialization(sizeof(state));
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(state), _))
+      .WillOnce([&state](uint32_t, unsigned char *data, int, bool) {
+        memcpy(data, &state, sizeof(state));
+        return sizeof(state);
+      });
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
+
+  EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
+  EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
+  EXPECT_CALL(ioMock, pinMode(gpioDown, OUTPUT));
+
+  Supla::Storage::LoadStateStorage();
+  rs.onInit();
+
+  EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);
+  EXPECT_EQ(rs.getCurrentTilt(), UNKNOWN_POSITION);
+  EXPECT_FALSE(rs.isCalibrated());
+  EXPECT_TRUE(rs.isCalibrationRequested());
+}
 
 TEST_F(RollerShutterFixture, notCalibratedStartup) {
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);

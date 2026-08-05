@@ -673,11 +673,12 @@ bool RollerShutterInterface::isCalibrationRequested() const {
 }
 
 bool RollerShutterInterface::isCalibrated() const {
-  if (isTimeSettingAvailable()) {
-    return !getCalibrate() && openingTimeMs != 0 && closingTimeMs != 0;
-  } else {
-    return !getCalibrate() && currentPosition != UNKNOWN_POSITION;
+  if (getCalibrate() || getCurrentPosition() == UNKNOWN_POSITION) {
+    return false;
   }
+
+  return !isTimeSettingAvailable() ||
+         (openingTimeMs != 0 && closingTimeMs != 0);
 }
 
 bool RollerShutterInterface::isCalibrationInProgress() const {
@@ -776,10 +777,12 @@ void RollerShutterInterface::onLoadState() {
       openingTimeMs = ClampRsMotionTime(
           data.openingTimeMs, "opening time", channel.getChannelNumber());
       currentPosition = data.currentPosition * 100;
-      if (currentPosition >= 0) {
+      currentTilt = data.tiltPosition * 100;
+      if (getCurrentPosition() == UNKNOWN_POSITION) {
+        setCalibrationNeeded();
+      } else {
         setCalibrate(false);
       }
-      currentTilt = data.tiltPosition * 100;
       SUPLA_LOG_DEBUG(
           "RS[%d] settings restored from storage. Opening time: %d "
           "ms; closing time: %d ms. Position: %d, Tilt: %d",
@@ -799,7 +802,9 @@ void RollerShutterInterface::onLoadState() {
       openingTimeMs = ClampRsMotionTime(
           data.openingTimeMs, "opening time", channel.getChannelNumber());
       currentPosition = data.currentPosition * 100;
-      if (currentPosition >= 0) {
+      if (getCurrentPosition() == UNKNOWN_POSITION) {
+        setCalibrationNeeded();
+      } else {
         setCalibrate(false);
       }
       SUPLA_LOG_DEBUG(

@@ -328,6 +328,9 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   void setCalibrationLost(bool value);
   void setMotorProblem(bool value);
 
+ private:
+  void clearTiltConfig();
+
  protected:
   RollerShutterInterface(bool tiltFunctionsEnabled,
                          Supla::Channel &externalChannel,

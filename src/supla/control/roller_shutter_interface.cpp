@@ -1028,8 +1028,7 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
         if (rsConfig.timeMargin > 101) {
           rsConfig.timeMargin = 101;
         }
-        // cleanup tilt config for standard RS functions
-        tiltConfig.clear();
+        clearTiltConfig();
         saveConfig();
         printConfig();
       }
@@ -1236,6 +1235,18 @@ void RollerShutterInterface::printConfig() const {
             ? "STANDS_IN_POSITION_WHILE_TILTING"
             : "UNKNOWN",
         tiltConfig.tiltControlType);
+  }
+}
+
+void RollerShutterInterface::clearTiltConfig() {
+  tiltConfig.clear();
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, Supla::ConfigTag::TiltConfigTag);
+    if (cfg->eraseKey(key)) {
+      cfg->saveWithDelay(2000);
+    }
   }
 }
 

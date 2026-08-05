@@ -689,6 +689,139 @@ TEST_F(RollerShutterInterfaceFixture, invalidStoredTilt100AngleIsCleared) {
   loadInvalidStoredTiltConfig(&rs, &config, &storage, storedTilt);
 }
 
+TEST_F(RollerShutterInterfaceFixture,
+       standardFunctionChangeClearsPersistedTiltConfig) {
+  ConfigMock config;
+  Supla::Control::RollerShutterInterface rs(true);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+
+  Supla::Control::TiltConfig persistedTilt = {};
+  bool tiltConfigPersisted = false;
+  Supla::Control::RollerShutterConfig persistedRsConfig = {};
+
+  EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
+  EXPECT_CALL(
+      config,
+      setBlob(
+          StrEq("0_rs_cfg"), _, sizeof(Supla::Control::RollerShutterConfig)))
+      .Times(2)
+      .WillRepeatedly(
+          [&persistedRsConfig](const char *, const char *value, size_t size) {
+            memcpy(&persistedRsConfig, value, size);
+            return true;
+          });
+  EXPECT_CALL(
+      config,
+      setBlob(StrEq("0_tilt_cfg"), _, sizeof(Supla::Control::TiltConfig)))
+      .WillOnce([&persistedTilt, &tiltConfigPersisted](
+                    const char *, const char *value, size_t size) {
+        memcpy(&persistedTilt, value, size);
+        tiltConfigPersisted = true;
+        return true;
+      });
+  EXPECT_CALL(config, saveWithDelay(2000)).Times(4);
+
+  TSD_ChannelConfig facadeConfig = {};
+  setFacadeBlindConfig(&facadeConfig,
+                       5000,
+                       6000,
+                       1000,
+                       30,
+                       150,
+                       SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                       2,
+                       2,
+                       3,
+                       7);
+  EXPECT_EQ(rs.applyChannelConfig(&facadeConfig),
+            Supla::ApplyConfigResult::Success);
+  ASSERT_TRUE(tiltConfigPersisted);
+  EXPECT_EQ(persistedTilt.tiltingTime, 1000);
+  EXPECT_EQ(persistedTilt.tilt0Angle, 30);
+  EXPECT_EQ(persistedTilt.tilt100Angle, 150);
+
+  EXPECT_CALL(
+      config,
+      setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER))
+      .WillOnce(Return(true));
+  EXPECT_CALL(config, saveWithDelay(5000)).WillOnce(Return());
+  EXPECT_CALL(config, eraseKey(StrEq("0_tilt_cfg")))
+      .WillOnce([&tiltConfigPersisted](const char *) {
+        tiltConfigPersisted = false;
+        return true;
+      });
+
+  TSD_ChannelConfig rollerShutterConfig = {};
+  rollerShutterConfig.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER;
+  rollerShutterConfig.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  rollerShutterConfig.ConfigSize = sizeof(TChannelConfig_RollerShutter);
+  auto newConfig = reinterpret_cast<TChannelConfig_RollerShutter *>(
+      rollerShutterConfig.Config);
+  newConfig->OpeningTimeMS = 7000;
+  newConfig->ClosingTimeMS = 8000;
+  newConfig->ButtonsUpsideDown = 1;
+  newConfig->MotorUpsideDown = 1;
+  newConfig->TimeMargin = 5;
+  newConfig->VisualizationType = 9;
+
+  EXPECT_EQ(rs.handleChannelConfig(&rollerShutterConfig, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(rs.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  EXPECT_FALSE(tiltConfigPersisted);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 0);
+  EXPECT_EQ(rs.getTiltControlType(), SUPLA_TILT_CONTROL_TYPE_UNKNOWN);
+  EXPECT_EQ(persistedRsConfig.buttonsUpsideDown, 1);
+  EXPECT_EQ(persistedRsConfig.motorUpsideDown, 1);
+  EXPECT_EQ(persistedRsConfig.timeMargin, 5);
+  EXPECT_EQ(persistedRsConfig.visualizationType, 9);
+
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
+      .WillOnce([](const char *, int32_t *value) {
+        *value = SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND;
+        return true;
+      });
+  EXPECT_CALL(config, getUInt8(StrEq("0_cfg_chng"), _)).WillOnce(Return(false));
+  EXPECT_CALL(
+      config,
+      getBlob(
+          StrEq("0_rs_cfg"), _, sizeof(Supla::Control::RollerShutterConfig)))
+      .WillOnce([&persistedRsConfig](const char *, char *value, size_t size) {
+        memcpy(value, &persistedRsConfig, size);
+        return true;
+      });
+  EXPECT_CALL(
+      config,
+      getBlob(StrEq("0_tilt_cfg"), _, sizeof(Supla::Control::TiltConfig)))
+      .WillOnce([&persistedTilt, &tiltConfigPersisted](
+                    const char *, char *value, size_t size) {
+        if (!tiltConfigPersisted) {
+          return false;
+        }
+        memcpy(value, &persistedTilt, size);
+        return true;
+      });
+
+  rs.onLoadConfig(nullptr);
+  EXPECT_EQ(rs.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 0);
+  EXPECT_EQ(rs.getTiltControlType(), SUPLA_TILT_CONTROL_TYPE_UNKNOWN);
+
+  TChannelConfig_FacadeBlind reported = {};
+  int size = 0;
+  rs.fillChannelConfig(&reported, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(size, sizeof(reported));
+  EXPECT_EQ(reported.Tilt0Angle, 0);
+  EXPECT_EQ(reported.Tilt100Angle, 0);
+  EXPECT_EQ(reported.TiltControlType, SUPLA_TILT_CONTROL_TYPE_UNKNOWN);
+  EXPECT_EQ(reported.ButtonsUpsideDown, 1);
+  EXPECT_EQ(reported.MotorUpsideDown, 1);
+  EXPECT_EQ(reported.TimeMargin, 5);
+  EXPECT_EQ(reported.VisualizationType, 9);
+}
+
 TEST_F(RollerShutterInterfaceFixture, facadeBlindLocalMovement) {
   Supla::Control::RollerShutterInterface rs(true);
   rs.getChannel()->setFlag(SUPLA_CHANNEL_FLAG_TIME_SETTING_NOT_AVAILABLE);

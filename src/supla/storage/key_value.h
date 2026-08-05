@@ -107,7 +107,7 @@ class KeyValueElement {
 
  protected:
   KeyValueElement* next = nullptr;
-  char key[SUPLA_STORAGE_KEY_SIZE] = {};
+  char key[SUPLA_STORAGE_KEY_SIZE + 1] = {};
   enum DataType dataType = DATA_TYPE_NOT_SET;
   unsigned int size = 0;  // set only for blob and string
   union {

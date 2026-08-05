@@ -44,6 +44,17 @@ TEST(KeyValueElementTests, isKeyEqualTest) {
   EXPECT_FALSE(kve.isKeyEqual("test"));
 }
 
+TEST(KeyValueElementTests, maxLengthKeyPreservesFixedWidthStorage) {
+  Supla::KeyValueElement kve("123456789012345");
+
+  uint8_t serializedData[SUPLA_STORAGE_KEY_SIZE + 1 + 2 + 1] = {};
+  EXPECT_TRUE(kve.setUInt8(1));
+  EXPECT_EQ(kve.serialize(serializedData, sizeof(serializedData)),
+            sizeof(serializedData));
+  EXPECT_EQ(memcmp(serializedData, "123456789012345", SUPLA_STORAGE_KEY_SIZE),
+            0);
+}
+
 TEST(KeyValueElementTests, elementSequenceTest) {
   Supla::KeyValueElement kve1("1");
   EXPECT_EQ(kve1.getNext(), nullptr);

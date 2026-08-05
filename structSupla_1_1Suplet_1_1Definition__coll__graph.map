@@ -1,9 +1,9 @@
 <map id="Supla::Suplet::Definition" name="Supla::Suplet::Definition">
-<area shape="rect" id="Node000001" title=" " alt="" coords="353,63,509,88"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="348,63,504,88"/>
 <area shape="rect" id="Node000002" href="$structSupla_1_1Suplet_1_1ChannelDefinition.html" title=" " alt="" coords="5,5,209,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="224,28,329,45,387,59,385,65,328,50,224,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="204,32,324,53,358,59,357,65,323,58,203,37"/>
 <area shape="rect" id="Node000003" href="$structSupla_1_1Suplet_1_1ParameterDefinition.html" title=" " alt="" coords="25,55,189,96"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="204,73,352,73,352,78,204,78"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="204,73,347,73,347,78,204,78"/>
 <area shape="rect" id="Node000004" href="$classSupla_1_1Suplet_1_1RuntimeHandler.html" title=" " alt="" coords="9,120,205,146"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="220,119,328,101,386,86,388,91,329,106,221,124"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="204,114,323,93,359,86,360,92,324,98,205,120"/>
 </map>

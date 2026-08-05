@@ -10,12 +10,12 @@ var searchData=
   ['poweractivewgetter_7',['PowerActiveWGetter',['../classSupla_1_1PowerActiveWGetter.html',1,'Supla']]],
   ['powerapparentvagetter_8',['PowerApparentVAGetter',['../classSupla_1_1PowerApparentVAGetter.html',1,'Supla']]],
   ['powerreactivevargetter_9',['PowerReactiveVarGetter',['../classSupla_1_1PowerReactiveVarGetter.html',1,'Supla']]],
-  ['powerstatusledparameters_10',['PowerStatusLedParameters',['../classPowerStatusLedParameters.html',1,'PowerStatusLedParameters'],['../classSupla_1_1Html_1_1PowerStatusLedParameters.html',1,'Supla::Html::PowerStatusLedParameters']]],
+  ['powerstatusledparameters_10',['PowerStatusLedParameters',['../classSupla_1_1Html_1_1PowerStatusLedParameters.html',1,'Supla::Html']]],
   ['preamble_11',['Preamble',['../structSupla_1_1Preamble.html',1,'Supla']]],
   ['pressure_12',['Pressure',['../classSupla_1_1Sensor_1_1Pressure.html',1,'Supla::Sensor']]],
   ['protocollayer_13',['ProtocolLayer',['../classSupla_1_1Protocol_1_1ProtocolLayer.html',1,'Supla::Protocol']]],
   ['protocolparameters_14',['ProtocolParameters',['../classSupla_1_1Html_1_1ProtocolParameters.html',1,'Supla::Html']]],
-  ['pwmfrequencyparameters_15',['PwmFrequencyParameters',['../classPwmFrequencyParameters.html',1,'PwmFrequencyParameters'],['../classSupla_1_1Html_1_1PwmFrequencyParameters.html',1,'Supla::Html::PwmFrequencyParameters']]],
+  ['pwmfrequencyparameters_15',['PwmFrequencyParameters',['../classSupla_1_1Html_1_1PwmFrequencyParameters.html',1,'Supla::Html']]],
   ['pzemv2_16',['PZEMv2',['../classSupla_1_1Sensor_1_1PZEMv2.html',1,'Supla::Sensor']]],
   ['pzemv3_17',['PZEMv3',['../classSupla_1_1Sensor_1_1PZEMv3.html',1,'Supla::Sensor']]]
 ];

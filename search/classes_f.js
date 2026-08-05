@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['ocrimpulsecounter_0',['OcrImpulseCounter',['../classOcrImpulseCounter.html',1,'OcrImpulseCounter'],['../classSupla_1_1Sensor_1_1OcrImpulseCounter.html',1,'Supla::Sensor::OcrImpulseCounter']]],
+  ['ocrimpulsecounter_0',['OcrImpulseCounter',['../classSupla_1_1Sensor_1_1OcrImpulseCounter.html',1,'Supla::Sensor']]],
   ['onbetweencond_1',['OnBetweenCond',['../classOnBetweenCond.html',1,'']]],
   ['onbetweeneqcond_2',['OnBetweenEqCond',['../classOnBetweenEqCond.html',1,'']]],
   ['onephaseelectricitymeter_3',['OnePhaseElectricityMeter',['../classSupla_1_1Sensor_1_1OnePhaseElectricityMeter.html',1,'Supla::Sensor']]],

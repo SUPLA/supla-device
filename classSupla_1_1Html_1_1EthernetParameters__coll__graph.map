@@ -1,8 +1,8 @@
 <map id="Supla::Html::EthernetParameters" name="Supla::Html::EthernetParameters">
-<area shape="rect" id="Node000001" title=" " alt="" coords="163,120,372,145"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="5,14,141,40"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="110,45,246,117,244,122,108,50"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="158,17,167,27,159,36,141,40,140,35,157,32,162,27,154,21"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Html_1_1NetworkAddressParameters.html" title=" " alt="" coords="237,7,429,47"/>
-<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="315,62,277,121,273,118,311,59"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="156,109,366,135"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="5,13,141,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="112,43,238,106,236,111,109,48"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="158,17,167,26,159,34,141,38,140,32,157,30,162,26,154,21"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Html_1_1NetworkAddressParameters.html" title=" " alt="" coords="229,5,421,46"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="305,60,271,110,267,107,301,57"/>
 </map>

@@ -9,7 +9,7 @@ var searchData=
   ['dht_6',['DHT',['../classSupla_1_1Sensor_1_1DHT.html',1,'Supla::Sensor']]],
   ['dimmerbase_7',['DimmerBase',['../classSupla_1_1Control_1_1DimmerBase.html',1,'Supla::Control']]],
   ['dimmerleds_8',['DimmerLeds',['../classSupla_1_1Control_1_1DimmerLeds.html',1,'Supla::Control']]],
-  ['disableuserinterfaceparameter_9',['DisableUserInterfaceParameter',['../classDisableUserInterfaceParameter.html',1,'DisableUserInterfaceParameter'],['../classSupla_1_1Html_1_1DisableUserInterfaceParameter.html',1,'Supla::Html::DisableUserInterfaceParameter']]],
+  ['disableuserinterfaceparameter_9',['DisableUserInterfaceParameter',['../classSupla_1_1Html_1_1DisableUserInterfaceParameter.html',1,'Supla::Html']]],
   ['distance_10',['Distance',['../classSupla_1_1Sensor_1_1Distance.html',1,'Supla::Sensor']]],
   ['divbegin_11',['DivBegin',['../classSupla_1_1Html_1_1DivBegin.html',1,'Supla::Html']]],
   ['divend_12',['DivEnd',['../classSupla_1_1Html_1_1DivEnd.html',1,'Supla::Html']]],

@@ -14,7 +14,7 @@
 <area shape="poly" id="edge22_Node000001_Node000027" title=" " alt="" coords="528,505,612,470,649,459,650,464,614,475,531,510"/>
 <area shape="rect" id="Node000028" href="$classSupla_1_1Sensor_1_1Distance.html" title=" " alt="" coords="634,485,793,510"/>
 <area shape="poly" id="edge23_Node000001_Node000028" title=" " alt="" coords="580,512,634,505,634,511,581,518"/>
-<area shape="rect" id="Node000030" href="$classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html" title="Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP)." alt="" coords="613,535,814,575"/>
+<area shape="rect" id="Node000030" href="$classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html" title="Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP)" alt="" coords="613,535,814,575"/>
 <area shape="poly" id="edge25_Node000001_Node000030" title=" " alt="" coords="581,536,613,540,613,545,580,541"/>
 <area shape="rect" id="Node000036" href="$classSupla_1_1Sensor_1_1Pressure.html" title=" " alt="" coords="634,600,793,625"/>
 <area shape="poly" id="edge28_Node000001_Node000036" title=" " alt="" coords="528,545,614,585,653,596,651,602,612,589,526,550"/>

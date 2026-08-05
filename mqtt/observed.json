@@ -2500,6 +2500,29 @@
           "qos": 0,
           "retain": false,
           "topic": "{prefix}/channels/{channel}/set/closing_percentage"
+        }
+      ]
+    },
+    {
+      "category": "public",
+      "channel_function": "SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND",
+      "channel_type": "SUPLA_CHANNELTYPE_RELAY",
+      "description": "Facade blind command topics",
+      "id": "roller_shutter.facade_blind.commands",
+      "operations": [
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/execute_action"
+        },
+        {
+          "direction": "broker_to_device",
+          "operation": "subscribe",
+          "qos": 0,
+          "retain": false,
+          "topic": "{prefix}/channels/{channel}/set/closing_percentage"
         },
         {
           "direction": "broker_to_device",

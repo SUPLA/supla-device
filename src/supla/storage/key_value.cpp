@@ -315,7 +315,9 @@ bool KeyValue::setUInt32(const char* key, const uint32_t value) {
 }
 
 KeyValueElement::KeyValueElement(const char* keyName) {
-  strncpy(key, keyName, SUPLA_STORAGE_KEY_SIZE);
+  size_t keyLength = strnlen(keyName, SUPLA_STORAGE_KEY_SIZE);
+  memcpy(key, keyName, keyLength);
+  key[keyLength] = '\0';
 }
 
 KeyValueElement::~KeyValueElement() {

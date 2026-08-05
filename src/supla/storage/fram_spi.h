@@ -86,8 +86,8 @@ class FramSpi : public Storage {
       }
 
       SUPLA_LOG_INFO(
-          "EEPROM: Read %d bytes, show first %d bytes [%s] (offset %d)",
-          size, sizeMax, logBuffer, offset);
+          "FRAM: Read %d bytes [%s] (offset %d)",
+          size, logBuffer, offset);
     }
 
     return size;

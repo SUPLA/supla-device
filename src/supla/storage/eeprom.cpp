@@ -76,8 +76,8 @@ int Eeprom::readStorage(unsigned int offset,
     }
 
     SUPLA_LOG_INFO(
-        "EEPROM: Read %d bytes, show first %d bytes [%s] (offset %d)",
-        size, sizeMax, logBuffer, offset);
+        "EEPROM: Read %d bytes [%s] (offset %d)",
+        size, logBuffer, offset);
   }
 
   return size;

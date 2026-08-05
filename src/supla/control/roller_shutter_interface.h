@@ -35,6 +35,8 @@ namespace Supla {
 namespace Control {
 
 bool isValidTiltControlType(uint32_t type);
+constexpr uint32_t MAX_TILT_ANGLE_DEGREES = 180;
+bool isValidTiltAngle(uint32_t angle);
 bool requiresSeparateTiltPhase(uint8_t type);
 bool isValidFacadeBlindTiming(uint8_t type,
                               uint32_t openingTimeMs,

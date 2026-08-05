@@ -64,6 +64,10 @@ bool Supla::Control::isValidTiltControlType(uint32_t type) {
   return type <= SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED;
 }
 
+bool Supla::Control::isValidTiltAngle(uint32_t angle) {
+  return angle <= MAX_TILT_ANGLE_DEGREES;
+}
+
 bool Supla::Control::requiresSeparateTiltPhase(uint8_t type) {
   return type == SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING ||
          type == SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED;
@@ -826,6 +830,8 @@ void RollerShutterInterface::validateTiltConfigAfterLoad() {
   }
 
   if (!isValidTiltControlType(tiltConfig.tiltControlType) ||
+      !isValidTiltAngle(tiltConfig.tilt0Angle) ||
+      !isValidTiltAngle(tiltConfig.tilt100Angle) ||
       (rollerShutterStateLoaded &&
        !isValidFacadeBlindTiming(tiltConfig.tiltControlType,
                                  openingTimeMs,
@@ -1051,6 +1057,8 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
         const uint32_t candidateTiltControlType = newConfig->TiltControlType;
 
         if (!isValidTiltControlType(candidateTiltControlType) ||
+            !isValidTiltAngle(newConfig->Tilt0Angle) ||
+            !isValidTiltAngle(newConfig->Tilt100Angle) ||
             !isValidFacadeBlindTiming(
                 static_cast<uint8_t>(candidateTiltControlType),
                 candidateOpeningTimeMs,

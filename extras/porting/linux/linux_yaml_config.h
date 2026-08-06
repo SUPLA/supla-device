@@ -76,6 +76,7 @@ channels:
 #include <yaml-cpp/yaml.h>
 
 #include <map>
+#include <set>
 #include <string>
 
 namespace Supla {
@@ -141,6 +142,8 @@ class LinuxYamlConfig : public KeyValue {
   bool getMqttClientFileCA(char* result) const;
 
   void markChannelParameterUsed();
+  YAML::Node getAndMarkChannelParameter(const YAML::Node& channel,
+                                         const char* parameter);
   bool addCommonChannelParameters(const YAML::Node& ch,
                                   Supla::Element* element);
 
@@ -269,7 +272,8 @@ class LinuxYamlConfig : public KeyValue {
   std::map<int, Supla::Payload::Payload*> payloads;
   std::map<int, Supla::Output::Output*> outputs;
 
-  std::size_t paramCount = 0;
+  std::set<std::string> usedChannelParameters;
+  std::size_t untrackedChannelParameterCount = 0;
   int parserCount = 0;
   int sourceCount = 0;
   int payloadCount = 0;

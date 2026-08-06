@@ -118,17 +118,17 @@ bool AddSosBinary(const Supla::Linux::ChannelFactoryContext& context) {
   uint32_t longMs = kDefaultLongMs;
   uint32_t pauseMs = kDefaultPauseMs;
 
-  if (ch["short_ms"]) {
-    config.markChannelParameterUsed();
-    shortMs = clampTimingMs(ch["short_ms"].as<int>(), kDefaultShortMs);
+  if (auto shortParameter =
+          config.getAndMarkChannelParameter(ch, "short_ms")) {
+    shortMs = clampTimingMs(shortParameter.as<int>(), kDefaultShortMs);
   }
-  if (ch["long_ms"]) {
-    config.markChannelParameterUsed();
-    longMs = clampTimingMs(ch["long_ms"].as<int>(), kDefaultLongMs);
+  if (auto longParameter =
+          config.getAndMarkChannelParameter(ch, "long_ms")) {
+    longMs = clampTimingMs(longParameter.as<int>(), kDefaultLongMs);
   }
-  if (ch["pause_ms"]) {
-    config.markChannelParameterUsed();
-    pauseMs = clampTimingMs(ch["pause_ms"].as<int>(), kDefaultPauseMs);
+  if (auto pauseParameter =
+          config.getAndMarkChannelParameter(ch, "pause_ms")) {
+    pauseMs = clampTimingMs(pauseParameter.as<int>(), kDefaultPauseMs);
   }
 
   auto sensor = new SosBinary(shortMs, longMs, pauseMs);

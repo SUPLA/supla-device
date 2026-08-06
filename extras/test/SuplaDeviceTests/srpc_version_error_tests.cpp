@@ -49,10 +49,6 @@ class VersionErrorTestSrpc : public Supla::Protocol::SuplaSrpc {
     deinitializeSrpc();
   }
 
-  void setRegisteredForTest(int8_t value) {
-    registered = value;
-  }
-
   uint32_t lastIterateTimeForTest() const {
     return lastIterateTime;
   }
@@ -150,14 +146,17 @@ TEST_F(SuplaSrpcVersionErrorTests,
   EXPECT_EQ(freeBeforeIterateReturned, 0);
   EXPECT_EQ(device.getCurrentStatus(), STATUS_PROTOCOL_VERSION_ERROR);
   EXPECT_EQ(srpcLayer.lastIterateTimeForTest(), time.value);
-  EXPECT_EQ(srpcLayer.waitForIterateForTest(), 15000U);
+  EXPECT_EQ(srpcLayer.waitForIterateForTest(), 1000U);
 
-  EXPECT_FALSE(srpcLayer.iterate(time.value + 5000));
+  EXPECT_FALSE(srpcLayer.iterate(time.value + 500));
   EXPECT_EQ(freeCalls, 1);
 }
 
-TEST_F(SuplaSrpcVersionErrorTests, RegistrationRejectionKeepsItsRetryDelay) {
-  srpcLayer.setRegisteredForTest(2);
+TEST_F(SuplaSrpcVersionErrorTests, RegistrationDisabledUsesReconnectBackoff) {
+  TSD_SuplaRegisterDeviceResult result = {};
+  result.result_code = SUPLA_RESULTCODE_REGISTRATION_DISABLED;
+  srpcLayer.onRegisterResult(&result);
+  EXPECT_EQ(device.getCurrentStatus(), STATUS_REGISTRATION_DISABLED);
 
   EXPECT_CALL(srpc, srpc_iterate(_)).WillOnce(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(*client, stop()).Times(1);
@@ -165,5 +164,5 @@ TEST_F(SuplaSrpcVersionErrorTests, RegistrationRejectionKeepsItsRetryDelay) {
 
   time.advance(1000);
   EXPECT_FALSE(srpcLayer.iterate(time.value));
-  EXPECT_EQ(srpcLayer.waitForIterateForTest(), 10000U);
+  EXPECT_EQ(srpcLayer.waitForIterateForTest(), 1000U);
 }

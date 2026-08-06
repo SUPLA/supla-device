@@ -66,6 +66,14 @@ Supla::Client *createNetworkClient() {
   return Supla::ClientBuilder();
 }
 
+uint8_t effectiveSrpcVersion(int requestedVersion) {
+  if (requestedVersion >= SUPLA_PROTO_VERSION_MIN &&
+      requestedVersion <= SUPLA_PROTO_VERSION) {
+    return static_cast<uint8_t>(requestedVersion);
+  }
+  return SUPLA_PROTO_VERSION;
+}
+
 void logRawHexDump(const char *direction,
                    int callId,
                    const char *callName,
@@ -479,7 +487,8 @@ void logRegisterDeviceHeader(int callId,
                   sizeof(escapedServerName));
 
   SUPLA_LOG_DEBUG(
-      "SRPC %s call=%s(%d) size=%zu payload={Email=<redacted>, "
+      "SRPC %s call=%s(%d) size=%zu wire_proto=%u "
+      "payload={Email=<redacted>, "
       "AuthKey=<redacted>, GUID=<redacted>, Name=\"%s\", SoftVer=\"%s\", "
       "ServerName=\"%s\", Flags=0x%" PRIX32
       ", ManufacturerID=%d, ProductID=%d, "
@@ -488,6 +497,7 @@ void logRegisterDeviceHeader(int callId,
       callName,
       callId,
       size,
+      static_cast<unsigned int>(packet->version),
       escapedName,
       escapedSoftVer,
       escapedServerName,
@@ -986,14 +996,14 @@ Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
   setSupla3rdPartyCACert(::supla3rdCACert);
 }
 
-void Supla::Protocol::SuplaSrpc::onPacketSent(void *userParam,
+void Supla::Protocol::SuplaSrpc::onPacketSent(void *srpcHandle,
                                               unsigned _supla_int_t callId,
                                               void *data,
                                               unsigned _supla_int_t dataSize,
-                                              void *reserved) {
-  (void)(reserved);
+                                              void *userParam) {
+  (void)(srpcHandle);
   auto *self = reinterpret_cast<SuplaSrpc *>(userParam);
-  if (self == nullptr) {
+  if (self == nullptr || self->hasWriteFailure()) {
     return;
   }
 
@@ -1003,13 +1013,13 @@ void Supla::Protocol::SuplaSrpc::onPacketSent(void *userParam,
                       dataSize);
 }
 
-void Supla::Protocol::SuplaSrpc::onPacketReceived(void *userParam,
+void Supla::Protocol::SuplaSrpc::onPacketReceived(void *srpcHandle,
                                                   unsigned _supla_int_t callId,
                                                   void *data,
                                                   unsigned _supla_int_t
                                                       dataSize,
-                                                  void *reserved) {
-  (void)(reserved);
+                                                  void *userParam) {
+  (void)(srpcHandle);
   auto *self = reinterpret_cast<SuplaSrpc *>(userParam);
   if (self == nullptr) {
     return;
@@ -1365,10 +1375,24 @@ _supla_int_t Supla::dataWrite(void *buf, _supla_int_t count, void *userParams) {
   if (srpcLayer == nullptr || srpcLayer->client == nullptr) {
     return 0;
   }
+  if (srpcLayer->hasWriteFailure()) {
+    return 0;
+  }
+  if (!srpcLayer->client->connected()) {
+    srpcLayer->markWriteFailure();
+    SUPLA_LOG_WARNING("SRPC write skipped; connection is already closed");
+    return 0;
+  }
   _supla_int_t r =
       srpcLayer->client->write(reinterpret_cast<uint8_t *>(buf), count);
-  if (r > 0) {
+  if (r == count) {
     srpcLayer->updateLastSentTime();
+  } else {
+    srpcLayer->markWriteFailure();
+    SUPLA_LOG_WARNING("SRPC write failed (%d/%d); closing connection",
+                      static_cast<int>(r),
+                      static_cast<int>(count));
+    srpcLayer->client->stop();
   }
   return r;
 }
@@ -1687,9 +1711,7 @@ void Supla::Protocol::SuplaSrpc::onVersionError(
                   versionError->server_version);
 
   versionErrorDisconnectPending = true;
-
-  lastIterateTime = millis();
-  waitForIterate = 15000;
+  scheduleReconnect(millis());
 }
 
 void Supla::Protocol::SuplaSrpc::onRegisterResultB(
@@ -1770,6 +1792,9 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
     case SUPLA_RESULTCODE_TRUE:
       serverActivityTimeout = registerDeviceResult->activity_timeout;
       registered = 1;
+      // A TCP connection alone is not enough to end the failure sequence.
+      // Reset backoff only after the server accepts registration.
+      reconnectAttemptCounter = 0;
       SUPLA_LOG_DEBUG(
           "Device registered (activity timeout %d s, server version: %d, "
           "server min version: %d)",
@@ -1897,6 +1922,23 @@ bool Supla::Protocol::SuplaSrpc::ping() {
     srpc_dcs_async_ping_server(srpc);
   }
   return true;
+}
+
+void Supla::Protocol::SuplaSrpc::scheduleReconnect(uint32_t now) {
+  if (reconnectAttemptCounter < 7) {
+    reconnectAttemptCounter++;
+  }
+
+  if (reconnectAttemptCounter == 1) {
+    waitForIterate = 1000;
+  } else if (reconnectAttemptCounter <= 3) {
+    waitForIterate = 5000;
+  } else if (reconnectAttemptCounter <= 6) {
+    waitForIterate = 15000;
+  } else {
+    waitForIterate = 60000;
+  }
+  lastIterateTime = now;
 }
 
 bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
@@ -2064,7 +2106,6 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   if (!client->connected()) {
     deinitializeSrpc();
     if (registered != 0) {
-      SUPLA_LOG_DEBUG("Supla server connection lost. Trying to reconnect");
       sdc->uptime.setConnectionLostCause(
           SUPLA_LASTCONNECTIONRESETCAUSE_SERVER_CONNECTION_LOST);
       registered = 0;
@@ -2076,8 +2117,10 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
         requestNetworkRestart = true;
       }
 #endif
-      waitForIterate = 1000;
-      lastIterateTime = _millis;
+      scheduleReconnect(_millis);
+      SUPLA_LOG_DEBUG(
+          "Supla server connection lost. Trying to reconnect (in %us)",
+          static_cast<unsigned int>(waitForIterate / 1000));
       return false;
     }
 
@@ -2103,13 +2146,8 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       SUPLA_LOG_DEBUG("Connection fail (%d). Server: %s",
                       result,
                       Supla::RegisterDevice::getServerName());
-      if (firstConnectionAttempt) {
-        waitForIterate = 1000;
-      } else {
-        waitForIterate = 10000;
-      }
-
       disconnect();
+      scheduleReconnect(_millis);
       firstConnectionAttempt = false;
       connectionFailCounter++;
       if (connectionFailCounter % 6 == 0) {
@@ -2121,6 +2159,13 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
 
   char srpcIterateResult = srpc_iterate_device(srpc);
 
+  if (writeFailure) {
+    SUPLA_LOG_WARNING("SRPC write failure; reconnecting");
+    disconnect();
+    scheduleReconnect(_millis);
+    return false;
+  }
+
   if (versionErrorDisconnectPending) {
     versionErrorDisconnectPending = false;
     disconnect();
@@ -2130,9 +2175,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   if (srpcIterateResult == SUPLA_RESULT_FALSE) {
     sdc->status(STATUS_ITERATE_FAIL, F("Communication failure"));
     disconnect();
-
-    lastIterateTime = _millis;
-    waitForIterate = 5000;
+    scheduleReconnect(_millis);
     return false;
   }
 
@@ -2140,6 +2183,15 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     // Perform registration if we are not yet registered
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
+    const auto *registerHeader = Supla::RegisterDevice::getRegDevHeaderPtr();
+    SUPLA_LOG_INFO(
+        "Registering device: wire_proto=%u, ManufacturerID=%d, ProductID=%d, "
+        "Flags=0x%" PRIX32 ", channels=%u",
+        static_cast<unsigned int>(effectiveSrpcVersion(version)),
+        static_cast<int>(registerHeader->ManufacturerID),
+        static_cast<int>(registerHeader->ProductID),
+        static_cast<uint32_t>(registerHeader->Flags),
+        static_cast<unsigned int>(registerHeader->channel_count));
     if (version <= 24) {
       if (!srpc_ds_async_registerdevice_in_chunks(
               srpc,
@@ -2164,9 +2216,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       sdc->status(STATUS_SERVER_DISCONNECTED,
                   F("Not connected to Supla server"));
       disconnect();
-
-      lastIterateTime = _millis;
-      waitForIterate = 2000;
+      scheduleReconnect(_millis);
     }
     return false;
   } else if (registered == 1) {
@@ -2201,6 +2251,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       sdc->status(STATUS_SERVER_DISCONNECTED,
                   F("Not connected to Supla server"));
       disconnect();
+      scheduleReconnect(_millis);
     }
 
     return true;
@@ -2208,8 +2259,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     // Server rejected registration
     disconnect();
     registered = 0;
-    lastIterateTime = millis();
-    waitForIterate = 10000;
+    scheduleReconnect(_millis);
   }
   return false;
 }
@@ -2266,6 +2316,14 @@ void Supla::Protocol::SuplaSrpc::setServerPort(int value) {
 
 void Supla::Protocol::SuplaSrpc::setVersion(int value) {
   version = value;
+}
+
+bool Supla::Protocol::SuplaSrpc::hasWriteFailure() const {
+  return writeFailure;
+}
+
+void Supla::Protocol::SuplaSrpc::markWriteFailure() {
+  writeFailure = true;
 }
 
 void Supla::Protocol::SuplaSrpc::setSuplaCACert(const char *cert) {
@@ -2910,7 +2968,8 @@ void Supla::Protocol::SuplaSrpc::initializeSrpc() {
     deinitializeSrpc();
   }
 
-  SUPLA_LOG_INFO("Initializing SRPC (proto: %d)", version);
+  writeFailure = false;
+  SUPLA_LOG_INFO("Initializing SRPC (requested proto: %d)", version);
   TsrpcParams srpcParams;
   srpc_params_init(&srpcParams);
   srpcParams.data_read = &Supla::dataRead;
@@ -2926,6 +2985,10 @@ void Supla::Protocol::SuplaSrpc::initializeSrpc() {
 
   // Set Supla protocol interface version
   srpc_set_proto_version(srpc, version);
+  SUPLA_LOG_INFO("SRPC wire proto: %u (supported range: %u..%u)",
+                 static_cast<unsigned int>(effectiveSrpcVersion(version)),
+                 static_cast<unsigned int>(SUPLA_PROTO_VERSION_MIN),
+                 static_cast<unsigned int>(SUPLA_PROTO_VERSION));
 }
 
 void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {

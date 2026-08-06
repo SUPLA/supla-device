@@ -127,6 +127,8 @@ class SuplaSrpc : public ProtocolLayer {
 
   void setServerPort(int value);
   void setVersion(int value);
+  bool hasWriteFailure() const;
+  void markWriteFailure();
   void setSuplaCACert(const char *);
   void setSupla3rdPartyCACert(const char *);
   const char *getSuplaCACert() const;
@@ -164,22 +166,23 @@ class SuplaSrpc : public ProtocolLayer {
   void setChannelConflictResolver(
       Supla::Device::ChannelConflictResolver *resolver);
 
-  static void onPacketSent(void *userParam,
+  static void onPacketSent(void *srpcHandle,
                            unsigned _supla_int_t callId,
                            void *data,
                            unsigned _supla_int_t dataSize,
-                           void *reserved);
-  static void onPacketReceived(void *userParam,
+                           void *userParam);
+  static void onPacketReceived(void *srpcHandle,
                                unsigned _supla_int_t callId,
                                void *data,
                                unsigned _supla_int_t dataSize,
-                               void *reserved);
+                               void *userParam);
   void logSrpcPacket(bool send, int callId, const uint8_t *buf, size_t size);
   static const char *callIdToName(int callId);
   static bool isSensitiveCallId(int callId);
 
  protected:
   bool ping();
+  void scheduleReconnect(uint32_t now);
   void initializeSrpc();
   void deinitializeSrpc();
   void addLastStateAdError(char *buf);
@@ -193,8 +196,10 @@ class SuplaSrpc : public ProtocolLayer {
   bool setDeviceConfigReceivedAfterRegistration = false;
   bool firstConnectionAttempt = true;
   bool adErrorLogged = false;
+  bool writeFailure = false;
   uint8_t autodiscoverRetryCounter = 0;
   uint16_t connectionFailCounter = 0;
+  uint8_t reconnectAttemptCounter = 0;
 
   uint32_t lastPingTimeMs = 0;
   uint32_t waitForIterate = 0;

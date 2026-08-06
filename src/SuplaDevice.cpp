@@ -1129,6 +1129,10 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
       }
       case SUPLA_CALCFG_CMD_RESTART_DEVICE: {
         SUPLA_LOG_INFO("CALCFG RESTART DEVICE received");
+        if (!isDeviceSoftwareResetSupported()) {
+          SUPLA_LOG_WARNING("CALCFG RESTART DEVICE is not supported");
+          return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+        }
         scheduleSoftRestart(1);
         return SUPLA_CALCFG_RESULT_DONE;
       }

@@ -16,6 +16,7 @@
 
 #include <SuplaDevice.h>
 #include <arduino_mock.h>
+#include <board_mock.h>
 #include <clock_mock.h>
 #include <config_mock.h>
 #include <element_mock.h>
@@ -56,6 +57,7 @@ class SuplaDeviceTests : public ::testing::Test {
     Supla::Channel::resetToDefaults();
   }
   virtual void TearDown() {
+    setDeviceSoftwareResetSupported(true);
     Supla::Channel::resetToDefaults();
   }
 };
@@ -121,6 +123,43 @@ class ConfigModeSuplaDevice : public SuplaDeviceClass {
     deviceRestartTimeoutTimestamp = restartTimestamp;
   }
 };
+
+class CalcfgRestartDevice : public SuplaDeviceClass {
+ public:
+  uint32_t getForceRestartTimeMs() const {
+    return forceRestartTimeMs;
+  }
+};
+
+TEST_F(SuplaDeviceTests, CalcfgRestartDeviceUnsupported) {
+  BoardMock board;
+  CalcfgRestartDevice sd;
+  TSD_DeviceCalCfgRequest request = {};
+
+  setDeviceSoftwareResetSupported(false);
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_RESTART_DEVICE;
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request),
+            SUPLA_CALCFG_RESULT_NOT_SUPPORTED);
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_UNKNOWN);
+  EXPECT_EQ(sd.getForceRestartTimeMs(), 0);
+}
+
+TEST_F(SuplaDeviceTests, CalcfgRestartDeviceSupported) {
+  BoardMock board;
+  CalcfgRestartDevice sd;
+  TSD_DeviceCalCfgRequest request = {};
+
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_RESTART_DEVICE;
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request), SUPLA_CALCFG_RESULT_DONE);
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_SOFTWARE_RESET);
+  EXPECT_EQ(sd.getForceRestartTimeMs(), 1);
+}
 
 TEST_F(SuplaDeviceTests, ReportsRemainingCfgModeInactivityTime) {
   ConfigModeSuplaDevice sd;

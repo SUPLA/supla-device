@@ -39,5 +39,6 @@ class BoardMock : public BoardInterface {
 };
 
 void setLastResetSoft(bool value);
+void setDeviceSoftwareResetSupported(bool value);
 
 #endif  // EXTRAS_TEST_DOUBLES_BOARD_MOCK_H_

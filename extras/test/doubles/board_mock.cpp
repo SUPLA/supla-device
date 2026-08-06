@@ -24,6 +24,7 @@
 
 namespace {
 bool lastResetSoft = false;
+bool deviceSoftwareResetSupported = true;
 }  // namespace
 
 BoardInterface::BoardInterface() {
@@ -44,7 +45,7 @@ void deviceSoftwareReset() {
 }
 
 bool isDeviceSoftwareResetSupported() {
-  return true;
+  return deviceSoftwareResetSupported;
 }
 
 bool isLastResetSoft() {
@@ -65,4 +66,8 @@ BoardMock::~BoardMock() {}
 
 void setLastResetSoft(bool value) {
   lastResetSoft = value;
+}
+
+void setDeviceSoftwareResetSupported(bool value) {
+  deviceSoftwareResetSupported = value;
 }

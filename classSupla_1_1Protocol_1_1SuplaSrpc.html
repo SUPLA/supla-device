@@ -266,6 +266,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setServerPort</b> (in
 <tr class="memitem:ac24b48c53f03e2a58b614e7f3babef5d" id="r_ac24b48c53f03e2a58b614e7f3babef5d"><td class="memItemLeft" align="right" valign="top"><a id="ac24b48c53f03e2a58b614e7f3babef5d" name="ac24b48c53f03e2a58b614e7f3babef5d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setVersion</b> (int value)</td></tr>
 <tr class="separator:ac24b48c53f03e2a58b614e7f3babef5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b3d2a9ade4e663bd116f2db6d2aa643" id="r_a9b3d2a9ade4e663bd116f2db6d2aa643"><td class="memItemLeft" align="right" valign="top"><a id="a9b3d2a9ade4e663bd116f2db6d2aa643" name="a9b3d2a9ade4e663bd116f2db6d2aa643"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>hasWriteFailure</b> () const</td></tr>
+<tr class="separator:a9b3d2a9ade4e663bd116f2db6d2aa643"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad108b98d4dd96704b174a3c94a3f1d94" id="r_ad108b98d4dd96704b174a3c94a3f1d94"><td class="memItemLeft" align="right" valign="top"><a id="ad108b98d4dd96704b174a3c94a3f1d94" name="ad108b98d4dd96704b174a3c94a3f1d94"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>markWriteFailure</b> ()</td></tr>
+<tr class="separator:ad108b98d4dd96704b174a3c94a3f1d94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad41da8abefe55ae9d3541f9c7e9e3bba" id="r_ad41da8abefe55ae9d3541f9c7e9e3bba"><td class="memItemLeft" align="right" valign="top"><a id="ad41da8abefe55ae9d3541f9c7e9e3bba" name="ad41da8abefe55ae9d3541f9c7e9e3bba"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setSuplaCACert</b> (const char *)</td></tr>
 <tr class="separator:ad41da8abefe55ae9d3541f9c7e9e3bba"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -347,12 +353,12 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a274ea2db8c11b5180bb637ae6dbaa862" id="r_a274ea2db8c11b5180bb637ae6dbaa862"><td class="memItemLeft" align="right" valign="top"><a id="a274ea2db8c11b5180bb637ae6dbaa862" name="a274ea2db8c11b5180bb637ae6dbaa862"></a>
 static const char *&#160;</td><td class="memItemRight" valign="bottom"><b>configResultToCStr</b> (int result)</td></tr>
 <tr class="separator:a274ea2db8c11b5180bb637ae6dbaa862"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac7a15f07b34bd425b1f0399a6b4e82d0" id="r_ac7a15f07b34bd425b1f0399a6b4e82d0"><td class="memItemLeft" align="right" valign="top"><a id="ac7a15f07b34bd425b1f0399a6b4e82d0" name="ac7a15f07b34bd425b1f0399a6b4e82d0"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>onPacketSent</b> (void *userParam, unsigned _supla_int_t callId, void *data, unsigned _supla_int_t dataSize, void *reserved)</td></tr>
-<tr class="separator:ac7a15f07b34bd425b1f0399a6b4e82d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24df341b19d9926cb562f4d71baaf19b" id="r_a24df341b19d9926cb562f4d71baaf19b"><td class="memItemLeft" align="right" valign="top"><a id="a24df341b19d9926cb562f4d71baaf19b" name="a24df341b19d9926cb562f4d71baaf19b"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>onPacketReceived</b> (void *userParam, unsigned _supla_int_t callId, void *data, unsigned _supla_int_t dataSize, void *reserved)</td></tr>
-<tr class="separator:a24df341b19d9926cb562f4d71baaf19b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3859ff10946a88c20f6ec0c3f8de6a2" id="r_aa3859ff10946a88c20f6ec0c3f8de6a2"><td class="memItemLeft" align="right" valign="top"><a id="aa3859ff10946a88c20f6ec0c3f8de6a2" name="aa3859ff10946a88c20f6ec0c3f8de6a2"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>onPacketSent</b> (void *srpcHandle, unsigned _supla_int_t callId, void *data, unsigned _supla_int_t dataSize, void *userParam)</td></tr>
+<tr class="separator:aa3859ff10946a88c20f6ec0c3f8de6a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7dcfc53f59eb1326e6f0508f884ecc68" id="r_a7dcfc53f59eb1326e6f0508f884ecc68"><td class="memItemLeft" align="right" valign="top"><a id="a7dcfc53f59eb1326e6f0508f884ecc68" name="a7dcfc53f59eb1326e6f0508f884ecc68"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>onPacketReceived</b> (void *srpcHandle, unsigned _supla_int_t callId, void *data, unsigned _supla_int_t dataSize, void *userParam)</td></tr>
+<tr class="separator:a7dcfc53f59eb1326e6f0508f884ecc68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14b7f4753abfe40db3b38f9258a302cf" id="r_a14b7f4753abfe40db3b38f9258a302cf"><td class="memItemLeft" align="right" valign="top"><a id="a14b7f4753abfe40db3b38f9258a302cf" name="a14b7f4753abfe40db3b38f9258a302cf"></a>
 static const char *&#160;</td><td class="memItemRight" valign="bottom"><b>callIdToName</b> (int callId)</td></tr>
 <tr class="separator:a14b7f4753abfe40db3b38f9258a302cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -390,6 +396,9 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:aebb68441093666d2cf753de4e6a19918" id="r_aebb68441093666d2cf753de4e6a19918"><td class="memItemLeft" align="right" valign="top"><a id="aebb68441093666d2cf753de4e6a19918" name="aebb68441093666d2cf753de4e6a19918"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>ping</b> ()</td></tr>
 <tr class="separator:aebb68441093666d2cf753de4e6a19918"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad984ee0b39e323dccac2db98ad7739f4" id="r_ad984ee0b39e323dccac2db98ad7739f4"><td class="memItemLeft" align="right" valign="top"><a id="ad984ee0b39e323dccac2db98ad7739f4" name="ad984ee0b39e323dccac2db98ad7739f4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>scheduleReconnect</b> (uint32_t now)</td></tr>
+<tr class="separator:ad984ee0b39e323dccac2db98ad7739f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f56687cb736eeb3b67c3bc9077dc29e" id="r_a7f56687cb736eeb3b67c3bc9077dc29e"><td class="memItemLeft" align="right" valign="top"><a id="a7f56687cb736eeb3b67c3bc9077dc29e" name="a7f56687cb736eeb3b67c3bc9077dc29e"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>initializeSrpc</b> ()</td></tr>
 <tr class="separator:a7f56687cb736eeb3b67c3bc9077dc29e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -429,12 +438,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>firstConnectionAttemp
 <tr class="memitem:a197b61a185e79b7899b27776f0963917" id="r_a197b61a185e79b7899b27776f0963917"><td class="memItemLeft" align="right" valign="top"><a id="a197b61a185e79b7899b27776f0963917" name="a197b61a185e79b7899b27776f0963917"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>adErrorLogged</b> = false</td></tr>
 <tr class="separator:a197b61a185e79b7899b27776f0963917"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e4db9d99ca4aa5753efcad46d5217c1" id="r_a1e4db9d99ca4aa5753efcad46d5217c1"><td class="memItemLeft" align="right" valign="top"><a id="a1e4db9d99ca4aa5753efcad46d5217c1" name="a1e4db9d99ca4aa5753efcad46d5217c1"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>writeFailure</b> = false</td></tr>
+<tr class="separator:a1e4db9d99ca4aa5753efcad46d5217c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a03bf15ecc6712f18817115279ef6d4f4" id="r_a03bf15ecc6712f18817115279ef6d4f4"><td class="memItemLeft" align="right" valign="top"><a id="a03bf15ecc6712f18817115279ef6d4f4" name="a03bf15ecc6712f18817115279ef6d4f4"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>autodiscoverRetryCounter</b> = 0</td></tr>
 <tr class="separator:a03bf15ecc6712f18817115279ef6d4f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48de2eb23a39d50f1001ae122600afe5" id="r_a48de2eb23a39d50f1001ae122600afe5"><td class="memItemLeft" align="right" valign="top"><a id="a48de2eb23a39d50f1001ae122600afe5" name="a48de2eb23a39d50f1001ae122600afe5"></a>
 uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>connectionFailCounter</b> = 0</td></tr>
 <tr class="separator:a48de2eb23a39d50f1001ae122600afe5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab45adeca95617c1f97b5590fe49b5a2a" id="r_ab45adeca95617c1f97b5590fe49b5a2a"><td class="memItemLeft" align="right" valign="top"><a id="ab45adeca95617c1f97b5590fe49b5a2a" name="ab45adeca95617c1f97b5590fe49b5a2a"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>reconnectAttemptCounter</b> = 0</td></tr>
+<tr class="separator:ab45adeca95617c1f97b5590fe49b5a2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14a9772dd24ef0bb3fc980b4677e0e49" id="r_a14a9772dd24ef0bb3fc980b4677e0e49"><td class="memItemLeft" align="right" valign="top"><a id="a14a9772dd24ef0bb3fc980b4677e0e49" name="a14a9772dd24ef0bb3fc980b4677e0e49"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastPingTimeMs</b> = 0</td></tr>
 <tr class="separator:a14a9772dd24ef0bb3fc980b4677e0e49"><td class="memSeparator" colspan="2">&#160;</td></tr>

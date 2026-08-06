@@ -818,7 +818,7 @@ TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
   EXPECT_TRUE(storage.isPreampleInitialized());
 }
 
-TEST_F(SuplaDeviceTests, OnVersionErrorShouldCallDisconnect) {
+TEST_F(SuplaDeviceTests, OnVersionErrorSetsProtocolVersionErrorStatus) {
   NetworkMockWithMac net;
   TimeInterfaceStub time;
 

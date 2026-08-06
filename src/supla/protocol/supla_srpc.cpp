@@ -1686,7 +1686,7 @@ void Supla::Protocol::SuplaSrpc::onVersionError(
                   versionError->server_version_min,
                   versionError->server_version);
 
-  disconnect();
+  versionErrorDisconnectPending = true;
 
   lastIterateTime = millis();
   waitForIterate = 15000;
@@ -2119,7 +2119,15 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     }
   }
 
-  if (srpc_iterate_device(srpc) == SUPLA_RESULT_FALSE) {
+  char srpcIterateResult = srpc_iterate_device(srpc);
+
+  if (versionErrorDisconnectPending) {
+    versionErrorDisconnectPending = false;
+    disconnect();
+    return false;
+  }
+
+  if (srpcIterateResult == SUPLA_RESULT_FALSE) {
     sdc->status(STATUS_ITERATE_FAIL, F("Communication failure"));
     disconnect();
 
@@ -2231,6 +2239,7 @@ void Supla::Protocol::SuplaSrpc::addLastStateAdError(char *buf) {
 }
 
 void Supla::Protocol::SuplaSrpc::disconnect() {
+  versionErrorDisconnectPending = false;
   if (!isEnabled()) {
     return;
   }
@@ -2920,6 +2929,7 @@ void Supla::Protocol::SuplaSrpc::initializeSrpc() {
 }
 
 void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
+  versionErrorDisconnectPending = false;
   calCfgResultPending.clearAll();
   if (srpc) {
     SUPLA_LOG_INFO("Deinitializing SRPC");

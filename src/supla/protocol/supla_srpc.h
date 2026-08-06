@@ -213,6 +213,7 @@ class SuplaSrpc : public ProtocolLayer {
  private:
   void handlePendingCalCfgTimeouts(uint32_t _millis);
   Supla::Device::RemoteDeviceConfig *remoteDeviceConfig = nullptr;
+  bool versionErrorDisconnectPending = false;
 };
 }  // namespace Protocol
 

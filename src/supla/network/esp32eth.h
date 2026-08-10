@@ -106,7 +106,8 @@ class ESPETH : public Supla::LAN {
         IPAddress localIP = ETH.localIP();
         IPAddress subnetMaskIP = ETH.subnetMask();
         IPAddress gatewayIP = ETH.gatewayIP();
-        uint8_t mac[6] = ETH.macAddress();
+        uint8_t mac[6] = {};
+        ETH.macAddress(mac);
         SUPLA_LOG_INFO("localIP: %d.%d.%d.%d",
                        localIP[0],
                        localIP[1],

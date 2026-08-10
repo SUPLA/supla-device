@@ -36,7 +36,7 @@
 
 // Choose where Supla should store roller shutter data in persistant memory
 // We recommend to use external FRAM memory
-// #define FRAM_CS_PIN 10
+// #define FRAM_CS_PIN TBD // choose a free GPIO and replace TBD
 // #define STORAGE_OFFSET 100
 // #include <supla/storage/fram_spi.h>
 // Supla::FramSpi fram(FRAM_CS_PIN, STORAGE_OFFSET);

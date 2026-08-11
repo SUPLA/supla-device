@@ -140,10 +140,11 @@ var searchData=
   ['statusledparameters_137',['StatusLedParameters',['../classSupla_1_1Html_1_1StatusLedParameters.html',1,'Supla::Html']]],
   ['storage_138',['Storage',['../classSupla_1_1Storage.html',1,'Supla::Storage'],['../classSupla_1_1Suplet_1_1Storage.html',1,'Supla::Suplet::Storage']]],
   ['subdevicepairinghandler_139',['SubdevicePairingHandler',['../classSupla_1_1Device_1_1SubdevicePairingHandler.html',1,'Supla::Device']]],
-  ['supladeviceclass_140',['SuplaDeviceClass',['../classSuplaDeviceClass.html',1,'']]],
-  ['suplasomfy_141',['SuplaSomfy',['../classSuplaSomfy.html',1,'']]],
-  ['suplasrpc_142',['SuplaSrpc',['../classSupla_1_1Protocol_1_1SuplaSrpc.html',1,'Supla::Protocol']]],
-  ['swupdate_143',['SwUpdate',['../classSupla_1_1Device_1_1SwUpdate.html',1,'Supla::Device::SwUpdate'],['../classSupla_1_1Html_1_1SwUpdate.html',1,'Supla::Html::SwUpdate']]],
-  ['swupdatebeta_144',['SwUpdateBeta',['../classSupla_1_1Html_1_1SwUpdateBeta.html',1,'Supla::Html']]],
-  ['swupdateobserver_145',['SwUpdateObserver',['../classSupla_1_1Device_1_1SwUpdateObserver.html',1,'Supla::Device']]]
+  ['subdevicepairingobserver_140',['SubdevicePairingObserver',['../classSupla_1_1Device_1_1SubdevicePairingObserver.html',1,'Supla::Device']]],
+  ['supladeviceclass_141',['SuplaDeviceClass',['../classSuplaDeviceClass.html',1,'']]],
+  ['suplasomfy_142',['SuplaSomfy',['../classSuplaSomfy.html',1,'']]],
+  ['suplasrpc_143',['SuplaSrpc',['../classSupla_1_1Protocol_1_1SuplaSrpc.html',1,'Supla::Protocol']]],
+  ['swupdate_144',['SwUpdate',['../classSupla_1_1Device_1_1SwUpdate.html',1,'Supla::Device::SwUpdate'],['../classSupla_1_1Html_1_1SwUpdate.html',1,'Supla::Html::SwUpdate']]],
+  ['swupdatebeta_145',['SwUpdateBeta',['../classSupla_1_1Html_1_1SwUpdateBeta.html',1,'Supla::Html']]],
+  ['swupdateobserver_146',['SwUpdateObserver',['../classSupla_1_1Device_1_1SwUpdateObserver.html',1,'Supla::Device']]]
 ];

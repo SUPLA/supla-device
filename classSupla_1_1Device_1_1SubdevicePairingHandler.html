@@ -90,6 +90,7 @@ $(function(){ initResizable(false); });
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="classSupla_1_1Device_1_1SubdevicePairingHandler-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Supla::Device::SubdevicePairingHandler Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div></div>
 </div><!--header-->
@@ -112,6 +113,18 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ace907eea0c0fa142a868356c5df9573f" id="r_ace907eea0c0fa142a868356c5df9573f"><td class="memItemLeft" align="right" valign="top"><a id="ace907eea0c0fa142a868356c5df9573f" name="ace907eea0c0fa142a868356c5df9573f"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>startPairing</b> (<a class="el" href="classSupla_1_1Protocol_1_1SuplaSrpc.html">Supla::Protocol::SuplaSrpc</a> *srpc, <a class="el" href="structTCalCfg__SubdevicePairingResult.html">TCalCfg_SubdevicePairingResult</a> *result)=0</td></tr>
 <tr class="separator:ace907eea0c0fa142a868356c5df9573f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab28091403a5ecd3e55ae77a4195eec53" id="r_ab28091403a5ecd3e55ae77a4195eec53"><td class="memItemLeft" align="right" valign="top"><a id="ab28091403a5ecd3e55ae77a4195eec53" name="ab28091403a5ecd3e55ae77a4195eec53"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setPairingObserver</b> (<a class="el" href="classSupla_1_1Device_1_1SubdevicePairingObserver.html">SubdevicePairingObserver</a> *newObserver)</td></tr>
+<tr class="separator:ab28091403a5ecd3e55ae77a4195eec53"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a10eb23de4bc5511fbc674cdfb876a176" id="r_a10eb23de4bc5511fbc674cdfb876a176"><td class="memItemLeft" align="right" valign="top"><a id="a10eb23de4bc5511fbc674cdfb876a176" name="a10eb23de4bc5511fbc674cdfb876a176"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>notifySubdevicePairingStarted</b> (uint16_t maximumDurationSec)</td></tr>
+<tr class="separator:a10eb23de4bc5511fbc674cdfb876a176"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0cb9f3912fbeaa1d3f1c87216f61729a" id="r_a0cb9f3912fbeaa1d3f1c87216f61729a"><td class="memItemLeft" align="right" valign="top"><a id="a0cb9f3912fbeaa1d3f1c87216f61729a" name="a0cb9f3912fbeaa1d3f1c87216f61729a"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>notifySubdevicePairingFinished</b> (const <a class="el" href="structTCalCfg__SubdevicePairingResult.html">TCalCfg_SubdevicePairingResult</a> &amp;result)</td></tr>
+<tr class="separator:a0cb9f3912fbeaa1d3f1c87216f61729a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>src/supla/device/<a class="el" href="subdevice__pairing__handler_8h_source.html">subdevice_pairing_handler.h</a></li>

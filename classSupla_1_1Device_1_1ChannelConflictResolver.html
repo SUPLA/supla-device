@@ -90,6 +90,7 @@ $(function(){ initResizable(false); });
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="classSupla_1_1Device_1_1ChannelConflictResolver-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Supla::Device::ChannelConflictResolver Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div></div>
 </div><!--header-->
@@ -116,6 +117,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a81dec823e04ac7b14839b28ba6b1713e" id="r_a81dec823e04ac7b14839b28ba6b1713e"><td class="memItemLeft" align="right" valign="top"><a id="a81dec823e04ac7b14839b28ba6b1713e" name="a81dec823e04ac7b14839b28ba6b1713e"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>onChannelConflictReport</b> (uint8_t *channelReport, uint8_t channelReportSize, bool hasConfilictInvalidType, bool hasConfilictChannelMissingOnServer, bool hasConflictChannelMissingOnDevice)=0</td></tr>
 <tr class="separator:a81dec823e04ac7b14839b28ba6b1713e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7fd8d632871cac2066f131990412a07f" id="r_a7fd8d632871cac2066f131990412a07f"><td class="memItemLeft" align="right" valign="top"><a id="a7fd8d632871cac2066f131990412a07f" name="a7fd8d632871cac2066f131990412a07f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setChannelConflictObserver</b> (<a class="el" href="classSupla_1_1Device_1_1ChannelConflictObserver.html">ChannelConflictObserver</a> *newObserver)</td></tr>
+<tr class="separator:a7fd8d632871cac2066f131990412a07f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:ab782bd1351df3312ebe35748737d1342" id="r_ab782bd1351df3312ebe35748737d1342"><td class="memItemLeft" align="right" valign="top"><a id="ab782bd1351df3312ebe35748737d1342" name="ab782bd1351df3312ebe35748737d1342"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>notifyChannelConflictResolution</b> (bool handled)</td></tr>
+<tr class="separator:ab782bd1351df3312ebe35748737d1342"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>src/supla/device/<a class="el" href="channel__conflict__resolver_8h_source.html">channel_conflict_resolver.h</a></li>

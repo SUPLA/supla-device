@@ -19,6 +19,7 @@
 
 #include <supla/log_wrapper.h>
 #include <supla/storage/config_tags.h>
+#include <supla/time.h>
 
 using Supla::Sensor::MultiDsSensor;
 
@@ -35,7 +36,10 @@ void MultiDsSensor::iterateAlways() {
 
 double MultiDsSensor::getValue() {
   double value = handler->getTemperature(address);
-  if (value == DEVICE_DISCONNECTED_C) {
+  // DallasTemperature uses -127 C for a disconnected device. Keep this
+  // platform-neutral so the common sensor implementation does not depend on
+  // Arduino headers.
+  if (value == -127.0) {
     channel.setStateOffline();
     lastValidValue = TEMPERATURE_NOT_AVAILABLE;
     return lastValidValue;
@@ -68,7 +72,7 @@ void MultiDsSensor::saveSensorConfig() {
   auto config = Supla::Storage::ConfigInstance();
   if (config) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    Supla::Config::generateKey(key, subDeviceId,
+    Supla::Config::generateKey(key, getSubDeviceId(),
                                Supla::ConfigTag::DsSensorConfig);
     SUPLA_LOG_DEBUG("MultiDS: Saving config for key %s", key);
     DsSensorConfig sensorConfig;
@@ -87,7 +91,7 @@ void MultiDsSensor::purgeConfig() {
   auto config = Supla::Storage::ConfigInstance();
   if (config) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    Supla::Config::generateKey(key, subDeviceId,
+    Supla::Config::generateKey(key, getSubDeviceId(),
                                Supla::ConfigTag::DsSensorConfig);
     SUPLA_LOG_DEBUG("MultiDS: Erasing config for key %s", key);
     config->eraseKey(key);

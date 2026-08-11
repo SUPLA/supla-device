@@ -210,6 +210,8 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/therm_hygro_press_meter.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/thermometer.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/thermometer_driver.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/multi_ds_sensor.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/multi_ds_handler_base.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/general_purpose_channel_base.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/general_purpose_measurement.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/general_purpose_meter.cpp

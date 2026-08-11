@@ -22,9 +22,8 @@
 #include <supla/storage/config.h>
 
 #include <stdint.h>
+#include <string.h>
 
-#include <DallasTemperature.h>
-#include <OneWire.h>
 
 namespace Supla {
 namespace Sensor {
@@ -44,8 +43,10 @@ class MultiDsSensor : public Thermometer {
       uint8_t *deviceAddress, bool useSubDevices,
       Supla::Sensor::MultiDsHandlerBase *handler) :
           handler(handler), subDeviceId(subDeviceId) {
+    // Keep the persisted ID separately because useSubDevices=false must leave
+    // the protocol Channel::SubDeviceId at 0 for backward compatibility.
     if (useSubDevices) {
-      channel.setSubDeviceId(subDeviceId);
+      channel.setSubDeviceId(static_cast<uint8_t>(subDeviceId));
     }
     memcpy(address, deviceAddress, 8);
   }
@@ -61,12 +62,12 @@ class MultiDsSensor : public Thermometer {
     return address;
   }
 
-  int getSubDeviceId() {
+  int getSubDeviceId() const {
     return subDeviceId;
   }
 
   bool isOwnerOfSubDeviceId(int subDeviceId) const override {
-    return channel.getSubDeviceId() == subDeviceId;
+    return this->subDeviceId == subDeviceId;
   }
 
   void setDetailsSend(bool send) { detailsSend = send; }
@@ -74,7 +75,7 @@ class MultiDsSensor : public Thermometer {
 
  protected:
   Supla::Sensor::MultiDsHandlerBase *handler;
-  DeviceAddress address = {};
+  uint8_t address[8] = {};
 
  private:
   int subDeviceId = -1;

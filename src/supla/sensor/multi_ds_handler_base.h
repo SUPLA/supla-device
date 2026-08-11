@@ -140,12 +140,16 @@ class MultiDsHandlerBase : public Element,
  protected:
   SuplaDeviceClass *sdc = nullptr;
   MultiDsSensor *sensors[MULTI_DS_MAX_DEVICES_COUNT] = {};
-  Supla::Sensor::MultiDsSensor *addDevice(DeviceAddress deviceAddress,
+  Supla::Sensor::MultiDsSensor *addDevice(uint8_t *deviceAddress,
                                           int channelNumber = -1,
                                           int subDeviceId = -1);
   virtual int refreshSensorsCount() = 0;
   virtual void requestTemperatures() = 0;
   virtual bool getSensorAddress(uint8_t *address, int index) = 0;
+
+  int findFreeSensorSlot() const;
+  int findNextFreeSubDeviceId() const;
+  int findChannelNumber(int sensorSlot) const;
 
  private:
   void notifySrpcAboutParingEnd(int pairingResult, const char *name = nullptr);

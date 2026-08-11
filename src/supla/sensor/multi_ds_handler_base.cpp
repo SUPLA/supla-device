@@ -17,6 +17,7 @@
 #include "multi_ds_handler_base.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include <supla/auto_lock.h>
 #include <supla/log_wrapper.h>
@@ -25,6 +26,8 @@
 #include <supla/protocol/supla_srpc.h>
 #include <supla/device/register_device.h>
 #include <supla/storage/config_tags.h>
+#include <supla/channel.h>
+#include <supla/time.h>
 
 #define DS_HANDLER_ADDRESS_LENGTH 24
 #define DS_NAME "DS18B20"
@@ -34,9 +37,6 @@ using Supla::Sensor::MultiDsHandlerBase;
 MultiDsHandlerBase::MultiDsHandlerBase(
     SuplaDeviceClass *sdc,
     uint8_t pin): sdc(sdc), pin(pin) {
-  if (sdc) {
-    sdc->setChannelConflictResolver(this);
-  }
 }
 
 MultiDsHandlerBase::~MultiDsHandlerBase() {
@@ -57,11 +57,12 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *) {
 
   anySensorLoaded = false;
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  for (int i = 0; i < maxDeviceCount; i++) {
-    int subDeviceId = i + 1;
+  // The numeric part of the key is the persisted SubDeviceId. It is not a
+  // runtime sensor slot, so scan the complete protocol range here.
+  for (int subDeviceId = 1; subDeviceId <= UINT8_MAX; subDeviceId++) {
     Supla::Config::generateKey(key, subDeviceId,
                                Supla::ConfigTag::DsSensorConfig);
-    Supla::Sensor::DsSensorConfig sensorConfig;
+    Supla::Sensor::DsSensorConfig sensorConfig = {};
 
     SUPLA_LOG_DEBUG("MultiDS: Loading config for key %s", key);
     bool configExists = config->getBlob(key,
@@ -87,9 +88,14 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *) {
 }
 
 void MultiDsHandlerBase::onInit() {
-  sdc->addFlags(SUPLA_DEVICE_FLAG_CALCFG_SUBDEVICE_PAIRING);
-  sdc->addFlags(SUPLA_DEVICE_FLAG_BLOCK_ADDING_CHANNELS_AFTER_DELETION);
-  sdc->setSubdevicePairingHandler(this);
+  if (sdc) {
+    // SuplaDevice may still be in static construction when a handler is
+    // created. Register runtime callbacks only during normal element init.
+    sdc->setChannelConflictResolver(this);
+    sdc->addFlags(SUPLA_DEVICE_FLAG_CALCFG_SUBDEVICE_PAIRING);
+    sdc->addFlags(SUPLA_DEVICE_FLAG_BLOCK_ADDING_CHANNELS_AFTER_DELETION);
+    sdc->setSubdevicePairingHandler(this);
+  }
 
   if (searchFirstDevice && !anySensorLoaded) {
     initialSensorSearch();
@@ -119,7 +125,7 @@ void MultiDsHandlerBase::iterateAlways() {
       SUPLA_LOG_DEBUG("MultiDS: Devices count %d", deviceCount);
 
       for (int i = 0; i < deviceCount; i++) {
-        DeviceAddress address;
+        uint8_t address[8] = {};
         if (getSensorAddress(address, i)) {
           bool found = false;
           for (int j = 0; j < maxDeviceCount; j++) {
@@ -200,7 +206,7 @@ bool MultiDsHandlerBase::iterateConnected() {
       SUPLA_LOG_DEBUG("MultiDS: Sending sub device info (idx: %d)", i);
 
       TDS_SubdeviceDetails subdeviceDetails = {};
-      subdeviceDetails.SubDeviceId = i + 1;
+      subdeviceDetails.SubDeviceId = sensor->getChannel()->getSubDeviceId();
       strncpy(subdeviceDetails.Name, DS_NAME, SUPLA_DEVICE_NAME_MAXSIZE - 1);
       addressToString(subdeviceDetails.SerialNumber,
                       SUPLA_SUBDEVICE_SERIAL_NUMBER_MAXSIZE,
@@ -217,20 +223,21 @@ bool MultiDsHandlerBase::iterateConnected() {
 }
 
 Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
-    DeviceAddress deviceAddress, int channelNumber, int subDeviceId) {
+    uint8_t *deviceAddress, int channelNumber, int subDeviceId) {
 
   bool newDevice = (subDeviceId == -1);
-  if (subDeviceId == -1) {
-    for (int i = 0; i < maxDeviceCount; i++) {
-      if (sensors[i] == nullptr) {
-        subDeviceId = i + 1;
-        break;
-      }
-    }
+  int sensorSlot = findFreeSensorSlot();
+  if (sensorSlot == -1) {
+    SUPLA_LOG_DEBUG("MultiDS: Cannot add new device - limit exceeded!");
+    return nullptr;
   }
 
-  if (subDeviceId == -1 || subDeviceId > maxDeviceCount) {
-    SUPLA_LOG_DEBUG("MultiDS: Cannot add new device - limit exceeded!");
+  if (subDeviceId == -1) {
+    subDeviceId = findNextFreeSubDeviceId();
+  }
+
+  if (subDeviceId <= 0 || subDeviceId > UINT8_MAX) {
+    SUPLA_LOG_DEBUG("MultiDS: Cannot add new device - no free subdevice ID!");
     return nullptr;
   }
 
@@ -239,9 +246,16 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
       channelNumber = Supla::RegisterDevice::getNextFreeChannelNumber();
       SUPLA_LOG_DEBUG("MultiDS: Took next channel number - %d", channelNumber);
     } else {
-      channelNumber = channelNumberOffset + subDeviceId - 1;
-      SUPLA_LOG_DEBUG("MultiDS: Channel number calculated - %d", channelNumber);
+      channelNumber = findChannelNumber(sensorSlot);
+      SUPLA_LOG_DEBUG("MultiDS: Took channel number from offset range - %d",
+                      channelNumber);
     }
+  }
+
+  if (channelNumber < 0 ||
+      !Supla::RegisterDevice::isChannelNumberFree(channelNumber)) {
+    SUPLA_LOG_DEBUG("MultiDS: Cannot add new device - no free channel!");
+    return nullptr;
   }
 
   SUPLA_LOG_DEBUG("MultiDS: Creating new sub device with id %d", subDeviceId);
@@ -258,7 +272,10 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
   if (channelStateDisabled) {
     sensor->disableChannelState();
   }
-  sensor->getChannel()->setChannelNumber(channelNumber);
+  if (!sensor->getChannel()->setChannelNumber(channelNumber)) {
+    delete sensor;
+    return nullptr;
+  }
   if (newDevice) {
     sensor->onLoadConfig(sdc);
     sensor->onInit();
@@ -268,8 +285,57 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
   SUPLA_LOG_DEBUG("MultiDS: Device added (subId: %d, number %d)",
       subDeviceId, sensor->getChannel()->getChannelNumber());
 
-  sensors[subDeviceId - 1] = sensor;
+  sensors[sensorSlot] = sensor;
   return sensor;
+}
+
+int MultiDsHandlerBase::findFreeSensorSlot() const {
+  for (int i = 0; i < maxDeviceCount; i++) {
+    if (sensors[i] == nullptr) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+int MultiDsHandlerBase::findNextFreeSubDeviceId() const {
+  for (int candidate = 1; candidate <= UINT8_MAX; candidate++) {
+    bool usedByChannel = false;
+    for (auto channel = Supla::Channel::Begin(); channel != nullptr;
+         channel = channel->next()) {
+      if (channel->getSubDeviceId() == candidate) {
+        usedByChannel = true;
+        break;
+      }
+    }
+
+    if (!usedByChannel &&
+        Supla::Element::getOwnerOfSubDeviceId(candidate) == nullptr) {
+      return candidate;
+    }
+  }
+  return -1;
+}
+
+int MultiDsHandlerBase::findChannelNumber(int sensorSlot) const {
+  if (channelNumberOffset < 0) {
+    return -1;
+  }
+
+  const int preferred = channelNumberOffset + sensorSlot;
+  if (Supla::RegisterDevice::isChannelNumberFree(preferred)) {
+    return preferred;
+  }
+
+  // Keep the offset range tied to handler capacity, not to SubDeviceId. This
+  // also allows a newly paired sensor to reuse a channel freed from a slot.
+  for (int offset = 0; offset < maxDeviceCount; offset++) {
+    const int candidate = channelNumberOffset + offset;
+    if (Supla::RegisterDevice::isChannelNumberFree(candidate)) {
+      return candidate;
+    }
+  }
+  return -1;
 }
 
 bool MultiDsHandlerBase::startPairing(Supla::Protocol::SuplaSrpc *srpc,
@@ -348,6 +414,7 @@ void MultiDsHandlerBase::setMaxDeviceCount(uint8_t count) {
   if (count > MULTI_DS_MAX_DEVICES_COUNT) {
     SUPLA_LOG_WARNING("MultiDS: Setting max count bigger then allowed"
         " - value ignored!");
+    return;
   }
   maxDeviceCount = count;
 }
@@ -388,7 +455,7 @@ void MultiDsHandlerBase::MultiDsHandlerBase::notifySrpcAboutParingEnd(
       len++;
     }
 
-    result.MaximumDurationSec = MUTLI_DS_DEFAULT_PAIRING_DURATION_SEC;
+    result.MaximumDurationSec = pairingTimeout;
     result.NameSize = len;
     result.PairingResult = pairingResult;
 
@@ -408,7 +475,7 @@ void MultiDsHandlerBase::initialSensorSearch() {
     return;
   }
 
-  DeviceAddress address;
+  uint8_t address[8] = {};
   if (!getSensorAddress(address, 0)) {
     SUPLA_LOG_ERROR("MultiDS: Initial search found theremometer but could "
                     "not get it address");

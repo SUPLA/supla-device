@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include <config_mock.h>
+#include <arduino_mock.h>
 
 #include <supla/channel.h>
 #include <supla/protocol/supla_srpc.h>
@@ -33,7 +34,8 @@ using ::testing::_;
 
 class TestMultiDsHandler : public Supla::Sensor::MultiDsHandlerBase {
  public:
-  TestMultiDsHandler() : MultiDsHandlerBase(nullptr, 0) {}
+  explicit TestMultiDsHandler(SuplaDeviceClass *sdc = nullptr)
+      : MultiDsHandlerBase(sdc, 0) {}
 
   Supla::Sensor::MultiDsSensor *add(uint8_t addressByte,
                                     int channelNumber = -1,
@@ -55,11 +57,56 @@ class TestMultiDsHandler : public Supla::Sensor::MultiDsHandlerBase {
     }
   }
 
+  void setDiscoveredSensor(uint8_t addressByte) {
+    discoveredAddress = {0x28, addressByte, 2, 3, 4, 5, 6, addressByte};
+    sensorDiscovered = true;
+  }
+
  protected:
-  int refreshSensorsCount() override { return 0; }
+  int refreshSensorsCount() override { return sensorDiscovered ? 1 : 0; }
   void requestTemperatures() override {}
-  bool getSensorAddress(uint8_t *, int) override { return false; }
+  bool getSensorAddress(uint8_t *address, int index) override {
+    if (!sensorDiscovered || address == nullptr || index != 0) {
+      return false;
+    }
+    memcpy(address, discoveredAddress.data(), discoveredAddress.size());
+    return true;
+  }
   double getTemperature(const uint8_t *) override { return 20.0; }
+
+ private:
+  std::array<uint8_t, 8> discoveredAddress = {};
+  bool sensorDiscovered = false;
+};
+
+class PairingObserver : public Supla::Device::SubdevicePairingObserver {
+ public:
+  void onSubdevicePairingStarted(uint16_t maximumDurationSec) override {
+    started = true;
+    this->maximumDurationSec = maximumDurationSec;
+  }
+
+  void onSubdevicePairingFinished(
+      const TCalCfg_SubdevicePairingResult &result) override {
+    finished = true;
+    pairingResult = result;
+  }
+
+  bool started = false;
+  bool finished = false;
+  uint16_t maximumDurationSec = 0;
+  TCalCfg_SubdevicePairingResult pairingResult = {};
+};
+
+class ConflictObserver : public Supla::Device::ChannelConflictObserver {
+ public:
+  void onChannelConflictResolution(bool handled) override {
+    calls++;
+    lastHandled = handled;
+  }
+
+  int calls = 0;
+  bool lastHandled = false;
 };
 
 class CapturingSrpc : public Supla::Protocol::SuplaSrpc {
@@ -280,6 +327,62 @@ TEST_F(MultiDsHandlerTests, MaxDeviceCountIsClampedAndZeroIsSafe) {
 
   handler.setMaxDeviceCount(MULTI_DS_MAX_DEVICES_COUNT + 1);
   EXPECT_EQ(handler.add(2), nullptr);
+}
+
+TEST_F(MultiDsHandlerTests, PairingObserverReceivesStartAndFinishedResult) {
+  NiceMock<TimeInterfaceMock> time;
+  ON_CALL(time, millis()).WillByDefault(Return(100));
+  TestMultiDsHandler handler;
+  PairingObserver observer;
+  handler.setMaxDeviceCount(0);
+  handler.setDiscoveredSensor(1);
+  handler.setPairingObserver(&observer);
+
+  TCalCfg_SubdevicePairingResult startResult = {};
+  EXPECT_TRUE(handler.startPairing(nullptr, &startResult));
+  EXPECT_TRUE(observer.started);
+  EXPECT_EQ(observer.maximumDurationSec, 5);
+  EXPECT_EQ(startResult.PairingResult,
+            SUPLA_CALCFG_PAIRINGRESULT_PROCEDURE_STARTED);
+
+  handler.iterateAlways();
+
+  EXPECT_TRUE(observer.finished);
+  EXPECT_EQ(observer.pairingResult.PairingResult,
+            SUPLA_CALCFG_PAIRINGRESULT_RESOURCES_LIMIT_EXCEEDED);
+  EXPECT_EQ(observer.pairingResult.MaximumDurationSec, 5);
+}
+
+TEST_F(MultiDsHandlerTests, ConflictObserverReportsUnresolvedConflict) {
+  TestMultiDsHandler handler;
+  ConflictObserver observer;
+  handler.setChannelConflictObserver(&observer);
+
+  EXPECT_FALSE(handler.onChannelConflictReport(
+      nullptr, 0, true, false, false));
+  EXPECT_EQ(observer.calls, 1);
+  EXPECT_FALSE(observer.lastHandled);
+}
+
+TEST_F(MultiDsHandlerTests, ConflictObserverReportsRemovedSensor) {
+  NiceMock<ConfigMock> config;
+  ON_CALL(config, init()).WillByDefault(Return(true));
+  ON_CALL(config, setBlob(_, _, _)).WillByDefault(Return(true));
+  ON_CALL(config, eraseKey(_)).WillByDefault(Return(true));
+  Supla::Storage::SetConfigInstance(&config);
+
+  SuplaDeviceClass sdc;
+  TestMultiDsHandler handler(&sdc);
+  ConflictObserver observer;
+  handler.setChannelConflictObserver(&observer);
+  ASSERT_NE(handler.add(1, 4, 1), nullptr);
+
+  uint8_t report[5] = {};
+  EXPECT_TRUE(handler.onChannelConflictReport(
+      report, sizeof(report), false, true, false));
+  EXPECT_EQ(handler.slot(0), nullptr);
+  EXPECT_EQ(observer.calls, 1);
+  EXPECT_TRUE(observer.lastHandled);
 }
 
 }  // namespace

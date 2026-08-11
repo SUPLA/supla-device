@@ -24,6 +24,12 @@
 namespace Supla {
 namespace Device {
 
+class ChannelConflictObserver {
+ public:
+  virtual ~ChannelConflictObserver() = default;
+  virtual void onChannelConflictResolution(bool handled) = 0;
+};
+
 class ChannelConflictResolver {
  public:
   virtual ~ChannelConflictResolver() = default;
@@ -33,6 +39,20 @@ class ChannelConflictResolver {
       bool hasConfilictInvalidType,
       bool hasConfilictChannelMissingOnServer,
       bool hasConflictChannelMissingOnDevice) = 0;
+
+  void setChannelConflictObserver(ChannelConflictObserver *newObserver) {
+    observer = newObserver;
+  }
+
+ protected:
+  void notifyChannelConflictResolution(bool handled) {
+    if (observer != nullptr) {
+      observer->onChannelConflictResolution(handled);
+    }
+  }
+
+ private:
+  ChannelConflictObserver *observer = nullptr;
 };
 
 struct ChannelConflictResolverListItem {

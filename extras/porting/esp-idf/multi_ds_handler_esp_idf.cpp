@@ -36,7 +36,7 @@ class MultiDsHandlerEspIdf::Impl {
   ~Impl() {
     clearDevices();
     if (bus != nullptr) {
-      owb_gpio_uninitialize(&driverInfo);
+      owb_uninitialize(bus);
       bus = nullptr;
     }
   }
@@ -115,8 +115,11 @@ class MultiDsHandlerEspIdf::Impl {
     }
 
     conversionPending = false;
-    SUPLA_LOG_DEBUG("MultiDS ESP-IDF: Found %d DS18B20 device(s)",
-                    deviceCount);
+    if (deviceCount != lastReportedDeviceCount) {
+      SUPLA_LOG_DEBUG("MultiDS ESP-IDF: Found %d DS18B20 device(s)",
+                      deviceCount);
+      lastReportedDeviceCount = deviceCount;
+    }
     return deviceCount;
   }
 
@@ -206,6 +209,7 @@ class MultiDsHandlerEspIdf::Impl {
   double cachedValues[MULTI_DS_MAX_DEVICES_COUNT] = {};
   bool cachedValueValid[MULTI_DS_MAX_DEVICES_COUNT] = {};
   int deviceCount = 0;
+  int lastReportedDeviceCount = -1;
   uint32_t conversionStartedAtMs = 0;
   bool conversionPending = false;
 };

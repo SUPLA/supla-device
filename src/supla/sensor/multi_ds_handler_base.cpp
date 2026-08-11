@@ -64,11 +64,11 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *) {
                                Supla::ConfigTag::DsSensorConfig);
     Supla::Sensor::DsSensorConfig sensorConfig = {};
 
-    SUPLA_LOG_DEBUG("MultiDS: Loading config for key %s", key);
     bool configExists = config->getBlob(key,
         reinterpret_cast<char *>(&sensorConfig), sizeof(sensorConfig));
 
     if (configExists) {
+      SUPLA_LOG_DEBUG("MultiDS: Loading config for key %s", key);
       anySensorLoaded = true;
       char addressString[DS_HANDLER_ADDRESS_LENGTH] = {};
       addressToString(addressString, DS_HANDLER_ADDRESS_LENGTH,
@@ -359,6 +359,7 @@ bool MultiDsHandlerBase::startPairing(Supla::Protocol::SuplaSrpc *srpc,
   state = MultiDsState::PARING;
   pairingStartTimeMs = millis();
   this->srpc = srpc;
+  notifySubdevicePairingStarted(pairingTimeout);
   return true;
 }
 
@@ -371,13 +372,16 @@ bool MultiDsHandlerBase::onChannelConflictReport(
   if (hasConflictChannelMissingOnDevice) {
     SUPLA_LOG_ERROR("MultiDS: Channel conflict - channel missing on device. "
         "Aborting...");
+    notifyChannelConflictResolution(false);
     return false;
   }
   if (hasConflictInvalidType) {
     SUPLA_LOG_ERROR("MultiDS: Channel conflict - channel type mismatch. "
         "Aborting...");
+    notifyChannelConflictResolution(false);
     return false;
   }
+  bool handled = false;
   if (hasConflictChannelMissingOnServer) {
     SUPLA_LOG_INFO(
         "MultiDS: Channel conflict - channel missing on server. "
@@ -403,11 +407,13 @@ bool MultiDsHandlerBase::onChannelConflictReport(
         delete sensor;
         sensor = nullptr;
         sensors[i] = nullptr;
+        handled = true;
       }
     }
   }
 
-  return false;
+  notifyChannelConflictResolution(handled);
+  return handled;
 }
 
 void MultiDsHandlerBase::setMaxDeviceCount(uint8_t count) {
@@ -439,26 +445,27 @@ void MultiDsHandlerBase::searchForFirstSensorDuringInitialization() {
   searchFirstDevice = true;
 }
 
-void MultiDsHandlerBase::MultiDsHandlerBase::notifySrpcAboutParingEnd(
+void MultiDsHandlerBase::notifySrpcAboutParingEnd(
     int pairingResult, const char *name) {
+  TCalCfg_SubdevicePairingResult result = {};
+  if (pairingStartTimeMs != 0) {
+    result.ElapsedTimeSec = (millis() - pairingStartTimeMs) / 1000;
+  }
+  int len = 0;
+  if (name &&
+      pairingResult != SUPLA_CALCFG_PAIRINGRESULT_NO_NEW_DEVICE_FOUND) {
+    len = strnlen(name, sizeof(result.Name) - 1);
+    strncpy(result.Name, name, len);
+    len++;
+  }
+
+  result.MaximumDurationSec = pairingTimeout;
+  result.NameSize = len;
+  result.PairingResult = pairingResult;
+
+  notifySubdevicePairingFinished(result);
 
   if (srpc) {
-    TCalCfg_SubdevicePairingResult result = {};
-    if (pairingStartTimeMs != 0) {
-      result.ElapsedTimeSec = (millis() - pairingStartTimeMs) / 1000;
-    }
-    int len = 0;
-    if (name &&
-        pairingResult != SUPLA_CALCFG_PAIRINGRESULT_NO_NEW_DEVICE_FOUND) {
-      len = strnlen(name, sizeof(result.Name) - 1);
-      strncpy(result.Name, name, len);
-      len++;
-    }
-
-    result.MaximumDurationSec = pairingTimeout;
-    result.NameSize = len;
-    result.PairingResult = pairingResult;
-
     srpc->sendPendingCalCfgResult(-1, SUPLA_CALCFG_RESULT_TRUE, -1,
         sizeof(result), &result);
     srpc->clearPendingCalCfgResult(-1);

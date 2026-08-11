@@ -117,11 +117,11 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#ifndef SRC_SUPLA_STORAGE_FRAM_SPI_H_</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#define SRC_SUPLA_STORAGE_FRAM_SPI_H_</span></div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &quot;Adafruit_FRAM_SPI.h&quot;</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &quot;storage.h&quot;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;SPI.h&gt;</span></div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &lt;supla/log_wrapper.h&gt;</span></div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &lt;SPI.h&gt;</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &lt;supla/log_wrapper.h&gt;</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &quot;Adafruit_FRAM_SPI.h&quot;</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &quot;storage.h&quot;</span></div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> </div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="preprocessor">#define SUPLA_FRAM_WRITING_PERIOD 1000</span></div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
@@ -180,32 +180,31 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>      }</div>
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span> </div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>      SUPLA_LOG_INFO(</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>          <span class="stringliteral">&quot;FRAM: Read %d bytes [%s] (offset %d)&quot;</span>,</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>          size, logBuffer, offset);</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    }</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span> </div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <span class="keywordflow">return</span> size;</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>  }</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>  <span class="keywordtype">int</span> writeStorage(<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> offset,</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>                   <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *buf,</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>                   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> size) {</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>    fram.writeEnable(<span class="keyword">true</span>);</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    fram.write(offset, <span class="keyword">const_cast&lt;</span>uint8_t *<span class="keyword">&gt;</span>(buf), size);</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    fram.writeEnable(<span class="keyword">false</span>);</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span> </div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    SUPLA_LOG_INFO(<span class="stringliteral">&quot;FRAM: Wrote %d bytes (offset %d)&quot;</span>, size, offset);</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span> </div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>    <span class="keywordflow">return</span> size;</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>  }</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span> </div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>  Adafruit_FRAM_SPI fram;</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>};</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>          <span class="stringliteral">&quot;FRAM: Read %d bytes [%s] (offset %d)&quot;</span>, size, logBuffer, offset);</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    }</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span> </div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    <span class="keywordflow">return</span> size;</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>  }</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span> </div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>  <span class="keywordtype">int</span> writeStorage(<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> offset,</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>                   <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *buf,</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>                   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> size) {</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    fram.writeEnable(<span class="keyword">true</span>);</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>    fram.write(offset, <span class="keyword">const_cast&lt;</span>uint8_t *<span class="keyword">&gt;</span>(buf), size);</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    fram.writeEnable(<span class="keyword">false</span>);</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span> </div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    SUPLA_LOG_INFO(<span class="stringliteral">&quot;FRAM: Wrote %d bytes (offset %d)&quot;</span>, size, offset);</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    <span class="keywordflow">return</span> size;</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>  }</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span> </div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>  Adafruit_FRAM_SPI fram;</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>};</div>
 </div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span> </div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>};  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span> </div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_STORAGE_FRAM_SPI_H_</span></div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span> </div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span> </div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_STORAGE_FRAM_SPI_H_</span></div>
 <div class="ttc" id="aclassSupla_1_1FramSpi_html"><div class="ttname"><a href="classSupla_1_1FramSpi.html">Supla::FramSpi</a></div><div class="ttdef"><b>Definition</b> fram_spi.h:37</div></div>
 <div class="ttc" id="aclassSupla_1_1Storage_html"><div class="ttname"><a href="classSupla_1_1Storage.html">Supla::Storage</a></div><div class="ttdef"><b>Definition</b> storage.h:38</div></div>
 </div><!-- fragment --></div><!-- contents -->

@@ -384,9 +384,9 @@ virtual <a class="el" href="classSupla_1_1Channel.html">Channel</a> *&#160;</td>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a5ba1e67988e32859dadc17cb83cb4a0e" id="r_a5ba1e67988e32859dadc17cb83cb4a0e"><td class="memItemLeft" align="right" valign="top"><a id="a5ba1e67988e32859dadc17cb83cb4a0e" name="a5ba1e67988e32859dadc17cb83cb4a0e"></a>
-<a class="el" href="classSupla_1_1Sensor_1_1MultiDsSensor.html">Supla::Sensor::MultiDsSensor</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>addDevice</b> (DeviceAddress deviceAddress, int channelNumber=-1, int subDeviceId=-1)</td></tr>
-<tr class="separator:a5ba1e67988e32859dadc17cb83cb4a0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1dd552300ee8c87cc7a1452f6f2638f6" id="r_a1dd552300ee8c87cc7a1452f6f2638f6"><td class="memItemLeft" align="right" valign="top"><a id="a1dd552300ee8c87cc7a1452f6f2638f6" name="a1dd552300ee8c87cc7a1452f6f2638f6"></a>
+<a class="el" href="classSupla_1_1Sensor_1_1MultiDsSensor.html">Supla::Sensor::MultiDsSensor</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>addDevice</b> (uint8_t *deviceAddress, int channelNumber=-1, int subDeviceId=-1)</td></tr>
+<tr class="separator:a1dd552300ee8c87cc7a1452f6f2638f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a824e925c335a4dfac0ae26370e42d866" id="r_a824e925c335a4dfac0ae26370e42d866"><td class="memItemLeft" align="right" valign="top"><a id="a824e925c335a4dfac0ae26370e42d866" name="a824e925c335a4dfac0ae26370e42d866"></a>
 virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>refreshSensorsCount</b> ()=0</td></tr>
 <tr class="separator:a824e925c335a4dfac0ae26370e42d866"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -396,6 +396,15 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>requestTemper
 <tr class="memitem:a3a1c3c66da044d73d25f348862209998" id="r_a3a1c3c66da044d73d25f348862209998"><td class="memItemLeft" align="right" valign="top"><a id="a3a1c3c66da044d73d25f348862209998" name="a3a1c3c66da044d73d25f348862209998"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>getSensorAddress</b> (uint8_t *address, int index)=0</td></tr>
 <tr class="separator:a3a1c3c66da044d73d25f348862209998"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2f3a980e99dc3bcfad36bba23634d66" id="r_ac2f3a980e99dc3bcfad36bba23634d66"><td class="memItemLeft" align="right" valign="top"><a id="ac2f3a980e99dc3bcfad36bba23634d66" name="ac2f3a980e99dc3bcfad36bba23634d66"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>findFreeSensorSlot</b> () const</td></tr>
+<tr class="separator:ac2f3a980e99dc3bcfad36bba23634d66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5296fdc74c8ec89b1d31404a0b688b5" id="r_ad5296fdc74c8ec89b1d31404a0b688b5"><td class="memItemLeft" align="right" valign="top"><a id="ad5296fdc74c8ec89b1d31404a0b688b5" name="ad5296fdc74c8ec89b1d31404a0b688b5"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>findNextFreeSubDeviceId</b> () const</td></tr>
+<tr class="separator:ad5296fdc74c8ec89b1d31404a0b688b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d4a8b996bbbf395aac8268d941433db" id="r_a5d4a8b996bbbf395aac8268d941433db"><td class="memItemLeft" align="right" valign="top"><a id="a5d4a8b996bbbf395aac8268d941433db" name="a5d4a8b996bbbf395aac8268d941433db"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>findChannelNumber</b> (int sensorSlot) const</td></tr>
+<tr class="separator:a5d4a8b996bbbf395aac8268d941433db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>

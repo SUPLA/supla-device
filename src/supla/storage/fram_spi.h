@@ -24,11 +24,11 @@
 #ifndef SRC_SUPLA_STORAGE_FRAM_SPI_H_
 #define SRC_SUPLA_STORAGE_FRAM_SPI_H_
 
-#include "Adafruit_FRAM_SPI.h"
-#include "storage.h"
-
 #include <SPI.h>
 #include <supla/log_wrapper.h>
+
+#include "Adafruit_FRAM_SPI.h"
+#include "storage.h"
 
 #define SUPLA_FRAM_WRITING_PERIOD 1000
 
@@ -86,8 +86,7 @@ class FramSpi : public Storage {
       }
 
       SUPLA_LOG_INFO(
-          "FRAM: Read %d bytes [%s] (offset %d)",
-          size, logBuffer, offset);
+          "FRAM: Read %d bytes [%s] (offset %d)", size, logBuffer, offset);
     }
 
     return size;

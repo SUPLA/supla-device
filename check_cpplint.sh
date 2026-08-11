@@ -3,13 +3,23 @@
 cpplint --version
 
 EXIT_STATUS=0
-cpplint --filter=-build/include_subdir --quiet ./src/* || EXIT_STATUS=$?
-cpplint --filter=-build/include_subdir --quiet --recursive ./src/supla/* || EXIT_STATUS=$?
-cpplint --filter=-build/include_subdir --quiet --recursive ./extras/porting/* || EXIT_STATUS=$?
-cpplint --filter=-build/include_subdir,-build/include_order --quiet ./extras/examples/linux/* || EXIT_STATUS=$?
-cpplint --filter=-build/include_subdir --quiet ./extras/examples/esp8266_rtos/main/* || EXIT_STATUS=$?
-cpplint --filter=-build/include_subdir --quiet ./extras/examples/esp_idf/main/* || EXIT_STATUS=$?
-cpplint --filter=-build/include_subdir --quiet ./extras/examples/freertos_linux/main.cpp || EXIT_STATUS=$?
+
+mapfile -d '' -t CPP_FILES < <(
+  find ./src -maxdepth 1 -type f \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
+  find ./src/supla ./extras/porting -type f \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
+  find ./extras/examples/esp8266_rtos/main ./extras/examples/esp_idf/main \
+    -maxdepth 1 -type f \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
+  find ./extras/examples/freertos_linux -maxdepth 1 -type f -name 'main.cpp' -print0
+)
+
+mapfile -d '' -t LINUX_CPP_FILES < <(
+  find ./extras/examples/linux -maxdepth 1 -type f \
+    \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
+)
+
+cpplint --filter=-build/include_subdir --quiet "${CPP_FILES[@]}" || EXIT_STATUS=$?
+cpplint --filter=-build/include_subdir,-build/include_order --quiet \
+  "${LINUX_CPP_FILES[@]}" || EXIT_STATUS=$?
 
 if [ $EXIT_STATUS -ne 0 ]
 then

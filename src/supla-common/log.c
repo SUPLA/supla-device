@@ -151,7 +151,7 @@ void supla_vlog(int __pri, const char *message) {
   serialPrintLn(message);
 }
 #elif defined(ESP_PLATFORM)
-// variant for ESP8266 RTOS and ESP-IDF
+// variant for ESP-IDF
 void supla_vlog(int __pri, const char *message) {
   switch (__pri) {
     case LOG_VERBOSE:

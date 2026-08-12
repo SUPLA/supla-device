@@ -16,10 +16,7 @@
 
 #include "nvs_config.h"
 
-#ifdef SUPLA_DEVICE_ESP32
 #include <esp_random.h>
-#endif
-
 #include <supla/crc16.h>
 #include <esp_system.h>
 #include <nvs.h>

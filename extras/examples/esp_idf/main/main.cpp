@@ -31,7 +31,7 @@
 #include <supla/debug/debug_log_tcp_server.h>
 #include <supla/time.h>
 
-// Supla extras/porting/esp-idf files - specific to ESP-IDF and ESP8266 RTOS
+// Supla extras/porting/esp-idf files - specific to ESP-IDF
 // targets
 #include <esp_idf_web_server.h>
 #include <esp_idf_wifi.h>

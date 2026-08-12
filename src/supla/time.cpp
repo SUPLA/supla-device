@@ -40,7 +40,7 @@ void delayMicroseconds(uint64_t delayMicro) {
 }
 
 #elif defined(ESP_PLATFORM)
-// ESP8266 RTOS SDK and ESP-IDF compilation
+// ESP-IDF compilation
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <unistd.h>

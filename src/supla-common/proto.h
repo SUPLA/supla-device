@@ -46,7 +46,7 @@ struct _supla_timeval {
 
 #elif defined(ESP8266) || defined(ESP32) || defined(ESP_PLATFORM)
 // *** Espressif NONOS SDK for ESP8266 OR ARDUINO WITH ESP8266 or ESP32 ***
-// *** ESP-IDF, ESP8266 RTOS SDK ***
+// *** ESP-IDF ***
 #ifndef ESP_PLATFORM
 #ifndef ARDUINO
 #include <mem.h>

@@ -30,9 +30,7 @@
 #include <esp_event.h>
 #include <esp_netif.h>
 
-#ifdef SUPLA_DEVICE_ESP32
 #include <esp_mac.h>
-#endif
 
 // Supla includes
 #include <SuplaDevice.h>

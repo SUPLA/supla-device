@@ -132,7 +132,7 @@ void initTimers() {
   TIMSK2 |= (1 << OCIE2A);
   sei();  // allow interrupts
 #elif defined(ESP_PLATFORM)
-  // ESP-IDF and ESP8266 RTOS (non Arduino)
+  // ESP-IDF (non Arduino)
 
   const esp_timer_create_args_t timerArgsSlow = {
       .callback = &slowerTimerCb,

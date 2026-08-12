@@ -26,30 +26,13 @@
 #error This file is for ESP-IDF platform
 #endif
 
-#ifndef SUPLA_DEVICE_ESP32
-// ESP8266 RTOS SDK doesn't provide some methods, so we add empty implementation
-
-void gpio_hold_en(gpio_num_t gpio) {
-  (void)(gpio);
-}
-
-void gpio_hold_dis(gpio_num_t gpio) {
-  (void)(gpio);
-}
-#endif
-
 namespace {
 
 bool gpioSupportsHold(gpio_num_t gpio) {
-#ifdef SUPLA_DEVICE_ESP32
 #ifdef GPIO_IS_VALID_OUTPUT_GPIO
   return GPIO_IS_VALID_OUTPUT_GPIO(gpio);
 #elif defined(CONFIG_IDF_TARGET_ESP32)
   return gpio >= 0 && gpio <= 33;
-#else
-  (void)(gpio);
-  return true;
-#endif
 #else
   (void)(gpio);
   return true;

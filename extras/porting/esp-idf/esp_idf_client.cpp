@@ -35,21 +35,6 @@
 
 #include "supla/network/client.h"
 
-#ifndef SUPLA_DEVICE_ESP32
-// delete name variant is deprecated in ESP-IDF, however ESP8266 RTOS still
-// use it.
-#define esp_tls_conn_destroy esp_tls_conn_delete
-
-// Latest ESP-IDF moved definition of esp_tls_t to private section and added
-// methods to access members. This change is missing in esp8266, so below
-// method is added to keep the same functionality
-void esp_tls_get_error_handle(esp_tls_t *client,
-                              esp_tls_error_handle_t *errorHandle) {
-  *errorHandle = client->error_handle;
-}
-
-#endif
-
 namespace {
 Supla::ConnectionError mapConnectionError(int error,
                                           int tlsError,

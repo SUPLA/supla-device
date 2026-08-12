@@ -13,7 +13,7 @@ RUN apt update && \
 RUN mkdir supla
 WORKDIR /supla
 
-# Download and install espressif toolset and ESP8266 RTOS SDK
+# Download and install ESP-IDF
 RUN mkdir esp && \
     cd esp && \
     git clone --recursive https://github.com/espressif/esp-idf.git && \
@@ -28,4 +28,3 @@ WORKDIR /supla/projects
 ENV SUPLA_DEVICE_PATH="/supla/supla-device"
 ENV ESP_TOOLSET="esp32"
 RUN echo "source /supla/esp/esp-idf/export.sh" >> ~/.bashrc
-

@@ -104,12 +104,6 @@ static void formatHttpClientError(const char *prefix,
   snprintf(buf, bufLen, "%s: Error %d", prefix, errorCode);
 }
 
-#ifndef SUPLA_DEVICE_ESP32
-// ESP8266 RTOS doesn't have OTA_WITH_SEQUENTIAL_WRITES, so we replace it with
-// default OTA_SIZE_UNKNOWN for ESP8266 target.
-#define OTA_WITH_SEQUENTIAL_WRITES OTA_SIZE_UNKNOWN
-#endif
-
 Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(
     SuplaDeviceClass *sdc, const char *newUrl, Supla::SwUpdateMode mode) {
   return new Supla::EspIdfOta(sdc, newUrl, mode);

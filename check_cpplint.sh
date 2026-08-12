@@ -7,7 +7,7 @@ EXIT_STATUS=0
 mapfile -d '' -t CPP_FILES < <(
   find ./src -maxdepth 1 -type f \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
   find ./src/supla ./extras/porting -type f \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
-  find ./extras/examples/esp8266_rtos/main ./extras/examples/esp_idf/main \
+  find ./extras/examples/esp_idf/main \
     -maxdepth 1 -type f \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
   find ./extras/examples/freertos_linux -maxdepth 1 -type f -name 'main.cpp' -print0
 )

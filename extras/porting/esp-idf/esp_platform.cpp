@@ -18,9 +18,7 @@
 
 #include <esp_system.h>
 #include <esp_random.h>
-#ifdef SUPLA_DEVICE_ESP32
 #include <esp_chip_info.h>
-#endif
 #include <supla/tools.h>
 
 void deviceSoftwareReset() {
@@ -40,7 +38,6 @@ bool Supla::isLastResetPower() {
 }
 
 int Supla::getPlatformId() {
-#ifdef SUPLA_DEVICE_ESP32
   esp_chip_info_t chipInfo = {};
   esp_chip_info(&chipInfo);
   switch (chipInfo.model) {
@@ -67,8 +64,6 @@ int Supla::getPlatformId() {
     default:
       return 0;
   }
-#endif
-  return 1;  // ESP8266
 }
 
 void Supla::fillRandom(uint8_t *buffer, int size) {

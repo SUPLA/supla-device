@@ -114,8 +114,7 @@ void Supla::Sha256::digest(uint8_t *output, int length) {
   memcpy(output, fullDigest, length);
 }
 
-#elif defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266) || \
-    defined(SUPLA_DEVICE_ESP8266)
+#elif defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
 
 #include <bearssl/bearssl_hash.h>
 

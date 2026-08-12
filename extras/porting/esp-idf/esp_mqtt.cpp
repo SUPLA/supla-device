@@ -21,8 +21,7 @@
 #include <errno.h>
 
 #include <SuplaDevice.h>
-#if defined(SUPLA_DEVICE_ESP32) && \
-    defined(CONFIG_MBEDTLS_CERTIFICATE_BUNDLE) && \
+#if defined(CONFIG_MBEDTLS_CERTIFICATE_BUNDLE) && \
     CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
 #include <esp_crt_bundle.h>
 #endif
@@ -186,12 +185,10 @@ static void mqttEventHandler(void *handler_args,
                         event->error_handle->esp_tls_last_esp_err);
         SUPLA_LOG_DEBUG("Last tls stack error number: 0x%x",
                         event->error_handle->esp_tls_stack_err);
-#ifdef SUPLA_DEVICE_ESP32
         SUPLA_LOG_DEBUG(
             "Last captured errno : %d (%s)",
             event->error_handle->esp_transport_sock_errno,
             strerror(event->error_handle->esp_transport_sock_errno));
-#endif
       } else if (event->error_handle->error_type ==
                  MQTT_ERROR_TYPE_CONNECTION_REFUSED) {
         switch (event->error_handle->connect_return_code) {
@@ -294,8 +291,6 @@ void Supla::Protocol::EspMqtt::onInit() {
   MqttTopic lastWill(prefix);
   lastWill = lastWill / "state" / "connected";
 
-#ifdef SUPLA_DEVICE_ESP32
-  // ESP32 ESP-IDF setup
   mqttCfg.broker.address.hostname = server;
   mqttCfg.broker.address.port = port;
   if (useAuth) {
@@ -354,27 +349,6 @@ void Supla::Protocol::EspMqtt::onInit() {
   mqttCfg.session.last_will.retain = 1;
 
   mqttCfg.credentials.client_id = clientId;
-#else
-  // ESP866 RTOS setup
-  mqttCfg.host = server;
-  mqttCfg.port = port;
-  if (useAuth) {
-    mqttCfg.username = user;
-    mqttCfg.password = password;
-  }
-  if (useTls) {
-    mqttCfg.transport = MQTT_TRANSPORT_OVER_SSL;
-  } else {
-    mqttCfg.transport = MQTT_TRANSPORT_OVER_TCP;
-  }
-  mqttCfg.keepalive = sdc->getActivityTimeout();
-
-  mqttCfg.lwt_topic = lastWill.c_str();
-  mqttCfg.lwt_msg = "false";
-  mqttCfg.lwt_retain = 1;
-
-  mqttCfg.client_id = clientId;
-#endif
 
   client = esp_mqtt_client_init(&mqttCfg);
   esp_mqtt_client_register_event(

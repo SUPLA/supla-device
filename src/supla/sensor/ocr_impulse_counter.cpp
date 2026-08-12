@@ -393,17 +393,18 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
         "OcrIC: parseStatus failed - missing resultMeasurement end");
     return;
   }
-  if (resultMeasurementEnd - resultMeasurementStart > 100) {
+  char buf[100] = {};
+  const size_t resultMeasurementSize =
+      resultMeasurementEnd - resultMeasurementStart;
+  if (resultMeasurementSize >= sizeof(buf)) {
     SUPLA_LOG_WARNING(
-        "OcrIC: parseStatus failed - resultMeasurement too long, %d > 100",
-        resultMeasurementEnd - resultMeasurementStart);
+        "OcrIC: parseStatus failed - resultMeasurement too long, %u >= %u",
+        static_cast<unsigned>(resultMeasurementSize),
+        static_cast<unsigned>(sizeof(buf)));
     return;
   }
-  char buf[100] = {};
-  strncpy(buf,
-          resultMeasurementStart,
-          resultMeasurementEnd - resultMeasurementStart);
-  buf[resultMeasurementEnd - resultMeasurementStart] = '\0';
+  strncpy(buf, resultMeasurementStart, resultMeasurementSize);
+  buf[resultMeasurementSize] = '\0';
   SUPLA_LOG_DEBUG("OcrIC: parseStatus - resultMeasurement: %s",
                   buf);
   uint64_t resultMeasurement = strtoull(buf, nullptr, 10);

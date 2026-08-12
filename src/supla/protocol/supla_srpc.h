@@ -75,6 +75,7 @@ class SuplaSrpc : public ProtocolLayer {
   bool iterate(uint32_t _millis) override;
   bool isNetworkRestartRequested() override;
   uint32_t getConnectionFailTime() override;
+  ConnectionError getConnectionError() const override;
   bool isRegisteredAndReady() override;
   void initClient();
 

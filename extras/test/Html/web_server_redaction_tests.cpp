@@ -65,6 +65,7 @@ TEST(WebServerRedactionTests, LeavesNonSensitiveFieldsUntouched) {
 TEST(WebServerRedactionTests, DetectsSensitiveFieldNames) {
   EXPECT_TRUE(Supla::isSensitiveLogField("cfg_pwd"));
   EXPECT_TRUE(Supla::isSensitiveLogField("custom_ca"));
+  EXPECT_TRUE(Supla::isSensitiveLogField("mqtt_ca"));
   EXPECT_TRUE(Supla::isSensitiveLogField("apiToken"));
   EXPECT_TRUE(Supla::isSensitiveLogField("wpw"));
   EXPECT_TRUE(Supla::isSensitiveLogField("mqttuser"));

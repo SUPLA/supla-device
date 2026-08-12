@@ -86,6 +86,10 @@ bool ProtocolLayer::isConnectionError() {
   return false;
 }
 
+Supla::ConnectionError ProtocolLayer::getConnectionError() const {
+  return Supla::ConnectionError::NONE;
+}
+
 bool ProtocolLayer::isConnecting() {
   return false;
 }

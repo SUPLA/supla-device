@@ -422,8 +422,23 @@ TEST(KeyValueTests, blobSizeReturnsExactPayloadSize) {
   EXPECT_EQ(kvStorage.getBlobSizeForTest("text"), -1);
 }
 
+TEST(KeyValueTests, stringSizeIncludesTerminatorAndReportsMissingKey) {
+  KeyValueTest kvStorage;
+
+  EXPECT_EQ(kvStorage.getStringSize(nullptr), -1);
+  EXPECT_EQ(kvStorage.getStringSize("missing"), -1);
+  EXPECT_TRUE(kvStorage.setString("empty", ""));
+  EXPECT_EQ(kvStorage.getStringSize("empty"), 1);
+  EXPECT_TRUE(kvStorage.setString("payload", "abc"));
+  EXPECT_EQ(kvStorage.getStringSize("payload"), 4);
+  EXPECT_TRUE(kvStorage.setBlob("blob", "abc", 3));
+  EXPECT_EQ(kvStorage.getStringSize("blob"), -1);
+}
+
 TEST(KeyValueTests, variousKVChecks) {
   KeyValueTest kvStorage;
+
+  EXPECT_TRUE(kvStorage.isMqttBrokerVerificationEnabled());
 
   int8_t result8 = {};
 
@@ -473,6 +488,8 @@ TEST(KeyValueTests, variousKVChecks) {
 
   EXPECT_TRUE(kvStorage.setMqttCommProtocolEnabled(true));
   EXPECT_TRUE(kvStorage.setMqttServer("mqtt.server"));
+  EXPECT_FALSE(kvStorage.isMqttBrokerVerificationEnabled());
+  EXPECT_TRUE(kvStorage.setMqttBrokerVerificationEnabled(true));
   EXPECT_TRUE(kvStorage.setMqttServerPort(42));
   EXPECT_TRUE(kvStorage.setMqttUser("mqtt user"));
   EXPECT_TRUE(kvStorage.setMqttPassword("mqtt pass"));
@@ -481,9 +498,13 @@ TEST(KeyValueTests, variousKVChecks) {
   EXPECT_TRUE(kvStorage.setMqttAuthEnabled(false));
   EXPECT_TRUE(kvStorage.setMqttRetainEnabled(true));
   EXPECT_TRUE(kvStorage.setMqttPrefix("supla test"));
+  EXPECT_TRUE(kvStorage.setMqttCA("mqtt CA certificate"));
 
   EXPECT_TRUE(kvStorage.isMqttCommProtocolEnabled());
   EXPECT_TRUE(kvStorage.isMqttTlsEnabled());
+  EXPECT_TRUE(kvStorage.isMqttBrokerVerificationEnabled());
+  EXPECT_TRUE(kvStorage.setMqttBrokerVerificationEnabled(false));
+  EXPECT_FALSE(kvStorage.isMqttBrokerVerificationEnabled());
   EXPECT_FALSE(kvStorage.isMqttAuthEnabled());
   EXPECT_TRUE(kvStorage.isMqttRetainEnabled());
 
@@ -497,6 +518,11 @@ TEST(KeyValueTests, variousKVChecks) {
   EXPECT_EQ(kvStorage.getMqttQos(), 2);
   EXPECT_TRUE(kvStorage.getMqttPrefix(buf));
   EXPECT_STREQ(buf, "supla test");
+  EXPECT_EQ(kvStorage.getMqttCASize(), 19);
+  EXPECT_TRUE(kvStorage.getMqttCA(buf, sizeof(buf)));
+  EXPECT_STREQ(buf, "mqtt CA certificate");
+  EXPECT_TRUE(kvStorage.setMqttCA(""));
+  EXPECT_EQ(kvStorage.getMqttCASize(), 0);
 
   EXPECT_TRUE(kvStorage.setWiFiSSID("ssid"));
   EXPECT_TRUE(kvStorage.setWiFiPassword("pass"));

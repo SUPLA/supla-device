@@ -95,6 +95,9 @@ class ConfigMock : public Supla::Config {
   MOCK_METHOD(bool, getCustomCA, (char* result, int maxSize), (override));
   MOCK_METHOD(int, getCustomCASize, (), (override));
   MOCK_METHOD(bool, setCustomCA, (const char* customCA), (override));
+  MOCK_METHOD(bool, getMqttCA, (char* result, int maxSize), (override));
+  MOCK_METHOD(int, getMqttCASize, (), (override));
+  MOCK_METHOD(bool, setMqttCA, (const char* mqttCA), (override));
   MOCK_METHOD(bool, setSuplaCommProtocolEnabled, (bool enabled), (override));
   MOCK_METHOD(bool, setSuplaServer, (const char* server), (override));
   MOCK_METHOD(bool, setSuplaServerPort, (int32_t port), (override));
@@ -114,6 +117,9 @@ class ConfigMock : public Supla::Config {
   MOCK_METHOD(bool, isMqttCommProtocolEnabled, (), (override));
   MOCK_METHOD(bool, setMqttTlsEnabled, (bool enabled), (override));
   MOCK_METHOD(bool, isMqttTlsEnabled, (), (override));
+  MOCK_METHOD(bool, setMqttBrokerVerificationEnabled, (bool enabled),
+              (override));
+  MOCK_METHOD(bool, isMqttBrokerVerificationEnabled, (), (override));
   MOCK_METHOD(bool, setMqttAuthEnabled, (bool enabled), (override));
   MOCK_METHOD(bool, isMqttAuthEnabled, (), (override));
   MOCK_METHOD(bool, setMqttRetainEnabled, (bool enabled), (override));

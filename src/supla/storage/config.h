@@ -78,6 +78,8 @@ class Config {
   // Generic getters and setters
   virtual bool setString(const char* key, const char* value) = 0;
   virtual bool getString(const char* key, char* value, size_t maxSize) = 0;
+  // Returns stored string size including the terminating NUL, or -1 when the
+  // key is missing, invalid, or stores a non-string value.
   virtual int getStringSize(const char* key) = 0;
 
   virtual bool setBlob(const char* key, const char* value, size_t blobSize) = 0;
@@ -170,6 +172,8 @@ class Config {
   virtual bool isMqttCommProtocolEnabled();
   virtual bool setMqttTlsEnabled(bool enabled);
   virtual bool isMqttTlsEnabled();
+  virtual bool setMqttBrokerVerificationEnabled(bool enabled);
+  virtual bool isMqttBrokerVerificationEnabled();
   virtual bool setMqttAuthEnabled(bool enabled);
   virtual bool isMqttAuthEnabled();
   virtual bool setMqttRetainEnabled(bool enabled);
@@ -181,6 +185,10 @@ class Config {
   virtual int32_t getMqttQos();
   virtual bool setMqttPrefix(const char* prefix);
   virtual bool getMqttPrefix(char* result);
+  virtual bool setMqttCA(const char* mqttCA);
+  virtual bool getMqttCA(char* result, int maxSize);
+  // Returns MQTT CA payload size without the terminating NUL.
+  virtual int getMqttCASize();
 
   // WiFi config
   virtual bool setWiFiSSID(const char* ssid);

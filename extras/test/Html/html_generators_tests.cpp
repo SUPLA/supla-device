@@ -721,6 +721,36 @@ TEST_F(HtmlCaptureTest, ProtocolParametersRendersSimpleProtocolSelector) {
               HasSubstr("<div class=\"form-field sensitive\"><label "
                         "for=\"mqttpasswd\">Password (required, max 255)"
                         "</label>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<label for=\"mqtt_ca\">Broker CA certificate "
+                        "(PEM)</label>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<textarea maxlength=\"3999\" name=\"mqtt_ca\" "
+                        "id=\"mqtt_ca\" "
+                        "placeholder=\"Leave empty to use the system CA "
+                        "bundle\"></textarea>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<select name=\"mqttverify\" id=\"mqttverify\" "
+                        "onchange=\"mqttVerificationChange();\">"));
+  EXPECT_THAT(sendHtml, HasSubstr(">NO (INSECURE, LEGACY)</option>"));
+}
+
+TEST_F(HtmlCaptureTest, ProtocolParametersStoresMqttCA) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  EXPECT_CALL(cfg, setMqttCA(StrEq("mqtt CA certificate")))
+      .WillOnce(Return(true));
+
+  Supla::Html::ProtocolParameters param(true, false);
+  EXPECT_TRUE(param.handleResponse("mqtt_ca", "mqtt CA certificate"));
+}
+
+TEST_F(HtmlCaptureTest, ProtocolParametersStoresMqttVerificationMode) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  EXPECT_CALL(cfg, setMqttBrokerVerificationEnabled(false))
+      .WillOnce(Return(true));
+
+  Supla::Html::ProtocolParameters param(true, false);
+  EXPECT_TRUE(param.handleResponse("mqttverify", "0"));
 }
 
 TEST_F(HtmlCaptureTest, SwUpdateRendersSimpleFirmwareSelector) {

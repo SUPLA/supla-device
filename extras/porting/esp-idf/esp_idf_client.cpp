@@ -25,6 +25,7 @@
 #include <lwip/netif.h>
 #include <lwip/sockets.h>
 #include <mbedtls/pk.h>
+#include <mbedtls/x509.h>
 #include <stdio.h>
 #include <string.h>
 #include <supla/auto_lock.h>
@@ -48,6 +49,42 @@ void esp_tls_get_error_handle(esp_tls_t *client,
 }
 
 #endif
+
+namespace {
+Supla::ConnectionError mapConnectionError(int error,
+                                          int tlsError,
+                                          int tlsFlags) {
+  if (tlsFlags & MBEDTLS_X509_BADCERT_EXPIRED) {
+    return Supla::ConnectionError::CERTIFICATE_EXPIRED;
+  }
+  if (tlsFlags & MBEDTLS_X509_BADCERT_FUTURE) {
+    return Supla::ConnectionError::CERTIFICATE_NOT_YET_VALID;
+  }
+  if (tlsFlags & MBEDTLS_X509_BADCERT_CN_MISMATCH) {
+    return Supla::ConnectionError::HOSTNAME_MISMATCH;
+  }
+  if (tlsFlags & MBEDTLS_X509_BADCERT_NOT_TRUSTED) {
+    return Supla::ConnectionError::UNTRUSTED_CERTIFICATE;
+  }
+  if (tlsFlags != 0 || tlsError == -MBEDTLS_ERR_X509_CERT_VERIFY_FAILED ||
+      error == ESP_ERR_MBEDTLS_X509_CRT_PARSE_FAILED) {
+    return Supla::ConnectionError::CERTIFICATE_ERROR;
+  }
+
+  switch (error) {
+    case ESP_ERR_ESP_TLS_CANNOT_RESOLVE_HOSTNAME:
+      return Supla::ConnectionError::DNS;
+    case ESP_ERR_ESP_TLS_CONNECTION_TIMEOUT:
+      return Supla::ConnectionError::CONNECTION_TIMEOUT;
+    case ESP_ERR_ESP_TLS_FAILED_CONNECT_TO_HOST:
+      return Supla::ConnectionError::CONNECTION_REFUSED;
+    case ESP_ERR_MBEDTLS_SSL_HANDSHAKE_FAILED:
+      return Supla::ConnectionError::TLS_ERROR;
+    default:
+      return Supla::ConnectionError::UNKNOWN;
+  }
+}
+}  // namespace
 
 Supla::EspIdfClient::EspIdfClient() {
   mutex = Supla::Mutex::Create();
@@ -99,6 +136,7 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
   int result = esp_tls_conn_new_sync(host, strlen(host), port, &cfg, client);
   if (result == 1) {
     isConnected = true;
+    connectionError = ConnectionError::NONE;
     int socketFd = 0;
     if (esp_tls_get_conn_sockfd(client, &socketFd) == ESP_OK) {
       fcntl(socketFd, F_SETFL, O_NONBLOCK);
@@ -150,6 +188,9 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
                     errorHandle->last_error,
                     errorHandle->esp_tls_error_code,
                     errorHandle->esp_tls_flags);
+    connectionError = mapConnectionError(errorHandle->last_error,
+                                         errorHandle->esp_tls_error_code,
+                                         errorHandle->esp_tls_flags);
     if (!isFirstConnectAfterInit) {
       logConnReason(errorHandle->last_error,
                     errorHandle->esp_tls_error_code,
@@ -173,10 +214,16 @@ std::size_t Supla::EspIdfClient::writeImp(const uint8_t *buf,
     return 0;
   }
   int sendSize = esp_tls_conn_write(client, buf, size);
-  if (sendSize == 0) {
-    isConnected = false;
+  if (sendSize == ESP_TLS_ERR_SSL_WANT_READ ||
+      sendSize == ESP_TLS_ERR_SSL_WANT_WRITE) {
+    return 0;
   }
-  return sendSize;
+  if (sendSize <= 0) {
+    isConnected = false;
+    connectionError = ConnectionError::CONNECTION_LOST;
+    return 0;
+  }
+  return static_cast<std::size_t>(sendSize);
 }
 
 int Supla::EspIdfClient::available() {
@@ -194,6 +241,7 @@ int Supla::EspIdfClient::available() {
   if (tlsErr != 0 && -tlsErr != ESP_TLS_ERR_SSL_WANT_READ &&
       -tlsErr != ESP_TLS_ERR_SSL_WANT_WRITE) {
     SUPLA_LOG_ERROR("Connection error %d", tlsErr);
+    connectionError = ConnectionError::CONNECTION_LOST;
     stop();
     return 0;
   }
@@ -205,6 +253,7 @@ int Supla::EspIdfClient::available() {
   autoLock.unlock();
   if (size < 0) {
     SUPLA_LOG_ERROR("error in esp tls get bytes avail %d", size);
+    connectionError = ConnectionError::CONNECTION_LOST;
     stop();
     return 0;
   }
@@ -230,11 +279,13 @@ int Supla::EspIdfClient::readImp(uint8_t *buf, std::size_t size) {
       }
       if (ret < 0) {
         SUPLA_LOG_ERROR("esp_tls_conn_read  returned -0x%x", -ret);
-        ret = 0;
-        break;
+        connectionError = ConnectionError::CONNECTION_LOST;
+        stop();
+        return 0;
       }
       if (ret == 0) {
         SUPLA_LOG_INFO("connection closed");
+        connectionError = ConnectionError::CONNECTION_LOST;
         stop();
         return 0;
       }
@@ -258,6 +309,10 @@ void Supla::EspIdfClient::stop() {
 
 uint8_t Supla::EspIdfClient::connected() {
   return isConnected;
+}
+
+Supla::ConnectionError Supla::EspIdfClient::getConnectionError() const {
+  return connectionError;
 }
 
 void Supla::EspIdfClient::logConnReason(int error,

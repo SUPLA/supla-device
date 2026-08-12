@@ -111,6 +111,23 @@ bool Config::isMqttTlsEnabled() {
   return result == 1;
 }
 
+bool Config::setMqttBrokerVerificationEnabled(bool enabled) {
+  int8_t value = enabled ? 1 : 0;
+  return setInt8("mqttverify", value);
+}
+
+bool Config::isMqttBrokerVerificationEnabled() {
+  int8_t result = 0;
+  if (getInt8("mqttverify", &result)) {
+    return result == 1;
+  }
+
+  // Preserve the legacy behavior for already configured MQTT brokers. New
+  // configurations use certificate verification by default.
+  char mqttServer[SUPLA_SERVER_NAME_MAXSIZE] = {};
+  return !getMqttServer(mqttServer) || mqttServer[0] == '\0';
+}
+
 bool Config::setMqttAuthEnabled(bool enabled) {
   int8_t value = (enabled ? 1 : 0);
   return setInt8("mqttauth", value);
@@ -437,6 +454,19 @@ bool Config::setMqttPrefix(const char* prefix) {
 
 bool Config::getMqttPrefix(char* result) {
   return getString("mqttprefix", result, 49);
+}
+
+bool Config::setMqttCA(const char* mqttCA) {
+  return setString("mqtt_ca", mqttCA);
+}
+
+bool Config::getMqttCA(char* result, int maxSize) {
+  return getString("mqtt_ca", result, maxSize);
+}
+
+int Config::getMqttCASize() {
+  int size = getStringSize("mqtt_ca");
+  return size > 0 ? size - 1 : size;
 }
 
 void Config::commit() {

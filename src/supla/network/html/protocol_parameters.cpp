@@ -45,6 +45,29 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char buf[512] = {};
+    auto sendMqttCA = [&]() {
+      bool showMqttCA = cfg->isMqttTlsEnabled() &&
+                        cfg->isMqttBrokerVerificationEnabled();
+      sender->toggleBox("mqtt_ca_input", showMqttCA, [&]() {
+        sender->formField([&]() {
+          sender->labelFor("mqtt_ca", "Broker CA certificate (PEM)");
+          auto textarea = sender->tag("textarea");
+          textarea.attr("maxlength", 3999)
+              .attr("name", "mqtt_ca")
+              .attr("id", "mqtt_ca")
+              .attr("placeholder", "Leave empty to use the system CA bundle");
+
+          char* bufCert = new char[4001];
+          memset(bufCert, 0, 4001);
+          if (cfg->getMqttCA(bufCert, 4001)) {
+            textarea.body(bufCert);
+          } else {
+            textarea.body("");
+          }
+          delete[] bufCert;
+        }, "form-field sensitive");
+      });
+    };
     if (!concurrent && addMqtt) {
       sender->tag("div").attr("class", "box").body([&]() {
         sender->formField([&]() {
@@ -257,8 +280,15 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                 "var port=document.getElementById(\"mqttport\"),"
                 "mqtt_tls=document.getElementById(\"mqtttls\");"
                 "if(mqtt_tls.value==\"0\")"
-                "{port.value=1883;}else"
-                "{port.value=8883;}"
+                "{port.value=1883;}else{port.value=8883;}"
+                "mqttVerificationChange();"
+                "}"
+                "function mqttVerificationChange(){"
+                "var mqtt_tls=document.getElementById(\"mqtttls\"),"
+                "mqtt_verify=document.getElementById(\"mqttverify\"),"
+                "mqtt_ca=document.getElementById(\"mqtt_ca_input\");"
+                "mqtt_ca.style.display=mqtt_tls.value==\"1\"&&"
+                "mqtt_verify.value==\"1\"?\"block\":\"none\";"
                 "}"
                 "</script>");
 
@@ -271,6 +301,19 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                 sender->selectOption(1, "YES", cfg->isMqttTlsEnabled());
               });
             });
+
+            sender->formField([&]() {
+              sender->labelFor("mqttverify", "Broker certificate verification");
+              auto select = sender->selectTag("mqttverify", "mqttverify");
+              select.attr("onchange", "mqttVerificationChange();").body([&]() {
+                bool verify = cfg->isMqttBrokerVerificationEnabled();
+                sender->selectOption(1, "YES", verify);
+                sender->selectOption(
+                    0, "NO (INSECURE, LEGACY)", !verify);
+              });
+            });
+
+            sendMqttCA();
 
             sender->formField([&]() {
               sender->labelFor("mqttport", "Port");
@@ -370,8 +413,15 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               "var port=document.getElementById(\"mqttport\"),"
               "mqtt_tls=document.getElementById(\"mqtttls\");"
               "if(mqtt_tls.value==\"0\")"
-              "{port.value=1883;}else"
-              "{port.value=8883;}"
+              "{port.value=1883;}else{port.value=8883;}"
+              "mqttVerificationChange();"
+              "}"
+              "function mqttVerificationChange(){"
+              "var mqtt_tls=document.getElementById(\"mqtttls\"),"
+              "mqtt_verify=document.getElementById(\"mqttverify\"),"
+              "mqtt_ca=document.getElementById(\"mqtt_ca_input\");"
+              "mqtt_ca.style.display=mqtt_tls.value==\"1\"&&"
+              "mqtt_verify.value==\"1\"?\"block\":\"none\";"
               "}"
               "</script>");
 
@@ -384,6 +434,18 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               sender->selectOption(1, "YES", cfg->isMqttTlsEnabled());
             });
           });
+
+          sender->formField([&]() {
+            sender->labelFor("mqttverify", "Broker certificate verification");
+            auto select = sender->selectTag("mqttverify", "mqttverify");
+            select.attr("onchange", "mqttVerificationChange();").body([&]() {
+              bool verify = cfg->isMqttBrokerVerificationEnabled();
+              sender->selectOption(1, "YES", verify);
+              sender->selectOption(0, "NO (INSECURE, LEGACY)", !verify);
+            });
+          });
+
+          sendMqttCA();
 
           sender->numberInput("mqttport",
                               {
@@ -500,6 +562,9 @@ bool ProtocolParameters::handleResponse(const char* key, const char* value) {
   } else if (strcmp(key, "custom_ca") == 0) {
     cfg->setCustomCA(value);
     return true;
+  } else if (strcmp(key, "mqtt_ca") == 0) {
+    cfg->setMqttCA(value);
+    return true;
   } else if (strcmp(key, "mqttserver") == 0) {
     cfg->setMqttServer(value);
     return true;
@@ -510,6 +575,10 @@ bool ProtocolParameters::handleResponse(const char* key, const char* value) {
   } else if (strcmp(key, "mqtttls") == 0) {
     int enabled = stringToUInt(value);
     cfg->setMqttTlsEnabled(enabled == 1);
+    return true;
+  } else if (strcmp(key, "mqttverify") == 0) {
+    int enabled = stringToUInt(value);
+    cfg->setMqttBrokerVerificationEnabled(enabled == 1);
     return true;
   } else if (strcmp(key, "mqttauth") == 0) {
     int enabled = stringToUInt(value);

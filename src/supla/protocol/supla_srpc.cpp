@@ -2359,6 +2359,12 @@ uint32_t Supla::Protocol::SuplaSrpc::getConnectionFailTime() {
   return connectionFailCounter * 10;
 }
 
+Supla::ConnectionError
+Supla::Protocol::SuplaSrpc::getConnectionError() const {
+  return client == nullptr ? Supla::ConnectionError::NONE
+                           : client->getConnectionError();
+}
+
 bool Supla::Protocol::SuplaSrpc::verifyConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
 

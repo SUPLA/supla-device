@@ -41,7 +41,7 @@ bool matchesSensitiveField(const char *key) {
   static const char *const sensitiveFields[] = {
       "cfg_pwd",       "old_cfg_pwd", "confirm_cfg_pwd", "wpw",
       "altwpw",        "mqttpasswd",   "apiToken",        "apiKey",
-      "custom_ca",     "eml",          "mqttuser"
+      "custom_ca",     "mqtt_ca",      "eml",             "mqttuser"
   };
 
   for (const char *field : sensitiveFields) {

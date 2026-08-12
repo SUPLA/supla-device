@@ -33,6 +33,7 @@ class EspIdfClient : public Client {
   int available() override;
   void stop() override;
   uint8_t connected() override;
+  ConnectionError getConnectionError() const override;
   void logConnReason(int, int, int, const char *);
   void setTimeoutMs(uint16_t _timeoutMs) override;
 
@@ -48,6 +49,7 @@ class EspIdfClient : public Client {
   uint16_t timeoutMs = 10000;
   int lastConnErr = 0;
   int lastTlsErr = 0;
+  ConnectionError connectionError = ConnectionError::NONE;
 };
 };  // namespace Supla
 

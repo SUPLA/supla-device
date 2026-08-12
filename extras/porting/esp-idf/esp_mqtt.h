@@ -37,13 +37,14 @@ class EspMqtt : public Mqtt {
   //  bool onLoadConfig() override;
   void disconnect() override;
   bool iterate(uint32_t _millis) override;
+  ConnectionError getConnectionError() const override;
   // bool isNetworkRestartRequested() override;
   // uint32_t getConnectionFailTime() override;
 
   static Supla::Mutex *mutex;
   static Supla::Mutex *mutexEventHandler;
   void setConnecting();
-  void setConnectionError();
+  void setConnectionError(ConnectionError newError);
   void setRegisteredAndReady();
 
  protected:
@@ -56,7 +57,9 @@ class EspMqtt : public Mqtt {
   bool started = false;
   bool enterRegisteredAndReady = false;
   esp_mqtt_client_handle_t client = {};
+  char *mqttCaCert = nullptr;
   uint32_t lastStatusUpdateSec = 0;
+  ConnectionError connectionError = ConnectionError::NONE;
 };
 
 }  // namespace Protocol

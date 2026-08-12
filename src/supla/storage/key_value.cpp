@@ -231,9 +231,12 @@ bool KeyValue::getString(const char* key, char* value, size_t maxSize) {
 }
 
 int KeyValue::getStringSize(const char* key) {
+  if (key == nullptr) {
+    return -1;
+  }
   auto element = find(key);
   if (!element) {
-    return 0;
+    return -1;
   }
   return element->getStringSize();
 }
@@ -404,7 +407,7 @@ bool KeyValueElement::getString(char* value, size_t maxSize) {
 
 int KeyValueElement::getStringSize() {
   if (dataType != DATA_TYPE_STRING) {
-    return 0;
+    return -1;
   }
   return size;
 }

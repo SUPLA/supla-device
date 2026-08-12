@@ -33,6 +33,7 @@ namespace Supla {
 const char ConfigFileName[] = "/supla-dev.cfg";
 const char BackupConfigFileName[] = "/supla-dev.cfg.bak";
 const char CustomCAFileName[] = "/custom_ca.pem";
+const char MqttCAFileName[] = "/mqtt_ca.pem";
 };  // namespace Supla
 
 #define BIG_BLOG_SIZE_TO_BE_STORED_IN_FILE 32
@@ -238,6 +239,80 @@ bool Supla::LittleFsConfig::setCustomCA(const char* customCA) {
   return true;
 }
 
+bool Supla::LittleFsConfig::getMqttCA(char* mqttCA, int maxSize) {
+  if (!initLittleFs()) {
+    return false;
+  }
+
+  if (!LittleFS.exists(MqttCAFileName)) {
+    LittleFS.end();
+    return false;
+  }
+
+  File file = LittleFS.open(MqttCAFileName, "r");
+  if (!file) {
+    SUPLA_LOG_ERROR("LittleFsConfig: failed to open MQTT CA file");
+    LittleFS.end();
+    return false;
+  }
+
+  int fileSize = file.size();
+  if (fileSize >= maxSize) {
+    SUPLA_LOG_ERROR("LittleFsConfig: MQTT CA file is too big");
+    file.close();
+    LittleFS.end();
+    return false;
+  }
+
+  int bytesRead = file.read(reinterpret_cast<uint8_t*>(mqttCA), fileSize);
+  file.close();
+  LittleFS.end();
+  if (bytesRead != fileSize) {
+    return false;
+  }
+  mqttCA[fileSize] = '\0';
+  return true;
+}
+
+int Supla::LittleFsConfig::getMqttCASize() {
+  if (!initLittleFs()) {
+    return 0;
+  }
+
+  int fileSize = 0;
+  if (LittleFS.exists(MqttCAFileName)) {
+    File file = LittleFS.open(MqttCAFileName, "r");
+    if (file) {
+      fileSize = file.size();
+      file.close();
+    } else {
+      SUPLA_LOG_ERROR("LittleFsConfig: failed to open MQTT CA file");
+    }
+  }
+  LittleFS.end();
+  return fileSize;
+}
+
+bool Supla::LittleFsConfig::setMqttCA(const char* mqttCA) {
+  if (mqttCA == nullptr || !initLittleFs()) {
+    return false;
+  }
+
+  File file = LittleFS.open(MqttCAFileName, "w");
+  if (!file) {
+    SUPLA_LOG_ERROR("LittleFsConfig: failed to open MQTT CA file for write");
+    LittleFS.end();
+    return false;
+  }
+
+  size_t dataSize = strlen(mqttCA);
+  size_t bytesWritten = file.write(
+      reinterpret_cast<const uint8_t*>(mqttCA), dataSize);
+  file.close();
+  LittleFS.end();
+  return bytesWritten == dataSize;
+}
+
 bool Supla::LittleFsConfig::initLittleFs() {
   bool result = LittleFS.begin();
   if (!result) {
@@ -260,6 +335,7 @@ void Supla::LittleFsConfig::removeAll() {
     return;
   }
   LittleFS.remove(CustomCAFileName);
+  LittleFS.remove(MqttCAFileName);
 
   File suplaDir = LittleFS.open("/supla", "r");
   if (suplaDir && suplaDir.isDirectory()) {

@@ -31,6 +31,10 @@ Supla::Client::Client() {
 Supla::Client::~Client() {
 }
 
+Supla::ConnectionError Supla::Client::getConnectionError() const {
+  return Supla::ConnectionError::NONE;
+}
+
 int Supla::Client::connect(IPAddress ip, uint16_t port) {
   char server[100] = {};
   snprintf(server,

@@ -38,6 +38,9 @@ class LittleFsConfig : public KeyValue {
   bool getCustomCA(char* result, int maxSize) override;
   int getCustomCASize() override;
   bool setCustomCA(const char* customCA) override;
+  bool getMqttCA(char* result, int maxSize) override;
+  int getMqttCASize() override;
+  bool setMqttCA(const char* mqttCA) override;
 
   // override blob storage to use separate file for each value
   bool setBlob(const char* key, const char* value, size_t blobSize) override;

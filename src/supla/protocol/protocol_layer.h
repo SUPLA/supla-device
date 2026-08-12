@@ -19,6 +19,8 @@
 #ifndef SRC_SUPLA_PROTOCOL_PROTOCOL_LAYER_H_
 #define SRC_SUPLA_PROTOCOL_PROTOCOL_LAYER_H_
 
+#include <supla/network/connection_error.h>
+
 #include <stdint.h>
 #include <supla-common/proto.h>
 
@@ -52,6 +54,7 @@ class ProtocolLayer {
   virtual bool isNetworkRestartRequested() = 0;
   virtual uint32_t getConnectionFailTime() = 0;
   virtual bool isConnectionError();
+  virtual Supla::ConnectionError getConnectionError() const;
   virtual bool isConnecting();
   virtual bool isMqtt() const;
   virtual bool isUpdatePending();

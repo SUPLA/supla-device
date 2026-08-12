@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "connection_error.h"
 #include "ip_address.h"
 
 class SuplaDeviceClass;
@@ -44,6 +45,7 @@ class Client {
   virtual void stop() = 0;
   virtual uint8_t connected() = 0;
   virtual void setTimeoutMs(uint16_t timeoutMs) = 0;
+  virtual ConnectionError getConnectionError() const;
 
   int connect(IPAddress ip, uint16_t port);
   int connect(const char *host, uint16_t port);

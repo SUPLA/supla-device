@@ -346,12 +346,14 @@ bool Supla::LittleFsConfig::getBlob(const char* key,
 
   char filename[50] = {};
   snprintf(filename, sizeof(filename), "/supla/%s", key);
+  if (!LittleFS.exists(filename)) {
+    LittleFS.end();
+    return false;
+  }
   File file = LittleFS.open(filename, "r");
   if (!file) {
-    SUPLA_LOG_DEBUG(
-        "LittleFsConfig: failed to open blob file \"%s\" for read, blob not "
-        "found",
-        key);
+    SUPLA_LOG_ERROR("LittleFsConfig: failed to open blob file \"%s\" for read",
+                    key);
     LittleFS.end();
     return false;
   }

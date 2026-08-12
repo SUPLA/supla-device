@@ -233,7 +233,11 @@ class Mqtt : public ProtocolLayer {
   // in current setup.
   // It is important to call publishDeviceStatus first, then to call
   // publishHADiscoveryActionTrigger for each AT channel.
-  uint8_t configChangedBit[8] = {};
+  static constexpr size_t CONFIG_CHANGED_BIT_SIZE =
+      (SUPLA_CHANNELMAXCOUNT + 7) / 8;
+  static_assert(CONFIG_CHANGED_BIT_SIZE * 8 >= SUPLA_CHANNELMAXCOUNT,
+                "MQTT config change bitset is too small");
+  uint8_t configChangedBit[CONFIG_CHANGED_BIT_SIZE] = {};
   Supla::Uptime uptime;
 };
 }  // namespace Protocol

@@ -2857,8 +2857,7 @@ void Mqtt::processDimmerRequest(const char *part,
 }
 
 void Mqtt::notifyConfigChange(int channelNumber) {
-  if (channelNumber >= 0 && channelNumber < 255) {
-    // set bit on configChangedBit[8]:
-    configChangedBit[channelNumber / 8] |= (1 << (channelNumber % 8));
+  if (channelNumber >= 0 && channelNumber < SUPLA_CHANNELMAXCOUNT) {
+    configChangedBit[channelNumber / 8] |= (1U << (channelNumber % 8));
   }
 }

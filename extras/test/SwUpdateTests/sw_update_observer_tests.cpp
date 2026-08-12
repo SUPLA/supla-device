@@ -1,6 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

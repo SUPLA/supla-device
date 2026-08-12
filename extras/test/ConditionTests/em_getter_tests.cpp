@@ -1,18 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -63,7 +50,7 @@ TEST(EmGetterTests, VoltageGetter) {
   EXPECT_TRUE(isValid);
 
   isValid = false;
-  em.setVoltage(1, 320 * 100); // set voltage on another phase
+  em.setVoltage(1, 320 * 100);  // set voltage on another phase
   em.updateChannelValues();
   EXPECT_NEAR(getter->getValue(&em, &isValid), 120, 0.05);
   EXPECT_TRUE(isValid);
@@ -112,7 +99,7 @@ TEST(EmGetterTests, CurrentGetter) {
   EXPECT_TRUE(isValid);
 
   isValid = false;
-  em.setCurrent(1, 66 * 1000); // set voltage on another phase
+  em.setCurrent(1, 66 * 1000);  // set voltage on another phase
   em.updateChannelValues();
   EXPECT_NEAR(getter->getValue(&em, &isValid), 8.52, 0.005);
   EXPECT_TRUE(isValid);
@@ -161,7 +148,7 @@ TEST(EmGetterTests, TotalCurrentGetter) {
   EXPECT_TRUE(isValid);
 
   isValid = false;
-  em.setCurrent(1, 66 * 1000); // set voltage on another phase
+  em.setCurrent(1, 66 * 1000);  // set voltage on another phase
   em.updateChannelValues();
   EXPECT_NEAR(getter->getValue(&em, &isValid), 8.52 + 66, 0.005);
   EXPECT_TRUE(isValid);
@@ -290,7 +277,7 @@ TEST(EmGetterTests, PowerApparentGetter) {
   EXPECT_EQ(getter->getValue(&em, &isValid), 0.0);
   EXPECT_FALSE(isValid);
 
-  em.setPowerApparent(0, 300 * 100000); // 300
+  em.setPowerApparent(0, 300 * 100000);  // 300
   em.updateChannelValues();
   EXPECT_NEAR(getter->getValue(&em, &isValid), 300.0, 0.005);
   EXPECT_TRUE(isValid);
@@ -386,7 +373,7 @@ TEST(EmGetterTests, PowerReactiveGetter) {
   EXPECT_EQ(getter->getValue(&em, &isValid), 0.0);
   EXPECT_FALSE(isValid);
 
-  em.setPowerReactive(0, 300 * 100000); // 300 W
+  em.setPowerReactive(0, 300 * 100000);  // 300 W
   em.updateChannelValues();
   EXPECT_NEAR(getter->getValue(&em, &isValid), 300.0, 0.005);
   EXPECT_TRUE(isValid);

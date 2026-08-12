@@ -1,23 +1,8 @@
-/*
-   Copyright (C) malarz
+// SPDX-FileCopyrightText: malarz
+// SPDX-License-Identifier: GPL-2.0-or-later
 
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
-
-#ifndef SRC_SUPLA_SENSOR_HECA_H_
-#define SRC_SUPLA_SENSOR_HECA_H_
+#ifndef EXAMPLES_DEVICES_NETTIGO_AIR_MONITOR_HECA_H_
+#define EXAMPLES_DEVICES_NETTIGO_AIR_MONITOR_HECA_H_
 
 #include <supla/sensor/SHT3x.h>
 #include <supla/control/virtual_relay.h>
@@ -27,7 +12,9 @@ namespace Supla {
 namespace Sensor {
 class HECA : public Supla::Sensor::SHT3x {
  public:
-  explicit HECA(int8_t humOn = 63, int8_t humOff = 60, int8_t address = 0x44) : SHT3x(address) {
+  explicit HECA(int8_t humOn = 63, int8_t humOff = 60,
+                int8_t address = 0x44)
+      : SHT3x(address) {
     humiOn = humOn;
     humiOff = humOff;
 
@@ -75,5 +62,5 @@ class HECA : public Supla::Sensor::SHT3x {
 }  // namespace Sensor
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_SENSOR_HECA_H_
+#endif  // EXAMPLES_DEVICES_NETTIGO_AIR_MONITOR_HECA_H_
 

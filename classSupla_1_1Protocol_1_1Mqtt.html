@@ -92,6 +92,7 @@ $(function(){ initResizable(false); });
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#pro-static-attribs">Static Protected Attributes</a> &#124;
 <a href="#friends">Friends</a> &#124;
 <a href="classSupla_1_1Protocol_1_1Mqtt-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Supla::Protocol::Mqtt Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div></div>
@@ -291,6 +292,9 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>isConfigEmpty
 <tr class="memitem:a73b29807ea84628605cb6f09425a6d42 inherit pub_methods_classSupla_1_1Protocol_1_1ProtocolLayer" id="r_a73b29807ea84628605cb6f09425a6d42"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>iterate</b> (uint32_t _millis)=0</td></tr>
 <tr class="separator:a73b29807ea84628605cb6f09425a6d42 inherit pub_methods_classSupla_1_1Protocol_1_1ProtocolLayer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acff79fdb27faf00517094ed5c046cee5 inherit pub_methods_classSupla_1_1Protocol_1_1ProtocolLayer" id="r_acff79fdb27faf00517094ed5c046cee5"><td class="memItemLeft" align="right" valign="top">
+virtual Supla::ConnectionError&#160;</td><td class="memItemRight" valign="bottom"><b>getConnectionError</b> () const</td></tr>
+<tr class="separator:acff79fdb27faf00517094ed5c046cee5 inherit pub_methods_classSupla_1_1Protocol_1_1ProtocolLayer"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a754c975c461c761abc7ab6c7e7fc76d5 inherit pub_methods_classSupla_1_1Protocol_1_1ProtocolLayer" id="r_a754c975c461c761abc7ab6c7e7fc76d5"><td class="memItemLeft" align="right" valign="top">
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendRemainingTimeValue</b> (uint8_t channelNumber, uint32_t timeMs, uint8_t state, int32_t senderId)</td></tr>
 <tr class="separator:a754c975c461c761abc7ab6c7e7fc76d5 inherit pub_methods_classSupla_1_1Protocol_1_1ProtocolLayer"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -483,9 +487,9 @@ uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>buttonNumber</b> 
 <tr class="memitem:adff2bb165c2793c76f8677911464d566" id="r_adff2bb165c2793c76f8677911464d566"><td class="memItemLeft" align="right" valign="top"><a id="adff2bb165c2793c76f8677911464d566" name="adff2bb165c2793c76f8677911464d566"></a>
 char *&#160;</td><td class="memItemRight" valign="bottom"><b>prefix</b> = nullptr</td></tr>
 <tr class="separator:adff2bb165c2793c76f8677911464d566"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a633e6194445182b7be0c6227aba12c3a" id="r_a633e6194445182b7be0c6227aba12c3a"><td class="memItemLeft" align="right" valign="top"><a id="a633e6194445182b7be0c6227aba12c3a" name="a633e6194445182b7be0c6227aba12c3a"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>configChangedBit</b> [8] = {}</td></tr>
-<tr class="separator:a633e6194445182b7be0c6227aba12c3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e5aacd0c1b605b6a168d032a46ba79d" id="r_a9e5aacd0c1b605b6a168d032a46ba79d"><td class="memItemLeft" align="right" valign="top"><a id="a9e5aacd0c1b605b6a168d032a46ba79d" name="a9e5aacd0c1b605b6a168d032a46ba79d"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>configChangedBit</b> [CONFIG_CHANGED_BIT_SIZE] = {}</td></tr>
+<tr class="separator:a9e5aacd0c1b605b6a168d032a46ba79d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0903353d02185eb21cd1b1a3815bd9ed" id="r_a0903353d02185eb21cd1b1a3815bd9ed"><td class="memItemLeft" align="right" valign="top"><a id="a0903353d02185eb21cd1b1a3815bd9ed" name="a0903353d02185eb21cd1b1a3815bd9ed"></a>
 <a class="el" href="classSupla_1_1Uptime.html">Supla::Uptime</a>&#160;</td><td class="memItemRight" valign="bottom"><b>uptime</b></td></tr>
 <tr class="separator:a0903353d02185eb21cd1b1a3815bd9ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -502,6 +506,15 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>configEmpty</b> = tru
 <tr class="memitem:ad202152f5e74a9365e1045b75a50b569 inherit pro_attribs_classSupla_1_1Protocol_1_1ProtocolLayer" id="r_ad202152f5e74a9365e1045b75a50b569"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>verboseLog</b> = false</td></tr>
 <tr class="separator:ad202152f5e74a9365e1045b75a50b569 inherit pro_attribs_classSupla_1_1Protocol_1_1ProtocolLayer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-attribs" name="pro-static-attribs"></a>
+Static Protected Attributes</h2></td></tr>
+<tr class="memitem:a2ffce5c21698ec4aa91711493dd39b42" id="r_a2ffce5c21698ec4aa91711493dd39b42"><td class="memItemLeft" align="right" valign="top">static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2ffce5c21698ec4aa91711493dd39b42">CONFIG_CHANGED_BIT_SIZE</a></td></tr>
+<tr class="separator:a2ffce5c21698ec4aa91711493dd39b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer')"><img src="closed.png" alt="-"/>&#160;Static Protected Attributes inherited from <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">Supla::Protocol::ProtocolLayer</a></td></tr>
+<tr class="memitem:a220f8110fcb384c45bf376b35f114e21 inherit pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer" id="r_a220f8110fcb384c45bf376b35f114e21"><td class="memItemLeft" align="right" valign="top">
+static <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">ProtocolLayer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>firstPtr</b> = nullptr</td></tr>
+<tr class="separator:a220f8110fcb384c45bf376b35f114e21 inherit pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>
@@ -521,10 +534,6 @@ static <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">Protoco
 <tr class="memitem:abe5fe28f5cf7b181a1b1eedbd241f8ed inherit pub_static_methods_classSupla_1_1Protocol_1_1ProtocolLayer" id="r_abe5fe28f5cf7b181a1b1eedbd241f8ed"><td class="memItemLeft" align="right" valign="top">
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>IsAnyUpdatePending</b> ()</td></tr>
 <tr class="separator:abe5fe28f5cf7b181a1b1eedbd241f8ed inherit pub_static_methods_classSupla_1_1Protocol_1_1ProtocolLayer"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer')"><img src="closed.png" alt="-"/>&#160;Static Protected Attributes inherited from <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">Supla::Protocol::ProtocolLayer</a></td></tr>
-<tr class="memitem:a220f8110fcb384c45bf376b35f114e21 inherit pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer" id="r_a220f8110fcb384c45bf376b35f114e21"><td class="memItemLeft" align="right" valign="top">
-static <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">ProtocolLayer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>firstPtr</b> = nullptr</td></tr>
-<tr class="separator:a220f8110fcb384c45bf376b35f114e21 inherit pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a09085c197d9502c783a8ef29a6729ad9" name="a09085c197d9502c783a8ef29a6729ad9"></a>
@@ -911,6 +920,31 @@ static <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">Protoco
 
 <p>Implements <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">Supla::Protocol::ProtocolLayer</a>.</p>
 
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a2ffce5c21698ec4aa91711493dd39b42" name="a2ffce5c21698ec4aa91711493dd39b42"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ffce5c21698ec4aa91711493dd39b42">&#9670;&#160;</a></span>CONFIG_CHANGED_BIT_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t Supla::Protocol::Mqtt::CONFIG_CHANGED_BIT_SIZE</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">      (SUPLA_CHANNELMAXCOUNT + 7) / 8</div>
+</div><!-- fragment -->
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>

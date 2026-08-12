@@ -924,6 +924,8 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
       }
       break;
     }
+    case SUPLA_CHANNELTYPE_THERMOMETER:
+    case SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR:
     case SUPLA_CHANNELTYPE_ACTIONTRIGGER:
     case SUPLA_CHANNELTYPE_ELECTRICITY_METER:
     case SUPLA_CHANNELTYPE_BINARYSENSOR: {

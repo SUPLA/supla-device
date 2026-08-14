@@ -19,6 +19,7 @@
 #include <supla/tools.h>
 
 #include <cerrno>
+#include <cstring>
 
 #include "supla/device/sw_update.h"
 
@@ -89,10 +90,12 @@ static void formatHttpClientError(const char *prefix,
   snprintf(buf, bufLen, "%s: Error %d", prefix, errorCode);
 }
 
+#ifndef SUPLA_TEST
 Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(
     SuplaDeviceClass *sdc, const char *newUrl, Supla::SwUpdateMode mode) {
   return new Supla::EspIdfOta(sdc, newUrl, mode);
 }
+#endif  // SUPLA_TEST
 
 Supla::EspIdfOta::EspIdfOta(SuplaDeviceClass *sdc,
                             const char *newUrl,
@@ -251,10 +254,10 @@ void Supla::EspIdfOta::iterate() {
     return;
   }
 
-//  SUPLA_LOG_INFO(
-//      "SW update: checking updates from url: \"%s\", with query: \"%s\"",
-//      url,
-//      queryParams);
+  //  SUPLA_LOG_INFO(
+  //      "SW update: checking updates from url: \"%s\", with query: \"%s\"",
+  //      url,
+  //      queryParams);
 
   int querySize = strlen(queryParams);
 
@@ -303,15 +306,26 @@ void Supla::EspIdfOta::iterate() {
     return;
   }
 
+  size_t responseSize = 0;
   while (true) {
-    int dataRead = esp_http_client_read(
-        client, reinterpret_cast<char *>(otaBuffer), BUFFER_SIZE);
+    int dataRead =
+        esp_http_client_read(client,
+                             reinterpret_cast<char *>(otaBuffer + responseSize),
+                             BUFFER_SIZE - responseSize);
     if (dataRead < 0) {
       fail("SW update: data read error");
       return;
     } else if (dataRead > 0) {
-      otaBuffer[dataRead] = '\0';
+      responseSize += dataRead;
+      otaBuffer[responseSize] = '\0';
       SUPLA_LOG_DEBUG("Read: %s", otaBuffer);
+      if (esp_http_client_is_complete_data_received(client) == true) {
+        break;
+      }
+      if (responseSize == BUFFER_SIZE) {
+        fail("SW update: check update response too large");
+        return;
+      }
     } else if (dataRead == 0) {
       if (errno == ECONNRESET || errno == ENOTCONN) {
         SUPLA_LOG_DEBUG("Connection closed, errno = %d", errno);
@@ -418,8 +432,9 @@ void Supla::EspIdfOta::iterate() {
       return;
     }
   } else {
-    fail("SW update: no new update available");
+    abort = true;
     retryAllowed = false;
+    notifyFinished(Supla::Device::SwUpdateResult::UP_TO_DATE);
     cJSON_Delete(json);
     return;
   }

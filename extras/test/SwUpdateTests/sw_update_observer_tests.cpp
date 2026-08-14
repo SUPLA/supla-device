@@ -17,6 +17,23 @@ class ObserverMock : public Supla::Device::SwUpdateObserver {
               onSwUpdateFinished,
               (bool success, const char *reason),
               (override));
+  MOCK_METHOD(void,
+              onSwUpdateResult,
+              (Supla::Device::SwUpdateResult result, const char *reason),
+              (override));
+};
+
+class LegacyObserverMock : public Supla::Device::SwUpdateObserver {
+ public:
+  MOCK_METHOD(void, onSwUpdateStarted, (), (override));
+  MOCK_METHOD(void,
+              onSwUpdateProgress,
+              (uint32_t downloadedBytes, uint32_t totalBytes),
+              (override));
+  MOCK_METHOD(void,
+              onSwUpdateFinished,
+              (bool success, const char *reason),
+              (override));
 };
 
 class TestSwUpdate : public Supla::Device::SwUpdate {
@@ -35,6 +52,11 @@ class TestSwUpdate : public Supla::Device::SwUpdate {
 
   void finish(bool success, const char *reason = nullptr) {
     notifyFinished(success, reason);
+  }
+
+  void finish(Supla::Device::SwUpdateResult result,
+              const char *reason = nullptr) {
+    notifyFinished(result, reason);
   }
 };
 }  // namespace
@@ -62,4 +84,25 @@ TEST(SwUpdateObserverTests, ReportsFailureReason) {
   EXPECT_CALL(observer,
               onSwUpdateFinished(false, testing::StrEq("TLS error")));
   update.finish(false, "TLS error");
+}
+
+TEST(SwUpdateObserverTests, ReportsTypedUpdateResult) {
+  TestSwUpdate update;
+  ObserverMock observer;
+  update.setObserver(&observer);
+
+  EXPECT_CALL(observer,
+              onSwUpdateResult(Supla::Device::SwUpdateResult::UP_TO_DATE,
+                                testing::StrEq("no update")));
+  update.finish(Supla::Device::SwUpdateResult::UP_TO_DATE, "no update");
+}
+
+TEST(SwUpdateObserverTests, PreservesLegacyObserverCallbackForTypedResult) {
+  TestSwUpdate update;
+  LegacyObserverMock observer;
+  update.setObserver(&observer);
+
+  EXPECT_CALL(observer,
+              onSwUpdateFinished(true, testing::StrEq("no update")));
+  update.finish(Supla::Device::SwUpdateResult::UP_TO_DATE, "no update");
 }

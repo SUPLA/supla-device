@@ -43,7 +43,17 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
   )
 
-FetchContent_MakeAvailable(json googletest)
+set(ENABLE_CJSON_TEST OFF CACHE BOOL "" FORCE)
+set(ENABLE_CJSON_UTILS OFF CACHE BOOL "" FORCE)
+set(ENABLE_TARGET_EXPORT OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  cjson
+  GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
+  GIT_TAG        v1.7.19
+  GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(json googletest cjson)
 
 option(SUPLA_TEST_ENABLE_CURL_HTTP
   "Enable sd4linux HTTP source tests when CURL is available" ON)
@@ -107,9 +117,13 @@ endif()
 list(APPEND TEST_SRC ../../src/supla-common/proto_check.cpp)
 list(APPEND TEST_SRC
   ../esp-idf/supla-interrupt-ac-to-dc-io/interrupt_ac_to_dc_io.cpp
+  ../porting/esp-idf/esp_idf_ota.cpp
   ../../src/supla/sensor/HC_SR04.cpp)
 
 file(GLOB DOUBLE_SRC CONFIGURE_DEPENDS doubles/*.cpp)
+set(ESP_IDF_OTA_DOUBLE_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf_ota_mock.cpp)
+list(REMOVE_ITEM DOUBLE_SRC ${ESP_IDF_OTA_DOUBLE_SRC})
 
 set(SD4LINUX_PORT_SRC
   ../porting/linux/linux_channel_factory.cpp
@@ -147,7 +161,11 @@ target_include_directories(supladevicelib PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles
 )
 
-add_executable(supladevicetests ${TEST_SRC} ${DOUBLE_SRC})
+add_executable(supladevicetests
+  ${TEST_SRC}
+  ${DOUBLE_SRC}
+  ${ESP_IDF_OTA_DOUBLE_SRC}
+)
 
 add_executable(sd4linuxtests
   ${SD4LINUX_TEST_SRC}
@@ -155,9 +173,15 @@ add_executable(sd4linuxtests
   ${SD4LINUX_PORT_SRC}
   )
 
+target_include_directories(supladevicetests BEFORE PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf
+)
+
 target_include_directories(supladevicetests PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles
   ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-interrupt-ac-to-dc-io
+  ${CMAKE_CURRENT_SOURCE_DIR}/../porting/esp-idf
+  ${cjson_SOURCE_DIR}
 )
 
 target_include_directories(sd4linuxtests PRIVATE
@@ -168,6 +192,7 @@ target_include_directories(sd4linuxtests PRIVATE
 target_link_libraries(supladevicetests
   PRIVATE
     supladevicelib
+    cjson
     nlohmann_json::nlohmann_json
     gtest
     gmock

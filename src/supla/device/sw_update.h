@@ -11,6 +11,12 @@
 namespace Supla {
 
 namespace Device {
+enum class SwUpdateResult : uint8_t {
+  UPDATED,
+  UP_TO_DATE,
+  FAILED,
+};
+
 class SwUpdateObserver {
  public:
   virtual ~SwUpdateObserver() = default;
@@ -18,6 +24,9 @@ class SwUpdateObserver {
   virtual void onSwUpdateProgress(uint32_t downloadedBytes,
                                   uint32_t totalBytes) = 0;
   virtual void onSwUpdateFinished(bool success, const char *reason) = 0;
+  virtual void onSwUpdateResult(SwUpdateResult result, const char *reason) {
+    onSwUpdateFinished(result != SwUpdateResult::FAILED, reason);
+  }
 };
 
 class SwUpdate {
@@ -88,6 +97,11 @@ class SwUpdate {
   void notifyFinished(bool success, const char *reason = nullptr) {
     if (observer) {
       observer->onSwUpdateFinished(success, reason);
+    }
+  }
+  void notifyFinished(SwUpdateResult result, const char *reason = nullptr) {
+    if (observer) {
+      observer->onSwUpdateResult(result, reason);
     }
   }
 

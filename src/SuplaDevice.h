@@ -235,6 +235,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void requestCfgMode();
 
   int8_t getCurrentStatus() const;
+  bool getSelfTestFailed() const;
+  int getSelfTestFailureReason() const;
   bool loadDeviceConfig();
   bool prepareLastStateLog();
   char *getLastStateLog();
@@ -530,6 +532,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   // true even if initialization procedure failed for some reason
   bool initializationDone = false;
   bool goToConfigModeAsap = false;
+  bool selfTestFailed = false;
+  int selfTestFailureReason = 0;
 
   uint8_t leaveCfgModeAfterInactivityMin = 5;
   uint8_t macLengthInHostname = 6;

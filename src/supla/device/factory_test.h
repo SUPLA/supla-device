@@ -68,6 +68,8 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   void setTestFailed(int reason);
   void setTestFinished();
   Supla::TestStage getTestStage() const;
+  bool hasFailed() const;
+  int getFailReason() const;
 
   void dontCheckAutomaticFirmwareUpdate();
 

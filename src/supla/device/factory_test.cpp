@@ -399,6 +399,14 @@ Supla::TestStage FactoryTest::getTestStage() const {
   return testStage;
 }
 
+bool FactoryTest::hasFailed() const {
+  return testFailed;
+}
+
+int FactoryTest::getFailReason() const {
+  return failReason;
+}
+
 void FactoryTest::dontCheckAutomaticFirmwareUpdate() {
   checkAutomaticFirmwareUpdate = false;
 }

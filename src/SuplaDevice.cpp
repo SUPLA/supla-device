@@ -377,6 +377,8 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     SUPLA_LOG_INFO(" *** Self-test ***");
     auto tester = new Supla::Device::FactoryTest(this, 0);
     tester->onInit();
+    selfTestFailed = tester->hasFailed();
+    selfTestFailureReason = tester->getFailReason();
     delete tester;
     SUPLA_LOG_INFO(" *** Self-test done ***");
   }
@@ -1812,6 +1814,14 @@ uint32_t SuplaDeviceClass::getActivityTimeout() {
 
 bool SuplaDeviceClass::getStorageInitResult() {
   return storageInitResult;
+}
+
+bool SuplaDeviceClass::getSelfTestFailed() const {
+  return selfTestFailed;
+}
+
+int SuplaDeviceClass::getSelfTestFailureReason() const {
+  return selfTestFailureReason;
 }
 
 // Sleeping is allowed only in normal and test mode.

@@ -194,12 +194,12 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>getValue</b> 
 <tr class="memitem:a063afb99658ded818126a60bf6e93fb6" id="r_a063afb99658ded818126a60bf6e93fb6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a063afb99658ded818126a60bf6e93fb6">setSensitivity</a> (uint8_t sensitivity, bool local=true)</td></tr>
 <tr class="memdesc:a063afb99658ded818126a60bf6e93fb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the sensitivity.  <br /></td></tr>
 <tr class="separator:a063afb99658ded818126a60bf6e93fb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad66758688a7ef793ab332475f76fb60a" id="r_ad66758688a7ef793ab332475f76fb60a"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad66758688a7ef793ab332475f76fb60a">getAlarmMuted</a> () const</td></tr>
-<tr class="memdesc:ad66758688a7ef793ab332475f76fb60a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the alarm muted state.  <br /></td></tr>
-<tr class="separator:ad66758688a7ef793ab332475f76fb60a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7eaba69dbf644733d47ffde738e8ebec" id="r_a7eaba69dbf644733d47ffde738e8ebec"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7eaba69dbf644733d47ffde738e8ebec">setAlarmMuted</a> (uint8_t alarmMuted, bool local=true)</td></tr>
-<tr class="memdesc:a7eaba69dbf644733d47ffde738e8ebec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the alarm muted state.  <br /></td></tr>
-<tr class="separator:a7eaba69dbf644733d47ffde738e8ebec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe4c6e9049332c1b171de795b080e2ac" id="r_abe4c6e9049332c1b171de795b080e2ac"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#abe4c6e9049332c1b171de795b080e2ac">getLocalAlarmIndication</a> () const</td></tr>
+<tr class="memdesc:abe4c6e9049332c1b171de795b080e2ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the local alarm indication state.  <br /></td></tr>
+<tr class="separator:abe4c6e9049332c1b171de795b080e2ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18aea41c7b5e6fdd59deb7dcad6ef57c" id="r_a18aea41c7b5e6fdd59deb7dcad6ef57c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a18aea41c7b5e6fdd59deb7dcad6ef57c">setLocalAlarmIndication</a> (uint8_t localAlarmIndication, bool local=true)</td></tr>
+<tr class="memdesc:a18aea41c7b5e6fdd59deb7dcad6ef57c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the local alarm indication state.  <br /></td></tr>
+<tr class="separator:a18aea41c7b5e6fdd59deb7dcad6ef57c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5fdbfc49e4f69a5714f5af65f84cd0f2" id="r_a5fdbfc49e4f69a5714f5af65f84cd0f2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5fdbfc49e4f69a5714f5af65f84cd0f2">setReadIntervalMs</a> (uint32_t intervalMs)</td></tr>
 <tr class="memdesc:a5fdbfc49e4f69a5714f5af65f84cd0f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the read interval in ms.  <br /></td></tr>
 <tr class="separator:a5fdbfc49e4f69a5714f5af65f84cd0f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -623,27 +623,6 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 
 </div>
 </div>
-<a id="ad66758688a7ef793ab332475f76fb60a" name="ad66758688a7ef793ab332475f76fb60a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad66758688a7ef793ab332475f76fb60a">&#9670;&#160;</a></span>getAlarmMuted()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint8_t BinaryBase::getAlarmMuted </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Get the alarm muted state. </p>
-<p>0 - not used, 1 - muted, 2 - not muted.</p>
-<dl class="section return"><dt>Returns</dt><dd>alarm muted state </dd></dl>
-
-</div>
-</div>
 <a id="adcebee5e4d01c3b2ab580902cd6fee83" name="adcebee5e4d01c3b2ab580902cd6fee83"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adcebee5e4d01c3b2ab580902cd6fee83">&#9670;&#160;</a></span>getChannel() <span class="overload">[1/2]</span></h2>
 
@@ -719,6 +698,27 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 <p>Get the filtering time in ms. </p>
 <p>0 - not used. Input state changes shorter than this time are ignored.</p>
 <dl class="section return"><dt>Returns</dt><dd>filtering time in ms </dd></dl>
+
+</div>
+</div>
+<a id="abe4c6e9049332c1b171de795b080e2ac" name="abe4c6e9049332c1b171de795b080e2ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe4c6e9049332c1b171de795b080e2ac">&#9670;&#160;</a></span>getLocalAlarmIndication()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t BinaryBase::getLocalAlarmIndication </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the local alarm indication state. </p>
+<p>0 - not used, 1 - disabled, 2 - enabled.</p>
+<dl class="section return"><dt>Returns</dt><dd>local alarm indication state </dd></dl>
 
 </div>
 </div>
@@ -881,38 +881,6 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 
 </div>
 </div>
-<a id="a7eaba69dbf644733d47ffde738e8ebec" name="a7eaba69dbf644733d47ffde738e8ebec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7eaba69dbf644733d47ffde738e8ebec">&#9670;&#160;</a></span>setAlarmMuted()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool BinaryBase::setAlarmMuted </td>
-          <td>(</td>
-          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>alarmMuted</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Set the alarm muted state. </p>
-<p>0 - not used, 1 - muted, 2 - not muted. Parameter is synchronized with the server.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">alarmMuted</td><td></td></tr>
-    <tr><td class="paramname">local</td><td>use true if change originates locally from the device (i.e. from config mode)</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if alarm muted state was changed </dd></dl>
-
-</div>
-</div>
 <a id="aaea273deeaffcb7e2970e0419043bc9f" name="aaea273deeaffcb7e2970e0419043bc9f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaea273deeaffcb7e2970e0419043bc9f">&#9670;&#160;</a></span>setFilteringTimeMs()</h2>
 
@@ -942,6 +910,38 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if filtering time was changed </dd></dl>
+
+</div>
+</div>
+<a id="a18aea41c7b5e6fdd59deb7dcad6ef57c" name="a18aea41c7b5e6fdd59deb7dcad6ef57c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18aea41c7b5e6fdd59deb7dcad6ef57c">&#9670;&#160;</a></span>setLocalAlarmIndication()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool BinaryBase::setLocalAlarmIndication </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>localAlarmIndication</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the local alarm indication state. </p>
+<p>0 - not used, 1 - disabled, 2 - enabled. Parameter is synchronized with the server.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">localAlarmIndication</td><td></td></tr>
+    <tr><td class="paramname">local</td><td>use true if change originates locally from the device (i.e. from config mode)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if local alarm indication state was changed </dd></dl>
 
 </div>
 </div>

@@ -71,7 +71,7 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
     setServerInvertLogic(storedServerInvertLogic > 0, false);
 
     if (config.filteringTimeMs > 0 || config.timeoutDs > 0 ||
-        config.sensitivity > 0 || config.alarmMuted > 0) {
+        config.sensitivity > 0 || config.localAlarmIndication > 0) {
       generateKey(key, Supla::ConfigTag::BinarySensorCfgTag);
       BinarySensorConfig storedConfig = {};
       cfg->getBlob(key,
@@ -96,9 +96,9 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
         }
       }
 
-      if (config.alarmMuted > 0) {
-        if (storedConfig.alarmMuted > 0) {
-          setAlarmMuted(storedConfig.alarmMuted, false);
+      if (config.localAlarmIndication > 0) {
+        if (storedConfig.localAlarmIndication > 0) {
+          setLocalAlarmIndication(storedConfig.localAlarmIndication, false);
         }
       }
     }
@@ -110,13 +110,13 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
 void BinaryBase::printConfig() {
   SUPLA_LOG_INFO(
       "Binary[%d] config serverInvertLogic %d, timeoutDs %d, filteringTimeMs "
-      "%d, sensitivity %d, alarmMuted %d",
+      "%d, sensitivity %d, localAlarmIndication %d",
       getChannelNumber(),
       channel.isServerInvertLogic(),
       config.timeoutDs,
       config.filteringTimeMs,
       config.sensitivity,
-      config.alarmMuted);
+      config.localAlarmIndication);
 }
 
 void BinaryBase::purgeConfig() {
@@ -152,13 +152,14 @@ Supla::ApplyConfigResult BinaryBase::applyChannelConfig(
       reinterpret_cast<TChannelConfig_BinarySensor *>(newConfig->Config);
 
   SUPLA_LOG_DEBUG("Binary[%d] received serverInvertLogic %d, timeoutDs %d, "
-                  "filteringTimeMs %d, sensitivity %d, alarmMuted %d",
+                  "filteringTimeMs %d, sensitivity %d, "
+                  "localAlarmIndication %d",
                   getChannelNumber(),
                   serverConfig->InvertedLogic,
                   serverConfig->Timeout,
                   serverConfig->FilteringTimeMs,
                   serverConfig->Sensitivity,
-                  serverConfig->AlarmMuted);
+                  serverConfig->LocalAlarmIndication);
 
   bool configChanged = false;
 
@@ -188,10 +189,11 @@ Supla::ApplyConfigResult BinaryBase::applyChannelConfig(
       configChanged = true;
     }
   }
-  if (getAlarmMuted() > 0 && serverConfig->AlarmMuted == 0) {
+  if (getLocalAlarmIndication() > 0 &&
+      serverConfig->LocalAlarmIndication == 0) {
     result = Supla::ApplyConfigResult::SetChannelConfigNeeded;
   } else {
-    if (setAlarmMuted(serverConfig->AlarmMuted, false)) {
+    if (setLocalAlarmIndication(serverConfig->LocalAlarmIndication, false)) {
       configChanged = true;
     }
   }
@@ -309,12 +311,14 @@ uint8_t BinaryBase::getSensitivity() const {
   return config.sensitivity;
 }
 
-bool BinaryBase::setAlarmMuted(uint8_t alarmMuted, bool local) {
-  if (alarmMuted == config.alarmMuted ||
-      (config.alarmMuted > 0 && alarmMuted == 0) || alarmMuted > 2) {
+bool BinaryBase::setLocalAlarmIndication(uint8_t localAlarmIndication,
+                                         bool local) {
+  if (localAlarmIndication == config.localAlarmIndication ||
+      (config.localAlarmIndication > 0 && localAlarmIndication == 0) ||
+      localAlarmIndication > 2) {
     return false;
   }
-  config.alarmMuted = alarmMuted;
+  config.localAlarmIndication = localAlarmIndication;
   if (local) {
     triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
     saveConfig();
@@ -322,8 +326,8 @@ bool BinaryBase::setAlarmMuted(uint8_t alarmMuted, bool local) {
   return true;
 }
 
-uint8_t BinaryBase::getAlarmMuted() const {
-  return config.alarmMuted;
+uint8_t BinaryBase::getLocalAlarmIndication() const {
+  return config.localAlarmIndication;
 }
 
 bool BinaryBase::setFilteringTimeMs(uint16_t filteringTimeMs, bool local) {
@@ -396,8 +400,8 @@ void BinaryBase::fillChannelConfig(void *channelConfig,
   if (config.sensitivity > 0) {
     serverConfig->Sensitivity = config.sensitivity;
   }
-  if (config.alarmMuted > 0) {
-    serverConfig->AlarmMuted = config.alarmMuted;
+  if (config.localAlarmIndication > 0) {
+    serverConfig->LocalAlarmIndication = config.localAlarmIndication;
   }
   if (config.timeoutDs > 0) {
     serverConfig->Timeout = config.timeoutDs;

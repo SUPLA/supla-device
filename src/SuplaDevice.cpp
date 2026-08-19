@@ -41,6 +41,7 @@
 #include <supla/timer.h>
 #include <supla/tools.h>
 #include <supla/version.h>
+#include <supla-common/proto_suplet.h>
 
 #ifndef ARDUINO
 #ifndef F

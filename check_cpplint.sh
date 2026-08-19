@@ -31,9 +31,16 @@ mapfile -d '' -t LINUX_CPP_FILES < <(
     \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
 )
 
+mapfile -d '' -t SUPLA_COMMON_CPP_FILES < <(
+  find ./src/supla-common -type f \
+    \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
+)
+
 cpplint --filter=-build/include_subdir --quiet "${CPP_FILES[@]}" || EXIT_STATUS=$?
 cpplint --filter=-build/include_subdir,-build/include_order --quiet \
   "${LINUX_CPP_FILES[@]}" || EXIT_STATUS=$?
+cpplint --filter=-build/include_subdir,-build/header_guard,-runtime/int \
+  --quiet "${SUPLA_COMMON_CPP_FILES[@]}" || EXIT_STATUS=$?
 
 if [ $EXIT_STATUS -ne 0 ]
 then

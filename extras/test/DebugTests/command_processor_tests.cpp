@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <supla-common/proto.h>
+#include <supla-common/proto_suplet.h>
 #include <supla/debug/command_processor.h>
 
 #include <string>

@@ -169,7 +169,7 @@ class BinarySensorStub : public Supla::Sensor::BinaryBase {
     setFilteringTimeMs(2500, false);
     setTimeoutDs(42, false);
     setSensitivity(12, false);
-    setAlarmMuted(2, false);
+    setLocalAlarmIndication(2, false);
   }
 
   bool getValue() override {
@@ -1277,12 +1277,13 @@ TEST_F(HtmlCaptureTest, BinarySensorParametersRendersFields) {
   EXPECT_THAT(sendHtml, HasSubstr("Filtering time [s]"));
   EXPECT_THAT(sendHtml, HasSubstr("Sensor timeout [s]"));
   EXPECT_THAT(sendHtml, HasSubstr("Sensor sensitivity [%]"));
-  EXPECT_THAT(sendHtml, HasSubstr("Alarm muted"));
-  EXPECT_THAT(sendHtml, HasSubstr("Muted"));
-  EXPECT_THAT(sendHtml, HasSubstr("Not muted"));
+  EXPECT_THAT(sendHtml, HasSubstr("Local alarm indication"));
+  EXPECT_THAT(sendHtml, HasSubstr("Disabled"));
+  EXPECT_THAT(sendHtml, HasSubstr("Enabled"));
 }
 
-TEST_F(HtmlCaptureTest, BinarySensorParametersHandleResponseStoresAlarmMuted) {
+TEST_F(HtmlCaptureTest,
+       BinarySensorParametersHandleResponseStoresLocalAlarmIndication) {
   NiceMock<ConfigMock> cfg;
   Supla::Channel::resetToDefaults();
   BinarySensorStub binary;
@@ -1290,10 +1291,11 @@ TEST_F(HtmlCaptureTest, BinarySensorParametersHandleResponseStoresAlarmMuted) {
   Supla::Html::BinarySensorParameters param(&binary);
 
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  Supla::Config::generateKey(key, binary.getChannelNumber(), "bs_alarm");
+  Supla::Config::generateKey(
+      key, binary.getChannelNumber(), "bs_local_alarm");
 
   EXPECT_TRUE(param.handleResponse(key, "1"));
-  EXPECT_EQ(binary.getAlarmMuted(), 1);
+  EXPECT_EQ(binary.getLocalAlarmIndication(), 1);
 
   param.onProcessingEnd();
 }

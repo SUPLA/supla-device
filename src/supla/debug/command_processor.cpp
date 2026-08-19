@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <supla-common/proto.h>
+#include <supla-common/proto_suplet.h>
 #include <supla/suplet/config.h>
 
 #if SUPLA_SUPLET_ENABLED

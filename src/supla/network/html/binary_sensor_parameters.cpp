@@ -24,7 +24,7 @@ namespace {
 constexpr char BinaryTimeoutKey[] = "bs_timeout";
 constexpr char BinarySensitivityKey[] = "bs_sens";
 constexpr char BinaryFilterKey[] = "bs_filter";
-constexpr char BinaryAlarmMutedKey[] = "bs_alarm";
+constexpr char BinaryLocalAlarmIndicationKey[] = "bs_local_alarm";
 }  // namespace
 
 BinarySensorParameters::BinarySensorParameters(
@@ -132,20 +132,20 @@ void BinarySensorParameters::send(Supla::WebSender* sender) {
           });
     }
 
-    if (binary->getAlarmMuted() > 0) {
+    if (binary->getLocalAlarmIndication() > 0) {
       Supla::Config::generateKey(key,
                                  binary->getChannelNumber(),
-                                 BinaryAlarmMutedKey);
+                                 BinaryLocalAlarmIndicationKey);
 
       sender->labeledField(
           key,
-          "Alarm muted",
+          "Local alarm indication",
           [&]() {
             sender->selectInput(key, key, [&]() {
-              sender->selectOption(1, "Muted", binary->getAlarmMuted() == 1);
-              sender->selectOption(2,
-                                   "Not muted",
-                                   binary->getAlarmMuted() == 2);
+              sender->selectOption(
+                  1, "Disabled", binary->getLocalAlarmIndication() == 1);
+              sender->selectOption(
+                  2, "Enabled", binary->getLocalAlarmIndication() == 2);
             });
           });
     }
@@ -216,11 +216,11 @@ bool BinarySensorParameters::handleResponse(const char* key,
   Supla::Config::generateKey(
       expectedKey,
       binary->getChannelNumber(),
-      BinaryAlarmMutedKey);
+      BinaryLocalAlarmIndicationKey);
   if (strcmp(key, expectedKey) == 0) {
     uint32_t param = stringToInt(value);
-    if (binary->getAlarmMuted() > 0 && param >= 1 && param <= 2) {
-      if (binary->setAlarmMuted(static_cast<uint8_t>(param))) {
+    if (binary->getLocalAlarmIndication() > 0 && param >= 1 && param <= 2) {
+      if (binary->setLocalAlarmIndication(static_cast<uint8_t>(param))) {
         configChanged = true;
       }
     }

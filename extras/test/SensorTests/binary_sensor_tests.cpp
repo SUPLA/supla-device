@@ -459,11 +459,11 @@ TEST(BinarySensorTests, BinaryInitDoesNotRunActions) {
   EXPECT_FALSE(sensor.getChannel()->getValueBool());
 }
 
-TEST(BinarySensorTests, BinaryConfigStoresAlarmMutedInChannelConfig) {
+TEST(BinarySensorTests, BinaryConfigStoresLocalAlarmIndicationInChannelConfig) {
   Supla::Channel::resetToDefaults();
   BinaryConfigStub sensor;
 
-  ASSERT_TRUE(sensor.setAlarmMuted(2, false));
+  ASSERT_TRUE(sensor.setLocalAlarmIndication(2, false));
 
   TChannelConfig_BinarySensor channelConfig = {};
   int configSize = 0;
@@ -473,14 +473,14 @@ TEST(BinarySensorTests, BinaryConfigStoresAlarmMutedInChannelConfig) {
                            SUPLA_CONFIG_TYPE_DEFAULT);
 
   EXPECT_EQ(configSize, sizeof(TChannelConfig_BinarySensor));
-  EXPECT_EQ(channelConfig.AlarmMuted, 2);
+  EXPECT_EQ(channelConfig.LocalAlarmIndication, 2);
 }
 
-TEST(BinarySensorTests, BinaryConfigAppliesAlarmMutedFromServer) {
+TEST(BinarySensorTests, BinaryConfigAppliesLocalAlarmIndicationFromServer) {
   Supla::Channel::resetToDefaults();
   BinaryConfigStub sensor;
 
-  ASSERT_TRUE(sensor.setAlarmMuted(2, false));
+  ASSERT_TRUE(sensor.setLocalAlarmIndication(2, false));
 
   TSD_ChannelConfig newConfig = {};
   newConfig.ConfigSize = sizeof(TChannelConfig_BinarySensor);
@@ -489,15 +489,15 @@ TEST(BinarySensorTests, BinaryConfigAppliesAlarmMutedFromServer) {
   auto serverConfig =
       reinterpret_cast<TChannelConfig_BinarySensor *>(newConfig.Config);
 
-  serverConfig->AlarmMuted = 1;
+  serverConfig->LocalAlarmIndication = 1;
   EXPECT_EQ(sensor.applyChannelConfig(&newConfig, false),
             Supla::ApplyConfigResult::Success);
-  EXPECT_EQ(sensor.getAlarmMuted(), 1);
+  EXPECT_EQ(sensor.getLocalAlarmIndication(), 1);
 
-  serverConfig->AlarmMuted = 0;
+  serverConfig->LocalAlarmIndication = 0;
   EXPECT_EQ(sensor.applyChannelConfig(&newConfig, false),
             Supla::ApplyConfigResult::SetChannelConfigNeeded);
-  EXPECT_EQ(sensor.getAlarmMuted(), 1);
+  EXPECT_EQ(sensor.getLocalAlarmIndication(), 1);
 }
 
 TEST(BinarySensorTests, BinaryValuesTest) {

@@ -8,6 +8,7 @@
 #include <supla/channel_element.h>
 #include <supla/channels/channel.h>
 #include <supla/clock/clock.h>
+#include <supla-common/proto_suplet.h>
 #include <supla/element.h>
 #include <supla/suplet/capability_registry.h>
 #include <supla/suplet/config.h>

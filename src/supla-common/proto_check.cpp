@@ -94,9 +94,11 @@ static_assert((unsigned int)62 == sizeof(TElectricityMeter_Measurement));
 // static_assert((unsigned int)429 == sizeof(TElectricityMeter_ExtendedValue));
 
 // deprecated
-//static_assert((139 +
-//              sizeof(TElectricityMeter_Measurement) * EM_MEASUREMENT_COUNT) ==
-//              sizeof(TElectricityMeter_ExtendedValue_V2));
+#ifdef USE_DEPRECATED_EMEV_V2
+static_assert((139 +
+               sizeof(TElectricityMeter_Measurement) * EM_MEASUREMENT_COUNT) ==
+              sizeof(TElectricityMeter_ExtendedValue_V2));
+#endif
 
 static_assert((144 +
                sizeof(TElectricityMeter_Measurement) * EM_MEASUREMENT_COUNT) ==
@@ -123,8 +125,10 @@ static_assert(sizeof(TElectricityMeter_Value) <=
 //               (unsigned int)SUPLA_CHANNELEXTENDEDVALUE_SIZE);
 
 // deprecated
-//static_assert(sizeof(TElectricityMeter_ExtendedValue_V2) <=
-//              (unsigned int)SUPLA_CHANNELEXTENDEDVALUE_SIZE);
+#ifdef USE_DEPRECATED_EMEV_V2
+static_assert(sizeof(TElectricityMeter_ExtendedValue_V2) <=
+              (unsigned int)SUPLA_CHANNELEXTENDEDVALUE_SIZE);
+#endif
 static_assert(sizeof(TElectricityMeter_ExtendedValue_V3) <=
               (unsigned int)SUPLA_CHANNELEXTENDEDVALUE_SIZE);
 static_assert((unsigned int)4 == sizeof(TThermostat_Time));
@@ -223,6 +227,9 @@ static_assert(sizeof(TDeviceConfig_HomeScreenContent) <=
               (unsigned int)SUPLA_DEVICE_CONFIG_MAXSIZE);
 static_assert((unsigned int)16 == sizeof(TDeviceConfig_ThermalProtection));
 static_assert(sizeof(TDeviceConfig_ThermalProtection) <=
+              (unsigned int)SUPLA_DEVICE_CONFIG_MAXSIZE);
+static_assert(sizeof(TDeviceConfig_InputActivation) == 8);
+static_assert(sizeof(TDeviceConfig_InputActivation) <=
               (unsigned int)SUPLA_DEVICE_CONFIG_MAXSIZE);
 static_assert((unsigned int)8 == sizeof(TCalCfg_RollerShutterSettings));
 static_assert(sizeof(TCalCfg_RollerShutterSettings) <=

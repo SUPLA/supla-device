@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <supla-common/proto_suplet.h>
 #include <supla/sha256.h>
 #include <supla/suplet/calcfg_session.h>
 #include <supla/suplet/capability_registry.h>

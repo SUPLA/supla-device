@@ -22,8 +22,9 @@ struct BinarySensorConfig {
       uint16_t filteringTimeMs;  // 0 - not used; > 0 - filtering time
       uint8_t sensitivity;       // 0 - not used; 1..101 -> 0..100 %;
                                      // value 1 is 0% -> off
-      uint8_t alarmMuted;  // 0 - not used, 1 - alarm is muted,
-                           // 2 - alarm is not muted
+      uint8_t localAlarmIndication;  // 0 - not used,
+                                     // 1 - local alarm indication disabled,
+                                     // 2 - local alarm indication enabled
     };
   };
 
@@ -134,23 +135,26 @@ class BinaryBase : public ElementWithChannelActions {
   bool setSensitivity(uint8_t sensitivity, bool local = true);
 
   /**
-   * Get the alarm muted state. 0 - not used, 1 - muted, 2 - not muted.
+   * Get the local alarm indication state. 0 - not used, 1 - disabled,
+   * 2 - enabled.
    *
-   * @return alarm muted state
+   * @return local alarm indication state
    */
-  uint8_t getAlarmMuted() const;
+  uint8_t getLocalAlarmIndication() const;
 
   /**
-   * Set the alarm muted state. 0 - not used, 1 - muted, 2 - not muted.
+   * Set the local alarm indication state. 0 - not used, 1 - disabled,
+   * 2 - enabled.
    * Parameter is synchronized with the server.
    *
-   * @param alarmMuted
+   * @param localAlarmIndication
    * @param local use true if change originates locally from the device (i.e.
    *              from config mode)
    *
-   * @return true if alarm muted state was changed
+   * @return true if local alarm indication state was changed
    */
-  bool setAlarmMuted(uint8_t alarmMuted, bool local = true);
+  bool setLocalAlarmIndication(uint8_t localAlarmIndication,
+                               bool local = true);
 
   /**
    * Set the read interval in ms. Sensor will try to read value every

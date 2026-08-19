@@ -115,6 +115,7 @@ if(NOT SUPLA_TEST_CURL_HTTP_ENABLED)
 endif()
 
 list(APPEND TEST_SRC ../../src/supla-common/proto_check.cpp)
+list(APPEND TEST_SRC ../../src/supla/storage/littlefs_config.cpp)
 list(APPEND TEST_SRC
   ../esp-idf/supla-interrupt-ac-to-dc-io/interrupt_ac_to_dc_io.cpp
   ../porting/esp-idf/esp_idf_ota.cpp

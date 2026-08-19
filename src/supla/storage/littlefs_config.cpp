@@ -397,8 +397,13 @@ bool Supla::LittleFsConfig::getBlob(const char* key,
     return false;
   }
 
-  if (Supla::KeyValue::getBlobSize(key) == static_cast<int>(blobSize)) {
-    return Supla::KeyValue::getBlob(key, value, blobSize);
+  int keyValueBlobSize = Supla::KeyValue::getBlobSize(key);
+  if (keyValueBlobSize >= 0) {
+    if (static_cast<size_t>(keyValueBlobSize) > blobSize) {
+      return false;
+    }
+    return Supla::KeyValue::getBlob(
+        key, value, static_cast<size_t>(keyValueBlobSize));
   }
 
   if (!initLittleFs()) {
@@ -419,8 +424,8 @@ bool Supla::LittleFsConfig::getBlob(const char* key,
     return false;
   }
   size_t fileSize = file.size();
-  if (fileSize != blobSize) {
-    SUPLA_LOG_ERROR("LittleFsConfig: blob file has invalid size");
+  if (fileSize > blobSize) {
+    SUPLA_LOG_ERROR("LittleFsConfig: blob file does not fit in buffer");
     file.close();
     LittleFS.end();
     return false;

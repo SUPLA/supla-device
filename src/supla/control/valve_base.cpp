@@ -142,11 +142,10 @@ void ValveBase::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     loadFunctionFromConfig();
-    // load TChannelConfig_Valve from Config
+    // load internal ValveConfig from Config
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     generateKey(key, Supla::ConfigTag::ValveCfgTag);
-    cfg->getBlob(
-        key, reinterpret_cast<char *>(&config), sizeof(TChannelConfig_Valve));
+    cfg->getBlob(key, reinterpret_cast<char *>(&config), sizeof(config));
 
     loadConfigChangeFlag();
 

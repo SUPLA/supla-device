@@ -79,7 +79,7 @@ var searchData=
   ['setpwmfrequency_76',['setPwmFrequency',['../classSupla_1_1Control_1_1LightingPwmBase.html#a93971acd32a846f2801f7ab455e6610b',1,'Supla::Control::LightingPwmBase']]],
   ['setpwmresolutionbits_77',['setPwmResolutionBits',['../classSupla_1_1Control_1_1LightingPwmBase.html#a5764354627157483b73d178ed0388c23',1,'Supla::Control::LightingPwmBase']]],
   ['setreadintervalms_78',['setReadIntervalMs',['../classSupla_1_1Sensor_1_1BinaryBase.html#a5fdbfc49e4f69a5714f5af65f84cd0f2',1,'Supla::Sensor::BinaryBase']]],
-  ['setrefreshintervalms_79',['setRefreshIntervalMs',['../classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#a969bc32bc6f2c1f91d6c9d1032254fde',1,'Supla::Sensor::GeneralPurposeChannelBase']]],
+  ['setrefreshintervalms_79',['setRefreshIntervalMs',['../classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#a969bc32bc6f2c1f91d6c9d1032254fde',1,'Supla::Sensor::GeneralPurposeChannelBase::setRefreshIntervalMs()'],['../classSupla_1_1Sensor_1_1MultiDsHandlerBase.html#a96b1266ea2c4eb11936214a90cdb8b2f',1,'Supla::Sensor::MultiDsHandlerBase::setRefreshIntervalMs()']]],
   ['setrestarttimerontoggle_80',['setRestartTimerOnToggle',['../classSupla_1_1Control_1_1Relay.html#a0423904d3d5f1cc49f42fa0c46e149a7',1,'Supla::Control::Relay']]],
   ['setrsconfigbuttonsupsidedownenabled_81',['setRsConfigButtonsUpsideDownEnabled',['../classSupla_1_1Control_1_1RollerShutterInterface.html#ace97800ebde90fea4ce6ea0488f2237b',1,'Supla::Control::RollerShutterInterface']]],
   ['setrsconfigbuttonsupsidedownvalue_82',['setRsConfigButtonsUpsideDownValue',['../classSupla_1_1Control_1_1RollerShutterInterface.html#a2ae937b876187f564e6d5da1d31244ad',1,'Supla::Control::RollerShutterInterface']]],

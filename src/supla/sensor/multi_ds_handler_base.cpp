@@ -19,6 +19,12 @@
 #define DS_HANDLER_ADDRESS_LENGTH 24
 #define DS_NAME "DS18B20"
 
+namespace {
+
+constexpr uint32_t kMinimumRefreshIntervalMs = 1000;
+
+}  // namespace
+
 using Supla::Sensor::MultiDsHandlerBase;
 
 MultiDsHandlerBase::MultiDsHandlerBase(
@@ -169,11 +175,18 @@ void MultiDsHandlerBase::iterateAlways() {
   }
 
   if (state == MultiDsState::READY) {
-    if (millis() - lastBusReadTime > 10000) {
+    if (millis() - lastBusReadTime > refreshIntervalMs) {
       requestTemperatures();
       lastBusReadTime = millis();
     }
   }
+}
+
+void MultiDsHandlerBase::setRefreshIntervalMs(uint32_t intervalMs) {
+  if (intervalMs < kMinimumRefreshIntervalMs) {
+    intervalMs = kMinimumRefreshIntervalMs;
+  }
+  refreshIntervalMs = intervalMs;
 }
 
 

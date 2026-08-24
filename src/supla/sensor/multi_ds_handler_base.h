@@ -62,6 +62,12 @@ class MultiDsHandlerBase : public Element,
   void setMaxDeviceCount(uint8_t count);
 
   /**
+   * Sets the interval between temperature conversion requests.
+   * Values below 1000 ms are clamped to 1000 ms.
+   */
+  void setRefreshIntervalMs(uint32_t intervalMs);
+
+  /**
    * Sets the offset for channel number.
    * 
    * Normally paired thermometers will get next free channel number. If you
@@ -150,6 +156,7 @@ class MultiDsHandlerBase : public Element,
   uint32_t pairingStartTimeMs = 0;
   uint32_t helperTimeMs = 0;
   uint32_t lastBusReadTime = 0;
+  uint32_t refreshIntervalMs = 10000;
 
   uint8_t maxDeviceCount = MULTI_DS_MAX_DEVICES_COUNT;
   uint8_t pairingTimeout = MUTLI_DS_DEFAULT_PAIRING_DURATION_SEC;

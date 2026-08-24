@@ -6,6 +6,7 @@
 
 #include <config_mock.h>
 #include <arduino_mock.h>
+#include <simple_time.h>
 
 #include <supla/channel.h>
 #include <supla/protocol/supla_srpc.h>
@@ -30,6 +31,8 @@ class TestMultiDsHandler : public Supla::Sensor::MultiDsHandlerBase {
  public:
   explicit TestMultiDsHandler(SuplaDeviceClass *sdc = nullptr)
       : MultiDsHandlerBase(sdc, 0) {}
+
+  int temperatureRequests = 0;
 
   Supla::Sensor::MultiDsSensor *add(uint8_t addressByte,
                                     int channelNumber = -1,
@@ -58,7 +61,7 @@ class TestMultiDsHandler : public Supla::Sensor::MultiDsHandlerBase {
 
  protected:
   int refreshSensorsCount() override { return sensorDiscovered ? 1 : 0; }
-  void requestTemperatures() override {}
+  void requestTemperatures() override { temperatureRequests++; }
   bool getSensorAddress(uint8_t *address, int index) override {
     if (!sensorDiscovered || address == nullptr || index != 0) {
       return false;
@@ -174,6 +177,34 @@ TEST_F(MultiDsHandlerTests, NewSensorsUseGlobalSubdeviceIdsNotSlots) {
   EXPECT_EQ(first->getSubDeviceId(), 3);
   EXPECT_EQ(second->getSubDeviceId(), 8);
   EXPECT_EQ(third->getSubDeviceId(), 12);
+}
+
+TEST_F(MultiDsHandlerTests, RefreshIntervalSetterUsesConfiguredInterval) {
+  SimpleTime time;
+  TestMultiDsHandler handler;
+  handler.setRefreshIntervalMs(2000);
+
+  time.advance(2000);
+  handler.iterateAlways();
+  EXPECT_EQ(handler.temperatureRequests, 0);
+
+  time.advance(1);
+  handler.iterateAlways();
+  EXPECT_EQ(handler.temperatureRequests, 1);
+}
+
+TEST_F(MultiDsHandlerTests, RefreshIntervalSetterClampsTooShortIntervals) {
+  SimpleTime time;
+  TestMultiDsHandler handler;
+  handler.setRefreshIntervalMs(1);
+
+  time.advance(1000);
+  handler.iterateAlways();
+  EXPECT_EQ(handler.temperatureRequests, 0);
+
+  time.advance(1);
+  handler.iterateAlways();
+  EXPECT_EQ(handler.temperatureRequests, 1);
 }
 
 TEST_F(MultiDsHandlerTests, RestoreScansIdsAboveMaxDeviceCount) {

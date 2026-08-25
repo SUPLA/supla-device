@@ -9,6 +9,7 @@
 #include <supla/control/button.h>
 #include <supla/local_action.h>
 #include <supla/log_wrapper.h>
+#include <supla/protocol/protocol_layer.h>
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
@@ -923,15 +924,23 @@ void RelayRollerShutterPair::onTimer() {
 
 void RelayRollerShutterPair::onFunctionChange(uint32_t currentFunction,
                                               uint32_t newFunction) {
-  (void)(currentFunction);
   if (loadingConfig) {
     applyRuntimeMode();
     return;
   }
+  const bool modeChanged = isRollerFunction(currentFunction) !=
+                           isRollerFunction(newFunction);
   if (isRollerFunction(newFunction)) {
     switchToRollerMode();
   } else {
     switchToRelayMode();
+  }
+  if (modeChanged) {
+    for (auto proto = Supla::Protocol::ProtocolLayer::first();
+         proto != nullptr;
+         proto = proto->next()) {
+      proto->notifyConfigChange(getSecondaryChannelNumber());
+    }
   }
 }
 

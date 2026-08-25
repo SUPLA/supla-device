@@ -16,6 +16,8 @@
 #include <supla/device/register_device.h>
 #include <supla/io.h>
 
+#include <vector>
+
 using ::testing::_;
 using ::testing::AnyNumber;
 using ::testing::DoAll;
@@ -82,6 +84,15 @@ class TestableRelayRollerShutterPair
   void markPrimaryDefaultConfigReceived() {
     receivedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
   }
+};
+
+class ConfigChangeCapturingProtocol : public ProtocolLayerMock {
+ public:
+  void notifyConfigChange(int channelNumber) override {
+    changedChannels.push_back(channelNumber);
+  }
+
+  std::vector<int> changedChannels;
 };
 
 TEST_F(RelayRollerShutterPairFixture,
@@ -218,6 +229,24 @@ TEST_F(RelayRollerShutterPairFixture, DefaultsToTwoLightSwitches) {
   EXPECT_EQ(pair.getSecondaryChannel()->getDefaultFunction(),
             SUPLA_CHANNELFNC_LIGHTSWITCH);
   EXPECT_TRUE(pair.isInRelayMode());
+}
+
+TEST_F(RelayRollerShutterPairFixture,
+       RelayToRollerNotifiesConfigChangeForBothChannels) {
+  ConfigChangeCapturingProtocol proto;
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = pair.getChannelNumber();
+  config.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio0, 0)).Times(testing::AtLeast(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(testing::AtLeast(1));
+  pair.handleChannelConfig(&config, false);
+
+  EXPECT_THAT(proto.changedChannels,
+              testing::UnorderedElementsAre(pair.getChannelNumber(),
+                                             pair.getSecondaryChannelNumber()));
 }
 
 TEST_F(RelayRollerShutterPairFixture,

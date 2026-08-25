@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SuplaDevice.h>
+#include <arduino_mock.h>
 #include <channel_element_mock.h>
 #include <config_mock.h>
 #include <gmock/gmock.h>
@@ -37,6 +38,7 @@ using ::testing::AtLeast;
 using ::testing::DoAll;
 using ::testing::HasSubstr;
 using ::testing::NiceMock;
+using ::testing::Not;
 using ::testing::Return;
 using ::testing::SetArrayArgument;
 using ::testing::StrEq;
@@ -67,6 +69,7 @@ class MqttTestMock : public MqttMock {
 
   using Supla::Protocol::Mqtt::publishDeviceStatus;
   using Supla::Protocol::Mqtt::publishHADiscovery;
+  using Supla::Protocol::Mqtt::processConfigChanges;
 
   void test_setChannelsCount(uint16_t count) {
     channelsCount = count;
@@ -1887,6 +1890,61 @@ TEST_F(MqttChannelDispatchTests,
   expectEmptyDiscovery(mqtt, "switch", channelNumber);
 
   mqtt.publishHADiscovery(channelNumber);
+}
+
+TEST_F(MqttChannelDispatchTests,
+       relayRollerShutterModeChangeRefreshesBothChannelsDiscovery) {
+  SuplaDeviceClass sd;
+  NiceMock<MqttTestMock> mqtt(&sd);
+  NiceMock<DigitalInterfaceMock> ioMock;
+  SimpleTime time;
+  initMqtt(sd, mqtt);
+
+  Supla::Control::RelayRollerShutterPair pair(1, 2);
+  const int primaryChannel = pair.getChannelNumber();
+  const int secondaryChannel = pair.getSecondaryChannelNumber();
+  mqtt.test_setChannelsCount(secondaryChannel + 1);
+
+  EXPECT_CALL(mqtt, publishTest(_, _, _, _)).Times(testing::AnyNumber());
+  EXPECT_CALL(mqtt,
+              publishTest(StrEq(expectedDiscoveryTopic(
+                              "light", primaryChannel)),
+                          Not(StrEq("")),
+                          0,
+                          true));
+  EXPECT_CALL(mqtt,
+              publishTest(StrEq(expectedDiscoveryTopic(
+                              "light", secondaryChannel)),
+                          Not(StrEq("")),
+                          0,
+                          true));
+
+  mqtt.notifyConfigChange(primaryChannel);
+  mqtt.notifyConfigChange(secondaryChannel);
+  mqtt.processConfigChanges();
+  testing::Mock::VerifyAndClearExpectations(&mqtt);
+
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = primaryChannel;
+  config.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+
+  EXPECT_CALL(mqtt, publishTest(_, _, _, _)).Times(testing::AnyNumber());
+  EXPECT_CALL(mqtt,
+              publishTest(StrEq(expectedDiscoveryTopic(
+                              "cover", primaryChannel)),
+                          Not(StrEq("")),
+                          0,
+                          true));
+  EXPECT_CALL(mqtt,
+              publishTest(StrEq(expectedDiscoveryTopic(
+                              "light", secondaryChannel)),
+                          StrEq(""),
+                          0,
+                          true));
+
+  pair.handleChannelConfig(&config, false);
+  mqtt.processConfigChanges();
 }
 
 TEST_F(MqttChannelDispatchTests,

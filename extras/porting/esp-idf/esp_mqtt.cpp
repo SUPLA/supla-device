@@ -377,16 +377,6 @@ void Supla::Protocol::EspMqtt::disconnect() {
   enterRegisteredAndReady = false;
 }
 
-void Supla::Protocol::EspMqtt::publishChannelSetup(int channelNumber) {
-  if (channelNumber < 0 || channelNumber >= channelsCount) {
-    return;
-  }
-  publishHADiscovery(channelNumber);
-  subscribeChannel(channelNumber);
-  publishChannelState(channelNumber);
-  configChangedBit[channelNumber / 8] &= ~(1 << (channelNumber % 8));
-}
-
 bool Supla::Protocol::EspMqtt::iterate(uint32_t _millis) {
   if (!isEnabled()) {
     return false;
@@ -416,22 +406,7 @@ bool Supla::Protocol::EspMqtt::iterate(uint32_t _millis) {
       }
     }
 
-    // check if any configChangedBit is set
-    bool anyConfigChanged = false;
-    for (int i = 0; i < sizeof(configChangedBit) / sizeof(configChangedBit[0]);
-         i++) {
-      if (configChangedBit[i] != 0) {
-        anyConfigChanged = true;
-        break;
-      }
-    }
-    if (anyConfigChanged) {
-      for (int i = 0; i < channelsCount; i++) {
-        if (configChangedBit[i / 8] & (1 << (i % 8))) {
-          publishChannelSetup(i);
-        }
-      }
-    }
+    processConfigChanges();
 
     // send device status update
     if (uptime.getConnectionUptime() - lastStatusUpdateSec >= 5) {

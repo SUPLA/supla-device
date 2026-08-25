@@ -2848,3 +2848,32 @@ void Mqtt::notifyConfigChange(int channelNumber) {
     configChangedBit[channelNumber / 8] |= (1U << (channelNumber % 8));
   }
 }
+
+void Mqtt::publishChannelSetup(int channelNumber) {
+  if (channelNumber < 0 || channelNumber >= channelsCount) {
+    return;
+  }
+  publishHADiscovery(channelNumber);
+  subscribeChannel(channelNumber);
+  publishChannelState(channelNumber);
+  configChangedBit[channelNumber / 8] &= ~(1U << (channelNumber % 8));
+}
+
+void Mqtt::processConfigChanges() {
+  bool anyConfigChanged = false;
+  for (size_t i = 0; i < sizeof(configChangedBit); i++) {
+    if (configChangedBit[i] != 0) {
+      anyConfigChanged = true;
+      break;
+    }
+  }
+  if (!anyConfigChanged) {
+    return;
+  }
+
+  for (int channel = 0; channel < channelsCount; channel++) {
+    if (configChangedBit[channel / 8] & (1U << (channel % 8))) {
+      publishChannelSetup(channel);
+    }
+  }
+}

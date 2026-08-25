@@ -147,6 +147,8 @@ class Mqtt : public ProtocolLayer {
   void generateObjectId(char result[30], int channelNumber, int subId);
   MqttTopic getHADiscoveryTopic(const char *sensor, char *objectId);
   void publishDeviceStatus(bool onRegistration = false);
+  void publishChannelSetup(int channelNumber);
+  void processConfigChanges();
   void publishHADiscovery(int channel);
   void publishHADiscoveryRelay(Supla::Element *);
   void publishHADiscoveryRelay(Supla::Element *, Supla::Channel *);

@@ -230,6 +230,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>publishExtendedChanne
 <tr class="memitem:a4954c7cba818880b20520a517f603951" id="r_a4954c7cba818880b20520a517f603951"><td class="memItemLeft" align="right" valign="top"><a id="a4954c7cba818880b20520a517f603951" name="a4954c7cba818880b20520a517f603951"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>subscribeChannel</b> (int channel)</td></tr>
 <tr class="separator:a4954c7cba818880b20520a517f603951"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3b685b9e231b423b027bdcfd086aa24" id="r_aa3b685b9e231b423b027bdcfd086aa24"><td class="memItemLeft" align="right" valign="top"><a id="aa3b685b9e231b423b027bdcfd086aa24" name="aa3b685b9e231b423b027bdcfd086aa24"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>unsubscribeChannel</b> (int channel)</td></tr>
+<tr class="separator:aa3b685b9e231b423b027bdcfd086aa24"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f2a43e1f276638e2af806f33445e398" id="r_a9f2a43e1f276638e2af806f33445e398"><td class="memItemLeft" align="right" valign="top"><a id="a9f2a43e1f276638e2af806f33445e398" name="a9f2a43e1f276638e2af806f33445e398"></a>
 const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getPrefix</b> () const</td></tr>
 <tr class="separator:a9f2a43e1f276638e2af806f33445e398"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -239,6 +242,9 @@ const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getHostname</
 <tr class="memitem:a5f495d0c1668a4f0c8ee6b8b1796ca3f" id="r_a5f495d0c1668a4f0c8ee6b8b1796ca3f"><td class="memItemLeft" align="right" valign="top"><a id="a5f495d0c1668a4f0c8ee6b8b1796ca3f" name="a5f495d0c1668a4f0c8ee6b8b1796ca3f"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>subscribe</b> (const char *topic, int qos=-1)</td></tr>
 <tr class="separator:a5f495d0c1668a4f0c8ee6b8b1796ca3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d521b89484b9a7c4a4db9b2588c6c98" id="r_a4d521b89484b9a7c4a4db9b2588c6c98"><td class="memItemLeft" align="right" valign="top"><a id="a4d521b89484b9a7c4a4db9b2588c6c98" name="a4d521b89484b9a7c4a4db9b2588c6c98"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>unsubscribe</b> (const char *topic)</td></tr>
+<tr class="separator:a4d521b89484b9a7c4a4db9b2588c6c98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf3c9d2d94f5778555c609b90f0b9fef" id="r_acf3c9d2d94f5778555c609b90f0b9fef"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#acf3c9d2d94f5778555c609b90f0b9fef">isUpdatePending</a> () override</td></tr>
 <tr class="separator:acf3c9d2d94f5778555c609b90f0b9fef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72cea8db5ee91acddce8339528c6dec5" id="r_a72cea8db5ee91acddce8339528c6dec5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a72cea8db5ee91acddce8339528c6dec5">isRegisteredAndReady</a> () override</td></tr>
@@ -349,6 +355,21 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>publishDeviceStatus</
 <tr class="memitem:a33a70b81d3d22c4167ab135c495797b7" id="r_a33a70b81d3d22c4167ab135c495797b7"><td class="memItemLeft" align="right" valign="top"><a id="a33a70b81d3d22c4167ab135c495797b7" name="a33a70b81d3d22c4167ab135c495797b7"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>publishChannelSetup</b> (int channelNumber)</td></tr>
 <tr class="separator:a33a70b81d3d22c4167ab135c495797b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa68142040f8f1b69de1f1d045976293d" id="r_aa68142040f8f1b69de1f1d045976293d"><td class="memItemLeft" align="right" valign="top"><a id="aa68142040f8f1b69de1f1d045976293d" name="aa68142040f8f1b69de1f1d045976293d"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isChannelAvailableForHa</b> (const <a class="el" href="classSupla_1_1Channel.html">Supla::Channel</a> *channel) const</td></tr>
+<tr class="separator:aa68142040f8f1b69de1f1d045976293d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ee256ccf608d7762f997d13d7ffcbbf" id="r_a7ee256ccf608d7762f997d13d7ffcbbf"><td class="memItemLeft" align="right" valign="top"><a id="a7ee256ccf608d7762f997d13d7ffcbbf" name="a7ee256ccf608d7762f997d13d7ffcbbf"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>publishChannelAvailability</b> (int channelNumber, bool force=false)</td></tr>
+<tr class="separator:a7ee256ccf608d7762f997d13d7ffcbbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45c6307ba343e5d6cc8a994b71c31f42" id="r_a45c6307ba343e5d6cc8a994b71c31f42"><td class="memItemLeft" align="right" valign="top"><a id="a45c6307ba343e5d6cc8a994b71c31f42" name="a45c6307ba343e5d6cc8a994b71c31f42"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>resetChannelAvailabilityCache</b> ()</td></tr>
+<tr class="separator:a45c6307ba343e5d6cc8a994b71c31f42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5563e633fefd29ecb95b788a3852c1b0" id="r_a5563e633fefd29ecb95b788a3852c1b0"><td class="memItemLeft" align="right" valign="top"><a id="a5563e633fefd29ecb95b788a3852c1b0" name="a5563e633fefd29ecb95b788a3852c1b0"></a>
+const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getHAAvailability</b> (const <a class="el" href="classSupla_1_1Channel.html">Supla::Channel</a> *channel)</td></tr>
+<tr class="separator:a5563e633fefd29ecb95b788a3852c1b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6895d1cbea7aa2475959cd840b2a574" id="r_ae6895d1cbea7aa2475959cd840b2a574"><td class="memItemLeft" align="right" valign="top"><a id="ae6895d1cbea7aa2475959cd840b2a574" name="ae6895d1cbea7aa2475959cd840b2a574"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>getHAExpireAfter</b> (const <a class="el" href="classSupla_1_1Channel.html">Supla::Channel</a> *channel, char *result, size_t resultSize) const</td></tr>
+<tr class="separator:ae6895d1cbea7aa2475959cd840b2a574"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abbd902d9b0953bb434c586cb96545857" id="r_abbd902d9b0953bb434c586cb96545857"><td class="memItemLeft" align="right" valign="top"><a id="abbd902d9b0953bb434c586cb96545857" name="abbd902d9b0953bb434c586cb96545857"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>processConfigChanges</b> ()</td></tr>
 <tr class="separator:abbd902d9b0953bb434c586cb96545857"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -418,6 +439,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>publishImp</b
 <tr class="memitem:ab8e97d3282dc6ed3b55cc2cfeb296408" id="r_ab8e97d3282dc6ed3b55cc2cfeb296408"><td class="memItemLeft" align="right" valign="top"><a id="ab8e97d3282dc6ed3b55cc2cfeb296408" name="ab8e97d3282dc6ed3b55cc2cfeb296408"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>subscribeImp</b> (const char *topic, int qos)=0</td></tr>
 <tr class="separator:ab8e97d3282dc6ed3b55cc2cfeb296408"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfdbc93c1f796fda0d52ce6cab84607f" id="r_adfdbc93c1f796fda0d52ce6cab84607f"><td class="memItemLeft" align="right" valign="top"><a id="adfdbc93c1f796fda0d52ce6cab84607f" name="adfdbc93c1f796fda0d52ce6cab84607f"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>unsubscribeImp</b> (const char *topic)=0</td></tr>
+<tr class="separator:adfdbc93c1f796fda0d52ce6cab84607f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b962e428311345ce647a175b7f926d2" id="r_a3b962e428311345ce647a175b7f926d2"><td class="memItemLeft" align="right" valign="top"><a id="a3b962e428311345ce647a175b7f926d2" name="a3b962e428311345ce647a175b7f926d2"></a>
 const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getStateClassStr</b> (Supla::Protocol::HAStateClass stateClass)</td></tr>
 <tr class="separator:a3b962e428311345ce647a175b7f926d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -496,6 +520,18 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>prefix</b> = nullpt
 <tr class="memitem:a9e5aacd0c1b605b6a168d032a46ba79d" id="r_a9e5aacd0c1b605b6a168d032a46ba79d"><td class="memItemLeft" align="right" valign="top"><a id="a9e5aacd0c1b605b6a168d032a46ba79d" name="a9e5aacd0c1b605b6a168d032a46ba79d"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>configChangedBit</b> [CONFIG_CHANGED_BIT_SIZE] = {}</td></tr>
 <tr class="separator:a9e5aacd0c1b605b6a168d032a46ba79d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae48bd372b5ba9f9e6b1150f175cec7c6" id="r_ae48bd372b5ba9f9e6b1150f175cec7c6"><td class="memItemLeft" align="right" valign="top"><a id="ae48bd372b5ba9f9e6b1150f175cec7c6" name="ae48bd372b5ba9f9e6b1150f175cec7c6"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>channelAvailabilityKnownBit</b> [CHANNEL_AVAILABILITY_BIT_SIZE] = {}</td></tr>
+<tr class="separator:ae48bd372b5ba9f9e6b1150f175cec7c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a562ec7dfc5ac4131d3eb6996fdb2631e" id="r_a562ec7dfc5ac4131d3eb6996fdb2631e"><td class="memItemLeft" align="right" valign="top"><a id="a562ec7dfc5ac4131d3eb6996fdb2631e" name="a562ec7dfc5ac4131d3eb6996fdb2631e"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>channelAvailabilityValueBit</b> [CHANNEL_AVAILABILITY_BIT_SIZE] = {}</td></tr>
+<tr class="separator:a562ec7dfc5ac4131d3eb6996fdb2631e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9876dcbca8bdad16cab6c7c605d8b8f0" id="r_a9876dcbca8bdad16cab6c7c605d8b8f0"><td class="memItemLeft" align="right" valign="top"><a id="a9876dcbca8bdad16cab6c7c605d8b8f0" name="a9876dcbca8bdad16cab6c7c605d8b8f0"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>channelOnlineButNotAvailableBit</b> [CHANNEL_AVAILABILITY_BIT_SIZE] = {}</td></tr>
+<tr class="separator:a9876dcbca8bdad16cab6c7c605d8b8f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1bd8eca9e2b5f9a1aa0f7b76b6add7e" id="r_af1bd8eca9e2b5f9a1aa0f7b76b6add7e"><td class="memItemLeft" align="right" valign="top"><a id="af1bd8eca9e2b5f9a1aa0f7b76b6add7e" name="af1bd8eca9e2b5f9a1aa0f7b76b6add7e"></a>
+char&#160;</td><td class="memItemRight" valign="bottom"><b>haAvailability</b> [HA_AVAILABILITY_BUFFER_SIZE] = {}</td></tr>
+<tr class="separator:af1bd8eca9e2b5f9a1aa0f7b76b6add7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0903353d02185eb21cd1b1a3815bd9ed" id="r_a0903353d02185eb21cd1b1a3815bd9ed"><td class="memItemLeft" align="right" valign="top"><a id="a0903353d02185eb21cd1b1a3815bd9ed" name="a0903353d02185eb21cd1b1a3815bd9ed"></a>
 <a class="el" href="classSupla_1_1Uptime.html">Supla::Uptime</a>&#160;</td><td class="memItemRight" valign="bottom"><b>uptime</b></td></tr>
 <tr class="separator:a0903353d02185eb21cd1b1a3815bd9ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -517,6 +553,11 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>verboseLog</b> = fals
 Static Protected Attributes</h2></td></tr>
 <tr class="memitem:a2ffce5c21698ec4aa91711493dd39b42" id="r_a2ffce5c21698ec4aa91711493dd39b42"><td class="memItemLeft" align="right" valign="top">static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2ffce5c21698ec4aa91711493dd39b42">CONFIG_CHANGED_BIT_SIZE</a></td></tr>
 <tr class="separator:a2ffce5c21698ec4aa91711493dd39b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c59a3923b0575e961374d85e0cbf0ff" id="r_a2c59a3923b0575e961374d85e0cbf0ff"><td class="memItemLeft" align="right" valign="top">static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2c59a3923b0575e961374d85e0cbf0ff">CHANNEL_AVAILABILITY_BIT_SIZE</a></td></tr>
+<tr class="separator:a2c59a3923b0575e961374d85e0cbf0ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a25d142609c2e7333f836c4fb93f24018" id="r_a25d142609c2e7333f836c4fb93f24018"><td class="memItemLeft" align="right" valign="top"><a id="a25d142609c2e7333f836c4fb93f24018" name="a25d142609c2e7333f836c4fb93f24018"></a>
+static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>HA_AVAILABILITY_BUFFER_SIZE</b> = 400</td></tr>
+<tr class="separator:a25d142609c2e7333f836c4fb93f24018"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer')"><img src="closed.png" alt="-"/>&#160;Static Protected Attributes inherited from <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">Supla::Protocol::ProtocolLayer</a></td></tr>
 <tr class="memitem:a220f8110fcb384c45bf376b35f114e21 inherit pro_static_attribs_classSupla_1_1Protocol_1_1ProtocolLayer" id="r_a220f8110fcb384c45bf376b35f114e21"><td class="memItemLeft" align="right" valign="top">
 static <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">ProtocolLayer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>firstPtr</b> = nullptr</td></tr>
@@ -929,6 +970,30 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>IsAnyUpdatePen
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a2c59a3923b0575e961374d85e0cbf0ff" name="a2c59a3923b0575e961374d85e0cbf0ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c59a3923b0575e961374d85e0cbf0ff">&#9670;&#160;</a></span>CHANNEL_AVAILABILITY_BIT_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t Supla::Protocol::Mqtt::CHANNEL_AVAILABILITY_BIT_SIZE</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">      (SUPLA_CHANNELMAXCOUNT + 7) / 8</div>
+</div><!-- fragment -->
+</div>
+</div>
 <a id="a2ffce5c21698ec4aa91711493dd39b42" name="a2ffce5c21698ec4aa91711493dd39b42"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2ffce5c21698ec4aa91711493dd39b42">&#9670;&#160;</a></span>CONFIG_CHANGED_BIT_SIZE</h2>
 

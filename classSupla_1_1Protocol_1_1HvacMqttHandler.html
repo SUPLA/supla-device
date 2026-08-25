@@ -123,6 +123,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a960c72c974fce2484ecad6e0a9ec8e26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a389ea4715badc9fa174fe21672c33b42" id="r_a389ea4715badc9fa174fe21672c33b42"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a389ea4715badc9fa174fe21672c33b42">mqttSubscribeChannel</a> (<a class="el" href="classSupla_1_1Protocol_1_1Mqtt.html">Mqtt</a> *mqtt, <a class="el" href="classSupla_1_1Element.html">Supla::Element</a> *element) override</td></tr>
 <tr class="separator:a389ea4715badc9fa174fe21672c33b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24d3537e3a912c2a05bd1c2186e7f2ea" id="r_a24d3537e3a912c2a05bd1c2186e7f2ea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a24d3537e3a912c2a05bd1c2186e7f2ea">mqttUnsubscribeChannel</a> (<a class="el" href="classSupla_1_1Protocol_1_1Mqtt.html">Mqtt</a> *mqtt, <a class="el" href="classSupla_1_1Element.html">Supla::Element</a> *element) override</td></tr>
+<tr class="separator:a24d3537e3a912c2a05bd1c2186e7f2ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1e51bd9400ac308d1077c4a89bd024f" id="r_aa1e51bd9400ac308d1077c4a89bd024f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa1e51bd9400ac308d1077c4a89bd024f">mqttProcessData</a> (<a class="el" href="classSupla_1_1Protocol_1_1Mqtt.html">Mqtt</a> *mqtt, const char *topic_part, const char *payload, <a class="el" href="classSupla_1_1Element.html">Supla::Element</a> *element) override</td></tr>
 <tr class="separator:aa1e51bd9400ac308d1077c4a89bd024f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a743db9189cb48e2f0eec9816df6212c4" id="r_a743db9189cb48e2f0eec9816df6212c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a743db9189cb48e2f0eec9816df6212c4">mqttPublishHADiscovery</a> (<a class="el" href="classSupla_1_1Protocol_1_1Mqtt.html">Mqtt</a> *mqtt, <a class="el" href="classSupla_1_1Element.html">Supla::Element</a> *element) override</td></tr>
@@ -271,6 +273,37 @@ Public Member Functions</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">void Supla::Protocol::HvacMqttHandler::mqttSubscribeChannel </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classSupla_1_1Protocol_1_1Mqtt.html">Mqtt</a> *</td>          <td class="paramname"><span class="paramname"><em>mqtt</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classSupla_1_1Element.html">Supla::Element</a> *</td>          <td class="paramname"><span class="paramname"><em>element</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="classSupla_1_1Protocol_1_1MqttChannelHandler.html">Supla::Protocol::MqttChannelHandler</a>.</p>
+
+</div>
+</div>
+<a id="a24d3537e3a912c2a05bd1c2186e7f2ea" name="a24d3537e3a912c2a05bd1c2186e7f2ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24d3537e3a912c2a05bd1c2186e7f2ea">&#9670;&#160;</a></span>mqttUnsubscribeChannel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Protocol::HvacMqttHandler::mqttUnsubscribeChannel </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classSupla_1_1Protocol_1_1Mqtt.html">Mqtt</a> *</td>          <td class="paramname"><span class="paramname"><em>mqtt</em></span>, </td>
         </tr>

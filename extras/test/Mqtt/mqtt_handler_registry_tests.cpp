@@ -46,6 +46,9 @@ class TestHandler : public Supla::Protocol::MqttChannelHandler {
   void mqttSubscribeChannel(Supla::Protocol::Mqtt *,
                             Supla::Element *) override {
   }
+  void mqttUnsubscribeChannel(Supla::Protocol::Mqtt *,
+                              Supla::Element *) override {
+  }
   bool mqttProcessData(Supla::Protocol::Mqtt *,
                        const char *,
                        const char *,

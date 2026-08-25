@@ -26,6 +26,10 @@ void MqttInterface::subscribeImp(const char *topic, int qos) {
   subscribeTest(std::string(topic), qos);
 }
 
+void MqttInterface::unsubscribeImp(const char *topic) {
+  unsubscribeTest(std::string(topic));
+}
+
 MqttDocumentationRecorder &MqttInterface::documentationRecorder() {
   return *documentationRecorder_;
 }

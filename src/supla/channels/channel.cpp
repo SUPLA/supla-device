@@ -752,8 +752,12 @@ void Channel::clearValue() {
   }
 }
 
-bool Channel::isSleepingEnabled() {
+bool Channel::isSleepingEnabled() const {
   return validityTimeSec > 0;
+}
+
+uint32_t Channel::getValidityTimeSec() const {
+  return validityTimeSec;
 }
 
 bool Channel::isWeeklyScheduleAvailable() {

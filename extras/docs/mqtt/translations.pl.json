@@ -114,6 +114,11 @@
         "description": "Bieżący odczyt temperatury.",
         "availability": "Czujniki temperatury z prawidłowym odczytem."
       },
+      "{prefix}/channels/{channel}/state/available": {
+        "title": "Dostępność kanału",
+        "description": "Bieżąca dostępność zasobu kanału.",
+        "availability": "Wszystkie kanały udostępniane przez MQTT."
+      },
       "homeassistant/climate/supla/000000000000_{channel}_{sub_id}/config": {
         "title": "Konfiguracja discovery HVAC",
         "description": "Konfiguracja MQTT Discovery Home Assistanta dla kanału HVAC.",

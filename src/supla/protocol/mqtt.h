@@ -107,9 +107,11 @@ class Mqtt : public ProtocolLayer {
   void publishChannelState(int channel);
   void publishExtendedChannelState(int channel);
   void subscribeChannel(int channel);
+  void unsubscribeChannel(int channel);
   const char *getPrefix() const;
   const char *getHostname() const;
   void subscribe(const char *topic, int qos = -1);
+  void unsubscribe(const char *topic);
   bool isUpdatePending() override;
   bool isRegisteredAndReady() override;
   void notifyConfigChange(int channelNumber) override;
@@ -148,6 +150,13 @@ class Mqtt : public ProtocolLayer {
   MqttTopic getHADiscoveryTopic(const char *sensor, char *objectId);
   void publishDeviceStatus(bool onRegistration = false);
   void publishChannelSetup(int channelNumber);
+  bool isChannelAvailableForHa(const Supla::Channel *channel) const;
+  void publishChannelAvailability(int channelNumber, bool force = false);
+  void resetChannelAvailabilityCache();
+  const char *getHAAvailability(const Supla::Channel *channel);
+  void getHAExpireAfter(const Supla::Channel *channel,
+                        char *result,
+                        size_t resultSize) const;
   void processConfigChanges();
   void publishHADiscovery(int channel);
   void publishHADiscoveryRelay(Supla::Element *);
@@ -184,6 +193,7 @@ class Mqtt : public ProtocolLayer {
                           int qos,
                           bool retain) = 0;
   virtual void subscribeImp(const char *topic, int qos) = 0;
+  virtual void unsubscribeImp(const char *topic) = 0;
   const char *getStateClassStr(Supla::Protocol::HAStateClass stateClass);
   const char *getDeviceClassStr(Supla::Protocol::HADeviceClass deviceClass);
 
@@ -225,6 +235,15 @@ class Mqtt : public ProtocolLayer {
   static_assert(CONFIG_CHANGED_BIT_SIZE * 8 >= SUPLA_CHANNELMAXCOUNT,
                 "MQTT config change bitset is too small");
   uint8_t configChangedBit[CONFIG_CHANGED_BIT_SIZE] = {};
+  static constexpr size_t CHANNEL_AVAILABILITY_BIT_SIZE =
+      (SUPLA_CHANNELMAXCOUNT + 7) / 8;
+  static_assert(CHANNEL_AVAILABILITY_BIT_SIZE * 8 >= SUPLA_CHANNELMAXCOUNT,
+                "MQTT channel availability bitset is too small");
+  uint8_t channelAvailabilityKnownBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};
+  uint8_t channelAvailabilityValueBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};
+  uint8_t channelOnlineButNotAvailableBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};
+  static constexpr size_t HA_AVAILABILITY_BUFFER_SIZE = 400;
+  char haAvailability[HA_AVAILABILITY_BUFFER_SIZE] = {};
   Supla::Uptime uptime;
 };
 }  // namespace Protocol

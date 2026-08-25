@@ -24,6 +24,8 @@ class MqttInterface : public Supla::Protocol::Mqtt {
   void publishImp(const char *topic, const char *payload, int qos, bool retain);
   virtual void subscribeTest(std::string topic, int qos) = 0;
   void subscribeImp(const char *topic, int qos) override;
+  virtual void unsubscribeTest(std::string topic) = 0;
+  void unsubscribeImp(const char *topic) override;
   MqttDocumentationRecorder &documentationRecorder();
 
   void setDocumentationRecorder(MqttDocumentationRecorder *recorder);
@@ -44,6 +46,7 @@ class MqttMock : public MqttInterface {
               (std::string topic, std::string payload, int qos, bool retain),
               (override));
   MOCK_METHOD(void, subscribeTest, (std::string topic, int qos), (override));
+  MOCK_METHOD(void, unsubscribeTest, (std::string topic), (override));
   MOCK_METHOD(void, disconnect, (), (override));
   MOCK_METHOD(bool, iterate, (uint32_t _millis), (override));
 };

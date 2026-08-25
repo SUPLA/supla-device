@@ -17,7 +17,7 @@ typów i funkcji kanałów oraz obsługiwanych pomiarów.
 
 ## Typy i funkcje kanałów
 
-[Urządzenie](#urządzenie) · [Przekaźnik](#przekaźnik) · [Roleta](#roleta) · [Ściemniacz](#ściemniacz) · [Sterownik RGB](#sterownik-rgb) · [Sterownik ściemniacza i RGB](#sterownik-ściemniacza-i-rgb) · [Termometr](#termometr) · [Czujnik wilgotności i temperatury](#czujnik-wilgotności-i-temperatury) · [HVAC](#hvac) · [Licznik energii elektrycznej](#licznik-energii-elektrycznej) · [Czujnik binarny](#czujnik-binarny)
+[Urządzenie](#urządzenie) · [Przekaźnik](#przekaźnik) · [Roleta](#roleta) · [Ściemniacz](#ściemniacz) · [Sterownik RGB](#sterownik-rgb) · [Sterownik ściemniacza i RGB](#sterownik-ściemniacza-i-rgb) · [Termometr](#termometr) · [Czujnik wilgotności i temperatury](#czujnik-wilgotności-i-temperatury) · [HVAC](#hvac) · [Licznik energii elektrycznej](#licznik-energii-elektrycznej) · [Czujnik binarny](#czujnik-binarny) · [Kanał](#kanał)
 
 ## Urządzenie
 
@@ -1056,3 +1056,22 @@ Funkcje kanału: `SUPLA_CHANNELFNC_FLOOD_SENSOR`, `SUPLA_CHANNELFNC_OPENINGSENSO
 Bieżący stan czujnika binarnego; używane wartości zależą od funkcji kanału.
 
 Przykłady: `ON`, `closed`, `open`
+
+## Kanał
+
+Typ kanału: `channel`
+
+### Publikowane topiki
+
+#### Dostępność kanału
+
+- Topik: `{prefix}/channels/{channel}/state/available`
+- Typ payloadu: `boolean`
+- Dozwolone wartości: `true`, `false`
+- QoS: `0`
+- Retain: `true`
+- Dostępność: Wszystkie kanały udostępniane przez MQTT.
+
+Bieżąca dostępność zasobu kanału.
+
+Przykłady: `false`, `true`

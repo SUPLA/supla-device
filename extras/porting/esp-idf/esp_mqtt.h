@@ -38,6 +38,7 @@ class EspMqtt : public Mqtt {
                           int qos,
                           bool retain) override;
   void subscribeImp(const char *topic, int qos) override;
+  void unsubscribeImp(const char *topic) override;
   bool started = false;
   bool enterRegisteredAndReady = false;
   esp_mqtt_client_handle_t client = {};

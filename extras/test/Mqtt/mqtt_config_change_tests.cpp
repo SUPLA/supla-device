@@ -13,6 +13,7 @@ class MqttConfigChangeTest : public Supla::Protocol::Mqtt {
   bool iterate(uint32_t) override { return false; }
   void publishImp(const char *, const char *, int, bool) override {}
   void subscribeImp(const char *, int) override {}
+  void unsubscribeImp(const char *) override {}
 
   bool isConfigChanged(int channelNumber) const {
     if (channelNumber < 0 || channelNumber >= SUPLA_CHANNELMAXCOUNT) {

@@ -18,7 +18,7 @@ channel types, channel functions, and supported measurements.
 
 ## Channel types and functions
 
-[Device](#device) · [Relay](#relay) · [Roller shutter](#roller-shutter) · [Dimmer](#dimmer) · [RGB controller](#rgb-controller) · [Dimmer and RGB controller](#dimmer-and-rgb-controller) · [Thermometer](#thermometer) · [Humidity and temperature sensor](#humidity-and-temperature-sensor) · [HVAC](#hvac) · [Electricity meter](#electricity-meter) · [Binary sensor](#binary-sensor)
+[Device](#device) · [Relay](#relay) · [Roller shutter](#roller-shutter) · [Dimmer](#dimmer) · [RGB controller](#rgb-controller) · [Dimmer and RGB controller](#dimmer-and-rgb-controller) · [Thermometer](#thermometer) · [Humidity and temperature sensor](#humidity-and-temperature-sensor) · [HVAC](#hvac) · [Electricity meter](#electricity-meter) · [Binary sensor](#binary-sensor) · [Channel](#channel)
 
 ## Device
 
@@ -1057,3 +1057,22 @@ Channel functions: `SUPLA_CHANNELFNC_FLOOD_SENSOR`, `SUPLA_CHANNELFNC_OPENINGSEN
 Current binary sensor state; vocabulary depends on the channel function.
 
 Examples: `ON`, `closed`, `open`
+
+## Channel
+
+Channel type: `channel`
+
+### Published topics
+
+#### Channel availability
+
+- Topic: `{prefix}/channels/{channel}/state/available`
+- Payload type: `boolean`
+- Allowed values: `true`, `false`
+- QoS: `0`
+- Retain: `true`
+- Availability: All MQTT-enabled channels.
+
+Current availability of the channel resource.
+
+Examples: `false`, `true`

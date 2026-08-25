@@ -279,7 +279,8 @@ class Channel : public LocalAction {
   virtual bool getExtValueAsElectricityMeter(
       TElectricityMeter_ExtendedValue_V3 *out);
   void setCorrection(double correction, bool forSecondaryValue = false);
-  bool isSleepingEnabled();
+  bool isSleepingEnabled() const;
+  uint32_t getValidityTimeSec() const;
   bool isWeeklyScheduleAvailable();
 
   // Returns true if channel is battery powered (for channel state info)

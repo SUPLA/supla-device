@@ -20,6 +20,7 @@ class MqttChannelHandler {
 
   virtual void mqttPublishChannelState(Mqtt *mqtt, Supla::Element *element) = 0;
   virtual void mqttSubscribeChannel(Mqtt *mqtt, Supla::Element *element) = 0;
+  virtual void mqttUnsubscribeChannel(Mqtt *mqtt, Supla::Element *element) = 0;
   virtual bool mqttProcessData(Mqtt *mqtt,
                                const char *topic_part,
                                const char *payload,

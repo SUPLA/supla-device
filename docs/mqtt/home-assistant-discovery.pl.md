@@ -24,9 +24,19 @@ Przykład 1:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -52,9 +62,19 @@ Przykład 2:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -80,9 +100,19 @@ Przykład 3:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -108,9 +138,19 @@ Przykład 4:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -146,9 +186,19 @@ Przykład:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -182,9 +232,19 @@ Przykład 1:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -208,9 +268,19 @@ Przykład 2:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -234,9 +304,19 @@ Przykład 3:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -278,9 +358,19 @@ Przykład 1:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -310,9 +400,19 @@ Przykład 2:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -349,9 +449,19 @@ Przykład 3:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -381,9 +491,19 @@ Przykład 4:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -413,9 +533,19 @@ Przykład 5:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -445,9 +575,19 @@ Przykład 6:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -477,9 +617,19 @@ Przykład 7:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -509,9 +659,19 @@ Przykład 8:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -566,9 +726,19 @@ Przykład:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/4/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/4",
   "dev": {
     "ids": "my-device-0405ab",
@@ -615,9 +785,19 @@ Przykład:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/5/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/5",
   "dev": {
     "ids": "my-device-0405ab",
@@ -666,9 +846,19 @@ Przykład 1:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/6/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/6",
   "dev": {
     "ids": "my-device-0405ab",
@@ -697,9 +887,19 @@ Przykład 2:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/6/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/6",
   "dev": {
     "ids": "my-device-0405ab",
@@ -748,9 +948,19 @@ Przykład:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/2/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/2",
   "dev": {
     "ids": "my-device-0405ab",
@@ -763,7 +973,6 @@ Przykład:
   "dev_cla": "temperature",
   "unit_of_meas": "°C",
   "stat_cla": "measurement",
-  "expire_after": 30,
   "qos": 0,
   "ret": false,
   "opt": false,
@@ -793,9 +1002,19 @@ Przykład 1:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/3/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/3",
   "dev": {
     "ids": "my-device-0405ab",
@@ -808,7 +1027,6 @@ Przykład 1:
   "stat_cla": "measurement",
   "unit_of_meas": "%",
   "uniq_id": "supla_000000000000_3_0",
-  "expire_after": 30,
   "qos": 0,
   "ret": false,
   "opt": false,
@@ -820,9 +1038,19 @@ Przykład 2:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/3/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/3",
   "dev": {
     "ids": "my-device-0405ab",
@@ -835,7 +1063,6 @@ Przykład 2:
   "dev_cla": "temperature",
   "unit_of_meas": "°C",
   "stat_cla": "measurement",
-  "expire_after": 30,
   "qos": 0,
   "ret": false,
   "opt": false,
@@ -865,9 +1092,19 @@ Przykład 1:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -906,9 +1143,19 @@ Przykład 2:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -951,9 +1198,19 @@ Przykład 3:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1010,9 +1267,19 @@ Przykład 1:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1034,9 +1301,19 @@ Przykład 2:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1058,9 +1335,19 @@ Przykład 3:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1082,9 +1369,19 @@ Przykład 4:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1106,9 +1403,19 @@ Przykład 5:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1130,9 +1437,19 @@ Przykład 6:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1154,9 +1471,19 @@ Przykład 7:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1178,9 +1505,19 @@ Przykład 8:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1202,9 +1539,19 @@ Przykład 9:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1226,9 +1573,19 @@ Przykład 10:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1250,9 +1607,19 @@ Przykład 11:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1274,9 +1641,19 @@ Przykład 12:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1298,9 +1675,19 @@ Przykład 13:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1322,9 +1709,19 @@ Przykład 14:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1346,9 +1743,19 @@ Przykład 15:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1370,9 +1777,19 @@ Przykład 16:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1393,9 +1810,19 @@ Przykład 17:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1417,9 +1844,19 @@ Przykład 18:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1441,9 +1878,19 @@ Przykład 19:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1465,9 +1912,19 @@ Przykład 20:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1489,9 +1946,19 @@ Przykład 21:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1513,9 +1980,19 @@ Przykład 22:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1537,9 +2014,19 @@ Przykład 23:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1561,9 +2048,19 @@ Przykład 24:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1585,9 +2082,19 @@ Przykład 25:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1609,9 +2116,19 @@ Przykład 26:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1633,9 +2150,19 @@ Przykład 27:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1657,9 +2184,19 @@ Przykład 28:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1680,9 +2217,19 @@ Przykład 29:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1704,9 +2251,19 @@ Przykład 30:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1728,9 +2285,19 @@ Przykład 31:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1752,9 +2319,19 @@ Przykład 32:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1776,9 +2353,19 @@ Przykład 33:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1800,9 +2387,19 @@ Przykład 34:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1824,9 +2421,19 @@ Przykład 35:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1848,9 +2455,19 @@ Przykład 36:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1872,9 +2489,19 @@ Przykład 37:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1896,9 +2523,19 @@ Przykład 38:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1920,9 +2557,19 @@ Przykład 39:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1944,9 +2591,19 @@ Przykład 40:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -1985,9 +2642,19 @@ Przykład 1:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2008,9 +2675,19 @@ Przykład 2:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2031,9 +2708,19 @@ Przykład 3:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2054,9 +2741,19 @@ Przykład 4:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2080,9 +2777,19 @@ Przykład 5:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2104,9 +2811,19 @@ Przykład 6:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2130,9 +2847,19 @@ Przykład 7:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2156,9 +2883,19 @@ Przykład 8:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2182,9 +2919,19 @@ Przykład 9:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2205,9 +2952,19 @@ Przykład 10:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2229,9 +2986,19 @@ Przykład 11:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2252,9 +3019,19 @@ Przykład 12:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2275,9 +3052,19 @@ Przykład 13:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2301,9 +3088,19 @@ Przykład 14:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",
@@ -2327,9 +3124,19 @@ Przykład 15:
 
 ```json
 {
-  "avty_t": "prefix/supla/devices/my-device-0405ab/state/connected",
-  "pl_avail": "true",
-  "pl_not_avail": "false",
+  "avty": [
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/state/connected",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    },
+    {
+      "t": "prefix/supla/devices/my-device-0405ab/channels/0/state/available",
+      "pl_avail": "true",
+      "pl_not_avail": "false"
+    }
+  ],
+  "avty_mode": "all",
   "~": "prefix/supla/devices/my-device-0405ab/channels/0",
   "dev": {
     "ids": "my-device-0405ab",

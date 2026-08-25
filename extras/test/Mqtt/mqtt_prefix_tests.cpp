@@ -28,6 +28,8 @@ class MqttUT : public Supla::Protocol::Mqtt {
   }
   void subscribeImp(const char *, int) override {
   }
+  void unsubscribeImp(const char *) override {
+  }
 
   void test_generateClientId(char result[MQTT_CLIENTID_MAX_SIZE]) {
     generateClientId(result);

@@ -117,6 +117,17 @@
       "availability": "Temperature-capable sensors with a valid reading.",
       "optional": true
     },
+    "{prefix}/channels/{channel}/state/available": {
+      "title": "Channel availability",
+      "payload_type": "boolean",
+      "allowed_values": [
+        "true",
+        "false"
+      ],
+      "description": "Current availability of the channel resource.",
+      "availability": "All MQTT-enabled channels.",
+      "optional": false
+    },
     "homeassistant/climate/supla/000000000000_{channel}_{sub_id}/config": {
       "title": "HVAC discovery configuration",
       "payload_type": "json",

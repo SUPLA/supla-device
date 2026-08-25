@@ -129,6 +129,17 @@ class HvacMqttHandler : public MqttChannelHandler {
     mqtt->subscribe((topic / "set" / "temperature_setpoint_cool").c_str());
   }
 
+  void mqttUnsubscribeChannel(Mqtt *mqtt, Supla::Element *element) override {
+    if (mqtt == nullptr || element == nullptr) {
+      return;
+    }
+    auto topic = MqttTopic("channels") / element->getChannelNumber();
+    mqtt->unsubscribe((topic / "execute_action").c_str());
+    mqtt->unsubscribe((topic / "set" / "temperature_setpoint").c_str());
+    mqtt->unsubscribe((topic / "set" / "temperature_setpoint_heat").c_str());
+    mqtt->unsubscribe((topic / "set" / "temperature_setpoint_cool").c_str());
+  }
+
   bool mqttProcessData(Mqtt *mqtt,
                        const char *topic_part,
                        const char *payload,
@@ -257,9 +268,7 @@ class HvacMqttHandler : public MqttChannelHandler {
 
     const char cfg[] =
         "{"
-        "\"avty_t\":\"%s/state/connected\","
-        "\"pl_avail\":\"true\","
-        "\"pl_not_avail\":\"false\","
+        "%s"
         "\"~\":\"%s/channels/%i\","
         "\"dev\":{"
         "\"ids\":\"%s\","
@@ -301,7 +310,7 @@ class HvacMqttHandler : public MqttChannelHandler {
               i ? payload : &c,
               i ? bufferSize : 1,
               cfg,
-              mqtt->getPrefix(),
+              mqtt->getHAAvailability(ch),
               mqtt->getPrefix(),
               ch->getChannelNumber(),
               mqtt->getHostname(),

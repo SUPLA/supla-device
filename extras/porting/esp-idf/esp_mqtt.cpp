@@ -475,3 +475,13 @@ void Supla::Protocol::EspMqtt::subscribeImp(const char *topic, int qos) {
   esp_mqtt_client_subscribe(client, topic, qos);
   mutex->lock();
 }
+
+void Supla::Protocol::EspMqtt::unsubscribeImp(const char *topic) {
+  if (!connected) {
+    return;
+  }
+
+  mutex->unlock();
+  esp_mqtt_client_unsubscribe(client, topic);
+  mutex->lock();
+}

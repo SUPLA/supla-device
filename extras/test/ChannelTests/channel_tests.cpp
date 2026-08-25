@@ -57,6 +57,18 @@ TEST_F(ChannelTestsFixture, ClearValueClearsPayloadAndValidity) {
             memcmp(deviceChannel.value, emptyValue, SUPLA_CHANNELVALUE_SIZE));
 }
 
+TEST_F(ChannelTestsFixture, ValidityTimeControlsSleepingState) {
+  Supla::Channel channel;
+
+  channel.setValidityTimeSec(0);
+  EXPECT_FALSE(channel.isSleepingEnabled());
+  EXPECT_EQ(channel.getValidityTimeSec(), 0U);
+
+  channel.setValidityTimeSec(123);
+  EXPECT_TRUE(channel.isSleepingEnabled());
+  EXPECT_EQ(channel.getValidityTimeSec(), 123U);
+}
+
 TEST_F(ChannelTestsFixture, ChannelMethods) {
   Supla::Channel first;
   Supla::Channel second;

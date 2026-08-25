@@ -32,10 +32,6 @@ double MultiDsSensor::getValue() {
     return lastValidValue;
   }
 
-  if (!channel.isStateOnline()) {
-    channel.setStateOnline();
-  }
-
   if (value == 85.0) {
     value = TEMPERATURE_NOT_AVAILABLE;
   }
@@ -49,6 +45,9 @@ double MultiDsSensor::getValue() {
     }
   } else {
     retryCounter = 0;
+    if (!channel.isStateOnline()) {
+      channel.setStateOnline();
+    }
   }
 
   lastValidValue = value;

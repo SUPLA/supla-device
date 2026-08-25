@@ -59,6 +59,10 @@ class TestMultiDsHandler : public Supla::Sensor::MultiDsHandlerBase {
     sensorDiscovered = true;
   }
 
+  void setTemperature(double value) {
+    temperature = value;
+  }
+
  protected:
   int refreshSensorsCount() override { return sensorDiscovered ? 1 : 0; }
   void requestTemperatures() override { temperatureRequests++; }
@@ -69,11 +73,12 @@ class TestMultiDsHandler : public Supla::Sensor::MultiDsHandlerBase {
     memcpy(address, discoveredAddress.data(), discoveredAddress.size());
     return true;
   }
-  double getTemperature(const uint8_t *) override { return 20.0; }
+  double getTemperature(const uint8_t *) override { return temperature; }
 
  private:
   std::array<uint8_t, 8> discoveredAddress = {};
   bool sensorDiscovered = false;
+  double temperature = 20.0;
 };
 
 class PairingObserver : public Supla::Device::SubdevicePairingObserver {
@@ -177,6 +182,32 @@ TEST_F(MultiDsHandlerTests, NewSensorsUseGlobalSubdeviceIdsNotSlots) {
   EXPECT_EQ(first->getSubDeviceId(), 3);
   EXPECT_EQ(second->getSubDeviceId(), 8);
   EXPECT_EQ(third->getSubDeviceId(), 12);
+}
+
+TEST_F(MultiDsHandlerTests, OfflineSensorReturnsOnlineOnlyAfterValidReading) {
+  TestMultiDsHandler handler;
+  auto sensor = handler.add(1);
+  ASSERT_NE(sensor, nullptr);
+
+  handler.setTemperature(28.0);
+  EXPECT_DOUBLE_EQ(sensor->getValue(), 28.0);
+  EXPECT_TRUE(sensor->getChannel()->isStateOnline());
+
+  handler.setTemperature(-127.0);
+  EXPECT_DOUBLE_EQ(sensor->getValue(), TEMPERATURE_NOT_AVAILABLE);
+  EXPECT_FALSE(sensor->getChannel()->isStateOnline());
+
+  handler.setTemperature(TEMPERATURE_NOT_AVAILABLE);
+  EXPECT_DOUBLE_EQ(sensor->getValue(), TEMPERATURE_NOT_AVAILABLE);
+  EXPECT_FALSE(sensor->getChannel()->isStateOnline());
+
+  handler.setTemperature(-127.0);
+  EXPECT_DOUBLE_EQ(sensor->getValue(), TEMPERATURE_NOT_AVAILABLE);
+  EXPECT_FALSE(sensor->getChannel()->isStateOnline());
+
+  handler.setTemperature(28.5);
+  EXPECT_DOUBLE_EQ(sensor->getValue(), 28.5);
+  EXPECT_TRUE(sensor->getChannel()->isStateOnline());
 }
 
 TEST_F(MultiDsHandlerTests, RefreshIntervalSetterUsesConfiguredInterval) {

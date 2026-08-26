@@ -146,6 +146,10 @@ int InterruptAcToDcIo::customDigitalRead(int channelNumber, uint8_t pin) {
     SUPLA_LOG_ERROR("InterruptAcToDcIo: not initialized");
     return 0;
   }
+  if (pin >= INTERRUPT_AC_TO_DC_IO_MAX_GPIOS) {
+    SUPLA_LOG_ERROR("InterruptAcToDcIo: Invalid GPIO number %d", pin);
+    return 0;
+  }
   if (gpioState[pin] == 255) {
     return 0;
   }

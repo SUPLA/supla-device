@@ -94,7 +94,8 @@ Supla::ApplyConfigResult OcrImpulseCounter::applyChannelConfig(
       ocrConfig.Host[sizeof(ocrConfig.Host) - 1] = '\0';
       bool ocrConfigReceived = true;
       SUPLA_LOG_DEBUG("OcrIC: OCR config:");
-      SUPLA_LOG_DEBUG("    AuthKey: %s", ocrConfig.AuthKey);
+      SUPLA_LOG_DEBUG("    AuthKey: %s",
+                      ocrConfig.AuthKey[0] == '\0' ? "not set" : "set");
       SUPLA_LOG_DEBUG("    Host: %s", ocrConfig.Host);
       SUPLA_LOG_DEBUG("    PhotoIntervalSec: %d", ocrConfig.PhotoIntervalSec);
       SUPLA_LOG_DEBUG("    LightingMode: %X%08X",

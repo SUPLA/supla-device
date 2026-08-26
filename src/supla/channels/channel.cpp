@@ -161,8 +161,11 @@ void Channel::setNewValue(double dbl) {
     if (isnan(dbl)) {
       SUPLA_LOG_DEBUG("Channel(%d) value changed to NaN", channelNumber);
     } else {
-      SUPLA_LOG_DEBUG("Channel(%d) value changed to %d.%02d", channelNumber,
-          static_cast<int>(dbl), abs(static_cast<int>(dbl*100)%100));
+      int integerPart = static_cast<int>(dbl);
+      int fractionalPart = abs(static_cast<int>(dbl * 100) % 100);
+      const char *sign = dbl < 0 && integerPart == 0 ? "-" : "";
+      SUPLA_LOG_DEBUG("Channel(%d) value changed to %s%d.%02d", channelNumber,
+          sign, integerPart, fractionalPart);
     }
   }
 }

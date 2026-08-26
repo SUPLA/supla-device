@@ -10,9 +10,13 @@
 #include <supla/channels/channel.h>
 #include <supla/correction.h>
 #include <supla/events.h>
+#include <supla-common/log.h>
 #include <supla/protocol/supla_srpc.h>
 
 #include "supla/device/register_device.h"
+
+extern "C" const char *supla_test_get_last_log();
+extern "C" void supla_test_clear_last_log();
 
 class ChannelTestsFixture : public ::testing::Test {
  protected:
@@ -610,6 +614,29 @@ TEST_F(ChannelTestsFixture, DoubleChannelWithLocalActions) {
   ch1.setNewValue(value);
   ch1.setNewValue(value);
   ch1.setNewValue(value);
+}
+
+TEST_F(ChannelTestsFixture, DoubleValueLogPreservesNegativeFractionSign) {
+  Supla::Channel channel;
+  const int oldLogLevel = supla_log_get_level();
+  supla_log_set_level(LOG_DEBUG);
+
+  supla_test_clear_last_log();
+  channel.setNewValue(-0.23);
+  EXPECT_STREQ(supla_test_get_last_log(),
+               "Channel(0) value changed to -0.23");
+
+  supla_test_clear_last_log();
+  channel.setNewValue(0.23);
+  EXPECT_STREQ(supla_test_get_last_log(),
+               "Channel(0) value changed to 0.23");
+
+  supla_test_clear_last_log();
+  channel.setNewValue(-12.34);
+  EXPECT_STREQ(supla_test_get_last_log(),
+               "Channel(0) value changed to -12.34");
+
+  supla_log_set_level(oldLogLevel);
 }
 
 TEST_F(ChannelTestsFixture, DoubleFloatChannelWithLocalActions) {

@@ -236,6 +236,10 @@ void Clock::onLoadConfig(SuplaDeviceClass *sdc) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     if (useAutomaticTimeSyncRemoteConfig) {
+      // AutomaticTimeSyncCfgTag caches the server-provided remote value; it
+      // is not a local user preference. If remote configuration is disabled,
+      // this value must not be used, intentionally restoring local/default
+      // behavior.
       // register DeviceConfig field bit:
       Supla::Device::RemoteDeviceConfig::RegisterConfigField(
           SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC);
@@ -253,7 +257,10 @@ void Clock::onLoadConfig(SuplaDeviceClass *sdc) {
 }
 
 void Clock::onDeviceConfigChange(uint64_t fieldBit) {
-  if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC) {
+  // Do not apply the cached server value when remote configuration is
+  // disabled; local/default automatic time synchronization remains in effect.
+  if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC &&
+      useAutomaticTimeSyncRemoteConfig) {
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
       uint8_t value = 1;

@@ -19,6 +19,7 @@
 #include <storage_mock.h>
 #include <string.h>
 #include <supla/device/register_device.h>
+#include <supla/events.h>
 #include <supla/local_action.h>
 #include <simple_time.h>
 #include "supla/element.h"
@@ -870,6 +871,51 @@ TEST_F(SuplaDeviceTests, OnRegisterResultOK) {
   register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
   register_device_result.activity_timeout = 45;
   register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  srpcLayer.onRegisterResult(&register_device_result);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+}
+
+TEST_F(SuplaDeviceTests, OnRegisterResultRestartRequested) {
+  NetworkMockWithMac net;
+  SrpcMock srpc;
+  TimeInterfaceStub time;
+  CalcfgRestartDevice sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
+
+  EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_RESTART_REQUESTED;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 25;
+  register_device_result.version_min = 1;
+
+  srpcLayer.onRegisterResult(&register_device_result);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_SOFTWARE_RESET);
+  EXPECT_EQ(sd.getForceRestartTimeMs(), 1);
+}
+
+TEST_F(SuplaDeviceTests, OnRegisterResultIdentifyRequested) {
+  NetworkMockWithMac net;
+  SrpcMock srpc;
+  TimeInterfaceStub time;
+  SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
+  LocalActionHandlerMock identifyHandler;
+
+  EXPECT_CALL(identifyHandler,
+              handleAction(Supla::ON_IDENTIFY, 123)).Times(1);
+  sd.addAction(123, identifyHandler, Supla::ON_IDENTIFY);
+  EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_IDENTIFY_REQUESTED;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 25;
   register_device_result.version_min = 1;
 
   srpcLayer.onRegisterResult(&register_device_result);

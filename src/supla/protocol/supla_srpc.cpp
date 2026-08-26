@@ -1780,6 +1780,8 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
   switch (registerDeviceResult->result_code) {
     // OK scenario
     case SUPLA_RESULTCODE_TRUE:
+    case SUPLA_RESULTCODE_RESTART_REQUESTED:
+    case SUPLA_RESULTCODE_IDENTIFY_REQUESTED:
       serverActivityTimeout = registerDeviceResult->activity_timeout;
       registered = 1;
       // A TCP connection alone is not enough to end the failure sequence.
@@ -1805,6 +1807,16 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
            element = element->next()) {
         element->onRegistered(this);
         delay(0);
+      }
+
+      if (registerDeviceResult->result_code ==
+          SUPLA_RESULTCODE_RESTART_REQUESTED) {
+        SUPLA_LOG_INFO("Registration result: restart requested");
+        sdc->scheduleSoftRestart(1);
+      } else if (registerDeviceResult->result_code ==
+                 SUPLA_RESULTCODE_IDENTIFY_REQUESTED) {
+        SUPLA_LOG_INFO("Registration result: identify requested");
+        sdc->identifyStatusLed();
       }
 
       return;

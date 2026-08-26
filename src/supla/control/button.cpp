@@ -422,7 +422,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
         multiclickTimeMsValue = 10000;
       }
       setMulticlickTime(multiclickTimeMsValue, isBistable());
-    } else if (multiclickTimeMsValue > 0) {
+    } else if (multiclickTimeMs > 0) {
       cfg->setUInt32(Supla::ConfigTag::BtnMulticlickTag, multiclickTimeMs);
       saveConfig = true;
     }
@@ -450,7 +450,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
                       &useInputAsConfigButtonValue);
       }
 
-      if (!isCentral() && useInputAsConfigButtonValue == 0) {
+      if (sdc && !isCentral() && useInputAsConfigButtonValue == 0) {
         // ON is "0", which is default value
         SUPLA_LOG_DEBUG("Button[%d] enabling IN as config button",
             getButtonNumber());

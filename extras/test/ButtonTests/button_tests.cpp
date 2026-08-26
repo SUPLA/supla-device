@@ -8,6 +8,8 @@
 #include <supla/io.h>
 #include <supla/control/button.h>
 #include <supla/control/sequence_button.h>
+#include <supla/storage/config_tags.h>
+#include <config_simulator.h>
 #include "supla/events.h"
 
 using ::testing::Return;
@@ -16,6 +18,25 @@ class ActionHandlerMock : public Supla::ActionHandler {
  public:
   MOCK_METHOD(void, handleAction, (int, int), (override));
 };
+
+TEST(ButtonTests, OnLoadConfigPersistsDefaultMulticlickTime) {
+  ConfigSimulator config;
+  SimpleTime time;
+  Supla::Control::Button button(-1);
+  button.setButtonNumber(0);
+  constexpr uint32_t defaultMulticlickTime = 750;
+  button.setMulticlickTime(defaultMulticlickTime);
+
+  uint32_t storedMulticlickTime = 0;
+  EXPECT_FALSE(config.getUInt32(Supla::ConfigTag::BtnMulticlickTag,
+                                &storedMulticlickTime));
+
+  button.onLoadConfig(nullptr);
+
+  ASSERT_TRUE(config.getUInt32(Supla::ConfigTag::BtnMulticlickTag,
+                               &storedMulticlickTime));
+  EXPECT_EQ(storedMulticlickTime, defaultMulticlickTime);
+}
 
 TEST(ButtonTests, IoPinConstructorUsesConfiguredPolarity) {
   DigitalInterfaceMock ioMock;

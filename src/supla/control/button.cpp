@@ -14,6 +14,11 @@
 
 #define CFG_MODE_ON_HOLD_TIME 5000
 
+namespace {
+constexpr uint32_t kButtonTimingMinMs = 200;
+constexpr uint32_t kButtonTimingMaxMs = 10000;
+}  // namespace
+
 using Supla::Control::Button;
 
 int Button::buttonCounter = 0;
@@ -313,16 +318,24 @@ void Button::addAction(uint16_t action, ActionHandler &client, uint16_t event,
 }
 
 void Button::setHoldTime(unsigned int timeMs) {
-  if (timeMs > UINT16_MAX) {
-    timeMs = UINT16_MAX;
+  if (timeMs != 0) {
+    if (timeMs < kButtonTimingMinMs) {
+      timeMs = kButtonTimingMinMs;
+    } else if (timeMs > kButtonTimingMaxMs) {
+      timeMs = kButtonTimingMaxMs;
+    }
   }
   holdTimeMs = timeMs;
   SUPLA_LOG_DEBUG("Button[%d] setHoldTime: %u", getButtonNumber(), holdTimeMs);
 }
 
 void Button::setMulticlickTime(unsigned int timeMs, bool bistableButton) {
-  if (timeMs > UINT16_MAX) {
-    timeMs = UINT16_MAX;
+  if (timeMs != 0) {
+    if (timeMs < kButtonTimingMinMs) {
+      timeMs = kButtonTimingMinMs;
+    } else if (timeMs > kButtonTimingMaxMs) {
+      timeMs = kButtonTimingMaxMs;
+    }
   }
   multiclickTimeMs = timeMs;
   if (bistableButton) {
@@ -415,11 +428,11 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
     uint32_t multiclickTimeMsValue = 0;
     if (cfg->getUInt32(Supla::ConfigTag::BtnMulticlickTag,
                        &multiclickTimeMsValue)) {
-      if (multiclickTimeMsValue < 200) {
-        multiclickTimeMsValue = 200;
+      if (multiclickTimeMsValue < kButtonTimingMinMs) {
+        multiclickTimeMsValue = kButtonTimingMinMs;
       }
-      if (multiclickTimeMsValue > 10000) {
-        multiclickTimeMsValue = 10000;
+      if (multiclickTimeMsValue > kButtonTimingMaxMs) {
+        multiclickTimeMsValue = kButtonTimingMaxMs;
       }
       setMulticlickTime(multiclickTimeMsValue, isBistable());
     } else if (multiclickTimeMs > 0) {
@@ -429,11 +442,11 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
 
     uint32_t holdTimeMsValue = CFG_MODE_ON_HOLD_TIME;
     if (cfg->getUInt32(Supla::ConfigTag::BtnHoldTag, &holdTimeMsValue)) {
-      if (holdTimeMsValue < 200) {
-        holdTimeMsValue = 200;
+      if (holdTimeMsValue < kButtonTimingMinMs) {
+        holdTimeMsValue = kButtonTimingMinMs;
       }
-      if (holdTimeMsValue > 10000) {
-        holdTimeMsValue = 10000;
+      if (holdTimeMsValue > kButtonTimingMaxMs) {
+        holdTimeMsValue = kButtonTimingMaxMs;
       }
       setHoldTime(holdTimeMsValue);
     } else if (holdTimeMs > 0) {

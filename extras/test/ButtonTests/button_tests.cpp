@@ -19,6 +19,101 @@ class ActionHandlerMock : public Supla::ActionHandler {
   MOCK_METHOD(void, handleAction, (int, int), (override));
 };
 
+class ButtonTestDouble : public Supla::Control::Button {
+ public:
+  using Supla::Control::Button::Button;
+
+  uint16_t holdTimeMsForTest() const {
+    return holdTimeMs;
+  }
+
+  uint16_t multiclickTimeMsForTest() const {
+    return multiclickTimeMs;
+  }
+};
+
+TEST(ButtonTests, SetMulticlickTimeClampsToPersistedConfigRange) {
+  ButtonTestDouble button(-1);
+
+  button.setMulticlickTime(0);
+  EXPECT_EQ(button.multiclickTimeMsForTest(), 0);
+
+  button.setMulticlickTime(100);
+  EXPECT_EQ(button.multiclickTimeMsForTest(), 200);
+
+  button.setMulticlickTime(200);
+  EXPECT_EQ(button.multiclickTimeMsForTest(), 200);
+
+  button.setMulticlickTime(10000);
+  EXPECT_EQ(button.multiclickTimeMsForTest(), 10000);
+
+  button.setMulticlickTime(20000);
+  EXPECT_EQ(button.multiclickTimeMsForTest(), 10000);
+}
+
+TEST(ButtonTests, SetHoldTimeClampsToPersistedConfigRange) {
+  ButtonTestDouble button(-1);
+
+  button.setHoldTime(0);
+  EXPECT_EQ(button.holdTimeMsForTest(), 0);
+
+  button.setHoldTime(100);
+  EXPECT_EQ(button.holdTimeMsForTest(), 200);
+
+  button.setHoldTime(200);
+  EXPECT_EQ(button.holdTimeMsForTest(), 200);
+
+  button.setHoldTime(10000);
+  EXPECT_EQ(button.holdTimeMsForTest(), 10000);
+
+  button.setHoldTime(20000);
+  EXPECT_EQ(button.holdTimeMsForTest(), 10000);
+}
+
+TEST(ButtonTests, PersistsClampedMulticlickDefaultWhenConfigIsMissing) {
+  ConfigSimulator config;
+  SimpleTime time;
+  ButtonTestDouble button(-1);
+  button.setButtonNumber(0);
+  button.setMulticlickTime(20000);
+
+  uint32_t storedValue = 0;
+  EXPECT_FALSE(config.getUInt32(Supla::ConfigTag::BtnMulticlickTag,
+                                &storedValue));
+
+  button.onLoadConfig(nullptr);
+
+  ASSERT_TRUE(config.getUInt32(Supla::ConfigTag::BtnMulticlickTag,
+                               &storedValue));
+  EXPECT_EQ(storedValue, 10000U);
+
+  ButtonTestDouble rebootedButton(-1);
+  rebootedButton.setButtonNumber(0);
+  rebootedButton.onLoadConfig(nullptr);
+  EXPECT_EQ(rebootedButton.multiclickTimeMsForTest(), 10000);
+}
+
+TEST(ButtonTests, PersistsClampedHoldDefaultWhenConfigIsMissing) {
+  ConfigSimulator config;
+  SimpleTime time;
+  ButtonTestDouble button(-1);
+  button.setButtonNumber(0);
+  button.setHoldTime(20000);
+
+  uint32_t storedValue = 0;
+  EXPECT_FALSE(config.getUInt32(Supla::ConfigTag::BtnHoldTag, &storedValue));
+
+  button.onLoadConfig(nullptr);
+
+  ASSERT_TRUE(config.getUInt32(Supla::ConfigTag::BtnHoldTag, &storedValue));
+  EXPECT_EQ(storedValue, 10000U);
+
+  ButtonTestDouble rebootedButton(-1);
+  rebootedButton.setButtonNumber(0);
+  rebootedButton.onLoadConfig(nullptr);
+  EXPECT_EQ(rebootedButton.holdTimeMsForTest(), 10000);
+}
+
 TEST(ButtonTests, OnLoadConfigPersistsDefaultMulticlickTime) {
   ConfigSimulator config;
   SimpleTime time;

@@ -317,7 +317,7 @@ void WebSender::send(int number) {
     SUPLA_LOG_WARNING("WebSender error - snprintf failed");
     return;
   }
-  if (static_cast<size_t>(size) > sizeof(buf)) {
+  if (static_cast<size_t>(size) >= sizeof(buf)) {
     SUPLA_LOG_WARNING("WebSender error - buffer too small");
     return;
   }
@@ -344,7 +344,7 @@ void WebSender::send(int number, int precision) {
     SUPLA_LOG_WARNING("WebSender error - snprintf failed");
     return;
   }
-  if (static_cast<size_t>(size) > sizeof(buf)) {
+  if (static_cast<size_t>(size) >= sizeof(buf)) {
     SUPLA_LOG_WARNING("WebSender error - buffer too small");
     return;
   }
@@ -359,7 +359,7 @@ void WebSender::sendNameAndId(const char *id) {
     SUPLA_LOG_WARNING("WebSender error - snprintf failed");
     return;
   }
-  if (static_cast<size_t>(size) > sizeof(buf)) {
+  if (static_cast<size_t>(size) >= sizeof(buf)) {
     SUPLA_LOG_WARNING("WebSender error - buffer too small");
     return;
   }
@@ -426,7 +426,7 @@ void WebSender::sendSelectItem(int value,
       SUPLA_LOG_WARNING("WebSender error - snprintf failed");
       return;
     }
-    if (static_cast<size_t>(size) > sizeof(buf)) {
+    if (static_cast<size_t>(size) >= sizeof(buf)) {
       SUPLA_LOG_WARNING("WebSender error - buffer too small");
       return;
     }
@@ -441,7 +441,7 @@ void WebSender::sendSelectItem(int value,
       SUPLA_LOG_WARNING("WebSender error - snprintf failed");
       return;
     }
-    if (static_cast<size_t>(size) > sizeof(buf)) {
+    if (static_cast<size_t>(size) >= sizeof(buf)) {
       SUPLA_LOG_WARNING("WebSender error - buffer too small");
       return;
     }
@@ -504,7 +504,7 @@ void WebSender::sendTimestamp(uint32_t timestamp) {
     SUPLA_LOG_WARNING("WebSender error - snprintf failed");
     return;
   }
-  if (static_cast<size_t>(size) > sizeof(buf)) {
+  if (static_cast<size_t>(size) >= sizeof(buf)) {
     SUPLA_LOG_WARNING("WebSender error - buffer too small");
     return;
   }

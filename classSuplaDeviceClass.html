@@ -352,6 +352,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>disableNetwork</b> ()
 <tr class="memitem:a3106efac4c107a6143092047a354105a" id="r_a3106efac4c107a6143092047a354105a"><td class="memItemLeft" align="right" valign="top"><a id="a3106efac4c107a6143092047a354105a" name="a3106efac4c107a6143092047a354105a"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>getStorageInitResult</b> ()</td></tr>
 <tr class="separator:a3106efac4c107a6143092047a354105a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50ebdd9207a6833793f8d8b2274bc59a" id="r_a50ebdd9207a6833793f8d8b2274bc59a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a50ebdd9207a6833793f8d8b2274bc59a">deferSleep</a> (uint32_t delayMs)</td></tr>
+<tr class="memdesc:a50ebdd9207a6833793f8d8b2274bc59a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Defers permission to enter sleep mode for the given number of milliseconds.  <br /></td></tr>
+<tr class="separator:a50ebdd9207a6833793f8d8b2274bc59a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b7daeb91938867da7de652ddae68f64" id="r_a4b7daeb91938867da7de652ddae68f64"><td class="memItemLeft" align="right" valign="top"><a id="a4b7daeb91938867da7de652ddae68f64" name="a4b7daeb91938867da7de652ddae68f64"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isSleepingAllowed</b> ()</td></tr>
 <tr class="separator:a4b7daeb91938867da7de652ddae68f64"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -584,6 +587,12 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>resetOnConnection
 <tr class="memitem:a562155fc48ecf6b5ee1b734b363ef396" id="r_a562155fc48ecf6b5ee1b734b363ef396"><td class="memItemLeft" align="right" valign="top"><a id="a562155fc48ecf6b5ee1b734b363ef396" name="a562155fc48ecf6b5ee1b734b363ef396"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastSwUpdateCheckTimestamp</b> = 0</td></tr>
 <tr class="separator:a562155fc48ecf6b5ee1b734b363ef396"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7540e91f2976ef34d9661b2ddbf74575" id="r_a7540e91f2976ef34d9661b2ddbf74575"><td class="memItemLeft" align="right" valign="top"><a id="a7540e91f2976ef34d9661b2ddbf74575" name="a7540e91f2976ef34d9661b2ddbf74575"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>sleepDeferStartMs</b> = 0</td></tr>
+<tr class="separator:a7540e91f2976ef34d9661b2ddbf74575"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afeab0e3edba26deea6f50f7738b90890" id="r_afeab0e3edba26deea6f50f7738b90890"><td class="memItemLeft" align="right" valign="top"><a id="afeab0e3edba26deea6f50f7738b90890" name="afeab0e3edba26deea6f50f7738b90890"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>sleepDeferDurationMs</b> = 0</td></tr>
+<tr class="separator:afeab0e3edba26deea6f50f7738b90890"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3c0f510963b4611c75acdb3c1ff60b8d" id="r_a3c0f510963b4611c75acdb3c1ff60b8d"><td class="memItemLeft" align="right" valign="top"><a id="a3c0f510963b4611c75acdb3c1ff60b8d" name="a3c0f510963b4611c75acdb3c1ff60b8d"></a>
 enum Supla::DeviceMode&#160;</td><td class="memItemRight" valign="bottom"><b>deviceMode</b> = Supla::DEVICE_MODE_NOT_SET</td></tr>
 <tr class="separator:a3c0f510963b4611c75acdb3c1ff60b8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -793,6 +802,26 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a50ebdd9207a6833793f8d8b2274bc59a" name="a50ebdd9207a6833793f8d8b2274bc59a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50ebdd9207a6833793f8d8b2274bc59a">&#9670;&#160;</a></span>deferSleep()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SuplaDeviceClass::deferSleep </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>delayMs</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Defers permission to enter sleep mode for the given number of milliseconds. </p>
+<p>A new request never shortens an already active deferral. </p>
 
 </div>
 </div>

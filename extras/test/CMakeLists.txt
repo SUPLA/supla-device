@@ -103,6 +103,7 @@ file(GLOB TEST_SRC CONFIGURE_DEPENDS
   ModbusTests/*.cpp
   SupletTests/*.cpp
   DebugTests/*.cpp
+  SpiTests/*.cpp
   )
 
 file(GLOB SD4LINUX_TEST_SRC CONFIGURE_DEPENDS
@@ -119,12 +120,16 @@ list(APPEND TEST_SRC ../../src/supla/storage/littlefs_config.cpp)
 list(APPEND TEST_SRC
   ../esp-idf/supla-interrupt-ac-to-dc-io/interrupt_ac_to_dc_io.cpp
   ../porting/esp-idf/esp_idf_ota.cpp
+  ../esp-idf/supla-spi-driver/esp_spi_driver.cpp
   ../../src/supla/sensor/HC_SR04.cpp)
 
 file(GLOB DOUBLE_SRC CONFIGURE_DEPENDS doubles/*.cpp)
 set(ESP_IDF_OTA_DOUBLE_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf_ota_mock.cpp)
 list(REMOVE_ITEM DOUBLE_SRC ${ESP_IDF_OTA_DOUBLE_SRC})
+set(ESP_IDF_SPI_DOUBLE_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf_spi_mock.cpp)
+list(REMOVE_ITEM DOUBLE_SRC ${ESP_IDF_SPI_DOUBLE_SRC})
 
 set(SD4LINUX_PORT_SRC
   ../porting/linux/linux_channel_factory.cpp
@@ -166,6 +171,7 @@ add_executable(supladevicetests
   ${TEST_SRC}
   ${DOUBLE_SRC}
   ${ESP_IDF_OTA_DOUBLE_SRC}
+  ${ESP_IDF_SPI_DOUBLE_SRC}
 )
 
 add_executable(sd4linuxtests
@@ -181,6 +187,7 @@ target_include_directories(supladevicetests BEFORE PRIVATE
 target_include_directories(supladevicetests PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles
   ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-interrupt-ac-to-dc-io
+  ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-spi-driver
   ${CMAKE_CURRENT_SOURCE_DIR}/../porting/esp-idf
   ${cjson_SOURCE_DIR}
 )

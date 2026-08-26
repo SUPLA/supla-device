@@ -11,7 +11,7 @@ class SPIDriver {
  public:
   SPIDriver(int16_t miso, int16_t mosi, int16_t clk);
 
-  void initialize();
+  bool initialize();
   bool isInitialized() const;
 
   bool addDevice(spi_device_interface_config_t *devcfg,

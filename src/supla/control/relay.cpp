@@ -26,7 +26,7 @@
 
 using Supla::Control::Relay;
 
-int16_t Relay::relayStorageSaveDelay = 5000;
+uint16_t Relay::relayStorageSaveDelay = 5000;
 
 namespace {
 
@@ -41,8 +41,10 @@ Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io,
 
 }  // namespace
 
-void Relay::setRelayStorageSaveDelay(int delayMs) {
-  relayStorageSaveDelay = delayMs;
+void Relay::setRelayStorageSaveDelay(uint32_t delayMs) {
+  relayStorageSaveDelay = delayMs > UINT16_MAX
+                              ? UINT16_MAX
+                              : static_cast<uint16_t>(delayMs);
 }
 
 Relay::Relay(Supla::Io::IoPin outputPin, _supla_int_t functions)

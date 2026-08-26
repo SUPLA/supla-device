@@ -108,7 +108,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isCountdownTimerFunctionEnabled() const;
   void setMinimumAllowedDurationMs(uint32_t durationMs);
 
-  static void setRelayStorageSaveDelay(int delayMs);
+  static void setRelayStorageSaveDelay(uint32_t delayMs);
 
   bool isDefaultRelatedMeterChannelSet() const;
   uint32_t getCurrentValueFromMeter() const;
@@ -236,7 +236,7 @@ class Relay : public ChannelElement, public ActionHandler {
   int8_t stateOnInit = STATE_ON_INIT_OFF;
   Supla::Io::IoPin outputPin;
 
-  static int16_t relayStorageSaveDelay;
+  static uint16_t relayStorageSaveDelay;
 };
 
 };  // namespace Control

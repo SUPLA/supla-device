@@ -2013,6 +2013,25 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   r1.onSaveState();
 }
 
+TEST_F(RelayFixture, RelayStorageSaveDelayIsClampedBeforeScheduling) {
+  Supla::Control::Relay relay(0);
+
+  EXPECT_CALL(storage, scheduleSave(5000, 2000)).Times(2);
+  EXPECT_CALL(storage, scheduleSave(60000, 2000));
+  EXPECT_CALL(storage, scheduleSave(UINT16_MAX, 2000));
+
+  Supla::Control::Relay::setRelayStorageSaveDelay(5000);
+  sendConfig(&relay, SUPLA_CHANNELFNC_STAIRCASETIMER, 1000);
+
+  Supla::Control::Relay::setRelayStorageSaveDelay(60000);
+  sendConfig(&relay, SUPLA_CHANNELFNC_STAIRCASETIMER, 2000);
+
+  Supla::Control::Relay::setRelayStorageSaveDelay(UINT16_MAX + 1u);
+  sendConfig(&relay, SUPLA_CHANNELFNC_STAIRCASETIMER, 3000);
+
+  Supla::Control::Relay::setRelayStorageSaveDelay(5000);
+}
+
 TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   int gpio = 0;
 

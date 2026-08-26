@@ -519,7 +519,7 @@ void OcrImpulseCounter::onLoadConfig(SuplaDeviceClass *sdc) {
         SUPLA_LOG_ERROR("OcrIC: missing ocr_auth");
         return;
       }
-      SUPLA_LOG_INFO("OcrIC: ocr_auth = %s", ocrConfig.AuthKey);
+      SUPLA_LOG_INFO("OcrIC: ocr_auth is set");
       char buf[100];
       if (!cfg->getString("ocr_crop", buf, sizeof(buf))) {
         SUPLA_LOG_ERROR("OcrIC: missing ocr_crop");

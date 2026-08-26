@@ -607,7 +607,7 @@ bool Container::isSoundAlarmSupported() const {
 int Container::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
   if (request) {
     if (request->Command == SUPLA_CALCFG_CMD_MUTE_ALARM_SOUND) {
-      if (config.muteAlarmSoundWithoutAdditionalAuth &&
+      if (!config.muteAlarmSoundWithoutAdditionalAuth &&
           !request->SuperUserAuthorized) {
         return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
       }

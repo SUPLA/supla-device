@@ -294,6 +294,37 @@ TEST(ContainerTests, ContainerSettersAndGetters) {
   EXPECT_FALSE(container.isSoundAlarmOn());
 }
 
+TEST(ContainerTests, MuteAlarmSoundAuthorizationMatrix) {
+  struct TestCase {
+    bool muteWithoutAdditionalAuth;
+    bool superUserAuthorized;
+    int expectedResult;
+    bool expectedSoundAlarmOn;
+  };
+
+  const TestCase testCases[] = {
+      {false, false, SUPLA_CALCFG_RESULT_UNAUTHORIZED, true},
+      {false, true, SUPLA_CALCFG_RESULT_DONE, false},
+      {true, false, SUPLA_CALCFG_RESULT_DONE, false},
+      {true, true, SUPLA_CALCFG_RESULT_DONE, false},
+  };
+
+  for (const auto &testCase : testCases) {
+    Supla::Sensor::Container container;
+    container.setMuteAlarmSoundWithoutAdditionalAuth(
+        testCase.muteWithoutAdditionalAuth);
+    container.getChannel()->setContainerSoundAlarmOn(true);
+
+    TSD_DeviceCalCfgRequest request = {};
+    request.Command = SUPLA_CALCFG_CMD_MUTE_ALARM_SOUND;
+    request.SuperUserAuthorized = testCase.superUserAuthorized;
+
+    EXPECT_EQ(container.handleCalcfgFromServer(&request),
+              testCase.expectedResult);
+    EXPECT_EQ(container.isSoundAlarmOn(), testCase.expectedSoundAlarmOn);
+  }
+}
+
 TEST(ContainerTests, AlarmingTests) {
   Supla::Channel::resetToDefaults();
   SimpleTime time;

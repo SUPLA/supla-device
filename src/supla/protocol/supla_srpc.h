@@ -35,6 +35,7 @@ class CalCfgResultPending {
   void clear(int16_t channelNo, int32_t command = -1);
   void clearTimeout(int16_t channelNo, int32_t command = -1);
   void clearAll();
+  bool empty() const;
   CalCfgResultPendingItem *get(int16_t channelNo, int32_t command = -1);
 
  protected:
@@ -103,6 +104,7 @@ class SuplaSrpc : public ProtocolLayer {
   void onRegisterResult(TSD_SuplaRegisterDeviceResult *register_device_result);
   void onRegisterResultB(
       TSD_SuplaRegisterDeviceResult_B *registerDeviceResultB);
+  void onDeviceSyncDone();
   void onSetActivityTimeoutResult(TSDC_SuplaSetActivityTimeoutResult *result);
   void setActivityTimeout(uint32_t activityTimeoutSec);
   uint32_t getActivityTimeout();
@@ -180,6 +182,7 @@ class SuplaSrpc : public ProtocolLayer {
   bool requestNetworkRestart = false;
   bool enabled = true;
   bool setDeviceConfigReceivedAfterRegistration = false;
+  bool deviceSyncDoneReceived = false;
   bool firstConnectionAttempt = true;
   bool adErrorLogged = false;
   bool writeFailure = false;

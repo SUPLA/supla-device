@@ -21,6 +21,10 @@ TEST(TemperatureDropSensorTests, ThermometerMissing) {
   sensor.iterateAlways();
   elBinary->iterateAlways();
 
+  time.advance(30001);
+  sensor.iterateAlways();
+  elBinary->iterateAlways();
+
   EXPECT_EQ(ch->getValueBool(), true);
   EXPECT_FALSE(sensor.isDropDetected());
 }

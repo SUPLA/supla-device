@@ -22,6 +22,10 @@ void TemperatureDropSensor::onInit() {
 }
 
 void TemperatureDropSensor::iterateAlways() {
+  if (thermometer == nullptr) {
+    return;
+  }
+
   if (millis() - lastTemperatureUpdate >= probeIntervalMs) {
     lastTemperatureUpdate = millis();
     auto temperature = thermometer->getTempInt16();

@@ -149,6 +149,14 @@ TEST_F(HtmlTagBuilderTests, BuildsNestedHtmlAndEscapes) {
             "</div>");
 }
 
+TEST_F(HtmlTagBuilderTests, SendSafeTreatsNullAsEmptyString) {
+  SenderMock sender;
+
+  EXPECT_CALL(sender, send(_, _)).Times(0);
+
+  sender.sendSafe(nullptr);
+}
+
 TEST_F(HtmlTagBuilderTests, CustomTextParameterUsesBuilder) {
   ConfigMock cfg;
   SenderMock sender;

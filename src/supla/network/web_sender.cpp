@@ -375,6 +375,9 @@ void WebSender::sendLabelFor(const char *id, const char *label) {
 }
 
 void WebSender::sendSafe(const char *buf, int size) {
+  if (buf == nullptr) {
+    return;
+  }
   if (size == -1) {
     size = strnlen(buf, 8000);
   }

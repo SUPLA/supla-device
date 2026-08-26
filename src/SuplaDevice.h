@@ -275,6 +275,13 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void enableNetwork();
   void disableNetwork();
   bool getStorageInitResult();
+  /**
+   * Defers permission to enter sleep mode for the given number of
+   * milliseconds.
+   *
+   * A new request never shortens an already active deferral.
+   */
+  void deferSleep(uint32_t delayMs);
   bool isSleepingAllowed();
 
   /**
@@ -516,6 +523,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   uint32_t protocolRestartTimeMs = 0;
   uint32_t resetOnConnectionFailTimeoutSec = 0;
   uint32_t lastSwUpdateCheckTimestamp = 0;
+  uint32_t sleepDeferStartMs = 0;
+  uint32_t sleepDeferDurationMs = 0;
 
   enum Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;
   bool triggerResetToFactorySettings = false;

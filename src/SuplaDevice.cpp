@@ -49,6 +49,10 @@
 #endif
 #endif
 
+namespace {
+constexpr uint32_t kIdentifySleepDeferMs = 6500;
+}
+
 void SuplaDeviceClass::status(int newStatus,
                               const __FlashStringHelper *msg,
                               bool alwaysLog) {
@@ -1828,9 +1832,42 @@ int SuplaDeviceClass::getSelfTestFailureReason() const {
 // Sleeping is allowed only in normal and test mode.
 // Additionally sleeping is not allowed, when device restet is requested.
 bool SuplaDeviceClass::isSleepingAllowed() {
-  return (getDeviceMode() == Supla::DEVICE_MODE_NORMAL ||
-          getDeviceMode() == Supla::DEVICE_MODE_TEST) &&
-         forceRestartTimeMs == 0;
+  if ((getDeviceMode() != Supla::DEVICE_MODE_NORMAL &&
+       getDeviceMode() != Supla::DEVICE_MODE_TEST) ||
+      forceRestartTimeMs != 0) {
+    return false;
+  }
+
+  if (sleepDeferDurationMs == 0) {
+    return true;
+  }
+
+  if (millis() - sleepDeferStartMs < sleepDeferDurationMs) {
+    return false;
+  }
+
+  sleepDeferDurationMs = 0;
+  return true;
+}
+
+void SuplaDeviceClass::deferSleep(uint32_t delayMs) {
+  if (delayMs == 0) {
+    return;
+  }
+
+  const uint32_t now = millis();
+  if (sleepDeferDurationMs == 0) {
+    sleepDeferStartMs = now;
+    sleepDeferDurationMs = delayMs;
+    return;
+  }
+
+  const uint32_t elapsed = now - sleepDeferStartMs;
+  if (elapsed >= sleepDeferDurationMs ||
+      delayMs > sleepDeferDurationMs - elapsed) {
+    sleepDeferStartMs = now;
+    sleepDeferDurationMs = delayMs;
+  }
 }
 
 void SuplaDeviceClass::allowWorkInOfflineMode(int mode) {
@@ -2130,6 +2167,7 @@ void SuplaDeviceClass::setAutomaticFirmwareUpdateSupported(bool value) {
 }
 
 void SuplaDeviceClass::identifyStatusLed() {
+  deferSleep(kIdentifySleepDeferMs);
   runAction(Supla::ON_IDENTIFY);
   if (statusLed) {
     statusLed->identify();

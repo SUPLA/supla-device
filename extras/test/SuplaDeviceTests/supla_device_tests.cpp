@@ -119,6 +119,59 @@ class CalcfgRestartDevice : public SuplaDeviceClass {
   }
 };
 
+class SleepingDeviceForTest : public SuplaDeviceClass {
+ public:
+  void setDeviceModeForTest(Supla::DeviceMode mode) {
+    deviceMode = mode;
+  }
+};
+
+TEST_F(SuplaDeviceTests, SleepPermissionCanBeDeferredAndExpires) {
+  SleepingDeviceForTest sd;
+  sd.setDeviceModeForTest(Supla::DEVICE_MODE_NORMAL);
+
+  EXPECT_TRUE(sd.isSleepingAllowed());
+
+  sd.deferSleep(6500);
+  EXPECT_FALSE(sd.isSleepingAllowed());
+
+  time.advance(6499);
+  EXPECT_FALSE(sd.isSleepingAllowed());
+
+  time.advance(1);
+  EXPECT_TRUE(sd.isSleepingAllowed());
+}
+
+TEST_F(SuplaDeviceTests, SleepPermissionDeferralIsNotShortened) {
+  SleepingDeviceForTest sd;
+  sd.setDeviceModeForTest(Supla::DEVICE_MODE_NORMAL);
+
+  sd.deferSleep(6500);
+  time.advance(5000);
+  sd.deferSleep(1000);
+
+  time.advance(1499);
+  EXPECT_FALSE(sd.isSleepingAllowed());
+
+  time.advance(1);
+  EXPECT_TRUE(sd.isSleepingAllowed());
+}
+
+TEST_F(SuplaDeviceTests, IdentifyDeviceDefersSleep) {
+  SleepingDeviceForTest sd;
+  sd.setDeviceModeForTest(Supla::DEVICE_MODE_NORMAL);
+  TSD_DeviceCalCfgRequest request = {};
+  request.Command = SUPLA_CALCFG_CMD_IDENTIFY_DEVICE;
+  request.SuperUserAuthorized = 1;
+
+  EXPECT_TRUE(sd.isSleepingAllowed());
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request), SUPLA_CALCFG_RESULT_DONE);
+  EXPECT_FALSE(sd.isSleepingAllowed());
+
+  time.advance(6500);
+  EXPECT_TRUE(sd.isSleepingAllowed());
+}
+
 TEST_F(SuplaDeviceTests, CalcfgRestartDeviceUnsupported) {
   BoardMock board;
   CalcfgRestartDevice sd;
@@ -902,10 +955,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultRestartRequested) {
 TEST_F(SuplaDeviceTests, OnRegisterResultIdentifyRequested) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  TimeInterfaceStub time;
-  SuplaDeviceClass sd;
+  SleepingDeviceForTest sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
   LocalActionHandlerMock identifyHandler;
+
+  sd.setDeviceModeForTest(Supla::DEVICE_MODE_NORMAL);
 
   EXPECT_CALL(identifyHandler,
               handleAction(Supla::ON_IDENTIFY, 123)).Times(1);
@@ -921,6 +975,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultIdentifyRequested) {
   srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_FALSE(sd.isSleepingAllowed());
 }
 
 TEST_F(SuplaDeviceTests, OnRegisterResultBadCredentials) {

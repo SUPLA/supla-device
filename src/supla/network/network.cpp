@@ -405,14 +405,23 @@ void Network::generateHostname(const char *prefix, int macSize, char *output) {
   if (macSize < 0) {
     macSize = 0;
   }
-  strncpy(result, prefix, hostnameSize - 1);
-  result[hostnameSize - 1] = '\0';
-  int destIdx = strnlen(result, hostnameSize);
+
+  if (prefix == nullptr || prefix[0] == '\0') {
+    prefix = "SUPLA";
+  }
+
+  const int suffixSize = macSize > 0 ? 1 + 2 * macSize : 0;
+  const int maxPrefixSize = hostnameSize - suffixSize - 1;
+  int destIdx = 0;
+  while (destIdx < maxPrefixSize && prefix[destIdx] != '\0') {
+    result[destIdx] = prefix[destIdx];
+    destIdx++;
+  }
 
   if (macSize > 0) {
     uint8_t mac[6] = {};
     getMacAddr(mac);
-    if (result[destIdx - 1] != '-') {
+    if (destIdx == 0 || result[destIdx - 1] != '-') {
       result[destIdx++] = '-';
     }
     destIdx +=

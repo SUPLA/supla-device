@@ -1086,3 +1086,26 @@ TEST_F(ChannelTestsFixture, ChannelArbitaryNumbers) {
   // channel number 2 is for "third"
   EXPECT_EQ(Supla::RegisterDevice::getChannelValuePtr(2)[0], 3);
 }
+
+TEST_F(ChannelTestsFixture, SetChannelNumberValidatesRangeAndSwapsChannels) {
+  Supla::Channel first;
+  Supla::Channel second;
+
+  EXPECT_TRUE(first.setChannelNumber(5));
+  EXPECT_EQ(first.getChannelNumber(), 5);
+  EXPECT_EQ(second.getChannelNumber(), 1);
+
+  EXPECT_TRUE(first.setChannelNumber(second.getChannelNumber()));
+  EXPECT_EQ(first.getChannelNumber(), 1);
+  EXPECT_EQ(second.getChannelNumber(), 5);
+
+  EXPECT_FALSE(first.setChannelNumber(-1));
+  EXPECT_EQ(first.getChannelNumber(), 1);
+
+  EXPECT_FALSE(second.setChannelNumber(SUPLA_CHANNELMAXCOUNT));
+  EXPECT_EQ(second.getChannelNumber(), 5);
+
+  EXPECT_FALSE(first.setChannelNumber(SUPLA_CHANNELMAXCOUNT + 1));
+  EXPECT_EQ(first.getChannelNumber(), 1);
+  EXPECT_EQ(second.getChannelNumber(), 5);
+}

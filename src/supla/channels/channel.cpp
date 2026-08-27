@@ -115,7 +115,8 @@ Channel *Channel::next() {
 bool Channel::setChannelNumber(int newChannelNumber) {
   int oldChannelNumber = channelNumber;
 
-  if (newChannelNumber < 0 || oldChannelNumber < 0) {
+  if (newChannelNumber < 0 || newChannelNumber >= SUPLA_CHANNELMAXCOUNT ||
+      oldChannelNumber < 0) {
     return false;
   }
   if (newChannelNumber == oldChannelNumber) {

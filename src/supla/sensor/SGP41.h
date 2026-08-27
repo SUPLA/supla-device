@@ -64,13 +64,13 @@ class SGP41 : public Element {
     uint16_t srawVoc = 0;
     uint16_t srawNox = 0;
 
-    if (temperature != TEMPERATURE_NOT_AVAILABLE) {
+    if (temperature >= -45 && temperature <= 130) {
       compensationT = static_cast<uint16_t>((temperature + 45) * 65535 / 175);
     } else {
       compensationT = defaultCompenstaionT;
     }
 
-    if (humidity != HUMIDITY_NOT_AVAILABLE) {
+    if (humidity >= 0 && humidity <= 100) {
       compensationRh = static_cast<uint16_t>(humidity * 65535 / 100);
     } else {
       compensationRh = defaultCompenstaionRh;
@@ -85,7 +85,9 @@ class SGP41 : public Element {
     }
 
     if (error) {
-      retryCount++;
+      if (retryCount <= 10) {
+        retryCount++;
+      }
       if (retryCount > 10) {
         vocchannel->setValue(NAN);
         noxchannel->setValue(NAN);

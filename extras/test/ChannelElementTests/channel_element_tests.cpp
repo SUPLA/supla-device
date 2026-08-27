@@ -233,6 +233,51 @@ TEST(ChannelElementTests, ConfigExchangeNoConfigOnServer) {
             SUPLA_CONFIG_RESULT_TRUE);
 }
 
+TEST(ChannelElementTests, SuccessfulSingleConfigExchangeResetsAttempts) {
+  Supla::Channel::resetToDefaults();
+  ASSERT_EQ(Supla::LocalAction::getClientListPtr(), nullptr);
+
+  SuplaSrpcLayerMock srpc;
+  TestingChannelElement element;
+  auto channel = element.getChannel();
+  channel->setType(SUPLA_CHANNELTYPE_RELAY);
+  channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  element.setUsedConfigTypes(configTypes);
+  element.onRegistered(&srpc);
+
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = channel->getChannelNumber();
+  config.Func = SUPLA_CHANNELFNC_POWERSWITCH;
+  config.ConfigSize = 4;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  EXPECT_EQ(element.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  element.handleChannelConfigFinished();
+
+  EXPECT_CALL(
+      srpc,
+      setChannelConfig(
+          0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_DEFAULT))
+      .Times(4)
+      .WillRepeatedly(Return(true));
+
+  TSDS_SetChannelConfigResult result = {};
+  result.ChannelNumber = channel->getChannelNumber();
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  result.Result = SUPLA_CONFIG_RESULT_TRUE;
+
+  for (int i = 0; i < 4; i++) {
+    config.ConfigSize = 0;
+    EXPECT_EQ(element.handleChannelConfig(&config, true),
+              SUPLA_CONFIG_RESULT_TRUE);
+    EXPECT_FALSE(element.iterateConnected());
+    element.handleSetChannelConfigResult(&result);
+  }
+}
+
 TEST(ChannelElementTests, ConfigExchange2xNoConfigOnServer) {
   Supla::Channel::resetToDefaults();
   ASSERT_EQ(Supla::LocalAction::getClientListPtr(), nullptr);

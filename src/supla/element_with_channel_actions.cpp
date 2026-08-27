@@ -481,6 +481,9 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
         channelConfigState = Supla::ChannelConfigState::LocalChangePending;
       }
     } else {
+      if (success) {
+        setChannelConfigAttempts = 0;
+      }
       clearChannelConfigChangedFlag();
     }
   }

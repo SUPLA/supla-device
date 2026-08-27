@@ -203,9 +203,15 @@ bool NvsConfig::init() {
     nvs_handle_t suplaNamespace;
     err = nvs_open_from_partition(
         NVS_DEFAULT_PARTITION_NAME, "supla", NVS_READWRITE, &suplaNamespace);
-    nvs_erase_all(suplaNamespace);
-    nvs_commit(suplaNamespace);
-    nvs_close(suplaNamespace);
+    if (err == ESP_OK) {
+      nvs_erase_all(suplaNamespace);
+      nvs_commit(suplaNamespace);
+      nvs_close(suplaNamespace);
+    } else {
+      SUPLA_LOG_DEBUG("NvsConfig: failed to open legacy NVS namespace "
+                      "for cleanup (%s)",
+                      esp_err_to_name(err));
+    }
   }
 
   SUPLA_LOG_INFO("NvsConfig: initialized NVS storage on partition %s",

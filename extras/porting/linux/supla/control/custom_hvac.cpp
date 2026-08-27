@@ -78,4 +78,7 @@ void CustomHvac::setMapping(
   customOutput->setMapping(parameter, index);
 }
 
-CustomHvac::~CustomHvac() {}
+CustomHvac::~CustomHvac() {
+  delete customOutput;
+  customOutput = nullptr;
+}

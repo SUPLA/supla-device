@@ -2340,14 +2340,13 @@ bool HvacBase::setMainThermometerChannelNo(int16_t newChannelNo) {
     defaultMainThermometer = newChannelNo;
     return true;
   }
-  if (channelNo == getChannelNumber()) {
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
     if (config.MainThermometerChannelNo != channelNo) {
       config.MainThermometerChannelNo = channelNo;
-      if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
-      }
+      channelConfigChangedOffline = 1;
+      saveConfig();
     }
+    return true;
   } else if (isChannelThermometer(newChannelNo)) {
     if (getAuxThermometerType() !=
         SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
@@ -2357,14 +2356,12 @@ bool HvacBase::setMainThermometerChannelNo(int16_t newChannelNo) {
     }
     if (config.MainThermometerChannelNo != channelNo) {
       config.MainThermometerChannelNo = channelNo;
-      if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
-      }
+      channelConfigChangedOffline = 1;
+      saveConfig();
     }
     return true;
   }
-  return true;
+  return false;
 }
 
 int16_t HvacBase::getMainThermometerChannelNo() const {
@@ -2397,24 +2394,20 @@ bool HvacBase::setAuxThermometerChannelNo(int16_t newChannelNo) {
           SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
         setAuxThermometerType(
             SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED);
-        if (initDone) {
-          channelConfigChangedOffline = 1;
-          saveConfig();
-        }
+        channelConfigChangedOffline = 1;
+        saveConfig();
       }
     }
     return true;
   }
 
-  if (getChannelNumber() == channelNo) {
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
     if (config.AuxThermometerChannelNo != channelNo) {
       config.AuxThermometerChannelNo = channelNo;
       setAuxThermometerType(
           SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
-      if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
-      }
+      channelConfigChangedOffline = 1;
+      saveConfig();
     }
     return true;
   }
@@ -4924,10 +4917,8 @@ bool HvacBase::setBinarySensorChannelNo(int16_t newChannelNo) {
       isChannelBinarySensor(newChannelNo)) {
     if (config.BinarySensorChannelNo != channelNo) {
       config.BinarySensorChannelNo = channelNo;
-      if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
-      }
+      channelConfigChangedOffline = 1;
+      saveConfig();
     }
     return true;
   }

@@ -15,6 +15,7 @@
 #include <supla/events.h>
 #include <supla/sensor/therm_hygro_meter.h>
 #include <supla/sensor/thermometer.h>
+#include <supla/sensor/virtual_binary.h>
 #include <output_mock.h>
 
 using ::testing::_;
@@ -960,6 +961,78 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
   EXPECT_EQ(hvac.getOutputValueOnError(), -100);
   EXPECT_TRUE(hvac.setOutputValueOnError(-101));
   EXPECT_EQ(hvac.getOutputValueOnError(), -100);
+}
+
+TEST_F(HvacTestsF, thermometerChannelSettersValidateRawDisableSentinel) {
+  OutputSimulator output;
+  Supla::Control::HvacBase hvac(&output);
+  Supla::Sensor::Thermometer mainThermometer;
+  Supla::Sensor::ThermHygroMeter auxThermometer;
+  Supla::Sensor::VirtualBinary nonThermometer;
+
+  hvac.onInit();
+
+  ASSERT_TRUE(hvac.setMainThermometerChannelNo(
+      mainThermometer.getChannelNumber()));
+  EXPECT_EQ(hvac.getMainThermometerChannelNo(),
+            mainThermometer.getChannelNumber());
+  EXPECT_FALSE(hvac.setMainThermometerChannelNo(
+      nonThermometer.getChannelNumber()));
+  EXPECT_EQ(hvac.getMainThermometerChannelNo(),
+            mainThermometer.getChannelNumber());
+  EXPECT_FALSE(hvac.setMainThermometerChannelNo(-2));
+  EXPECT_EQ(hvac.getMainThermometerChannelNo(),
+            mainThermometer.getChannelNumber());
+  EXPECT_FALSE(hvac.setMainThermometerChannelNo(300));
+  EXPECT_EQ(hvac.getMainThermometerChannelNo(),
+            mainThermometer.getChannelNumber());
+
+  EXPECT_TRUE(hvac.setMainThermometerChannelNo(-1));
+  EXPECT_EQ(hvac.getMainThermometerChannelNo(), -1);
+  EXPECT_TRUE(hvac.setMainThermometerChannelNo(hvac.getChannelNumber()));
+  EXPECT_EQ(hvac.getMainThermometerChannelNo(), -1);
+  EXPECT_TRUE(hvac.setMainThermometerChannelNo(
+      mainThermometer.getChannelNumber()));
+
+  ASSERT_TRUE(hvac.setAuxThermometerChannelNo(
+      auxThermometer.getChannelNumber()));
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(),
+            auxThermometer.getChannelNumber());
+  EXPECT_FALSE(hvac.setAuxThermometerChannelNo(
+      nonThermometer.getChannelNumber()));
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(),
+            auxThermometer.getChannelNumber());
+  EXPECT_FALSE(hvac.setAuxThermometerChannelNo(-2));
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(),
+            auxThermometer.getChannelNumber());
+  EXPECT_FALSE(hvac.setAuxThermometerChannelNo(300));
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(),
+            auxThermometer.getChannelNumber());
+
+  EXPECT_TRUE(hvac.setAuxThermometerChannelNo(-1));
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), -1);
+  EXPECT_TRUE(hvac.setAuxThermometerChannelNo(hvac.getChannelNumber()));
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), -1);
+  EXPECT_TRUE(hvac.setAuxThermometerChannelNo(
+      auxThermometer.getChannelNumber()));
+}
+
+TEST_F(HvacTestsF, invalidThermometerAssignmentsAreClearedOnInit) {
+  OutputSimulator output;
+  Supla::Control::HvacBase hvac(&output);
+
+  hvac.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac.initDefaultConfig();
+
+  ASSERT_TRUE(hvac.setMainThermometerChannelNo(99));
+  ASSERT_TRUE(hvac.setAuxThermometerChannelNo(98));
+  ASSERT_EQ(hvac.getMainThermometerChannelNo(), 99);
+  ASSERT_EQ(hvac.getAuxThermometerChannelNo(), 98);
+
+  hvac.onInit();
+
+  EXPECT_EQ(hvac.getMainThermometerChannelNo(), -1);
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), -1);
 }
 
 TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {

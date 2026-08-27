@@ -452,6 +452,44 @@ TEST_F(RelayHvacFixture, turnOffWhenHvacIsOffline) {
   EXPECT_EQ(gpio1Value, 1);
 }
 
+TEST_F(RelayHvacFixture, firstOnlineHvacKeepsDemandAfterGoingOffline) {
+  int gpio1 = 1;
+  Supla::Control::Relay r1(gpio1);
+
+  int number1 = r1.getChannelNumber();
+  ASSERT_EQ(number1, 0);
+
+  auto io1 = Supla::Control::InternalPinOutput(4);
+  Supla::Control::HvacBase hvac1(&io1);
+
+  int gpio1Value = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio1Value));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpio1Value));
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  r1.onInit();
+
+  auto aggregator = Supla::Control::RelayHvacAggregator::Add(number1, &r1);
+  ASSERT_NE(aggregator, nullptr);
+
+  time.advance(16 * 60 * 1000);
+  hvac1.getChannel()->setStateOnline();
+  aggregator->registerHvac(&hvac1);
+  hvac1.getChannel()->setHvacFlagHeating(true);
+  hvac1.getChannel()->setStateOffline();
+
+  time.advance(2000);
+  aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
+
+  time.advance(15 * 60 * 1000);
+  aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
+
+  EXPECT_TRUE(Supla::Control::RelayHvacAggregator::Remove(number1));
+}
+
 TEST_F(RelayHvacFixture, overrideRelayInternalState) {
   int gpio1 = 1;
   Supla::Control::Relay r1(gpio1);

@@ -95,19 +95,20 @@ void RelayHvacAggregator::registerHvac(HvacBase *hvac) {
                     hvac);
     return;
   }
+  auto newHvac = new HvacPtr;
+  newHvac->hvac = hvac;
+  if (hvac->getChannel()->isStateOnline()) {
+    newHvac->lastSeenTimestamp = millis();
+  }
+
   if (firstHvacPtr == nullptr) {
-    firstHvacPtr = new HvacPtr;
-    firstHvacPtr->hvac = hvac;
+    firstHvacPtr = newHvac;
   } else {
     auto *ptr = firstHvacPtr;
     while (ptr->nextPtr != nullptr) {
       ptr = ptr->nextPtr;
     }
-    ptr->nextPtr = new HvacPtr;
-    ptr->nextPtr->hvac = hvac;
-    if (hvac->getChannel()->isStateOnline()) {
-      ptr->nextPtr->lastSeenTimestamp = millis();
-    }
+    ptr->nextPtr = newHvac;
   }
   SUPLA_LOG_DEBUG("RelayHvacAggregator[%d] hvac[%d @ %X] registered (%s)",
                   relayChannelNumber,

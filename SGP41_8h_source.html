@@ -162,13 +162,13 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    uint16_t srawVoc = 0;</div>
 <div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    uint16_t srawNox = 0;</div>
 <div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="keywordflow">if</span> (temperature != TEMPERATURE_NOT_AVAILABLE) {</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="keywordflow">if</span> (temperature &gt;= -45 &amp;&amp; temperature &lt;= 130) {</div>
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>      compensationT = <span class="keyword">static_cast&lt;</span>uint16_t<span class="keyword">&gt;</span>((temperature + 45) * 65535 / 175);</div>
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    } <span class="keywordflow">else</span> {</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>      compensationT = defaultCompenstaionT;</div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    }</div>
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span> </div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keywordflow">if</span> (humidity != HUMIDITY_NOT_AVAILABLE) {</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keywordflow">if</span> (humidity &gt;= 0 &amp;&amp; humidity &lt;= 100) {</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>      compensationRh = <span class="keyword">static_cast&lt;</span>uint16_t<span class="keyword">&gt;</span>(humidity * 65535 / 100);</div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    } <span class="keywordflow">else</span> {</div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>      compensationRh = defaultCompenstaionRh;</div>
@@ -183,37 +183,39 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    }</div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span> </div>
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="keywordflow">if</span> (error) {</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>      retryCount++;</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>      <span class="keywordflow">if</span> (retryCount &gt; 10) {</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>        vocchannel-&gt;<a class="code hl_function" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#acf28901e575d351cc2d66fc6fb536a3d">setValue</a>(NAN);</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        noxchannel-&gt;<a class="code hl_function" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#acf28901e575d351cc2d66fc6fb536a3d">setValue</a>(NAN);</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>      }</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>      retryCount = 0;</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>      vocchannel-&gt;<a class="code hl_function" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#acf28901e575d351cc2d66fc6fb536a3d">setValue</a>(srawVoc);</div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>      noxchannel-&gt;<a class="code hl_function" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#acf28901e575d351cc2d66fc6fb536a3d">setValue</a>(srawNox);</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    }</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>  }</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>  uint16_t defaultCompenstaionRh = 0x8000;  <span class="comment">// in ticks as defined by SGP41</span></div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>  uint16_t defaultCompenstaionT = 0x6666;   <span class="comment">// in ticks as defined by SGP41</span></div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>  uint16_t compensationRh = 0;              <span class="comment">// in ticks as defined by SGP41</span></div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>  uint16_t compensationT = 0;               <span class="comment">// in ticks as defined by SGP41</span></div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>  int8_t retryCount = 0;</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>  ::SensirionI2CSgp41 sgp;</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>  GeneralPurposeMeasurement *vocchannel = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>  GeneralPurposeMeasurement *noxchannel = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>  ThermHygroMeter *th = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>  uint32_t lastReadTime = 0;</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>  <span class="keywordtype">int</span> skipFirstReadingsCounter = 10;</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>};</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>      <span class="keywordflow">if</span> (retryCount &lt;= 10) {</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>        retryCount++;</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>      }</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>      <span class="keywordflow">if</span> (retryCount &gt; 10) {</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        vocchannel-&gt;<a class="code hl_function" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#acf28901e575d351cc2d66fc6fb536a3d">setValue</a>(NAN);</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        noxchannel-&gt;<a class="code hl_function" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#acf28901e575d351cc2d66fc6fb536a3d">setValue</a>(NAN);</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>      }</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>      retryCount = 0;</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>      vocchannel-&gt;<a class="code hl_function" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#acf28901e575d351cc2d66fc6fb536a3d">setValue</a>(srawVoc);</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>      noxchannel-&gt;<a class="code hl_function" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#acf28901e575d351cc2d66fc6fb536a3d">setValue</a>(srawNox);</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>    }</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>  }</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span> </div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span> <span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>  uint16_t defaultCompenstaionRh = 0x8000;  <span class="comment">// in ticks as defined by SGP41</span></div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>  uint16_t defaultCompenstaionT = 0x6666;   <span class="comment">// in ticks as defined by SGP41</span></div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>  uint16_t compensationRh = 0;              <span class="comment">// in ticks as defined by SGP41</span></div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>  uint16_t compensationT = 0;               <span class="comment">// in ticks as defined by SGP41</span></div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>  int8_t retryCount = 0;</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>  ::SensirionI2CSgp41 sgp;</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>  GeneralPurposeMeasurement *vocchannel = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>  GeneralPurposeMeasurement *noxchannel = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>  ThermHygroMeter *th = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>  uint32_t lastReadTime = 0;</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>  <span class="keywordtype">int</span> skipFirstReadingsCounter = 10;</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>};</div>
 </div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span> </div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>};  <span class="comment">// namespace Sensor</span></div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>};  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span> </div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SENSOR_SGP41_H_</span></div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span> </div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>};  <span class="comment">// namespace Sensor</span></div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SENSOR_SGP41_H_</span></div>
 <div class="ttc" id="aclassSupla_1_1Channel_html_a45edd9941f947d462783d07b8c6970b5"><div class="ttname"><a href="classSupla_1_1Channel.html#a45edd9941f947d462783d07b8c6970b5">Supla::Channel::setDefaultIcon</a></div><div class="ttdeci">void setDefaultIcon(uint8_t iconId)</div><div class="ttdoc">Sets default icon.</div><div class="ttdef"><b>Definition</b> channel.cpp:1537</div></div>
 <div class="ttc" id="aclassSupla_1_1Element_html"><div class="ttname"><a href="classSupla_1_1Element.html">Supla::Element</a></div><div class="ttdoc">Base class for all elements of SuplaDevice.</div><div class="ttdef"><b>Definition</b> element.h:27</div></div>
 <div class="ttc" id="aclassSupla_1_1Element_html_a2da43bb00ea1bccd84d89998e949f7d3"><div class="ttname"><a href="classSupla_1_1Element.html#a2da43bb00ea1bccd84d89998e949f7d3">Supla::Element::setInitialCaption</a></div><div class="ttdeci">void setInitialCaption(const char *caption, bool secondaryChannel=false)</div><div class="ttdoc">Sets initial caption.</div><div class="ttdef"><b>Definition</b> element.cpp:372</div></div>

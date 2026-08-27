@@ -1051,7 +1051,11 @@ bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
     auto fadeEffectMs = fadeEffectParameter.as<int>();
     rgb->setFadeEffectTime(fadeEffectMs);
   }
-  return addCommonParameters(ch, rgb);
+  if (!addStateParser(ch, rgb, parser, false)) {
+    return false;
+  }
+
+  return addCommonParametersParsed(ch, rgb, parser);
 }
 
 bool Supla::LinuxYamlConfig::addCmdRollerShutter(

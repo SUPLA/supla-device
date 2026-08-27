@@ -132,6 +132,7 @@ set(ESP_IDF_SPI_DOUBLE_SRC
 list(REMOVE_ITEM DOUBLE_SRC ${ESP_IDF_SPI_DOUBLE_SRC})
 
 set(SD4LINUX_PORT_SRC
+  ../porting/linux/linux_yaml_config.cpp
   ../porting/linux/linux_channel_factory.cpp
   ../porting/linux/supla/control/cmd_relay.cpp
   ../porting/linux/supla/control/control_payload.cpp
@@ -140,17 +141,37 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/control/custom_hvac.cpp
   ../porting/linux/supla/control/hvac_parsed.cpp
   ../porting/linux/supla/control/rgbcct_parsed.cpp
+  ../porting/linux/supla/control/cmd_valve.cpp
   ../porting/linux/supla/control/action_trigger_parsed.cpp
+  ../porting/linux/supla/custom_channel.cpp
   ../porting/linux/supla/linux_command.cpp
   ../porting/linux/supla/parser/json.cpp
   ../porting/linux/supla/parser/parser.cpp
+  ../porting/linux/supla/parser/simple.cpp
+  ../porting/linux/supla/output/file.cpp
+  ../porting/linux/supla/payload/json.cpp
+  ../porting/linux/supla/payload/simple.cpp
+  ../porting/linux/supla/source/cmd.cpp
+  ../porting/linux/supla/source/file.cpp
   ../porting/linux/supla/sensor/sensor_parsed.cpp
   ../porting/linux/supla/sensor/binary_parsed.cpp
+  ../porting/linux/supla/sensor/container_parsed.cpp
+  ../porting/linux/supla/sensor/distance_parsed.cpp
+  ../porting/linux/supla/sensor/electricity_meter_parsed.cpp
   ../porting/linux/supla/sensor/general_purpose_measurement_parsed.cpp
+  ../porting/linux/supla/sensor/general_purpose_meter_parsed.cpp
+  ../porting/linux/supla/sensor/humidity_parsed.cpp
   ../porting/linux/supla/sensor/impulse_counter_parsed.cpp
+  ../porting/linux/supla/sensor/pressure_parsed.cpp
+  ../porting/linux/supla/sensor/rain_parsed.cpp
   ../porting/linux/supla/sensor/thermometer_parsed.cpp
+  ../porting/linux/supla/sensor/therm_hygro_meter_parsed.cpp
+  ../porting/linux/supla/sensor/weight_parsed.cpp
+  ../porting/linux/supla/sensor/wind_parsed.cpp
   ../porting/linux/supla/payload/payload.cpp
   ../porting/linux/supla/output/cmd.cpp
+  ../../src/supla/pv/afore.cpp
+  ../../src/supla/pv/fronius.cpp
   )
 
 if(SUPLA_TEST_CURL_HTTP_ENABLED)
@@ -213,6 +234,7 @@ target_link_libraries(sd4linuxtests
   PRIVATE
     supladevicelib
     nlohmann_json::nlohmann_json
+    yaml-cpp
     gtest
     gmock
     gtest_main

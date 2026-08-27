@@ -29,6 +29,19 @@ class ActionHandlerMock2 : public Supla::ActionHandler {
   MOCK_METHOD(void, activateAction, (int), (override));
 };
 
+class CountingActionHandler : public Supla::ActionHandler {
+ public:
+  void handleAction(int event, int action) override {
+    callCount++;
+    lastEvent = event;
+    lastAction = action;
+  }
+
+  int callCount = 0;
+  int lastEvent = 0;
+  int lastAction = 0;
+};
+
 using ::testing::_;
 using ::testing::ElementsAreArray;
 using ::testing::Args;
@@ -604,6 +617,40 @@ TEST_F(ConditionTestsFixture, setThresholdCheck) {
   cond->setThreshold(110);
 
   cond->setThreshold(120);
+}
+
+TEST_F(ConditionTestsFixture, setThresholdReevaluatesOnlyThisCondition) {
+  CountingActionHandler conditionClient;
+  CountingActionHandler unrelatedClient;
+  const int conditionAction = 15;
+  const int unrelatedAction = 16;
+
+  Supla::ChannelElement channelElement;
+  auto channel = channelElement.getChannel();
+  channel->setType(SUPLA_CHANNELTYPE_WINDSENSOR);
+  channel->setNewValue(100.0);
+
+  auto cond = OnLess(50.0);
+  channelElement.addAction(conditionAction, conditionClient, cond);
+  channelElement.addAction(
+      unrelatedAction, unrelatedClient, Supla::ON_CHANGE);
+
+  cond->setThreshold(101.0);
+  EXPECT_EQ(conditionClient.callCount, 1);
+  EXPECT_EQ(conditionClient.lastEvent, Supla::ON_CHANGE);
+  EXPECT_EQ(conditionClient.lastAction, conditionAction);
+  EXPECT_EQ(unrelatedClient.callCount, 0);
+
+  cond->setThreshold(102.0);
+  EXPECT_EQ(conditionClient.callCount, 1);
+  EXPECT_EQ(unrelatedClient.callCount, 0);
+
+  channel->setNewValue(110.0);
+  EXPECT_EQ(unrelatedClient.callCount, 1);
+
+  cond->setThreshold(111.0);
+  EXPECT_EQ(conditionClient.callCount, 2);
+  EXPECT_EQ(unrelatedClient.callCount, 1);
 }
 
 TEST_F(ConditionTestsFixture, conditionForContainer) {

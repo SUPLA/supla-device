@@ -170,7 +170,15 @@ void Supla::Condition::activateAction(int action) {
 void Supla::Condition::setThreshold(double val) {
   threshold = val;
   if (source) {
-    source->runAction(Supla::ON_CHANGE);
+    auto channel = source->getChannel();
+    if (!channel) {
+      return;
+    }
+
+    auto handler = channel->getHandlerForClient(this, Supla::ON_CHANGE);
+    if (handler && handler->isEnabled()) {
+      handleAction(Supla::ON_CHANGE, handler->action);
+    }
   }
 }
 

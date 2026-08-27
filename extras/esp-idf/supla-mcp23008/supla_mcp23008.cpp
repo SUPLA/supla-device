@@ -26,16 +26,16 @@ void MCP23008::customPinMode(int channelNumber, uint8_t pin, uint8_t mode) {
 
   switch (mode) {
     case INPUT: {
-      mode |= (1 << pin);
+      this->mode |= (1 << pin);
       pullup &= ~(1 << pin);
       break;
     }
     case OUTPUT: {
-      mode &= ~(1 << pin);
+      this->mode &= ~(1 << pin);
       break;
     }
     case INPUT_PULLUP: {
-      mode |= (1 << pin);
+      this->mode |= (1 << pin);
       pullup |= (1 << pin);
       break;
     }

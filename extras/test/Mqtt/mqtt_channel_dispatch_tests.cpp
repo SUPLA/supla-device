@@ -3687,6 +3687,45 @@ TEST_F(MqttChannelDispatchTests, processDataHvacToggleTurnsOffActiveHvac) {
   EXPECT_TRUE(mqtt.processData(actionTopic.c_str(), "toggle"));
 }
 
+TEST_F(MqttChannelDispatchTests, processDataHvacToggleUsesSemanticIsOnState) {
+  SuplaDeviceClass sd;
+  StrictMock<MqttTestMock> mqtt(&sd);
+  initMqtt(sd, mqtt);
+  mqtt.test_setChannelsCount(255);
+
+  auto expectToggle = [&](bool proportional,
+                          uint8_t percent,
+                          bool isOn,
+                          uint8_t expectedRaw,
+                          int expectedMode) {
+    ChannelElementMock hvac;
+    hvac.getChannel()->setType(SUPLA_CHANNELTYPE_HVAC);
+    hvac.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+    if (proportional) {
+      hvac.getChannel()->setHvacIsOnPercent(percent);
+    } else {
+      hvac.getChannel()->setHvacIsOn(isOn);
+    }
+    EXPECT_EQ(expectedRaw, hvac.getChannel()->getHvacIsOnRaw());
+
+    EXPECT_CALL(hvac, handleNewValueFromServer(_))
+        .WillOnce([expectedMode](TSD_SuplaChannelNewValue *value) {
+          auto *hvacValue = reinterpret_cast<THVACValue *>(value->value);
+          EXPECT_EQ(expectedMode, hvacValue->Mode);
+          return 0;
+        });
+
+    const auto actionTopic =
+        expectedChannelTopic(hvac.getChannelNumber(), "execute_action");
+    EXPECT_TRUE(mqtt.processData(actionTopic.c_str(), "toggle"));
+  };
+
+  expectToggle(false, 0, false, 0, SUPLA_HVAC_MODE_CMD_TURN_ON);
+  expectToggle(false, 0, true, 1, SUPLA_HVAC_MODE_OFF);
+  expectToggle(true, 0, false, 2, SUPLA_HVAC_MODE_CMD_TURN_ON);
+  expectToggle(true, 50, false, 52, SUPLA_HVAC_MODE_OFF);
+}
+
 TEST_F(MqttChannelDispatchTests,
        processDataRoutesRelayRollerShutterPairSecondaryRelayTopic) {
   SuplaDeviceClass sd;

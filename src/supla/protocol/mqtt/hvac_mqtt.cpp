@@ -201,7 +201,7 @@ class HvacMqttHandler : public MqttChannelHandler {
         hvacValue->Mode = SUPLA_HVAC_MODE_OFF;
       } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
         if (element->getChannel() &&
-            element->getChannel()->getHvacIsOnRaw() != 0) {
+            element->getChannel()->getHvacIsOnBool()) {
           hvacValue->Mode = SUPLA_HVAC_MODE_OFF;
         } else {
           hvacValue->Mode = SUPLA_HVAC_MODE_CMD_TURN_ON;

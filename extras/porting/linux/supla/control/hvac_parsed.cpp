@@ -42,7 +42,7 @@ int CmdOutput::getOutputValue() const {
 
 void CmdOutput::setOutputValue(int value) {
   lastState = value;
-  if (value == 1) {
+  if (value != 0) {
     if (cmdOn.length() > 0) {
       Supla::Linux::executeCommand(cmdOn, "Hvac.cmd_on");
     }

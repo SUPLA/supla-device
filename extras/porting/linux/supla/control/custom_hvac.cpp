@@ -42,7 +42,7 @@ int CustomOutput::getOutputValue() const {
 
 void CustomOutput::setOutputValue(int value) {
   lastState = value;
-  if (value == 1) {
+  if (value != 0) {
     payload->turnOn(parameter2Key[Supla::Payload::HvacState], setOnValue);
   } else if (value == 0) {
     payload->turnOff(parameter2Key[Supla::Payload::HvacState], setOffValue);

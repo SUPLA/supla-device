@@ -164,9 +164,9 @@ class PwmFrequencyStub : public Supla::Control::LightingPwmBase {
 
 class BinarySensorStub : public Supla::Sensor::BinaryBase {
  public:
-  BinarySensorStub() {
+  explicit BinarySensorStub(uint16_t filteringTimeMs = 2500) {
     setServerInvertLogic(true, false);
-    setFilteringTimeMs(2500, false);
+    setFilteringTimeMs(filteringTimeMs, false);
     setTimeoutDs(42, false);
     setSensitivity(12, false);
     setLocalAlarmIndication(2, false);
@@ -1298,6 +1298,59 @@ TEST_F(HtmlCaptureTest,
   EXPECT_EQ(binary.getLocalAlarmIndication(), 1);
 
   param.onProcessingEnd();
+}
+
+TEST_F(HtmlCaptureTest, BinarySensorParametersAcceptsFilteringTimeBounds) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  BinarySensorStub binary;
+
+  Supla::Html::BinarySensorParameters param(&binary);
+
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(key, binary.getChannelNumber(), "bs_filter");
+
+  EXPECT_TRUE(param.handleResponse(key, "0.03"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 30);
+  EXPECT_TRUE(param.handleResponse(key, "3.0"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 3000);
+}
+
+TEST_F(HtmlCaptureTest,
+       BinarySensorParametersRejectsOutOfRangeFilteringTime) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  BinarySensorStub binary;
+
+  Supla::Html::BinarySensorParameters param(&binary);
+
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(key, binary.getChannelNumber(), "bs_filter");
+
+  EXPECT_TRUE(param.handleResponse(key, "0"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 2500);
+  EXPECT_TRUE(param.handleResponse(key, "0.02"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 2500);
+  EXPECT_TRUE(param.handleResponse(key, "3.01"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 2500);
+}
+
+TEST_F(HtmlCaptureTest,
+       BinarySensorParametersDoesNotEnableUnsupportedFilteringTime) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  BinarySensorStub binary(0);
+
+  ASSERT_EQ(binary.getFilteringTimeMs(), 0);
+
+  Supla::Html::BinarySensorParameters param(&binary);
+
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(key, binary.getChannelNumber(), "bs_filter");
+
+  EXPECT_TRUE(param.handleResponse(key, "0.03"));
+  EXPECT_TRUE(param.handleResponse(key, "3.0"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 0);
 }
 
 TEST_F(HtmlCaptureTest, ScreenDelayTypeParametersRendersSelectedOption) {

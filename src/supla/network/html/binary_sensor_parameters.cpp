@@ -205,7 +205,7 @@ bool BinarySensorParameters::handleResponse(const char* key,
       BinaryFilterKey);
   if (strcmp(key, expectedKey) == 0) {
     uint32_t param = floatStringToInt(value, 3);
-    if (binary->getFilteringTimeMs() > 0 && param < 10000) {
+    if (binary->getFilteringTimeMs() > 0 && param >= 30 && param <= 3000) {
       if (binary->setFilteringTimeMs(param)) {
         configChanged = true;
       }

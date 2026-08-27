@@ -50,7 +50,6 @@
 #include <supla/sensor/DS18B20.h>
 #include <supla/sensor/bh1750.h>
 #include <supla/sensor/particle_meter_sds011.h>
-#include <supla/sensor/sht3x.h>
 #include "heca.h"
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -121,7 +120,6 @@ void setup() {
   const char DeviceVersion[] = "NAM " NAM_VERSION " / " SUPLA_SHORT_VERSION;
   SuplaDevice.setSwVersion(DeviceVersion);
   SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
-  SuplaDevice.setPermanentWebServer();
   SuplaDevice.begin();
 }
 

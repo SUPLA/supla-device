@@ -498,6 +498,22 @@ void HvacBase::onInit() {
       setBinarySensorChannelNo(getChannelNumber());
     }
   }
+  if (!setPumpSwitchChannelNo(getPumpSwitchChannelNo())) {
+    SUPLA_LOG_WARNING(
+        "HVAC[%d]: pump switch channel number %d is invalid. Clearing.",
+        getChannelNumber(),
+        getPumpSwitchChannelNo());
+    clearPumpSwitchChannelNo();
+  }
+  if (!setHeatOrColdSourceSwitchChannelNo(
+          getHeatOrColdSourceSwitchChannelNo())) {
+    SUPLA_LOG_WARNING(
+        "HVAC[%d]: heat or cold source switch channel number %d is invalid. "
+        "Clearing.",
+        getChannelNumber(),
+        getHeatOrColdSourceSwitchChannelNo());
+    clearHeatOrColdSourceSwitchChannelNo();
+  }
 
   previousSubfunction = config.Subfunction;
 
@@ -1664,6 +1680,27 @@ bool HvacBase::isChannelBinarySensor(int16_t channelNo) const {
       SUPLA_CHANNELTYPE_BINARYSENSOR) {
     return true;
   }
+  return false;
+}
+
+bool HvacBase::isChannelRelay(int16_t channelNo) const {
+  if (channelNo < 0 || channelNo == getChannelNumber()) {
+    return false;
+  }
+  auto element = Supla::Element::getElementByChannelNumber(channelNo);
+  if (element == nullptr) {
+    SUPLA_LOG_WARNING("HVAC[%d]: relay not found for channel %d",
+                      getChannelNumber(),
+                      channelNo);
+    return false;
+  }
+  if (element->getChannel()->getChannelType() == SUPLA_CHANNELTYPE_RELAY) {
+    return true;
+  }
+  SUPLA_LOG_WARNING("HVAC[%d]: channel %d has invalid relay type %d",
+                    getChannelNumber(),
+                    channelNo,
+                    element->getChannel()->getChannelType());
   return false;
 }
 
@@ -5762,33 +5799,51 @@ int32_t HvacBase::getRemainingCountDownTimeSec() const {
   return remainingSec;
 }
 
-bool HvacBase::setPumpSwitchChannelNo(uint8_t channelNo) {
+bool HvacBase::setPumpSwitchChannelNo(int16_t newChannelNo) {
+  uint8_t channelNo = getChannelNumber();
+  if (newChannelNo >= 0 && newChannelNo <= 255) {
+    channelNo = newChannelNo;
+  }
   if (initialConfig && !initDone) {
     initialConfig->PumpSwitchChannelNo = channelNo;
-    if (channelNo == getChannelNumber()) {
+    if (newChannelNo == -1 || channelNo == getChannelNumber()) {
       initialConfig->PumpSwitchIsSet = 0;
     } else {
       initialConfig->PumpSwitchIsSet = 1;
     }
   }
-  if (config.PumpSwitchChannelNo == channelNo) {
+  if (!initDone) {
+    config.PumpSwitchChannelNo = channelNo;
+    config.PumpSwitchIsSet =
+        newChannelNo == -1 || channelNo == getChannelNumber() ? 0 : 1;
+    defaultPumpSwitch = newChannelNo;
     return true;
   }
 
-  unregisterInAggregator(config.PumpSwitchChannelNo);
-  registeredInRelayHvacAggregator = false;
-  if (channelNo == getChannelNumber()) {
-    config.PumpSwitchIsSet = 0;
-  } else {
-    config.PumpSwitchIsSet = 1;
-    registerInAggregator(channelNo);
-  }
-  config.PumpSwitchChannelNo = channelNo;
-  if (!initDone) {
-    defaultPumpSwitch = channelNo;
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
+    if (config.PumpSwitchChannelNo != channelNo ||
+        config.PumpSwitchIsSet != 0) {
+      unregisterInAggregator(config.PumpSwitchChannelNo);
+      registeredInRelayHvacAggregator = false;
+      config.PumpSwitchChannelNo = channelNo;
+      config.PumpSwitchIsSet = 0;
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
     return true;
   }
-  if (initDone) {
+
+  if (!isChannelRelay(newChannelNo)) {
+    return false;
+  }
+
+  if (config.PumpSwitchChannelNo != channelNo ||
+      config.PumpSwitchIsSet == 0) {
+    unregisterInAggregator(config.PumpSwitchChannelNo);
+    registeredInRelayHvacAggregator = false;
+    config.PumpSwitchChannelNo = channelNo;
+    config.PumpSwitchIsSet = 1;
+    registerInAggregator(channelNo);
     channelConfigChangedOffline = 1;
     saveConfig();
   }
@@ -5806,33 +5861,51 @@ bool HvacBase::isPumpSwitchSet() const {
   return config.PumpSwitchIsSet != 0;
 }
 
-bool HvacBase::setHeatOrColdSourceSwitchChannelNo(uint8_t channelNo) {
+bool HvacBase::setHeatOrColdSourceSwitchChannelNo(int16_t newChannelNo) {
+  uint8_t channelNo = getChannelNumber();
+  if (newChannelNo >= 0 && newChannelNo <= 255) {
+    channelNo = newChannelNo;
+  }
   if (initialConfig && !initDone) {
     initialConfig->HeatOrColdSourceSwitchChannelNo = channelNo;
-    if (channelNo == getChannelNumber()) {
+    if (newChannelNo == -1 || channelNo == getChannelNumber()) {
       initialConfig->HeatOrColdSourceSwitchIsSet = 0;
     } else {
       initialConfig->HeatOrColdSourceSwitchIsSet = 1;
     }
   }
-  if (config.HeatOrColdSourceSwitchChannelNo == channelNo) {
+  if (!initDone) {
+    config.HeatOrColdSourceSwitchChannelNo = channelNo;
+    config.HeatOrColdSourceSwitchIsSet =
+        newChannelNo == -1 || channelNo == getChannelNumber() ? 0 : 1;
+    defaultHeatOrColdSourceSwitch = newChannelNo;
     return true;
   }
 
-  unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
-  registeredInRelayHvacAggregator = false;
-  if (channelNo == getChannelNumber()) {
-    config.HeatOrColdSourceSwitchIsSet = 0;
-  } else {
-    config.HeatOrColdSourceSwitchIsSet = 1;
-    registerInAggregator(channelNo);
-  }
-  config.HeatOrColdSourceSwitchChannelNo = channelNo;
-  if (!initDone) {
-    defaultHeatOrColdSourceSwitch = channelNo;
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
+    if (config.HeatOrColdSourceSwitchChannelNo != channelNo ||
+        config.HeatOrColdSourceSwitchIsSet != 0) {
+      unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
+      registeredInRelayHvacAggregator = false;
+      config.HeatOrColdSourceSwitchChannelNo = channelNo;
+      config.HeatOrColdSourceSwitchIsSet = 0;
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
     return true;
   }
-  if (initDone) {
+
+  if (!isChannelRelay(newChannelNo)) {
+    return false;
+  }
+
+  if (config.HeatOrColdSourceSwitchChannelNo != channelNo ||
+      config.HeatOrColdSourceSwitchIsSet == 0) {
+    unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
+    registeredInRelayHvacAggregator = false;
+    config.HeatOrColdSourceSwitchChannelNo = channelNo;
+    config.HeatOrColdSourceSwitchIsSet = 1;
+    registerInAggregator(channelNo);
     channelConfigChangedOffline = 1;
     saveConfig();
   }

@@ -143,11 +143,11 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setAuxThermometerType(uint8_t type);
   uint8_t getAuxThermometerType() const;
 
-  bool setPumpSwitchChannelNo(uint8_t channelNo);
+  bool setPumpSwitchChannelNo(int16_t channelNo);
   void clearPumpSwitchChannelNo();
   int16_t getPumpSwitchChannelNo() const;
   bool isPumpSwitchSet() const;
-  bool setHeatOrColdSourceSwitchChannelNo(uint8_t channelNo);
+  bool setHeatOrColdSourceSwitchChannelNo(int16_t channelNo);
   void clearHeatOrColdSourceSwitchChannelNo();
   int16_t getHeatOrColdSourceSwitchChannelNo() const;
   bool isHeatOrColdSourceSwitchSet() const;
@@ -480,6 +480,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // returns true if forced off should be set
   bool getForcedOffSensorState();
   bool isSensorTempValid(_supla_int16_t temperature) const;
+  bool isChannelRelay(int16_t channelNo) const;
   bool checkOverheatProtection(_supla_int16_t t, _supla_int16_t tAux);
   bool checkAntifreezeProtection(_supla_int16_t t, _supla_int16_t tAux);
   bool isAuxMinLimitReached(_supla_int16_t tAux) const;

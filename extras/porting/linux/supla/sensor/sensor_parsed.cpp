@@ -190,7 +190,9 @@ int SensorParsedBase::getStateValue(bool updateChannelState) {
             state = 0;
           }
         }
-       setLastValue(state);
+        if (std::holds_alternative<int>(value)) {
+          setLastValue(std::get<int>(value));
+        }
       }
     }
   }

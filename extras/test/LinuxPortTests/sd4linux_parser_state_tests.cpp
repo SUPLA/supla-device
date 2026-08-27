@@ -3,6 +3,8 @@
 
 #include <gtest/gtest.h>
 #include <simple_time.h>
+#include <supla/at_channel.h>
+#include <supla/control/action_trigger_parsed.h>
 #include <supla/parser/parser.h>
 #include <supla/sensor/binary_parsed.h>
 #include <supla/sensor/general_purpose_measurement_parsed.h>
@@ -58,6 +60,17 @@ class FakeSd4linuxParser : public Supla::Parser::Parser {
     return valid;
   }
 };
+
+static void configureActionTrigger(Supla::Control::ActionTriggerParsed *at,
+                                   uint32_t activeActions) {
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  auto actionTriggerConfig = reinterpret_cast<TChannelConfig_ActionTrigger *>(
+      config.Config);
+  actionTriggerConfig->ActiveActions = activeActions;
+  at->handleChannelConfig(&config);
+}
 
 class Sd4linuxParserStateTests : public ::testing::Test {
  protected:
@@ -330,6 +343,48 @@ TEST_F(Sd4linuxParserStateTests, ReadsBinaryStateFromTextValues) {
   sensor.iterateAlways();
   EXPECT_FALSE(sensor.getValue());
   EXPECT_FALSE(sensor.getChannel()->getValueBool());
+}
+
+TEST_F(Sd4linuxParserStateTests,
+       ActionTriggersUseRawIntegerValuesAndNormalizedState) {
+  SimpleTime time;
+  FakeSd4linuxSource source;
+  FakeSd4linuxParser parser(&source);
+  parser.stateValue = 0;
+
+  Supla::Control::ActionTriggerParsed at("raw_value_action_trigger");
+  configureActionTrigger(
+      &at,
+      SUPLA_ACTION_CAP_TURN_ON | SUPLA_ACTION_CAP_TURN_OFF |
+          SUPLA_ACTION_CAP_TOGGLE_x1);
+
+  Supla::Sensor::BinaryParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::State, "state");
+  sensor.setAtName("raw_value_action_trigger");
+  sensor.setOnValues({7});
+  sensor.onInit();
+
+  sensor.addAtOnValue({5, 0});
+  sensor.addAtOnValueChange({6, 7, 1});
+  sensor.addAtOnStateChange({0, 1, 2});
+
+  parser.stateValue = 5;
+  EXPECT_FALSE(sensor.getValue());
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(),
+            SUPLA_ACTION_CAP_TURN_ON);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0);
+
+  parser.stateValue = 6;
+  EXPECT_FALSE(sensor.getValue());
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0);
+
+  parser.stateValue = 7;
+  EXPECT_TRUE(sensor.getValue());
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(),
+            SUPLA_ACTION_CAP_TURN_OFF);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(),
+            SUPLA_ACTION_CAP_TOGGLE_x1);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0);
 }
 
 TEST_F(Sd4linuxParserStateTests,

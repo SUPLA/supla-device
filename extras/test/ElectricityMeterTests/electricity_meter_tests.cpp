@@ -5,6 +5,7 @@
 
 #include <supla/channel.h>
 #include <gmock/gmock.h>
+#include <config_mock.h>
 #include <srpc_mock.h>
 #include <supla/sensor/electricity_meter.h>
 #include <simple_time.h>
@@ -15,7 +16,35 @@ class EMForTest : public Supla::Sensor::ElectricityMeter {
   TElectricityMeter_ExtendedValue_V3 *getEmValue() {
     return &emValue;
   }
+
+  int8_t getUsedCtType() const {
+    return usedCtType;
+  }
 };
+
+static TSD_ChannelConfig makeElectricityMeterConfig(uint64_t usedCtType,
+                                                    uint64_t usedPhaseLedType,
+                                                    uint64_t availableTypes) {
+  TSD_ChannelConfig result = {};
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  result.ConfigSize = sizeof(TChannelConfig_ElectricityMeter);
+  result.Func = SUPLA_CHANNELFNC_ELECTRICITY_METER;
+
+  auto config = reinterpret_cast<TChannelConfig_ElectricityMeter *>(
+      &result.Config);
+  config->UsedCTType = usedCtType;
+  config->UsedPhaseLedType = usedPhaseLedType;
+  config->AvailableCTTypes = availableTypes;
+  config->AvailablePhaseLedTypes = availableTypes;
+  return result;
+}
+
+static void addElectricityMeterTestTypes(EMForTest *em) {
+  em->addCtType(1ULL);
+  em->addCtType(2ULL);
+  em->addPhaseLedType(1ULL);
+  em->addPhaseLedType(2ULL);
+}
 
 TEST(ElectricityMeterTests,
      ClearingVoltagePhaseSequenceRefreshesExtendedValue) {
@@ -194,6 +223,72 @@ TEST(ElectricityMeterTests, SettersAndGetters) {
   EXPECT_EQ(em.getPowerApparent(2), 34);
   EXPECT_EQ(em.getPowerFactor(2), 35);
   EXPECT_EQ(em.getPhaseAngle(2), 36);
+}
+
+TEST(ElectricityMeterTests, ChannelConfigAcceptsSupportedSingleBitTypes) {
+  Supla::Channel::resetToDefaults();
+  testing::NiceMock<ConfigMock> cfg;
+  EMForTest em;
+  addElectricityMeterTestTypes(&em);
+
+  auto config = makeElectricityMeterConfig(2, 2, 3);
+
+  EXPECT_EQ(em.applyChannelConfig(&config, false),
+            Supla::ApplyConfigResult::Success);
+  EXPECT_EQ(em.getUsedCtType(), 1);
+  EXPECT_EQ(em.getPhaseLedType(), 1);
+}
+
+TEST(ElectricityMeterTests, ChannelConfigRejectsUnsupportedSingleBitTypes) {
+  Supla::Channel::resetToDefaults();
+  testing::NiceMock<ConfigMock> cfg;
+  EMForTest em;
+  addElectricityMeterTestTypes(&em);
+
+  auto config = makeElectricityMeterConfig(4, 1, 3);
+
+  EXPECT_EQ(em.applyChannelConfig(&config, false),
+            Supla::ApplyConfigResult::SetChannelConfigNeeded);
+  EXPECT_EQ(em.getUsedCtType(), 0);
+
+  config = makeElectricityMeterConfig(1, 4, 3);
+
+  EXPECT_EQ(em.applyChannelConfig(&config, false),
+            Supla::ApplyConfigResult::SetChannelConfigNeeded);
+  EXPECT_EQ(em.getPhaseLedType(), 0);
+}
+
+TEST(ElectricityMeterTests, ChannelConfigRejectsMalformedTypeMasks) {
+  Supla::Channel::resetToDefaults();
+  testing::NiceMock<ConfigMock> cfg;
+  EMForTest em;
+  addElectricityMeterTestTypes(&em);
+
+  auto config = makeElectricityMeterConfig(2, 2, 3);
+  ASSERT_EQ(em.applyChannelConfig(&config, false),
+            Supla::ApplyConfigResult::Success);
+  ASSERT_EQ(em.getUsedCtType(), 1);
+  ASSERT_EQ(em.getPhaseLedType(), 1);
+
+  config = makeElectricityMeterConfig(0, 2, 3);
+  EXPECT_EQ(em.applyChannelConfig(&config, false),
+            Supla::ApplyConfigResult::SetChannelConfigNeeded);
+  EXPECT_EQ(em.getUsedCtType(), 1);
+
+  config = makeElectricityMeterConfig(3, 2, 3);
+  EXPECT_EQ(em.applyChannelConfig(&config, false),
+            Supla::ApplyConfigResult::SetChannelConfigNeeded);
+  EXPECT_EQ(em.getUsedCtType(), 1);
+
+  config = makeElectricityMeterConfig(2, 0, 3);
+  EXPECT_EQ(em.applyChannelConfig(&config, false),
+            Supla::ApplyConfigResult::SetChannelConfigNeeded);
+  EXPECT_EQ(em.getPhaseLedType(), 1);
+
+  config = makeElectricityMeterConfig(2, 3, 3);
+  EXPECT_EQ(em.applyChannelConfig(&config, false),
+            Supla::ApplyConfigResult::SetChannelConfigNeeded);
+  EXPECT_EQ(em.getPhaseLedType(), 1);
 }
 
 TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {

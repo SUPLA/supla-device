@@ -443,6 +443,70 @@ TEST(TemperatureDropSensorTests, DropFrom23To15WithDelay) {
   EXPECT_FALSE(sensor.isDropDetected());
 }
 
+TEST(TemperatureDropSensorTests,
+     AbortedDelayedDropStartsFreshDetectionDelay) {
+  SimpleTime time;
+  Supla::Sensor::VirtualThermometer thermometer;
+  Supla::Sensor::TemperatureDropSensor sensor(&thermometer);
+
+  auto elBinary = Supla::Element::getElementByChannelNumber(1);
+  ASSERT_NE(elBinary, nullptr);
+  auto ch = elBinary->getChannel();
+  ASSERT_NE(ch, nullptr);
+
+  sensor.setDropDetectionDelayMs(120000);
+  sensor.setTemperatureDropThreshold(-500);
+
+  thermometer.setValue(23);
+  thermometer.onInit();
+  elBinary->onInit();
+  sensor.onInit();
+  elBinary->iterateAlways();
+
+  auto iterate = [&]() {
+    thermometer.iterateAlways();
+    sensor.iterateAlways();
+    elBinary->iterateAlways();
+    time.advance(30000);
+  };
+
+  // Populate a stable temperature history.
+  for (int i = 0; i < 60; i++) {
+    iterate();
+  }
+
+  thermometer.setValue(15);
+  iterate();
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
+
+  // Recover before the delayed drop can be confirmed.
+  thermometer.setValue(23);
+  iterate();
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
+
+  // Let the old filtering timestamp exceed the detection delay.
+  for (int i = 0; i < 5; i++) {
+    iterate();
+  }
+
+  thermometer.setValue(15);
+  iterate();
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
+
+  // The second drop must remain pending for a fresh full delay.
+  for (int i = 0; i < 4; i++) {
+    iterate();
+    EXPECT_EQ(ch->getValueBool(), true);
+    EXPECT_FALSE(sensor.isDropDetected());
+  }
+
+  iterate();
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
+}
 
 
 

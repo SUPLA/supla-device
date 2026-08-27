@@ -66,6 +66,8 @@ void TemperatureDropSensor::iterateAlways() {
           dropDetectionTimestamp = millis();
           filteringTimestamp = 0;
         }
+      } else if (filteringTimestamp != 0) {
+        filteringTimestamp = 0;
       }
     }
   }

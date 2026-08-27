@@ -4920,7 +4920,8 @@ bool HvacBase::setBinarySensorChannelNo(int16_t newChannelNo) {
     defaultBinarySensor = newChannelNo;
     return true;
   }
-  if (isChannelBinarySensor(newChannelNo)) {
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber() ||
+      isChannelBinarySensor(newChannelNo)) {
     if (config.BinarySensorChannelNo != channelNo) {
       config.BinarySensorChannelNo = channelNo;
       if (initDone) {

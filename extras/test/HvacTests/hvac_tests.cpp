@@ -178,6 +178,21 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
                 SUPLA_BIT_FUNC_HVAC_THERMOSTAT_DIFFERENTIAL);
 }
 
+TEST_F(HvacTestsF, invalidBinarySensorAssignmentIsClearedOnInit) {
+  OutputSimulator output;
+  Supla::Control::HvacBase hvac(&output);
+
+  hvac.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac.initDefaultConfig();
+
+  ASSERT_TRUE(hvac.setBinarySensorChannelNo(99));
+  ASSERT_EQ(hvac.getBinarySensorChannelNo(), 99);
+
+  hvac.onInit();
+
+  EXPECT_EQ(hvac.getBinarySensorChannelNo(), -1);
+}
+
 TEST_F(HvacTestsF, CountdownTimerRemainingConditionFiresOnThreshold) {
   OutputSimulatorWithCheck output;
   EXPECT_CALL(output, setOutputValueCheck(_)).Times(::testing::AnyNumber());

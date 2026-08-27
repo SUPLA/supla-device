@@ -93,6 +93,29 @@ class HvacControlFlowF : public ::testing::Test {
   }
 };
 
+TEST_F(HvacControlFlowF, binarySensorCanBeDisabledAfterInit) {
+  const auto binarySensorChannelNo = forcedOffSensor->getChannelNumber();
+
+  EXPECT_TRUE(hvac->setBinarySensorChannelNo(binarySensorChannelNo));
+  EXPECT_EQ(hvac->getBinarySensorChannelNo(), binarySensorChannelNo);
+
+  EXPECT_TRUE(hvac->setBinarySensorChannelNo(-1));
+  EXPECT_EQ(hvac->getBinarySensorChannelNo(), -1);
+
+  EXPECT_TRUE(hvac->setBinarySensorChannelNo(binarySensorChannelNo));
+  EXPECT_EQ(hvac->getBinarySensorChannelNo(), binarySensorChannelNo);
+
+  EXPECT_TRUE(hvac->setBinarySensorChannelNo(hvac->getChannelNumber()));
+  EXPECT_EQ(hvac->getBinarySensorChannelNo(), -1);
+
+  EXPECT_TRUE(hvac->setBinarySensorChannelNo(binarySensorChannelNo));
+  EXPECT_FALSE(hvac->setBinarySensorChannelNo(
+      mainTemperature->getChannelNumber()));
+  EXPECT_EQ(hvac->getBinarySensorChannelNo(), binarySensorChannelNo);
+  EXPECT_FALSE(hvac->setBinarySensorChannelNo(-2));
+  EXPECT_EQ(hvac->getBinarySensorChannelNo(), binarySensorChannelNo);
+}
+
 TEST_F(HvacControlFlowF, forcedOffAfterAuxMinStillRetriesHeatShutdown) {
   hvac->setMinOnTimeS(10);
   settleMode(SUPLA_HVAC_MODE_HEAT);

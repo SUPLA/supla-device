@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 #include <supla/device/register_device.h>
+#include <supla/channels/channel.h>
 
 #include <cstring>
 
@@ -52,6 +53,32 @@ TEST_F(RegisterDeviceTests, FillsGUIDTextForHighBitByteValues) {
       static_cast<char>(0xBB), static_cast<char>(0xCC)};
 
   expectGUIDText(guid, "80FF81FE-90A0-B0C0-D0E0-F08899AABBCC");
+}
+
+TEST_F(RegisterDeviceTests, ReturnsChannelStructureForValidIndex) {
+  Supla::Channel channel;
+
+  EXPECT_NE(Supla::RegisterDevice::getChannelPtr_D(0), nullptr);
+  EXPECT_NE(Supla::RegisterDevice::getChannelPtr_E(0), nullptr);
+}
+
+TEST_F(RegisterDeviceTests, RejectsOutOfRangeAndNegativeIndexes) {
+  Supla::Channel channel;
+  ASSERT_EQ(Supla::RegisterDevice::getChannelCount(), 1);
+
+  for (int index : {-1, -2, 1}) {
+    EXPECT_EQ(Supla::RegisterDevice::getChannelPtr_D(index), nullptr);
+    EXPECT_EQ(Supla::RegisterDevice::getChannelPtr_E(index), nullptr);
+  }
+}
+
+TEST_F(RegisterDeviceTests, ReturnsNullWhenChannelListIsShorterThanCount) {
+  Supla::Channel channel;
+  Supla::RegisterDevice::addChannel(1);
+
+  ASSERT_EQ(Supla::RegisterDevice::getChannelCount(), 2);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelPtr_D(1), nullptr);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelPtr_E(1), nullptr);
 }
 
 }  // namespace

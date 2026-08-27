@@ -17,6 +17,48 @@ class EMForTest : public Supla::Sensor::ElectricityMeter {
   }
 };
 
+TEST(ElectricityMeterTests,
+     ClearingVoltagePhaseSequenceRefreshesExtendedValue) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  Supla::Sensor::ElectricityMeter em;
+  time.advance(1);
+
+  em.setVoltagePhaseSequence(true);
+  em.updateChannelValues();
+
+  auto extValue = em.getChannel()->getExtValue();
+  auto emExtValue = reinterpret_cast<TElectricityMeter_ExtendedValue_V3 *>(
+      extValue->value);
+  EXPECT_NE(emExtValue->measured_values & EM_VAR_VOLTAGE_PHASE_SEQUENCE, 0);
+
+  em.clearVoltagePhaseSequenceFlag();
+  em.updateChannelValues();
+
+  EXPECT_EQ(emExtValue->measured_values & EM_VAR_VOLTAGE_PHASE_SEQUENCE, 0);
+}
+
+TEST(ElectricityMeterTests,
+     ClearingCurrentPhaseSequenceRefreshesExtendedValue) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  Supla::Sensor::ElectricityMeter em;
+  time.advance(1);
+
+  em.setCurrentPhaseSequence(true);
+  em.updateChannelValues();
+
+  auto extValue = em.getChannel()->getExtValue();
+  auto emExtValue = reinterpret_cast<TElectricityMeter_ExtendedValue_V3 *>(
+      extValue->value);
+  EXPECT_NE(emExtValue->measured_values & EM_VAR_CURRENT_PHASE_SEQUENCE, 0);
+
+  em.clearCurrentPhaseSequenceFlag();
+  em.updateChannelValues();
+
+  EXPECT_EQ(emExtValue->measured_values & EM_VAR_CURRENT_PHASE_SEQUENCE, 0);
+}
+
 TEST(ElectricityMeterTests, SettersAndGetters) {
   Supla::Channel::resetToDefaults();
   SimpleTime time;

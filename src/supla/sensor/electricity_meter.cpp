@@ -360,12 +360,18 @@ void Supla::Sensor::ElectricityMeter::setCurrentPhaseSequence(bool clockwise) {
 }
 
 void Supla::Sensor::ElectricityMeter::clearVoltagePhaseSequenceFlag() {
+  if (emValue.measured_values & EM_VAR_VOLTAGE_PHASE_SEQUENCE) {
+    valueChanged = true;
+  }
   emValue.phase_sequence &= (~(1 << 0));
   emValue.m_count = 1;
   emValue.measured_values &= ~EM_VAR_VOLTAGE_PHASE_SEQUENCE;
 }
 
 void Supla::Sensor::ElectricityMeter::clearCurrentPhaseSequenceFlag() {
+  if (emValue.measured_values & EM_VAR_CURRENT_PHASE_SEQUENCE) {
+    valueChanged = true;
+  }
   emValue.phase_sequence &= (~(1 << 1));
   emValue.m_count = 1;
   emValue.measured_values &= ~EM_VAR_CURRENT_PHASE_SEQUENCE;

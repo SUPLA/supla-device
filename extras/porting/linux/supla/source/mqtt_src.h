@@ -10,8 +10,11 @@
 #include <string>
 #include <vector>
 
-#include "linux_mqtt_client.h"
 #include "source.h"
+
+namespace Supla {
+class LinuxMqttClient;
+}
 
 namespace Supla::Source {
 

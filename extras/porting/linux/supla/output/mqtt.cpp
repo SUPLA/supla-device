@@ -3,6 +3,7 @@
 
 #include "mqtt.h"
 
+#include <linux_mqtt_client.h>
 #include <supla/log_wrapper.h>
 
 #include <string>

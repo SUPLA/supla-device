@@ -8,10 +8,12 @@
 #include <vector>
 #include <string>
 
-#include "linux_mqtt_client.h"
 #include "output.h"
 
 namespace Supla {
+class LinuxYamlConfig;
+class LinuxMqttClient;
+
 namespace Output {
 class Mqtt : public Output {
  public:

@@ -1,4 +1,4 @@
-FROM ubuntu:25.10
+FROM ubuntu:26.04
 LABEL maintainer="Krzysztof Lewandowski <krzysiek@supla.org>"
 
 # Install required packages

@@ -18,6 +18,9 @@ class ClockConfigTests : public ::testing::Test {
   }
 
   void TearDown() override {
+    if (Supla::Clock::GetInstance()) {
+      delete Supla::Clock::GetInstance();
+    }
     Supla::Storage::SetConfigInstance(nullptr);
   }
 
@@ -39,4 +42,22 @@ TEST_F(ClockConfigTests,
   clock.onDeviceConfigChange(SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC);
 
   EXPECT_FALSE(clock.iterateConnected());
+}
+
+TEST_F(ClockConfigTests, ReplacingClockDoesNotDeleteOrUnregisterTheWrongOne) {
+  ASSERT_EQ(Supla::Clock::GetInstance(), nullptr);
+
+  Supla::Clock *clockB = nullptr;
+  {
+    Supla::Clock clockA;
+    EXPECT_EQ(Supla::Clock::GetInstance(), &clockA);
+
+    clockB = new Supla::Clock;
+    EXPECT_EQ(Supla::Clock::GetInstance(), clockB);
+  }
+
+  EXPECT_EQ(Supla::Clock::GetInstance(), clockB);
+
+  delete clockB;
+  EXPECT_EQ(Supla::Clock::GetInstance(), nullptr);
 }

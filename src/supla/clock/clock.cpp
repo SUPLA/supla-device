@@ -101,14 +101,13 @@ Clock* Clock::GetInstance() {
 }
 
 Clock::Clock() {
-  if (clockInstance) {
-    delete clockInstance;
-  }
   clockInstance = this;
 }
 
 Clock::~Clock() {
-  clockInstance = nullptr;
+  if (clockInstance == this) {
+    clockInstance = nullptr;
+  }
 }
 
 bool Clock::isReady() {

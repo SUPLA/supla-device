@@ -11,6 +11,7 @@
 #include <storage_mock.h>
 #include <string.h>
 #include <supla/control/virtual_relay.h>
+#include <supla/clock/clock.h>
 #include <supla/crc16.h>
 #include <supla/storage/state_wear_leveling_byte.h>
 #include <supla/storage/storage.h>
@@ -43,6 +44,15 @@ class InitSuccessfulConfigSimulator : public ConfigSimulator {
   bool init() override {
     initResult = true;
     return true;
+  }
+};
+
+class StorageStateWlByteClockCleanupTests : public ::testing::Test {
+ protected:
+  void TearDown() override {
+    if (Supla::Clock::GetInstance()) {
+      delete Supla::Clock::GetInstance();
+    }
   }
 };
 
@@ -1074,8 +1084,8 @@ TEST(StorageStateWlByteTests, rejectsMetadataWithAddressOverflow) {
   EXPECT_FALSE(Supla::Storage::IsStateStorageValid());
 }
 
-TEST(StorageStateWlByteTests,
-     SuplaDeviceBeginRebuildsInvalidMetadataWithVirtualRelayState) {
+TEST_F(StorageStateWlByteClockCleanupTests,
+       SuplaDeviceBeginRebuildsInvalidMetadataWithVirtualRelayState) {
   EXPECT_FALSE(Supla::Storage::Init());
 
   const uint32_t storageOffset = 0;

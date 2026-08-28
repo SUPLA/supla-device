@@ -3,12 +3,18 @@
 
 #include <gtest/gtest.h>
 #include <simple_time.h>
+#include <supla-common/proto.h>
 #include <supla/element.h>
 #include <supla/parser/parser.h>
 #include <supla/output/mqtt.h>
 #include <supla/source/mqtt_src.h>
 #include <supla/source/source.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
+#include <array>
+#include <fstream>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <string>
 #include <variant>
 #include <vector>
@@ -106,6 +112,60 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   }
 
   using Supla::LinuxYamlConfig::addRgbCctParsed;
+  using Supla::LinuxYamlConfig::saveGuidAuth;
+};
+
+class UmaskGuard {
+ public:
+  explicit UmaskGuard(mode_t mask) : originalMask(::umask(mask)) {
+  }
+
+  ~UmaskGuard() {
+    ::umask(originalMask);
+  }
+
+ private:
+  mode_t originalMask;
+};
+
+class Sd4linuxYamlCredentialTests : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    const auto directoryTemplate =
+        std::filesystem::temp_directory_path() /
+        ("supla_yaml_credentials_tests_" + std::to_string(getpid()) +
+         "_XXXXXX");
+    std::string writableDirectoryTemplate = directoryTemplate.string();
+    std::vector<char> writableDirectory(writableDirectoryTemplate.begin(),
+                                        writableDirectoryTemplate.end());
+    writableDirectory.push_back('\0');
+
+    ASSERT_NE(mkdtemp(writableDirectory.data()), nullptr);
+    tempDirectory = writableDirectory.data();
+  }
+
+  void TearDown() override {
+    if (tempDirectory.empty()) {
+      return;
+    }
+
+    std::error_code error;
+    std::filesystem::remove_all(tempDirectory, error);
+    EXPECT_FALSE(error) << error.message();
+  }
+
+  static bool saveCredentials(const std::filesystem::path& stateDirectory) {
+    TestLinuxYamlConfig config;
+    std::array<char, SUPLA_GUID_SIZE> guid;
+    std::array<char, SUPLA_AUTHKEY_SIZE> authkey;
+    guid.fill(0x11);
+    authkey.fill(0x22);
+
+    return config.setGUID(guid.data()) && config.setAuthKey(authkey.data()) &&
+           config.saveGuidAuth(stateDirectory.string());
+  }
+
+  std::filesystem::path tempDirectory;
 };
 
 Supla::Control::RgbCctParsed* getCreatedRgb(Supla::Element* previousElement) {
@@ -124,6 +184,63 @@ void deleteCreatedElement(Supla::Element* previousElement) {
 }
 
 }  // namespace
+
+TEST_F(Sd4linuxYamlCredentialTests,
+       SavesCredentialsWithOwnerOnlyPermissionsRegardlessOfUmask) {
+  UmaskGuard umaskGuard(0022);
+  const auto stateDirectory = tempDirectory / "state";
+  const auto credentialPath = stateDirectory / "guid_auth.yaml";
+
+  ASSERT_TRUE(saveCredentials(stateDirectory));
+
+  struct stat fileStat = {};
+  ASSERT_EQ(::stat(credentialPath.c_str(), &fileStat), 0);
+  EXPECT_EQ(fileStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO), 0600);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests,
+       TightensPermissionsOfExistingCredentialFileWhenRewritten) {
+  const auto stateDirectory = tempDirectory / "state";
+  const auto credentialPath = stateDirectory / "guid_auth.yaml";
+  ASSERT_TRUE(std::filesystem::create_directories(stateDirectory));
+
+  std::ofstream existingCredentials(credentialPath);
+  ASSERT_TRUE(existingCredentials.is_open());
+  existingCredentials << "old credentials";
+  existingCredentials.close();
+  ASSERT_EQ(::chmod(credentialPath.c_str(), 0644), 0);
+
+  ASSERT_TRUE(saveCredentials(stateDirectory));
+
+  struct stat fileStat = {};
+  ASSERT_EQ(::stat(credentialPath.c_str(), &fileStat), 0);
+  EXPECT_EQ(fileStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO), 0600);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests,
+       RejectsCredentialPathSymlinkWithoutModifyingItsTarget) {
+  const auto stateDirectory = tempDirectory / "state";
+  const auto credentialPath = stateDirectory / "guid_auth.yaml";
+  const auto targetPath = tempDirectory / "credential-target";
+  ASSERT_TRUE(std::filesystem::create_directories(stateDirectory));
+
+  std::ofstream target(targetPath);
+  ASSERT_TRUE(target.is_open());
+  target << "unchanged";
+  target.close();
+  ASSERT_EQ(::symlink(targetPath.c_str(), credentialPath.c_str()), 0);
+
+  EXPECT_FALSE(saveCredentials(stateDirectory));
+
+  struct stat linkStat = {};
+  ASSERT_EQ(::lstat(credentialPath.c_str(), &linkStat), 0);
+  EXPECT_TRUE(S_ISLNK(linkStat.st_mode));
+
+  std::ifstream targetAfterSave(targetPath);
+  std::string targetContents;
+  std::getline(targetAfterSave, targetContents);
+  EXPECT_EQ(targetContents, "unchanged");
+}
 
 TEST(Sd4linuxYamlConfigTests, AllowsRgbCctWithoutStateAndRejectsMissingParser) {
   TestLinuxYamlConfig config;

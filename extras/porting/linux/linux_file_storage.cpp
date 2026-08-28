@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "linux_file_storage.h"
+#include "linux_secure_file.h"
 
 #include <supla/log_wrapper.h>
 
@@ -75,18 +76,13 @@ int LinuxFileStorage::writeStorage(unsigned int offset,
 
 void LinuxFileStorage::commit() {
   if (dataChanged) {
-    std::ofstream stateFile(path + "/state.bin",
-        std::ofstream::out | std::ios::binary);
-
-    for (unsigned int i = 0; i < reservedSize; i++) {
-      stateFile << data[i];
+    if (!Supla::Linux::writeSecureFile(
+            path + "/state.bin", data, reservedSize, false)) {
+      SUPLA_LOG_ERROR("Storage: failed to write state file");
     }
-
-    stateFile.close();
     // save to a file
   }
   dataChanged = false;
 }
 
 }  // namespace Supla
-

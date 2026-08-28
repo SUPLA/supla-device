@@ -145,7 +145,7 @@ You can specify your own config file:
 
     ./supla-device-linux -c /path/to/your/file/supla-cfg.yml
 
-## GUID, AUTHKEY, last_state.txt
+## GUID, AUTHKEY, last_state.txt, state.bin
 
 GUID and AUTHKEY is automatically generated (if missing) and stored in location:
 `var/lib/supla-device/guid_auth.yaml`. Directory may be modified, but file
@@ -155,6 +155,9 @@ access to the `var/lib/supla-device` location. I.e. by calling:
 
     sudo mkdir -p /var/lib/supla-device
     sudo chown supla_user /var/lib/supla-device
+    sudo chmod 700 /var/lib/supla-device
+
+The application creates these state files with owner-only permissions (`0600`).
 
 Adjust "supla_user" to your user name.
 
@@ -210,7 +213,7 @@ Example:
 #### Parameter `state_files_path`
 
 Defines location where supla-device will read/write GUID, AUTHKEY and
-`last_state.txt`.
+`last_state.txt` and `state.bin`.
 Parameter is optional. Default value is: `var/lib/supla-device` (relative path).
 Allowed values: any valid relative or absolute path where supla-device will have
 proper rights to write and read files.
@@ -1363,6 +1366,7 @@ Create directory for GUID and state files with proper access rights:
 
     sudo mkdir -p /var/lib/supla-device
     sudo chown supla_user_name /var/lib/supla-device
+    sudo chmod 700 /var/lib/supla-device
 
 Prepare service file: `/etc/systemd/system/supla-device.service`:
 
@@ -1372,6 +1376,7 @@ Prepare service file: `/etc/systemd/system/supla-device.service`:
 
     [Service]
     User=supla_user_name
+    UMask=0077
     ExecStart=/home/supla/supla-device/extras/examples/linux/build/supla-device-linux -s
 
     [Install]

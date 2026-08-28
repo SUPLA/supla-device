@@ -58,11 +58,13 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include "linux_channel_factory.h"
 #include "linux_extension_init.h"
+#include "linux_secure_file.h"
 #include "supla/control/custom_hvac.h"
 #include "supla/control/hvac_parsed.h"
 #include "supla/sensor/sensor_parsed.h"
@@ -2355,10 +2357,12 @@ bool Supla::LinuxYamlConfig::saveGuidAuth(const std::string& path) {
   outputYaml[Supla::GuidKey] = guid;
   outputYaml[Supla::AuthKeyKey] = authkey;
 
-  std::ofstream out(path + Supla::GuidAuthFileName);
-  out << outputYaml;
-  out.close();
-  if (out.fail()) {
+  std::ostringstream output;
+  output << outputYaml;
+  const std::string outputString = output.str();
+  const std::string filePath = path + Supla::GuidAuthFileName;
+  if (!Supla::Linux::writeSecureFile(
+          filePath, outputString.data(), outputString.size(), false)) {
     SUPLA_LOG_ERROR("Config: failed to write guid/authkey to file");
     return false;
   }

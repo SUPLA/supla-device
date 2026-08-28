@@ -133,6 +133,9 @@ list(REMOVE_ITEM DOUBLE_SRC ${ESP_IDF_SPI_DOUBLE_SRC})
 
 set(SD4LINUX_PORT_SRC
   ../porting/linux/linux_yaml_config.cpp
+  ../porting/linux/linux_secure_file.cpp
+  ../porting/linux/linux_file_state_logger.cpp
+  ../porting/linux/linux_file_storage.cpp
   ../porting/linux/linux_channel_factory.cpp
   ../porting/linux/supla/control/cmd_relay.cpp
   ../porting/linux/supla/control/control_payload.cpp

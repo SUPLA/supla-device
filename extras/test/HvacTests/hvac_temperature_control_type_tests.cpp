@@ -247,3 +247,54 @@ TEST_F(HvacTempControlTypeF, auxControlTypeTest) {
   t2->setValue(30.5);
   moveTime(50);
 }
+
+TEST_F(HvacTempControlTypeF, serverConfigValidatesTemperatureControlType) {
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(_)).Times(AtLeast(1));
+
+  TSD_ChannelConfig configFromServer = {};
+  configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+  configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC);
+
+  // The first server config selects the channel function. The next config is
+  // the one whose HVAC payload is validated and applied.
+  ASSERT_EQ(hvac->handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  auto *hvacConfig =
+      reinterpret_cast<TChannelConfig_HVAC *>(&configFromServer.Config);
+  hvacConfig->MainThermometerChannelNo = t1->getChannelNumber();
+  hvacConfig->AuxThermometerType =
+      SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET;
+  hvacConfig->Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
+  hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+
+  const uint8_t validTypes[] = {
+      0,
+      SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_ROOM_TEMPERATURE,
+      SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE};
+  for (const auto type : validTypes) {
+    hvac->setTemperatureControlType(type);
+    hvacConfig->TemperatureControlType = type;
+
+    EXPECT_EQ(hvac->handleChannelConfig(&configFromServer),
+              SUPLA_CONFIG_RESULT_TRUE);
+    TChannelConfig_HVAC liveConfig = {};
+    hvac->copyFullChannelConfigTo(&liveConfig);
+    EXPECT_EQ(liveConfig.TemperatureControlType, type);
+    hvac->clearChannelConfigChangedFlag();
+  }
+
+  TChannelConfig_HVAC liveConfig = {};
+  hvac->copyFullChannelConfigTo(&liveConfig);
+  const auto previouslyValidType = liveConfig.TemperatureControlType;
+  const uint8_t invalidTypes[] = {3, 255};
+  for (const auto type : invalidTypes) {
+    hvacConfig->TemperatureControlType = type;
+
+    EXPECT_EQ(hvac->handleChannelConfig(&configFromServer),
+              SUPLA_CONFIG_RESULT_DATA_ERROR);
+    hvac->copyFullChannelConfigTo(&liveConfig);
+    EXPECT_EQ(liveConfig.TemperatureControlType, previouslyValidType);
+  }
+}

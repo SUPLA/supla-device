@@ -1210,6 +1210,14 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
     return false;
   }
 
+  if (newConfig->TemperatureControlType >
+      SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE) {
+    SUPLA_LOG_WARNING("HVAC[%d]: invalid temperature control type %d",
+                      channel.getChannelNumber(),
+                      newConfig->TemperatureControlType);
+    return false;
+  }
+
   // heater cooler thermometer is optional, but if set, it has to be set to a
   // local thermometer
   if (newConfig->AuxThermometerType !=

@@ -498,6 +498,15 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
                  // result in unexpected "turn on after duration ms received in
                  // turnOff message"
     } else {
+      // Cyclic-mode semantics are intentional here:
+      //
+      // OFF with DurationMS > 0 configures/starts the OFF phase of the cycle.
+      // After DurationMS expires, the relay is expected to turn ON again.
+      //
+      // OFF with DurationMS == 0 is the explicit "stop cycle" command and
+      // leaves the relay OFF because no timer is armed.
+      //
+      // Do not replace this with turnOff(0) for all cyclic-mode OFF commands.
       turnOff(newValue->DurationMS);
     }
     result = 1;

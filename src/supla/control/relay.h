@@ -180,6 +180,31 @@ class Relay : public ChannelElement, public ActionHandler {
 
   bool isFullyInitialized() const;
 
+  /**
+   * Enable automatic cyclic relay operation.
+   *
+   * In cyclic mode the relay alternates between:
+   *
+   *   ON  for turnOnTimeMs
+   *   OFF for turnOffTimeMs
+   *
+   * Server commands use DurationMS as follows:
+   *
+   *   ON,  DurationMS == 0  - start/resume the cycle using configured ON time
+   *   ON,  DurationMS > 0   - update ON phase duration and start the cycle
+   *   OFF, DurationMS > 0   - update OFF phase duration and enter the OFF phase;
+   *                           the relay will turn ON again after that duration
+   *   OFF, DurationMS == 0  - stop cyclic operation and remain OFF
+   *
+   * Therefore, an OFF command with a non-zero DurationMS intentionally does
+   * NOT stop cyclic operation. Only OFF with DurationMS == 0 stops the running
+   * cycle.
+   *
+   * Disabling cyclic mode completely requires disableCyclicMode().
+   *
+   * Cyclic mode is not supported for timed functions (staircase timer) or
+   * impulse functions (gates, doors and similar functions).
+   */
   void enableCyclicMode(uint32_t turnOnTimeMs, uint32_t turnOffTimeMs);
   void disableCyclicMode();
   bool isCyclicMode() const;

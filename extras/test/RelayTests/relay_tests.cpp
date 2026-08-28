@@ -1184,6 +1184,49 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 0);
 }
 
+TEST_F(RelayFixture, CyclicModeServerOffZeroStopsButOffWithDurationContinues) {
+  const int gpio = 1;
+  Supla::Control::Relay relay(gpio);
+  int gpioValue = 0;
+
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
+
+  relay.enableCyclicMode(1000, 5000);
+  relay.onInit();
+
+  TSD_SuplaChannelNewValue newValue = {};
+  newValue.ChannelNumber = relay.getChannelNumber();
+  newValue.value[0] = 0;
+  newValue.DurationMS = 5000;
+
+  EXPECT_EQ(1, relay.handleNewValueFromServer(&newValue));
+  EXPECT_EQ(0, gpioValue);
+
+  time.advance(4999);
+  relay.iterateAlways();
+  EXPECT_EQ(0, gpioValue);
+
+  time.advance(1);
+  relay.iterateAlways();
+  EXPECT_EQ(0, gpioValue);
+
+  time.advance(1);
+  relay.iterateAlways();
+  EXPECT_EQ(1, gpioValue);
+
+  newValue.DurationMS = 0;
+  EXPECT_EQ(1, relay.handleNewValueFromServer(&newValue));
+  EXPECT_EQ(0, gpioValue);
+
+  time.advance(10000);
+  relay.iterateAlways();
+  EXPECT_EQ(0, gpioValue);
+}
+
 TEST_F(RelayFixture, CountdownTimerRemainingConditionFiresOnceOnThreshold) {
   int gpio = 1;
   int gpioValue = 0;

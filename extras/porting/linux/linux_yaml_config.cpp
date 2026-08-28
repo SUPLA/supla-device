@@ -1390,6 +1390,12 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
 bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch,
                                            int channelNumber,
                                            Payload::Payload* payload) {
+  if (payload == nullptr) {
+    SUPLA_LOG_ERROR("Channel[%d] config: CustomHvac requires a valid payload",
+                    channelNumber);
+    return false;
+  }
+
   SUPLA_LOG_INFO("Channel[%d] config: adding CustomHvac", channelNumber);
   int mainThermometerChannelNo = -1;
   int auxThermometerChannelNo = -1;

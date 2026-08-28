@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "linux_yaml_config.h"
+#include "supla/control/custom_hvac.h"
 #include "supla/control/rgbcct_parsed.h"
 
 namespace Supla::Linux {
@@ -106,12 +107,32 @@ class FakeYamlParser : public Supla::Parser::Parser {
   }
 };
 
+class FakePayload : public Supla::Payload::Payload {
+ public:
+  FakePayload() : Supla::Payload::Payload(nullptr) {
+  }
+
+  bool isBasedOnIndex() override {
+    return false;
+  }
+
+  void turnOn(const std::string&,
+              std::variant<int, bool, std::string>) override {
+  }
+
+  void turnOff(const std::string&,
+               std::variant<int, bool, std::string>) override {
+  }
+};
+
 class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
  public:
   TestLinuxYamlConfig() : Supla::LinuxYamlConfig("") {
   }
 
   using Supla::LinuxYamlConfig::addRgbCctParsed;
+  using Supla::LinuxYamlConfig::addCustomHvac;
+  using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
 };
 
@@ -294,4 +315,32 @@ TEST(Sd4linuxYamlConfigTests,
   EXPECT_TRUE(rgb->isOffline());
 
   deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsCustomHvacWithoutPayload) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+  auto channel = YAML::Load(
+      "type: CustomHvac\n"
+      "main_thermometer_channel_no: 1\n");
+
+  EXPECT_FALSE(config.parseChannel(channel, 0));
+  EXPECT_EQ(Supla::Element::last(), previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, AcceptsCustomHvacWithPayload) {
+  TestLinuxYamlConfig config;
+  FakePayload payload;
+  auto previousElement = Supla::Element::last();
+  auto channel = YAML::Load(
+      "type: CustomHvac\n"
+      "main_thermometer_channel_no: 1\n");
+
+  EXPECT_TRUE(config.addCustomHvac(channel, 0, &payload));
+
+  auto createdElement = Supla::Element::last();
+  auto customHvac = dynamic_cast<Supla::Control::CustomHvac*>(createdElement);
+  ASSERT_NE(createdElement, previousElement);
+  ASSERT_NE(customHvac, nullptr);
+  delete createdElement;
 }

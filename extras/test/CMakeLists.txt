@@ -101,6 +101,7 @@ file(GLOB TEST_SRC CONFIGURE_DEPENDS
   GpmTests/*.cpp
   SwUpdateTests/*.cpp
   ModbusTests/*.cpp
+  MCP23008Tests/*.cpp
   SupletTests/*.cpp
   DebugTests/*.cpp
   SpiTests/*.cpp
@@ -119,9 +120,14 @@ list(APPEND TEST_SRC ../../src/supla-common/proto_check.cpp)
 list(APPEND TEST_SRC ../../src/supla/storage/littlefs_config.cpp)
 list(APPEND TEST_SRC
   ../esp-idf/supla-interrupt-ac-to-dc-io/interrupt_ac_to_dc_io.cpp
+  ../esp-idf/supla-mcp23008/supla_mcp23008.cpp
   ../porting/esp-idf/esp_idf_ota.cpp
   ../esp-idf/supla-spi-driver/esp_spi_driver.cpp
   ../../src/supla/sensor/HC_SR04.cpp)
+
+set_source_files_properties(
+  ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-mcp23008/supla_mcp23008.cpp
+  PROPERTIES COMPILE_OPTIONS "-Wno-unused-parameter")
 
 file(GLOB DOUBLE_SRC CONFIGURE_DEPENDS doubles/*.cpp)
 set(ESP_IDF_OTA_DOUBLE_SRC
@@ -207,12 +213,14 @@ add_executable(sd4linuxtests
   )
 
 target_include_directories(supladevicetests BEFORE PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/MCP23008Tests
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf
 )
 
 target_include_directories(supladevicetests PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles
   ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-interrupt-ac-to-dc-io
+  ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-mcp23008
   ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-spi-driver
   ${CMAKE_CURRENT_SOURCE_DIR}/../porting/esp-idf
   ${cjson_SOURCE_DIR}

@@ -49,6 +49,12 @@ void MCP23008::customPinMode(int channelNumber, uint8_t pin, uint8_t mode) {
 }
 
 int MCP23008::customDigitalRead(int channelNumber, uint8_t pin) {
+  if (pin > 7) {
+    return 0;
+  }
+  if (handle == nullptr) {
+    return 0;
+  }
   readState();
   return (state & (1 << pin)) > 0 ? 1 : 0;
 }

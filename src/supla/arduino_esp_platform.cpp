@@ -22,7 +22,9 @@ class ArduinoEspClient : public Client {
     if (wifiClient) {
       wifiClient->stop();
       delete wifiClient;
+      wifiClient = nullptr;
     }
+    clientSec = nullptr;
   }
 
   int available() override {
@@ -60,6 +62,10 @@ class ArduinoEspClient : public Client {
 
     if (sslEnabled) {
       if (clientSec == nullptr) {
+        if (wifiClient != nullptr) {
+          delete wifiClient;
+          wifiClient = nullptr;
+        }
         clientSec = new WiFiClientSecure();
       }
       wifiClient = clientSec;
@@ -99,6 +105,11 @@ class ArduinoEspClient : public Client {
       }
 #endif
     } else {
+      if (clientSec != nullptr) {
+        delete clientSec;
+        clientSec = nullptr;
+        wifiClient = nullptr;
+      }
       if (wifiClient == nullptr) {
         wifiClient = new WiFiClient();
       }

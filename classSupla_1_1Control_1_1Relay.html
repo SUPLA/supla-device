@@ -333,8 +333,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setTurnOffWhenEmptyAg
 <tr class="memitem:aeb054d1a008da7a700adf56ec1dfbf2c" id="r_aeb054d1a008da7a700adf56ec1dfbf2c"><td class="memItemLeft" align="right" valign="top"><a id="aeb054d1a008da7a700adf56ec1dfbf2c" name="aeb054d1a008da7a700adf56ec1dfbf2c"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isFullyInitialized</b> () const</td></tr>
 <tr class="separator:aeb054d1a008da7a700adf56ec1dfbf2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44e51bff93e90a830a974c3b698c1642" id="r_a44e51bff93e90a830a974c3b698c1642"><td class="memItemLeft" align="right" valign="top"><a id="a44e51bff93e90a830a974c3b698c1642" name="a44e51bff93e90a830a974c3b698c1642"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>enableCyclicMode</b> (uint32_t turnOnTimeMs, uint32_t turnOffTimeMs)</td></tr>
+<tr class="memitem:a44e51bff93e90a830a974c3b698c1642" id="r_a44e51bff93e90a830a974c3b698c1642"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a44e51bff93e90a830a974c3b698c1642">enableCyclicMode</a> (uint32_t turnOnTimeMs, uint32_t turnOffTimeMs)</td></tr>
+<tr class="memdesc:a44e51bff93e90a830a974c3b698c1642"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable automatic cyclic relay operation.  <br /></td></tr>
 <tr class="separator:a44e51bff93e90a830a974c3b698c1642"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20c74a1518c890f90e447114ba5ffaa2" id="r_a20c74a1518c890f90e447114ba5ffaa2"><td class="memItemLeft" align="right" valign="top"><a id="a20c74a1518c890f90e447114ba5ffaa2" name="a20c74a1518c890f90e447114ba5ffaa2"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>disableCyclicMode</b> ()</td></tr>
@@ -761,6 +761,36 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="a44e51bff93e90a830a974c3b698c1642" name="a44e51bff93e90a830a974c3b698c1642"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44e51bff93e90a830a974c3b698c1642">&#9670;&#160;</a></span>enableCyclicMode()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Relay::enableCyclicMode </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>turnOnTimeMs</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>turnOffTimeMs</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Enable automatic cyclic relay operation. </p>
+<p>In cyclic mode the relay alternates between:</p>
+<p>ON for turnOnTimeMs OFF for turnOffTimeMs</p>
+<p>Server commands use DurationMS as follows:</p>
+<p>ON, DurationMS == 0 - start/resume the cycle using configured ON time ON, DurationMS &gt; 0 - update ON phase duration and start the cycle OFF, DurationMS &gt; 0 - update OFF phase duration and enter the OFF phase; the relay will turn ON again after that duration OFF, DurationMS == 0 - stop cyclic operation and remain OFF</p>
+<p>Therefore, an OFF command with a non-zero DurationMS intentionally does NOT stop cyclic operation. Only OFF with DurationMS == 0 stops the running cycle.</p>
+<p>Disabling cyclic mode completely requires disableCyclicMode().</p>
+<p>Cyclic mode is not supported for timed functions (staircase timer) or impulse functions (gates, doors and similar functions). </p>
 
 </div>
 </div>

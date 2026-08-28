@@ -549,7 +549,7 @@ void Relay::turnOn(_supla_int_t duration) {
   Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
 }
 
-void Relay::applyDuration(int duration, bool turnOn) {
+void Relay::applyDuration(int32_t duration, bool turnOn) {
   if (isCyclicMode() && duration > 0) {
     if (turnOn) {
       storedTurnOnDurationMs = duration;

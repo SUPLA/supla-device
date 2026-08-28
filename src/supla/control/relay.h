@@ -220,7 +220,7 @@ class Relay : public ChannelElement, public ActionHandler {
     ButtonListElement *next = nullptr;
   };
 
-  void applyDuration(int durationMs, bool turnOn);
+  void applyDuration(int32_t durationMs, bool turnOn);
 
   virtual void setNewChannelValue(bool value);
 

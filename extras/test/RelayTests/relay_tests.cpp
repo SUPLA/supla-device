@@ -1184,6 +1184,41 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 0);
 }
 
+TEST_F(RelayFixture, TimerDurationKeepsInt32Range) {
+  const int gpio = 1;
+  Supla::Control::Relay relay(gpio);
+  int gpioValue = 0;
+
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
+
+  relay.onInit();
+
+  const int32_t durations[] = {0, 1000, 32767, 32768, 60000, 120000};
+  for (int32_t duration : durations) {
+    relay.turnOn(duration);
+    EXPECT_EQ(gpioValue, 1);
+
+    if (duration == 0) {
+      time.advance(120001);
+      relay.iterateAlways();
+      EXPECT_EQ(gpioValue, 1);
+      continue;
+    }
+
+    time.advance(duration);
+    relay.iterateAlways();
+    EXPECT_EQ(gpioValue, 1);
+
+    time.advance(1);
+    relay.iterateAlways();
+    EXPECT_EQ(gpioValue, 0);
+  }
+}
+
 TEST_F(RelayFixture, CyclicModeServerOffZeroStopsButOffWithDurationContinues) {
   const int gpio = 1;
   Supla::Control::Relay relay(gpio);

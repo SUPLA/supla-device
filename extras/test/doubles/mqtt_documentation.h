@@ -5,10 +5,11 @@
 #define EXTRAS_TEST_DOUBLES_MQTT_DOCUMENTATION_H_
 
 #include <map>
-#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <string>
 #include <vector>
+
+#include <nlohmann/json_fwd.hpp>
 
 struct MqttCapturedOperation {
   enum class Type { Publish, Subscribe };

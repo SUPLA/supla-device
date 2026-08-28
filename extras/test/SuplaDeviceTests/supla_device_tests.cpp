@@ -45,6 +45,9 @@ class SuplaDeviceTests : public ::testing::Test {
     Supla::Channel::resetToDefaults();
   }
   virtual void TearDown() {
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
+    }
     setDeviceSoftwareResetSupported(true);
     Supla::Channel::resetToDefaults();
   }

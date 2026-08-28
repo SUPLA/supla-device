@@ -25,7 +25,7 @@ using ::testing::StrEq;
 
 class HvacTempControlTypeF : public ::testing::Test {
  protected:
-  ConfigMock cfg;
+  ::testing::NiceMock<ConfigMock> cfg;
   StorageMock storage;
   OutputSimulatorWithCheck primaryOutput;
   OutputSimulatorWithCheck secondaryOutput;

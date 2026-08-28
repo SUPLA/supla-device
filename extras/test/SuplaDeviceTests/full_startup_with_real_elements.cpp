@@ -51,6 +51,9 @@ class FullStartupWithRealElements : public ::testing::Test {
         .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   }
   virtual void TearDown() {
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
+    }
     Supla::Channel::resetToDefaults();
   }
 };
@@ -279,4 +282,3 @@ TEST_F(FullStartupWithRealElements, SleepingThermometerAndBinarySensor) {
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
 }
-

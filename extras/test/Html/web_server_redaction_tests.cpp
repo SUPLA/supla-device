@@ -3,9 +3,9 @@
 
 #include <gtest/gtest.h>
 
-#include <cstring>
-
 #include <supla/network/web_server.h>
+
+#include <cstring>
 
 TEST(WebServerRedactionTests, MasksSecretFieldsWithLength) {
   char redacted[Supla::REDACTED_LOG_VALUE_BUFFER_SIZE] = {};

@@ -5,9 +5,9 @@
 
 #include <gtest/gtest.h>
 
-#include <string>
-
 #include <supla/device/security_logger.h>
+
+#include <string>
 
 extern "C" const char *supla_test_get_last_log();
 extern "C" void supla_test_clear_last_log();

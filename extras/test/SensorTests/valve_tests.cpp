@@ -4,13 +4,15 @@
 #include <config_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <cstring>
 #include <supla/control/valve_base.h>
 #include <supla/control/virtual_valve.h>
 #include <supla/storage/storage.h>
 #include <simple_time.h>
 #include <arduino_mock.h>
 #include <supla/events.h>
+
+#include <cstring>
+
 #include "supla/sensor/virtual_binary.h"
 
 using ::testing::AtLeast;

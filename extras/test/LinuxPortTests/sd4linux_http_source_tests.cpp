@@ -3,6 +3,9 @@
 
 #include <gtest/gtest.h>
 
+#include <simple_time.h>
+#include <supla/source/http.h>
+
 #include <chrono>
 #include <cstdio>
 #include <cstdint>
@@ -14,9 +17,6 @@
 #include <thread>
 #include <utility>
 #include <vector>
-
-#include <simple_time.h>
-#include <supla/source/http.h>
 
 namespace {
 

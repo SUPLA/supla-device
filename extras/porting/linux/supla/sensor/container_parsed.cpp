@@ -14,7 +14,7 @@ ContainerParsed::ContainerParsed(Supla::Parser::Parser *parser)
 
 
 void ContainerParsed::onInit() {
-  channel.setNewValue(readNewValue());
+  channel.setContainerFillValue(readNewValue());
 }
 
 int ContainerParsed::readNewValue() {
@@ -36,4 +36,3 @@ int ContainerParsed::readNewValue() {
   }
   return value;
 }
-

@@ -3,16 +3,19 @@
 
 #include <gtest/gtest.h>
 
-#include <cmath>
-#include <cstdint>
-#include <string>
-#include <variant>
-
 #include <simple_time.h>
 #include <supla/parser/json.h>
 #include <supla/sensor/binary_parsed.h>
+#include <supla/sensor/container_parsed.h>
 #include <supla/sensor/impulse_counter_parsed.h>
 #include <supla/source/source.h>
+
+#include <cmath>
+#include <cstdint>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace {
 
@@ -61,6 +64,11 @@ class TestImpulseCounterParsed : public Supla::Sensor::ImpulseCounterParsed {
     EXPECT_EQ(size, sizeof(TChannelConfig_ImpulseCounter));
     return config;
   }
+};
+
+union RawContainerValue {
+  int8_t raw[SUPLA_CHANNELVALUE_SIZE];
+  TContainerChannel_Value container;
 };
 
 }  // namespace
@@ -212,4 +220,76 @@ TEST_F(Sd4linuxJsonParserTests, ImpulseCounterRejectsNanStringValue) {
 
   EXPECT_FALSE(parser.isValid());
   EXPECT_EQ(sensor.getChannel()->getValueInt64(), 0u);
+}
+
+TEST_F(Sd4linuxJsonParserTests,
+       ContainerParsedInitialLevelUsesContainerValueEncoding) {
+  SimpleTime time;
+  for (const auto &[parsedLevel, expectedLevel] :
+       std::vector<std::pair<int, int>>{{0, 0}, {50, 50}, {100, 100}}) {
+    FakeJsonSource source;
+    source.content = "{\"level\":" + std::to_string(parsedLevel) + "}";
+    Supla::Parser::Json parser(&source);
+    Supla::Sensor::ContainerParsed sensor(&parser);
+    sensor.setMapping(Supla::Parser::Level, "level");
+
+    sensor.onInit();
+
+    RawContainerValue rawValue = {};
+    sensor.getChannel()->fillRawValue(rawValue.raw);
+    EXPECT_EQ(sensor.getChannel()->getContainerFillValue(), expectedLevel);
+    EXPECT_EQ(rawValue.container.level, expectedLevel + 1);
+    EXPECT_EQ(rawValue.container.flags, 0);
+  }
+}
+
+TEST_F(Sd4linuxJsonParserTests,
+       ContainerParsedInitialInvalidOrUnavailableLevelKeepsInvalidValue) {
+  SimpleTime time;
+  for (int parsedLevel : {-1, 101}) {
+    FakeJsonSource source;
+    source.content = "{\"level\":" + std::to_string(parsedLevel) + "}";
+    Supla::Parser::Json parser(&source);
+    Supla::Sensor::ContainerParsed sensor(&parser);
+    sensor.setMapping(Supla::Parser::Level, "level");
+
+    sensor.onInit();
+
+    RawContainerValue rawValue = {};
+    sensor.getChannel()->fillRawValue(rawValue.raw);
+    EXPECT_EQ(sensor.getChannel()->getContainerFillValue(), -1);
+    EXPECT_EQ(rawValue.container.level, 0);
+    EXPECT_EQ(rawValue.container.flags, 0);
+  }
+}
+
+TEST_F(Sd4linuxJsonParserTests,
+       ContainerParsedInitialLevelPreservesContainerFlags) {
+  SimpleTime time;
+  FakeJsonSource source;
+  source.content = R"({"level":50})";
+  Supla::Parser::Json parser(&source);
+  Supla::Sensor::ContainerParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::Level, "level");
+
+  auto channel = sensor.getChannel();
+  channel->setContainerWarning(true);
+  channel->setContainerAlarm(true);
+  channel->setContainerInvalidSensorState(true);
+  channel->setContainerSoundAlarmOn(true);
+
+  sensor.onInit();
+
+  RawContainerValue rawValue = {};
+  channel->fillRawValue(rawValue.raw);
+  EXPECT_EQ(channel->getContainerFillValue(), 50);
+  EXPECT_EQ(rawValue.container.level, 51);
+  EXPECT_EQ(rawValue.container.flags,
+            CONTAINER_FLAG_WARNING_LEVEL | CONTAINER_FLAG_ALARM_LEVEL |
+                CONTAINER_FLAG_INVALID_SENSOR_STATE |
+                CONTAINER_FLAG_SOUND_ALARM_ON);
+  EXPECT_TRUE(channel->isContainerWarningActive());
+  EXPECT_TRUE(channel->isContainerAlarmActive());
+  EXPECT_TRUE(channel->isContainerInvalidSensorStateActive());
+  EXPECT_TRUE(channel->isContainerSoundAlarmOn());
 }

@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <arduino_mock.h>
-#include <array>
 #include <gtest/gtest.h>
 #include <supla/io.h>
 #include <supla_io_mock.h>
+
+#include <array>
 
 namespace {
 constexpr uint8_t ExpectedDefaultAnalogWriteResolutionBits() {

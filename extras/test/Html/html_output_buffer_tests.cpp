@@ -3,10 +3,10 @@
 
 #include <gtest/gtest.h>
 
+#include <supla/network/html_output_buffer.h>
+
 #include <string>
 #include <vector>
-
-#include <supla/network/html_output_buffer.h>
 
 namespace {
 

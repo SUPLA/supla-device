@@ -4,13 +4,14 @@
 #include <gtest/gtest.h>
 #include <stdint.h>
 #include <string.h>
-#include <map>
-#include <string>
-#include <vector>
 #include <supla/channels/channel.h>
 #include <supla/storage/config.h>
 #include <supla/suplet/assignment_applier.h>
 #include <supla/suplet/thermometer_group.h>
+
+#include <map>
+#include <string>
+#include <vector>
 
 namespace {
 

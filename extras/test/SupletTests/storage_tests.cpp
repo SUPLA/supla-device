@@ -5,13 +5,14 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <supla/storage/config.h>
+#include <supla/storage/key_value.h>
+#include <supla/suplet/storage.h>
+
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
-#include <supla/storage/config.h>
-#include <supla/storage/key_value.h>
-#include <supla/suplet/storage.h>
 
 namespace {
 

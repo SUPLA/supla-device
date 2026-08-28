@@ -4,8 +4,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <array>
-
 #include <SuplaDevice.h>
 #include <supla/clock/clock.h>
 #include <supla/device/factory_test.h>
@@ -16,6 +14,8 @@
 
 #include <config_mock.h>
 #include <simple_time.h>
+
+#include <array>
 
 class SecureConfigMock : public ConfigMock {
  public:

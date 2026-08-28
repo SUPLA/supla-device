@@ -3,12 +3,13 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <vector>
 #include <supla/sensor/container.h>
 #include <simple_time.h>
 #include <arduino_mock.h>
 #include <supla/events.h>
 #include <supla/sensor/virtual_binary.h>
+
+#include <vector>
 
 class ActionHandlerMock : public Supla::ActionHandler {
  public:

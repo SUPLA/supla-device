@@ -23,12 +23,13 @@
 
 #include <cstring>
 #include <limits>
-#include <nlohmann/json.hpp>
 #include <optional>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <nlohmann/json.hpp>
 
 #include "../doubles/mqtt_mock.h"
 

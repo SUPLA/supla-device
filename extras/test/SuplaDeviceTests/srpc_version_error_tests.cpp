@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <stdint.h>
-#include <cstring>
 
 #include <SuplaDevice.h>
 #include <gmock/gmock.h>
@@ -12,6 +11,8 @@
 #include <srpc_mock.h>
 #include <supla/device/register_device.h>
 #include <supla/protocol/supla_srpc.h>
+
+#include <cstring>
 
 using ::testing::_;
 using ::testing::AnyNumber;

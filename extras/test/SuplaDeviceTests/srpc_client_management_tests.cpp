@@ -3,16 +3,16 @@
 
 #include <stdint.h>
 
-#include <deque>
-#include <string>
-#include <vector>
-
 #include <gtest/gtest.h>
 #include <SuplaDevice.h>
 #include <supla/device/register_device.h>
 #include <supla/network/client.h>
 #include <supla/network/network.h>
 #include <supla/protocol/supla_srpc.h>
+
+#include <deque>
+#include <string>
+#include <vector>
 
 extern "C" const char *supla_test_get_last_log();
 extern "C" void supla_test_clear_last_log();

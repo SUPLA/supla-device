@@ -26,6 +26,10 @@ mapfile -d '' -t CPP_FILES < <(
   find ./extras/examples/freertos_linux -maxdepth 1 -type f -name 'main.cpp' -print0
 )
 
+mapfile -d '' -t TEST_CPP_FILES < <(
+  find ./extras/test -path './extras/test/build' -prune -o -type f \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
+)
+
 mapfile -d '' -t LINUX_CPP_FILES < <(
   find ./extras/examples/linux -maxdepth 1 -type f \
     \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print0
@@ -37,6 +41,8 @@ mapfile -d '' -t SUPLA_COMMON_CPP_FILES < <(
 )
 
 cpplint --filter=-build/include_subdir --quiet "${CPP_FILES[@]}" || EXIT_STATUS=$?
+cpplint --filter=-build/include_subdir --quiet \
+  "${TEST_CPP_FILES[@]}" || EXIT_STATUS=$?
 cpplint --filter=-build/include_subdir,-build/include_order --quiet \
   "${LINUX_CPP_FILES[@]}" || EXIT_STATUS=$?
 cpplint --filter=-build/include_subdir,-build/header_guard,-runtime/int \

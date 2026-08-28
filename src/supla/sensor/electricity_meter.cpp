@@ -573,36 +573,41 @@ Supla::ApplyConfigResult Supla::Sensor::ElectricityMeter::applyChannelConfig(
   bool configChanged = false;
   bool configValid = true;
 
-  int8_t bitNumberCtTypeInNewConfig =
-      Supla::getBitNumber(configFromServer->UsedCTType);
-  if (bitNumberCtTypeInNewConfig < 0 ||
-      !isCtTypeSupported(configFromServer->UsedCTType)) {
-    SUPLA_LOG_WARNING("EM[%d] CT type %d not supported",
-                      getChannelNumber(),
-                      configFromServer->UsedCTType);
-    configValid = false;
-  } else if (usedCtType != bitNumberCtTypeInNewConfig) {
-    usedCtType = bitNumberCtTypeInNewConfig;
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, Supla::ConfigTag::EmCtTypeTag);
-    cfg->setInt32(key, usedCtType);
-    configChanged = true;
+  if (availableCtTypes != 0 || configFromServer->UsedCTType != 0) {
+    int8_t bitNumberCtTypeInNewConfig =
+        Supla::getBitNumber(configFromServer->UsedCTType);
+    if (bitNumberCtTypeInNewConfig < 0 ||
+        !isCtTypeSupported(configFromServer->UsedCTType)) {
+      SUPLA_LOG_WARNING("EM[%d] CT type %d not supported",
+                        getChannelNumber(),
+                        configFromServer->UsedCTType);
+      configValid = false;
+    } else if (usedCtType != bitNumberCtTypeInNewConfig) {
+      usedCtType = bitNumberCtTypeInNewConfig;
+      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+      generateKey(key, Supla::ConfigTag::EmCtTypeTag);
+      cfg->setInt32(key, usedCtType);
+      configChanged = true;
+    }
   }
 
-  int8_t bitNumberPhaseLedTypeInNewConfig =
-      Supla::getBitNumber(configFromServer->UsedPhaseLedType);
-  if (bitNumberPhaseLedTypeInNewConfig < 0 ||
-      !isPhaseLedTypeSupported(configFromServer->UsedPhaseLedType)) {
-    SUPLA_LOG_DEBUG("EM[%d] Phase LED type %d not supported",
-                    getChannelNumber(),
-                    configFromServer->UsedPhaseLedType);
-    configValid = false;
-  } else if (usedPhaseLedType != bitNumberPhaseLedTypeInNewConfig) {
-    usedPhaseLedType = bitNumberPhaseLedTypeInNewConfig;
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, Supla::ConfigTag::EmPhaseLedTag);
-    cfg->setInt8(key, usedPhaseLedType);
-    configChanged = true;
+  if (availablePhaseLedTypes != 0 ||
+      configFromServer->UsedPhaseLedType != 0) {
+    int8_t bitNumberPhaseLedTypeInNewConfig =
+        Supla::getBitNumber(configFromServer->UsedPhaseLedType);
+    if (bitNumberPhaseLedTypeInNewConfig < 0 ||
+        !isPhaseLedTypeSupported(configFromServer->UsedPhaseLedType)) {
+      SUPLA_LOG_DEBUG("EM[%d] Phase LED type %d not supported",
+                      getChannelNumber(),
+                      configFromServer->UsedPhaseLedType);
+      configValid = false;
+    } else if (usedPhaseLedType != bitNumberPhaseLedTypeInNewConfig) {
+      usedPhaseLedType = bitNumberPhaseLedTypeInNewConfig;
+      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+      generateKey(key, Supla::ConfigTag::EmPhaseLedTag);
+      cfg->setInt8(key, usedPhaseLedType);
+      configChanged = true;
+    }
   }
 
   if (usedPhaseLedType == 3) {

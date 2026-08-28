@@ -101,6 +101,9 @@ Clock* Clock::GetInstance() {
 }
 
 Clock::Clock() {
+  if (clockInstance != nullptr) {
+    SUPLA_LOG_ERROR("Clock: replacing an existing instance");
+  }
   clockInstance = this;
 }
 

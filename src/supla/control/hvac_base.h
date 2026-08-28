@@ -151,7 +151,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void clearHeatOrColdSourceSwitchChannelNo();
   int16_t getHeatOrColdSourceSwitchChannelNo() const;
   bool isHeatOrColdSourceSwitchSet() const;
-  bool setMasterThermostatChannelNo(uint8_t channelNo);
+  bool setMasterThermostatChannelNo(int16_t channelNo);
   void clearMasterThermostatChannelNo();
   int16_t getMasterThermostatChannelNo() const;
   bool isMasterThermostatSet() const;
@@ -304,6 +304,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
       bool isAltWeeklySchedule = false) const;
   bool isChannelThermometer(int16_t channelNo) const;
   bool isChannelBinarySensor(int16_t channelNo) const;
+  bool isChannelHvac(int16_t channelNo) const;
   bool isAlgorithmValid(unsigned _supla_int16_t algorithm) const;
   bool areTemperaturesValid(const THVACTemperatureCfg *temperatures) const;
   bool fixTempearturesConfig();

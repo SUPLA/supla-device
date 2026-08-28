@@ -195,6 +195,61 @@ TEST_F(HvacTestsF, invalidBinarySensorAssignmentIsClearedOnInit) {
   EXPECT_EQ(hvac.getBinarySensorChannelNo(), -1);
 }
 
+TEST_F(HvacTestsF, masterThermostatAssignmentIsValidatedAfterInit) {
+  OutputSimulatorWithCheck output;
+  Supla::Control::HvacBase hvac(&output);
+  Supla::Control::HvacBase master;
+  Supla::Control::Relay relay(0);
+
+  hvac.getChannel()->setChannelNumber(5);
+  master.getChannel()->setChannelNumber(6);
+  relay.getChannel()->setChannelNumber(7);
+
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(::testing::AtLeast(1));
+  hvac.onInit();
+
+  EXPECT_TRUE(hvac.setMasterThermostatChannelNo(6));
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 6);
+
+  EXPECT_FALSE(hvac.setMasterThermostatChannelNo(7));
+  EXPECT_FALSE(hvac.setMasterThermostatChannelNo(99));
+  EXPECT_FALSE(hvac.setMasterThermostatChannelNo(-2));
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 6);
+
+  EXPECT_TRUE(hvac.setMasterThermostatChannelNo(-1));
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
+
+  EXPECT_TRUE(hvac.setMasterThermostatChannelNo(6));
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+
+  EXPECT_TRUE(hvac.setMasterThermostatChannelNo(hvac.getChannelNumber()));
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
+
+  EXPECT_TRUE(hvac.setMasterThermostatChannelNo(-1));
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
+}
+
+TEST_F(HvacTestsF, invalidMasterThermostatAssignmentIsClearedOnInit) {
+  OutputSimulatorWithCheck output;
+  Supla::Control::HvacBase hvac(&output);
+
+  hvac.getChannel()->setChannelNumber(5);
+  EXPECT_TRUE(hvac.setMasterThermostatChannelNo(99));
+  ASSERT_TRUE(hvac.isMasterThermostatSet());
+  ASSERT_EQ(hvac.getMasterThermostatChannelNo(), 99);
+
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(::testing::AtLeast(1));
+  hvac.onInit();
+
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
+}
+
 TEST_F(HvacTestsF, CountdownTimerRemainingConditionFiresOnThreshold) {
   OutputSimulatorWithCheck output;
   EXPECT_CALL(output, setOutputValueCheck(_)).Times(::testing::AnyNumber());
@@ -380,11 +435,13 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
 
   Supla::Sensor::Thermometer t1;
   Supla::Sensor::ThermHygroMeter t2;
+  Supla::Control::HvacBase master;
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
 
   ASSERT_EQ(hvac.getChannelNumber(), 0);
   ASSERT_EQ(t1.getChannelNumber(), 1);
   ASSERT_EQ(t2.getChannelNumber(), 2);
+  ASSERT_EQ(master.getChannelNumber(), 3);
 
   // init min max ranges for tempreatures setting and check again setters
   // for temperatures
@@ -433,6 +490,40 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
 
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
+  hvac.clearChannelConfigChangedFlag();
+
+  hvacConfig->MasterThermostatIsSet = 1;
+  hvacConfig->MasterThermostatChannelNo = master.getChannelNumber();
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), master.getChannelNumber());
+  hvac.clearChannelConfigChangedFlag();
+
+  for (auto invalidChannel : {1, 0, 4}) {
+    hvacConfig->MasterThermostatChannelNo = invalidChannel;
+    EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+              SUPLA_CONFIG_RESULT_DATA_ERROR);
+    EXPECT_TRUE(hvac.isMasterThermostatSet());
+    EXPECT_EQ(hvac.getMasterThermostatChannelNo(),
+              master.getChannelNumber());
+  }
+
+  hvacConfig->MasterThermostatIsSet = 2;
+  hvacConfig->MasterThermostatChannelNo = master.getChannelNumber();
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), master.getChannelNumber());
+
+  hvacConfig->MasterThermostatIsSet = 0;
+  hvacConfig->MasterThermostatChannelNo = master.getChannelNumber();
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_TRUE(hvac.setMasterThermostatChannelNo(master.getChannelNumber()));
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), master.getChannelNumber());
   hvac.clearChannelConfigChangedFlag();
 
   hvacConfig->MainThermometerChannelNo = 0;
@@ -2451,9 +2542,9 @@ TEST_F(HvacTestsF, handleChannelConfigAndReadonlyParameters) {
   hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_TRUE(hvac.isMasterThermostatSet());
-  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 4);
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
   hvac.clearChannelConfigChangedFlag();
 }
 
@@ -2571,7 +2662,9 @@ TEST_F(HvacTestsF, PumpHeatSourceMasterSetAfterInitCheck) {
   Supla::Control::HvacBase hvac(&output);
   Supla::Control::Relay pumpRelay(1);
   Supla::Control::Relay sourceRelay(2);
+  Supla::Control::HvacBase master;
   hvac.getChannel()->setChannelNumber(5);
+  master.getChannel()->setChannelNumber(3);
 
   auto ch = hvac.getChannel();
   ASSERT_NE(ch, nullptr);
@@ -2638,14 +2731,15 @@ TEST_F(HvacTestsF, PumpHeatSourceMasterSetBeforeInitCheck) {
   Supla::Control::HvacBase hvac(&output);
   Supla::Control::Relay relay1(1);
   Supla::Control::Relay relay2(2);
-  Supla::Control::Relay relay3(3);
+  Supla::Control::HvacBase master;
+  Supla::Control::HvacBase master13;
   Supla::Control::Relay relay11(11);
   Supla::Control::Relay relay12(12);
-  Supla::Control::Relay relay13(13);
   relay11.getChannel()->setChannelNumber(11);
   relay12.getChannel()->setChannelNumber(12);
-  relay13.getChannel()->setChannelNumber(13);
   hvac.getChannel()->setChannelNumber(5);
+  master.getChannel()->setChannelNumber(3);
+  master13.getChannel()->setChannelNumber(13);
 
   auto ch = hvac.getChannel();
   ASSERT_NE(ch, nullptr);

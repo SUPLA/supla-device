@@ -514,6 +514,15 @@ void HvacBase::onInit() {
         getHeatOrColdSourceSwitchChannelNo());
     clearHeatOrColdSourceSwitchChannelNo();
   }
+  if (!setMasterThermostatChannelNo(getMasterThermostatChannelNo())) {
+    SUPLA_LOG_WARNING(
+        "HVAC[%d]: master thermostat channel number %d is invalid. "
+        "Clearing.",
+        getChannelNumber(),
+        getMasterThermostatChannelNo());
+    defaultMasterThermostat = -1;
+    clearMasterThermostatChannelNo();
+  }
 
   previousSubfunction = config.Subfunction;
 
@@ -1250,6 +1259,22 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
     }
   }
 
+  if (newConfig->MasterThermostatIsSet != 0 &&
+      newConfig->MasterThermostatIsSet != 1) {
+    SUPLA_LOG_WARNING("HVAC[%d]: invalid master thermostat IsSet value %d",
+                      channel.getChannelNumber(),
+                      newConfig->MasterThermostatIsSet);
+    return false;
+  }
+
+  if (newConfig->MasterThermostatIsSet == 1 &&
+      !isChannelHvac(newConfig->MasterThermostatChannelNo)) {
+    SUPLA_LOG_WARNING("HVAC[%d]: invalid master thermostat channel %d",
+                      channel.getChannelNumber(),
+                      newConfig->MasterThermostatChannelNo);
+    return false;
+  }
+
   if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     switch (newConfig->Subfunction) {
       case SUPLA_HVAC_SUBFUNCTION_NOT_SET:
@@ -1680,6 +1705,28 @@ bool HvacBase::isChannelBinarySensor(int16_t channelNo) const {
       SUPLA_CHANNELTYPE_BINARYSENSOR) {
     return true;
   }
+  return false;
+}
+
+bool HvacBase::isChannelHvac(int16_t channelNo) const {
+  if (channelNo < 0 || channelNo == getChannelNumber()) {
+    return false;
+  }
+  auto element = Supla::Element::getElementByChannelNumber(channelNo);
+  if (element == nullptr) {
+    SUPLA_LOG_WARNING("HVAC[%d]: master thermostat not found for channel %d",
+                      getChannelNumber(),
+                      channelNo);
+    return false;
+  }
+  if (element->getChannel()->getChannelType() == SUPLA_CHANNELTYPE_HVAC) {
+    return true;
+  }
+  SUPLA_LOG_WARNING("HVAC[%d]: master thermostat channel %d has invalid type "
+                    "%d",
+                    getChannelNumber(),
+                    channelNo,
+                    element->getChannel()->getChannelType());
   return false;
 }
 
@@ -5923,29 +5970,47 @@ bool HvacBase::isHeatOrColdSourceSwitchSet() const {
   return config.HeatOrColdSourceSwitchIsSet != 0;
 }
 
-bool HvacBase::setMasterThermostatChannelNo(uint8_t channelNo) {
+bool HvacBase::setMasterThermostatChannelNo(int16_t newChannelNo) {
+  uint8_t channelNo = getChannelNumber();
+  if (newChannelNo >= 0 && newChannelNo <= 255) {
+    channelNo = newChannelNo;
+  }
   if (initialConfig && !initDone) {
     initialConfig->MasterThermostatChannelNo = channelNo;
-    if (channelNo == getChannelNumber()) {
+    if (newChannelNo == -1 || channelNo == getChannelNumber()) {
       initialConfig->MasterThermostatIsSet = 0;
     } else {
       initialConfig->MasterThermostatIsSet = 1;
     }
   }
-  if (config.MasterThermostatChannelNo == channelNo) {
-    return true;
-  }
-  config.MasterThermostatChannelNo = channelNo;
-  if (channelNo == getChannelNumber()) {
-    config.MasterThermostatIsSet = 0;
-  } else {
-    config.MasterThermostatIsSet = 1;
-  }
   if (!initDone) {
-    defaultMasterThermostat = channelNo;
+    config.MasterThermostatChannelNo = channelNo;
+    config.MasterThermostatIsSet =
+        newChannelNo == -1 || channelNo == getChannelNumber() ? 0 : 1;
+    defaultMasterThermostat = newChannelNo;
     return true;
   }
-  if (initDone) {
+
+  if (newChannelNo != -1 && newChannelNo != getChannelNumber() &&
+      !isChannelHvac(newChannelNo)) {
+    return false;
+  }
+
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
+    if (config.MasterThermostatChannelNo != channelNo ||
+        config.MasterThermostatIsSet != 0) {
+      config.MasterThermostatChannelNo = channelNo;
+      config.MasterThermostatIsSet = 0;
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
+    return true;
+  }
+
+  if (config.MasterThermostatChannelNo != channelNo ||
+      config.MasterThermostatIsSet != 1) {
+    config.MasterThermostatChannelNo = channelNo;
+    config.MasterThermostatIsSet = 1;
     channelConfigChangedOffline = 1;
     saveConfig();
   }

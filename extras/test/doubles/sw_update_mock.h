@@ -20,6 +20,7 @@ class SwUpdateMock : public Supla::Device::SwUpdate {
 
   void setFinished();
   void setAborted();
+  void setRetryAllowed();
   void setFacade(SwUpdateFacade *facade) { this->facade = facade; }
   void setNewVersion(const char *version);
   bool isSecurityOnlyOnFacade();

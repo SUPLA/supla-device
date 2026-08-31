@@ -690,7 +690,7 @@ bool SuplaDeviceClass::initSwUpdateInstance(Supla::SwUpdateMode mode,
     if (cfg->isSwUpdateBeta()) {
       swUpdate->useBeta();
     }
-    if (deviceMode == Supla::DEVICE_MODE_SW_UPDATE &&
+    if (cfg->getDeviceMode() == Supla::DEVICE_MODE_SW_UPDATE &&
         cfg->isSwUpdateSkipCert()) {
       // Recovery-only fallback for a locally requested SW update.
       // Automatic and remotely triggered OTA checks must keep certificate

@@ -18,6 +18,34 @@ namespace {
 using ::testing::IsNull;
 using ::testing::StrEq;
 
+constexpr char AVAILABLE_UPDATE_RESPONSE[] =
+"{\"status\":\"ok\",\"latestUpdate\":{\"version\":\"2.0.0\","
+"\"updateUrl\":\"https://updates.supla.org/fw.bin\"}}";
+
+std::string makeFirmware(size_t size = 600) {
+  std::string firmware(size, '\0');
+  const uint8_t rsaFooter[] = {0xBA,
+                               0xBE,
+                               0x2B,
+                               0xED,
+                               0x00,
+                               0x01,
+                               0x02,
+                               0x00,
+                               0x10,
+                               0x00,
+                               0x00,
+                               0x00,
+                               0x00,
+                               0x00,
+                               0x00,
+                               0x00};
+  memcpy(firmware.data() + firmware.size() - sizeof(rsaFooter),
+         rsaFooter,
+         sizeof(rsaFooter));
+  return firmware;
+}
+
 class LastStateLoggerMock : public Supla::Device::LastStateLogger {
  public:
   MOCK_METHOD(void, log, (const char *state, int uptimeSec), (override));
@@ -137,30 +165,9 @@ TEST_F(EspIdfOtaTests, ParsesFragmentedAvailableUpdateForOnlyCheck) {
 }
 
 TEST_F(EspIdfOtaTests, DownloadsVerifiesAndActivatesUpdate) {
-  EspIdfOtaMock::setHttpResponse(
-      R"({"status":"ok","latestUpdate":{"version":"2.0.0","updateUrl":"https://updates.supla.org/fw.bin"}})",
-      {7, 11, 13});
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE, {7, 11, 13});
 
-  std::string firmware(600, '\0');
-  const uint8_t rsaFooter[] = {0xBA,
-                               0xBE,
-                               0x2B,
-                               0xED,
-                               0x00,
-                               0x01,
-                               0x02,
-                               0x00,
-                               0x10,
-                               0x00,
-                               0x00,
-                               0x00,
-                               0x00,
-                               0x00,
-                               0x00,
-                               0x00};
-  memcpy(firmware.data() + firmware.size() - sizeof(rsaFooter),
-         rsaFooter,
-         sizeof(rsaFooter));
+  std::string firmware = makeFirmware();
   EspIdfOtaMock::addHttpResponse(firmware, {200, 400});
   EspIdfOtaMock::setRsaVerificationResult(true);
 
@@ -184,6 +191,263 @@ TEST_F(EspIdfOtaTests, DownloadsVerifiesAndActivatesUpdate) {
   EXPECT_TRUE(EspIdfOtaMock::wasOtaBeginCalled());
   EXPECT_TRUE(EspIdfOtaMock::wasOtaEndCalled());
   EXPECT_TRUE(EspIdfOtaMock::wasRsaVerificationCalled());
+  EXPECT_TRUE(EspIdfOtaMock::wasBootPartitionSet());
+}
+
+TEST_F(EspIdfOtaTests, HeaderReadFailureStopsBeforeParsingAndAllowsRetry) {
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::setHttpHeadersError(0);
+  TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate);
+  ObserverMock observer;
+
+  EXPECT_CALL(observer,
+              onSwUpdateFinished(
+                  false,
+                  StrEq("SW update: failed to read response headers: "
+                        "Error 1")));
+  run(update, observer);
+
+  EXPECT_TRUE(update.isAborted());
+  EXPECT_TRUE(update.isRetryAllowed());
+  EXPECT_EQ(EspIdfOtaMock::getHttpReadCallCount(0), 0u);
+  EXPECT_FALSE(EspIdfOtaMock::wasOtaBeginCalled());
+}
+
+TEST_F(EspIdfOtaTests, OnlyCheckTransportFailureDoesNotBecomeInstallRetry) {
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::setHttpHeadersError(0);
+  TestEspIdfOta update(Supla::SwUpdateMode::OnlyCheck);
+  ObserverMock observer;
+
+  EXPECT_CALL(observer, onSwUpdateFinished(false, testing::_));
+  run(update, observer);
+
+  EXPECT_TRUE(update.isAborted());
+  EXPECT_FALSE(update.isRetryAllowed());
+  EXPECT_FALSE(EspIdfOtaMock::wasOtaBeginCalled());
+}
+
+TEST_F(EspIdfOtaTests, UpdateCheckRejectsNonSuccessStatusBeforeBody) {
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::setHttpStatusCode(0, 503);
+  TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate);
+  ObserverMock observer;
+
+  EXPECT_CALL(observer,
+              onSwUpdateFinished(
+                  false,
+                  StrEq("SW update: update check failed with status code "
+                        "503")));
+  run(update, observer);
+
+  EXPECT_TRUE(update.isRetryAllowed());
+  EXPECT_EQ(EspIdfOtaMock::getHttpReadCallCount(0), 0u);
+  EXPECT_FALSE(EspIdfOtaMock::wasOtaBeginCalled());
+}
+
+TEST_F(EspIdfOtaTests, DataReadErrorAbortsPartialSessionAndRetryRestarts) {
+  std::string firmware = makeFirmware();
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::addHttpResponse(firmware);
+  EspIdfOtaMock::setHttpReadResults(1, {200, -1});
+  EspIdfOtaMock::addHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::addHttpResponse(firmware, {300, 300});
+  EspIdfOtaMock::setRsaVerificationResult(true);
+
+  SuplaDeviceClass sd;
+  uint8_t rsaPublicKey[512] = {};
+  sd.setRsaPublicKeyPtr(rsaPublicKey);
+  ObserverMock observer;
+
+  {
+    TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate, &sd);
+    EXPECT_CALL(observer, onSwUpdateProgress(0, firmware.size()));
+    EXPECT_CALL(observer,
+                onSwUpdateFinished(false,
+                                   StrEq("SW update: data read error")));
+    run(update, observer);
+
+    EXPECT_TRUE(update.isAborted());
+    EXPECT_TRUE(update.isRetryAllowed());
+    EXPECT_EQ(EspIdfOtaMock::getOtaWrittenBytes(), 200u);
+    EXPECT_EQ(EspIdfOtaMock::getOtaBeginCount(), 1u);
+    EXPECT_EQ(EspIdfOtaMock::getOtaAbortCount(), 1u);
+    EXPECT_EQ(EspIdfOtaMock::getOtaEndCount(), 0u);
+  }
+
+  TestEspIdfOta retry(Supla::SwUpdateMode::CheckAndUpdate, &sd);
+  EXPECT_CALL(observer, onSwUpdateProgress(0, firmware.size()));
+  EXPECT_CALL(observer, onSwUpdateProgress(firmware.size(), firmware.size()));
+  EXPECT_CALL(observer, onSwUpdateFinished(true, IsNull()));
+  run(retry, observer);
+
+  EXPECT_FALSE(retry.isAborted());
+  EXPECT_EQ(EspIdfOtaMock::getHttpClientInitCount(), 4u);
+  EXPECT_EQ(EspIdfOtaMock::getOtaWrittenBytes(), firmware.size());
+  EXPECT_EQ(EspIdfOtaMock::getOtaBeginCount(), 2u);
+  EXPECT_EQ(EspIdfOtaMock::getOtaAbortCount(), 1u);
+  EXPECT_EQ(EspIdfOtaMock::getOtaEndCount(), 1u);
+  EXPECT_TRUE(EspIdfOtaMock::wasBootPartitionSet());
+}
+
+TEST_F(EspIdfOtaTests, UnexpectedZeroReadFailsWithoutSpinning) {
+  std::string firmware = makeFirmware();
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::addHttpResponse(firmware);
+  EspIdfOtaMock::setHttpReadResults(1, {200, 0, -1});
+  TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate);
+  ObserverMock observer;
+
+  EXPECT_CALL(observer, onSwUpdateProgress(0, firmware.size()));
+  EXPECT_CALL(observer,
+              onSwUpdateFinished(false, StrEq("SW update: data read error")));
+  run(update, observer);
+
+  EXPECT_TRUE(update.isRetryAllowed());
+  EXPECT_EQ(EspIdfOtaMock::getHttpReadCallCount(1), 2u);
+  EXPECT_EQ(EspIdfOtaMock::getOtaWrittenBytes(), 200u);
+  EXPECT_TRUE(EspIdfOtaMock::wasOtaAbortCalled());
+  EXPECT_FALSE(EspIdfOtaMock::wasOtaEndCalled());
+}
+
+TEST_F(EspIdfOtaTests, EarlyServerCloseDoesNotFinalizePartialImage) {
+  std::string partialFirmware = makeFirmware(300);
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::addHttpResponse(partialFirmware);
+  EspIdfOtaMock::setHttpContentLength(1, 600);
+  EspIdfOtaMock::setResponseComplete(1, false);
+  TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate);
+  ObserverMock observer;
+
+  EXPECT_CALL(observer, onSwUpdateProgress(0, 600));
+  EXPECT_CALL(observer,
+              onSwUpdateFinished(false, StrEq("SW update: data read error")));
+  run(update, observer);
+
+  EXPECT_TRUE(update.isRetryAllowed());
+  EXPECT_EQ(EspIdfOtaMock::getOtaWrittenBytes(), partialFirmware.size());
+  EXPECT_TRUE(EspIdfOtaMock::wasOtaAbortCalled());
+  EXPECT_FALSE(EspIdfOtaMock::wasBootPartitionSet());
+}
+
+TEST_F(EspIdfOtaTests, CertificateFailureIsTerminal) {
+  std::string firmware = makeFirmware();
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::addHttpResponse(firmware);
+  EspIdfOtaMock::setHttpOpenError(1, 0, 1);
+  TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate);
+  ObserverMock observer;
+
+  EXPECT_CALL(
+      observer,
+      onSwUpdateFinished(
+          false,
+          StrEq("SW update: failed to open HTTPS connection: certificate "
+                "verification failed, flags=0x1")));
+  run(update, observer);
+
+  EXPECT_FALSE(update.isRetryAllowed());
+  EXPECT_FALSE(EspIdfOtaMock::wasOtaBeginCalled());
+  EXPECT_FALSE(EspIdfOtaMock::wasBootPartitionSet());
+}
+
+TEST_F(EspIdfOtaTests, PermanentHttpErrorIsNotRetried) {
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::addHttpResponse("not found");
+  EspIdfOtaMock::setHttpStatusCode(1, 404);
+  TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate);
+  ObserverMock observer;
+
+  EXPECT_CALL(observer,
+              onSwUpdateFinished(
+                  false,
+                  StrEq("SW update: HTTPS GET failed with status code 404")));
+  run(update, observer);
+
+  EXPECT_FALSE(update.isRetryAllowed());
+  EXPECT_FALSE(EspIdfOtaMock::wasOtaBeginCalled());
+}
+
+TEST_F(EspIdfOtaTests, TransientHttpErrorAllowsRetry) {
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::addHttpResponse("service unavailable");
+  EspIdfOtaMock::setHttpStatusCode(1, 503);
+  TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate);
+  ObserverMock observer;
+
+  EXPECT_CALL(observer, onSwUpdateFinished(false, testing::_));
+  run(update, observer);
+
+  EXPECT_TRUE(update.isRetryAllowed());
+  EXPECT_FALSE(EspIdfOtaMock::wasOtaBeginCalled());
+}
+
+TEST_F(EspIdfOtaTests, InvalidRsaSignatureIsTerminal) {
+  std::string firmware = makeFirmware();
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::addHttpResponse(firmware);
+
+  SuplaDeviceClass sd;
+  uint8_t rsaPublicKey[512] = {};
+  sd.setRsaPublicKeyPtr(rsaPublicKey);
+  TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate, &sd);
+  ObserverMock observer;
+
+  EXPECT_CALL(observer, onSwUpdateProgress(0, firmware.size()));
+  EXPECT_CALL(observer,
+              onSwUpdateFinished(
+                  false,
+                  StrEq("SW update: RSA signature verification failed")));
+  run(update, observer);
+
+  EXPECT_FALSE(update.isRetryAllowed());
+  EXPECT_TRUE(EspIdfOtaMock::wasOtaEndCalled());
+  EXPECT_FALSE(EspIdfOtaMock::wasOtaAbortCalled());
+  EXPECT_FALSE(EspIdfOtaMock::wasBootPartitionSet());
+}
+
+TEST_F(EspIdfOtaTests, ImageValidationFailureIsTerminal) {
+  std::string firmware = makeFirmware();
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::addHttpResponse(firmware);
+  EspIdfOtaMock::setOtaEndResult(ESP_ERR_OTA_VALIDATE_FAILED);
+  TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate);
+  ObserverMock observer;
+
+  EXPECT_CALL(observer, onSwUpdateProgress(0, firmware.size()));
+  EXPECT_CALL(
+      observer,
+      onSwUpdateFinished(
+          false,
+          StrEq("SW update: image validation failed - image is corrupted")));
+  run(update, observer);
+
+  EXPECT_FALSE(update.isRetryAllowed());
+  EXPECT_TRUE(EspIdfOtaMock::wasOtaEndCalled());
+  EXPECT_FALSE(EspIdfOtaMock::wasOtaAbortCalled());
+  EXPECT_FALSE(EspIdfOtaMock::wasRsaVerificationCalled());
+  EXPECT_FALSE(EspIdfOtaMock::wasBootPartitionSet());
+}
+
+TEST_F(EspIdfOtaTests, MissingContentLengthStillUsesCompleteTransferState) {
+  std::string firmware = makeFirmware();
+  EspIdfOtaMock::setHttpResponse(AVAILABLE_UPDATE_RESPONSE);
+  EspIdfOtaMock::addHttpResponse(firmware, {200, 400});
+  EspIdfOtaMock::setHttpContentLength(1, 0);
+  EspIdfOtaMock::setRsaVerificationResult(true);
+
+  SuplaDeviceClass sd;
+  uint8_t rsaPublicKey[512] = {};
+  sd.setRsaPublicKeyPtr(rsaPublicKey);
+  TestEspIdfOta update(Supla::SwUpdateMode::CheckAndUpdate, &sd);
+  ObserverMock observer;
+
+  EXPECT_CALL(observer, onSwUpdateProgress(0, 0));
+  EXPECT_CALL(observer, onSwUpdateProgress(firmware.size(), 0));
+  EXPECT_CALL(observer, onSwUpdateFinished(true, IsNull()));
+  run(update, observer);
+
+  EXPECT_EQ(EspIdfOtaMock::getOtaWrittenBytes(), firmware.size());
   EXPECT_TRUE(EspIdfOtaMock::wasBootPartitionSet());
 }
 

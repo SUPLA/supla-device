@@ -28,6 +28,10 @@ class SwUpdateFacade : public Supla::Device::SwUpdate {
     abort = true;
   }
 
+  void setRetryAllowed() {
+    retryAllowed = true;
+  }
+
   void setNewVersion(const char *version) {
     if (newVersion) {
       delete[] newVersion;
@@ -64,6 +68,10 @@ void SwUpdateMock::setFinished() {
 
 void SwUpdateMock::setAborted() {
   facade->setAborted();
+}
+
+void SwUpdateMock::setRetryAllowed() {
+  facade->setRetryAllowed();
 }
 
 void SwUpdateMock::setNewVersion(const char *version) {

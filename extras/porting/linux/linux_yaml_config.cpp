@@ -2889,11 +2889,9 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
           getAndMarkChannelParameter(ch, Supla::Sensor::ForceBatteryPowered)) {
     auto forceBatteryPowered = forceBatteryPoweredParameter.as<bool>();
     if (forceBatteryPowered) {
-      // we add ForceBatteryPowered, but it is not read from index 0. It is only
-      // checked if mapping was added
       batteryAdded = true;
-      sensor->setMapping(Supla::Sensor::ForceBatteryPowered, 0);
     }
+    sensor->setForceBatteryPowered(forceBatteryPowered);
   }
   if (auto initialCaptionParameter =
           getAndMarkChannelParameter(ch, Supla::InitialCaption)) {

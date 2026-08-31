@@ -282,6 +282,48 @@ TEST(Sd4linuxYamlConfigTests, AllowsRgbCctWithoutStateAndRejectsMissingParser) {
   deleteCreatedElement(previousElement);
 }
 
+TEST(Sd4linuxYamlConfigTests, AllowsParserlessRgbCctForcedBatteryPowered) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addRgbCctParsed(
+      YAML::Load("force_battery_powered: true"), 0, nullptr));
+  auto rgb = getCreatedRgb(previousElement);
+  ASSERT_NE(rgb, nullptr);
+  EXPECT_TRUE(rgb->getChannel()->isBatteryPowered());
+  EXPECT_FALSE(rgb->isParameterConfigured("force_battery_powered"));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, AllowsParserlessRgbCctWithoutForcedBattery) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addRgbCctParsed(
+      YAML::Load("force_battery_powered: false"), 0, nullptr));
+  auto rgb = getCreatedRgb(previousElement);
+  ASSERT_NE(rgb, nullptr);
+  EXPECT_FALSE(rgb->getChannel()->isBatteryPowered());
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     RejectsParserlessRgbCctDynamicBatteryParameters) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.addRgbCctParsed(YAML::Load("battery_level: level"),
+                                      0,
+                                      nullptr));
+  deleteCreatedElement(previousElement);
+
+  previousElement = Supla::Element::last();
+  EXPECT_FALSE(config.addRgbCctParsed(YAML::Load("battery_powered: powered"),
+                                      0,
+                                      nullptr));
+  deleteCreatedElement(previousElement);
+}
+
 TEST(Sd4linuxYamlConfigTests,
      MapsRgbCctStateOnValuesAndOfflineHandlingThroughYaml) {
   SimpleTime time;
@@ -314,6 +356,20 @@ TEST(Sd4linuxYamlConfigTests,
   EXPECT_EQ(rgb->getStateValue(), -1);
   EXPECT_TRUE(rgb->isOffline());
 
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, ParserBackedRgbCctCanForceBatteryPowered) {
+  TestLinuxYamlConfig config;
+  FakeYamlSource source;
+  FakeYamlParser parser(&source);
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addRgbCctParsed(
+      YAML::Load("force_battery_powered: true"), 0, &parser));
+  auto rgb = getCreatedRgb(previousElement);
+  ASSERT_NE(rgb, nullptr);
+  EXPECT_TRUE(rgb->getChannel()->isBatteryPowered());
   deleteCreatedElement(previousElement);
 }
 

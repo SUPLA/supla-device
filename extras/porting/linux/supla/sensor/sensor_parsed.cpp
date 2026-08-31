@@ -40,6 +40,10 @@ void SensorParsedBase::setMapping(const std::string &parameter,
   parser->addKey(key, index);
 }
 
+void SensorParsedBase::setForceBatteryPowered(bool forceBatteryPowered) {
+  this->forceBatteryPowered = forceBatteryPowered;
+}
+
 void SensorParsedBase::setMultiplier(const std::string &parameter,
                                      double multiplier) {
   parameterMultiplier[parameter] = multiplier;
@@ -324,7 +328,7 @@ void SensorParsedBase::updateBatteryInfoFlags() {
     unsigned char batteryLevel = 255;
     bool batteryPowered = true;
     bool batteryPoweredConfigured = false;
-    if (isParameterConfigured(ForceBatteryPowered)) {
+    if (forceBatteryPowered) {
       batteryPowered = true;
       batteryPoweredConfigured = true;
     } else {

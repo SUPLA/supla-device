@@ -34,6 +34,8 @@ class SensorParsedBase {
 
   void setMapping(const std::string &parameter, const int index);
 
+  void setForceBatteryPowered(bool forceBatteryPowered);
+
   void setMultiplier(const std::string &parameter, double multiplier);
 
   bool refreshParserSource(bool updateChannelState = true);
@@ -75,6 +77,7 @@ class SensorParsedBase {
   Supla::Parser::Parser *parser = nullptr;
   std::map<std::string, std::string> parameterToKey;
   std::map<std::string, double> parameterMultiplier;
+  bool forceBatteryPowered = false;
   std::vector<std::variant<int, bool, std::string>> stateOnValues;
   bool useOfflineOnInvalidState = false;
 

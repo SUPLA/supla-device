@@ -23,6 +23,9 @@
 #include "supla/control/custom_hvac.h"
 #include "supla/control/rgbcct_parsed.h"
 
+extern "C" const char *supla_test_get_last_log();
+extern "C" void supla_test_clear_last_log();
+
 namespace Supla::Linux {
 void initExtensions() {
 }
@@ -280,6 +283,31 @@ TEST(Sd4linuxYamlConfigTests, AllowsRgbCctWithoutStateAndRejectsMissingParser) {
                                       0,
                                       nullptr));
   deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, ParseErrorDoesNotLogYamlSource) {
+  const auto path = std::filesystem::temp_directory_path() /
+                    ("supla_yaml_parse_error_" + std::to_string(getpid()) +
+                     ".yaml");
+  {
+    std::ofstream output(path);
+    ASSERT_TRUE(output.is_open());
+    output << "password: [SUPER_SECRET_TEST_VALUE\n";
+  }
+
+  supla_test_clear_last_log();
+  Supla::LinuxYamlConfig config(path.string());
+  EXPECT_FALSE(config.init());
+
+  std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("Config file YAML error"), std::string::npos);
+  EXPECT_NE(log.find("line"), std::string::npos);
+  EXPECT_NE(log.find("column"), std::string::npos);
+  EXPECT_EQ(log.find("SUPER_SECRET_TEST_VALUE"), std::string::npos);
+
+  std::error_code error;
+  EXPECT_TRUE(std::filesystem::remove(path, error));
+  EXPECT_FALSE(error) << error.message();
 }
 
 TEST(Sd4linuxYamlConfigTests, AllowsParserlessRgbCctForcedBatteryPowered) {

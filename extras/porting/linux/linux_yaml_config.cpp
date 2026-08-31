@@ -117,35 +117,17 @@ bool Supla::LinuxYamlConfig::addCommonChannelParameters(
 
 void Supla::LinuxYamlConfig::logError(const std::string& filename,
                                       const YAML::Exception& ex) const {
-  SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
-  if (ex.mark.line < 0) {
-    return;
-  }
-  std::ifstream file(filename);
-  if (!file.is_open()) {
-    SUPLA_LOG_ERROR("Error: Could not open file '%s'", filename.c_str());
-    return;
-  }
-
-  std::string line;
-  int currentLine = 0;
-  int fromLine = ex.mark.line - 3;
-  int toLine = ex.mark.line + 3;
-  if (fromLine < 0) {
-    fromLine = 0;
-  }
-
-  SUPLA_LOG_ERROR("Problematic place:");
-  while (std::getline(file, line)) {
-    if (currentLine >= fromLine && currentLine <= toLine) {
-      if (currentLine == ex.mark.line) {
-        SUPLA_LOG_ERROR(
-            "%3d: %s\t\t<--- PROBLEM IS HERE", currentLine, line.c_str());
-      } else {
-        SUPLA_LOG_WARNING("%3d: %s", currentLine, line.c_str());
-      }
-    }
-    ++currentLine;
+  if (ex.mark.line >= 0 && ex.mark.column >= 0) {
+    SUPLA_LOG_ERROR(
+        "Config file YAML error in '%s' at line %d, column %d: %s",
+        filename.c_str(),
+        ex.mark.line + 1,
+        ex.mark.column + 1,
+        ex.what());
+  } else {
+    SUPLA_LOG_ERROR("Config file YAML error in '%s': %s",
+                    filename.c_str(),
+                    ex.what());
   }
 }
 

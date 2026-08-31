@@ -17,6 +17,9 @@
 #include <variant>
 #include <vector>
 
+extern "C" const char *supla_test_get_last_log();
+extern "C" void supla_test_clear_last_log();
+
 namespace {
 
 class FakeJsonSource : public Supla::Source::Source {
@@ -110,6 +113,20 @@ TEST_F(Sd4linuxJsonParserTests, RejectsOrdinaryInvalidStringValues) {
   const double value = parser.getValue("counter");
   EXPECT_EQ(value, 0);
   EXPECT_FALSE(parser.isValid());
+}
+
+TEST_F(Sd4linuxJsonParserTests, ParseErrorDoesNotLogJsonSource) {
+  SimpleTime time;
+  source.content = R"({"value":1,"password":"SUPER_SECRET_TEST_VALUE")";
+  Supla::Parser::Json parser(&source);
+
+  supla_test_clear_last_log();
+  EXPECT_FALSE(parser.refreshParserSource());
+
+  std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("JSON parsing error at byte"), std::string::npos);
+  EXPECT_EQ(log.find("SUPER_SECRET_TEST_VALUE"), std::string::npos);
+  EXPECT_EQ(log.find(source.content), std::string::npos);
 }
 
 TEST_F(Sd4linuxJsonParserTests, InvalidNumericValueDoesNotPoisonSharedParser) {

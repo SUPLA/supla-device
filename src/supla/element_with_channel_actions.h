@@ -122,7 +122,9 @@ class ElementWithChannelActions : public Element, public LocalAction {
                                                bool local);
   virtual void fillChannelConfig(void *channelConfig, int *size, uint8_t index);
 
-  void triggerSetChannelConfig(int configType = SUPLA_CONFIG_TYPE_DEFAULT);
+  void triggerSetChannelConfig(
+      int configType = SUPLA_CONFIG_TYPE_DEFAULT,
+      bool localChange = false);
 
  protected:
   // returns true if function was changed (previous one was different)

@@ -140,7 +140,7 @@ void Relay::onRegistered(
 }
 
 Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
-                                                   bool) {
+                                                   bool local) {
   SUPLA_LOG_DEBUG(
       "Relay[%d] applyChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
@@ -210,7 +210,7 @@ Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
                         getChannelNumber(),
                         overcurrentThreshold,
                         config->OvercurrentThreshold);
-        setOvercurrentThreshold(config->OvercurrentThreshold);
+        setOvercurrentThreshold(config->OvercurrentThreshold, local);
         overcurrentActiveTimestamp = 0;
       }
     }
@@ -1083,6 +1083,10 @@ void Relay::setOvercurrentMaxAllowed(uint32_t value) {
 }
 
 void Relay::setOvercurrentThreshold(uint32_t value) {
+  setOvercurrentThreshold(value, true);
+}
+
+void Relay::setOvercurrentThreshold(uint32_t value, bool local) {
   if (value > overcurrentMaxAllowed) {
     value = overcurrentMaxAllowed;
   }
@@ -1090,9 +1094,9 @@ void Relay::setOvercurrentThreshold(uint32_t value) {
   if (overcurrentThreshold != value) {
     overcurrentThreshold = value;
     if (isStaircaseFunction()) {
-      triggerSetChannelConfig(SUPLA_CONFIG_TYPE_EXTENDED);
+      triggerSetChannelConfig(SUPLA_CONFIG_TYPE_EXTENDED, local);
     } else {
-      triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+      triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, local);
     }
     saveConfig();
   }

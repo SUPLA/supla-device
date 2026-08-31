@@ -313,6 +313,10 @@ void Supla::ElementWithChannelActions::onRegistered(
     case Supla::ChannelConfigState::LocalChangePending: {
       break;
     }
+    case Supla::ChannelConfigState::LocalChangeSent: {
+      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      break;
+    }
     default: {
       channelConfigState = Supla::ChannelConfigState::ResendConfig;
       break;
@@ -326,7 +330,9 @@ void Supla::ElementWithChannelActions::handleChannelConfigFinished() {
   if (channelConfigState == Supla::ChannelConfigState::WaitForConfigFinished) {
     channelConfigState = Supla::ChannelConfigState::None;
   }
-  if (receivedConfigTypes != usedConfigTypes) {
+  if (receivedConfigTypes != usedConfigTypes &&
+      channelConfigState != Supla::ChannelConfigState::LocalChangePending &&
+      channelConfigState != Supla::ChannelConfigState::LocalChangeSent) {
     SUPLA_LOG_INFO(
         "Channel[%d] some config is missing on server... (rcv: 0x%X != used: "
         "0x%X)",
@@ -397,7 +403,8 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
   // Skip config if local config changed (except for OCR which is always
   // accepted)
   if (result->ConfigType != SUPLA_CONFIG_TYPE_OCR) {
-    if (channelConfigState == Supla::ChannelConfigState::LocalChangePending &&
+    if ((channelConfigState == Supla::ChannelConfigState::LocalChangePending ||
+         channelConfigState == Supla::ChannelConfigState::LocalChangeSent) &&
         !local) {
       SUPLA_LOG_INFO(
           "Channel[%d] Ignoring config (local config changed offline)",
@@ -506,10 +513,17 @@ void Supla::ElementWithChannelActions::purgeConfig() {
   }
 }
 
-void Supla::ElementWithChannelActions::triggerSetChannelConfig(int configType) {
+void Supla::ElementWithChannelActions::triggerSetChannelConfig(
+    int configType, bool localChange) {
   // don't trigger setChannelConfig if it failed in previous attempt
   if (channelConfigState != Supla::ChannelConfigState::SetChannelConfigFailed) {
-    channelConfigState = Supla::ChannelConfigState::ResendConfig;
+    if (localChange ||
+        (channelConfigState != Supla::ChannelConfigState::LocalChangePending &&
+         channelConfigState != Supla::ChannelConfigState::LocalChangeSent)) {
+      channelConfigState = localChange
+                                ? Supla::ChannelConfigState::LocalChangePending
+                                : Supla::ChannelConfigState::ResendConfig;
+    }
     receivedConfigTypes.clear(configType);
   }
 }

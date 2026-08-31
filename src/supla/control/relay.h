@@ -221,6 +221,7 @@ class Relay : public ChannelElement, public ActionHandler {
   };
 
   void applyDuration(int32_t durationMs, bool turnOn);
+  void setOvercurrentThreshold(uint32_t value, bool local);
 
   virtual void setNewChannelValue(bool value);
 

@@ -374,7 +374,7 @@ void ValveBase::saveConfig(bool local) {
     }
 
     if (local) {
-      triggerSetChannelConfig();
+      triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     } else {
       clearChannelConfigChangedFlag();
     }

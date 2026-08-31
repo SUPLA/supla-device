@@ -138,6 +138,14 @@ class TestingChannelElement : public Supla::ChannelElement {
     usedConfigTypes = ct;
   }
 
+  Supla::ChannelConfigState getChannelConfigState() const {
+    return channelConfigState;
+  }
+
+  int getAppliedConfigCount() const {
+    return appliedConfigCount;
+  }
+
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
                                               bool local) override {
     (void)(local);
@@ -145,6 +153,7 @@ class TestingChannelElement : public Supla::ChannelElement {
     if (!usedConfigTypes.isSet(result->ConfigType)) {
       return Supla::ApplyConfigResult::NotSupported;
     }
+    appliedConfigCount++;
     if (result->ConfigSize == 0) {
       return Supla::ApplyConfigResult::SetChannelConfigNeeded;
     }
@@ -169,6 +178,9 @@ class TestingChannelElement : public Supla::ChannelElement {
     cfg[3] = 3;
     *size = 4;
   }
+
+ private:
+  int appliedConfigCount = 0;
 };
 
 using ::testing::_;
@@ -353,4 +365,138 @@ TEST(ChannelElementTests, ConfigExchange2xNoConfigOnServer) {
     element.iterateAlways();
     element.iterateConnected();
   }
+}
+
+TEST(ChannelElementTests, LocalConfigChangeKeepsProvenanceUntilAcknowledged) {
+  Supla::Channel::resetToDefaults();
+
+  SuplaSrpcLayerMock srpc;
+  TestingChannelElement element;
+  auto channel = element.getChannel();
+  channel->setType(SUPLA_CHANNELTYPE_RELAY);
+  channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  element.setUsedConfigTypes(configTypes);
+  element.onRegistered(&srpc);
+
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = channel->getChannelNumber();
+  config.Func = SUPLA_CHANNELFNC_POWERSWITCH;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = 4;
+  EXPECT_EQ(element.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  element.handleChannelConfigFinished();
+  EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
+
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::LocalChangePending);
+
+  EXPECT_EQ(element.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(element.getAppliedConfigCount(), 1);
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::LocalChangePending);
+  element.handleChannelConfigFinished();
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::LocalChangePending);
+
+  EXPECT_CALL(
+      srpc,
+      setChannelConfig(
+          0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_DEFAULT))
+      .WillOnce(Return(true));
+  EXPECT_FALSE(element.iterateConnected());
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::LocalChangeSent);
+
+  TSDS_SetChannelConfigResult result = {};
+  result.ChannelNumber = channel->getChannelNumber();
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  result.Result = SUPLA_CONFIG_RESULT_TRUE;
+  element.handleSetChannelConfigResult(&result);
+  EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
+}
+
+TEST(ChannelElementTests, LocalConfigChangeFailureDoesNotRetryIndefinitely) {
+  Supla::Channel::resetToDefaults();
+
+  SuplaSrpcLayerMock srpc;
+  TestingChannelElement element;
+  auto channel = element.getChannel();
+  channel->setType(SUPLA_CHANNELTYPE_RELAY);
+  channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  element.setUsedConfigTypes(configTypes);
+  element.onRegistered(&srpc);
+
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = channel->getChannelNumber();
+  config.Func = SUPLA_CHANNELFNC_POWERSWITCH;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = 4;
+  EXPECT_EQ(element.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  element.handleChannelConfigFinished();
+
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+  EXPECT_CALL(
+      srpc,
+      setChannelConfig(
+          0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_DEFAULT))
+      .WillOnce(Return(true));
+  EXPECT_FALSE(element.iterateConnected());
+
+  TSDS_SetChannelConfigResult result = {};
+  result.ChannelNumber = channel->getChannelNumber();
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  result.Result = SUPLA_CONFIG_RESULT_FALSE;
+  element.handleSetChannelConfigResult(&result);
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::SetChannelConfigFailed);
+
+  EXPECT_TRUE(element.iterateConnected());
+  EXPECT_TRUE(element.iterateConnected());
+}
+
+TEST(ChannelElementTests, GenericConfigResendKeepsGenericState) {
+  Supla::Channel::resetToDefaults();
+
+  SuplaSrpcLayerMock srpc;
+  TestingChannelElement element;
+  auto channel = element.getChannel();
+  channel->setType(SUPLA_CHANNELTYPE_RELAY);
+  channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  element.setUsedConfigTypes(configTypes);
+  element.onRegistered(&srpc);
+
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = channel->getChannelNumber();
+  config.Func = SUPLA_CHANNELFNC_POWERSWITCH;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = 4;
+  EXPECT_EQ(element.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  element.handleChannelConfigFinished();
+
+  element.triggerSetChannelConfig();
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::ResendConfig);
+
+  EXPECT_CALL(
+      srpc,
+      setChannelConfig(
+          0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_DEFAULT))
+      .WillOnce(Return(true));
+  EXPECT_FALSE(element.iterateConnected());
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::SetChannelConfigSend);
 }

@@ -375,7 +375,7 @@ void ContainerParameters::onProcessingEnd() {
   muteSet = false;
 
   if (configChanged) {
-    container->triggerSetChannelConfig();
+    container->triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     container->saveConfig();
     container->printConfig();
   }

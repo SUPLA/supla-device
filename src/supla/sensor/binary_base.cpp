@@ -272,7 +272,7 @@ bool BinaryBase::setServerInvertLogic(bool invertLogic, bool local) {
   }
 
   if (local) {
-    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     saveConfig();
   }
   return true;
@@ -301,7 +301,7 @@ bool BinaryBase::setSensitivity(uint8_t sensitivity, bool local) {
   }
   config.sensitivity = sensitivity;
   if (local) {
-    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     saveConfig();
   }
   return true;
@@ -320,7 +320,7 @@ bool BinaryBase::setLocalAlarmIndication(uint8_t localAlarmIndication,
   }
   config.localAlarmIndication = localAlarmIndication;
   if (local) {
-    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     saveConfig();
   }
   return true;
@@ -337,7 +337,7 @@ bool BinaryBase::setFilteringTimeMs(uint16_t filteringTimeMs, bool local) {
   }
   config.filteringTimeMs = filteringTimeMs;
   if (local) {
-    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     saveConfig();
   }
   return true;
@@ -354,7 +354,7 @@ bool BinaryBase::setTimeoutDs(uint16_t timeoutDs, bool local) {
   }
   config.timeoutDs = timeoutDs;
   if (local) {
-    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     saveConfig();
   }
   return true;

@@ -1219,6 +1219,57 @@ TEST_F(RelayFixture, TimerDurationKeepsInt32Range) {
   }
 }
 
+TEST_F(RelayFixture, CountdownTimerStartedAtMillisZeroRemainsActive) {
+  const int gpio = 1;
+  Supla::Control::Relay relay(gpio);
+  relay.setDefaultStateRestore();
+  storage.defaultInitialization(5);
+
+  EXPECT_CALL(storage, readStorage(_, _, 4, _))
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+        uint32_t storedDurationMs = 0;
+        memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
+        return 4;
+      });
+  EXPECT_CALL(storage, readStorage(_, _, 1, _))
+      .WillRepeatedly(DoAll(SetArgPointee<1>(0), Return(1)));
+
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
+
+  relay.onLoadState();
+  relay.onInit();
+  relay.onRegistered(nullptr);
+
+  uint32_t remainingSec = 0;
+  relay.turnOn(60000);
+  EXPECT_TRUE(relay.getRemainingCountdownTimerSec(&remainingSec));
+  EXPECT_EQ(remainingSec, 60u);
+
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 59999, 0, 0));
+  EXPECT_FALSE(relay.iterateConnected());
+
+  time.advance(1000);
+  EXPECT_TRUE(relay.getRemainingCountdownTimerSec(&remainingSec));
+  EXPECT_EQ(remainingSec, 59u);
+
+  EXPECT_CALL(storage, writeStorage(_, _, 4))
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 58999u);
+        return 4;
+      });
+  EXPECT_CALL(storage, writeStorage(_, Pointee(RELAY_FLAGS_ON), 1))
+      .WillOnce(Return(1));
+  relay.onSaveState();
+
+  relay.turnOff();
+  EXPECT_FALSE(relay.getRemainingCountdownTimerSec(&remainingSec));
+}
+
 TEST_F(RelayFixture, CyclicModeServerOffZeroStopsButOffWithDurationContinues) {
   const int gpio = 1;
   Supla::Control::Relay relay(gpio);
@@ -1232,6 +1283,7 @@ TEST_F(RelayFixture, CyclicModeServerOffZeroStopsButOffWithDurationContinues) {
 
   relay.enableCyclicMode(1000, 5000);
   relay.onInit();
+  time.advance(1);
 
   TSD_SuplaChannelNewValue newValue = {};
   newValue.ChannelNumber = relay.getChannelNumber();

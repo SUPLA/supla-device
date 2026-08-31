@@ -571,6 +571,9 @@ void Relay::applyDuration(int32_t duration, bool turnOn) {
 
   if (durationMs != 0) {
     durationTimestamp = millis();
+    if (durationTimestamp == 0) {
+      durationTimestamp = UINT32_MAX;
+    }
   } else {
     durationTimestamp = 0;
   }

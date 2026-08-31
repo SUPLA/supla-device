@@ -58,10 +58,12 @@ class ADS1115 : public Supla::Io::Base {
       return -1;
     }
     if (mutex_) mutex_->lock();
-    if (ads_.isConnected()) {
-      ads_.setGain(gain_);
-      readValue_[pin] = ads_.readADC(pin);
+    if (!ads_.isConnected()) {
+      if (mutex_) mutex_->unlock();
+      return -1;
     }
+    ads_.setGain(gain_);
+    readValue_[pin] = ads_.readADC(pin);
     if (mutex_) mutex_->unlock();
     return readValue_[pin];
   }

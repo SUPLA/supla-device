@@ -165,6 +165,8 @@ void Channel::setNewValue(double dbl) {
       int integerPart = static_cast<int>(dbl);
       int fractionalPart = abs(static_cast<int>(dbl * 100) % 100);
       const char *sign = dbl < 0 && integerPart == 0 ? "-" : "";
+      (void)(fractionalPart);
+      (void)(sign);
       SUPLA_LOG_DEBUG("Channel(%d) value changed to %s%d.%02d", channelNumber,
           sign, integerPart, fractionalPart);
     }

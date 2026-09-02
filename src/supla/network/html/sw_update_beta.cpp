@@ -1,30 +1,15 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef ARDUINO_ARCH_AVR
+#include "sw_update_beta.h"
+
 #include <string.h>
 #include <supla/device/sw_update.h>
 #include <supla/network/web_sender.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
-
-#include "sw_update_beta.h"
 
 namespace Supla {
 
@@ -41,18 +26,42 @@ void SwUpdateBeta::send(Supla::WebSender* sender) {
   if (cfg) {
     bool update = (cfg->getDeviceMode() == DEVICE_MODE_SW_UPDATE);
     bool beta = cfg->isSwUpdateBeta();
+    bool skipCert = cfg->isSwUpdateSkipCert();
 
     const char key[] = "updbeta";
     sender->labeledField(key, "Firmware update", [&]() {
-      auto select = sender->selectTag(key, key);
-      select.body([&]() {
-        sender->selectOption(0, "NO", !update);
-        sender->selectOption(1, "YES", update && !beta);
-        sender->selectOption(2, "YES - BETA", update && beta);
+      sender->tag("div").body([&]() {
+        auto select = sender->selectTag(key, key);
+        select.body([&]() {
+          sender->selectOption(0, "NO", !update);
+          sender->selectOption(1, "YES", update && !beta);
+          sender->selectOption(2, "YES - BETA", update && beta);
+          sender->selectOption(
+              3,
+              "YES - ONE-TIME RECOVERY MODE (SKIP CERTIFICATE)",
+              update && skipCert);
+        });
+        sender->tag("div")
+            .attr("class", "hint")
+            .body("NO: keep firmware update disabled.");
+        sender->tag("div")
+            .attr("class", "hint")
+            .body(
+                "YES: normal OTA update with HTTPS certificate verification.");
+        sender->tag("div")
+            .attr("class", "hint")
+            .body(
+                "YES - BETA: install beta firmware. Beta versions may contain "
+                "bugs "
+                "and your device may not work properly.");
+        sender->tag("div")
+            .attr("class", "hint")
+            .body(
+                "YES - ONE-TIME RECOVERY MODE: use only when the OTA "
+                "certificate "
+                "has expired. This mode is cleared automatically after the "
+                "update.");
       });
-      sender->tag("div").attr("class", "hint").body(
-          "Warning: beta SW versions may contain bugs and your device may not "
-          "work properly.");
     });
   }
 }
@@ -65,17 +74,26 @@ bool SwUpdateBeta::handleResponse(const char* key, const char* value) {
       default:
       case 0: {
         cfg->setDeviceMode(DEVICE_MODE_NORMAL);
+        cfg->setSwUpdateSkipCert(false);
         cfg->setSwUpdateBeta(false);
         break;
       }
       case 1: {
         cfg->setDeviceMode(DEVICE_MODE_SW_UPDATE);
+        cfg->setSwUpdateSkipCert(false);
         cfg->setSwUpdateBeta(false);
         break;
       }
       case 2: {
         cfg->setDeviceMode(DEVICE_MODE_SW_UPDATE);
+        cfg->setSwUpdateSkipCert(false);
         cfg->setSwUpdateBeta(true);
+        break;
+      }
+      case 3: {
+        cfg->setDeviceMode(DEVICE_MODE_SW_UPDATE);
+        cfg->setSwUpdateSkipCert(true);
+        cfg->setSwUpdateBeta(false);
         break;
       }
     }

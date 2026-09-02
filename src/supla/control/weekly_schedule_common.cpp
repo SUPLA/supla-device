@@ -41,7 +41,7 @@ int getWeeklyScheduleProgramId(const TChannelConfig_WeeklySchedule *schedule,
   if (schedule == nullptr) {
     return 0;
   }
-  if (index < 0 || index > SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) {
+  if (index < 0 || index >= SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) {
     return 0;
   }
 

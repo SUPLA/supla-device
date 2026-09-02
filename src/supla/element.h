@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_ELEMENT_H_
 #define SRC_SUPLA_ELEMENT_H_
@@ -31,12 +16,17 @@ namespace Protocol {
 class SuplaSrpc;
 }  // namespace Protocol
 
+enum class ElementMode : uint8_t {
+  Registered,
+  Detached,
+};
+
 /**
  * Base class for all elements of SuplaDevice
  */
 class Element {
  public:
-  Element();
+  explicit Element(ElementMode mode = ElementMode::Registered);
   virtual ~Element();
   /**
    * Returns first Element (based on creation order)
@@ -186,6 +176,8 @@ class Element {
    *         false otherwise.
    */
   virtual bool iterateConnected();
+  /// deprecated
+  virtual bool iterateConnected(void *ptr);
 
   /**
    * Method called on timer interupt.
@@ -235,6 +227,17 @@ class Element {
    */
   virtual void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value);
 
+  /**
+   * Returns active countdown timer remaining time in seconds.
+   *
+   * @param remainingSec output pointer for remaining seconds. It is set to 0
+   *                     when the countdown timer is not available or inactive.
+   *
+   * @return true when remainingSec contains a valid active timer value, false
+   *         otherwise.
+   */
+  virtual bool getRemainingCountdownTimerSec(uint32_t *remainingSec) const;
+
   // Handles "get channel state" request from server
   // channelState is prefilled with network and device status informations
   /**
@@ -254,6 +257,13 @@ class Element {
    */
   virtual int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);
 
+  /**
+   * Returns timeout in milliseconds for CALCFG requests that become pending.
+   * Zero means no timeout.
+   */
+  virtual uint32_t getCalcfgPendingTimeoutMs(
+      TSD_DeviceCalCfgRequest *request) const;
+
   // Returns SUPLA_RESULTCODE_
   /**
    * Handles "set channel config" request from server
@@ -265,7 +275,7 @@ class Element {
    * @return SUPLA_RESULTCODE_* (see proto.h)
    */
   virtual uint8_t handleChannelConfig(TSD_ChannelConfig *newChannelConfig,
-                                      bool local);
+                                      bool local = false);
 
   /**
    * Handles "set channel config" with "weekly schedule" type request from
@@ -280,8 +290,8 @@ class Element {
    * @return SUPLA_RESULTCODE_* (see proto.h)
    */
   virtual uint8_t handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
-                                       bool altSchedule,
-                                       bool local);
+                                       bool altSchedule = false,
+                                       bool local = false);
 
   // handleSetChannelConfigResult should handle both standard channel config
   // and weekly schedule config
@@ -303,6 +313,13 @@ class Element {
    * for this element.
    */
   virtual void handleChannelConfigFinished();
+  /**
+   * Handles "channel config finished" for a specific channel.
+   *
+   * The default implementation forwards the event to the primary channel
+   * handler only when the channel belongs to this element.
+   */
+  virtual void handleChannelConfigFinished(int channelNumber);
 
   /**
    * Returns channel number
@@ -345,6 +362,15 @@ class Element {
    */
   virtual const Channel *getSecondaryChannel() const;
   virtual Channel *getSecondaryChannel();
+
+  /**
+   * Returns pointer to the channel matching channelNumber.
+   *
+   * @return pointer to primary/secondary channel, nullptr if not owned by this
+   * element
+   */
+  const Channel *getChannelByChannelNumber(int channelNumber) const;
+  Channel *getChannelByChannelNumber(int channelNumber);
 
   /**
    * Generates key used for Config
@@ -411,6 +437,19 @@ class Element {
   bool setFunction(uint32_t newFunction);
 
   /**
+   * Sets channel's function at runtime.
+   *
+   * Elements which require additional runtime setup after a function change
+   * should override this method. The default implementation calls
+   * setFunction().
+   *
+   * @param newFunction
+   *
+   * @return true if function was changed, false otherwise
+   */
+  virtual bool setRuntimeFunction(uint32_t newFunction);
+
+  /**
    * Called when channel function changes
    *
    * @param currentFunction old function
@@ -421,6 +460,7 @@ class Element {
  protected:
   static Element *firstPtr;
   static bool invalidatePtr;
+  bool registeredElement = true;
   Element *nextPtr = nullptr;
 };
 

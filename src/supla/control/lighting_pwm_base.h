@@ -1,25 +1,12 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_CONTROL_LIGHTING_PWM_BASE_H_
 #define SRC_SUPLA_CONTROL_LIGHTING_PWM_BASE_H_
 
 #include <stdint.h>
+
+#include <supla/io/io_pin.h>
 
 #include "../action_handler.h"
 #include "../actions.h"
@@ -30,6 +17,9 @@
 #define RGBW_STATE_ON_INIT_ON      1
 
 namespace Supla {
+
+class Mutex;
+
 namespace Control {
 
 class BrightnessAdjuster {
@@ -76,7 +66,7 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
    * handle channel disabling based on parent's function.
    */
   explicit LightingPwmBase(LightingPwmBase *parent = nullptr);
-  virtual ~LightingPwmBase() = default;
+  virtual ~LightingPwmBase();
 
   void purgeConfig() override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
@@ -162,7 +152,6 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   void setBrightnessAdjuster(BrightnessAdjuster *adjuster);
   int getCurrentDimmerBrightness() const;
   int getCurrentRGBBrightness() const;
-  void setMaxHwValue(int newMaxHwValue);
 
   /**
    * Sets minimum PWM frequency.
@@ -194,6 +183,21 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   void setPwmFrequency(uint16_t pwmFrequency);
 
   /**
+   * Applies the same PWM frequency validation as setPwmFrequency().
+   *
+   * @param pwmFrequency [Hz]
+   * @param minPwmFrequency minimum allowed frequency [Hz]
+   * @param maxPwmFrequency maximum allowed frequency [Hz]
+   * @param stepPwmFrequency step between allowed frequencies [Hz]
+   *
+   * @return corrected PWM frequency [Hz]
+   */
+  static uint16_t normalizePwmFrequency(uint16_t pwmFrequency,
+                                        uint16_t minPwmFrequency,
+                                        uint16_t maxPwmFrequency,
+                                        uint16_t stepPwmFrequency);
+
+  /**
    * Sets PWM frequency step.
    * This will only set class member. Actual usage of PWM frequency settings
    * depends on RGBCCT object implementation.
@@ -201,6 +205,13 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
    * @param stepPwmFrequency [Hz]
    */
   void setStepPwmFrequency(uint16_t stepPwmFrequency);
+
+  /**
+   * Sets PWM resolution bits and updates the remembered hardware max value.
+   *
+   * This value is owned by the lighting instance and later applied to outputs.
+   */
+  void setPwmResolutionBits(uint8_t pwmResolutionBits);
 
   /**
    * Returns minimum PWM frequency
@@ -231,6 +242,11 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   uint16_t getStepPwmFrequency() const;
 
   /**
+   * Returns current PWM resolution bits remembered by this lighting instance.
+   */
+  uint8_t getPwmResolutionBits() const;
+
+  /**
    * Checks if this instance has parent
    *
    * @return true if this instance has parent
@@ -255,6 +271,11 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
    *         proper operation of it's function
    */
   int getMissingGpioCount() const;
+
+  void setMaxHwValue(int newMaxHwValue);
+
+  uint32_t scalePwmValueForOutput(const Supla::Io::IoPin &pin,
+                                  uint32_t value) const;
 
   void enableChannel();
   void disableChannel();
@@ -337,7 +358,6 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   enum ButtonControlType buttonControlType = BUTTON_FOR_RGBW;
   enum AutoIterateMode autoIterateMode = AutoIterateMode::OFF;
 
-  uint16_t maxHwValue = 1023;
   float minBrightnessRatio = 0.0f;
   float maxBrightnessRatio = 1.0f;
   float minColorBrightnessRatio = 0.0f;
@@ -351,6 +371,9 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   uint16_t pwmFrequency = 500;
   uint16_t stepPwmFrequency = 1;
 
+  uint16_t maxHwValue = 1023;
+  uint8_t pwmResolutionBits = 10;
+
   uint32_t previousChannelFunction = 0;
 
   float warmWhiteGain = 1.0;
@@ -359,6 +382,7 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   BrightnessAdjuster *brightnessAdjuster = nullptr;
   Supla::Control::Button *attachedButton = nullptr;
   LightingPwmBase *parent = nullptr;
+  Supla::Mutex *mutex = nullptr;
 };
 
 using RGBCCTBase = LightingPwmBase;

@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_DEVICE_CHANNEL_CONFLICT_RESOLVER_H_
 #define SRC_SUPLA_DEVICE_CHANNEL_CONFLICT_RESOLVER_H_
@@ -23,6 +8,12 @@
 
 namespace Supla {
 namespace Device {
+
+class ChannelConflictObserver {
+ public:
+  virtual ~ChannelConflictObserver() = default;
+  virtual void onChannelConflictResolution(bool handled) = 0;
+};
 
 class ChannelConflictResolver {
  public:
@@ -33,6 +24,46 @@ class ChannelConflictResolver {
       bool hasConfilictInvalidType,
       bool hasConfilictChannelMissingOnServer,
       bool hasConflictChannelMissingOnDevice) = 0;
+
+  void setChannelConflictObserver(ChannelConflictObserver *newObserver) {
+    observer = newObserver;
+  }
+
+ protected:
+  void notifyChannelConflictResolution(bool handled) {
+    if (observer != nullptr) {
+      observer->onChannelConflictResolution(handled);
+    }
+  }
+
+ private:
+  ChannelConflictObserver *observer = nullptr;
+};
+
+struct ChannelConflictResolverListItem {
+  ChannelConflictResolver *resolver = nullptr;
+  ChannelConflictResolverListItem *next = nullptr;
+};
+
+class ChannelConflictResolverList : public ChannelConflictResolver {
+ public:
+  ~ChannelConflictResolverList() override;
+
+  bool add(ChannelConflictResolver *resolver);
+  bool remove(ChannelConflictResolver *resolver);
+  void clear();
+  bool contains(ChannelConflictResolver *resolver) const;
+  bool isEmpty() const;
+
+  bool onChannelConflictReport(
+      uint8_t *channelReport,
+      uint8_t channelReportSize,
+      bool hasConfilictInvalidType,
+      bool hasConfilictChannelMissingOnServer,
+      bool hasConflictChannelMissingOnDevice) override;
+
+ private:
+  ChannelConflictResolverListItem *first = nullptr;
 };
 
 }  // namespace Device

@@ -1,20 +1,5 @@
-/*
- Copyright (C) malarz
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: malarz
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_SENSOR_SGP41_H_
 #define SRC_SUPLA_SENSOR_SGP41_H_
@@ -79,13 +64,13 @@ class SGP41 : public Element {
     uint16_t srawVoc = 0;
     uint16_t srawNox = 0;
 
-    if (temperature != TEMPERATURE_NOT_AVAILABLE) {
+    if (temperature >= -45 && temperature <= 130) {
       compensationT = static_cast<uint16_t>((temperature + 45) * 65535 / 175);
     } else {
       compensationT = defaultCompenstaionT;
     }
 
-    if (humidity != HUMIDITY_NOT_AVAILABLE) {
+    if (humidity >= 0 && humidity <= 100) {
       compensationRh = static_cast<uint16_t>(humidity * 65535 / 100);
     } else {
       compensationRh = defaultCompenstaionRh;
@@ -100,7 +85,9 @@ class SGP41 : public Element {
     }
 
     if (error) {
-      retryCount++;
+      if (retryCount <= 10) {
+        retryCount++;
+      }
       if (retryCount > 10) {
         vocchannel->setValue(NAN);
         noxchannel->setValue(NAN);

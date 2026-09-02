@@ -1,27 +1,43 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
-
-#ifndef SUPLA_TEST
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "sha256.h"
 
-#if defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
+#include <string.h>
+
+#if defined(SUPLA_TEST)
+
+Supla::Sha256::Sha256() : state{}, offset(0) {
+}
+
+Supla::Sha256::~Sha256() {
+}
+
+void Supla::Sha256::update(const uint8_t *data, const int size) {
+  if (data == nullptr || size <= 0) {
+    return;
+  }
+  for (int i = 0; i < size; i++) {
+    uint32_t index = offset + static_cast<uint32_t>(i);
+    state[index % 32] = static_cast<uint8_t>(
+        state[index % 32] + data[i] + static_cast<uint8_t>(index));
+  }
+  offset += static_cast<uint32_t>(size);
+}
+
+void Supla::Sha256::digest(uint8_t *output, int length) {
+  if (output == nullptr || length <= 0) {
+    return;
+  }
+  if (length > 32) {
+    length = 32;
+  }
+  memcpy(output, state, length);
+}
+
+#elif defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
 
 #include <mbedtls/md.h>
-#include <string.h>
 
 Supla::Sha256::Sha256() : ctx(nullptr) {
   mbedtls_md_context_t *mdCtx = new mbedtls_md_context_t();
@@ -85,5 +101,93 @@ void Supla::Sha256::digest(uint8_t *output, int length) {
   memcpy(output, fullDigest, length);
 }
 
-#endif  // SUPLA_DEVICE_ESP32
-#endif  // SUPLA_TEST
+#elif defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+
+#include <bearssl/bearssl_hash.h>
+
+Supla::Sha256::Sha256() : ctx(nullptr) {
+  br_sha256_context *shaCtx = new br_sha256_context();
+  br_sha256_init(shaCtx);
+  ctx = shaCtx;
+}
+
+Supla::Sha256::~Sha256() {
+  delete static_cast<br_sha256_context *>(ctx);
+  ctx = nullptr;
+}
+
+void Supla::Sha256::update(const uint8_t *data, const int size) {
+  if (ctx == nullptr || data == nullptr || size <= 0) {
+    return;
+  }
+  br_sha256_update(static_cast<br_sha256_context *>(ctx), data, size);
+}
+
+void Supla::Sha256::digest(uint8_t *output, int length) {
+  if (ctx == nullptr || output == nullptr || length <= 0) {
+    return;
+  }
+
+  uint8_t fullDigest[32] = {};
+  br_sha256_context tmp = *static_cast<br_sha256_context *>(ctx);
+  br_sha256_out(&tmp, fullDigest);
+
+  if (length > 32) {
+    length = 32;
+  }
+  memcpy(output, fullDigest, length);
+}
+
+#elif defined(SUPLA_LINUX)
+
+#include <openssl/evp.h>
+
+Supla::Sha256::Sha256() : ctx(nullptr) {
+  EVP_MD_CTX *mdCtx = EVP_MD_CTX_new();
+  if (mdCtx == nullptr) {
+    return;
+  }
+  if (EVP_DigestInit_ex(mdCtx, EVP_sha256(), nullptr) != 1) {
+    EVP_MD_CTX_free(mdCtx);
+    return;
+  }
+  ctx = mdCtx;
+}
+
+Supla::Sha256::~Sha256() {
+  EVP_MD_CTX_free(static_cast<EVP_MD_CTX *>(ctx));
+  ctx = nullptr;
+}
+
+void Supla::Sha256::update(const uint8_t *data, const int size) {
+  if (ctx == nullptr || data == nullptr || size <= 0) {
+    return;
+  }
+  EVP_DigestUpdate(static_cast<EVP_MD_CTX *>(ctx), data, size);
+}
+
+void Supla::Sha256::digest(uint8_t *output, int length) {
+  if (ctx == nullptr || output == nullptr || length <= 0) {
+    return;
+  }
+
+  uint8_t fullDigest[EVP_MAX_MD_SIZE] = {};
+  unsigned int fullDigestLength = 0;
+  EVP_MD_CTX *tmp = EVP_MD_CTX_new();
+  if (tmp == nullptr) {
+    return;
+  }
+  if (EVP_MD_CTX_copy_ex(tmp, static_cast<EVP_MD_CTX *>(ctx)) != 1 ||
+      EVP_DigestFinal_ex(tmp, fullDigest, &fullDigestLength) != 1) {
+    EVP_MD_CTX_free(tmp);
+    return;
+  }
+  EVP_MD_CTX_free(tmp);
+
+  if (length > static_cast<int>(fullDigestLength)) {
+    length = static_cast<int>(fullDigestLength);
+  }
+  memcpy(output, fullDigest, length);
+}
+
+#endif  // ESP32/SUPLA_DEVICE_ESP32/ESP8266/SUPLA_LINUX

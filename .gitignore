@@ -12,8 +12,11 @@ aes_key.bin
 prvtkey.pem
 aes_key_devdata.bin
 .clang_complete
-extras/docs
+extras/docs/*
+!extras/docs/mqtt/
+!extras/docs/mqtt/**
 .vscode/settings.json
 aes_key.bin
 prvtkey.pem
 aes_key_devdata.bin
+.clangd

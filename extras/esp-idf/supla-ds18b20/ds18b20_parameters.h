@@ -1,23 +1,8 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
-
-#ifndef _SRC_SUPLA_NETWORK_HTML_DS18B20_PARAMETERS_H_
-#define _SRC_SUPLA_NETWORK_HTML_DS18B20_PARAMETERS_H_
+#ifndef EXTRAS_ESP_IDF_SUPLA_DS18B20_DS18B20_PARAMETERS_H_
+#define EXTRAS_ESP_IDF_SUPLA_DS18B20_DS18B20_PARAMETERS_H_
 
 #include <supla/network/html_element.h>
 
@@ -27,7 +12,7 @@ namespace Html {
 
 class DS18B20Parameters : public HtmlElement {
  public:
-  DS18B20Parameters(int channel);
+  explicit DS18B20Parameters(int channel);
   virtual ~DS18B20Parameters();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
@@ -39,4 +24,4 @@ class DS18B20Parameters : public HtmlElement {
 };  // namespace Html
 };  // namespace Supla
 
-#endif  // _SRC_SUPLA_NETWORK_HTML_DS18B20_PARAMETERS_H_
+#endif  // EXTRAS_ESP_IDF_SUPLA_DS18B20_DS18B20_PARAMETERS_H_

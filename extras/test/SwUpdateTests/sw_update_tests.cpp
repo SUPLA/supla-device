@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SuplaDevice.h>
 #include <arduino_mock.h>
@@ -49,7 +34,7 @@ class SwUpdateTests : public ::testing::Test {
   SuplaDeviceClass sd;
   BoardMock board;
   NetworkClientMock *client = nullptr;
-  ConfigMock cfg;
+  ::testing::NiceMock<ConfigMock> cfg;
   SwUpdateMock swUpdate;
 
   virtual void SetUp() {
@@ -61,11 +46,15 @@ class SwUpdateTests : public ::testing::Test {
     Supla::Channel::resetToDefaults();
     EXPECT_CALL(cfg, init()).WillOnce(Return(true));
     EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
+    EXPECT_CALL(cfg, isSwUpdateSkipCert()).WillRepeatedly(Return(false));
     EXPECT_CALL(net, isWifiConfigRequired()).WillRepeatedly(Return(true));
   }
 
   virtual void TearDown() {
     Supla::Channel::resetToDefaults();
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
+    }
     client = nullptr;
   }
 
@@ -77,7 +66,7 @@ class SwUpdateTests : public ::testing::Test {
   }
 };
 
-TEST_F(SwUpdateTests, FirmwareCheckAndNormalUpdate) {
+TEST_F(SwUpdateTests, FirmwareCheckAndRetriesAreBounded) {
   EXPECT_CALL(srpc, srpc_dcs_async_get_user_localtime(_))
       .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
 
@@ -165,7 +154,7 @@ TEST_F(SwUpdateTests, FirmwareCheckAndNormalUpdate) {
       .WillOnce(Return(false))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2015)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks_g(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks_g(_, _)).Times(2);
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
 
   EXPECT_CALL(srpc, srpc_rd_free(_)).Times(AtLeast(1));
@@ -325,6 +314,10 @@ TEST_F(SwUpdateTests, FirmwareCheckAndNormalUpdate) {
   Supla::messageReceived(nullptr, 0, 0, srpcLayer, 28);
   moveTime(10);
 
+  // A stale recovery-mode flag must not disable certificate validation for
+  // cloud-triggered firmware updates.
+  EXPECT_CALL(cfg, isSwUpdateSkipCert()).WillRepeatedly(Return(true));
+
   // authorized and supported, start update, new version not available
   EXPECT_CALL(srpc, srpc_getdata(_, _, _))
       .WillOnce([&calcfgRequest](
@@ -348,19 +341,16 @@ TEST_F(SwUpdateTests, FirmwareCheckAndNormalUpdate) {
       });
 
   EXPECT_CALL(swUpdate, iterate())
-//      .WillOnce([this]() {
-//        swUpdate.setNewVersion("1.2.3");
-//        swUpdate.setAborted();
-//        EXPECT_FALSE(swUpdate.isSecurityOnly());
-//      })
-      .WillOnce([this]() {
-        swUpdate.setNewVersion("1.2.3");
+      .Times(4)
+      .WillRepeatedly([this]() {
         EXPECT_FALSE(swUpdate.isSecurityOnly());
-        swUpdate.setFinished();
+        EXPECT_FALSE(swUpdate.isSkipCertOnFacade());
+        swUpdate.setRetryAllowed();
+        swUpdate.setAborted();
       });
 
-  EXPECT_CALL(board, deviceSoftwareReset()).Times(1);
-  EXPECT_CALL(*client, stop()).Times(1);
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+  EXPECT_CALL(*client, stop()).Times(4);
   EXPECT_CALL(srpc, srpc_free(_)).Times(1);
   EXPECT_CALL(cfg, setDeviceMode(Supla::DeviceMode::DEVICE_MODE_NORMAL))
       .Times(1);
@@ -368,7 +358,7 @@ TEST_F(SwUpdateTests, FirmwareCheckAndNormalUpdate) {
   EXPECT_CALL(cfg, commit()).Times(AtLeast(1));
 
   Supla::messageReceived(nullptr, 0, 0, srpcLayer, 28);
-  moveTime(3);
+  moveTime(10);
 }
 
 TEST_F(SwUpdateTests, SecurityOnlyUpdate) {
@@ -841,11 +831,16 @@ TEST_F(SwUpdateTests, AutomaticUpdateTriggeredInternallySecurityOnly) {
 //  EXPECT_CALL(cfg, setSwUpdateBeta(false)).Times(1);
   EXPECT_CALL(cfg, commit()).Times(AtLeast(1));
 
+  // A stale recovery-mode flag must not disable certificate validation for
+  // periodic automatic OTA checks.
+  EXPECT_CALL(cfg, isSwUpdateSkipCert()).WillRepeatedly(Return(true));
+
   EXPECT_CALL(swUpdate, iterate())
       .WillOnce([this]() {
         swUpdate.setNewVersion("1.2.3");
         swUpdate.setFinished();
         EXPECT_TRUE(swUpdate.isSecurityOnlyOnFacade());
+        EXPECT_FALSE(swUpdate.isSkipCertOnFacade());
       });
   moveTime(5);
   time.advance(Supla::AutomaticOtaCheckInterval);
@@ -1433,6 +1428,7 @@ TEST_F(SwUpdateTests, SwUpdateFromCfgDeviceMode) {
   EXPECT_CALL(cfg, isSwUpdateBeta()).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getDeviceMode())
       .WillRepeatedly(Return(Supla::DEVICE_MODE_SW_UPDATE));
+  EXPECT_CALL(cfg, isSwUpdateSkipCert()).WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
     char temp[] = "mega.supla.org";
     memcpy(server, temp, strlen(temp));
@@ -1505,11 +1501,18 @@ TEST_F(SwUpdateTests, SwUpdateFromCfgDeviceMode) {
   //  EXPECT_CALL(srpc, srpc_rd_free(_)).Times(AtLeast(0));
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
-  EXPECT_CALL(swUpdate, iterate()).WillOnce([this]() {
-    swUpdate.setNewVersion("2.1.4");
-    swUpdate.setFinished();
-    EXPECT_FALSE(swUpdate.isSecurityOnlyOnFacade());
-  });
+  EXPECT_CALL(swUpdate, iterate())
+      .WillOnce([this]() {
+        EXPECT_TRUE(swUpdate.isSkipCertOnFacade());
+        swUpdate.setRetryAllowed();
+        swUpdate.setAborted();
+      })
+      .WillOnce([this]() {
+        swUpdate.setNewVersion("2.1.4");
+        swUpdate.setFinished();
+        EXPECT_FALSE(swUpdate.isSecurityOnlyOnFacade());
+        EXPECT_TRUE(swUpdate.isSkipCertOnFacade());
+      });
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(1);
   EXPECT_CALL(*client, stop()).Times(0);
@@ -1519,7 +1522,7 @@ TEST_F(SwUpdateTests, SwUpdateFromCfgDeviceMode) {
   EXPECT_CALL(cfg, setSwUpdateBeta(false)).Times(1);
   EXPECT_CALL(cfg, commit()).Times(AtLeast(1));
 
-  moveTime(3);
+  moveTime(5);
   delete client;
 }
 

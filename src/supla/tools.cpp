@@ -1,25 +1,11 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "tools.h"
 #include <string.h>
 #include <supla-common/proto.h>
 #include <ctype.h>
+#include <limits.h>
 
 #if defined(ARDUINO_ARCH_AVR)
 #include <stdlib.h>
@@ -33,6 +19,7 @@
 #include <esp_random.h>
 #endif
 
+#include <supla/log_wrapper.h>
 #include "supla/IEEE754tools.h"
 
 void float2DoublePacked(float number, uint8_t *bar, int byteOrder) {
@@ -113,38 +100,47 @@ int generateHexString(const void *input,
   return destIdx;
 }
 
-void hexStringToArray(const char *input, char *output, int outputLength) {
-  for (int i = 0; i < outputLength; i++) {
-    output[i] = hexStringToInt(input + 2*i, 2);
+static bool hexCharToNibble(char hexChar, uint8_t *result) {
+  if (hexChar >= 'A' && hexChar <= 'F') {
+    *result = static_cast<uint8_t>(hexChar - 'A' + 10);
+    return true;
   }
-  return;
+  if (hexChar >= 'a' && hexChar <= 'f') {
+    *result = static_cast<uint8_t>(hexChar - 'a' + 10);
+    return true;
+  }
+  if (hexChar >= '0' && hexChar <= '9') {
+    *result = static_cast<uint8_t>(hexChar - '0');
+    return true;
+  }
+  return false;
 }
 
-uint32_t hexStringToInt(const char *str, int len) {
-  if (len == -1) {
-    len = strlen(str);
+bool hexByteToInt(const char *str, uint8_t *result) {
+  if (str == nullptr || result == nullptr) {
+    return false;
   }
 
-  uint32_t result = 0;
-
-  for (int i = 0; i < len; i++) {
-    if (i) {
-      result <<= 4;
-    }
-    uint32_t n = 0;
-
-    if (str[i] >= 'A' && str[i] <= 'F') {
-      n = str[i] - 55;
-    } else if (str[i] >= 'a' && str[i] <= 'f') {
-      n = str[i] - 87;
-    } else if (str[i] >= '0' && str[i] <= '9') {
-      n = str[i] - 48;
-    }
-
-    result += n;
+  uint8_t high = 0;
+  uint8_t low = 0;
+  if (!hexCharToNibble(str[0], &high) || !hexCharToNibble(str[1], &low)) {
+    return false;
   }
 
-  return result;
+  *result = static_cast<uint8_t>((high << 4) | low);
+  return true;
+}
+
+bool hexStringToArray(const char *input, char *output, int outputLength) {
+  for (int i = 0; i < outputLength; i++) {
+    uint8_t value = 0;
+    if (!hexByteToInt(input + 2 * i, &value)) {
+      output[i] = 0;
+      return false;
+    }
+    output[i] = static_cast<char>(value);
+  }
+  return true;
 }
 
 uint32_t stringToUInt(const char *str, int len) {
@@ -152,20 +148,23 @@ uint32_t stringToUInt(const char *str, int len) {
     len = strlen(str);
   }
 
-  uint32_t result = 0;
+  uint64_t result = 0;
+  const uint64_t maxValue = UINT32_MAX;
 
   for (int i = 0; i < len; i++) {
     if (str[i] < '0' || str[i] > '9') {
+      SUPLA_LOG_ERROR("stringToUInt: invalid character");
       return 0;
     }
-    if (i) {
-      result *= 10;
+    uint8_t digit = static_cast<uint8_t>(str[i] - '0');
+    if (result > (maxValue - digit) / 10) {
+      SUPLA_LOG_ERROR("stringToUInt: overflow");
+      return 0;
     }
-
-    result += static_cast<uint8_t>(str[i]-'0');
+    result = result * 10 + digit;
   }
 
-  return result;
+  return static_cast<uint32_t>(result);
 }
 
 int32_t stringToInt(const char *str, int len) {
@@ -173,8 +172,9 @@ int32_t stringToInt(const char *str, int len) {
     len = strlen(str);
   }
 
-  int32_t result = 0;
   bool minusFound = false;
+  uint64_t result = 0;
+  const uint64_t maxValue = static_cast<uint64_t>(INT32_MAX) + 1;
 
   for (int i = 0; i < len; i++) {
     if (str[i] == '-') {
@@ -182,23 +182,34 @@ int32_t stringToInt(const char *str, int len) {
         minusFound = true;
         continue;
       } else {
+        SUPLA_LOG_ERROR("stringToInt: invalid minus position");
         return 0;
       }
     }
     if (str[i] < '0' || str[i] > '9') {
+      SUPLA_LOG_ERROR("stringToInt: invalid character");
       return 0;
     }
-    if (i) {
-      result *= 10;
+    uint8_t digit = static_cast<uint8_t>(str[i] - '0');
+    uint64_t signedLimit = minusFound ? maxValue : INT32_MAX;
+    if (result > (signedLimit - digit) / 10) {
+      SUPLA_LOG_ERROR("stringToInt: overflow");
+      return 0;
     }
-
-    result += static_cast<uint8_t>(str[i]-'0');
+    result = result * 10 + digit;
   }
 
-  return minusFound ? -result : result;
+  if (minusFound) {
+    if (result == maxValue) {
+      return INT32_MIN;
+    }
+    return -static_cast<int32_t>(result);
+  }
+
+  return static_cast<int32_t>(result);
 }
 
-void urlDecodeInplace(char *buffer, int size) {
+bool urlDecodeInplace(char *buffer, int size) {
   auto insertPtr = buffer;
   auto parserPtr = buffer;
   auto endPtr = &buffer[size];
@@ -208,7 +219,11 @@ void urlDecodeInplace(char *buffer, int size) {
     } else if (*parserPtr == '%') {
       parserPtr++;  // skip '%'
       if (parserPtr + 1 < endPtr) {
-        *insertPtr = static_cast<char>(hexStringToInt(parserPtr, 2));
+        uint8_t decoded = 0;
+        if (!hexByteToInt(parserPtr, &decoded)) {
+          return false;
+        }
+        *insertPtr = static_cast<char>(decoded);
         parserPtr++;  // there are 2 bytes, so we shift one here
                       // decode %HEX
       } else {
@@ -224,6 +239,7 @@ void urlDecodeInplace(char *buffer, int size) {
     parserPtr++;
   }
   *insertPtr = '\0';
+  return true;
 }
 
 int urlEncode(const char *input, char *output, int outputMaxSize) {
@@ -479,6 +495,9 @@ const char *Supla::getRelayChannelName(int channelFunction) {
     case SUPLA_CHANNELFNC_LIGHTSWITCH: {
       return "Light switch";
     }
+    case SUPLA_CHANNELFNC_STAIRCASETIMER: {
+      return "Staircase timer";
+    }
     case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE: {
       return "Gate";
     }
@@ -621,16 +640,3 @@ int Supla::compareSemVer(const char *sw1, const char *sw2) {
 
   return 0;
 }
-
-void Supla::fillRandom(uint8_t *buffer, int size) {
-#if defined(ESP8266)
-  ESP.random(buffer, size);
-#elif defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
-  esp_fill_random(buffer, size);
-#else
-  (void)(buffer);
-  (void)(size);
-  // TODO(klew): Arduino MEGA, sd4linux
-#endif
-}
-

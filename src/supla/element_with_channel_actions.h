@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_ELEMENT_WITH_CHANNEL_ACTIONS_H_
 #define SRC_SUPLA_ELEMENT_WITH_CHANNEL_ACTIONS_H_
@@ -80,6 +65,9 @@ class SuplaSrpc;
 
 class ElementWithChannelActions : public Element, public LocalAction {
  public:
+  explicit ElementWithChannelActions(
+      ElementMode mode = ElementMode::Registered);
+
   // Override local action methods in order to delegate execution to Channel
   void addAction(uint16_t action,
       ActionHandler &client,  // NOLINT(runtime/references)
@@ -87,6 +75,25 @@ class ElementWithChannelActions : public Element, public LocalAction {
       bool alwaysEnabled = false) override;
   void addAction(uint16_t action, ActionHandler *client, uint16_t event,
       bool alwaysEnabled = false) override;
+  /**
+   * Adds a conditional local action for a specific event.
+   *
+   * The condition source is this element and the condition client is the
+   * provided action handler. The existing addAction(action, client, condition)
+   * overload remains a shorthand for ON_CHANGE.
+   */
+  virtual void addAction(uint16_t action,
+      ActionHandler &client,  // NOLINT(runtime/references)
+      uint16_t event,
+      Supla::Condition *condition,
+      bool alwaysEnabled = false);
+  /**
+   * Pointer variant of addAction(action, client, event, condition).
+   */
+  virtual void addAction(uint16_t action, ActionHandler *client,
+      uint16_t event,
+      Supla::Condition *condition,
+      bool alwaysEnabled = false);
   virtual void addAction(uint16_t action,
       ActionHandler &client,  // NOLINT(runtime/references)
       Supla::Condition *condition,
@@ -99,6 +106,7 @@ class ElementWithChannelActions : public Element, public LocalAction {
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   bool iterateConnected() override;
   void handleChannelConfigFinished() override;
+  void handleChannelConfigFinished(int channelNumber) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *result, bool local) override;
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;
@@ -114,7 +122,9 @@ class ElementWithChannelActions : public Element, public LocalAction {
                                                bool local);
   virtual void fillChannelConfig(void *channelConfig, int *size, uint8_t index);
 
-  void triggerSetChannelConfig(int configType = SUPLA_CONFIG_TYPE_DEFAULT);
+  void triggerSetChannelConfig(
+      int configType = SUPLA_CONFIG_TYPE_DEFAULT,
+      bool localChange = false);
 
  protected:
   // returns true if function was changed (previous one was different)

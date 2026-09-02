@@ -1,7 +1,7 @@
 name: My fancy device
 log_level: debug
 state_files_path: "./auth"
-security_level: 2 # disable certificate verification
+security_level: 0 # verify server certificate with SUPLA CA
 
 supla:
   server: supla.gorale

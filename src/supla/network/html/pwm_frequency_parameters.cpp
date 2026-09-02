@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef ARDUINO_ARCH_AVR
 #include "pwm_frequency_parameters.h"
@@ -58,31 +43,40 @@ void PwmFrequencyParameters::send(Supla::WebSender* sender) {
     frequency = rgbCct->getPwmFrequency();
     frequencyStep = rgbCct->getStepPwmFrequency();
   }
-  sender->labeledField(
-      Supla::ConfigTag::PwmFrequencyTag,
-      "PWM frequency [Hz] (reboot required to take effect)", [&]() {
-        sender->numberInput(
-            Supla::ConfigTag::PwmFrequencyTag,
-            Supla::NumericInputSpec{
-                .min = static_cast<int>(minFrequency),
-                .max = static_cast<int>(maxFrequency),
-                .value = static_cast<int>(frequency),
-                .step = static_cast<int>(frequencyStep),
-            });
-      });
+  sender->labeledField(Supla::ConfigTag::PwmFrequencyTag,
+                       "PWM frequency [Hz] (reboot required to take effect)",
+                       [&]() {
+                         sender->numberInput(
+                             Supla::ConfigTag::PwmFrequencyTag,
+                             Supla::NumericInputSpec{
+                                 .min = static_cast<int>(minFrequency),
+                                 .max = static_cast<int>(maxFrequency),
+                                 .value = static_cast<int>(frequency),
+                                 .step = static_cast<int>(frequencyStep),
+                             });
+                       });
 }
 
 bool PwmFrequencyParameters::handleResponse(const char* key,
                                             const char* value) {
   if (strcmp(key, Supla::ConfigTag::PwmFrequencyTag) == 0) {
     uint32_t pwmFrequency = stringToUInt(value);
-    // setPwmFrequency() will apply validation and will correct pwmFrequency
-    // to allowed value
     if (pwmFrequency > UINT16_MAX) {
       pwmFrequency = UINT16_MAX;
     }
-    rgbCct->setPwmFrequency(pwmFrequency);
-    pwmFrequency = rgbCct->getPwmFrequency();
+
+    if (rgbCct) {
+      // setPwmFrequency() will apply validation and will correct
+      // pwmFrequency to allowed value
+      rgbCct->setPwmFrequency(pwmFrequency);
+      pwmFrequency = rgbCct->getPwmFrequency();
+    } else {
+      pwmFrequency = Supla::Control::LightingPwmBase::normalizePwmFrequency(
+          static_cast<uint16_t>(pwmFrequency),
+          PWM_FREQUENCY_MIN,
+          PWM_FREQUENCY_MAX,
+          PWM_FREQUENCY_STEP);
+    }
 
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {

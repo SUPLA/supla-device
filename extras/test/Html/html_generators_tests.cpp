@@ -1,22 +1,8 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SuplaDevice.h>
+#include <arduino_mock.h>
 #include <clock_mock.h>
 #include <config_mock.h>
 #include <gmock/gmock.h>
@@ -25,8 +11,9 @@
 #include <simple_time.h>
 #include <supla-common/proto.h>
 #include <supla/control/hvac_base.h>
-#include <supla/control/relay.h>
 #include <supla/control/lighting_pwm_base.h>
+#include <supla/control/relay.h>
+#include <supla/control/relay_roller_shutter_pair.h>
 #include <supla/control/roller_shutter.h>
 #include <supla/device/register_device.h>
 #include <supla/device/security_logger.h>
@@ -39,6 +26,7 @@
 #include <supla/network/html/button_refresh.h>
 #include <supla/network/html/button_type_parameters.h>
 #include <supla/network/html/channel_correction.h>
+#include <supla/network/html/channel_function_parameters.h>
 #include <supla/network/html/container_parameters.h>
 #include <supla/network/html/custom_checkbox_parameter.h>
 #include <supla/network/html/custom_parameter.h>
@@ -54,6 +42,7 @@
 #include <supla/network/html/hide_show_container.h>
 #include <supla/network/html/home_screen_content.h>
 #include <supla/network/html/hvac_parameters.h>
+#include <supla/network/html/input_activation_parameters.h>
 #include <supla/network/html/modbus_parameters.h>
 #include <supla/network/html/power_status_led_parameters.h>
 #include <supla/network/html/protocol_parameters.h>
@@ -70,6 +59,7 @@
 #include <supla/network/html/sw_update.h>
 #include <supla/network/html/sw_update_beta.h>
 #include <supla/network/html/text_cmd_input_parameter.h>
+#include <supla/network/html/thermal_protection_parameters.h>
 #include <supla/network/html/time_parameters.h>
 #include <supla/network/html/volume_parameters.h>
 #include <supla/network/network.h>
@@ -88,7 +78,9 @@
 using ::testing::_;
 using ::testing::EndsWith;
 using ::testing::HasSubstr;
+using ::testing::Invoke;
 using ::testing::NiceMock;
+using ::testing::Not;
 using ::testing::Return;
 using ::testing::StartsWith;
 using ::testing::StrEq;
@@ -96,6 +88,17 @@ using ::testing::StrEq;
 class SenderMock : public Supla::WebSender {
  public:
   MOCK_METHOD(void, send, (const char*, int), (override));
+};
+
+class ConfigChangeObserver : public Supla::Element {
+ public:
+  void onDeviceConfigChange(uint64_t fieldBit) override {
+    if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_INPUT_ACTIVATION) {
+      notificationCount++;
+    }
+  }
+
+  int notificationCount = 0;
 };
 
 class HtmlCaptureTest : public ::testing::Test {
@@ -161,11 +164,12 @@ class PwmFrequencyStub : public Supla::Control::LightingPwmBase {
 
 class BinarySensorStub : public Supla::Sensor::BinaryBase {
  public:
-  BinarySensorStub() {
-    setServerInvertLogic(true, true);
-    setFilteringTimeMs(2500, true);
-    setTimeoutDs(42, true);
-    setSensitivity(12, true);
+  explicit BinarySensorStub(uint16_t filteringTimeMs = 2500) {
+    setServerInvertLogic(true, false);
+    setFilteringTimeMs(filteringTimeMs, false);
+    setTimeoutDs(42, false);
+    setSensitivity(12, false);
+    setLocalAlarmIndication(2, false);
   }
 
   bool getValue() override {
@@ -311,6 +315,7 @@ TEST_F(HtmlCaptureTest, HideShowContainerGeneratesToggledSection) {
 
   Supla::Html::HideShowContainerBegin begin("Hidden section");
   begin.send(&sender);
+  sender.send("<input id=\"hidden_payload\" />", -1);
   Supla::Html::HideShowContainerEnd end;
   end.send(&sender);
 
@@ -333,7 +338,9 @@ TEST_F(HtmlCaptureTest, HideShowContainerGeneratesToggledSection) {
       sendHtml,
       HasSubstr("document.getElementById(&quot;" + id + "_link&quot;)"));
   EXPECT_THAT(sendHtml,
-              HasSubstr("<div id=\"" + id + "\" style=\"display:none\">"));
+              HasSubstr("<div id=\"" + id +
+                        "\" style=\"display:none\"><input "
+                        "id=\"hidden_payload\" /></div>"));
 }
 
 TEST_F(HtmlCaptureTest, SecurityLogListWithoutLoggerShowsEmptyState) {
@@ -631,6 +638,7 @@ TEST_F(HtmlCaptureTest, SwUpdateBetaRendersSelectedState) {
 
   EXPECT_CALL(cfg, getDeviceMode())
       .WillOnce(Return(Supla::DEVICE_MODE_SW_UPDATE));
+  EXPECT_CALL(cfg, isSwUpdateSkipCert()).WillOnce(Return(false));
   EXPECT_CALL(cfg, isSwUpdateBeta()).WillOnce(Return(true));
   EXPECT_CALL(cfg, init()).WillOnce(Return(false));
   EXPECT_CALL(sender, send(_, _))
@@ -643,13 +651,23 @@ TEST_F(HtmlCaptureTest, SwUpdateBetaRendersSelectedState) {
   EXPECT_EQ(sendHtml,
             "<div class=\"form-field\">"
             "<label for=\"updbeta\">Firmware update</label>"
-            "<select name=\"updbeta\" id=\"updbeta\">"
+            "<div><select name=\"updbeta\" id=\"updbeta\">"
             "<option value=\"0\">NO</option>"
             "<option value=\"1\">YES</option>"
             "<option value=\"2\" selected>YES - BETA</option>"
+            "<option value=\"3\">YES - ONE-TIME RECOVERY MODE (SKIP "
+            "CERTIFICATE)</option>"
             "</select>"
-            "<div class=\"hint\">Warning: beta SW versions may contain bugs "
-            "and your device may not work properly.</div>"
+            "<div class=\"hint\">NO: keep firmware update disabled.</div>"
+            "<div class=\"hint\">YES: normal OTA update with HTTPS "
+            "certificate verification.</div>"
+            "<div class=\"hint\">YES - BETA: install beta firmware. Beta "
+            "versions may contain bugs and your device may not work properly."
+            "</div>"
+            "<div class=\"hint\">YES - ONE-TIME RECOVERY MODE: use only when "
+            "the OTA certificate has expired. This mode is cleared "
+            "automatically after the update.</div>"
+            "</div>"
             "</div>");
 }
 
@@ -675,6 +693,49 @@ TEST_F(HtmlCaptureTest, ProtocolParametersRendersSimpleProtocolSelector) {
   EXPECT_THAT(sendHtml, HasSubstr("<option value=\"1\""));
   EXPECT_THAT(sendHtml, HasSubstr(">MQTT</option>"));
   EXPECT_THAT(sendHtml, HasSubstr("onchange=\"protocolChanged()\""));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<div class=\"form-field sensitive\"><label "
+                        "for=\"eml\">E-mail</label>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<select name=\"mqttauth\" id=\"mqttauth\" "
+                        "onchange=\"mAuthChanged();\">"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<div class=\"form-field sensitive\"><label "
+                        "for=\"mqttuser\">Username</label>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<div class=\"form-field sensitive\"><label "
+                        "for=\"mqttpasswd\">Password (required, max 255)"
+                        "</label>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<label for=\"mqtt_ca\">Broker CA certificate "
+                        "(PEM)</label>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<textarea maxlength=\"3999\" name=\"mqtt_ca\" "
+                        "id=\"mqtt_ca\" "
+                        "placeholder=\"Leave empty to use the system CA "
+                        "bundle\"></textarea>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<select name=\"mqttverify\" id=\"mqttverify\" "
+                        "onchange=\"mqttVerificationChange();\">"));
+  EXPECT_THAT(sendHtml, HasSubstr(">NO (INSECURE, LEGACY)</option>"));
+}
+
+TEST_F(HtmlCaptureTest, ProtocolParametersStoresMqttCA) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  EXPECT_CALL(cfg, setMqttCA(StrEq("mqtt CA certificate")))
+      .WillOnce(Return(true));
+
+  Supla::Html::ProtocolParameters param(true, false);
+  EXPECT_TRUE(param.handleResponse("mqtt_ca", "mqtt CA certificate"));
+}
+
+TEST_F(HtmlCaptureTest, ProtocolParametersStoresMqttVerificationMode) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  EXPECT_CALL(cfg, setMqttBrokerVerificationEnabled(false))
+      .WillOnce(Return(true));
+
+  Supla::Html::ProtocolParameters param(true, false);
+  EXPECT_TRUE(param.handleResponse("mqttverify", "0"));
 }
 
 TEST_F(HtmlCaptureTest, SwUpdateRendersSimpleFirmwareSelector) {
@@ -683,11 +744,6 @@ TEST_F(HtmlCaptureTest, SwUpdateRendersSimpleFirmwareSelector) {
   sendHtml.clear();
 
   EXPECT_CALL(cfg, getDeviceMode()).WillOnce(Return(Supla::DEVICE_MODE_NORMAL));
-  EXPECT_CALL(cfg, getInt8(StrEq("swUpdNoCert"), _))
-      .WillOnce([](const char*, int8_t* value) {
-        *value = 0;
-        return true;
-      });
   EXPECT_CALL(cfg, init()).WillOnce(Return(false));
   EXPECT_CALL(sender, send(_, _))
       .WillRepeatedly(
@@ -700,9 +756,7 @@ TEST_F(HtmlCaptureTest, SwUpdateRendersSimpleFirmwareSelector) {
               HasSubstr("<label for=\"upd\">Firmware update</label>"));
   EXPECT_THAT(sendHtml, HasSubstr("<option value=\"0\" selected>NO</option>"));
   EXPECT_THAT(sendHtml, HasSubstr("<option value=\"1\">YES</option>"));
-  EXPECT_THAT(sendHtml,
-              HasSubstr("<option value=\"2\">YES - SKIP CERTIFICATE "
-                        "(dangerous)</option>"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("SKIP CERTIFICATE")));
   EXPECT_THAT(sendHtml, HasSubstr("<select "));
 }
 
@@ -898,6 +952,154 @@ TEST_F(HtmlCaptureTest, RelayParametersRendersThresholdInput) {
             "</div>");
 }
 
+TEST_F(HtmlCaptureTest,
+       RelayParametersHideThresholdInputWithoutOvercurrentSupport) {
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
+
+  expectAllSendCalls(sender);
+
+  Supla::Html::RelayParameters param(&relay);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("oc_thr")));
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"0_on_dur\""));
+}
+
+TEST_F(HtmlCaptureTest, RelayParametersRenderTurnOnDurationForTimedFunction) {
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
+  relay.setStoredTurnOnDurationMs(12500);
+
+  expectAllSendCalls(sender);
+
+  Supla::Html::RelayParameters param(&relay);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"0_on_dur\""));
+  EXPECT_THAT(sendHtml, HasSubstr("Turn-on duration (sec.)"));
+  EXPECT_THAT(sendHtml, HasSubstr("min=\"0.1\""));
+  EXPECT_THAT(sendHtml, HasSubstr("max=\"3600\""));
+  EXPECT_THAT(sendHtml, HasSubstr("step=\"0.1\""));
+  EXPECT_THAT(sendHtml, HasSubstr("value=\"12.5\""));
+}
+
+TEST_F(HtmlCaptureTest, RelayParametersHideTurnOnDurationForLightSwitch) {
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+
+  expectAllSendCalls(sender);
+
+  Supla::Html::RelayParameters param(&relay);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("on_dur")));
+}
+
+TEST_F(HtmlCaptureTest,
+       RelayParametersDynamicallyShowTurnOnDurationFromChannelFunction) {
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+
+  expectAllSendCalls(sender);
+
+  Supla::Html::RelayParameters param(&relay);
+  param.setDynamicTimeVisibilityFromChannelFunction(true);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"relay_time_0\""));
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"0_on_dur\""));
+  EXPECT_THAT(sendHtml, HasSubstr("document.getElementById('0_fnc')"));
+  EXPECT_THAT(sendHtml, HasSubstr("disabled=!on"));
+  EXPECT_THAT(sendHtml, HasSubstr("DOMContentLoaded"));
+}
+
+TEST_F(HtmlCaptureTest, RelayParametersSaveTurnOnDurationAfterProcessing) {
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  relay.setStoredTurnOnDurationMs(500);
+  Supla::Html::RelayParameters param(&relay);
+
+  EXPECT_TRUE(param.handleResponse("0_on_dur", "1.2"));
+  EXPECT_EQ(500u, relay.getStoredTurnOnDurationMs());
+
+  param.onProcessingEnd();
+
+  EXPECT_EQ(1200u, relay.getStoredTurnOnDurationMs());
+}
+
+TEST_F(HtmlCaptureTest,
+       RelayParametersApplyDurationAfterFunctionRegardlessOfPostOrder) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.setStoredTurnOnDurationMs(0);
+  Supla::Html::RelayParameters relayParam(&relay);
+  Supla::Html::ChannelFunctionParameters functionParam(&relay);
+
+  EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_STAIRCASETIMER))
+      .WillOnce(Return(true));
+
+  EXPECT_TRUE(relayParam.handleResponse("0_on_dur", "10"));
+  EXPECT_TRUE(functionParam.handleResponse("0_fnc", "300"));
+  relayParam.onProcessingEnd();
+
+  EXPECT_EQ(SUPLA_CHANNELFNC_STAIRCASETIMER,
+            relay.getChannel()->getDefaultFunction());
+  EXPECT_EQ(10000u, relay.getStoredTurnOnDurationMs());
+}
+
+TEST_F(HtmlCaptureTest, RelayParametersIgnoreDurationForNonTimedFunction) {
+  Supla::Control::Relay relay(nullptr, 7);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.setStoredTurnOnDurationMs(0);
+  Supla::Html::RelayParameters param(&relay);
+
+  EXPECT_TRUE(param.handleResponse("0_on_dur", "1"));
+  param.onProcessingEnd();
+
+  EXPECT_EQ(0u, relay.getStoredTurnOnDurationMs());
+}
+
+TEST_F(HtmlCaptureTest, RelayRollerShutterPairExposesBothRelayEngines) {
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1, -1);
+
+  auto primaryRelay = pair.getPrimaryRelay();
+  auto secondaryRelay = pair.getSecondaryRelay();
+
+  ASSERT_NE(nullptr, primaryRelay);
+  ASSERT_NE(nullptr, secondaryRelay);
+  EXPECT_EQ(pair.getChannel(), primaryRelay->getChannel());
+  EXPECT_EQ(pair.getSecondaryChannel(), secondaryRelay->getChannel());
+
+  primaryRelay->setDefaultFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
+  secondaryRelay->setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  Supla::Html::RelayParameters primaryParam(primaryRelay);
+  Supla::Html::RelayParameters secondaryParam(secondaryRelay);
+
+  EXPECT_TRUE(primaryParam.handleResponse("0_on_dur", "10"));
+  EXPECT_TRUE(secondaryParam.handleResponse("1_on_dur", "0.5"));
+  primaryParam.onProcessingEnd();
+  secondaryParam.onProcessingEnd();
+
+  EXPECT_EQ(10000u, primaryRelay->getStoredTurnOnDurationMs());
+  EXPECT_EQ(500u, secondaryRelay->getStoredTurnOnDurationMs());
+  Supla::Channel::resetToDefaults();
+}
+
 TEST_F(HtmlCaptureTest, TimeParametersRendersClockControls) {
   ConfigMock cfg;
   SenderMock sender;
@@ -935,6 +1137,8 @@ TEST_F(HtmlCaptureTest, EthernetParametersRendersCheckbox) {
         *value = 0;
         return true;
       });
+  EXPECT_CALL(cfg, loadNetifConfig(StrEq(Supla::ConfigTag::EthNetifCfgTag), _))
+      .WillOnce(Return(false));
   EXPECT_CALL(cfg, init()).WillOnce(Return(false));
   EXPECT_CALL(sender, send(_, _))
       .WillRepeatedly(
@@ -943,18 +1147,17 @@ TEST_F(HtmlCaptureTest, EthernetParametersRendersCheckbox) {
   Supla::Html::EthernetParameters param;
   param.send(&sender);
 
-  EXPECT_EQ(sendHtml,
-            "<h3>Ethernet Settings</h3>"
-            "<div class=\"form-field right-checkbox\">"
-            "<label for=\"eth_en\">Enable Ethernet</label>"
-            "<label>"
-            "<span class=\"switch\">"
-            "<input type=\"checkbox\" value=\"on\" checked name=\"eth_en\" "
-            "id=\"eth_en\">"
-            "<span class=\"slider\"></span>"
-            "</span>"
-            "</label>"
-            "</div>");
+  EXPECT_THAT(sendHtml, HasSubstr("<h3>Ethernet Settings</h3>"));
+  EXPECT_THAT(sendHtml, HasSubstr("for=\"eth_en\">Enable Ethernet"));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"eth_mode\""));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"eth_static_box\""));
+  EXPECT_THAT(sendHtml, HasSubstr("showHideNetifStaticSettings"));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"eth_ip\" maxlength=\"15\""));
+  EXPECT_THAT(sendHtml, HasSubstr("inputmode=\"decimal\""));
+  EXPECT_THAT(sendHtml, HasSubstr("placeholder=\"192.168.1.100\""));
+  EXPECT_THAT(sendHtml, HasSubstr("data-static-required=\"1\""));
+  EXPECT_THAT(sendHtml, HasSubstr("for=\"eth_mask\">Subnet mask</label>"));
+  EXPECT_THAT(sendHtml, HasSubstr("placeholder=\"255.255.255.0 or /24\""));
 }
 
 TEST_F(HtmlCaptureTest, PwmFrequencyParametersRendersDefaultRange) {
@@ -976,6 +1179,11 @@ TEST_F(HtmlCaptureTest, PwmFrequencyParametersRendersDefaultRange) {
             "<input type=\"number\" min=\"100\" max=\"9000\" step=\"1\" "
             "name=\"pwm_freq\" id=\"pwm_freq\" value=\"500\">"
             "</div>");
+}
+
+TEST_F(HtmlCaptureTest, PwmFrequencyParametersHandlesResponseWithoutRgbCct) {
+  Supla::Html::PwmFrequencyParameters param(nullptr);
+  EXPECT_TRUE(param.handleResponse(Supla::ConfigTag::PwmFrequencyTag, "2345"));
 }
 
 TEST_F(HtmlCaptureTest, RgbwButtonParametersRendersDefaultOptions) {
@@ -1069,6 +1277,80 @@ TEST_F(HtmlCaptureTest, BinarySensorParametersRendersFields) {
   EXPECT_THAT(sendHtml, HasSubstr("Filtering time [s]"));
   EXPECT_THAT(sendHtml, HasSubstr("Sensor timeout [s]"));
   EXPECT_THAT(sendHtml, HasSubstr("Sensor sensitivity [%]"));
+  EXPECT_THAT(sendHtml, HasSubstr("Local alarm indication"));
+  EXPECT_THAT(sendHtml, HasSubstr("Disabled"));
+  EXPECT_THAT(sendHtml, HasSubstr("Enabled"));
+}
+
+TEST_F(HtmlCaptureTest,
+       BinarySensorParametersHandleResponseStoresLocalAlarmIndication) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  BinarySensorStub binary;
+
+  Supla::Html::BinarySensorParameters param(&binary);
+
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(
+      key, binary.getChannelNumber(), "bs_local_alarm");
+
+  EXPECT_TRUE(param.handleResponse(key, "1"));
+  EXPECT_EQ(binary.getLocalAlarmIndication(), 1);
+
+  param.onProcessingEnd();
+}
+
+TEST_F(HtmlCaptureTest, BinarySensorParametersAcceptsFilteringTimeBounds) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  BinarySensorStub binary;
+
+  Supla::Html::BinarySensorParameters param(&binary);
+
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(key, binary.getChannelNumber(), "bs_filter");
+
+  EXPECT_TRUE(param.handleResponse(key, "0.03"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 30);
+  EXPECT_TRUE(param.handleResponse(key, "3.0"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 3000);
+}
+
+TEST_F(HtmlCaptureTest,
+       BinarySensorParametersRejectsOutOfRangeFilteringTime) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  BinarySensorStub binary;
+
+  Supla::Html::BinarySensorParameters param(&binary);
+
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(key, binary.getChannelNumber(), "bs_filter");
+
+  EXPECT_TRUE(param.handleResponse(key, "0"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 2500);
+  EXPECT_TRUE(param.handleResponse(key, "0.02"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 2500);
+  EXPECT_TRUE(param.handleResponse(key, "3.01"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 2500);
+}
+
+TEST_F(HtmlCaptureTest,
+       BinarySensorParametersDoesNotEnableUnsupportedFilteringTime) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  BinarySensorStub binary(0);
+
+  ASSERT_EQ(binary.getFilteringTimeMs(), 0);
+
+  Supla::Html::BinarySensorParameters param(&binary);
+
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(key, binary.getChannelNumber(), "bs_filter");
+
+  EXPECT_TRUE(param.handleResponse(key, "0.03"));
+  EXPECT_TRUE(param.handleResponse(key, "3.0"));
+  EXPECT_EQ(binary.getFilteringTimeMs(), 0);
 }
 
 TEST_F(HtmlCaptureTest, ScreenDelayTypeParametersRendersSelectedOption) {
@@ -1250,6 +1532,263 @@ TEST_F(HtmlCaptureTest, ModbusParametersRendersSerialAndNetworkSelectors) {
   EXPECT_THAT(sendHtml, HasSubstr("<option value=\"1\" selected>TCP</option>"));
 }
 
+TEST_F(HtmlCaptureTest,
+       ThermalProtectionParametersHideEnabledWhenDisableNotAllowed) {
+  NiceMock<ConfigMock> cfg;
+  NiceMock<TimeInterfaceMock> time;
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Device::ThermalProtectionConfig storedConfig = {
+      .threshold = 215,
+      .enabled = 0,
+  };
+  const Supla::Device::ThermalProtectionProperties properties = {
+      .minThreshold = 50,
+      .maxThreshold = 300,
+      .disableAllowed = 0,
+  };
+
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq(Supla::ConfigTag::ThermalProtectionCfgTag),
+              _,
+              sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, char *blob, size_t blobSize) {
+            std::memcpy(blob, &storedConfig, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(
+      cfg,
+      setBlob(StrEq(Supla::ConfigTag::ThermalProtectionCfgTag),
+              _,
+              sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, const char *blob, size_t blobSize) {
+            std::memcpy(&storedConfig, blob, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(
+      cfg,
+      setUInt8(StrEq(Supla::ConfigTag::DeviceConfigChangeCfgTag), 1))
+      .WillOnce(Return(true));
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char *data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::ThermalProtectionParameters param(properties);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml,
+              HasSubstr("Thermal protection threshold [°C]"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("<h3>Thermal protection</h3>")));
+  EXPECT_THAT(sendHtml, HasSubstr("min=\"5\""));
+  EXPECT_THAT(sendHtml, HasSubstr("max=\"30\""));
+  EXPECT_THAT(sendHtml, HasSubstr("value=\"21.5\""));
+  EXPECT_THAT(sendHtml, HasSubstr("step=\"0.1\""));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("name=\"thermal_en\"")));
+
+  EXPECT_TRUE(param.handleResponse("thermal_thr", "22.5"));
+  param.onProcessingEnd();
+
+  EXPECT_EQ(storedConfig.threshold, 225);
+  EXPECT_EQ(storedConfig.enabled, 1);
+}
+
+TEST_F(HtmlCaptureTest, InputActivationParametersRenderSupportedModes) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+  Supla::Device::InputActivationConfig storedConfig = {
+      .mode = SUPLA_DEVCFG_INPUT_ACTIVATION_VCC};
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND |
+                        SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+
+  EXPECT_CALL(cfg,
+              getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _,
+                      sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, char *blob, size_t blobSize) {
+            std::memcpy(blob, &storedConfig, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char *data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::InputActivationParameters param(properties);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("Input activation"));
+  EXPECT_THAT(sendHtml, HasSubstr("GND — SIG"));
+  EXPECT_THAT(sendHtml, HasSubstr("VCC — SIG"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("value=\"2\" selected>VCC — SIG</option>"));
+}
+
+TEST_F(
+    HtmlCaptureTest,
+    InputActivationParametersUseDefaultAndHideUnsupportedModes) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND |
+                        SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+
+  EXPECT_CALL(cfg,
+              getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _, _))
+      .WillOnce(Invoke([](const char *, char *, size_t) { return false; }));
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char *data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::InputActivationParameters param(properties);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml,
+              HasSubstr("value=\"1\" selected>GND — SIG</option>"));
+  EXPECT_THAT(sendHtml, HasSubstr("value=\"2\">VCC — SIG</option>"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("value=\"128\"")));
+}
+
+TEST_F(HtmlCaptureTest,
+       InputActivationParametersDoNotRenderSingleModeSelector) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+  EXPECT_CALL(cfg,
+              getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _, _))
+      .WillOnce(Invoke([](const char *, char *, size_t) { return false; }));
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char *data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::InputActivationParameters param(properties);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("Input activation")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("<select")));
+}
+
+TEST_F(HtmlCaptureTest, InputActivationParametersRenderVccOnlyMode) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+  };
+  EXPECT_CALL(cfg,
+              getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _, _))
+      .WillOnce(Invoke([](const char *, char *, size_t) { return false; }));
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char *data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::InputActivationParameters param(properties);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("GND — SIG")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("VCC — SIG")));
+}
+
+TEST_F(HtmlCaptureTest,
+       InputActivationParametersStoreValidChangedValueAndNotify) {
+  NiceMock<ConfigMock> cfg;
+  NiceMock<TimeInterfaceMock> time;
+  ConfigChangeObserver observer;
+  Supla::Device::InputActivationConfig storedConfig = {
+      .mode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND};
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND |
+                        SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _,
+              sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, char *blob, size_t blobSize) {
+            std::memcpy(blob, &storedConfig, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(
+      cfg,
+      setBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _,
+              sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, const char *blob, size_t blobSize) {
+            std::memcpy(&storedConfig, blob, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(cfg, setUInt8(StrEq(Supla::ConfigTag::DeviceConfigChangeCfgTag),
+                            1))
+      .WillOnce(Return(true));
+
+  Supla::Html::InputActivationParameters param(properties);
+  EXPECT_TRUE(param.handleResponse("input_act", "2"));
+  param.onProcessingEnd();
+
+  EXPECT_EQ(storedConfig.mode, SUPLA_DEVCFG_INPUT_ACTIVATION_VCC);
+  EXPECT_EQ(observer.notificationCount, 1);
+}
+
+TEST_F(HtmlCaptureTest,
+       InputActivationParametersRejectInvalidAndUnchangedValues) {
+  NiceMock<ConfigMock> cfg;
+  ConfigChangeObserver observer;
+  Supla::Device::InputActivationConfig storedConfig = {
+      .mode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND};
+  const Supla::Device::InputActivationProperties properties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND |
+                        SUPLA_DEVCFG_INPUT_ACTIVATION_VCC,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _,
+              sizeof(storedConfig)))
+      .WillOnce(Invoke(
+          [&storedConfig](const char *, char *blob, size_t blobSize) {
+            std::memcpy(blob, &storedConfig, blobSize);
+            return true;
+          }));
+  EXPECT_CALL(cfg,
+              setBlob(StrEq(Supla::ConfigTag::InputActivationCfgTag), _, _))
+      .Times(0);
+  EXPECT_CALL(cfg, setUInt8(StrEq(Supla::ConfigTag::DeviceConfigChangeCfgTag),
+                            _))
+      .Times(0);
+
+  Supla::Html::InputActivationParameters param(properties);
+  EXPECT_FALSE(param.handleResponse("input_act", "0"));
+  EXPECT_FALSE(param.handleResponse("input_act", "3"));
+  EXPECT_FALSE(param.handleResponse("input_act", "nope"));
+  EXPECT_TRUE(param.handleResponse("input_act", "1"));
+  param.onProcessingEnd();
+
+  const Supla::Device::InputActivationProperties gndOnlyProperties = {
+      .availableModes = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+      .defaultMode = SUPLA_DEVCFG_INPUT_ACTIVATION_GND,
+  };
+  Supla::Html::InputActivationParameters gndOnlyParam(gndOnlyProperties);
+  EXPECT_FALSE(gndOnlyParam.handleResponse("input_act", "2"));
+
+  EXPECT_EQ(storedConfig.mode, SUPLA_DEVCFG_INPUT_ACTIVATION_GND);
+  EXPECT_EQ(observer.notificationCount, 0);
+}
+
 TEST_F(HtmlCaptureTest, RollerShutterParametersRendersBasicFields) {
   NiceMock<ConfigMock> cfg;
   SenderMock sender;
@@ -1285,6 +1824,464 @@ TEST_F(HtmlCaptureTest, RollerShutterParametersRendersBasicFields) {
   EXPECT_THAT(sendHtml, HasSubstr("value=\"45.6\""));
 }
 
+TEST_F(HtmlCaptureTest, RollerShutterParametersCanHideChannelFunctionField) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::RollerShutter rs(-1, -1);
+  rs.getChannel()->setChannelNumber(7);
+  rs.getChannel()->setDefaultFunction(
+      SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::RollerShutterParameters param(&rs);
+  param.setShowChannelFunction(false);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("Roller shutter #7"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("name=\"7_fnc\"")));
+  EXPECT_THAT(sendHtml, HasSubstr("Full opening time (sec.)"));
+}
+
+TEST_F(HtmlCaptureTest, RollerShutterParametersAcceptsDefaultTimeMargin) {
+  NiceMock<ConfigMock> cfg;
+
+  Supla::Control::RollerShutter rs(-1, -1);
+  rs.getChannel()->setChannelNumber(7);
+  rs.setRsConfigTimeMarginEnabled(true);
+  rs.setRsConfigTimeMarginValue(5);
+
+  Supla::Html::RollerShutterParameters param(&rs);
+
+  EXPECT_TRUE(param.handleResponse("7_rs_margin", "-1"));
+  EXPECT_EQ(rs.getTimeMargin(), -1);
+}
+
+TEST_F(HtmlCaptureTest,
+       RollerShutterParametersValidatesFacadeBlindTimingAsOneForm) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Control::RollerShutter rs(-1, -1, true, true);
+  rs.getChannel()->setChannelNumber(7);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  rs.setOpenCloseTime(5000, 5000);
+  rs.setTiltingTime(10000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+
+  Supla::Html::RollerShutterParameters param(&rs);
+  char openingKey[16] = {};
+  char closingKey[16] = {};
+  char tiltingKey[16] = {};
+  char typeKey[16] = {};
+  rs.generateKey(openingKey, Supla::ConfigTag::RollerShutterOpeningTimeTag);
+  rs.generateKey(closingKey, Supla::ConfigTag::RollerShutterClosingTimeTag);
+  rs.generateKey(tiltingKey, Supla::ConfigTag::FacadeBlindTiltingTimeTag);
+  rs.generateKey(typeKey,
+                 Supla::ConfigTag::FacadeBlindTiltControlTypeTag);
+
+  // The type arrives first and would be invalid against the old values if the
+  // fields were applied one at a time. The complete candidate is valid.
+  EXPECT_TRUE(param.handleResponse(typeKey, "1"));
+  EXPECT_TRUE(param.handleResponse(openingKey, "20"));
+  EXPECT_TRUE(param.handleResponse(closingKey, "20"));
+  EXPECT_TRUE(param.handleResponse(tiltingKey, "10"));
+  param.onProcessingEnd();
+
+  EXPECT_EQ(rs.getOpeningTimeMs(), 20000);
+  EXPECT_EQ(rs.getClosingTimeMs(), 20000);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 10000);
+  EXPECT_EQ(rs.getTiltControlType(),
+            SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING);
+
+  EXPECT_TRUE(param.handleResponse(tiltingKey, "malformed"));
+  param.onProcessingEnd();
+  EXPECT_EQ(rs.getTiltingTimeMs(), 10000);
+
+  EXPECT_TRUE(param.handleResponse(tiltingKey, "-1"));
+  param.onProcessingEnd();
+  EXPECT_EQ(rs.getTiltingTimeMs(), 10000);
+
+  EXPECT_TRUE(param.handleResponse(typeKey, "257"));
+  param.onProcessingEnd();
+  EXPECT_EQ(rs.getTiltControlType(),
+            SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING);
+
+  EXPECT_TRUE(param.handleResponse(typeKey, "4294967295"));
+  param.onProcessingEnd();
+  EXPECT_EQ(rs.getTiltControlType(),
+            SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING);
+
+  EXPECT_TRUE(param.handleResponse(openingKey, "5"));
+  EXPECT_TRUE(param.handleResponse(closingKey, "5"));
+  EXPECT_TRUE(param.handleResponse(tiltingKey, "5"));
+  param.onProcessingEnd();
+  EXPECT_EQ(rs.getOpeningTimeMs(), 20000);
+  EXPECT_EQ(rs.getClosingTimeMs(), 20000);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 10000);
+}
+
+TEST_F(HtmlCaptureTest,
+       RollerShutterParametersRejectsInvalidTimingRegardlessOfFieldOrder) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Control::RollerShutter rs(-1, -1, true, true);
+  rs.getChannel()->setChannelNumber(7);
+  rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  rs.setOpenCloseTime(20000, 20000);
+  rs.setTiltingTime(1000, false);
+  rs.setTiltControlType(SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                        false);
+
+  Supla::Html::RollerShutterParameters param(&rs);
+  char functionKey[16] = {};
+  char openingKey[16] = {};
+  char closingKey[16] = {};
+  char tiltingKey[16] = {};
+  char typeKey[16] = {};
+  char functionValue[16] = {};
+  rs.generateKey(functionKey, Supla::ConfigTag::ChannelFunctionTag);
+  rs.generateKey(openingKey, Supla::ConfigTag::RollerShutterOpeningTimeTag);
+  rs.generateKey(closingKey, Supla::ConfigTag::RollerShutterClosingTimeTag);
+  rs.generateKey(tiltingKey, Supla::ConfigTag::FacadeBlindTiltingTimeTag);
+  rs.generateKey(typeKey,
+                 Supla::ConfigTag::FacadeBlindTiltControlTypeTag);
+  snprintf(functionValue,
+           sizeof(functionValue),
+           "%d",
+           SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+
+  EXPECT_TRUE(param.handleResponse(openingKey, "5"));
+  EXPECT_TRUE(param.handleResponse(closingKey, "5"));
+  param.handleResponse(functionKey, functionValue);
+  EXPECT_EQ(rs.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  EXPECT_TRUE(param.handleResponse(tiltingKey, "5"));
+  EXPECT_TRUE(param.handleResponse(typeKey, "1"));
+  param.onProcessingEnd();
+
+  EXPECT_EQ(rs.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+  EXPECT_EQ(rs.getOpeningTimeMs(), 20000);
+  EXPECT_EQ(rs.getClosingTimeMs(), 20000);
+  EXPECT_EQ(rs.getTiltingTimeMs(), 1000);
+  EXPECT_EQ(rs.getTiltControlType(),
+            SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING);
+}
+
+TEST_F(HtmlCaptureTest,
+       RollerShutterParametersCanUseDynamicFunctionVisibility) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Control::RollerShutter rs(-1, -1);
+  rs.getChannel()->setChannelNumber(7);
+  rs.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::RollerShutterParameters param(&rs);
+  param.setShowChannelFunction(false);
+  param.setRenderContainer(false);
+  param.setDynamicVisibilityFromChannelFunction(true);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("Light switch #7")));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"rs_params_7\""));
+  EXPECT_THAT(sendHtml, HasSubstr("document.getElementById('7_fnc')"));
+  EXPECT_THAT(sendHtml, HasSubstr("addEventListener('change',u)"));
+  EXPECT_THAT(sendHtml, HasSubstr("Full opening time (sec.)"));
+}
+
+TEST_F(HtmlCaptureTest, ChannelFunctionParametersRenderRelayRollerPairFields) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1, -1);
+
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::ChannelFunctionParameters param(&pair);
+  param.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"0_fnc\""));
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"1_fnc\""));
+  EXPECT_THAT(sendHtml, HasSubstr("Channel #0 default function"));
+  EXPECT_THAT(sendHtml, HasSubstr("Channel #1 default function"));
+  EXPECT_THAT(sendHtml, HasSubstr(">Light switch</option>"));
+  EXPECT_THAT(sendHtml, HasSubstr(">Roller shutter</option>"));
+  EXPECT_THAT(sendHtml, HasSubstr(">Facade blind</option>"));
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest,
+       ChannelFunctionParametersCanRenderPairChannelsSeparately) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  sendHtml.clear();
+
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1, -1);
+
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  Supla::Html::ChannelFunctionParameters primaryParam(
+      &pair,
+      nullptr,
+      nullptr,
+      Supla::Html::ChannelFunctionParameters::ChannelScope::Primary);
+  primaryParam.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"0_fnc\""));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("name=\"1_fnc\"")));
+  EXPECT_THAT(sendHtml, HasSubstr("Channel #0 default function"));
+
+  sendHtml.clear();
+  Supla::Html::ChannelFunctionParameters secondaryParam(
+      &pair,
+      nullptr,
+      nullptr,
+      Supla::Html::ChannelFunctionParameters::ChannelScope::Secondary);
+  secondaryParam.send(&sender);
+
+  EXPECT_THAT(sendHtml, Not(HasSubstr("name=\"0_fnc\"")));
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"1_fnc\""));
+  EXPECT_THAT(sendHtml, HasSubstr("Channel #1 default function"));
+  EXPECT_THAT(sendHtml, HasSubstr(">Light switch</option>"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr(">Roller shutter</option>")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr(">Facade blind</option>")));
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest,
+       ChannelFunctionParametersSetRelayRollerPairToRollerAndLight) {
+  NiceMock<ConfigMock> cfg;
+  SimpleTime time;
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1, -1);
+  Supla::Html::ChannelFunctionParameters param(&pair);
+
+  EXPECT_CALL(
+      cfg,
+      setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setInt32(StrEq("1_fnc"), SUPLA_CHANNELFNC_LIGHTSWITCH))
+      .WillOnce(Return(true));
+
+  char functionValue[12] = {};
+  snprintf(functionValue,
+           sizeof(functionValue),
+           "%d",
+           SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  EXPECT_TRUE(param.handleResponse("0_fnc", functionValue));
+
+  EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  EXPECT_EQ(pair.getSecondaryChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_TRUE(pair.isInRollerShutterMode());
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest, ChannelFunctionParametersSetRelayRollerPairSecondary) {
+  NiceMock<ConfigMock> cfg;
+  SimpleTime time;
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(-1, -1);
+  Supla::Html::ChannelFunctionParameters param(&pair);
+
+  EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_LIGHTSWITCH))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setInt32(StrEq("1_fnc"), SUPLA_CHANNELFNC_POWERSWITCH))
+      .WillOnce(Return(true));
+
+  char functionValue[12] = {};
+  snprintf(
+      functionValue, sizeof(functionValue), "%d", SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_TRUE(param.handleResponse("1_fnc", functionValue));
+
+  EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_EQ(pair.getSecondaryChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_TRUE(pair.isInRelayMode());
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest,
+       ChannelFunctionParametersRejectUnsupportedPairFunction) {
+  NiceMock<ConfigMock> cfg;
+  Supla::Channel::resetToDefaults();
+  Supla::Control::RelayRollerShutterPair pair(
+      -1, -1, true, true, SUPLA_BIT_FUNC_LIGHTSWITCH);
+  Supla::Html::ChannelFunctionParameters param(&pair);
+
+  EXPECT_CALL(cfg, setInt32(_, _)).Times(0);
+
+  char functionValue[12] = {};
+  snprintf(
+      functionValue, sizeof(functionValue), "%d", SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_TRUE(param.handleResponse("0_fnc", functionValue));
+
+  EXPECT_EQ(pair.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_EQ(pair.getSecondaryChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest,
+       ChannelFunctionParametersSafelyChangesActiveRelayToImpulseFunction) {
+  NiceMock<ConfigMock> cfg;
+  NiceMock<DigitalInterfaceMock> io;
+  SimpleTime time;
+  Supla::Channel::resetToDefaults();
+  const int gpio = 7;
+  int outputState = 0;
+  ON_CALL(io, digitalWrite(gpio, _))
+      .WillByDefault(
+          [&outputState](uint8_t, uint8_t value) { outputState = value; });
+  ON_CALL(io, digitalRead(gpio)).WillByDefault([&outputState](uint8_t) {
+    return outputState;
+  });
+
+  Supla::Control::Relay relay(gpio);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.onInit();
+  relay.turnOn();
+  ASSERT_TRUE(relay.getChannel()->getValueBool());
+  Supla::Html::ChannelFunctionParameters param(&relay);
+
+  EXPECT_CALL(cfg,
+              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_CONTROLLINGTHEGATE))
+      .WillOnce(Return(true));
+
+  char functionValue[12] = {};
+  snprintf(functionValue,
+           sizeof(functionValue),
+           "%d",
+           SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  EXPECT_TRUE(param.handleResponse("0_fnc", functionValue));
+
+  EXPECT_EQ(relay.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  EXPECT_FALSE(relay.getChannel()->getValueBool());
+  EXPECT_EQ(500u, relay.getStoredTurnOnDurationMs());
+
+  TSD_SuplaChannelNewValue value = {};
+  value.ChannelNumber = relay.getChannelNumber();
+  value.value[0] = 1;
+  ASSERT_EQ(1, relay.handleNewValueFromServer(&value));
+  ASSERT_TRUE(relay.getChannel()->getValueBool());
+
+  time.advance(501);
+  relay.iterateAlways();
+  EXPECT_FALSE(relay.getChannel()->getValueBool());
+
+  Supla::Channel::resetToDefaults();
+}
+
+TEST_F(HtmlCaptureTest,
+       ChannelFunctionParametersSafelyChangesBothPairRelaysToImpulse) {
+  NiceMock<ConfigMock> cfg;
+  NiceMock<DigitalInterfaceMock> io;
+  SimpleTime time;
+  Supla::Channel::resetToDefaults();
+  const int gpio0 = 7;
+  const int gpio1 = 8;
+  int outputState0 = 0;
+  int outputState1 = 0;
+  ON_CALL(io, digitalWrite(gpio0, _))
+      .WillByDefault(
+          [&outputState0](uint8_t, uint8_t value) { outputState0 = value; });
+  ON_CALL(io, digitalWrite(gpio1, _))
+      .WillByDefault(
+          [&outputState1](uint8_t, uint8_t value) { outputState1 = value; });
+  ON_CALL(io, digitalRead(gpio0)).WillByDefault([&outputState0](uint8_t) {
+    return outputState0;
+  });
+  ON_CALL(io, digitalRead(gpio1)).WillByDefault([&outputState1](uint8_t) {
+    return outputState1;
+  });
+
+  Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
+  pair.onInit();
+  Supla::Html::ChannelFunctionParameters param(&pair);
+
+  EXPECT_CALL(cfg,
+              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_CONTROLLINGTHEGATE))
+      .Times(2)
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, setInt32(StrEq("1_fnc"), SUPLA_CHANNELFNC_LIGHTSWITCH))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg,
+              setInt32(StrEq("1_fnc"), SUPLA_CHANNELFNC_CONTROLLINGTHEGATE))
+      .WillOnce(Return(true));
+
+  TSD_SuplaChannelNewValue value = {};
+  value.ChannelNumber = pair.getChannelNumber();
+  value.value[0] = 1;
+  ASSERT_EQ(1, pair.handleNewValueFromServer(&value));
+  ASSERT_TRUE(pair.getChannel()->getValueBool());
+
+  char functionValue[12] = {};
+  snprintf(functionValue,
+           sizeof(functionValue),
+           "%d",
+           SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  ASSERT_TRUE(param.handleResponse("0_fnc", functionValue));
+  EXPECT_FALSE(pair.getChannel()->getValueBool());
+
+  value = {};
+  value.ChannelNumber = pair.getChannelNumber();
+  pair.fillSuplaChannelNewValue(&value);
+  EXPECT_EQ(500u, value.DurationMS);
+  value.value[0] = 1;
+  value.DurationMS = 0;
+  ASSERT_EQ(1, pair.handleNewValueFromServer(&value));
+  time.advance(501);
+  pair.iterateAlways();
+  EXPECT_FALSE(pair.getChannel()->getValueBool());
+
+  value = {};
+  value.ChannelNumber = pair.getSecondaryChannelNumber();
+  value.value[0] = 1;
+  ASSERT_EQ(1, pair.handleNewValueFromServer(&value));
+  ASSERT_TRUE(pair.getSecondaryChannel()->getValueBool());
+
+  ASSERT_TRUE(param.handleResponse("1_fnc", functionValue));
+  EXPECT_FALSE(pair.getSecondaryChannel()->getValueBool());
+
+  value = {};
+  value.ChannelNumber = pair.getSecondaryChannelNumber();
+  pair.fillSuplaChannelNewValue(&value);
+  EXPECT_EQ(500u, value.DurationMS);
+  value.value[0] = 1;
+  value.DurationMS = 0;
+  ASSERT_EQ(1, pair.handleNewValueFromServer(&value));
+  time.advance(501);
+  pair.iterateAlways();
+  EXPECT_FALSE(pair.getSecondaryChannel()->getValueBool());
+
+  Supla::Channel::resetToDefaults();
+}
+
 TEST_F(HtmlCaptureTest, HvacParametersRendersBasicThermostatFields) {
   NiceMock<ConfigMock> cfg;
   SenderMock sender;
@@ -1317,6 +2314,38 @@ TEST_F(HtmlCaptureTest, HvacParametersRendersBasicThermostatFields) {
   EXPECT_THAT(sendHtml, HasSubstr("Cooling temperature setpoint [°C]"));
   EXPECT_THAT(sendHtml, HasSubstr("value=\"21.0\""));
   EXPECT_THAT(sendHtml, HasSubstr("value=\"25.0\""));
+}
+
+TEST_F(HtmlCaptureTest, HvacParametersUsesUniqueAuxSectionIdsPerChannel) {
+  NiceMock<ConfigMock> cfg;
+  SenderMock sender;
+  OutputSimulatorWithCheck output1;
+  OutputSimulatorWithCheck output2;
+  sendHtml.clear();
+
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  Supla::Control::HvacBase hvac1(&output1);
+  Supla::Control::HvacBase hvac2(&output2);
+
+  Supla::Html::HvacParameters param1(&hvac1);
+  Supla::Html::HvacParameters param2(&hvac2);
+
+  param1.send(&sender);
+  param2.send(&sender);
+
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"0_aux_box\""));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"1_aux_box\""));
+  EXPECT_THAT(sendHtml, HasSubstr("function auxSetpointEnabledChange_0()"));
+  EXPECT_THAT(sendHtml, HasSubstr("function auxSetpointEnabledChange_1()"));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"0_af_box\""));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"1_af_box\""));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("function antiFreezeAndHeatProtectionChange_0()"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("function antiFreezeAndHeatProtectionChange_1()"));
 }
 
 TEST_F(HtmlCaptureTest, ContainerParametersRendersBasicFields) {
@@ -1376,4 +2405,66 @@ TEST_F(HtmlCaptureTest, DeviceInfoRendersRegisterDeviceAndMainMac) {
             "</span><span>"
             "<br>Uptime: 0 s"
             "</span>");
+}
+
+TEST_F(HtmlCaptureTest, HtmlGeneratorIncludesPrivacyToggleAssets) {
+  SenderMock sender;
+  expectAllSendCalls(sender);
+  Supla::HtmlGenerator generator;
+
+  generator.sendHeader(&sender);
+  EXPECT_THAT(sendHtml, HasSubstr(".sensitive{transition:filter"));
+  EXPECT_THAT(sendHtml, HasSubstr(".privacy-mode .sensitive"));
+  EXPECT_THAT(sendHtml, HasSubstr(".hint.warn"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr(".help-link")));
+  EXPECT_THAT(sendHtml, HasSubstr("#privacy-toggle"));
+
+  sendHtml.clear();
+  generator.sendJavascript(&sender);
+  EXPECT_THAT(sendHtml, HasSubstr("function initPrivacyToggle()"));
+  EXPECT_THAT(sendHtml, HasSubstr("function findDeviceInfoSpans()"));
+  EXPECT_THAT(sendHtml, HasSubstr("function setDeviceInfoSensitive(hidden)"));
+  EXPECT_THAT(sendHtml, HasSubstr("device-info-value"));
+  EXPECT_THAT(sendHtml, HasSubstr("document.createTreeWalker(spans[i],4"));
+  EXPECT_THAT(sendHtml, HasSubstr("range.surroundContents(value)"));
+  EXPECT_THAT(sendHtml, HasSubstr("parent.normalize()"));
+  EXPECT_THAT(sendHtml, HasSubstr("document.querySelectorAll('.sensitive')"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("document.body.classList.toggle('privacy-mode')"));
+  EXPECT_THAT(sendHtml, HasSubstr("setDeviceInfoSensitive(hidden)"));
+  EXPECT_THAT(sendHtml, HasSubstr("button.innerHTML='<svg class=\"icon-eye\""));
+  EXPECT_THAT(sendHtml, HasSubstr("class=\"icon-eye-off\""));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("button.setAttribute('aria-pressed','false')"));
+  EXPECT_THAT(
+      sendHtml,
+      HasSubstr("button.setAttribute('aria-pressed',hidden?'true':'false')"));
+  EXPECT_THAT(sendHtml, HasSubstr("button.title=hidden?'Show sensitive data'"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("function showHelp(text)")));
+  EXPECT_THAT(sendHtml, HasSubstr("t.parentNode.style.display=e"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("mauth_usr")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("mauth_pwd")));
+}
+
+TEST_F(HtmlCaptureTest, HeaderBeginEscapesDeviceNameInTitle) {
+  resetRegisterDevice();
+
+  SenderMock sender;
+  expectAllSendCalls(sender);
+
+  Supla::RegisterDevice::setName(
+      "Device </title><script>alert('x')</script> & \"quote\"");
+
+  Supla::HtmlGenerator generator;
+  generator.sendHeaderBegin(&sender);
+
+  resetRegisterDevice();
+
+  EXPECT_THAT(
+      sendHtml,
+      HasSubstr("<title>Device &lt;/title&gt;&lt;script&gt;alert(&apos;x&apos;)"
+                "&lt;/script&gt; &amp; &quot;quote&quot;</title>"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("<meta name=\"theme-color\" content=\"#00d151\">"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("<script>alert('x')</script>")));
 }

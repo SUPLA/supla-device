@@ -1,18 +1,5 @@
-/*
-  Copyright (C) AC SOFTWARE SP. Z O.O.
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 /*
   - for LAN8720 + ESP32 - using as less gpio as possible
@@ -36,6 +23,7 @@
 
 #include <Arduino.h>
 #include <ETH.h>
+#include <supla/network/arduino_netif_config.h>
 #include <supla/network/netif_lan.h>
 #include <supla/supla_lib_config.h>
 #include <supla/log_wrapper.h>
@@ -102,19 +90,37 @@ class ESPETH : public Supla::LAN {
         if (thisEth) {
           thisEth->setIpv4Addr(ETH.localIP());
         }
-        Serial.print(F("[Ethernet] local IP: "));
-        Serial.println(ETH.localIP());
-        Serial.print(F("subnetMask: "));
-        Serial.println(ETH.subnetMask());
-        Serial.print(F("gatewayIP: "));
-        Serial.println(ETH.gatewayIP());
-        Serial.print(F("ETH MAC: "));
-        Serial.println(ETH.macAddress());
+        IPAddress localIP = ETH.localIP();
+        IPAddress subnetMaskIP = ETH.subnetMask();
+        IPAddress gatewayIP = ETH.gatewayIP();
+        uint8_t mac[6] = {};
+        ETH.macAddress(mac);
+        SUPLA_LOG_INFO("localIP: %d.%d.%d.%d",
+                       localIP[0],
+                       localIP[1],
+                       localIP[2],
+                       localIP[3]);
+        SUPLA_LOG_INFO("subnetMaskIP: %d.%d.%d.%d",
+                       subnetMaskIP[0],
+                       subnetMaskIP[1],
+                       subnetMaskIP[2],
+                       subnetMaskIP[3]);
+        SUPLA_LOG_INFO("gatewayIP: %d.%d.%d.%d",
+                       gatewayIP[0],
+                       gatewayIP[1],
+                       gatewayIP[2],
+                       gatewayIP[3]);
+        SUPLA_LOG_INFO("ETH MAC: %02X:%02X:%02X:%02X:%02X:%02X",
+                       mac[0],
+                       mac[1],
+                       mac[2],
+                       mac[3],
+                       mac[4],
+                       mac[5]);
+        SUPLA_LOG_INFO("speed: %d Mbps", ETH.linkSpeed());
         if (ETH.fullDuplex()) {
-          Serial.print(F("FULL_DUPLEX , "));
+          SUPLA_LOG_INFO("FULL_DUPLEX");
         }
-        Serial.print(ETH.linkSpeed());
-        Serial.println(F("Mbps"));
         break;
       }
       case ARDUINO_EVENT_ETH_DISCONNECTED: {
@@ -147,6 +153,17 @@ class ESPETH : public Supla::LAN {
         powerPin,
         clkMode);
     ETH.begin(ethType, ethAddress, mdcPin, mdioPin, powerPin, clkMode);
+    if (hasStaticIpConfig()) {
+      const auto &cfg = getNetifConfig();
+      IPAddress localIp = toArduinoIpAddress(cfg.ip);
+      IPAddress gateway = toArduinoIpAddress(cfg.gateway);
+      IPAddress subnet = toArduinoIpAddress(cfg.netmask);
+      IPAddress dns1 = toArduinoIpAddress(cfg.dns1);
+      IPAddress dns2 = toArduinoIpAddress(cfg.dns2);
+      if (!ETH.config(localIp, gateway, subnet, dns1, dns2)) {
+        SUPLA_LOG_WARNING("ETH static IP config failed, continuing");
+      }
+    }
 
     initDone = true;
 

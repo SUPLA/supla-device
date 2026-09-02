@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_DEVICE_SW_UPDATE_H_
 #define SRC_SUPLA_DEVICE_SW_UPDATE_H_
@@ -26,6 +11,24 @@
 namespace Supla {
 
 namespace Device {
+enum class SwUpdateResult : uint8_t {
+  UPDATED,
+  UP_TO_DATE,
+  FAILED,
+};
+
+class SwUpdateObserver {
+ public:
+  virtual ~SwUpdateObserver() = default;
+  virtual void onSwUpdateStarted() = 0;
+  virtual void onSwUpdateProgress(uint32_t downloadedBytes,
+                                  uint32_t totalBytes) = 0;
+  virtual void onSwUpdateFinished(bool success, const char *reason) = 0;
+  virtual void onSwUpdateResult(SwUpdateResult result, const char *reason) {
+    onSwUpdateFinished(result != SwUpdateResult::FAILED, reason);
+  }
+};
+
 class SwUpdate {
  public:
   static SwUpdate *Create(SuplaDeviceClass *sdc,
@@ -35,7 +38,11 @@ class SwUpdate {
 
   void start() {
     started = true;
+    if (observer) {
+      observer->onSwUpdateStarted();
+    }
   }
+  void setObserver(SwUpdateObserver *newObserver) { observer = newObserver; }
   virtual void iterate() = 0;
 
   void setUrl(const char *newUrl);
@@ -52,6 +59,8 @@ class SwUpdate {
     beta = true;
   }
   void setSkipCert() {
+    // One-time recovery fallback for expired OTA certificates.
+    // The OTA flow clears this mode after use.
     skipCert = true;
   }
   bool isRetryAllowed() {
@@ -80,6 +89,22 @@ class SwUpdate {
                     const char *newUrl,
                     Supla::SwUpdateMode mode);
 
+  void notifyProgress(uint32_t downloadedBytes, uint32_t totalBytes) {
+    if (observer) {
+      observer->onSwUpdateProgress(downloadedBytes, totalBytes);
+    }
+  }
+  void notifyFinished(bool success, const char *reason = nullptr) {
+    if (observer) {
+      observer->onSwUpdateFinished(success, reason);
+    }
+  }
+  void notifyFinished(SwUpdateResult result, const char *reason = nullptr) {
+    if (observer) {
+      observer->onSwUpdateResult(result, reason);
+    }
+  }
+
   bool beta = false;
   bool skipCert = false;
   bool securityOnly = false;
@@ -87,6 +112,7 @@ class SwUpdate {
   bool finished = false;
   bool abort = false;
   SuplaDeviceClass *sdc = nullptr;
+  SwUpdateObserver *observer = nullptr;
   char *updateUrl = nullptr;
   char *newVersion = nullptr;
   char *changelogUrl = nullptr;

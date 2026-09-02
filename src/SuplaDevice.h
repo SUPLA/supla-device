@@ -1,26 +1,19 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLADEVICE_H_
 #define SRC_SUPLADEVICE_H_
 
+#include <supla-common/log.h>
 #include <supla-common/proto.h>
 #include <supla/action_handler.h>
 #include <supla/device/device_mode.h>
 #include <supla/local_action.h>
+#include <supla/suplet/config.h>
+#if SUPLA_SUPLET_ENABLED
+#include <supla/suplet/definition_cache.h>
+#include <supla/suplet/storage.h>
+#endif
 #include <supla/uptime.h>
 
 #include "supla/device/security_logger.h"
@@ -76,6 +69,9 @@ namespace Supla {
 class Clock;
 class Mutex;
 class Element;
+namespace Device {
+class SwUpdateObserver;
+}
 
 // 10 days
 constexpr uint32_t AutomaticOtaCheckInterval = (10ULL * 24 * 60 * 60 * 1000);
@@ -146,6 +142,7 @@ const char *getInitialModeName(const InitialMode mode);
 namespace Device {
 class SwUpdate;
 class ChannelConflictResolver;
+class ChannelConflictResolverList;
 class SubdevicePairingHandler;
 class StatusLed;
 class LastStateLogger;
@@ -155,6 +152,14 @@ class SecurityLogger;
 namespace Protocol {
 class SuplaSrpc;
 }  // namespace Protocol
+
+namespace Suplet {
+class CapabilityRegistry;
+class Manager;
+class Registry;
+class ServerConfigHandler;
+enum class ServerConfigResult : uint8_t;
+}  // namespace Suplet
 
 }  // namespace Supla
 
@@ -226,9 +231,12 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void restartCfgModeTimeout(bool requireRestart);
   void resetToFactorySettings();
   void disableLocalActionsIfNeeded();
+  void restoreLocalActionsAfterConfigMode();
   void requestCfgMode();
 
   int8_t getCurrentStatus() const;
+  bool getSelfTestFailed() const;
+  int getSelfTestFailureReason() const;
   bool loadDeviceConfig();
   bool prepareLastStateLog();
   char *getLastStateLog();
@@ -267,6 +275,13 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void enableNetwork();
   void disableNetwork();
   bool getStorageInitResult();
+  /**
+   * Defers permission to enter sleep mode for the given number of
+   * milliseconds.
+   *
+   * A new request never shortens an already active deferral.
+   */
+  void deferSleep(uint32_t delayMs);
   bool isSleepingAllowed();
 
   /**
@@ -316,23 +331,49 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setShowUptimeInChannelState(bool value);
 
   /**
+   * Sets global Supla log level.
+   *
+   * Messages with priority higher than provided level are filtered out before
+   * formatting. Use LOG_INFO, LOG_DEBUG, LOG_VERBOSE, etc.
+   *
+   * @param level maximum log level to emit
+   */
+  void setLogLevel(int level);
+
+  /**
+   * Returns current global Supla log level.
+   *
+   * @return current maximum log level emitted
+   */
+  int getLogLevel();
+
+  /**
    * Enables/disables verbose logging of Supla protocol
    *
    * @param value true to enable verbose logging
+   * @warning Enabling verbose logging is insecure. It may expose raw protocol
+   * payloads and secrets such as GUIDs, auth keys, and registration data in
+   * logs.
    */
   void setProtoVerboseLog(bool value);
-
-  /**
-   * Enables/disables the permanent web server.
-   *
-   * @param value true to enable permanent web server
-   */
-  void setPermanentWebInterface(bool value = true);
 
   Supla::Mutex *getTimerAccessMutex();
 
   void setChannelConflictResolver(
       Supla::Device::ChannelConflictResolver *resolver);
+  bool addChannelConflictResolver(
+      Supla::Device::ChannelConflictResolver *resolver);
+  bool removeChannelConflictResolver(
+      Supla::Device::ChannelConflictResolver *resolver);
+  void setSupletRuntime(Supla::Suplet::Manager *manager,
+                        Supla::Suplet::Registry *registry);
+  void setSupletCapabilityRegistry(Supla::Suplet::CapabilityRegistry *registry);
+  void setSupletServerConfigHandler(
+      Supla::Suplet::ServerConfigHandler *handler);
+  Supla::Suplet::ServerConfigResult applySupletCommandJson(
+      const char *commandJson);
+  Supla::Suplet::ServerConfigResult validateSupletCommandJson(
+      const char *commandJson) const;
   void setSubdevicePairingHandler(
       Supla::Device::SubdevicePairingHandler *handler);
 
@@ -370,6 +411,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    * @param valueMin inactivity timeout in minutes. Use 0 to disable
    */
   void setLeaveCfgModeAfterInactivityMin(int valueMin);
+  uint32_t getCfgModeInactivityTimeLeftMs() const;
+  void setSwUpdateObserver(Supla::Device::SwUpdateObserver *observer);
 
   /**
    * Checks if leave configuration mode after inactivity is enabled.
@@ -465,6 +508,9 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void handleLocalActionTriggers();
   void checkIfLeaveCfgModeOrRestartIsNeeded();
   void createSrpcLayerIfNeeded();
+  bool loadSupletRuntime();
+  bool handleSupletRuntimeRefresh();
+  void rewriteStateStorageIfInvalidAfterTopologyChange();
   void setupDeviceMode();
 
   uint32_t networkIsNotReadyCounter = 0;
@@ -477,6 +523,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   uint32_t protocolRestartTimeMs = 0;
   uint32_t resetOnConnectionFailTimeoutSec = 0;
   uint32_t lastSwUpdateCheckTimestamp = 0;
+  uint32_t sleepDeferStartMs = 0;
+  uint32_t sleepDeferDurationMs = 0;
 
   enum Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;
   bool triggerResetToFactorySettings = false;
@@ -493,10 +541,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   // true even if initialization procedure failed for some reason
   bool initializationDone = false;
   bool goToConfigModeAsap = false;
-
-  // used for permanent web server
-  bool startPermanentWebInterface = false;
-  bool runningPermanentWebInterface = false;
+  bool selfTestFailed = false;
+  int selfTestFailureReason = 0;
 
   uint8_t leaveCfgModeAfterInactivityMin = 5;
   uint8_t macLengthInHostname = 6;
@@ -509,6 +555,12 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
+  Supla::Device::SwUpdateObserver *swUpdateObserver = nullptr;
+  Supla::Device::ChannelConflictResolverList *channelConflictResolvers =
+      nullptr;
+#if SUPLA_SUPLET_ENABLED
+  Supla::Suplet::Manager *supletManager = nullptr;
+#endif
   Supla::Element *iterateConnectedPtr = nullptr;
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;
   Supla::Mutex *timerAccessMutex = nullptr;

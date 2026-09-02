@@ -84,9 +84,8 @@ bool HvacWeeklySchedule::loadSchedule(bool isAltWeeklySchedule) {
               const TChannelConfig_WeeklySchedule *loadedSchedule) {
             return isWeeklyScheduleValid(loadedSchedule, isAltWeeklySchedule);
           })) {
-    if (schedule != nullptr) {
-      weeklyScheduleBuffer_.set(isAltWeeklySchedule, schedule);
-    }
+    weeklyScheduleBuffer_.set(isAltWeeklySchedule, schedule);
+    weeklyScheduleBuffer_.clear(isAltWeeklySchedule);
     return false;
   }
   weeklyScheduleBuffer_.set(isAltWeeklySchedule, schedule);
@@ -435,6 +434,16 @@ bool HvacWeeklySchedule::isWeeklyScheduleValid(
 
   for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; i++) {
     int programId = getWeeklyScheduleProgramId(newSchedule, i);
+    if (programId < 0 ||
+        programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
+      SUPLA_LOG_WARNING(
+          "HVAC[%d]: weekly schedule validation failed: invalid program %d "
+          "used in schedule %d",
+          owner_->getChannelNumber(),
+          programId,
+          i);
+      return false;
+    }
     if (programId != 0 && !programIsUsed[programId - 1]) {
       SUPLA_LOG_WARNING(
           "HVAC[%d]: weekly schedule validation failed: not configured program "

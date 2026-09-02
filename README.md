@@ -251,3 +251,16 @@ This project is licensed under the **GNU GPL v2**.
 See the [LICENSE](LICENSE) file for details.
 
 ---
+
+## Security considerations
+
+This SDK supports multiple platforms with different security capabilities.
+
+- ESP-IDF builds support secure storage (flash/NVS encryption) and are recommended for production devices.
+- Arduino builds (ESP8266 / ESP32 Arduino) store configuration in plaintext (LittleFS) and do not provide protection against physical access.
+
+Devices using Arduino builds should not be considered secure against extraction of stored credentials.
+
+See [SECURITY.md](SECURITY.md) for detailed security model and recommendations.
+
+---

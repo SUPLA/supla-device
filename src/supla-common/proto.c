@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #define _POSIX_C_SOURCE 200809L
 
@@ -301,25 +286,28 @@ char PROTO_ICACHE_FLASH sproto_pop_in_sdp(void *spd_ptr,
         return SUPLA_RESULT_VERSION_ERROR;
       }
 
-      if ((header_size + _sdp->data_size) > sizeof(TSuplaDataPacket)) {
+      if (_sdp->data_size > sizeof(TSuplaDataPacket) - header_size) {
         sproto_shrink_in_buffer(&spd->in, spd->in.data_size);
         return SUPLA_RESULT_DATA_ERROR;
       }
 
-      if ((header_size + _sdp->data_size + SUPLA_TAG_SIZE) > spd->in.data_size)
+      size_t packet_size = header_size + (size_t)_sdp->data_size;
+
+      if (packet_size + SUPLA_TAG_SIZE > spd->in.data_size) {
         return SUPLA_RESULT_FALSE;
+      }
 
-      if (header_size + _sdp->data_size >= spd->in.size ||
-          memcmp(&spd->in.buffer[header_size + _sdp->data_size], sproto_tag,
-                 SUPLA_TAG_SIZE) != 0) {
+      if (packet_size >= spd->in.size ||
+          memcmp(&spd->in.buffer[packet_size], sproto_tag, SUPLA_TAG_SIZE) !=
+              0) {
         sproto_shrink_in_buffer(&spd->in, spd->in.data_size);
 
         return SUPLA_RESULT_DATA_ERROR;
       }
 
-      memcpy(sdp, spd->in.buffer, header_size + _sdp->data_size);
+      memcpy(sdp, spd->in.buffer, packet_size);
       sproto_shrink_in_buffer(&spd->in,
-                              header_size + _sdp->data_size + SUPLA_TAG_SIZE);
+                              packet_size + SUPLA_TAG_SIZE);
 
       return (SUPLA_RESULT_TRUE);
     }

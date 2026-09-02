@@ -43,6 +43,9 @@ const TChannelConfig_WeeklySchedule *WeeklyScheduleBuffer::get(bool alt) const {
 void WeeklyScheduleBuffer::set(bool alt,
                                TChannelConfig_WeeklySchedule *schedule) {
   auto &slot = alt ? altWeeklySchedule_ : weeklySchedule_;
+  if (slot == schedule) {
+    return;
+  }
   delete slot;
   slot = schedule;
 }

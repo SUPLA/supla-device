@@ -10,3 +10,11 @@ config SUPLA_DISABLE_LOGS
     help
       Disables Supla logs in debug mode. In production mode they are always
       disabled.
+
+config SUPLA_INSECURE_DEBUG_INTERFACE
+    bool "Enable insecure SUPLA debug interfaces"
+    depends on SUPLA_DEBUG_BUILD
+    default n
+    help
+      Enables development-only local/network debug interfaces such as TCP log
+      streaming. Do not enable in production firmware.

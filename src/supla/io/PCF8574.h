@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
@@ -38,7 +23,7 @@ class PCF8574 : public Supla::Io::Base {
                    Supla::Mutex *mutex = nullptr,
                    uint8_t initialPinState = 0xFF,
                    TwoWire *wire = &Wire)
-      : Supla::Io::Base(false), pcf_(address, wire), mutex_(mutex) {
+      : Supla::Io::Base(), pcf_(address, wire), mutex_(mutex) {
     if (!pcf_.begin(initialPinState)) {
       SUPLA_LOG_ERROR("Unable to find PCF8574 at address 0x%x", address);
     } else {

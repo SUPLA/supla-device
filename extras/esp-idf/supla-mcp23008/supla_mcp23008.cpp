@@ -1,29 +1,15 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "supla_mcp23008.h"
 
 #include <supla/log_wrapper.h>
+#include <stdio.h>
 
 using Supla::MCP23008;
 
 MCP23008::MCP23008(Supla::I2CDriver *driver, uint8_t address, bool initDefaults)
-    : Supla::Io::Base(false),
+    : Supla::Io::Base(),
       driver(driver),
       address(address),
       initDefaults(initDefaults) {
@@ -40,16 +26,16 @@ void MCP23008::customPinMode(int channelNumber, uint8_t pin, uint8_t mode) {
 
   switch (mode) {
     case INPUT: {
-      mode |= (1 << pin);
+      this->mode |= (1 << pin);
       pullup &= ~(1 << pin);
       break;
     }
     case OUTPUT: {
-      mode &= ~(1 << pin);
+      this->mode &= ~(1 << pin);
       break;
     }
     case INPUT_PULLUP: {
-      mode |= (1 << pin);
+      this->mode |= (1 << pin);
       pullup |= (1 << pin);
       break;
     }
@@ -63,6 +49,12 @@ void MCP23008::customPinMode(int channelNumber, uint8_t pin, uint8_t mode) {
 }
 
 int MCP23008::customDigitalRead(int channelNumber, uint8_t pin) {
+  if (pin > 7) {
+    return 0;
+  }
+  if (handle == nullptr) {
+    return 0;
+  }
   readState();
   return (state & (1 << pin)) > 0 ? 1 : 0;
 }

@@ -1,20 +1,5 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_CONTROL_HVAC_BASE_H_
 #define SRC_SUPLA_CONTROL_HVAC_BASE_H_
@@ -57,14 +42,22 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   void iterateAlways() override;
   bool iterateConnected() override;
+  /**
+   * Returns remaining countdown timer time in seconds for an active HVAC
+   * countdown timer.
+   *
+   * Returns false when the clock is not ready or the HVAC countdown timer is
+   * not active.
+   */
+  bool getRemainingCountdownTimerSec(uint32_t *remainingSec) const override;
   void purgeConfig() override;
 
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *config,
-                              bool localfalse) override;
+                              bool local = false) override;
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
-                               bool altSchedule,
-                               bool local) override;
+                               bool altSchedule = false,
+                               bool local = false) override;
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;
   void handleChannelConfigFinished() override;
@@ -149,15 +142,15 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setAuxThermometerType(uint8_t type);
   uint8_t getAuxThermometerType() const;
 
-  bool setPumpSwitchChannelNo(uint8_t channelNo);
+  bool setPumpSwitchChannelNo(int16_t channelNo);
   void clearPumpSwitchChannelNo();
   int16_t getPumpSwitchChannelNo() const;
   bool isPumpSwitchSet() const;
-  bool setHeatOrColdSourceSwitchChannelNo(uint8_t channelNo);
+  bool setHeatOrColdSourceSwitchChannelNo(int16_t channelNo);
   void clearHeatOrColdSourceSwitchChannelNo();
   int16_t getHeatOrColdSourceSwitchChannelNo() const;
   bool isHeatOrColdSourceSwitchSet() const;
-  bool setMasterThermostatChannelNo(uint8_t channelNo);
+  bool setMasterThermostatChannelNo(int16_t channelNo);
   void clearMasterThermostatChannelNo();
   int16_t getMasterThermostatChannelNo() const;
   bool isMasterThermostatSet() const;
@@ -309,6 +302,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
                              bool isAltWeeklySchedule = false) const;
   bool isChannelThermometer(int16_t channelNo) const;
   bool isChannelBinarySensor(int16_t channelNo) const;
+  bool isChannelHvac(int16_t channelNo) const;
   bool isAlgorithmValid(unsigned _supla_int16_t algorithm) const;
   bool areTemperaturesValid(const THVACTemperatureCfg *temperatures) const;
   bool fixTempearturesConfig();
@@ -498,8 +492,13 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // returns true if forced off should be set
   bool getForcedOffSensorState();
   bool isSensorTempValid(_supla_int16_t temperature) const;
-  bool checkOverheatProtection(_supla_int16_t t);
-  bool checkAntifreezeProtection(_supla_int16_t t);
+  bool isChannelRelay(int16_t channelNo) const;
+  bool checkOverheatProtection(_supla_int16_t t, _supla_int16_t tAux);
+  bool checkAntifreezeProtection(_supla_int16_t t, _supla_int16_t tAux);
+  bool isAuxMinLimitReached(_supla_int16_t tAux) const;
+  bool isAuxMaxLimitReached(_supla_int16_t tAux) const;
+  // This only handles normal auxiliary regulation. Its return value ends the
+  // normal-control phase, not the higher-priority protection/user handling.
   bool checkAuxProtection(_supla_int16_t t);
   bool isAuxProtectionEnabled() const;
   bool processWeeklySchedule();
@@ -519,6 +518,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
   void updateWeeklyScheduleConfigTypes();
+  void emitCountdownTimerActionIfNeeded();
   bool fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig);
   bool fixReadonlyTemperature(int32_t temperatureIndex,
                               THVACTemperatureCfg *newTemp);
@@ -574,6 +574,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint32_t lastIterateTimestampMs = 0;
   uint32_t lastOutputStateChangeTimestampMs = 0;
   uint32_t timerUpdateTimestamp = 0;
+  uint32_t lastCountdownTimerRemainingSec = UINT32_MAX;
 
   time_t countdownTimerEnds = 1;
 

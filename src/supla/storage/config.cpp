@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 /*
  * Default Config implementation assumes that values are stored in key-value
@@ -23,23 +8,40 @@
  * provide some key-value based interface.
  */
 
+#include "config.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <supla-common/proto.h>
-#include <supla/device/sw_update.h>
-#include <supla/time.h>
-#include <supla/log_wrapper.h>
-#include <supla/element.h>
+#include <supla/crypto.h>
 #include <supla/device/remote_device_config.h>
+#include <supla/device/sw_update.h>
+#include <supla/element.h>
+#include <supla/log_wrapper.h>
+#include <supla/network/network.h>
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
-#include <supla/network/network.h>
+#include <supla/time.h>
 #include <supla/tools.h>
-#include <supla/crypto.h>
-
-#include "config.h"
 
 namespace Supla {
+
+namespace {
+
+uint32_t swapNetworkOrder(uint32_t value) {
+  return ((value & 0x000000FFu) << 24) | ((value & 0x0000FF00u) << 8) |
+         ((value & 0x00FF0000u) >> 8) | ((value & 0xFF000000u) >> 24);
+}
+
+uint32_t toNetworkOrder(uint32_t value) {
+  return Supla::isLittleEndian() ? swapNetworkOrder(value) : value;
+}
+
+uint32_t fromNetworkOrder(uint32_t value) {
+  return toNetworkOrder(value);
+}
+
+}  // namespace
 
 Config::Config() {
   Storage::SetConfigInstance(this);
@@ -94,6 +96,23 @@ bool Config::isMqttTlsEnabled() {
   return result == 1;
 }
 
+bool Config::setMqttBrokerVerificationEnabled(bool enabled) {
+  int8_t value = enabled ? 1 : 0;
+  return setInt8("mqttverify", value);
+}
+
+bool Config::isMqttBrokerVerificationEnabled() {
+  int8_t result = 0;
+  if (getInt8("mqttverify", &result)) {
+    return result == 1;
+  }
+
+  // Preserve the legacy behavior for already configured MQTT brokers. New
+  // configurations use certificate verification by default.
+  char mqttServer[SUPLA_SERVER_NAME_MAXSIZE] = {};
+  return !getMqttServer(mqttServer) || mqttServer[0] == '\0';
+}
+
 bool Config::setMqttAuthEnabled(bool enabled) {
   int8_t value = (enabled ? 1 : 0);
   return setInt8("mqttauth", value);
@@ -145,7 +164,7 @@ bool Config::getSuplaServer(char* result) {
 int32_t Config::getSuplaServerPort() {
   int32_t result = -1;
   getInt32("suplaport", &result);
-  if (result <= 0 || result > 65536) {
+  if (result <= 0 || result > 65535) {
     result = -1;
   }
 
@@ -172,10 +191,87 @@ bool Config::getAESKey(uint8_t*) {
   return false;
 }
 
+bool Config::loadNetifConfig(const char* blobName, NetifConfigBlob* cfg) {
+  if (cfg == nullptr) {
+    return false;
+  }
+
+  normalizeDhcpNetifConfig(cfg);
+  if (blobName == nullptr || blobName[0] == '\0') {
+    return false;
+  }
+
+  NetifConfigBlob stored = {};
+  if (!getBlob(blobName, reinterpret_cast<char*>(&stored), sizeof(stored))) {
+    return false;
+  }
+
+  if (stored.version != NETIF_CONFIG_BLOB_VERSION) {
+    SUPLA_LOG_WARNING("Invalid netif config version \"%s\"", blobName);
+    return false;
+  }
+
+  if (stored.ipMode == static_cast<uint8_t>(NetifIpMode::DHCP)) {
+    normalizeDhcpNetifConfig(&stored);
+  } else if (stored.ipMode == static_cast<uint8_t>(NetifIpMode::Static)) {
+    stored.ip = fromNetworkOrder(stored.ip);
+    stored.netmask = fromNetworkOrder(stored.netmask);
+    stored.gateway = fromNetworkOrder(stored.gateway);
+    stored.dns1 = fromNetworkOrder(stored.dns1);
+    stored.dns2 = fromNetworkOrder(stored.dns2);
+    if (!isValidStaticNetifConfig(stored)) {
+      SUPLA_LOG_WARNING("Invalid netif config blob \"%s\"", blobName);
+      return false;
+    }
+  } else {
+    SUPLA_LOG_WARNING("Invalid netif config mode \"%s\"", blobName);
+    return false;
+  }
+
+  *cfg = stored;
+  return true;
+}
+
+bool Config::saveNetifConfig(const char* blobName, const NetifConfigBlob& cfg) {
+  if (blobName == nullptr || blobName[0] == '\0') {
+    return false;
+  }
+
+  NetifConfigBlob stored = cfg;
+  if (stored.ipMode == static_cast<uint8_t>(NetifIpMode::DHCP)) {
+    normalizeDhcpNetifConfig(&stored);
+  } else if (!isValidStaticNetifConfig(stored)) {
+    SUPLA_LOG_WARNING("Rejected invalid static netif config blob \"%s\"",
+                      blobName);
+    return false;
+  }
+
+  if (stored.ipMode == static_cast<uint8_t>(NetifIpMode::Static)) {
+    stored.ip = toNetworkOrder(stored.ip);
+    stored.netmask = toNetworkOrder(stored.netmask);
+    stored.gateway = toNetworkOrder(stored.gateway);
+    stored.dns1 = toNetworkOrder(stored.dns1);
+    stored.dns2 = toNetworkOrder(stored.dns2);
+  }
+
+  stored.version = NETIF_CONFIG_BLOB_VERSION;
+  stored.reserved[0] = 0;
+  stored.reserved[1] = 0;
+  return setBlob(
+      blobName, reinterpret_cast<const char*>(&stored), sizeof(stored));
+}
+
+bool Config::removeNetifConfig(const char* blobName) {
+  if (blobName == nullptr || blobName[0] == '\0') {
+    return false;
+  }
+  return eraseKey(blobName);
+}
+
 int32_t Config::getMqttServerPort() {
   int32_t result = -1;
   getInt32("mqttport", &result);
-  if (result <= 0 || result > 65536) {
+  if (result <= 0 || result > 65535) {
     if (isMqttTlsEnabled()) {
       result = 8883;
     } else {
@@ -276,7 +372,7 @@ bool Config::setSuplaServer(const char* server) {
 }
 
 bool Config::setSuplaServerPort(int32_t port) {
-  if (port <= 0 || port > 65536) {
+  if (port <= 0 || port > 65535) {
     port = 2016;
   }
   return setInt32("suplaport", port);
@@ -305,7 +401,7 @@ bool Config::setMqttServer(const char* server) {
 }
 
 bool Config::setMqttServerPort(int32_t port) {
-  if (port <= 0 || port > 65536) {
+  if (port <= 0 || port > 65535) {
     port = 1883;
   }
   return setInt32("mqttport", port);
@@ -343,6 +439,19 @@ bool Config::setMqttPrefix(const char* prefix) {
 
 bool Config::getMqttPrefix(char* result) {
   return getString("mqttprefix", result, 49);
+}
+
+bool Config::setMqttCA(const char* mqttCA) {
+  return setString("mqtt_ca", mqttCA);
+}
+
+bool Config::getMqttCA(char* result, int maxSize) {
+  return getString("mqtt_ca", result, maxSize);
+}
+
+int Config::getMqttCASize() {
+  int size = getStringSize("mqtt_ca");
+  return size > 0 ? size - 1 : size;
 }
 
 void Config::commit() {
@@ -424,7 +533,7 @@ void Config::saveIfNeeded() {
   }
 }
 
-void Config::generateKey(char *output, int number, const char *key) {
+void Config::generateKey(char* output, int number, const char* key) {
   snprintf(output, SUPLA_CONFIG_MAX_KEY_SIZE, "%d_%s", number, key);
 }
 
@@ -586,8 +695,9 @@ bool Config::isChannelConfigChangeFlagSet(int channelNo, int configType) {
   return false;
 }
 
+#ifndef ARDUINO_ARCH_AVR
 void Config::generateSaltPassword(const char* password,
-                                  Supla::SaltPassword *result) {
+                                  Supla::SaltPassword* result) {
   if (password == nullptr || result == nullptr) {
     return;
   }
@@ -604,15 +714,17 @@ void Config::generateSaltPassword(const char* password,
                               result->passwordSha,
                               sizeof(result->passwordSha));
 }
+#endif  // !ARDUINO_ARCH_AVR
 
-bool Config::setCfgModeSaltPassword(const Supla::SaltPassword &saltPassword) {
-  return setBlob("cfgpass", reinterpret_cast<const char*>(&saltPassword),
+bool Config::setCfgModeSaltPassword(const Supla::SaltPassword& saltPassword) {
+  return setBlob("cfgpass",
+                 reinterpret_cast<const char*>(&saltPassword),
                  sizeof(Supla::SaltPassword));
 }
 
-bool Config::getCfgModeSaltPassword(Supla::SaltPassword *result) {
-  return getBlob("cfgpass", reinterpret_cast<char*>(result),
-                 sizeof(Supla::SaltPassword));
+bool Config::getCfgModeSaltPassword(Supla::SaltPassword* result) {
+  return getBlob(
+      "cfgpass", reinterpret_cast<char*>(result), sizeof(Supla::SaltPassword));
 }
 
 void Supla::SaltPassword::copySalt(const SaltPassword& other) {
@@ -687,6 +799,14 @@ void Supla::Config::setAutoUpdatePolicy(Supla::AutoUpdatePolicy policy) {
 }
 
 bool Supla::Config::isEncryptionEnabled() {
+  return false;
+}
+
+bool Supla::Config::isDeviceDataPartitionDeclared() {
+  return false;
+}
+
+bool Supla::Config::isDeviceDataPartitionAvailable() {
   return false;
 }
 

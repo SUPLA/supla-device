@@ -1,30 +1,16 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <supla/log_wrapper.h>
 
 #include <ctime>
 #include <filesystem>  // NOLINT(build/c++17)
-#include <fstream>
 #include <iomanip>
+#include <sstream>
 #include <string>
 
 #include "linux_file_state_logger.h"
+#include "linux_secure_file.h"
 #include "supla/device/last_state_logger.h"
 
 namespace Supla {
@@ -42,8 +28,10 @@ Supla::Device::FileStateLogger::FileStateLogger(const std::string &path) {
   }
 
   file = path + Supla::LastStateFile;
-  std::ofstream out(file);
-  out.close();
+  if (!Supla::Linux::writeSecureFile(file, nullptr, 0, false)) {
+    SUPLA_LOG_ERROR("Config: failed to create last state file");
+    return;
+  }
 
   addToFile("Starting supla-device");
 }
@@ -54,11 +42,14 @@ void Supla::Device::FileStateLogger::log(const char *logLine, int uptime) {
 }
 
 void Supla::Device::FileStateLogger::addToFile(const char *line) {
-  std::ofstream out(file, std::ios_base::app);
-
   time_t now = time(nullptr);
-  out <<
+  std::ostringstream output;
+  output <<
     std::put_time(localtime(&now), "%F %T ")  // NOLINT(runtime/threadsafe_fn)
     << line << std::endl;
-  out.close();
+  const std::string outputString = output.str();
+  if (!Supla::Linux::writeSecureFile(
+          file, outputString.data(), outputString.size(), true)) {
+    SUPLA_LOG_ERROR("Config: failed to write last state file");
+  }
 }

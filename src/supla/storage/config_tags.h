@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_STORAGE_CONFIG_TAGS_H_
 #define SRC_SUPLA_STORAGE_CONFIG_TAGS_H_
@@ -71,6 +56,7 @@ const char FacadeBlindTiltControlTypeTag[] = "fb_type";
 const char TiltConfigTag[] = "tilt_cfg";
 
 const char RelayOvercurrentThreshold[] = "oc_thr";
+const char RelayTurnOnDuration[] = "on_dur";
 
 const char HvacCfgTag[] = "hvac_cfg";
 const char HvacWeeklyCfgTag[] = "hvac_weekly";
@@ -85,8 +71,12 @@ const char BinarySensorCfgTag[] = "bs_cfg";
 const char ContainerTag[] = "container";
 
 const char ValveCfgTag[] = "valve_cfg";
+const char WifiNetifCfgTag[] = "wifi_cfg";
+const char EthNetifCfgTag[] = "eth_cfg";
 
 const char ModbusCfgTag[] = "modbus_cfg";
+const char ThermalProtectionCfgTag[] = "thermal_cfg";
+const char InputActivationCfgTag[] = "input_act";
 
 const char OtaModeTag[] = "ota_mode";
 
@@ -129,6 +119,7 @@ static_assert(sizeof(TiltConfigTag) < 12);
 static_assert(sizeof(FacadeBlindTiltingTimeTag) < 12);
 static_assert(sizeof(FacadeBlindTiltControlTypeTag) < 12);
 static_assert(sizeof(RelayOvercurrentThreshold) < 12);
+static_assert(sizeof(RelayTurnOnDuration) < 12);
 static_assert(sizeof(HvacCfgTag) < 12);
 static_assert(sizeof(HvacWeeklyCfgTag) <= 12);
 static_assert(sizeof(HvacAltWeeklyCfgTag) <= 13);
@@ -139,7 +130,11 @@ static_assert(sizeof(BinarySensorServerInvertedLogicTag) < 12);
 static_assert(sizeof(BinarySensorCfgTag) < 12);
 static_assert(sizeof(ContainerTag) < 12);
 static_assert(sizeof(ValveCfgTag) < 12);
+static_assert(sizeof(WifiNetifCfgTag) < 12);
+static_assert(sizeof(EthNetifCfgTag) < 12);
 static_assert(sizeof(ModbusCfgTag) < 16);
+static_assert(sizeof(ThermalProtectionCfgTag) < 16);
+static_assert(sizeof(InputActivationCfgTag) < 16);
 static_assert(sizeof(OtaModeTag) < 16);
 static_assert(sizeof(PwmFrequencyTag) < 16);
 static_assert(sizeof(DsSensorConfig) < 12);

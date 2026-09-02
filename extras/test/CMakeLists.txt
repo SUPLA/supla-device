@@ -30,13 +30,45 @@ mark_as_advanced(
 include(FetchContent)
 
 FetchContent_Declare(
+  json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG        v3.12.0
+  GIT_SHALLOW TRUE
+)
+
+FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
   GIT_TAG        v1.17.0
   GIT_SHALLOW TRUE
   )
 
-FetchContent_MakeAvailable(googletest)
+set(ENABLE_CJSON_TEST OFF CACHE BOOL "" FORCE)
+set(ENABLE_CJSON_UTILS OFF CACHE BOOL "" FORCE)
+set(ENABLE_TARGET_EXPORT OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  cjson
+  GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
+  GIT_TAG        v1.7.19
+  GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(json googletest cjson)
+
+option(SUPLA_TEST_ENABLE_CURL_HTTP
+  "Enable sd4linux HTTP source tests when CURL is available" ON)
+option(SUPLA_TEST_REQUIRE_CURL
+  "Fail test configuration when CURL is missing" OFF)
+
+find_package(CURL QUIET)
+set(SUPLA_TEST_CURL_HTTP_ENABLED OFF)
+if(CURL_FOUND AND SUPLA_TEST_ENABLE_CURL_HTTP)
+  set(SUPLA_TEST_CURL_HTTP_ENABLED ON)
+elseif(SUPLA_TEST_REQUIRE_CURL)
+  message(FATAL_ERROR
+    "CURL is required for sd4linux HTTP source tests. "
+    "Install libcurl development package or disable SUPLA_TEST_REQUIRE_CURL.")
+endif()
 
 file(GLOB TEST_SRC CONFIGURE_DEPENDS
   UptimeTests/*.cpp
@@ -47,6 +79,8 @@ file(GLOB TEST_SRC CONFIGURE_DEPENDS
   SensorTests/*.cpp
   ChannelElementTests/*.cpp
   InternalPinOutputTests/*.cpp
+  InputNoiseGuardTests/*.cpp
+  InterruptAcToDcIoTests/*.cpp
   BlinkingLedTests/*.cpp
   PinStatusLedTests/*.cpp
   ConditionTests/*.cpp
@@ -66,38 +100,111 @@ file(GLOB TEST_SRC CONFIGURE_DEPENDS
   RelayTests/*.cpp
   GpmTests/*.cpp
   SwUpdateTests/*.cpp
+  ModbusTests/*.cpp
+  MCP23008Tests/*.cpp
+  SupletTests/*.cpp
+  DebugTests/*.cpp
+  SpiTests/*.cpp
   )
 
 file(GLOB SD4LINUX_TEST_SRC CONFIGURE_DEPENDS
   LinuxPortTests/*.cpp
   )
 
+if(NOT SUPLA_TEST_CURL_HTTP_ENABLED)
+  list(REMOVE_ITEM SD4LINUX_TEST_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/LinuxPortTests/sd4linux_http_source_tests.cpp)
+endif()
+
 list(APPEND TEST_SRC ../../src/supla-common/proto_check.cpp)
+list(APPEND TEST_SRC ../../src/supla/storage/littlefs_config.cpp)
+list(APPEND TEST_SRC
+  ../esp-idf/supla-interrupt-ac-to-dc-io/interrupt_ac_to_dc_io.cpp
+  ../esp-idf/supla-mcp23008/supla_mcp23008.cpp
+  ../porting/esp-idf/esp_idf_ota.cpp
+  ../esp-idf/supla-spi-driver/esp_spi_driver.cpp
+  ../../src/supla/sensor/HC_SR04.cpp)
+
+set_source_files_properties(
+  ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-mcp23008/supla_mcp23008.cpp
+  PROPERTIES COMPILE_OPTIONS "-Wno-unused-parameter")
 
 file(GLOB DOUBLE_SRC CONFIGURE_DEPENDS doubles/*.cpp)
+set(ESP_IDF_OTA_DOUBLE_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf_ota_mock.cpp)
+list(REMOVE_ITEM DOUBLE_SRC ${ESP_IDF_OTA_DOUBLE_SRC})
+set(ESP_IDF_SPI_DOUBLE_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf_spi_mock.cpp)
+list(REMOVE_ITEM DOUBLE_SRC ${ESP_IDF_SPI_DOUBLE_SRC})
 
 set(SD4LINUX_PORT_SRC
+  ../porting/linux/linux_yaml_config.cpp
+  ../porting/linux/linux_secure_file.cpp
+  ../porting/linux/linux_file_state_logger.cpp
+  ../porting/linux/linux_file_storage.cpp
+  ../porting/linux/linux_channel_factory.cpp
   ../porting/linux/supla/control/cmd_relay.cpp
   ../porting/linux/supla/control/control_payload.cpp
   ../porting/linux/supla/control/custom_relay.cpp
   ../porting/linux/supla/control/cmd_roller_shutter.cpp
+  ../porting/linux/supla/control/custom_hvac.cpp
+  ../porting/linux/supla/control/hvac_parsed.cpp
   ../porting/linux/supla/control/rgbcct_parsed.cpp
+  ../porting/linux/supla/control/cmd_valve.cpp
   ../porting/linux/supla/control/action_trigger_parsed.cpp
+  ../porting/linux/supla/custom_channel.cpp
+  ../porting/linux/supla/linux_command.cpp
+  ../porting/linux/supla/parser/json.cpp
   ../porting/linux/supla/parser/parser.cpp
+  ../porting/linux/supla/parser/simple.cpp
+  ../porting/linux/supla/output/file.cpp
+  ../porting/linux/supla/payload/json.cpp
+  ../porting/linux/supla/payload/simple.cpp
+  ../porting/linux/supla/source/cmd.cpp
+  ../porting/linux/supla/source/file.cpp
   ../porting/linux/supla/sensor/sensor_parsed.cpp
   ../porting/linux/supla/sensor/binary_parsed.cpp
+  ../porting/linux/supla/sensor/container_parsed.cpp
+  ../porting/linux/supla/sensor/distance_parsed.cpp
+  ../porting/linux/supla/sensor/electricity_meter_parsed.cpp
+  ../porting/linux/supla/sensor/general_purpose_measurement_parsed.cpp
+  ../porting/linux/supla/sensor/general_purpose_meter_parsed.cpp
+  ../porting/linux/supla/sensor/humidity_parsed.cpp
+  ../porting/linux/supla/sensor/impulse_counter_parsed.cpp
+  ../porting/linux/supla/sensor/pressure_parsed.cpp
+  ../porting/linux/supla/sensor/rain_parsed.cpp
   ../porting/linux/supla/sensor/thermometer_parsed.cpp
+  ../porting/linux/supla/sensor/therm_hygro_meter_parsed.cpp
+  ../porting/linux/supla/sensor/weight_parsed.cpp
+  ../porting/linux/supla/sensor/wind_parsed.cpp
   ../porting/linux/supla/payload/payload.cpp
+  ../porting/linux/supla/output/cmd.cpp
+  ../../src/supla/pv/afore.cpp
+  ../../src/supla/pv/fronius.cpp
   )
+
+if(SUPLA_TEST_CURL_HTTP_ENABLED)
+  list(APPEND SD4LINUX_PORT_SRC ../porting/linux/supla/source/http.cpp)
+endif()
 
 add_library(supladevicelib SHARED)
 supla_device(supladevicelib)
+target_sources(supladevicelib PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles/fill_random_stub.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/pv/solaredge.cpp
+)
 
 target_include_directories(supladevicelib PUBLIC
   ${SUPLA_DEVICE_SRC_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles
 )
 
-add_executable(supladevicetests ${TEST_SRC} ${DOUBLE_SRC})
+add_executable(supladevicetests
+  ${TEST_SRC}
+  ${DOUBLE_SRC}
+  ${ESP_IDF_OTA_DOUBLE_SRC}
+  ${ESP_IDF_SPI_DOUBLE_SRC}
+)
 
 add_executable(sd4linuxtests
   ${SD4LINUX_TEST_SRC}
@@ -105,8 +212,18 @@ add_executable(sd4linuxtests
   ${SD4LINUX_PORT_SRC}
   )
 
+target_include_directories(supladevicetests BEFORE PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/MCP23008Tests
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf
+)
+
 target_include_directories(supladevicetests PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles
+  ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-interrupt-ac-to-dc-io
+  ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-mcp23008
+  ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-spi-driver
+  ${CMAKE_CURRENT_SOURCE_DIR}/../porting/esp-idf
+  ${cjson_SOURCE_DIR}
 )
 
 target_include_directories(sd4linuxtests PRIVATE
@@ -117,6 +234,8 @@ target_include_directories(sd4linuxtests PRIVATE
 target_link_libraries(supladevicetests
   PRIVATE
     supladevicelib
+    cjson
+    nlohmann_json::nlohmann_json
     gtest
     gmock
     gtest_main
@@ -125,10 +244,18 @@ target_link_libraries(supladevicetests
 target_link_libraries(sd4linuxtests
   PRIVATE
     supladevicelib
+    nlohmann_json::nlohmann_json
+    yaml-cpp
     gtest
     gmock
     gtest_main
   )
+
+if(SUPLA_TEST_CURL_HTTP_ENABLED)
+  target_link_libraries(sd4linuxtests PRIVATE CURL::libcurl)
+  target_compile_definitions(sd4linuxtests
+    PRIVATE SUPLA_LINUX_HTTP_SOURCE_ENABLED)
+endif()
 
 add_test(NAME supladevicetests COMMAND supladevicetests)
 add_test(NAME sd4linuxtests COMMAND sd4linuxtests)
@@ -138,6 +265,15 @@ supla_apply_warnings(supladevicetests)
 supla_apply_warnings(sd4linuxtests)
 supla_apply_warnings(supladevicelib)
 
-target_compile_definitions(supladevicetests PRIVATE SUPLA_TEST)
-target_compile_definitions(sd4linuxtests PRIVATE SUPLA_TEST)
-target_compile_definitions(supladevicelib PRIVATE SUPLA_TEST)
+target_compile_definitions(supladevicetests PRIVATE
+  SUPLA_TEST
+  SUPLA_INSECURE_DEBUG_INTERFACE=1
+)
+target_compile_definitions(sd4linuxtests PRIVATE
+  SUPLA_TEST
+  SUPLA_INSECURE_DEBUG_INTERFACE=1
+)
+target_compile_definitions(supladevicelib PRIVATE
+  SUPLA_TEST
+  SUPLA_INSECURE_DEBUG_INTERFACE=1
+)

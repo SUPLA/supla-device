@@ -1,20 +1,5 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef EXTRAS_PORTING_ESP_IDF_ESP_MQTT_H_
 #define EXTRAS_PORTING_ESP_IDF_ESP_MQTT_H_
@@ -37,13 +22,14 @@ class EspMqtt : public Mqtt {
   //  bool onLoadConfig() override;
   void disconnect() override;
   bool iterate(uint32_t _millis) override;
+  ConnectionError getConnectionError() const override;
   // bool isNetworkRestartRequested() override;
   // uint32_t getConnectionFailTime() override;
 
   static Supla::Mutex *mutex;
   static Supla::Mutex *mutexEventHandler;
   void setConnecting();
-  void setConnectionError();
+  void setConnectionError(ConnectionError newError);
   void setRegisteredAndReady();
 
  protected:
@@ -52,11 +38,13 @@ class EspMqtt : public Mqtt {
                           int qos,
                           bool retain) override;
   void subscribeImp(const char *topic, int qos) override;
-  void publishChannelSetup(int channelNumber);
+  void unsubscribeImp(const char *topic) override;
   bool started = false;
   bool enterRegisteredAndReady = false;
   esp_mqtt_client_handle_t client = {};
+  char *mqttCaCert = nullptr;
   uint32_t lastStatusUpdateSec = 0;
+  ConnectionError connectionError = ConnectionError::NONE;
 };
 
 }  // namespace Protocol

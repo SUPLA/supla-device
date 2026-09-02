@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
@@ -39,7 +24,7 @@ class ADS1115 : public Supla::Io::Base {
                    Supla::Mutex *mutex = nullptr,
                    TwoWire *wire = &Wire,
                    uint8_t dataRrate = 7)
-      : Supla::Io::Base(false), ads_(address, wire), mutex_(mutex) {
+      : Supla::Io::Base(), ads_(address, wire), mutex_(mutex) {
     if (!ads_.begin()) {
       SUPLA_LOG_ERROR("Unable to find ADS1115 at address 0x%x", address);
     } else {
@@ -73,10 +58,12 @@ class ADS1115 : public Supla::Io::Base {
       return -1;
     }
     if (mutex_) mutex_->lock();
-    if (ads_.isConnected()) {
-      ads_.setGain(gain_);
-      readValue_[pin] = ads_.readADC(pin);
+    if (!ads_.isConnected()) {
+      if (mutex_) mutex_->unlock();
+      return -1;
     }
+    ads_.setGain(gain_);
+    readValue_[pin] = ads_.readADC(pin);
     if (mutex_) mutex_->unlock();
     return readValue_[pin];
   }

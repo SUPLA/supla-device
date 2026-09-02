@@ -1,23 +1,12 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
 #if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
 
 #include <supla/log_wrapper.h>
+#if defined(ARDUINO_ARCH_ESP32)
+#include <esp_system.h>
+#endif
 #include <WiFiClient.h>
 #include <WiFiClientSecure.h>
 #include <supla/clock/clock.h>
@@ -33,7 +22,9 @@ class ArduinoEspClient : public Client {
     if (wifiClient) {
       wifiClient->stop();
       delete wifiClient;
+      wifiClient = nullptr;
     }
+    clientSec = nullptr;
   }
 
   int available() override {
@@ -71,6 +62,10 @@ class ArduinoEspClient : public Client {
 
     if (sslEnabled) {
       if (clientSec == nullptr) {
+        if (wifiClient != nullptr) {
+          delete wifiClient;
+          wifiClient = nullptr;
+        }
         clientSec = new WiFiClientSecure();
       }
       wifiClient = clientSec;
@@ -110,6 +105,11 @@ class ArduinoEspClient : public Client {
       }
 #endif
     } else {
+      if (clientSec != nullptr) {
+        delete clientSec;
+        clientSec = nullptr;
+        wifiClient = nullptr;
+      }
       if (wifiClient == nullptr) {
         wifiClient = new WiFiClient();
       }
@@ -221,6 +221,14 @@ Supla::Client *Supla::ClientBuilder() {
 int Supla::getPlatformId() {
   // TODO(klew): do we need platfom id for Arduino based ESP SW?
   return 0;
+}
+
+void Supla::fillRandom(uint8_t *buffer, int size) {
+#if defined(ARDUINO_ARCH_ESP8266)
+  ESP.random(buffer, size);
+#else
+  esp_fill_random(buffer, size);
+#endif
 }
 
 #endif

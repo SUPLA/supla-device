@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef ARDUINO_ARCH_AVR
 #include "protocol_parameters.h"
@@ -45,6 +30,29 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char buf[512] = {};
+    auto sendMqttCA = [&]() {
+      bool showMqttCA = cfg->isMqttTlsEnabled() &&
+                        cfg->isMqttBrokerVerificationEnabled();
+      sender->toggleBox("mqtt_ca_input", showMqttCA, [&]() {
+        sender->formField([&]() {
+          sender->labelFor("mqtt_ca", "Broker CA certificate (PEM)");
+          auto textarea = sender->tag("textarea");
+          textarea.attr("maxlength", 3999)
+              .attr("name", "mqtt_ca")
+              .attr("id", "mqtt_ca")
+              .attr("placeholder", "Leave empty to use the system CA bundle");
+
+          char* bufCert = new char[4001];
+          memset(bufCert, 0, 4001);
+          if (cfg->getMqttCA(bufCert, 4001)) {
+            textarea.body(bufCert);
+          } else {
+            textarea.body("");
+          }
+          delete[] bufCert;
+        }, "form-field sensitive");
+      });
+    };
     if (!concurrent && addMqtt) {
       sender->tag("div").attr("class", "box").body([&]() {
         sender->formField([&]() {
@@ -95,7 +103,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               input.attr("value", buf);
             }
             input.finish();
-          });
+          }, "form-field sensitive");
 
           sender->send(
               "<script>"
@@ -127,6 +135,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                   "Custom CA (paste here CA certificate in PEM format)");
               auto textarea = sender->tag("textarea");
               textarea.attr("name", "custom_ca")
+                  .attr("id", "custom_ca")
                   .attr("maxlength", 4000)
                   .close();
               char* bufCert = new char[4000];
@@ -174,7 +183,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                 input.attr("value", buf);
               }
               input.finish();
-            });
+            }, "form-field sensitive");
 
             sender->send(
                 "<script>"
@@ -206,6 +215,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                     "Custom CA (paste here CA certificate in PEM format)");
                 auto textarea = sender->tag("textarea");
                 textarea.attr("name", "custom_ca")
+                    .attr("id", "custom_ca")
                     .attr("maxlength", 4000)
                     .close();
                 char* bufCert = new char[4000];
@@ -255,8 +265,15 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                 "var port=document.getElementById(\"mqttport\"),"
                 "mqtt_tls=document.getElementById(\"mqtttls\");"
                 "if(mqtt_tls.value==\"0\")"
-                "{port.value=1883;}else"
-                "{port.value=8883;}"
+                "{port.value=1883;}else{port.value=8883;}"
+                "mqttVerificationChange();"
+                "}"
+                "function mqttVerificationChange(){"
+                "var mqtt_tls=document.getElementById(\"mqtttls\"),"
+                "mqtt_verify=document.getElementById(\"mqttverify\"),"
+                "mqtt_ca=document.getElementById(\"mqtt_ca_input\");"
+                "mqtt_ca.style.display=mqtt_tls.value==\"1\"&&"
+                "mqtt_verify.value==\"1\"?\"block\":\"none\";"
                 "}"
                 "</script>");
 
@@ -270,17 +287,34 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               });
             });
 
-            sender->numberInput("mqttport",
-                                {
-                                    .min = 1,
-                                    .max = 65535,
-                                    .value = cfg->getMqttServerPort(),
-                                    .step = 1,
-                                });
+            sender->formField([&]() {
+              sender->labelFor("mqttverify", "Broker certificate verification");
+              auto select = sender->selectTag("mqttverify", "mqttverify");
+              select.attr("onchange", "mqttVerificationChange();").body([&]() {
+                bool verify = cfg->isMqttBrokerVerificationEnabled();
+                sender->selectOption(1, "YES", verify);
+                sender->selectOption(
+                    0, "NO (INSECURE, LEGACY)", !verify);
+              });
+            });
+
+            sendMqttCA();
+
+            sender->formField([&]() {
+              sender->labelFor("mqttport", "Port");
+              sender->numberInput("mqttport",
+                                  {
+                                      .min = 1,
+                                      .max = 65535,
+                                      .value = cfg->getMqttServerPort(),
+                                      .step = 1,
+                                  });
+            });
 
             sender->formField([&]() {
               sender->labelFor("mqttauth", "Auth");
               auto select = sender->selectTag("mqttauth", "mqttauth");
+              select.attr("onchange", "mAuthChanged();");
               select.body([&]() {
                 sender->selectOption(0, "NO", !cfg->isMqttAuthEnabled());
                 sender->selectOption(1, "YES", cfg->isMqttAuthEnabled());
@@ -297,16 +331,17 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                 input.attr("value", buf);
               }
               input.finish();
-            });
+            }, "form-field sensitive");
 
             sender->formField([&]() {
               sender->labelFor("mqttpasswd", "Password (required, max 255)");
               auto input = sender->voidTag("input");
               input.attr("maxlength", 255)
+                  .attr("type", "password")
                   .attr("name", "mqttpasswd")
                   .attr("id", "mqttpasswd")
                   .finish();
-            });
+            }, "form-field sensitive");
 
             sender->formField([&]() {
               sender->labelFor("mqttprefix", "Topic prefix");
@@ -320,13 +355,16 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               input.finish();
             });
 
-            sender->numberInput("mqttqos",
-                                {
-                                    .min = 0,
-                                    .max = 2,
-                                    .value = cfg->getMqttQos(),
-                                    .step = 1,
-                                });
+            sender->formField([&]() {
+              sender->labelFor("mqttqos", "QoS");
+              sender->numberInput("mqttqos",
+                                  {
+                                      .min = 0,
+                                      .max = 2,
+                                      .value = cfg->getMqttQos(),
+                                      .step = 1,
+                                  });
+            });
 
             sender->formField([&]() {
               sender->labelFor("mqttretain", "Retain");
@@ -360,8 +398,15 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               "var port=document.getElementById(\"mqttport\"),"
               "mqtt_tls=document.getElementById(\"mqtttls\");"
               "if(mqtt_tls.value==\"0\")"
-              "{port.value=1883;}else"
-              "{port.value=8883;}"
+              "{port.value=1883;}else{port.value=8883;}"
+              "mqttVerificationChange();"
+              "}"
+              "function mqttVerificationChange(){"
+              "var mqtt_tls=document.getElementById(\"mqtttls\"),"
+              "mqtt_verify=document.getElementById(\"mqttverify\"),"
+              "mqtt_ca=document.getElementById(\"mqtt_ca_input\");"
+              "mqtt_ca.style.display=mqtt_tls.value==\"1\"&&"
+              "mqtt_verify.value==\"1\"?\"block\":\"none\";"
               "}"
               "</script>");
 
@@ -375,6 +420,18 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
             });
           });
 
+          sender->formField([&]() {
+            sender->labelFor("mqttverify", "Broker certificate verification");
+            auto select = sender->selectTag("mqttverify", "mqttverify");
+            select.attr("onchange", "mqttVerificationChange();").body([&]() {
+              bool verify = cfg->isMqttBrokerVerificationEnabled();
+              sender->selectOption(1, "YES", verify);
+              sender->selectOption(0, "NO (INSECURE, LEGACY)", !verify);
+            });
+          });
+
+          sendMqttCA();
+
           sender->numberInput("mqttport",
                               {
                                   .min = 1,
@@ -386,6 +443,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
           sender->formField([&]() {
             sender->labelFor("mqttauth", "Auth");
             auto select = sender->selectTag("mqttauth", "mqttauth");
+            select.attr("onchange", "mAuthChanged();");
             select.body([&]() {
               sender->selectOption(0, "NO", !cfg->isMqttAuthEnabled());
               sender->selectOption(1, "YES", cfg->isMqttAuthEnabled());
@@ -402,7 +460,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               input.attr("value", buf);
             }
             input.finish();
-          });
+          }, "form-field sensitive");
 
           sender->formField([&]() {
             sender->labelFor("mqttpasswd", "Password (required, max 255)");
@@ -411,7 +469,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
                 .attr("name", "mqttpasswd")
                 .attr("id", "mqttpasswd")
                 .finish();
-          });
+          }, "form-field sensitive");
 
           sender->formField([&]() {
             sender->labelFor("mqttprefix", "Topic prefix");
@@ -489,6 +547,9 @@ bool ProtocolParameters::handleResponse(const char* key, const char* value) {
   } else if (strcmp(key, "custom_ca") == 0) {
     cfg->setCustomCA(value);
     return true;
+  } else if (strcmp(key, "mqtt_ca") == 0) {
+    cfg->setMqttCA(value);
+    return true;
   } else if (strcmp(key, "mqttserver") == 0) {
     cfg->setMqttServer(value);
     return true;
@@ -499,6 +560,10 @@ bool ProtocolParameters::handleResponse(const char* key, const char* value) {
   } else if (strcmp(key, "mqtttls") == 0) {
     int enabled = stringToUInt(value);
     cfg->setMqttTlsEnabled(enabled == 1);
+    return true;
+  } else if (strcmp(key, "mqttverify") == 0) {
+    int enabled = stringToUInt(value);
+    cfg->setMqttBrokerVerificationEnabled(enabled == 1);
     return true;
   } else if (strcmp(key, "mqttauth") == 0) {
     int enabled = stringToUInt(value);

@@ -1,28 +1,17 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <config_mock.h>
 #include <gtest/gtest.h>
 #include <output_mock.h>
 #include <protocol_layer_mock.h>
 #include <simple_time.h>
+#include <stdio.h>
 #include <string.h>
 #include <supla/control/hvac_base.h>
+#include <supla/control/weekly_schedule_buffer.h>
+#include <supla/control/weekly_schedule_cache_runtime.h>
+#include <supla/control/weekly_schedule_storage.h>
 #include <supla/sensor/therm_hygro_meter.h>
 #include <supla/sensor/thermometer.h>
 
@@ -33,6 +22,51 @@ using ::testing::AnyNumber;
 using ::testing::AtLeast;
 using ::testing::Return;
 using ::testing::StrEq;
+
+TEST(WeeklyScheduleInfrastructureTests, CacheCanBecomeInactiveAtMillisZero) {
+  Supla::Control::WeeklyScheduleCacheRuntime cache;
+
+  cache.touch(false, 0);
+
+  EXPECT_FALSE(cache.process(false, 14999));
+  EXPECT_TRUE(cache.process(false, 15000));
+}
+
+TEST(WeeklyScheduleInfrastructureTests, SettingSameBufferKeepsOwnership) {
+  Supla::Control::WeeklyScheduleBuffer buffer;
+  auto *schedule = new TChannelConfig_WeeklySchedule{};
+  buffer.set(false, schedule);
+
+  buffer.set(false, schedule);
+
+  ASSERT_EQ(buffer.get(false), schedule);
+  schedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
+  EXPECT_EQ(buffer.get(false)->Program[0].Mode, SUPLA_HVAC_MODE_HEAT);
+}
+
+TEST(WeeklyScheduleInfrastructureTests,
+     InvalidStorageDataLeavesCleanupToBufferOwner) {
+  ConfigMock cfg;
+  auto *schedule = new TChannelConfig_WeeklySchedule{};
+  auto *originalSchedule = schedule;
+  EXPECT_CALL(cfg, getBlob(StrEq("0_weekly"), _, sizeof(*schedule)))
+      .WillOnce(Return(true));
+
+  EXPECT_FALSE(Supla::Control::WeeklyScheduleStorage::load(
+      0,
+      "test",
+      "weekly schedule",
+      "weekly",
+      false,
+      schedule,
+      [](char *key, const char *) {
+        snprintf(key, SUPLA_CONFIG_MAX_KEY_SIZE, "0_weekly");
+      },
+      [](const TChannelConfig_WeeklySchedule *) { return false; }));
+  EXPECT_EQ(schedule, originalSchedule);
+
+  delete schedule;
+}
 
 class HvacBaseForTests : public Supla::Control::HvacBase {
  public:
@@ -153,6 +187,9 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
   EXPECT_EQ(hvac->getWeeklyScheduleProgramId(
                 nullptr, hvac->calculateIndex(Supla::DayOfWeek_Tuesday, 2, 3)),
             1);
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(
+                nullptr, SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE),
+            0);
 
   TWeeklyScheduleProgram program = {};
   auto result = hvac->getProgramById(0);
@@ -294,6 +331,13 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   // empty weekly schedule is filled with "off", so it is fine
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
+
+  // Program identifiers are encoded in four bits, while only the configured
+  // program slots are valid.
+  weeklySchedule->Quarters[0] = 0xF;
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  weeklySchedule->Quarters[0] = 0;
 
   weeklySchedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
   weeklySchedule->Program[0].SetpointTemperatureHeat = 2100;

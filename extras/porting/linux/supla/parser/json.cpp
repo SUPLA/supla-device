@@ -1,23 +1,11 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "json.h"
 
 #include <supla/log_wrapper.h>
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -30,6 +18,7 @@ Supla::Parser::Json::~Json() {
 
 bool Supla::Parser::Json::refreshSource() {
   valid = false;
+  sourceValid = false;
   if (source) {
     std::string sourceContent = source->getContent();
 
@@ -41,10 +30,10 @@ bool Supla::Parser::Json::refreshSource() {
       json = nlohmann::json::parse(sourceContent);
     } catch (nlohmann::json::parse_error& ex) {
       SUPLA_LOG_ERROR("JSON parsing error at byte %d", ex.byte);
-      SUPLA_LOG_ERROR("JSON Source: \n%s", sourceContent.c_str());
       return valid;
     }
 
+    sourceValid = true;
     valid = true;
   }
   return valid;
@@ -54,7 +43,17 @@ bool Supla::Parser::Json::isValid() {
   return valid;
 }
 
+bool Supla::Parser::Json::isSourceValid() {
+  return sourceValid;
+}
+
 double Supla::Parser::Json::getValue(const std::string& key) {
+  if (!sourceValid) {
+    valid = false;
+    return 0;
+  }
+
+  valid = true;
   try {
     const nlohmann::json* valuePtr = nullptr;
 
@@ -79,13 +78,27 @@ double Supla::Parser::Json::getValue(const std::string& key) {
     }
 
     if (valuePtr->is_number()) {
-      return valuePtr->get<double>();
+      double value = valuePtr->get<double>();
+      if (!std::isfinite(value)) {
+        SUPLA_LOG_ERROR("JSON key \"%s\" has non-finite numeric value",
+                        key.c_str());
+        valid = false;
+        return 0;
+      }
+      return value;
     }
 
     if (valuePtr->is_string()) {
       // Try to convert string to double
       try {
-        return std::stod(valuePtr->get<std::string>());
+        double value = std::stod(valuePtr->get<std::string>());
+        if (!std::isfinite(value)) {
+          SUPLA_LOG_ERROR("JSON key \"%s\" has non-finite numeric value",
+                          key.c_str());
+          valid = false;
+          return 0;
+        }
+        return value;
       } catch (...) {
         SUPLA_LOG_ERROR("JSON key \"%s\" string cannot be converted to double",
                         key.c_str());
@@ -116,6 +129,12 @@ double Supla::Parser::Json::getValue(const std::string& key) {
 
 std::variant<int, bool, std::string> Supla::Parser::Json::getStateValue(
     const std::string& key) {
+  if (!sourceValid) {
+    valid = false;
+    return 0;
+  }
+
+  valid = true;
   try {
     if (key[0] == '/') {
       return json[nlohmann::json::json_pointer(key)].get<bool>();

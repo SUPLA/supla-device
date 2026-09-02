@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <supla/time.h>
 #include <supla/storage/storage.h>
@@ -28,6 +13,11 @@
 #include "button.h"
 
 #define CFG_MODE_ON_HOLD_TIME 5000
+
+namespace {
+constexpr uint32_t kButtonTimingMinMs = 200;
+constexpr uint32_t kButtonTimingMaxMs = 10000;
+}  // namespace
 
 using Supla::Control::Button;
 
@@ -67,7 +57,7 @@ void Button::onTimer() {
     return;
   }
   if (stateResult == TO_PRESSED) {
-    SUPLA_LOG_VERBOSE("Button[%d] pressed", getButtonNumber());
+    SUPLA_LOG_DEBUG("Button[%d] pressed", getButtonNumber());
     stateChanged = true;
     runAction(ON_PRESS);
     runAction(ON_CHANGE);
@@ -76,7 +66,7 @@ void Button::onTimer() {
       runAction(CONDITIONAL_ON_CHANGE);
     }
   } else if (stateResult == TO_RELEASED) {
-    SUPLA_LOG_VERBOSE("Button[%d] released", getButtonNumber());
+    SUPLA_LOG_DEBUG("Button[%d] released", getButtonNumber());
     stateChanged = true;
     runAction(ON_RELEASE);
     runAction(ON_CHANGE);
@@ -328,16 +318,24 @@ void Button::addAction(uint16_t action, ActionHandler &client, uint16_t event,
 }
 
 void Button::setHoldTime(unsigned int timeMs) {
-  if (timeMs > UINT16_MAX) {
-    timeMs = UINT16_MAX;
+  if (timeMs != 0) {
+    if (timeMs < kButtonTimingMinMs) {
+      timeMs = kButtonTimingMinMs;
+    } else if (timeMs > kButtonTimingMaxMs) {
+      timeMs = kButtonTimingMaxMs;
+    }
   }
   holdTimeMs = timeMs;
   SUPLA_LOG_DEBUG("Button[%d] setHoldTime: %u", getButtonNumber(), holdTimeMs);
 }
 
 void Button::setMulticlickTime(unsigned int timeMs, bool bistableButton) {
-  if (timeMs > UINT16_MAX) {
-    timeMs = UINT16_MAX;
+  if (timeMs != 0) {
+    if (timeMs < kButtonTimingMinMs) {
+      timeMs = kButtonTimingMinMs;
+    } else if (timeMs > kButtonTimingMaxMs) {
+      timeMs = kButtonTimingMaxMs;
+    }
   }
   multiclickTimeMs = timeMs;
   if (bistableButton) {
@@ -430,25 +428,25 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
     uint32_t multiclickTimeMsValue = 0;
     if (cfg->getUInt32(Supla::ConfigTag::BtnMulticlickTag,
                        &multiclickTimeMsValue)) {
-      if (multiclickTimeMsValue < 200) {
-        multiclickTimeMsValue = 200;
+      if (multiclickTimeMsValue < kButtonTimingMinMs) {
+        multiclickTimeMsValue = kButtonTimingMinMs;
       }
-      if (multiclickTimeMsValue > 10000) {
-        multiclickTimeMsValue = 10000;
+      if (multiclickTimeMsValue > kButtonTimingMaxMs) {
+        multiclickTimeMsValue = kButtonTimingMaxMs;
       }
       setMulticlickTime(multiclickTimeMsValue, isBistable());
-    } else if (multiclickTimeMsValue > 0) {
+    } else if (multiclickTimeMs > 0) {
       cfg->setUInt32(Supla::ConfigTag::BtnMulticlickTag, multiclickTimeMs);
       saveConfig = true;
     }
 
     uint32_t holdTimeMsValue = CFG_MODE_ON_HOLD_TIME;
     if (cfg->getUInt32(Supla::ConfigTag::BtnHoldTag, &holdTimeMsValue)) {
-      if (holdTimeMsValue < 200) {
-        holdTimeMsValue = 200;
+      if (holdTimeMsValue < kButtonTimingMinMs) {
+        holdTimeMsValue = kButtonTimingMinMs;
       }
-      if (holdTimeMsValue > 10000) {
-        holdTimeMsValue = 10000;
+      if (holdTimeMsValue > kButtonTimingMaxMs) {
+        holdTimeMsValue = kButtonTimingMaxMs;
       }
       setHoldTime(holdTimeMsValue);
     } else if (holdTimeMs > 0) {
@@ -465,7 +463,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
                       &useInputAsConfigButtonValue);
       }
 
-      if (!isCentral() && useInputAsConfigButtonValue == 0) {
+      if (sdc && !isCentral() && useInputAsConfigButtonValue == 0) {
         // ON is "0", which is default value
         SUPLA_LOG_DEBUG("Button[%d] enabling IN as config button",
             getButtonNumber());

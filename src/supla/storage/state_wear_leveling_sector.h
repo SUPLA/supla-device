@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_STORAGE_STATE_WEAR_LEVELING_SECTOR_H_
 #define SRC_SUPLA_STORAGE_STATE_WEAR_LEVELING_SECTOR_H_
@@ -105,9 +90,13 @@ class StateWearLevelingSector : public StateStorageInterface {
   uint16_t getSizeValue(uint16_t availableSize) override;
   bool tryLoadPreamblesFrom(uint32_t offset);
   bool isDataDifferent(uint32_t address, const uint8_t *data, uint32_t size);
+  bool isSlotValid(uint32_t address, uint8_t *buffer);
+  uint32_t getPhysicalSlotCount() const;
+  uint32_t getMaxBitmapSlotCount() const;
   int getSlotSize() const;
   uint32_t getFirstSlotAddress() const;
   uint32_t getNextSlotAddress(uint32_t slotAddress) const;
+  uint32_t getPreviousSlotAddress(uint32_t slotAddress) const;
   uint16_t slotSize() const;
   uint32_t updateStateEntryAddress();
   uint32_t sectionOffset = 0;
@@ -119,6 +108,7 @@ class StateWearLevelingSector : public StateStorageInterface {
   bool elementStateCrcCValid = false;
   bool storageStateOk = false;
   bool initDone = false;
+  bool currentSlotPreparedForFirstWrite = false;
   int repeatBeforeSwitchToAnotherSlot = 0;
 
   uint32_t currentSlotAddress = 0;

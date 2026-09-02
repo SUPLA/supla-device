@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O.
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 /*
  * This extension depends on Adafruit FRAM SPI library
@@ -25,6 +10,7 @@
 #define SRC_SUPLA_STORAGE_FRAM_SPI_H_
 
 #include <SPI.h>
+#include <supla/log_wrapper.h>
 
 #include "Adafruit_FRAM_SPI.h"
 #include "storage.h"
@@ -51,9 +37,9 @@ class FramSpi : public Storage {
 
   bool init() {
     if (fram.begin()) {
-      Serial.println(F("Storage: FRAM found"));
+      SUPLA_LOG_INFO("Storage: FRAM found");
     } else {
-      Serial.println(F("Storage: FRAM not found"));
+      SUPLA_LOG_INFO("Storage: FRAM not found");
     }
 
     return Storage::init();
@@ -67,21 +53,27 @@ class FramSpi : public Storage {
                   unsigned char *buf,
                   unsigned int size,
                   bool logs) {
-    if (logs) {
-      Serial.print(F("readStorage: "));
-      Serial.print(size);
-      Serial.print(F("; Read: ["));
-    }
     for (int i = 0; i < size; i++) {
       buf[i] = fram.read8(offset + i);
-      if (logs) {
-        Serial.print(static_cast<unsigned char *>(buf)[i], HEX);
-        Serial.print(F(" "));
-      }
     }
     if (logs) {
-      Serial.println(F("]"));
+      static constexpr uint8_t MaxLogBytes = 32;
+      static constexpr uint16_t LogBufferSize = MaxLogBytes * 3 + 1;
+
+      uint8_t sizeMax = (size > MaxLogBytes) ? MaxLogBytes : size;
+
+      char logBuffer[LogBufferSize] = {};
+      int logSize = 0;
+
+      for (uint8_t i = 0; i < sizeMax && logSize < LogBufferSize - 1; i++) {
+        logSize += snprintf(
+            logBuffer + logSize, LogBufferSize - logSize, "%02X ", buf[i]);
+      }
+
+      SUPLA_LOG_INFO(
+          "FRAM: Read %d bytes [%s] (offset %d)", size, logBuffer, offset);
     }
+
     return size;
   }
 
@@ -91,10 +83,9 @@ class FramSpi : public Storage {
     fram.writeEnable(true);
     fram.write(offset, const_cast<uint8_t *>(buf), size);
     fram.writeEnable(false);
-    Serial.print(F("Wrote "));
-    Serial.print(size);
-    Serial.print(F(" bytes to storage at "));
-    Serial.println(offset);
+
+    SUPLA_LOG_INFO("FRAM: Wrote %d bytes (offset %d)", size, offset);
+
     return size;
   }
 

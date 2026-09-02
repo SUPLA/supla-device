@@ -1,23 +1,13 @@
-/*
-  Copyright (C) malarz
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: malarz
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #define DEV_NAME "Malarz Bombka"
 #define DEV_VERSION "2025.12.28"
+
+// Debug/DIY only: ButtonUpdate exposes an unauthenticated OTA endpoint.
+// Do not use it on real devices or untrusted networks.
+// Uncomment the following line to enable it.
+// #define ADD_INSECURE_BUTTON_UPDATE
 
 #define STATUS_LED_GPIO 2
 #define RGB_GPIO 14
@@ -25,6 +15,7 @@
 
 #include <SuplaDevice.h>
 #include <supla/network/esp_wifi.h>
+#include <supla/network/network.h>
 #include <supla/device/status_led.h>
 #include <supla/storage/littlefs_config.h>
 #include <supla/version.h>
@@ -49,13 +40,28 @@ Supla::Device::StatusLed statusLed(STATUS_LED_GPIO, true); // inverted state
 auto XMasGenerator = new xMasHtmlGenerator;
 Supla::EspWebServer suplaServer(XMasGenerator);
 
+static bool localWebServerStarted = false;
+
+static void ensureLocalWebServerStarted() {
+  if (!localWebServerStarted && Supla::Network::IsReady()) {
+    // Debug/DIY only: this exposes the local config web UI on the operational
+    // network without authentication. Do not use in real deployed devices.
+    suplaServer.start();
+    localWebServerStarted = true;
+  }
+}
+
 void setup() {
   Serial.begin(115200);
 
   new Supla::Html::DeviceInfo(&SuplaDevice);
   new Supla::Html::WifiParameters;
   new Supla::Html::ProtocolParameters;
+#ifdef ADD_INSECURE_BUTTON_UPDATE
+  // Debug/DIY only: ButtonUpdate exposes an unauthenticated OTA endpoint.
+  // Do not use it on real devices or untrusted networks.
   new Supla::Html::ButtonUpdate(&suplaServer);
+#endif  // ADD_INSECURE_BUTTON_UPDATE
 
   // WS2812b LEDs strip
   auto strip = new Supla::Control::AddressableLEDs(RGB_RING_NUM_LEDS, RGB_GPIO);
@@ -90,10 +96,10 @@ void setup() {
   SuplaDevice.setName(DEV_NAME);
   SuplaDevice.setSwVersion(DEV_VERSION);
   SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
-  SuplaDevice.setPermanentWebInterface();
   SuplaDevice.begin();
 }
 
 void loop() {
   SuplaDevice.iterate();
+  ensureLocalWebServerStarted();
 }

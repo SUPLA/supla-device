@@ -1,18 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "local_action.h"
 
@@ -57,11 +44,27 @@ bool ActionHandlerClient::isEnabled() {
 
 void ActionHandlerClient::enable() {
   enabled = true;
+  disabledForConfigMode = false;
 }
 
 void ActionHandlerClient::disable() {
   if (!alwaysEnabled) {
     enabled = false;
+    disabledForConfigMode = false;
+  }
+}
+
+void ActionHandlerClient::disableForConfigMode() {
+  if (!alwaysEnabled && enabled) {
+    enabled = false;
+    disabledForConfigMode = true;
+  }
+}
+
+void ActionHandlerClient::restoreAfterConfigMode() {
+  if (disabledForConfigMode) {
+    enabled = true;
+    disabledForConfigMode = false;
   }
 }
 
@@ -255,6 +258,22 @@ void LocalAction::DeleteActionsTriggeredBy(const LocalAction *trigger) {
   while (ptr) {
     auto next = ptr->next;
     if (ptr->trigger == trigger) {
+      delete ptr;
+      next = ActionHandlerClient::begin;
+    }
+    ptr = next;
+  }
+}
+
+void LocalAction::DeleteAction(const LocalAction *trigger,
+                               const ActionHandler *client,
+                               uint16_t event,
+                               uint16_t action) {
+  auto ptr = ActionHandlerClient::begin;
+  while (ptr) {
+    auto next = ptr->next;
+    if (ptr->trigger == trigger && ptr->client == client &&
+        ptr->onEvent == event && ptr->action == action) {
       delete ptr;
       next = ActionHandlerClient::begin;
     }

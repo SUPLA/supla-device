@@ -1,18 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 /* Relay class
  * This class is used to control any type of relay that can be controlled
@@ -83,6 +70,7 @@ class Relay : public ChannelElement, public ActionHandler {
   virtual Relay &setDefaultStateOn();
   virtual Relay &setDefaultStateOff();
   virtual Relay &setDefaultStateRestore();
+  virtual Relay &setPreloadStateOnSoftReset(bool enabled = true);
   virtual Relay &keepTurnOnDuration(bool keep = true);  // DEPREACATED
 
   [[deprecated("Use IoPin::writeActive/writeInactive instead")]] virtual uint8_t
@@ -112,6 +100,14 @@ class Relay : public ChannelElement, public ActionHandler {
   void fillChannelConfig(void *channelConfig,
                          int *size,
                          uint8_t configType) override;
+  /**
+   * Returns remaining countdown timer time in seconds for an active relay
+   * countdown timer.
+   *
+   * Returns false when countdown timer support is disabled or the timer is not
+   * active.
+   */
+  bool getRemainingCountdownTimerSec(uint32_t *remainingSec) const override;
 
   // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
   // value for specific channel type (i.e. to prefill durationMS field when
@@ -128,7 +124,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isCountdownTimerFunctionEnabled() const;
   void setMinimumAllowedDurationMs(uint32_t durationMs);
 
-  static void setRelayStorageSaveDelay(int delayMs);
+  static void setRelayStorageSaveDelay(uint32_t delayMs);
 
   bool isDefaultRelatedMeterChannelSet() const;
   uint32_t getCurrentValueFromMeter() const;
@@ -185,6 +181,7 @@ class Relay : public ChannelElement, public ActionHandler {
     defaultImpulseDurationMs = durationMs;
   }
 
+  bool setRuntimeFunction(uint32_t channelFunction) override;
   bool setAndSaveFunction(uint32_t channelFunction) override;
 
   /**
@@ -203,6 +200,31 @@ class Relay : public ChannelElement, public ActionHandler {
 
   bool isFullyInitialized() const;
 
+  /**
+   * Enable automatic cyclic relay operation.
+   *
+   * In cyclic mode the relay alternates between:
+   *
+   *   ON  for turnOnTimeMs
+   *   OFF for turnOffTimeMs
+   *
+   * Server commands use DurationMS as follows:
+   *
+   *   ON,  DurationMS == 0  - start/resume the cycle using configured ON time
+   *   ON,  DurationMS > 0   - update ON phase duration and start the cycle
+   *   OFF, DurationMS > 0   - update OFF phase duration and enter the OFF phase;
+   *                           the relay will turn ON again after that duration
+   *   OFF, DurationMS == 0  - stop cyclic operation and remain OFF
+   *
+   * Therefore, an OFF command with a non-zero DurationMS intentionally does
+   * NOT stop cyclic operation. Only OFF with DurationMS == 0 stops the running
+   * cycle.
+   *
+   * Disabling cyclic mode completely requires disableCyclicMode().
+   *
+   * Cyclic mode is not supported for timed functions (staircase timer) or
+   * impulse functions (gates, doors and similar functions).
+   */
   void enableCyclicMode(uint32_t turnOnTimeMs, uint32_t turnOffTimeMs);
   void disableCyclicMode();
   bool isCyclicMode() const;
@@ -210,17 +232,26 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isWeeklyScheduleSupported() const;
 
  protected:
+  Relay(Supla::Io::IoPin outputPin,
+        _supla_int_t functions,
+        Supla::Channel &externalChannel,
+        ElementMode mode);
+
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
     ButtonListElement *next = nullptr;
   };
 
-  void applyDuration(int durationMs, bool turnOn);
+  void applyDuration(int32_t durationMs, bool turnOn);
+  void setOvercurrentThreshold(uint32_t value, bool local);
 
   virtual void setNewChannelValue(bool value);
 
   void saveConfig() const;
+  void loadRelayConfigOnly();
+  void purgeRelayConfigOnly();
   void updateTimerValue();
+  void emitCountdownTimerActionIfNeeded();
   void updateRelayHvacAggregator();
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
@@ -235,6 +266,7 @@ class Relay : public ChannelElement, public ActionHandler {
   uint32_t overcurrentCheckTimestamp = 0;
 
   uint32_t timerUpdateTimestamp = 0;
+  uint32_t lastCountdownTimerRemainingSec = UINT32_MAX;
   uint32_t postponeCommTimestamp = 0;
 
   ButtonListElement *buttonList = nullptr;
@@ -247,12 +279,13 @@ class Relay : public ChannelElement, public ActionHandler {
   bool initDone = false;
   bool restartTimerOnToggle = false;
   bool skipInitialStateSetting = false;
+  bool preloadStateOnSoftReset = false;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
   Supla::Io::IoPin outputPin;
   RelayWeeklySchedule *weeklyScheduleHelper = nullptr;
 
-  static int16_t relayStorageSaveDelay;
+  static uint16_t relayStorageSaveDelay;
 };
 
 };  // namespace Control

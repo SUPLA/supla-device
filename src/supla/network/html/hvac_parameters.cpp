@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef ARDUINO_ARCH_AVR
 #include "hvac_parameters.h"
@@ -25,6 +10,7 @@
 #include <supla/control/hvac_base.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/web_sender.h>
+#include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
 
@@ -143,6 +129,10 @@ void HvacParameters::send(Supla::WebSender* sender) {
 
   char tmp[100] = {};
   snprintf(tmp, sizeof(tmp), "Thermostat #%d", hvac->getChannelNumber());
+  char auxSettingsKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  hvac->generateKey(auxSettingsKey, "aux_box");
+  char antiFreezeSettingsKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  hvac->generateKey(antiFreezeSettingsKey, "af_box");
 
   sender->send("</div><div class=\"box\">");
   sender->tag("h3").body(tmp);
@@ -392,21 +382,34 @@ void HvacParameters::send(Supla::WebSender* sender) {
 
   if (!hvac->parameterFlags.AuxMinMaxSetpointEnabledHidden) {
     hvac->generateKey(key, "aux_ctrl");
+    char auxChangeFn[48] = {};
+    char auxOnChange[52] = {};
+    snprintf(auxChangeFn,
+             sizeof(auxChangeFn),
+             "auxSetpointEnabledChange_%d",
+             hvac->getChannelNumber());
+    snprintf(auxOnChange, sizeof(auxOnChange), "%s()", auxChangeFn);
     emitSwitchField(sender,
                     key,
                     "Enable auxiliary min. and max. setpoints",
                     hvac->isAuxMinMaxSetpointEnabled(),
                     hvac->parameterFlags.AuxMinMaxSetpointEnabledReadonly,
-                    "auxSetpointEnabledChange();");
+                    auxOnChange);
 
     sender->send(
         "<script>"
-        "function auxSetpointEnabledChange(){"
+        "function ");
+    sender->send(auxChangeFn);
+    sender->send(
+        "(){"
         "var e=document.getElementById(\"");
     sender->send(key);
     sender->send(
         "\"),"
-        "c=document.getElementById(\"aux_settings\"),"
+        "c=document.getElementById(\"");
+    sender->send(auxSettingsKey);
+    sender->send(
+        "\"),"
         "l=e.checked?\"block\":\"none\";"
         "c.style.display=l;}"
         "</script>");
@@ -415,7 +418,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   if (!hvac->parameterFlags.TemperaturesAuxMinSetpointHidden ||
       !hvac->parameterFlags.TemperaturesAuxMaxSetpointHidden) {
     sender->toggleBox(
-        "aux_settings", hvac->isAuxMinMaxSetpointEnabled(), [&]() {
+        auxSettingsKey, hvac->isAuxMinMaxSetpointEnabled(), [&]() {
           if (!hvac->parameterFlags.TemperaturesAuxMinSetpointHidden) {
             hvac->generateKey(key, "t_aux_min");
             emitNumberField(
@@ -441,22 +444,38 @@ void HvacParameters::send(Supla::WebSender* sender) {
   if (!hvac->parameterFlags.AntiFreezeAndOverheatProtectionEnabledHidden) {
     sender->tag("h2").body("Anti freeze and overheat protection");
     hvac->generateKey(key, "anti_freeze");
+    char antiFreezeChangeFn[48] = {};
+    char antiFreezeOnChange[52] = {};
+    snprintf(antiFreezeChangeFn,
+             sizeof(antiFreezeChangeFn),
+             "antiFreezeAndHeatProtectionChange_%d",
+             hvac->getChannelNumber());
+    snprintf(antiFreezeOnChange,
+             sizeof(antiFreezeOnChange),
+             "%s()",
+             antiFreezeChangeFn);
     emitSwitchField(
         sender,
         key,
         "Enable anti-freeze and overheat protection",
         hvac->isAntiFreezeAndHeatProtectionEnabled(),
         hvac->parameterFlags.AntiFreezeAndOverheatProtectionEnabledReadonly,
-        "antiFreezeAndHeatProtectionChange();");
+        antiFreezeOnChange);
 
     sender->send(
         "<script>"
-        "function antiFreezeAndHeatProtectionChange(){"
+        "function ");
+    sender->send(antiFreezeChangeFn);
+    sender->send(
+        "(){"
         "var e=document.getElementById(\"");
     sender->send(key);
     sender->send(
         "\"),"
-        "c=document.getElementById(\"antifreeze_settings\"),"
+        "c=document.getElementById(\"");
+    sender->send(antiFreezeSettingsKey);
+    sender->send(
+        "\"),"
         "l=e.checked?\"block\":\"none\";"
         "c.style.display=l;}"
         "</script>");
@@ -465,7 +484,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   if (!hvac->parameterFlags.TemperaturesFreezeProtectionHidden ||
       !hvac->parameterFlags.TemperaturesHeatProtectionHidden) {
     sender->toggleBox(
-        "antifreeze_settings",
+        antiFreezeSettingsKey,
         hvac->isAntiFreezeAndHeatProtectionEnabled(),
         [&]() {
           if (!hvac->parameterFlags.TemperaturesFreezeProtectionHidden) {

@@ -1,29 +1,14 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "virtual_impulse_counter.h"
 
+#include <string.h>
 #include <supla/actions.h>
+#include <supla/events.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
-#include <supla/events.h>
-#include <string.h>
 
 using Supla::Sensor::VirtualImpulseCounter;
 
@@ -54,12 +39,13 @@ void VirtualImpulseCounter::onLoadState() {
 }
 
 void VirtualImpulseCounter::setCounter(uint64_t value) {
+  if (counter != value) {
+    SUPLA_LOG_DEBUG("VirtualImpulseCounter[%d] - set counter to %d",
+                    channel.getChannelNumber(),
+                    static_cast<int>(value));
+  }
   counter = value;
   channel.setNewValue(value);
-  SUPLA_LOG_DEBUG(
-            "VirtualImpulseCounter[%d] - set counter to %d",
-            channel.getChannelNumber(),
-            static_cast<int>(counter));
 }
 
 void VirtualImpulseCounter::incCounter() {
@@ -115,6 +101,13 @@ void VirtualImpulseCounter::setForceStateSaveOnChange(bool value) {
   forceStateSaveOnChange = value;
 }
 
+void VirtualImpulseCounter::setDefaultImpulsesPerUnit(
+    uint32_t impulsesPerUnit) {
+  if (impulsesPerUnit > 0) {
+    defaultImpulsesPerUnit = impulsesPerUnit;
+  }
+}
+
 Supla::ApplyConfigResult VirtualImpulseCounter::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
   if (result->ConfigSize == 0) {
@@ -136,12 +129,12 @@ void VirtualImpulseCounter::fillChannelConfig(void *channelConfig,
                                               uint8_t configType) {
   if (size && channelConfig) {
     if (configType == SUPLA_CONFIG_TYPE_DEFAULT) {
-      // init default impulse counter config with 1000 impulses per unit
+      // init default impulse counter config
       *size = sizeof(TChannelConfig_ImpulseCounter);
       TChannelConfig_ImpulseCounter *config =
-        reinterpret_cast<TChannelConfig_ImpulseCounter *>(channelConfig);
+          reinterpret_cast<TChannelConfig_ImpulseCounter *>(channelConfig);
       memset(config, 0, sizeof(TChannelConfig_ImpulseCounter));
-      config->ImpulsesPerUnit = 1000;
+      config->ImpulsesPerUnit = defaultImpulsesPerUnit;
     }
   }
 }

@@ -1,22 +1,8 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "linux_file_storage.h"
+#include "linux_secure_file.h"
 
 #include <supla/log_wrapper.h>
 
@@ -90,18 +76,13 @@ int LinuxFileStorage::writeStorage(unsigned int offset,
 
 void LinuxFileStorage::commit() {
   if (dataChanged) {
-    std::ofstream stateFile(path + "/state.bin",
-        std::ofstream::out | std::ios::binary);
-
-    for (unsigned int i = 0; i < reservedSize; i++) {
-      stateFile << data[i];
+    if (!Supla::Linux::writeSecureFile(
+            path + "/state.bin", data, reservedSize, false)) {
+      SUPLA_LOG_ERROR("Storage: failed to write state file");
     }
-
-    stateFile.close();
     // save to a file
   }
   dataChanged = false;
 }
 
 }  // namespace Supla
-

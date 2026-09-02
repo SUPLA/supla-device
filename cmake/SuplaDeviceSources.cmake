@@ -12,6 +12,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/binary_sensor_channel.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel_extended.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/io.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/io/io_pin.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/tools.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/element.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/local_action.cpp
@@ -22,6 +23,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/action_handler.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/time.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/timer.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/input_noise_guard.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/mutex.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/esp_idf_mutex.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/auto_lock.cpp
@@ -46,6 +48,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/clock/clock.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/last_state_logger.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/device/channel_conflict_resolver.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/status_led.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/sw_update.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/remote_device_config.cpp
@@ -54,6 +57,10 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/register_device.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/factory_test.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/security_logger.cpp
+
+  ${SUPLA_DEVICE_SRC_DIR}/supla/debug/command_processor.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/debug/debug_log.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/debug/debug_log_tcp_server.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/modbus/modbus_configurator.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/modbus/modbus_client_handler.cpp
@@ -68,12 +75,30 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/storage/state_wear_leveling_byte.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/storage/state_wear_leveling_sector.cpp
 
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/assignment_applier.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/calcfg_handler.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/capability_registry.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/channel_map.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/definition.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/definition_cache.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/json_definition.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/json_instance_config.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/manager.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/registry.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/runtime.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/server_config.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/storage.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/thermometer_group.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/virtual_channel.cpp
+
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/network.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html_element.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html_generator.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/web_server.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/web_sender.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html_output_buffer.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/netif_wifi.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/wifi_scan_result.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/netif_lan.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/device_info.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/protocol_parameters.cpp
@@ -81,6 +106,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/power_status_led_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/wifi_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/ethernet_parameters.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/network_address_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/sw_update_beta.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/sw_update.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/custom_sw_update.cpp
@@ -92,6 +118,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/button_type_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/button_config_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/button_action_trigger_config.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/channel_function_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/rgbw_button_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/relay_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/time_parameters.cpp
@@ -108,6 +135,8 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/roller_shutter_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/button_refresh.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/modbus_parameters.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/thermal_protection_parameters.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/input_activation_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/binary_sensor_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/security_log_list.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/custom_text_parameter.cpp
@@ -126,6 +155,8 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/protocol_layer.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/supla_srpc.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt_handler_registry.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt/hvac_mqtt.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt_topic.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/action_trigger.cpp
@@ -141,6 +172,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/pin_status_led.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay_weekly_schedule.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay_roller_shutter_pair.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay_hvac_aggregator.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/weekly_schedule_cache_runtime.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/hvac_weekly_schedule.cpp
@@ -184,6 +216,8 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/therm_hygro_press_meter.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/thermometer.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/thermometer_driver.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/multi_ds_sensor.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/multi_ds_handler_base.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/general_purpose_channel_base.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/general_purpose_measurement.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/sensor/general_purpose_meter.cpp

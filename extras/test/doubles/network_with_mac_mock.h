@@ -1,20 +1,5 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef EXTRAS_TEST_DOUBLES_NETWORK_WITH_MAC_MOCK_H_
 #define EXTRAS_TEST_DOUBLES_NETWORK_WITH_MAC_MOCK_H_
@@ -33,9 +18,30 @@ class NetworkMockWithMac : public Supla::Network {
   MOCK_METHOD(bool, iterate, (), (override));
   MOCK_METHOD(bool, getMacAddr, (uint8_t*), (override));
 
+  void setWifiState(int8_t rssi, uint8_t signalStrength) {
+    wifiStateConfigured = true;
+    wifiRssi = rssi;
+    wifiSignalStrength = signalStrength;
+  }
+
+  void fillStateData(TDSC_ChannelState *channelState) override {
+    if (!wifiStateConfigured || channelState == nullptr) {
+      return;
+    }
+    channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_WIFIRSSI |
+                            SUPLA_CHANNELSTATE_FIELD_WIFISIGNALSTRENGTH;
+    channelState->WiFiRSSI = wifiRssi;
+    channelState->WiFiSignalStrength = wifiSignalStrength;
+  }
+
   void getHostName(char* buffer) {
     memcpy(buffer, hostname, 32);
   }
+
+ private:
+  bool wifiStateConfigured = false;
+  int8_t wifiRssi = 0;
+  uint8_t wifiSignalStrength = 0;
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_NETWORK_WITH_MAC_MOCK_H_

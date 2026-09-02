@@ -47,11 +47,6 @@ class WeeklyScheduleStorage {
       return false;
     }
 
-    if (schedule == nullptr) {
-      schedule = new TChannelConfig_WeeklySchedule();
-      memset(schedule, 0, sizeof(TChannelConfig_WeeklySchedule));
-    }
-
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     generateKey(key, storageTag);
     SUPLA_LOG_DEBUG("%s[%d]: loading%s %s from storage",
@@ -59,6 +54,11 @@ class WeeklyScheduleStorage {
                     channelNumber,
                     alt ? " alt" : "",
                     scheduleLabel);
+    if (schedule == nullptr) {
+      schedule = new TChannelConfig_WeeklySchedule();
+      memset(schedule, 0, sizeof(TChannelConfig_WeeklySchedule));
+    }
+
     if (!cfg->getBlob(key,
                       reinterpret_cast<char *>(schedule),
                       sizeof(TChannelConfig_WeeklySchedule))) {
@@ -76,8 +76,6 @@ class WeeklyScheduleStorage {
                         channelNumber,
                         alt ? " alt" : "",
                         scheduleLabel);
-      delete schedule;
-      schedule = nullptr;
       return false;
     }
 

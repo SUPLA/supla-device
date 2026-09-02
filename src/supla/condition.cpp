@@ -1,18 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "condition.h"
 
@@ -40,7 +27,8 @@ Supla::Condition::~Condition() {
 
 void Supla::Condition::handleAction(int event, int action) {
   if (event == Supla::ON_CHANGE ||
-      event == Supla::ON_SECONDARY_CHANNEL_CHANGE) {
+      event == Supla::ON_SECONDARY_CHANNEL_CHANGE ||
+      event == Supla::ON_COUNTDOWN_TIMER) {
     if (!source->getChannel()) {
       return;
     }
@@ -182,7 +170,15 @@ void Supla::Condition::activateAction(int action) {
 void Supla::Condition::setThreshold(double val) {
   threshold = val;
   if (source) {
-    source->runAction(Supla::ON_CHANGE);
+    auto channel = source->getChannel();
+    if (!channel) {
+      return;
+    }
+
+    auto handler = channel->getHandlerForClient(this, Supla::ON_CHANGE);
+    if (handler && handler->isEnabled()) {
+      handleAction(Supla::ON_CHANGE, handler->action);
+    }
   }
 }
 

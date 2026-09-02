@@ -1,0 +1,12 @@
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#ifndef SRC_SUPLA_DEBUG_DEBUG_CONFIG_H_
+#define SRC_SUPLA_DEBUG_DEBUG_CONFIG_H_
+
+#ifndef SUPLA_INSECURE_DEBUG_INTERFACE
+#define SUPLA_INSECURE_DEBUG_INTERFACE 0
+#endif
+
+#endif  // SRC_SUPLA_DEBUG_DEBUG_CONFIG_H_
+

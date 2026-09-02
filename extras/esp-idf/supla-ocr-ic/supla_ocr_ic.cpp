@@ -1,28 +1,16 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "supla_ocr_ic.h"
 
-#include <supla/log_wrapper.h>
-#include <supla/io.h>
 #include <string.h>
-#include <esp_http_client.h>
+
 #include <driver/ledc.h>
+#include <esp_http_client.h>
+#include <supla/io.h>
+#include <supla/log_wrapper.h>
+
+#include "ocr_http_response_buffer.h"
 
 // TODO(klew): move it to constructor
 #define CAM_PIN_PWDN 32
@@ -270,6 +258,7 @@ namespace {
 static char *responseBuffer = nullptr;
 static size_t maxResponseLen = 0;
 static size_t responseBufferOffset = 0;
+static bool responseBufferOverflow = false;
 
 static esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
   switch (evt->event_id) {
@@ -287,12 +276,17 @@ static esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
           SUPLA_LOG_ERROR("HTTP: response buffer is not set");
           return ESP_FAIL;
         }
-        if (evt->data_len + responseBufferOffset > maxResponseLen) {
+        if (evt->data_len < 0 ||
+            !Supla::Sensor::appendOcrHttpResponseData(
+                responseBuffer,
+                maxResponseLen,
+                &responseBufferOffset,
+                static_cast<const char *>(evt->data),
+                static_cast<size_t>(evt->data_len))) {
           SUPLA_LOG_ERROR("HTTP: response buffer is too small");
+          responseBufferOverflow = true;
           return ESP_FAIL;
         }
-        memcpy(responseBuffer + responseBufferOffset, evt->data, evt->data_len);
-        responseBufferOffset += evt->data_len;
       } else {
         SUPLA_LOG_ERROR("Chunked response not supported");
       }
@@ -313,7 +307,7 @@ bool OcrIc::getStatusFromOcrServer(const char *url,
                                    char *resultBuffer,
                                    int resultBufferSize) {
   if (url == nullptr || url[0] == '\0' || authkey == nullptr ||
-      authkey[0] == '\0' || resultBuffer == nullptr || resultBufferSize == 0) {
+      authkey[0] == '\0' || resultBuffer == nullptr || resultBufferSize <= 0) {
     return false;
   }
 
@@ -332,6 +326,7 @@ bool OcrIc::getStatusFromOcrServer(const char *url,
   responseBuffer = resultBuffer;
   maxResponseLen = resultBufferSize;
   responseBufferOffset = 0;
+  responseBufferOverflow = false;
 
   esp_http_client_handle_t client = esp_http_client_init(&config);
 
@@ -339,7 +334,7 @@ bool OcrIc::getStatusFromOcrServer(const char *url,
   esp_http_client_set_header(client, "X-AuthKey", authkey);
   esp_err_t err = esp_http_client_perform(client);
 
-  if (err == ESP_OK) {
+  if (err == ESP_OK && !responseBufferOverflow) {
     esp_http_client_fetch_headers(client);
     int status = esp_http_client_get_status_code(client);
     int contentLength = esp_http_client_get_content_length(client);
@@ -350,6 +345,8 @@ bool OcrIc::getStatusFromOcrServer(const char *url,
     if (status >= 200 && status <= 202) {
       result = true;
     }
+  } else if (responseBufferOverflow) {
+    SUPLA_LOG_ERROR("HTTP GET response is too large");
   } else {
     SUPLA_LOG_ERROR("HTTP GET request failed: %s", esp_err_to_name(err));
   }
@@ -359,6 +356,7 @@ bool OcrIc::getStatusFromOcrServer(const char *url,
   responseBuffer = nullptr;
   maxResponseLen = 0;
   responseBufferOffset = 0;
+  responseBufferOverflow = false;
 
   return result;
 }

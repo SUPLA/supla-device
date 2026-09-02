@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "esp_spi_driver.h"
 
@@ -26,24 +11,29 @@ SPIDriver::SPIDriver(int16_t miso, int16_t mosi, int16_t clk)
     : miso(miso), mosi(mosi), clk(clk) {
 }
 
-void SPIDriver::initialize() {
-  if (!isInitialized()) {
-    esp_err_t ret;
-    spi_bus_config_t buscfg = {};
-    buscfg.miso_io_num = miso;
-    buscfg.mosi_io_num = mosi;
-    buscfg.sclk_io_num = clk;
-    buscfg.quadwp_io_num = -1;
-    buscfg.quadhd_io_num = -1;
-    buscfg.max_transfer_sz = 0;
-    ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
-    if (ret != ESP_OK) {
-      SUPLA_LOG_ERROR("Failed to initialize SPI bus (%d)", ret);
-    } else {
-      SUPLA_LOG_DEBUG("SPI bus initialized");
-    }
-    initialized = true;
+bool SPIDriver::initialize() {
+  if (isInitialized()) {
+    return true;
   }
+
+  esp_err_t ret;
+  spi_bus_config_t buscfg = {};
+  buscfg.miso_io_num = miso;
+  buscfg.mosi_io_num = mosi;
+  buscfg.sclk_io_num = clk;
+  buscfg.quadwp_io_num = -1;
+  buscfg.quadhd_io_num = -1;
+  buscfg.max_transfer_sz = 0;
+  ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
+  if (ret != ESP_OK) {
+    SUPLA_LOG_ERROR("Failed to initialize SPI bus (%d)", ret);
+    initialized = false;
+    return false;
+  }
+
+  SUPLA_LOG_DEBUG("SPI bus initialized");
+  initialized = true;
+  return true;
 }
 
 bool SPIDriver::addDevice(spi_device_interface_config_t *devcfg,
@@ -51,7 +41,9 @@ bool SPIDriver::addDevice(spi_device_interface_config_t *devcfg,
   if (devcfg == nullptr || deviceHandle == nullptr) {
     return false;
   }
-  initialize();
+  if (!initialize()) {
+    return false;
+  }
 
   auto ret = spi_bus_add_device(SPI2_HOST, devcfg, deviceHandle);
   if (ret != ESP_OK) {

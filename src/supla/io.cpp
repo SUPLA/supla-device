@@ -1,26 +1,11 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "io.h"
 
 #include <supla/log_wrapper.h>
 
-#ifdef ARDUINO
+#if defined(ARDUINO) || defined(SUPLA_TEST)
 #include <Arduino.h>
 #elif defined(ESP_PLATFORM)
 #include <esp_idf_gpio.h>
@@ -73,138 +58,38 @@ uint8_t digitalPinToInterrupt(uint8_t pin) {
 }
 #endif
 
+namespace {
+constexpr uint8_t DefaultAnalogWriteResolutionBits() {
+#if defined(ARDUINO_ARCH_AVR)
+  return 8;
+#elif defined(ARDUINO_ARCH_ESP8266)
+  return 10;
+#elif defined(ARDUINO_ARCH_ESP32)
+  return 8;
+#else
+  return 10;
+#endif
+}
+
+constexpr uint16_t DefaultPwmFrequencyHz() {
+#if defined(ARDUINO_ARCH_AVR)
+  return 490;
+#else
+  return 1000;
+#endif
+}
+
+bool DefaultPwmResolutionBitsMutable() {
+#if defined(ARDUINO_ARCH_AVR)
+  return false;
+#else
+  return true;
+#endif
+}
+}  // namespace
+
 namespace Supla {
 namespace Io {
-void IoPin::configureAnalogOutput(int channelNumber) const {
-  if (!isSet()) {
-    return;
-  }
-
-  if (io != nullptr) {
-    io->customConfigureAnalogOutput(channelNumber,
-                                    static_cast<uint8_t>(pin),
-                                    !isActiveHigh());
-    return;
-  }
-
-  if (!isActiveHigh()) {
-    SUPLA_LOG_WARNING(
-        "Analog output invert is not supported for default IO, GPIO %d",
-        pin);
-  }
-
-#ifdef ARDUINO_ARCH_ESP32
-#elif defined(ARDUINO_ARCH_ESP8266)
-#endif
-}
-
-void IoPin::setAnalogOutputResolutionBits(uint8_t resolutionBits) {
-  if (io != nullptr) {
-    io->customSetPwmResolutionBits(resolutionBits);
-    return;
-  }
-
-  analogWriteResolutionBitsValue = resolutionBits;
-
-#ifdef ARDUINO_ARCH_ESP32
-  analogWriteResolution(static_cast<uint8_t>(pin), resolutionBits);
-#elif defined(ARDUINO_ARCH_ESP8266)
-  analogWriteRange(1UL << resolutionBits);
-#else
-  (void)(resolutionBits);
-#endif
-}
-
-void IoPin::setAnalogOutputFrequency(uint32_t frequencyHz) {
-  if (io != nullptr) {
-    io->customSetPwmFrequency(static_cast<uint16_t>(frequencyHz));
-    return;
-  }
-
-#ifdef ARDUINO_ARCH_ESP32
-  analogWriteFrequency(static_cast<uint8_t>(pin), frequencyHz);
-#elif defined(ARDUINO_ARCH_ESP8266)
-  analogWriteFreq(frequencyHz);
-#else
-  (void)(frequencyHz);
-#endif
-}
-
-void IoPin::pinMode(int channelNumber) const {
-  if (isSet()) {
-    uint8_t effectiveMode = mode;
-    if (effectiveMode == INPUT && isPullUp()) {
-      effectiveMode = INPUT_PULLUP;
-    }
-    Supla::Io::pinMode(channelNumber,
-                       static_cast<uint8_t>(pin),
-                       effectiveMode,
-                       io);
-  }
-}
-
-int IoPin::digitalRead(int channelNumber) const {
-  if (!isSet()) {
-    return 0;
-  }
-  return Supla::Io::digitalRead(channelNumber,
-                                static_cast<uint8_t>(pin),
-                                io);
-}
-
-void IoPin::digitalWrite(uint8_t value, int channelNumber) const {
-  if (isSet()) {
-    Supla::Io::digitalWrite(channelNumber,
-                            static_cast<uint8_t>(pin),
-                            value,
-                            io);
-  }
-}
-
-void IoPin::analogWrite(int value, int channelNumber) const {
-  if (isSet()) {
-#ifdef ARDUINO_ARCH_AVR
-    if (io == nullptr) {
-      value = map(value, 0, 1023, 0, 255);
-    }
-#endif
-    Supla::Io::analogWrite(channelNumber,
-                           static_cast<uint8_t>(pin),
-                           value,
-                           io);
-  }
-}
-
-uint8_t IoPin::analogWriteResolutionBits() const {
-  if (analogWriteResolutionBitsValue != 0) {
-    return analogWriteResolutionBitsValue;
-  }
-  if (io != nullptr) {
-    return io->customAnalogWriteResolutionBits();
-  }
-  return 0;
-}
-
-uint32_t IoPin::analogWriteMaxValue() const {
-  uint8_t bits = analogWriteResolutionBits();
-  if (bits == 0) {
-    return 0;
-  }
-  return (1UL << bits) - 1;
-}
-
-void IoPin::writeActive(int channelNumber) const {
-  digitalWrite(isActiveHigh() ? 1 : 0, channelNumber);
-}
-
-void IoPin::writeInactive(int channelNumber) const {
-  digitalWrite(isActiveHigh() ? 0 : 1, channelNumber);
-}
-
-bool IoPin::readActive(int channelNumber) const {
-  return digitalRead(channelNumber) == (isActiveHigh() ? 1 : 0);
-}
-
 void pinMode(uint8_t pin, uint8_t mode, Supla::Io::Base *io) {
   return pinMode(-1, pin, mode, io);
 }
@@ -322,19 +207,90 @@ uint8_t pinToInterrupt(uint8_t pin, Io::Base *io) {
   return digitalPinToInterrupt(pin);
 }
 
-Base::Base(bool useAsSingleton) : useAsSingleton(useAsSingleton) {
-  if (useAsSingleton) {
-    if (ioInstance != nullptr) {
-      delete ioInstance;
-    }
-    ioInstance = this;
+void setPwmFrequency(uint8_t pin, uint16_t pwmFrequency, Io::Base *io) {
+  if (io) {
+    io->customSetPwmFrequency(pwmFrequency);
+    return;
   }
+#if defined(ARDUINO_ARCH_ESP8266)
+  (void)(pin);
+  analogWriteFreq(pwmFrequency);
+#elif defined(ARDUINO_ARCH_ESP32) || defined(SUPLA_TEST)
+  analogWriteFrequency(pin, pwmFrequency);
+#else
+  (void)(pin);
+  (void)(pwmFrequency);
+#endif
+}
+
+void setPwmResolutionBits(uint8_t pin, uint8_t resolutionBits, Io::Base *io) {
+  if (io) {
+    io->customSetPwmResolutionBits(pin, resolutionBits);
+    return;
+  }
+#if defined(ARDUINO_ARCH_ESP32) || defined(SUPLA_TEST)
+  analogWriteResolution(pin, resolutionBits);
+#elif defined(ARDUINO_ARCH_ESP8266)
+  analogWriteRange(1UL << resolutionBits);
+#elif defined(ARDUINO_ARCH_AVR)
+  (void)(pin);
+  (void)(resolutionBits);
+#else
+  (void)(pin);
+  (void)(resolutionBits);
+#endif
+}
+
+uint8_t defaultPwmResolutionBits(uint8_t pin, Io::Base *io) {
+  if (io != nullptr) {
+    return io->customDefaultPwmResolutionBits(pin);
+  }
+  return DefaultAnalogWriteResolutionBits();
+}
+
+bool canSetPwmResolutionBits(uint8_t pin, Io::Base *io) {
+  if (io != nullptr) {
+    return io->customCanSetPwmResolutionBits(pin);
+  }
+  return DefaultPwmResolutionBitsMutable();
+}
+
+uint8_t pwmResolutionBits(uint8_t pin, Io::Base *io) {
+  if (io != nullptr) {
+    return io->customPwmResolutionBits(pin);
+  }
+  return DefaultAnalogWriteResolutionBits();
+}
+
+uint32_t pwmMaxValue(uint8_t pin, Io::Base *io) {
+  uint8_t bits = pwmResolutionBits(pin, io);
+  if (bits == 0) {
+    return 0;
+  }
+  return (1UL << bits) - 1;
+}
+
+uint8_t pwmResolutionBits(Io::Base *io) {
+  return pwmResolutionBits(0, io);
+}
+
+uint32_t pwmMaxValue(Io::Base *io) {
+  return pwmMaxValue(0, io);
+}
+
+uint16_t pwmFrequency(Io::Base *io) {
+  if (io != nullptr) {
+    return io->customPwmFrequency();
+  }
+  return DefaultPwmFrequencyHz();
+}
+
+Base::Base()
+    : pwmResolutionBitsValue(DefaultAnalogWriteResolutionBits()),
+      pwmFrequencyHzValue(DefaultPwmFrequencyHz()) {
 }
 
 Base::~Base() {
-  if (useAsSingleton) {
-    ioInstance = nullptr;
-  }
 }
 
 bool Base::isReady() const {
@@ -354,25 +310,43 @@ void Base::customDigitalWrite(int, uint8_t, uint8_t) {
 void Base::customAnalogWrite(int, uint8_t, int) {
 }
 
-void Base::customSetPwmResolutionBits(uint8_t) {
+void Base::customSetPwmResolutionBits(uint8_t pin, uint8_t resolutionBits) {
+  (void)(pin);
+  pwmResolutionBitsValue = resolutionBits;
 }
 
 void Base::customConfigureAnalogOutput(int, uint8_t, bool) {
 }
 
-void Base::customSetPwmFrequency(uint16_t) {
+void Base::customSetPwmFrequency(uint16_t freq) {
+  pwmFrequencyHzValue = freq;
 }
 
-uint8_t Base::customAnalogWriteResolutionBits() const {
-  return 0;
+uint8_t Base::customDefaultPwmResolutionBits(uint8_t pin) const {
+  (void)(pin);
+  return pwmResolutionBitsValue;
 }
 
-uint32_t Base::customAnalogWriteMaxValue() const {
-  uint8_t bits = customAnalogWriteResolutionBits();
+bool Base::customCanSetPwmResolutionBits(uint8_t pin) const {
+  (void)(pin);
+  return true;
+}
+
+uint8_t Base::customPwmResolutionBits(uint8_t pin) const {
+  (void)(pin);
+  return pwmResolutionBitsValue;
+}
+
+uint32_t Base::customPwmMaxValue(uint8_t pin) const {
+  uint8_t bits = customPwmResolutionBits(pin);
   if (bits == 0) {
     return 0;
   }
   return (1UL << bits) - 1;
+}
+
+uint16_t Base::customPwmFrequency() const {
+  return pwmFrequencyHzValue;
 }
 
 int Base::customAnalogRead(int, uint8_t) {
@@ -392,8 +366,6 @@ void Base::customDetachInterrupt(uint8_t) {
 uint8_t Base::customPinToInterrupt(uint8_t) {
   return 0;
 }
-
-Base *Base::ioInstance = nullptr;
 
 }  // namespace Io
 }  // namespace Supla

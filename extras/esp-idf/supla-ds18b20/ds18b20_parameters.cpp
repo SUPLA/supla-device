@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <stdio.h>
 #include <string.h>
@@ -51,15 +36,11 @@ void DS18B20Parameters::send(Supla::WebSender* sender) {
     uint8_t dsAddress[DS_ADDRESS_SIZE] = {};
     cfg->getBlob(key, reinterpret_cast<char*>(dsAddress), DS_ADDRESS_SIZE);
 
-    sender->send(
-        "<h3>External thermometer #"
-        );
+    sender->send("<h3>External thermometer #");
 
     snprintf(tmp, sizeof(tmp), "%d", channel);
     sender->send(tmp);
-    sender->send(
-        "</h3><p>Assigned address: "
-        );
+    sender->send("</h3><p>Assigned address: ");
 
     if (dsAddress[0]) {
       snprintf(
@@ -77,9 +58,7 @@ void DS18B20Parameters::send(Supla::WebSender* sender) {
     } else {
       sender->send("Not configured");
     }
-    sender->send(
-        "<br>Value: "
-        );
+    sender->send("<br>Value: ");
 
     auto element = Supla::Element::getElementByChannelNumber(channel);
     if (element && element->getChannel()) {

@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "register_device.h"
 
@@ -123,13 +108,17 @@ TDS_SuplaRegisterDeviceHeader *Supla::RegisterDevice::getRegDevHeaderPtr() {
 }
 
 TDS_SuplaDeviceChannel_D *Supla::RegisterDevice::getChannelPtr_D(int index) {
-  if (index >= reg_dev.channel_count || index == -1) {
+  if (index < 0 || index >= reg_dev.channel_count) {
     return nullptr;
   }
 
   auto channel = Supla::Channel::Begin();
   for (int i = 0; i < reg_dev.channel_count && i < index && channel; i++) {
     channel = channel->next();
+  }
+
+  if (channel == nullptr) {
+    return nullptr;
   }
 
   channel->fillDeviceChannelStruct(&deviceChannelStruct.version_D);
@@ -138,13 +127,17 @@ TDS_SuplaDeviceChannel_D *Supla::RegisterDevice::getChannelPtr_D(int index) {
 }
 
 TDS_SuplaDeviceChannel_E *Supla::RegisterDevice::getChannelPtr_E(int index) {
-  if (index >= reg_dev.channel_count || index == -1) {
+  if (index < 0 || index >= reg_dev.channel_count) {
     return nullptr;
   }
 
   auto channel = Supla::Channel::Begin();
   for (int i = 0; i < reg_dev.channel_count && i < index && channel; i++) {
     channel = channel->next();
+  }
+
+  if (channel == nullptr) {
+    return nullptr;
   }
 
   channel->fillDeviceChannelStruct(&deviceChannelStruct.version_E);
@@ -186,22 +179,22 @@ void Supla::RegisterDevice::fillGUIDText(char text[37]) {
       text,
       37,
       "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
-      reg_dev.GUID[0],
-      reg_dev.GUID[1],
-      reg_dev.GUID[2],
-      reg_dev.GUID[3],
-      reg_dev.GUID[4],
-      reg_dev.GUID[5],
-      reg_dev.GUID[6],
-      reg_dev.GUID[7],
-      reg_dev.GUID[8],
-      reg_dev.GUID[9],
-      reg_dev.GUID[10],
-      reg_dev.GUID[11],
-      reg_dev.GUID[12],
-      reg_dev.GUID[13],
-      reg_dev.GUID[14],
-      reg_dev.GUID[15]);
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[0])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[1])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[2])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[3])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[4])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[5])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[6])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[7])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[8])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[9])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[10])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[11])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[12])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[13])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[14])),
+      static_cast<unsigned int>(static_cast<uint8_t>(reg_dev.GUID[15])));
 }
 
 const char *Supla::RegisterDevice::getAuthKey() {
@@ -286,7 +279,7 @@ int Supla::RegisterDevice::getNextFreeChannelNumber() {
 
 // TODO(klew) move to channel
 bool Supla::RegisterDevice::isChannelNumberFree(int channelNumber) {
-  if (channelNumber >= SUPLA_CHANNELMAXCOUNT) {
+  if (channelNumber < 0 || channelNumber >= SUPLA_CHANNELMAXCOUNT) {
     return false;
   }
 
@@ -298,6 +291,38 @@ bool Supla::RegisterDevice::isChannelNumberFree(int channelNumber) {
   }
 
   return true;
+}
+
+int Supla::RegisterDevice::getFreeChannelCount() {
+  int result = 0;
+  for (int candidate = Supla::Channel::getStartingChannelNumber();
+       candidate < SUPLA_CHANNELMAXCOUNT;
+       candidate++) {
+    if (isChannelNumberFree(candidate)) {
+      result++;
+    }
+  }
+  return result;
+}
+
+bool Supla::RegisterDevice::hasFreeChannelCount(uint8_t requiredCount) {
+  if (requiredCount == 0) {
+    return true;
+  }
+
+  int freeCount = 0;
+  for (int candidate = Supla::Channel::getStartingChannelNumber();
+       candidate < SUPLA_CHANNELMAXCOUNT;
+       candidate++) {
+    if (isChannelNumberFree(candidate)) {
+      freeCount++;
+      if (freeCount >= requiredCount) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 void Supla::RegisterDevice::addChannel(int channelNumber) {

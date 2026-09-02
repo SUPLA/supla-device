@@ -1,24 +1,10 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "binary_base.h"
 
 #include <supla/time.h>
+#include <supla/events.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
@@ -39,8 +25,40 @@ BinaryBase::BinaryBase() {
 BinaryBase::~BinaryBase() {
 }
 
+void BinaryBase::beginInitialChannelValueRead() {
+  localActionState = LocalActionState::Initializing;
+  initialStateCandidatePending = false;
+}
+
+void BinaryBase::setChannelValueQuietly(bool value) {
+  char channelValue[SUPLA_CHANNELVALUE_SIZE] = {};
+  channelValue[0] = value;
+  channel.setNewValue(channelValue);
+}
+
+void BinaryBase::setInitialChannelValue(bool value) {
+  if (localActionState != LocalActionState::Initializing) {
+    beginInitialChannelValueRead();
+  }
+  setChannelValueQuietly(value);
+  startupSyncStartTimeMs = millis();
+  localActionState = turnActionSyncOnStartup ? LocalActionState::StartupSync
+                                             : LocalActionState::Runtime;
+}
+
+void BinaryBase::notifyInputStateChangeCandidate() {
+  if (localActionState == LocalActionState::Initializing) {
+    initialStateCandidatePending = true;
+  } else if (localActionState == LocalActionState::StartupSync) {
+    initialStateCandidatePending = false;
+    startupSyncStartTimeMs = millis();
+  }
+}
+
 void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
+  localActionState = LocalActionState::LoadingConfig;
+  initialStateCandidatePending = false;
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     loadFunctionFromConfig();
@@ -53,7 +71,7 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
     setServerInvertLogic(storedServerInvertLogic > 0, false);
 
     if (config.filteringTimeMs > 0 || config.timeoutDs > 0 ||
-        config.sensitivity > 0) {
+        config.sensitivity > 0 || config.localAlarmIndication > 0) {
       generateKey(key, Supla::ConfigTag::BinarySensorCfgTag);
       BinarySensorConfig storedConfig = {};
       cfg->getBlob(key,
@@ -77,6 +95,12 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
           setSensitivity(storedConfig.sensitivity, false);
         }
       }
+
+      if (config.localAlarmIndication > 0) {
+        if (storedConfig.localAlarmIndication > 0) {
+          setLocalAlarmIndication(storedConfig.localAlarmIndication, false);
+        }
+      }
     }
 
     printConfig();
@@ -86,12 +110,13 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
 void BinaryBase::printConfig() {
   SUPLA_LOG_INFO(
       "Binary[%d] config serverInvertLogic %d, timeoutDs %d, filteringTimeMs "
-      "%d, sensitivity %d",
+      "%d, sensitivity %d, localAlarmIndication %d",
       getChannelNumber(),
       channel.isServerInvertLogic(),
       config.timeoutDs,
       config.filteringTimeMs,
-      config.sensitivity);
+      config.sensitivity,
+      config.localAlarmIndication);
 }
 
 void BinaryBase::purgeConfig() {
@@ -127,12 +152,14 @@ Supla::ApplyConfigResult BinaryBase::applyChannelConfig(
       reinterpret_cast<TChannelConfig_BinarySensor *>(newConfig->Config);
 
   SUPLA_LOG_DEBUG("Binary[%d] received serverInvertLogic %d, timeoutDs %d, "
-                  "filteringTimeMs %d, sensitivity %d",
+                  "filteringTimeMs %d, sensitivity %d, "
+                  "localAlarmIndication %d",
                   getChannelNumber(),
                   serverConfig->InvertedLogic,
                   serverConfig->Timeout,
                   serverConfig->FilteringTimeMs,
-                  serverConfig->Sensitivity);
+                  serverConfig->Sensitivity,
+                  serverConfig->LocalAlarmIndication);
 
   bool configChanged = false;
 
@@ -162,6 +189,14 @@ Supla::ApplyConfigResult BinaryBase::applyChannelConfig(
       configChanged = true;
     }
   }
+  if (getLocalAlarmIndication() > 0 &&
+      serverConfig->LocalAlarmIndication == 0) {
+    result = Supla::ApplyConfigResult::SetChannelConfigNeeded;
+  } else {
+    if (setLocalAlarmIndication(serverConfig->LocalAlarmIndication, false)) {
+      configChanged = true;
+    }
+  }
 
   if (configChanged) {
     saveConfig();
@@ -171,9 +206,42 @@ Supla::ApplyConfigResult BinaryBase::applyChannelConfig(
 }
 
 void BinaryBase::iterateAlways() {
-  if (millis() - lastReadTime > readIntervalMs) {
-    lastReadTime = millis();
-    channel.setNewValue(getValue());
+  const uint32_t readTime = millis();
+  if (readTime - lastReadTime > readIntervalMs) {
+    lastReadTime = readTime;
+    const bool previousLogicalValue = channel.getValueBool();
+    const bool newRawValue = getValue();
+    const bool newLogicalValue =
+        channel.isServerInvertLogic() ? !newRawValue : newRawValue;
+
+    if (localActionState == LocalActionState::StartupSync &&
+        initialStateCandidatePending &&
+        previousLogicalValue != newLogicalValue) {
+      setChannelValueQuietly(newRawValue);
+      runAction(newLogicalValue ? Supla::ON_TURN_ON : Supla::ON_TURN_OFF);
+      initialStateCandidatePending = false;
+      localActionState = LocalActionState::Runtime;
+      return;
+    }
+
+    channel.setNewValue(newRawValue);
+
+    if (previousLogicalValue != channel.getValueBool()) {
+      // A real input transition already ran the complete set of channel
+      // actions. It also makes a later startup synchronization unnecessary.
+      initialStateCandidatePending = false;
+      localActionState = LocalActionState::Runtime;
+      return;
+    }
+
+    const uint32_t now = millis();
+    if (localActionState == LocalActionState::StartupSync &&
+        now - startupSyncStartTimeMs >= config.filteringTimeMs) {
+      runAction(channel.getValueBool() ? Supla::ON_TURN_ON
+                                       : Supla::ON_TURN_OFF);
+      initialStateCandidatePending = false;
+      localActionState = LocalActionState::Runtime;
+    }
   }
 }
 
@@ -189,12 +257,41 @@ bool BinaryBase::setServerInvertLogic(bool invertLogic, bool local) {
   if (invertLogic == channel.isServerInvertLogic()) {
     return false;
   }
+  const bool previousLogicalValue = channel.getValueBool();
   channel.setServerInvertLogic(invertLogic);
+
+  if (previousLogicalValue != channel.getValueBool() &&
+      localActionState != LocalActionState::LoadingConfig &&
+      localActionState != LocalActionState::Initializing) {
+    runAction(channel.getValueBool() ? Supla::ON_TURN_ON
+                                     : Supla::ON_TURN_OFF);
+    runAction(Supla::ON_CHANGE);
+    runAction(Supla::ON_SECONDARY_CHANNEL_CHANGE);
+    initialStateCandidatePending = false;
+    localActionState = LocalActionState::Runtime;
+  }
+
   if (local) {
-    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     saveConfig();
   }
   return true;
+}
+
+void BinaryBase::setTurnActionSyncOnStartup(bool enabled) {
+  turnActionSyncOnStartup = enabled;
+  if (!enabled) {
+    if (localActionState == LocalActionState::StartupSync) {
+      initialStateCandidatePending = false;
+      localActionState = LocalActionState::Runtime;
+    }
+    return;
+  }
+
+  if (localActionState == LocalActionState::Runtime) {
+    startupSyncStartTimeMs = millis();
+    localActionState = LocalActionState::StartupSync;
+  }
 }
 
 bool BinaryBase::setSensitivity(uint8_t sensitivity, bool local) {
@@ -204,7 +301,7 @@ bool BinaryBase::setSensitivity(uint8_t sensitivity, bool local) {
   }
   config.sensitivity = sensitivity;
   if (local) {
-    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     saveConfig();
   }
   return true;
@@ -214,6 +311,25 @@ uint8_t BinaryBase::getSensitivity() const {
   return config.sensitivity;
 }
 
+bool BinaryBase::setLocalAlarmIndication(uint8_t localAlarmIndication,
+                                         bool local) {
+  if (localAlarmIndication == config.localAlarmIndication ||
+      (config.localAlarmIndication > 0 && localAlarmIndication == 0) ||
+      localAlarmIndication > 2) {
+    return false;
+  }
+  config.localAlarmIndication = localAlarmIndication;
+  if (local) {
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+    saveConfig();
+  }
+  return true;
+}
+
+uint8_t BinaryBase::getLocalAlarmIndication() const {
+  return config.localAlarmIndication;
+}
+
 bool BinaryBase::setFilteringTimeMs(uint16_t filteringTimeMs, bool local) {
   if (filteringTimeMs == config.filteringTimeMs ||
       (config.filteringTimeMs > 0 && filteringTimeMs == 0)) {
@@ -221,7 +337,7 @@ bool BinaryBase::setFilteringTimeMs(uint16_t filteringTimeMs, bool local) {
   }
   config.filteringTimeMs = filteringTimeMs;
   if (local) {
-    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     saveConfig();
   }
   return true;
@@ -238,7 +354,7 @@ bool BinaryBase::setTimeoutDs(uint16_t timeoutDs, bool local) {
   }
   config.timeoutDs = timeoutDs;
   if (local) {
-    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
     saveConfig();
   }
   return true;
@@ -284,6 +400,9 @@ void BinaryBase::fillChannelConfig(void *channelConfig,
   if (config.sensitivity > 0) {
     serverConfig->Sensitivity = config.sensitivity;
   }
+  if (config.localAlarmIndication > 0) {
+    serverConfig->LocalAlarmIndication = config.localAlarmIndication;
+  }
   if (config.timeoutDs > 0) {
     serverConfig->Timeout = config.timeoutDs;
   }
@@ -321,4 +440,3 @@ void BinaryBase::saveConfig() {
     proto->notifyConfigChange(getChannelNumber());
   }
 }
-

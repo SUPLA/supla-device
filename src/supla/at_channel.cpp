@@ -1,23 +1,12 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "at_channel.h"
 
 #include <supla/channels/channel.h>
 #include <supla/protocol/protocol_layer.h>
+
+#include <string.h>
 
 namespace Supla {
 
@@ -33,7 +22,11 @@ void AtChannel::sendUpdate() {
            proto = proto->next()) {
         proto->sendActionTrigger(static_cast<uint8_t>(channelNumber), actionId);
       }
+      if (actionToSend || valueUpdatePending) {
+        setSendValue();
+      }
     } else {
+      valueUpdatePending = false;
       Channel::sendUpdate();
     }
   } else {
@@ -45,7 +38,7 @@ uint32_t AtChannel::popAction() {
   for (int i = 0; i < 32; i++) {
     if (actionToSend & (1 << i)) {
       actionToSend ^= (1 << i);
-      if (actionToSend == 0) {
+      if (actionToSend == 0 && !valueUpdatePending) {
         clearSendValue();
       }
       return (1 << i);
@@ -64,11 +57,35 @@ void AtChannel::activateAction(uint32_t action) {
 }
 
 void AtChannel::setRelatedChannel(uint8_t relatedChannel) {
-  actionTriggerProperties.relatedChannelNumber = relatedChannel + 1;
+  TActionTriggerProperties properties = actionTriggerProperties;
+  properties.relatedChannelNumber = relatedChannel + 1;
+  setActionTriggerProperties(properties);
 }
 
 void AtChannel::setDisablesLocalOperation(uint32_t actions) {
-  actionTriggerProperties.disablesLocalOperation = actions;
+  TActionTriggerProperties properties = actionTriggerProperties;
+  properties.disablesLocalOperation = actions;
+  setActionTriggerProperties(properties);
+}
+
+void AtChannel::enableValueUpdates() {
+  valueUpdatesEnabled = true;
+  valueUpdatePending = false;
+  clearSendValue();
+}
+
+void AtChannel::setActionTriggerProperties(
+    const TActionTriggerProperties &properties) {
+  char rawValue[SUPLA_CHANNELVALUE_SIZE] = {};
+  memcpy(rawValue, &properties, sizeof(properties));
+
+  if (setNewValue(rawValue)) {
+    if (valueUpdatesEnabled) {
+      valueUpdatePending = true;
+    } else {
+      clearSendValue();
+    }
+  }
 }
 
 };  // namespace Supla

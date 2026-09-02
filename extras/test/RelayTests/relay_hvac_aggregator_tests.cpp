@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -465,6 +450,44 @@ TEST_F(RelayHvacFixture, turnOffWhenHvacIsOffline) {
   time.advance(10000);
   aggregator->iterateAlways();
   EXPECT_EQ(gpio1Value, 1);
+}
+
+TEST_F(RelayHvacFixture, firstOnlineHvacKeepsDemandAfterGoingOffline) {
+  int gpio1 = 1;
+  Supla::Control::Relay r1(gpio1);
+
+  int number1 = r1.getChannelNumber();
+  ASSERT_EQ(number1, 0);
+
+  auto io1 = Supla::Control::InternalPinOutput(4);
+  Supla::Control::HvacBase hvac1(&io1);
+
+  int gpio1Value = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio1Value));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpio1Value));
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  r1.onInit();
+
+  auto aggregator = Supla::Control::RelayHvacAggregator::Add(number1, &r1);
+  ASSERT_NE(aggregator, nullptr);
+
+  time.advance(16 * 60 * 1000);
+  hvac1.getChannel()->setStateOnline();
+  aggregator->registerHvac(&hvac1);
+  hvac1.getChannel()->setHvacFlagHeating(true);
+  hvac1.getChannel()->setStateOffline();
+
+  time.advance(2000);
+  aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
+
+  time.advance(15 * 60 * 1000);
+  aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
+
+  EXPECT_TRUE(Supla::Control::RelayHvacAggregator::Remove(number1));
 }
 
 TEST_F(RelayHvacFixture, overrideRelayInternalState) {

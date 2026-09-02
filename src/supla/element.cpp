@@ -1,18 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "element.h"
 
@@ -31,7 +18,11 @@ class SuplaSrpc;
 Element *Element::firstPtr = nullptr;
 bool Element::invalidatePtr = false;
 
-Element::Element() {
+Element::Element(ElementMode mode)
+    : registeredElement(mode == ElementMode::Registered) {
+  if (!registeredElement) {
+    return;
+  }
   if (firstPtr == nullptr) {
     firstPtr = this;
   } else {
@@ -40,6 +31,9 @@ Element::Element() {
 }
 
 Element::~Element() {
+  if (!registeredElement) {
+    return;
+  }
   invalidatePtr = true;
   if (begin() == this) {
     firstPtr = next();
@@ -72,7 +66,8 @@ Element *Element::getElementByChannelNumber(int channelNumber) {
   }
 
   Element *element = begin();
-  while (element != nullptr && element->getChannelNumber() != channelNumber) {
+  while (element != nullptr && element->getChannelNumber() != channelNumber &&
+         element->getSecondaryChannelNumber() != channelNumber) {
     element = element->next();
   }
 
@@ -140,6 +135,11 @@ bool Element::isChannelStateEnabled() const {
 
 void Element::iterateAlways() {}
 
+bool Element::iterateConnected(void *ptr) {
+  (void)(ptr);
+  return iterateConnected();
+}
+
 bool Element::iterateConnected() {
   bool response = true;
   Channel *secondaryChannel = getSecondaryChannel();
@@ -167,6 +167,13 @@ int32_t Element::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
 
 void Element::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
   (void)(value);
+}
+
+bool Element::getRemainingCountdownTimerSec(uint32_t *remainingSec) const {
+  if (remainingSec) {
+    *remainingSec = 0;
+  }
+  return false;
 }
 
 int Element::getChannelNumber() const {
@@ -200,6 +207,42 @@ Channel *Element::getChannel() {
 }
 
 Channel *Element::getSecondaryChannel() {
+  return nullptr;
+}
+
+const Channel *Element::getChannelByChannelNumber(int channelNumber) const {
+  if (channelNumber < 0) {
+    return nullptr;
+  }
+
+  auto channel = getChannel();
+  if (channel && channel->getChannelNumber() == channelNumber) {
+    return channel;
+  }
+
+  channel = getSecondaryChannel();
+  if (channel && channel->getChannelNumber() == channelNumber) {
+    return channel;
+  }
+
+  return nullptr;
+}
+
+Channel *Element::getChannelByChannelNumber(int channelNumber) {
+  if (channelNumber < 0) {
+    return nullptr;
+  }
+
+  auto channel = getChannel();
+  if (channel && channel->getChannelNumber() == channelNumber) {
+    return channel;
+  }
+
+  channel = getSecondaryChannel();
+  if (channel && channel->getChannelNumber() == channelNumber) {
+    return channel;
+  }
+
   return nullptr;
 }
 
@@ -244,6 +287,12 @@ int Element::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
   return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
 }
 
+uint32_t Element::getCalcfgPendingTimeoutMs(
+    TSD_DeviceCalCfgRequest *request) const {
+  (void)(request);
+  return 0;
+}
+
 Element & Element::disableChannelState() {
   if (getChannel()) {
     getChannel()->unsetFlag(SUPLA_CHANNEL_FLAG_CHANNELSTATE);
@@ -286,6 +335,11 @@ void Element::handleChannelConfigFinished() {
       getChannelNumber());
 }
 
+void Element::handleChannelConfigFinished(int channelNumber) {
+  if (channelNumber == getChannelNumber()) {
+    handleChannelConfigFinished();
+  }
+}
 
 void Element::generateKey(char *output, const char *key) const {
   Supla::Config::generateKey(output, getChannelNumber(), key);
@@ -347,6 +401,10 @@ bool Element::setDefaultFunction(uint32_t defaultFunction) {
 
 bool Element::setFunction(uint32_t newFunction) {
   return setDefaultFunction(newFunction);
+}
+
+bool Element::setRuntimeFunction(uint32_t newFunction) {
+  return setFunction(newFunction);
 }
 
 void Element::onFunctionChange(uint32_t currentFunction, uint32_t newFunction) {

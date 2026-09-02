@@ -1,24 +1,12 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "action_trigger.h"
 
+#include <SuplaDevice.h>
+#include <supla/auto_lock.h>
 #include <supla/log_wrapper.h>
+#include <supla/local_action.h>
 #include <supla/storage/storage.h>
 #include <supla/storage/config.h>
 #include <supla/protocol/supla_srpc.h>
@@ -200,6 +188,7 @@ void Supla::Control::ActionTrigger::onRegistered(
   while (channel.popAction()) {
   }
 
+  channel.enableValueUpdates();
   channel.setSendGetConfig();
 }
 
@@ -293,12 +282,16 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
         }
         if (makeSureThatOnClick1IsDisabled && eventId == Supla::ON_CLICK_1) {
           makeSureThatOnClick1IsDisabled = false;
-          localHandlerForEnabledAt->disable();
+          if (localHandlerForEnabledAt) {
+            localHandlerForEnabledAt->disable();
+          }
         }
         if (makeSureThatOnChangePressReleaseIsDisabled &&
             eventId == Supla::ON_CLICK_1) {
           makeSureThatOnChangePressReleaseIsDisabled = false;
-          localHandlerForDisabledAt->disable();
+          if (localHandlerForDisabledAt) {
+            localHandlerForDisabledAt->disable();
+          }
         }
       }
     }
@@ -317,7 +310,8 @@ uint8_t Supla::Control::ActionTrigger::handleChannelConfig(
         "AT[%d] received config with active actions: 0x%X",
         channel.getChannelNumber(),
         activeActionsFromServer);
-    parseActiveActionsFromServer();
+    Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
+    rebuildForAttachedButton();
     if (storageEnabled) {
       // Schedule save in 2 s after state change
       Supla::Storage::ScheduleSave(2000);
@@ -347,6 +341,30 @@ void Supla::Control::ActionTrigger::setRelatedChannel(Channel &relatedChannel) {
 }
 
 void Supla::Control::ActionTrigger::onInit() {
+  rebuildForAttachedButton();
+}
+
+void Supla::Control::ActionTrigger::rebuildForAttachedButton() {
+  if (!attachedButton) {
+    parseActiveActionsFromServer();
+    return;
+  }
+
+  if (attachedButton && localHandlerSwitchConfigured && localHandlerClient) {
+    Supla::LocalAction::DeleteAction(attachedButton,
+                                     localHandlerClient,
+                                     Supla::ON_CLICK_1,
+                                     localHandlerAction);
+  }
+  Supla::LocalAction::DeleteActionsHandledBy(this);
+  localHandlerForEnabledAt = nullptr;
+  localHandlerForDisabledAt = nullptr;
+  localHandlerClient = nullptr;
+  localHandlerAction = 0;
+  localHandlerSwitchConfigured = false;
+  disablesLocalOperation = 0;
+  channel.setActionTriggerCaps(0);
+
   // handle automatic switch from on_press, on_release, on_change
   // events to on_click_1 for local actions on relays, roller shutters, etc.
   if (attachedButton) {
@@ -398,12 +416,20 @@ void Supla::Control::ActionTrigger::onInit() {
     }
 
     if (localHandlerForDisabledAt) {
+      localHandlerClient = localHandlerForDisabledAt->client;
+      localHandlerAction = localHandlerForDisabledAt->action;
       attachedButton->addAction(localHandlerForDisabledAt->action,
                                 localHandlerForDisabledAt->client,
                                 Supla::ON_CLICK_1);
       localHandlerForEnabledAt = attachedButton->getHandlerForClient(
           localHandlerForDisabledAt->client, Supla::ON_CLICK_1);
-      localHandlerForEnabledAt->disable();
+      if (localHandlerForEnabledAt) {
+        localHandlerForEnabledAt->disable();
+        localHandlerSwitchConfigured = true;
+      } else {
+        localHandlerClient = nullptr;
+        localHandlerAction = 0;
+      }
     }
   }
 
@@ -630,4 +656,3 @@ void Supla::Control::ActionTrigger::enable() {
 void Supla::Control::ActionTrigger::disable() {
   enabled = false;
 }
-

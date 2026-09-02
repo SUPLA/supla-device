@@ -1,26 +1,13 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef EXTRAS_TEST_DOUBLES_CONFIG_MOCK_H_
 #define EXTRAS_TEST_DOUBLES_CONFIG_MOCK_H_
 
 #include <gmock/gmock.h>
 #include <supla/storage/config.h>
+
+using Supla::NetifConfigBlob;
 
 class ConfigMock : public Supla::Config {
  public:
@@ -47,6 +34,15 @@ class ConfigMock : public Supla::Config {
               getBlob,
               (const char* key, char* value, size_t blobSize),
               (override));
+  MOCK_METHOD(bool,
+              loadNetifConfig,
+              (const char* blobName, NetifConfigBlob* cfg),
+              (override));
+  MOCK_METHOD(bool,
+              saveNetifConfig,
+              (const char* blobName, const NetifConfigBlob& cfg),
+              (override));
+  MOCK_METHOD(bool, removeNetifConfig, (const char* blobName), (override));
   MOCK_METHOD(bool, eraseKey, (const char* key), (override));
   MOCK_METHOD(int, getBlobSize, (const char* key), (override));
   MOCK_METHOD(bool, getInt8, (const char* key, int8_t* result), (override));
@@ -77,12 +73,16 @@ class ConfigMock : public Supla::Config {
   MOCK_METHOD(enum Supla::DeviceMode, getDeviceMode, (), (override));
   MOCK_METHOD(bool, getGUID, (char* result), (override));
   MOCK_METHOD(bool, getSwUpdateServer, (char* url), (override));
+  MOCK_METHOD(bool, isSwUpdateSkipCert, (), (override));
   MOCK_METHOD(bool, isSwUpdateBeta, (), (override));
   MOCK_METHOD(bool, setSwUpdateServer, (const char* url), (override));
   MOCK_METHOD(bool, setSwUpdateBeta, (bool enabled), (override));
   MOCK_METHOD(bool, getCustomCA, (char* result, int maxSize), (override));
   MOCK_METHOD(int, getCustomCASize, (), (override));
   MOCK_METHOD(bool, setCustomCA, (const char* customCA), (override));
+  MOCK_METHOD(bool, getMqttCA, (char* result, int maxSize), (override));
+  MOCK_METHOD(int, getMqttCASize, (), (override));
+  MOCK_METHOD(bool, setMqttCA, (const char* mqttCA), (override));
   MOCK_METHOD(bool, setSuplaCommProtocolEnabled, (bool enabled), (override));
   MOCK_METHOD(bool, setSuplaServer, (const char* server), (override));
   MOCK_METHOD(bool, setSuplaServerPort, (int32_t port), (override));
@@ -102,6 +102,9 @@ class ConfigMock : public Supla::Config {
   MOCK_METHOD(bool, isMqttCommProtocolEnabled, (), (override));
   MOCK_METHOD(bool, setMqttTlsEnabled, (bool enabled), (override));
   MOCK_METHOD(bool, isMqttTlsEnabled, (), (override));
+  MOCK_METHOD(bool, setMqttBrokerVerificationEnabled, (bool enabled),
+              (override));
+  MOCK_METHOD(bool, isMqttBrokerVerificationEnabled, (), (override));
   MOCK_METHOD(bool, setMqttAuthEnabled, (bool enabled), (override));
   MOCK_METHOD(bool, isMqttAuthEnabled, (), (override));
   MOCK_METHOD(bool, setMqttRetainEnabled, (bool enabled), (override));

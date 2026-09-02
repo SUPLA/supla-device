@@ -1,20 +1,5 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_DEVICE_FACTORY_TEST_H_
 #define SRC_SUPLA_DEVICE_FACTORY_TEST_H_
@@ -44,6 +29,25 @@ namespace Device {
 
 class FactoryTest : public Supla::ActionHandler, public Supla::Element {
  public:
+  using InsecureOptions = uint32_t;
+
+  // Allows legacy factory behavior where the device starts in config mode on
+  // factory defaults. Risk: a shipped or reset device exposes the config AP
+  // and local web UI before the user completes provisioning.
+  static constexpr InsecureOptions AllowStartInCfgMode = 1u << 0;
+
+  // Allows factory configuration to remain without encryption. Risk: device
+  // configuration secrets are stored in a weaker or plaintext form.
+  static constexpr InsecureOptions AllowConfigEncryptionDisabled = 1u << 1;
+
+  // Allows missing or invalid embedded HTTPS certificates. Risk: the local web
+  // UI cannot provide authenticated TLS and may fall back to weaker transport.
+  static constexpr InsecureOptions AllowMissingHttpsCertificates = 1u << 2;
+
+  // Allows security logging to stay disabled. Risk: factory/security audit
+  // evidence is missing, which weakens detection and incident investigation.
+  static constexpr InsecureOptions AllowSecurityLogDisabled = 1u << 3;
+
    /**
     * @brief Construct a new Factory Test object
     *
@@ -64,11 +68,18 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   void setTestFailed(int reason);
   void setTestFinished();
   Supla::TestStage getTestStage() const;
+  bool hasFailed() const;
+  int getFailReason() const;
 
   void dontCheckAutomaticFirmwareUpdate();
 
+  // Set the factory-test security policy once before any FactoryTest instance
+  // is created. Both the short-lived self-test and the persistent test-mode
+  // tester consume the same static options.
+  static void setInsecureOptions(InsecureOptions options);
+  static InsecureOptions getInsecureOptions();
+
  protected:
-  bool ensureAdvancedSecurity = true;
   bool testFailed = false;
   bool testFinished = false;
   bool waitForRegisteredAndReady = true;
@@ -82,6 +93,8 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   // Use values >= 100 for device specific failures
   int failReason = 0;
   bool checkAutomaticFirmwareUpdate = true;
+
+  static InsecureOptions insecureOptions;
 };
 
 }  // namespace Device

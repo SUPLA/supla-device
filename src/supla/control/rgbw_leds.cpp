@@ -1,18 +1,5 @@
-/*
-Copyright (C) AC SOFTWARE SP. Z O.O.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "rgbw_leds.h"
 
@@ -20,9 +7,12 @@ namespace {
 constexpr uint8_t LegacyAnalogWriteResolutionBits = 10;
 constexpr uint32_t LegacyAnalogWriteFrequencyHz = 1000;
 
-void ConfigureLegacyAnalogOutput(Supla::Io::IoPin &pin) {
-  pin.setAnalogOutputResolutionBits(LegacyAnalogWriteResolutionBits);
-  pin.setAnalogOutputFrequency(LegacyAnalogWriteFrequencyHz);
+void ConfigureLegacyAnalogOutput(Supla::Control::RGBWBase &lighting,
+                                 Supla::Io::IoPin &pin) {
+  lighting.setPwmResolutionBits(LegacyAnalogWriteResolutionBits);
+  lighting.setPwmFrequency(LegacyAnalogWriteFrequencyHz);
+  pin.setPwmResolutionBits(lighting.getPwmResolutionBits());
+  pin.setPwmFrequency(lighting.getPwmFrequency());
 }
 }  // namespace
 
@@ -63,17 +53,18 @@ void Supla::Control::RGBWLeds::setRGBWValueOnDevice(uint32_t red,
                           uint32_t green,
                           uint32_t blue,
                           uint32_t brightness) {
-  redPin.analogWrite(red);
-  greenPin.analogWrite(green);
-  bluePin.analogWrite(blue);
-  brightnessPin.analogWrite(brightness);
+  redPin.analogWrite(scalePwmValueForOutput(redPin, red));
+  greenPin.analogWrite(scalePwmValueForOutput(greenPin, green));
+  bluePin.analogWrite(scalePwmValueForOutput(bluePin, blue));
+  brightnessPin.analogWrite(
+      scalePwmValueForOutput(brightnessPin, brightness));
 }
 
 void Supla::Control::RGBWLeds::onInit() {
-  ConfigureLegacyAnalogOutput(redPin);
-  ConfigureLegacyAnalogOutput(greenPin);
-  ConfigureLegacyAnalogOutput(bluePin);
-  ConfigureLegacyAnalogOutput(brightnessPin);
+  ConfigureLegacyAnalogOutput(*this, redPin);
+  ConfigureLegacyAnalogOutput(*this, greenPin);
+  ConfigureLegacyAnalogOutput(*this, bluePin);
+  ConfigureLegacyAnalogOutput(*this, brightnessPin);
   redPin.configureAnalogOutput();
   greenPin.configureAnalogOutput();
   bluePin.configureAnalogOutput();

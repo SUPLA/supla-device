@@ -1,0 +1,11 @@
+* text=auto
+
+*.c text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.ino text eol=lf
+*.svg text eol=lf
+
+/extras/esp-idf/esp-modbus/** -text -eol
+/extras/examples/freertos_linux/FreeRTOSConfig.h -text -eol

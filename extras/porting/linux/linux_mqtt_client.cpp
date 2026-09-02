@@ -1,20 +1,5 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <linux_mqtt_client.h>
 #include <mqtt_client.h>
@@ -36,6 +21,11 @@ Supla::LinuxMqttClient::LinuxMqttClient(
     : useSSL(yamlConfig.getMqttClientUseSSL()),
       verifyCA(yamlConfig.getMqttClientVerifyCA()),
       port(yamlConfig.getMqttClientPort()) {
+  if (!useSSL && port == 8883) {
+    SUPLA_LOG_WARNING("MQTT: enabling TLS because broker port is 8883");
+    useSSL = true;
+  }
+
   char buffer[256];
   host = yamlConfig.getMqttClientHost(buffer) ? buffer : "";
   if (!yamlConfig.getMqttClientName(buffer)) {
@@ -87,6 +77,10 @@ void Supla::LinuxMqttClient::subscribeTopic(const std::string& topic, int qos) {
 
 void Supla::LinuxMqttClient::unsubscribeTopic(const std::string& topic) {
   topics.erase(topic);
+  if (mq_client == nullptr || mq_client->reconnect_state == nullptr) {
+    return;
+  }
+
   auto reconnect_state =
       static_cast<reconnect_state_t*>(mq_client->reconnect_state);
   reconnect_state->topics.erase(topic);
@@ -135,4 +129,3 @@ enum MQTTErrors Supla::LinuxMqttClient::publish(const std::string& topic,
                       payload.size(),
                       qos);
 }
-

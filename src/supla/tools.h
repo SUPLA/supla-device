@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_TOOLS_H_
 #define SRC_SUPLA_TOOLS_H_
@@ -45,10 +30,13 @@ int generateHexString(const void *input,
     int inputLength,
     char separator = 0);
 
-void hexStringToArray(const char *input, char *output, int outputLength);
+// Converts hex byte string value to integer.
+// Returns false when input contains invalid hex characters.
+bool hexByteToInt(const char *str, uint8_t *result);
 
-// Converts hex string value to integer
-uint32_t hexStringToInt(const char *str, int len = -1);
+// Converts hex string to array of bytes.
+// Returns false when input contains invalid hex characters.
+bool hexStringToArray(const char *input, char *output, int outputLength);
 
 // Converts decimal string value to unsigned integer
 uint32_t stringToUInt(const char *str, int len = -1);
@@ -69,7 +57,8 @@ bool stringToColor(const char *payload,
 // Replace '+' with ' '.
 // Replace %xy with proper byte.
 // If not complete % parameter is found at the end, then it is omitted.
-void urlDecodeInplace(char *buffer, int size);
+// Returns false when invalid hex escape is found.
+bool urlDecodeInplace(char *buffer, int size);
 
 // Encode url string from input to output
 // Returns number of non-null bytes added to output
@@ -118,7 +107,9 @@ int compareSemVer(const char *sw1, const char *sw2);
  * @param buffer
  * @param size
  */
+#ifndef ARDUINO_ARCH_AVR
 void fillRandom(uint8_t *buffer, int size);
+#endif
 
 }  // namespace Supla
 

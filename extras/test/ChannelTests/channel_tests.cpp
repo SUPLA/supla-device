@@ -1,31 +1,22 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
-
-#include <gtest/gtest.h>
-
-#include <supla/channels/channel.h>
-#include <gmock/gmock.h>
-#include <srpc_mock.h>
-#include <supla/events.h>
-#include <supla/actions.h>
-#include <supla/correction.h>
 #include <SuplaDevice.h>
-#include <supla/protocol/supla_srpc.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include <network_client_mock.h>
+#include <srpc_mock.h>
+#include <supla/actions.h>
+#include <supla/channels/channel.h>
+#include <supla/correction.h>
+#include <supla/events.h>
+#include <supla-common/log.h>
+#include <supla/protocol/supla_srpc.h>
+
 #include "supla/device/register_device.h"
+
+extern "C" const char *supla_test_get_last_log();
+extern "C" void supla_test_clear_last_log();
 
 class ChannelTestsFixture : public ::testing::Test {
  protected:
@@ -44,6 +35,43 @@ class ActionHandlerMock : public Supla::ActionHandler {
 };
 
 using ::testing::ElementsAreArray;
+
+TEST_F(ChannelTestsFixture, ClearValueClearsPayloadAndValidity) {
+  Supla::Channel channel;
+  int8_t rawValue[SUPLA_CHANNELVALUE_SIZE] = {1, 2, 3, 4, 5, 6, 7, 8};
+  int8_t emptyValue[SUPLA_CHANNELVALUE_SIZE] = {};
+
+  channel.clearValue();
+  EXPECT_FALSE(channel.isUpdateReady());
+
+  ASSERT_TRUE(channel.setNewValue(reinterpret_cast<const char *>(rawValue)));
+  channel.clearSendValue();
+  channel.setValidityTimeSec(123);
+
+  channel.clearValue();
+
+  EXPECT_TRUE(channel.isUpdateReady());
+  EXPECT_EQ(0,
+            memcmp(channel.getValuePtr(), emptyValue, SUPLA_CHANNELVALUE_SIZE));
+
+  TDS_SuplaDeviceChannel_E deviceChannel = {};
+  channel.fillDeviceChannelStruct(&deviceChannel);
+  EXPECT_EQ(deviceChannel.ValueValidityTimeSec, 0);
+  EXPECT_EQ(0,
+            memcmp(deviceChannel.value, emptyValue, SUPLA_CHANNELVALUE_SIZE));
+}
+
+TEST_F(ChannelTestsFixture, ValidityTimeControlsSleepingState) {
+  Supla::Channel channel;
+
+  channel.setValidityTimeSec(0);
+  EXPECT_FALSE(channel.isSleepingEnabled());
+  EXPECT_EQ(channel.getValidityTimeSec(), 0U);
+
+  channel.setValidityTimeSec(123);
+  EXPECT_TRUE(channel.isSleepingEnabled());
+  EXPECT_EQ(channel.getValidityTimeSec(), 123U);
+}
 
 TEST_F(ChannelTestsFixture, ChannelMethods) {
   Supla::Channel first;
@@ -65,9 +93,10 @@ TEST_F(ChannelTestsFixture, ChannelMethods) {
   EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number), 0);
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          emptyArray,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   emptyArray,
+                   SUPLA_CHANNELVALUE_SIZE));
 
   first.setType(SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(first.getChannelType(), SUPLA_CHANNELTYPE_HVAC);
@@ -96,16 +125,83 @@ TEST_F(ChannelTestsFixture, ChannelMethods) {
   EXPECT_EQ(Supla::RegisterDevice::getChannelFunctionList(number), 11);
 }
 
+TEST_F(ChannelTestsFixture, RelayFunctionValidationUsesFunctionListBits) {
+  struct FunctionMapping {
+    uint32_t function;
+    uint32_t functionBit;
+  };
+
+  const FunctionMapping mappings[] = {
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK,
+       SUPLA_BIT_FUNC_CONTROLLINGTHEGATEWAYLOCK},
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEGATE, SUPLA_BIT_FUNC_CONTROLLINGTHEGATE},
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR,
+       SUPLA_BIT_FUNC_CONTROLLINGTHEGARAGEDOOR},
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK,
+       SUPLA_BIT_FUNC_CONTROLLINGTHEDOORLOCK},
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER,
+       SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER},
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW,
+       SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW},
+      {SUPLA_CHANNELFNC_POWERSWITCH, SUPLA_BIT_FUNC_POWERSWITCH},
+      {SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_BIT_FUNC_LIGHTSWITCH},
+      {SUPLA_CHANNELFNC_STAIRCASETIMER, SUPLA_BIT_FUNC_STAIRCASETIMER},
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND,
+       SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND},
+      {SUPLA_CHANNELFNC_TERRACE_AWNING, SUPLA_BIT_FUNC_TERRACE_AWNING},
+      {SUPLA_CHANNELFNC_PROJECTOR_SCREEN, SUPLA_BIT_FUNC_PROJECTOR_SCREEN},
+      {SUPLA_CHANNELFNC_CURTAIN, SUPLA_BIT_FUNC_CURTAIN},
+      {SUPLA_CHANNELFNC_VERTICAL_BLIND, SUPLA_BIT_FUNC_VERTICAL_BLIND},
+      {SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR, SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR},
+      {SUPLA_CHANNELFNC_PUMPSWITCH, SUPLA_BIT_FUNC_PUMPSWITCH},
+      {SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH,
+       SUPLA_BIT_FUNC_HEATORCOLDSOURCESWITCH},
+  };
+
+  Supla::Channel channel;
+  channel.setType(SUPLA_CHANNELTYPE_RELAY);
+
+  channel.setFuncList(0);
+  for (const auto &mapping : mappings) {
+    EXPECT_FALSE(channel.isFunctionValid(mapping.function));
+  }
+
+  for (const auto &selected : mappings) {
+    channel.setFuncList(selected.functionBit);
+    for (const auto &mapping : mappings) {
+      EXPECT_EQ(channel.isFunctionValid(mapping.function),
+                mapping.function == selected.function);
+    }
+  }
+}
+
 TEST_F(ChannelTestsFixture, ChannelNumberOffset) {
   Supla::Channel::setStartingChannelNumber(10);
 
   EXPECT_EQ(Supla::RegisterDevice::getNextFreeChannelNumber(), 10);
+  EXPECT_EQ(Supla::RegisterDevice::getFreeChannelCount(),
+            SUPLA_CHANNELMAXCOUNT - 10);
+  EXPECT_TRUE(Supla::RegisterDevice::hasFreeChannelCount(2));
 
   Supla::Channel first;
   Supla::Channel second;
 
   EXPECT_EQ(first.getChannelNumber(), 10);
   EXPECT_EQ(second.getChannelNumber(), 11);
+  EXPECT_EQ(Supla::RegisterDevice::getFreeChannelCount(),
+            SUPLA_CHANNELMAXCOUNT - 12);
+}
+
+TEST_F(ChannelTestsFixture, FreeChannelCountUsesGaps) {
+  Supla::Channel first(0);
+  Supla::Channel second(2);
+
+  EXPECT_EQ(Supla::RegisterDevice::getFreeChannelCount(),
+            SUPLA_CHANNELMAXCOUNT - 2);
+  EXPECT_TRUE(
+      Supla::RegisterDevice::hasFreeChannelCount(SUPLA_CHANNELMAXCOUNT - 2));
+  EXPECT_FALSE(
+      Supla::RegisterDevice::hasFreeChannelCount(SUPLA_CHANNELMAXCOUNT - 1));
 }
 
 TEST_F(ChannelTestsFixture, SetNewValue) {
@@ -131,24 +227,27 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
   EXPECT_FALSE(channel.isUpdateReady());
 
   channel.setNewValue(array);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          array,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   array,
+                   SUPLA_CHANNELVALUE_SIZE));
   EXPECT_FALSE(channel.isUpdateReady());
 
   array[4] = 15;
   channel.setNewValue(array);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          array,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   array,
+                   SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
 
   ASSERT_EQ(sizeof(double), 8);
   double temp = 3.1415;
   channel.setNewValue(temp);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          &temp,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   &temp,
+                   SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
@@ -158,35 +257,39 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
 
   arrayBool[0] = true;
   channel.setNewValue(true);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          arrayBool,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   arrayBool,
+                   SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
   channel.setNewValue(false);
   arrayBool[0] = false;
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          arrayBool,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   arrayBool,
+                   SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
   int value = 1234;
   ASSERT_EQ(sizeof(int), 4);
   channel.setNewValue(value);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          &value,
-                          sizeof(int)));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   &value,
+                   sizeof(int)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
   uint64_t value64 = 124346;
   ASSERT_EQ(sizeof(value64), 8);
   channel.setNewValue(value64);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          &value64,
-                          sizeof(value64)));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   &value64,
+                   sizeof(value64)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
@@ -197,21 +300,24 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
   int expectedHumi = humi * 1000;
 
   channel.setNewValue(temp, humi);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          &expectedTemp,
-                          sizeof(expectedTemp)));
-  EXPECT_EQ(0, memcmp(&(Supla::RegisterDevice::getChannelValuePtr(number)[4]),
-                          &expectedHumi,
-                          sizeof(expectedHumi)));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   &expectedTemp,
+                   sizeof(expectedTemp)));
+  EXPECT_EQ(0,
+            memcmp(&(Supla::RegisterDevice::getChannelValuePtr(number)[4]),
+                   &expectedHumi,
+                   sizeof(expectedHumi)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
   // RGBW (cct) channel setting
   channel.setNewValue(1, 2, 3, 4, 5, 6);
   char rgbwArray[SUPLA_CHANNELVALUE_SIZE] = {5, 4, 3, 2, 1, 0, 0, 6};
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          rgbwArray,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   rgbwArray,
+                   SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
@@ -227,9 +333,10 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
   expectedValue.total_forward_active_energy = (1000 + 2000 + 4000) / 1000;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          &expectedValue,
-                          sizeof(expectedValue)));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   &expectedValue,
+                   sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
@@ -242,9 +349,10 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
   expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          &expectedValue,
-                          sizeof(expectedValue)));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   &expectedValue,
+                   sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
@@ -256,9 +364,10 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
   expectedValue.flags |= EM_VALUE_FLAG_PHASE2_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          &expectedValue,
-                          sizeof(expectedValue)));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   &expectedValue,
+                   sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
@@ -270,9 +379,10 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
   expectedValue.flags |= EM_VALUE_FLAG_PHASE3_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          &expectedValue,
-                          sizeof(expectedValue)));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   &expectedValue,
+                   sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
@@ -284,9 +394,10 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
   expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON | EM_VALUE_FLAG_PHASE3_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          &expectedValue,
-                          sizeof(expectedValue)));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   &expectedValue,
+                   sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
@@ -299,9 +410,10 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
                          EM_VALUE_FLAG_PHASE2_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
-                          &expectedValue,
-                          sizeof(expectedValue)));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                   &expectedValue,
+                   sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 }
@@ -502,6 +614,29 @@ TEST_F(ChannelTestsFixture, DoubleChannelWithLocalActions) {
   ch1.setNewValue(value);
   ch1.setNewValue(value);
   ch1.setNewValue(value);
+}
+
+TEST_F(ChannelTestsFixture, DoubleValueLogPreservesNegativeFractionSign) {
+  Supla::Channel channel;
+  const int oldLogLevel = supla_log_get_level();
+  supla_log_set_level(LOG_DEBUG);
+
+  supla_test_clear_last_log();
+  channel.setNewValue(-0.23);
+  EXPECT_STREQ(supla_test_get_last_log(),
+               "Channel(0) value changed to -0.23");
+
+  supla_test_clear_last_log();
+  channel.setNewValue(0.23);
+  EXPECT_STREQ(supla_test_get_last_log(),
+               "Channel(0) value changed to 0.23");
+
+  supla_test_clear_last_log();
+  channel.setNewValue(-12.34);
+  EXPECT_STREQ(supla_test_get_last_log(),
+               "Channel(0) value changed to -12.34");
+
+  supla_log_set_level(oldLogLevel);
 }
 
 TEST_F(ChannelTestsFixture, DoubleFloatChannelWithLocalActions) {
@@ -726,7 +861,6 @@ TEST_F(ChannelTestsFixture, SetNewTemperatureHumidityWithCorrection) {
   Supla::Correction::clear();  // cleanup
 }
 
-
 TEST_F(ChannelTestsFixture, HvacMethodsTest) {
   Supla::Channel ch;
 
@@ -789,7 +923,6 @@ TEST_F(ChannelTestsFixture, HvacMethodsTest) {
   EXPECT_EQ(ch.getHvacIsOnRaw(), 102);
   EXPECT_TRUE(ch.getHvacIsOnBool());
   EXPECT_EQ(ch.getHvacIsOnPercent(), 100);
-
 
   ch.setHvacIsOnPercent(99);
   EXPECT_TRUE(ch.isUpdateReady());
@@ -952,4 +1085,27 @@ TEST_F(ChannelTestsFixture, ChannelArbitaryNumbers) {
 
   // channel number 2 is for "third"
   EXPECT_EQ(Supla::RegisterDevice::getChannelValuePtr(2)[0], 3);
+}
+
+TEST_F(ChannelTestsFixture, SetChannelNumberValidatesRangeAndSwapsChannels) {
+  Supla::Channel first;
+  Supla::Channel second;
+
+  EXPECT_TRUE(first.setChannelNumber(5));
+  EXPECT_EQ(first.getChannelNumber(), 5);
+  EXPECT_EQ(second.getChannelNumber(), 1);
+
+  EXPECT_TRUE(first.setChannelNumber(second.getChannelNumber()));
+  EXPECT_EQ(first.getChannelNumber(), 1);
+  EXPECT_EQ(second.getChannelNumber(), 5);
+
+  EXPECT_FALSE(first.setChannelNumber(-1));
+  EXPECT_EQ(first.getChannelNumber(), 1);
+
+  EXPECT_FALSE(second.setChannelNumber(SUPLA_CHANNELMAXCOUNT));
+  EXPECT_EQ(second.getChannelNumber(), 5);
+
+  EXPECT_FALSE(first.setChannelNumber(SUPLA_CHANNELMAXCOUNT + 1));
+  EXPECT_EQ(first.getChannelNumber(), 1);
+  EXPECT_EQ(second.getChannelNumber(), 5);
 }

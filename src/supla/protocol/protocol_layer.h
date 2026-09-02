@@ -1,23 +1,10 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_PROTOCOL_PROTOCOL_LAYER_H_
 #define SRC_SUPLA_PROTOCOL_PROTOCOL_LAYER_H_
+
+#include <supla/network/connection_error.h>
 
 #include <stdint.h>
 #include <supla-common/proto.h>
@@ -52,7 +39,9 @@ class ProtocolLayer {
   virtual bool isNetworkRestartRequested() = 0;
   virtual uint32_t getConnectionFailTime() = 0;
   virtual bool isConnectionError();
+  virtual Supla::ConnectionError getConnectionError() const;
   virtual bool isConnecting();
+  virtual bool isMqtt() const;
   virtual bool isUpdatePending();
   virtual bool isRegisteredAndReady() = 0;
   virtual void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) = 0;
@@ -95,7 +84,7 @@ class ProtocolLayer {
   ProtocolLayer *nextPtr = nullptr;
   SuplaDeviceClass *sdc = nullptr;
   bool configEmpty = true;
-  bool verboseLog = true;
+  bool verboseLog = false;
 };
 
 }  // namespace Protocol

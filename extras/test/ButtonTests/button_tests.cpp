@@ -1,18 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <arduino_mock.h>
 #include <gmock/gmock.h>
@@ -21,6 +8,8 @@
 #include <supla/io.h>
 #include <supla/control/button.h>
 #include <supla/control/sequence_button.h>
+#include <supla/storage/config_tags.h>
+#include <config_simulator.h>
 #include "supla/events.h"
 
 using ::testing::Return;
@@ -29,6 +18,120 @@ class ActionHandlerMock : public Supla::ActionHandler {
  public:
   MOCK_METHOD(void, handleAction, (int, int), (override));
 };
+
+class ButtonTestDouble : public Supla::Control::Button {
+ public:
+  using Supla::Control::Button::Button;
+
+  uint16_t holdTimeMsForTest() const {
+    return holdTimeMs;
+  }
+
+  uint16_t multiclickTimeMsForTest() const {
+    return multiclickTimeMs;
+  }
+};
+
+TEST(ButtonTests, SetMulticlickTimeClampsToPersistedConfigRange) {
+  ButtonTestDouble button(-1);
+
+  button.setMulticlickTime(0);
+  EXPECT_EQ(button.multiclickTimeMsForTest(), 0);
+
+  button.setMulticlickTime(100);
+  EXPECT_EQ(button.multiclickTimeMsForTest(), 200);
+
+  button.setMulticlickTime(200);
+  EXPECT_EQ(button.multiclickTimeMsForTest(), 200);
+
+  button.setMulticlickTime(10000);
+  EXPECT_EQ(button.multiclickTimeMsForTest(), 10000);
+
+  button.setMulticlickTime(20000);
+  EXPECT_EQ(button.multiclickTimeMsForTest(), 10000);
+}
+
+TEST(ButtonTests, SetHoldTimeClampsToPersistedConfigRange) {
+  ButtonTestDouble button(-1);
+
+  button.setHoldTime(0);
+  EXPECT_EQ(button.holdTimeMsForTest(), 0);
+
+  button.setHoldTime(100);
+  EXPECT_EQ(button.holdTimeMsForTest(), 200);
+
+  button.setHoldTime(200);
+  EXPECT_EQ(button.holdTimeMsForTest(), 200);
+
+  button.setHoldTime(10000);
+  EXPECT_EQ(button.holdTimeMsForTest(), 10000);
+
+  button.setHoldTime(20000);
+  EXPECT_EQ(button.holdTimeMsForTest(), 10000);
+}
+
+TEST(ButtonTests, PersistsClampedMulticlickDefaultWhenConfigIsMissing) {
+  ConfigSimulator config;
+  SimpleTime time;
+  ButtonTestDouble button(-1);
+  button.setButtonNumber(0);
+  button.setMulticlickTime(20000);
+
+  uint32_t storedValue = 0;
+  EXPECT_FALSE(config.getUInt32(Supla::ConfigTag::BtnMulticlickTag,
+                                &storedValue));
+
+  button.onLoadConfig(nullptr);
+
+  ASSERT_TRUE(config.getUInt32(Supla::ConfigTag::BtnMulticlickTag,
+                               &storedValue));
+  EXPECT_EQ(storedValue, 10000U);
+
+  ButtonTestDouble rebootedButton(-1);
+  rebootedButton.setButtonNumber(0);
+  rebootedButton.onLoadConfig(nullptr);
+  EXPECT_EQ(rebootedButton.multiclickTimeMsForTest(), 10000);
+}
+
+TEST(ButtonTests, PersistsClampedHoldDefaultWhenConfigIsMissing) {
+  ConfigSimulator config;
+  SimpleTime time;
+  ButtonTestDouble button(-1);
+  button.setButtonNumber(0);
+  button.setHoldTime(20000);
+
+  uint32_t storedValue = 0;
+  EXPECT_FALSE(config.getUInt32(Supla::ConfigTag::BtnHoldTag, &storedValue));
+
+  button.onLoadConfig(nullptr);
+
+  ASSERT_TRUE(config.getUInt32(Supla::ConfigTag::BtnHoldTag, &storedValue));
+  EXPECT_EQ(storedValue, 10000U);
+
+  ButtonTestDouble rebootedButton(-1);
+  rebootedButton.setButtonNumber(0);
+  rebootedButton.onLoadConfig(nullptr);
+  EXPECT_EQ(rebootedButton.holdTimeMsForTest(), 10000);
+}
+
+TEST(ButtonTests, OnLoadConfigPersistsDefaultMulticlickTime) {
+  ConfigSimulator config;
+  SimpleTime time;
+  Supla::Control::Button button(-1);
+  button.setButtonNumber(0);
+  constexpr uint32_t defaultMulticlickTime = 750;
+  button.setMulticlickTime(defaultMulticlickTime);
+
+  uint32_t storedMulticlickTime = 0;
+  EXPECT_FALSE(config.getUInt32(Supla::ConfigTag::BtnMulticlickTag,
+                                &storedMulticlickTime));
+
+  button.onLoadConfig(nullptr);
+
+  ASSERT_TRUE(config.getUInt32(Supla::ConfigTag::BtnMulticlickTag,
+                               &storedMulticlickTime));
+  EXPECT_EQ(storedMulticlickTime, defaultMulticlickTime);
+}
 
 TEST(ButtonTests, IoPinConstructorUsesConfiguredPolarity) {
   DigitalInterfaceMock ioMock;

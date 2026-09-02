@@ -1,36 +1,63 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
-
+#include <config_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <supla/control/valve_base.h>
 #include <supla/control/virtual_valve.h>
+#include <supla/storage/storage.h>
 #include <simple_time.h>
 #include <arduino_mock.h>
 #include <supla/events.h>
+
+#include <cstring>
+
 #include "supla/sensor/virtual_binary.h"
 
 using ::testing::AtLeast;
+using ::testing::_;
+using ::testing::Invoke;
+using ::testing::NiceMock;
+using ::testing::StrEq;
 
 class ActionHandlerMock : public Supla::ActionHandler {
  public:
   MOCK_METHOD(void, handleAction, (int, int), (override));
 };
+
+TEST(ValveTests, LoadConfigUsesInternalValveConfigSize) {
+  NiceMock<ConfigMock> config;
+  Supla::Storage::SetConfigInstance(&config);
+  Supla::Channel::resetToDefaults();
+  Supla::Control::ValveBase valve;
+
+  EXPECT_CALL(config, getBlob(StrEq("0_valve_cfg"), _,
+                              sizeof(Supla::Control::ValveConfig)))
+      .Times(1)
+      .WillOnce(Invoke([](const char *, char *blob, size_t blobSize) {
+        Supla::Control::ValveConfig storedConfig = {};
+        storedConfig.sensorData[0] = 3;
+        storedConfig.closeValveOnFloodType = 2;
+        EXPECT_EQ(blobSize, sizeof(storedConfig));
+        std::memcpy(blob, &storedConfig, sizeof(storedConfig));
+        return true;
+      }));
+
+  valve.onLoadConfig(nullptr);
+
+  TChannelConfig_Valve channelConfig = {};
+  int configSize = 0;
+  valve.fillChannelConfig(&channelConfig, &configSize,
+                          SUPLA_CONFIG_TYPE_DEFAULT);
+
+  EXPECT_EQ(configSize, sizeof(TChannelConfig_Valve));
+  EXPECT_EQ(channelConfig.SensorInfo[0].IsSet, 1);
+  EXPECT_EQ(channelConfig.SensorInfo[0].ChannelNo, 3);
+  EXPECT_EQ(channelConfig.CloseValveOnFloodType, 2);
+
+  Supla::Storage::SetConfigInstance(nullptr);
+}
 
 
 TEST(ValveTests, ValveOpenCloseChannelMethods) {
@@ -586,5 +613,4 @@ TEST(ValveTests, ValveOnChangeTests) {
   EXPECT_TRUE(channel->isValveOpen());
   EXPECT_FALSE(channel->isValveFloodingFlagActive());
   EXPECT_FALSE(channel->isValveManuallyClosedFlagActive());
-
 }

@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_CONTROL_ROLLER_SHUTTER_INTERFACE_H_
 #define SRC_SUPLA_CONTROL_ROLLER_SHUTTER_INTERFACE_H_
@@ -28,10 +13,20 @@
 #define MOVE_DOWN_POSITION -4
 #define STOP_REQUEST       -5
 #define RS_DEFAULT_OPERATION_TIMEOUT_MS 60000
+#define RS_MAX_OPERATION_TIME_MS 600000  // Max opening/closing/tilting time
 
 namespace Supla {
 
 namespace Control {
+
+bool isValidTiltControlType(uint32_t type);
+constexpr uint32_t MAX_TILT_ANGLE_DEGREES = 180;
+bool isValidTiltAngle(uint32_t angle);
+bool requiresSeparateTiltPhase(uint8_t type);
+bool isValidFacadeBlindTiming(uint8_t type,
+                              uint32_t openingTimeMs,
+                              uint32_t closingTimeMs,
+                              uint32_t tiltingTimeMs);
 
 class Button;
 
@@ -114,6 +109,9 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
    * @return true if tilting is configured
    */
   bool isTiltConfigured() const;
+
+  /** Check whether a tilt-only target can be executed safely. */
+  bool canExecuteTiltOnlyCommand(int tilt) const;
 
   /**
    * Check if top position (and tilt if applicable) is reached
@@ -305,12 +303,27 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   void setOpenCloseTime(uint32_t newClosingTimeMs, uint32_t newOpeningTimeMs);
   void setTiltingTime(uint32_t newTiltingTimeMs, bool local = true);
   void setTiltControlType(uint8_t newTiltControlType, bool local = true);
+  bool applyFacadeBlindTimingConfig(uint32_t openingTimeMs,
+                                    uint32_t closingTimeMs,
+                                    uint32_t tiltingTimeMs,
+                                    uint32_t tiltControlType,
+                                    bool local = true);
 
   void setCalibrationFailed(bool value);
   void setCalibrationLost(bool value);
   void setMotorProblem(bool value);
 
+ private:
+  void clearTiltConfig();
+
  protected:
+  RollerShutterInterface(bool tiltFunctionsEnabled,
+                         Supla::Channel &externalChannel,
+                         ElementMode mode);
+  void loadRollerShutterConfigOnly();
+  void validateTiltConfigAfterLoad();
+  void purgeRollerShutterConfigOnly();
+
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
     bool asInternal = true;
@@ -340,6 +353,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
 
   void printConfig() const;
   uint32_t getTimeMarginValue(uint32_t fullTime) const;
+  void logIgnoredTiltOnlyCommand(int tilt);
 
   uint8_t flags = 0;
 
@@ -361,6 +375,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   int16_t lastPositionBeforeMovement = UNKNOWN_POSITION;  // 0-100
   int16_t lastTiltBeforeMovement = UNKNOWN_POSITION;      // 0-100
   bool newTargetPositionAvailable = false;
+  bool invalidTiltOnlyCommandWarningLogged = false;
 
   RollerShutterConfig rsConfig;
   TiltConfig tiltConfig;
@@ -374,6 +389,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   // calibrationTime > 0 means that there is ongoing calibration
   uint32_t calibrationTime = 0;
   uint32_t lastUpdateTime = 0;
+  bool rollerShutterStateLoaded = false;
 
   static int16_t rsStorageSaveDelay;
 };

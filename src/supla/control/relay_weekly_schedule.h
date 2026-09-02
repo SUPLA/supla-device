@@ -52,7 +52,6 @@ class RelayWeeklySchedule {
 
  private:
   bool loadSchedule();
-  void initDefaultWeeklySchedule();
   void saveWeeklySchedule();
   void syncRelayMode(uint8_t programMode);
   void processCacheRelease();
@@ -63,6 +62,9 @@ class RelayWeeklySchedule {
   TChannelConfig_WeeklySchedule *getSchedule(bool loadIfMissing = true);
   bool isWeeklyScheduleValid(
       const TChannelConfig_WeeklySchedule *newSchedule) const;
+  bool isNoOpSchedule(
+      const TChannelConfig_WeeklySchedule *newSchedule) const;
+  void clearSchedule();
   bool isProgramValid(const TWeeklyScheduleProgram &program) const;
   uint8_t getCurrentProgramMode() const;
   void applyCurrentState();

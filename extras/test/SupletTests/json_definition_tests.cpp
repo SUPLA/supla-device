@@ -1,0 +1,384 @@
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#include <gtest/gtest.h>
+#include <simple_time.h>
+#include <supla/channels/channel.h>
+#include <supla/element.h>
+#include <supla/sensor/virtual_thermometer.h>
+#include <supla/storage/config.h>
+#include <supla/suplet/json_definition.h>
+#include <supla/suplet/manager.h>
+#include <supla/suplet/runtime.h>
+
+namespace {
+
+class NoopConfig : public Supla::Config {
+ public:
+  bool init() override {
+    return true;
+  }
+  void removeAll() override {
+  }
+  bool setString(const char *, const char *) override {
+    return false;
+  }
+  bool getString(const char *, char *, size_t) override {
+    return false;
+  }
+  int getStringSize(const char *) override {
+    return -1;
+  }
+  bool setBlob(const char *, const char *, size_t) override {
+    return true;
+  }
+  bool getBlob(const char *, char *, size_t) override {
+    return false;
+  }
+  int getBlobSize(const char *) override {
+    return -1;
+  }
+  bool getInt8(const char *, int8_t *) override {
+    return false;
+  }
+  bool getUInt8(const char *, uint8_t *) override {
+    return false;
+  }
+  bool getInt32(const char *, int32_t *) override {
+    return false;
+  }
+  bool getUInt32(const char *, uint32_t *) override {
+    return false;
+  }
+  bool setInt8(const char *, const int8_t) override {
+    return false;
+  }
+  bool setUInt8(const char *, const uint8_t) override {
+    return true;
+  }
+  bool setInt32(const char *, const int32_t) override {
+    return false;
+  }
+  bool setUInt32(const char *, const uint32_t) override {
+    return false;
+  }
+  bool eraseKey(const char *) override {
+    return true;
+  }
+};
+
+class SupletJsonFixture : public testing::Test {
+ protected:
+  SimpleTime time;
+
+  void SetUp() override {
+    Supla::Channel::resetToDefaults();
+  }
+
+  void TearDown() override {
+    while (Supla::Element::begin() != nullptr) {
+      delete Supla::Element::begin();
+    }
+    Supla::Channel::resetToDefaults();
+  }
+};
+
+}  // namespace
+
+TEST(SupletJsonDefinitionTests, ParsesVirtualDefinition) {
+  const char json[] =
+      "{"
+      "\"schemaVersion\":1,"
+      "\"handlerVersion\":2,"
+      "\"definitionId\":1001,"
+      "\"definitionVersion\":7,"
+      "\"maxInstances\":6,"
+      "\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\","
+      "\"name\":\"Virtual controls\","
+      "\"handlerConfig\":{\"ignored\":\"for now\"},"
+      "\"parameters\":["
+      "{\"key\":\"relay.count\",\"type\":\"uint8\",\"default\":4,"
+      "\"min\":1,\"max\":16,\"lifecycle\":\"createOnly\","
+      "\"affectsTopology\":true},"
+      "{\"key\":\"mode\",\"type\":\"enum\",\"default\":\"avg\","
+      "\"values\":[\"avg\",\"min\",\"max\"],\"required\":true},"
+      "{\"key\":\"password\",\"type\":\"secret\","
+      "\"lifecycle\":\"secret\"}"
+      "],"
+      "\"channels\":["
+      "{\"channelId\":1,\"key\":\"relay_main\",\"kind\":\"virtualRelay\","
+      "\"function\":\"powerSwitch\",\"caption\":\"Main relay\"},"
+      "{\"channelId\":2,\"key\":\"door\",\"kind\":\"virtualBinarySensor\","
+      "\"function\":\"openingSensorDoor\"},"
+      "{\"channelId\":3,\"key\":\"temp\",\"kind\":\"virtualThermometer\","
+      "\"function\":\"thermometer\"}"
+      "]"
+      "}";
+
+  Supla::Suplet::JsonDefinition parsed;
+  ASSERT_TRUE(Supla::Suplet::JsonDefinitionParser::parse(json, &parsed));
+
+  const auto *definition = parsed.getDefinition();
+  ASSERT_NE(definition, nullptr);
+  EXPECT_EQ(definition->schemaVersion, 1);
+  EXPECT_EQ(definition->handlerVersion, 2);
+  EXPECT_EQ(definition->definitionId, 1001u);
+  EXPECT_EQ(definition->definitionVersion, 7u);
+  EXPECT_EQ(definition->maxInstances, 6);
+  EXPECT_EQ(definition->category, Supla::Suplet::Category::Virtual);
+  EXPECT_EQ(definition->kind, Supla::Suplet::Kind::VirtualRelay);
+  EXPECT_STREQ(definition->name, "Virtual controls");
+  ASSERT_EQ(definition->parameterCount, 3);
+  EXPECT_STREQ(definition->parameters[0].key, "relay.count");
+  EXPECT_EQ(definition->parameters[0].type,
+            Supla::Suplet::ParameterType::UInt8);
+  EXPECT_EQ(definition->parameters[0].lifecycle,
+            Supla::Suplet::ParameterLifecycle::CreateOnly);
+  EXPECT_EQ(definition->parameters[0].defaultNumber, 4);
+  EXPECT_EQ(definition->parameters[0].min, 1);
+  EXPECT_EQ(definition->parameters[0].max, 16);
+  EXPECT_EQ(definition->parameters[0].affectsTopology, 1);
+  EXPECT_STREQ(definition->parameters[1].key, "mode");
+  EXPECT_EQ(definition->parameters[1].type, Supla::Suplet::ParameterType::Enum);
+  EXPECT_STREQ(definition->parameters[1].defaultText, "avg");
+  EXPECT_STREQ(definition->parameters[1].enumValues, "avg,min,max");
+  EXPECT_EQ(definition->parameters[1].required, 1);
+  EXPECT_EQ(definition->parameters[2].type,
+            Supla::Suplet::ParameterType::Secret);
+  EXPECT_EQ(definition->parameters[2].lifecycle,
+            Supla::Suplet::ParameterLifecycle::Secret);
+  ASSERT_EQ(definition->channelCount, 3);
+
+  EXPECT_EQ(definition->channels[0].channelId, 1);
+  EXPECT_EQ(definition->channels[0].kind,
+            Supla::Suplet::ChannelKind::VirtualRelay);
+  EXPECT_EQ(definition->channels[0].defaultFunction,
+            SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_STREQ(definition->channels[0].caption, "Main relay");
+  EXPECT_EQ(definition->channels[1].kind,
+            Supla::Suplet::ChannelKind::VirtualBinarySensor);
+  EXPECT_EQ(definition->channels[2].kind,
+            Supla::Suplet::ChannelKind::VirtualThermometer);
+}
+
+TEST(SupletJsonDefinitionTests, ParsesVersionedParameterizedRelayDefinition) {
+  const char json[] =
+      "{"
+      "\"schemaVersion\":1,"
+      "\"handlerVersion\":1,"
+      "\"definitionId\":2011,"
+      "\"definitionVersion\":2,"
+      "\"maxInstances\":3,"
+      "\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\","
+      "\"parameters\":["
+      "{\"key\":\"relay.count\",\"type\":\"uint8\",\"default\":1,"
+      "\"min\":1,\"max\":4,\"lifecycle\":\"createOnly\","
+      "\"affectsTopology\":true},"
+      "{\"key\":\"mode\",\"type\":\"enum\",\"default\":\"avg\","
+      "\"values\":[\"avg\",\"min\",\"max\"],\"required\":true},"
+      "{\"key\":\"host\",\"type\":\"string\",\"required\":true}"
+      "],"
+      "\"channels\":[{"
+      "\"channelId\":1,"
+      "\"key\":\"relay\","
+      "\"kind\":\"virtualRelay\","
+      "\"function\":\"powerSwitch\","
+      "\"caption\":\"Param relay@@@\""
+      "}]"
+      "}";
+
+  Supla::Suplet::JsonDefinition parsed;
+  ASSERT_TRUE(Supla::Suplet::JsonDefinitionParser::parse(json, &parsed));
+
+  const auto *definition = parsed.getDefinition();
+  ASSERT_NE(definition, nullptr);
+  EXPECT_EQ(definition->definitionId, 2011u);
+  EXPECT_EQ(definition->definitionVersion, 2u);
+  EXPECT_EQ(definition->maxInstances, 3);
+  ASSERT_EQ(definition->parameterCount, 3);
+  ASSERT_EQ(definition->channelCount, 1);
+  EXPECT_STREQ(definition->channels[0].caption, "Param relay@@@");
+}
+
+TEST(SupletJsonDefinitionTests, ParsesCompactDefinitionAliases) {
+  const char json[] =
+      "{"
+      "\"sv\":1,"
+      "\"hv\":2,"
+      "\"di\":3001,"
+      "\"dv\":3,"
+      "\"mi\":4,"
+      "\"c\":\"virt\","
+      "\"k\":\"virtRelay\","
+      "\"n\":\"Compact controls\","
+      "\"p\":["
+      "{\"key\":\"relay.count\",\"t\":\"u8\",\"d\":2,"
+      "\"min\":1,\"max\":4,\"lc\":\"co\",\"at\":true},"
+      "{\"key\":\"enabled\",\"t\":\"b\",\"d\":true,\"r\":true},"
+      "{\"key\":\"mode\",\"t\":\"e\",\"d\":\"avg\","
+      "\"v\":[\"avg\",\"min\",\"max\"]},"
+      "{\"key\":\"password\",\"t\":\"sec\",\"lc\":\"sec\"}"
+      "],"
+      "\"ch\":["
+      "{\"id\":1,\"k\":\"virtRelay\",\"fn\":\"ps\",\"cap\":\"Relay\"},"
+      "{\"id\":2,\"k\":\"virtBinSensor\",\"fn\":\"osd\"},"
+      "{\"id\":3,\"k\":\"virtThermo\",\"df\":40,\"cap\":\"Temp\"}"
+      "]"
+      "}";
+
+  Supla::Suplet::JsonDefinition parsed;
+  ASSERT_TRUE(Supla::Suplet::JsonDefinitionParser::parse(json, &parsed));
+
+  const auto *definition = parsed.getDefinition();
+  ASSERT_NE(definition, nullptr);
+  EXPECT_EQ(definition->schemaVersion, 1);
+  EXPECT_EQ(definition->handlerVersion, 2);
+  EXPECT_EQ(definition->definitionId, 3001u);
+  EXPECT_EQ(definition->definitionVersion, 3u);
+  EXPECT_EQ(definition->maxInstances, 4);
+  EXPECT_EQ(definition->category, Supla::Suplet::Category::Virtual);
+  EXPECT_EQ(definition->kind, Supla::Suplet::Kind::VirtualRelay);
+  EXPECT_STREQ(definition->name, "Compact controls");
+
+  ASSERT_EQ(definition->parameterCount, 4);
+  EXPECT_STREQ(definition->parameters[0].key, "relay.count");
+  EXPECT_EQ(definition->parameters[0].type,
+            Supla::Suplet::ParameterType::UInt8);
+  EXPECT_EQ(definition->parameters[0].defaultNumber, 2);
+  EXPECT_EQ(definition->parameters[0].lifecycle,
+            Supla::Suplet::ParameterLifecycle::CreateOnly);
+  EXPECT_EQ(definition->parameters[0].affectsTopology, 1);
+  EXPECT_EQ(definition->parameters[1].type,
+            Supla::Suplet::ParameterType::Bool);
+  EXPECT_EQ(definition->parameters[1].defaultNumber, 1);
+  EXPECT_EQ(definition->parameters[1].required, 1);
+  EXPECT_EQ(definition->parameters[2].type,
+            Supla::Suplet::ParameterType::Enum);
+  EXPECT_STREQ(definition->parameters[2].enumValues, "avg,min,max");
+  EXPECT_EQ(definition->parameters[3].type,
+            Supla::Suplet::ParameterType::Secret);
+  EXPECT_EQ(definition->parameters[3].lifecycle,
+            Supla::Suplet::ParameterLifecycle::Secret);
+
+  ASSERT_EQ(definition->channelCount, 3);
+  EXPECT_EQ(definition->channels[0].channelId, 1);
+  EXPECT_EQ(definition->channels[0].kind,
+            Supla::Suplet::ChannelKind::VirtualRelay);
+  EXPECT_EQ(definition->channels[0].defaultFunction,
+            SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_STREQ(definition->channels[0].caption, "Relay");
+  EXPECT_EQ(definition->channels[1].kind,
+            Supla::Suplet::ChannelKind::VirtualBinarySensor);
+  EXPECT_EQ(definition->channels[1].defaultFunction,
+            SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR);
+  EXPECT_EQ(definition->channels[2].kind,
+            Supla::Suplet::ChannelKind::VirtualThermometer);
+  EXPECT_EQ(definition->channels[2].defaultFunction,
+            SUPLA_CHANNELFNC_THERMOMETER);
+  EXPECT_STREQ(definition->channels[2].caption, "Temp");
+}
+
+TEST(SupletJsonDefinitionTests, RejectsInvalidDefinitions) {
+  Supla::Suplet::JsonDefinition parsed;
+
+  EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+      "{\"definitionId\":1,\"definitionVersion\":1,"
+      "\"category\":\"virtual\",\"kind\":\"virtualRelay\"}",
+      &parsed));
+  EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+      "{\"definitionId\":1,\"definitionVersion\":1,"
+      "\"kind\":\"virtualRelay\","
+      "\"channels\":[{\"channelId\":1,\"key\":\"a\","
+      "\"kind\":\"virtualRelay\"}]}",
+      &parsed));
+  EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+      "{\"definitionId\":1,\"definitionVersion\":1,"
+      "\"category\":\"virtual\","
+      "\"channels\":[{\"channelId\":1,\"key\":\"a\","
+      "\"kind\":\"virtualRelay\"}]}",
+      &parsed));
+  EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+      "{\"definitionId\":1,\"definitionVersion\":1,"
+      "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
+      "\"channels\":["
+      "{\"channelId\":1,\"key\":\"first\",\"kind\":\"virtualRelay\"},"
+      "{\"channelId\":1,\"key\":\"second\",\"kind\":\"virtualRelay\"}]}",
+      &parsed));
+  EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+      "{\"definitionId\":1,\"definitionVersion\":1,"
+      "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
+      "\"channels\":[{\"key\":\"a\",\"kind\":\"virtualRelay\"}]}",
+      &parsed));
+  EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+      "{\"definitionId\":1,\"definitionVersion\":1,"
+      "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
+      "\"channels\":[{\"channelId\":0,\"key\":\"a\","
+      "\"kind\":\"virtualRelay\"}]}",
+      &parsed));
+  EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+      "{\"definitionId\":1,\"definitionVersion\":1,"
+      "\"category\":\"bad\",\"kind\":\"virtualRelay\","
+      "\"channels\":[{\"channelId\":1,\"key\":\"a\","
+      "\"kind\":\"virtualRelay\"}]}",
+      &parsed));
+  EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+      "{\"definitionId\":1,\"definitionVersion\":1,"
+      "\"maxInstances\":0,"
+      "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
+      "\"channels\":[{\"channelId\":1,\"key\":\"a\","
+      "\"kind\":\"virtualRelay\"}]}",
+      &parsed));
+}
+
+TEST_F(SupletJsonFixture, CreatesRuntimeElementsFromJsonDefinition) {
+  const char json[] =
+      "{"
+      "\"definitionId\":2002,"
+      "\"definitionVersion\":1,"
+      "\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\","
+      "\"channels\":["
+      "{\"channelId\":1,\"key\":\"relay\",\"kind\":\"virtualRelay\","
+      "\"function\":\"powerSwitch\"},"
+      "{\"channelId\":2,\"key\":\"temperature\",\"kind\":"
+      "\"virtualThermometer\","
+      "\"function\":\"thermometer\"}"
+      "]"
+      "}";
+  Supla::Suplet::JsonDefinition parsed;
+  ASSERT_TRUE(Supla::Suplet::JsonDefinitionParser::parse(json, &parsed));
+
+  NoopConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Channel occupied0(0);
+
+  Supla::Suplet::InstanceRecord instance = {};
+  instance.instanceId = 55;
+  ASSERT_TRUE(manager.addInstanceFromDefinition(
+      instance, *parsed.getDefinition()));
+  const auto *record = manager.getInstanceTable()->findByInstanceId(55);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->channelMap.getChannelNumber(1),
+            Supla::Suplet::kInvalidChannelNumber);
+  EXPECT_EQ(record->channelMap.getChannelNumber(2),
+            Supla::Suplet::kInvalidChannelNumber);
+
+  Supla::Element *created[2] = {};
+  Supla::Suplet::ChannelMap createdChannelMap;
+  ASSERT_TRUE(Supla::Suplet::Runtime::createElements(
+      *parsed.getDefinition(), *record, created, 2, &createdChannelMap));
+
+  EXPECT_EQ(created[0]->getChannelNumber(), 1);
+  EXPECT_EQ(created[1]->getChannelNumber(), 2);
+  EXPECT_EQ(createdChannelMap.getChannelNumber(1), 1);
+  EXPECT_EQ(createdChannelMap.getChannelNumber(2), 2);
+  EXPECT_EQ(created[0]->getChannel()->getSubDeviceId(), record->subDeviceId);
+  EXPECT_EQ(created[1]->getChannel()->getSubDeviceId(), record->subDeviceId);
+
+  auto thermometer =
+      reinterpret_cast<Supla::Sensor::VirtualThermometer *>(created[1]);
+  thermometer->setValue(23.5);
+  EXPECT_DOUBLE_EQ(thermometer->getValue(), 23.5);
+}

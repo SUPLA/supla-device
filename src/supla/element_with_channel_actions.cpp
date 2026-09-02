@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "element_with_channel_actions.h"
 
@@ -59,6 +44,10 @@ const char *configTypeToString(int configType) {
 }
 
 }  // namespace
+
+Supla::ElementWithChannelActions::ElementWithChannelActions(ElementMode mode)
+    : Element(mode) {
+}
 
 void ConfigTypesBitmap::clear(int configType) {
   set(configType, false);
@@ -189,14 +178,32 @@ bool Supla::ElementWithChannelActions::isEventAlreadyUsed(
 
 void Supla::ElementWithChannelActions::addAction(uint16_t action,
                                                  Supla::ActionHandler &client,
+                                                 uint16_t event,
                                                  Supla::Condition *condition,
                                                  bool alwaysEnabled) {
   condition->setClient(client);
   condition->setSource(this);
   auto channel = getChannel();
   if (channel) {
-    channel->addAction(action, condition, Supla::ON_CHANGE, alwaysEnabled);
+    channel->addAction(action, condition, event, alwaysEnabled);
   }
+}
+
+void Supla::ElementWithChannelActions::addAction(uint16_t action,
+                                                 Supla::ActionHandler *client,
+                                                 uint16_t event,
+                                                 Supla::Condition *condition,
+                                                 bool alwaysEnabled) {
+  ElementWithChannelActions::addAction(
+      action, *client, event, condition, alwaysEnabled);
+}
+
+void Supla::ElementWithChannelActions::addAction(uint16_t action,
+                                                 Supla::ActionHandler &client,
+                                                 Supla::Condition *condition,
+                                                 bool alwaysEnabled) {
+  ElementWithChannelActions::addAction(
+      action, client, Supla::ON_CHANGE, condition, alwaysEnabled);
 }
 
 void Supla::ElementWithChannelActions::addAction(uint16_t action,
@@ -284,7 +291,7 @@ bool Supla::ElementWithChannelActions::setAndSaveFunction(
   if (!channel) {
     return false;
   }
-  if (setFunction(channelFunction)) {
+  if (setRuntimeFunction(channelFunction)) {
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
       cfg->setChannelFunction(getChannelNumber(), channelFunction);
@@ -338,6 +345,10 @@ void Supla::ElementWithChannelActions::onRegistered(
     case Supla::ChannelConfigState::LocalChangePending: {
       break;
     }
+    case Supla::ChannelConfigState::LocalChangeSent: {
+      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      break;
+    }
     default: {
       channelConfigState = Supla::ChannelConfigState::ResendConfig;
       break;
@@ -351,7 +362,9 @@ void Supla::ElementWithChannelActions::handleChannelConfigFinished() {
   if (channelConfigState == Supla::ChannelConfigState::WaitForConfigFinished) {
     channelConfigState = Supla::ChannelConfigState::None;
   }
-  if (receivedConfigTypes != usedConfigTypes) {
+  if (receivedConfigTypes != usedConfigTypes &&
+      channelConfigState != Supla::ChannelConfigState::LocalChangePending &&
+      channelConfigState != Supla::ChannelConfigState::LocalChangeSent) {
     SUPLA_LOG_INFO(
         "Channel[%d] some config is missing on server... (rcv: 0x%X != used: "
         "0x%X)",
@@ -359,6 +372,13 @@ void Supla::ElementWithChannelActions::handleChannelConfigFinished() {
         receivedConfigTypes.getAll(),
         usedConfigTypes.getAll());
     channelConfigState = Supla::ChannelConfigState::ResendConfig;
+  }
+}
+
+void Supla::ElementWithChannelActions::handleChannelConfigFinished(
+    int channelNumber) {
+  if (channelNumber == getChannelNumber()) {
+    handleChannelConfigFinished();
   }
 }
 
@@ -418,7 +438,8 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
   // Skip config if local config changed (except for OCR which is always
   // accepted)
   if (result->ConfigType != SUPLA_CONFIG_TYPE_OCR) {
-    if (channelConfigState == Supla::ChannelConfigState::LocalChangePending &&
+    if ((channelConfigState == Supla::ChannelConfigState::LocalChangePending ||
+         channelConfigState == Supla::ChannelConfigState::LocalChangeSent) &&
         !local) {
       SUPLA_LOG_INFO(
           "Channel[%d] Ignoring config (local config changed offline)",
@@ -503,6 +524,9 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
         channelConfigState = Supla::ChannelConfigState::LocalChangePending;
       }
     } else {
+      if (success) {
+        setChannelConfigAttempts = 0;
+      }
       clearChannelConfigChangedFlag();
     }
   }
@@ -525,10 +549,17 @@ void Supla::ElementWithChannelActions::purgeConfig() {
   }
 }
 
-void Supla::ElementWithChannelActions::triggerSetChannelConfig(int configType) {
+void Supla::ElementWithChannelActions::triggerSetChannelConfig(
+    int configType, bool localChange) {
   // don't trigger setChannelConfig if it failed in previous attempt
   if (channelConfigState != Supla::ChannelConfigState::SetChannelConfigFailed) {
-    channelConfigState = Supla::ChannelConfigState::ResendConfig;
+    if (localChange ||
+        (channelConfigState != Supla::ChannelConfigState::LocalChangePending &&
+         channelConfigState != Supla::ChannelConfigState::LocalChangeSent)) {
+      channelConfigState = localChange
+                                ? Supla::ChannelConfigState::LocalChangePending
+                                : Supla::ChannelConfigState::ResendConfig;
+    }
     receivedConfigTypes.clear(configType);
   }
 }

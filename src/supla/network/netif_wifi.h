@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_NETWORK_NETIF_WIFI_H_
 #define SRC_SUPLA_NETWORK_NETIF_WIFI_H_
@@ -25,6 +10,9 @@
 #define MAX_WIFI_PASSWORD_SIZE 64
 
 namespace Supla {
+
+constexpr uint32_t WifiScanRefreshIntervalMs = 60 * 1000;
+
 class Wifi : public Supla::Network {
  public:
   Wifi(const char *wifiSsid = nullptr,
@@ -35,11 +23,18 @@ class Wifi : public Supla::Network {
   void setPassword(const char *wifiPassword) override;
   bool isWifiConfigRequired() override;
   const char* getIntfName() const override;
+  virtual void startConfigModeScan();
+  bool iterate() override;
 
   void onLoadConfig() override;
+
  protected:
+  void requestConfigModeScanIfDue();
+  virtual bool isConfigModeScanInProgress() const;
   char ssid[MAX_SSID_SIZE] = {};
   char password[MAX_WIFI_PASSWORD_SIZE] = {};
+  uint32_t lastConfigModeScanStartMs = 0;
+  bool configModeScanStartRecorded = false;
 };
 
 };  // namespace Supla

@@ -1,27 +1,50 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef ARDUINO_ARCH_AVR
 #include "solaredge.h"
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
+
+#include <supla/log_wrapper.h>
+#include <supla/time.h>
+
+// Allow insecure external TLS (not recommended)
+// #define SUPLA_ALLOW_INSECURE_EXTERNAL_TLS
 
 #define TEMPERATURE_NOT_AVAILABLE -275.0
+
+#ifndef PROGMEM
+#define PROGMEM
+#endif
+
+// Certificate for https://api.solaredge.com
+// DigiCert Global Root CA
+static const char SOLAREDGE_CA_CERT[] PROGMEM = R"EOF(
+-----BEGIN CERTIFICATE-----
+MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
+QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
+CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
+nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
+43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
+T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
+gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
+BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
+TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
+DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
+hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
+06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
+PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
+YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
+CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
+-----END CERTIFICATE-----
+)EOF";
 
 using Supla::PV::SolarEdge;
 
@@ -43,6 +66,12 @@ SolarEdge::SolarEdge(const char *apiKeyValue,
                      const char *inverterSerialNumberValue,
                      Supla::Clock *clock)
     : clock(clock) {
+  pvClient = Supla::ClientBuilder();
+  pvClient->setSSLEnabled(true);
+#if !defined(SUPLA_ALLOW_INSECURE_EXTERNAL_TLS)
+  pvClient->setCACert(SOLAREDGE_CA_CERT);
+#endif
+
   // SolarEdge api allows 300 requests daily, so it is one request per almost 5
   // min
   refreshRateSec = 6 * 60;  // refresh every 6 min
@@ -70,36 +99,42 @@ SolarEdge::SolarEdge(const char *apiKeyValue,
   temperatureChannel.setNewValue(TEMPERATURE_NOT_AVAILABLE);
 }
 
+SolarEdge::~SolarEdge() {
+  delete pvClient;
+  pvClient = nullptr;
+}
+
 void SolarEdge::iterateAlways() {
   if (dataFetchInProgress) {
     if (millis() - connectionTimeoutMs > 30000) {
-      Serial.println(
-          F("SolarEdge: connection timeout. Remote host is not responding"));
-      pvClient.stop();
+      SUPLA_LOG_DEBUG(
+          "SolarEdge: connection timeout. Remote host is not responding");
+      pvClient->stop();
       dataFetchInProgress = false;
       dataIsReady = false;
       return;
     }
-    if (!pvClient.connected()) {
-      Serial.println(F("SolarEdge fetch completed"));
+    if (!pvClient->connected()) {
+      SUPLA_LOG_DEBUG("SolarEdge fetch completed");
       dataFetchInProgress = false;
       dataIsReady = true;
     }
-    if (pvClient.available()) {
-      Serial.print(F("Reading data from SolarEdge: "));
-      Serial.println(pvClient.available());
+    if (pvClient->available()) {
+      SUPLA_LOG_DEBUG("Reading data from SolarEdge: %d", pvClient->available());
     }
-    while (pvClient.available()) {
-      char c;
-      c = pvClient.read();
-      Serial.print(c);
+    while (pvClient->available()) {
+      int readResult = pvClient->read();
+      if (readResult < 0) {
+        break;
+      }
+      char c = static_cast<char>(readResult);
       if (c == '\n') {
         if (bytesCounter > 0) {
           // new line is found with bytesCounter > 0 means that we have full
           // received line of data in buf
           buf[bytesCounter] =
               '\0';  // add null character at the end of received string
-
+          SUPLA_LOG_VERBOSE("Received line: %s", buf);
           if (!headerFound) {
             if (0 == strncmp(headerVerification,
                              buf,
@@ -268,8 +303,8 @@ void SolarEdge::iterateAlways() {
         bytesCounter++;
       }
     }
-    if (!pvClient.connected()) {
-      pvClient.stop();
+    if (!pvClient->connected()) {
+      pvClient->stop();
     }
   }
   if (dataIsReady) {
@@ -308,25 +343,13 @@ bool SolarEdge::iterateConnected() {
           millis() - lastReadTime >
               (retryCounter > 0 ? 5000 : refreshRateSec * 1000)) {
         lastReadTime = millis();
-        Serial.println(F("SolarEdge connecting"));
-#ifdef ARDUINO_ARCH_ESP8266
-        pvClient.setBufferSizes(2048, 512);  //
-#endif
-        pvClient.setInsecure();
-        int returnCode = pvClient.connect("monitoringapi.solaredge.com", 443);
+        SUPLA_LOG_DEBUG("SolarEdge connecting");
+        int returnCode = pvClient->connect("monitoringapi.solaredge.com", 443);
         if (returnCode) {
           retryCounter = 0;
           dataFetchInProgress = true;
           connectionTimeoutMs = lastReadTime;
-          Serial.println(F("Succesful connect"));
-
-          char buf[200];
-          strcpy(buf, "GET /equipment/");  // NOLINT(runtime/printf)
-
-          strcat(buf, siteId);                  // NOLINT(runtime/printf)
-          strcat(buf, "/");                     // NOLINT(runtime/printf)
-          strcat(buf, inverterSerialNumber);    // NOLINT(runtime/printf)
-          strcat(buf, "/data.csv?startTime=");  // NOLINT(runtime/printf)
+          SUPLA_LOG_DEBUG("Succesful connect");
 
           time_t timestamp = time(0);  // get current time
           timestamp -= 10 * 60;        // go back in time 10 minutes
@@ -355,23 +378,32 @@ bool SolarEdge::iterateConnected() {
                    timeinfo.tm_mon + 1,
                    timeinfo.tm_mday);
 
-          strcat(buf, startTime);    // NOLINT(runtime/printf)
-          strcat(buf, "&endTime=");  // NOLINT(runtime/printf)
-          strcat(buf, endTime);      // NOLINT(runtime/printf)
-          strcat(buf, "&api_key=");  // NOLINT(runtime/printf)
-          strcat(buf, apiKey);       // NOLINT(runtime/printf)
-          strcat(buf, " HTTP/1.1");  // NOLINT(runtime/printf)
+          char query[512];
+          int queryLen = snprintf(query,
+                                  sizeof(query),
+                                  "GET /equipment/%s/%s/data.csv?startTime=%s"
+                                  "&endTime=%s&api_key=%s HTTP/1.1",
+                                  siteId,
+                                  inverterSerialNumber,
+                                  startTime,
+                                  endTime,
+                                  apiKey);
+          if (queryLen < 0 || queryLen >= static_cast<int>(sizeof(query))) {
+            SUPLA_LOG_ERROR("SolarEdge query buffer overflow");
+            pvClient->stop();
+            dataFetchInProgress = false;
+            return Element::iterateConnected();
+          }
 
-          Serial.print(F("Query: "));
-          Serial.println(buf);
-          pvClient.println(buf);
-          pvClient.println(F("Host: localhost"));
-          pvClient.println(F("Connection: close"));
-          pvClient.println();
+          SUPLA_LOG_VERBOSE("SolarEdge query: %s", query);
+          pvClient->println(query);
+          pvClient->println(F("Host: localhost"));
+          pvClient->println(F("Connection: close"));
+          pvClient->println();
 
         } else {  // if connection wasn't successful, try few times
-          Serial.print(F("Failed to connect to SolarEdge api, return code: "));
-          Serial.println(returnCode);
+          SUPLA_LOG_DEBUG("Failed to connect to SolarEdge api, return code: %d",
+                          returnCode);
           retryCounter++;
         }
       }
@@ -388,4 +420,3 @@ Supla::Channel *SolarEdge::getSecondaryChannel() {
 }
 
 #endif
-

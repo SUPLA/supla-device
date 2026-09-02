@@ -1,22 +1,9 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gtest/gtest.h>
+#include <supla/at_channel.h>
+#include <supla/control/action_trigger_parsed.h>
 #include <simple_time.h>
 #include <supla/control/cmd_relay.h>
 #include <supla/control/cmd_roller_shutter.h>
@@ -26,6 +13,7 @@
 #include <supla/payload/payload.h>
 #include <supla/source/source.h>
 
+#include <cstring>
 #include <string>
 #include <variant>
 
@@ -120,6 +108,33 @@ TEST_F(Sd4linuxParsedControlOfflineTests,
 
   EXPECT_FALSE(relay.getChannel()->isStateOnline());
   EXPECT_EQ(parser.refreshCount, 0);
+}
+
+TEST_F(Sd4linuxParsedControlOfflineTests,
+       CmdRelayWithoutParserTriggersActionOnStateChange) {
+  Supla::Control::ActionTriggerParsed at("cmd_relay_action_trigger");
+  Supla::Control::CmdRelay relay(nullptr);
+  relay.setAtName("cmd_relay_action_trigger");
+  relay.addAtOnStateChange({0, 1, 0});
+
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger actionTriggerConfig = {};
+  actionTriggerConfig.ActiveActions = SUPLA_ACTION_CAP_TURN_ON;
+  memcpy(config.Config, &actionTriggerConfig, sizeof(actionTriggerConfig));
+  at.handleChannelConfig(&config);
+
+  relay.onInit();
+  at.onInit();
+
+  EXPECT_EQ(at.getChannel()->getActionTriggerCaps(),
+            SUPLA_ACTION_CAP_TURN_ON);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0);
+
+  relay.turnOn();
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(),
+            SUPLA_ACTION_CAP_TURN_ON);
 }
 
 TEST_F(Sd4linuxParsedControlOfflineTests,

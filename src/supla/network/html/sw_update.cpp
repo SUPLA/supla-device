@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef ARDUINO_ARCH_AVR
 #include "sw_update.h"
@@ -44,7 +29,6 @@ void SwUpdate::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     bool update = (cfg->getDeviceMode() == DEVICE_MODE_SW_UPDATE);
-    bool skipCert = cfg->isSwUpdateSkipCert();
     bool useRemoteOta = false;
     Supla::AutoUpdatePolicy otaPolicy = Supla::AutoUpdatePolicy::SecurityOnly;
     if (sdc) {
@@ -86,9 +70,7 @@ void SwUpdate::send(Supla::WebSender* sender) {
       auto select = sender->selectTag(key, key);
       select.body([&]() {
         sender->selectOption(0, "NO", !update);
-        sender->selectOption(1, "YES", update && !skipCert);
-        sender->selectOption(2, "YES - SKIP CERTIFICATE (dangerous)",
-                             update && skipCert);
+        sender->selectOption(1, "YES", update);
       });
     });
   }
@@ -109,12 +91,6 @@ bool SwUpdate::handleResponse(const char* key, const char* value) {
       case 1: {
         cfg->setDeviceMode(DEVICE_MODE_SW_UPDATE);
         cfg->setSwUpdateSkipCert(false);
-        cfg->setSwUpdateBeta(false);
-        break;
-      }
-      case 2: {
-        cfg->setDeviceMode(DEVICE_MODE_SW_UPDATE);
-        cfg->setSwUpdateSkipCert(true);
         cfg->setSwUpdateBeta(false);
         break;
       }

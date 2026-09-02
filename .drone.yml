@@ -1,7 +1,29 @@
+---
+kind: secret
+name: rocket_url
+data: GktdRvYSwOXxbfpUh/RGs633F89D3jFKasxpCYoPLIRmOVcBIhGcjzdn5CUojxivOrk5Kw==
+
+---
+kind: secret
+name: rocket_user
+data: dnghPG3TK2wMqtnJHC8jvqeuZr1+3CTOjDKAis8LT+JILU0audAzd36A6kVJ
+
+---
+kind: secret
+name: rocket_token
+data: bOaE6BiCcjm06co0/ZHoPPYQDO+itvxSjSvmzczHUEiZieKqIjqRuy+rAjheSrXmrM2yTX0Cf/Vlecg+5vXp2nIEfDdddoc=
+
+---
 kind: pipeline
 name: default
 
 steps:
+- name: html_generator_assets
+  image: devel/freertos
+  pull: never
+  commands:
+  - python3 extras/tools/generate_html_generator_styles.py --check
+
 - name: tests_compilation
   image: devel/freertos
   pull: never
@@ -11,13 +33,22 @@ steps:
   - cmake ..
   - make -j32
 
+- name: mqtt_documentation
+  image: devel/freertos
+  pull: never
+  depends_on:
+  - tests_compilation
+  commands:
+  - extras/tools/mqtt-docgen/generate.sh
+  - git diff --exit-code -- extras/docs/mqtt/observed.json docs/mqtt/topics.md docs/mqtt/topics.pl.md docs/mqtt/home-assistant-discovery.md docs/mqtt/home-assistant-discovery.pl.md
+
 - name: tests
   image: devel/freertos
   pull: never
   commands:
   - cd extras/test/build
-  - ./supladevicetests --gtest_repeat=50 --gtest_shuffle
-  - ./sd4linuxtests --gtest_repeat=50 --gtest_shuffle
+  - ./supladevicetests --gtest_repeat=50 --gtest_shuffle --gtest_brief
+  - ./sd4linuxtests --gtest_repeat=50 --gtest_shuffle --gtest_brief
   depends_on:
   - tests_compilation
 
@@ -26,23 +57,11 @@ steps:
   pull: never
   commands:
   - cd extras/test/build
-  - valgrind --error-exitcode=1 --leak-check=full ./supladevicetests
-  - valgrind --error-exitcode=1 --leak-check=full ./sd4linuxtests
+  - ulimit -n 8192
+  - valgrind --error-exitcode=1 --leak-check=full ./supladevicetests --gtest_brief
+  - valgrind --error-exitcode=1 --leak-check=full ./sd4linuxtests --gtest_brief
   depends_on:
   - tests_compilation
-
-    # - name: esp8266_rtos_compilation_check
-    #   image: devel/esp8266_rtos_sdk
-    #   pull: never
-    #   commands:
-    #   - pwd
-    #   - echo $SUPLA_DEVICE_PATH
-    #   - ls -al
-    #   - export SUPLA_DEVICE_PATH=/drone/src
-    #   - cd extras/examples/esp8266_rtos/
-    #   - rm -f build/supla-esp8266-mk.bin
-    #   - /bin/bash -c "source /supla/esp/ESP8266_RTOS_SDK/export.sh && make -j32"
-    #   - /bin/bash -c "[ -f build/supla-esp8266-mk.bin ] && true || false"
 
 - name: esp_idf_setup
   image: devel/esp-idf
@@ -69,7 +88,7 @@ steps:
   image: stable/esp-idf
   pull: never
   depends_on:
-    - esp_idf_setup
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - cd extras/examples/esp_idf/
@@ -92,7 +111,7 @@ steps:
   - cmake --build build
   - /bin/bash -c "[ -f build/supla-freertos-example ] && true || false"
 
-- name: linux_compilation_check
+- name: sd4linux_compilation_check
 # Linux compilation requires generic linux toolset for compilation and building
 # which is also part of our freertos docker, so we just reuse it here
   image: devel/freertos
@@ -119,6 +138,7 @@ steps:
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./Fronius/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./GarageParkingAssistLight/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./HX711_Weight_sensor/
+  - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./SimpleRelay/
 
 - name: arduino_esp8266_compilation_check_part_2
   image: devel/arduino-cli
@@ -205,6 +225,7 @@ steps:
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./DHT/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./Fronius/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./HX711_Weight_sensor/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./SimpleRelay/
 
 - name: arduino_esp32_compilation_check_part_5
   image: devel/arduino-cli
@@ -271,7 +292,7 @@ steps:
     url:
       from_secret: rocket_url
     user_id:
-      from_secret: rocket_user_id
+      from_secret: rocket_user
     token:
       from_secret: rocket_token
     channel: github
@@ -283,7 +304,7 @@ steps:
         - pull_request
   depends_on: [tests, esp_idf_compilation_check,
                freertos_linux_compilation_check,
-               linux_compilation_check,
+               sd4linux_compilation_check,
                arduino_esp32_compilation_check_part_1,
                arduino_esp32_compilation_check_part_2,
                arduino_esp32_compilation_check_part_3,

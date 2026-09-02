@@ -1,18 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <arduino_mock.h>
 #include <gmock/gmock.h>
@@ -20,6 +7,8 @@
 #include <simple_time.h>
 #include <supla/control/rgb_leds.h>
 #include <supla_io_mock.h>
+
+#include "legacy_pwm_test_io.h"
 
 using ::testing::Return;
 
@@ -37,6 +26,12 @@ TEST(RgbLedsTests, SettingNewRGBValue) {
   SimpleTime time;
   DigitalInterfaceMock ioMock;
 
+  EXPECT_CALL(ioMock, analogWriteResolution(1, 10)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteFrequency(1, 1000)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteResolution(2, 10)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteFrequency(2, 1000)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteResolution(3, 10)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteFrequency(3, 1000)).Times(1);
   EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
   EXPECT_CALL(ioMock, pinMode(2, OUTPUT));
   EXPECT_CALL(ioMock, pinMode(3, OUTPUT));
@@ -103,11 +98,11 @@ TEST(RgbLedsTests, IoPinConstructorUsesSeparateIoForOutputs) {
   SuplaIoMock greenIo;
   SuplaIoMock blueIo;
 
-  EXPECT_CALL(redIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(redIo, customSetPwmResolutionBits(11, 10));
   EXPECT_CALL(redIo, customSetPwmFrequency(1000));
-  EXPECT_CALL(greenIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(greenIo, customSetPwmResolutionBits(12, 10));
   EXPECT_CALL(greenIo, customSetPwmFrequency(1000));
-  EXPECT_CALL(blueIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(blueIo, customSetPwmResolutionBits(13, 10));
   EXPECT_CALL(blueIo, customSetPwmFrequency(1000));
   EXPECT_CALL(redIo, customConfigureAnalogOutput(-1, 11, false));
   EXPECT_CALL(greenIo, customConfigureAnalogOutput(-1, 12, false));
@@ -136,4 +131,19 @@ TEST(RgbLedsTests, IoPinConstructorUsesSeparateIoForOutputs) {
   EXPECT_EQ(ch->getValueBlue(), 0);
   EXPECT_EQ(ch->getValueColorBrightness(), 0);
   EXPECT_EQ(ch->getValueBrightness(), 0);
+}
+
+TEST(RgbLedsTests, ScalesEveryChannelForFixedEightBitOutputs) {
+  FixedEightBitPwmIo redIo;
+  FixedEightBitPwmIo greenIo;
+  FixedEightBitPwmIo blueIo;
+  Supla::Control::RGBLeds rgb(Supla::Io::IoPin(1, &redIo),
+                              Supla::Io::IoPin(2, &greenIo),
+                              Supla::Io::IoPin(3, &blueIo));
+
+  rgb.setRGBWValueOnDevice(511, 767, 1023, 0);
+
+  EXPECT_THAT(redIo.values, ::testing::ElementsAre(127));
+  EXPECT_THAT(greenIo.values, ::testing::ElementsAre(191));
+  EXPECT_THAT(blueIo.values, ::testing::ElementsAre(255));
 }

@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "sensor_parsed.h"
 
@@ -55,6 +40,10 @@ void SensorParsedBase::setMapping(const std::string &parameter,
   parser->addKey(key, index);
 }
 
+void SensorParsedBase::setForceBatteryPowered(bool forceBatteryPowered) {
+  this->forceBatteryPowered = forceBatteryPowered;
+}
+
 void SensorParsedBase::setMultiplier(const std::string &parameter,
                                      double multiplier) {
   parameterMultiplier[parameter] = multiplier;
@@ -87,7 +76,7 @@ bool SensorParsedBase::refreshParserSource(bool updateChannelState) {
       return false;
     }
     if (parser->refreshParserSource()) {
-      if (!parser->isValid()) {
+      if (!parser->isSourceValid()) {
         return false;
       }
       if (updateChannelState) {
@@ -190,6 +179,8 @@ int SensorParsedBase::getStateValue(bool updateChannelState) {
           if (std::find(stateOnValues.begin(), stateOnValues.end(), value) !=
               stateOnValues.end()) {
             state = 1;
+          } else if (value != std::variant<int, bool, std::string>(-1)) {
+            state = 0;
           }
         }
         if (state == -1) {
@@ -203,7 +194,9 @@ int SensorParsedBase::getStateValue(bool updateChannelState) {
             state = 0;
           }
         }
-       setLastValue(state);
+        if (std::holds_alternative<int>(value)) {
+          setLastValue(std::get<int>(value));
+        }
       }
     }
   }
@@ -335,7 +328,7 @@ void SensorParsedBase::updateBatteryInfoFlags() {
     unsigned char batteryLevel = 255;
     bool batteryPowered = true;
     bool batteryPoweredConfigured = false;
-    if (isParameterConfigured(ForceBatteryPowered)) {
+    if (forceBatteryPowered) {
       batteryPowered = true;
       batteryPoweredConfigured = true;
     } else {

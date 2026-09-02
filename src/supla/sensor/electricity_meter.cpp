@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <string.h>
 #include <supla/channel_function_string.h>
@@ -376,12 +361,18 @@ void Supla::Sensor::ElectricityMeter::setCurrentPhaseSequence(bool clockwise) {
 }
 
 void Supla::Sensor::ElectricityMeter::clearVoltagePhaseSequenceFlag() {
+  if (emValue.measured_values & EM_VAR_VOLTAGE_PHASE_SEQUENCE) {
+    valueChanged = true;
+  }
   emValue.phase_sequence &= (~(1 << 0));
   emValue.m_count = 1;
   emValue.measured_values &= ~EM_VAR_VOLTAGE_PHASE_SEQUENCE;
 }
 
 void Supla::Sensor::ElectricityMeter::clearCurrentPhaseSequenceFlag() {
+  if (emValue.measured_values & EM_VAR_CURRENT_PHASE_SEQUENCE) {
+    valueChanged = true;
+  }
   emValue.phase_sequence &= (~(1 << 1));
   emValue.m_count = 1;
   emValue.measured_values &= ~EM_VAR_CURRENT_PHASE_SEQUENCE;
@@ -585,15 +576,16 @@ Supla::ApplyConfigResult Supla::Sensor::ElectricityMeter::applyChannelConfig(
   bool configChanged = false;
   bool configValid = true;
 
-  int8_t bitNumberCtTypeInNewConfig =
-      Supla::getBitNumber(configFromServer->UsedCTType);
-  if (usedCtType != bitNumberCtTypeInNewConfig) {
-    if (!isCtTypeSupported(configFromServer->UsedCTType)) {
+  if (availableCtTypes != 0 || configFromServer->UsedCTType != 0) {
+    int8_t bitNumberCtTypeInNewConfig =
+        Supla::getBitNumber(configFromServer->UsedCTType);
+    if (bitNumberCtTypeInNewConfig < 0 ||
+        !isCtTypeSupported(configFromServer->UsedCTType)) {
       SUPLA_LOG_WARNING("EM[%d] CT type %d not supported",
                         getChannelNumber(),
                         configFromServer->UsedCTType);
       configValid = false;
-    } else {
+    } else if (usedCtType != bitNumberCtTypeInNewConfig) {
       usedCtType = bitNumberCtTypeInNewConfig;
       char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
       generateKey(key, Supla::ConfigTag::EmCtTypeTag);
@@ -602,15 +594,17 @@ Supla::ApplyConfigResult Supla::Sensor::ElectricityMeter::applyChannelConfig(
     }
   }
 
-  int8_t bitNumberPhaseLedTypeInNewConfig =
-      Supla::getBitNumber(configFromServer->UsedPhaseLedType);
-  if (usedPhaseLedType != bitNumberPhaseLedTypeInNewConfig) {
-    if (!isPhaseLedTypeSupported(configFromServer->UsedPhaseLedType)) {
+  if (availablePhaseLedTypes != 0 ||
+      configFromServer->UsedPhaseLedType != 0) {
+    int8_t bitNumberPhaseLedTypeInNewConfig =
+        Supla::getBitNumber(configFromServer->UsedPhaseLedType);
+    if (bitNumberPhaseLedTypeInNewConfig < 0 ||
+        !isPhaseLedTypeSupported(configFromServer->UsedPhaseLedType)) {
       SUPLA_LOG_DEBUG("EM[%d] Phase LED type %d not supported",
                       getChannelNumber(),
                       configFromServer->UsedPhaseLedType);
       configValid = false;
-    } else {
+    } else if (usedPhaseLedType != bitNumberPhaseLedTypeInNewConfig) {
       usedPhaseLedType = bitNumberPhaseLedTypeInNewConfig;
       char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
       generateKey(key, Supla::ConfigTag::EmPhaseLedTag);

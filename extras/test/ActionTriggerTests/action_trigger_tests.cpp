@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SuplaDevice.h>
 #include <arduino_mock.h>
@@ -32,10 +17,13 @@
 #include <supla/protocol/supla_srpc.h>
 #include <supla/device/register_device.h>
 #include <storage_mock.h>
+#include <vector>
 #include "supla/actions.h"
 #include "supla/events.h"
 
 using testing::_;
+using ::testing::AnyNumber;
+using ::testing::ElementsAreArray;
 using ::testing::DoAll;
 using ::testing::Pointee;
 using ::testing::Return;
@@ -82,8 +70,37 @@ class TimeInterfaceStub : public TimeInterface {
   }
 };
 
+void ignoreAtValueUpdates(SrpcMock *srpc) {
+  EXPECT_CALL(*srpc, valueChanged(_, _, _, _, _)).Times(AnyNumber());
+}
+
+void loadMqttActionTriggerMode(Supla::Control::ActionTrigger *at,
+                               int32_t mode) {
+  ConfigMock cfg;
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([mode](const char *key,
+                                                   int32_t *value) {
+    EXPECT_STREQ(key, "0_mqtt_at");
+    *value = mode;
+    return true;
+  });
+  at->onLoadConfig(nullptr);
+}
+
+void applyActionTriggerServerConfig(Supla::Control::ActionTrigger *at,
+                                    uint32_t activeActions) {
+  TSD_ChannelConfig result = {};
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
+  config.ActiveActions = activeActions;
+  memcpy(result.Config, &config, sizeof(config));
+  at->handleChannelConfig(&result);
+}
+
 TEST_F(ActionTriggerTests, AttachToMonostableButton) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   Supla::Control::ActionTrigger at;
@@ -165,6 +182,7 @@ TEST_F(ActionTriggerTests, AttachToMonostableButton) {
 
 TEST_F(ActionTriggerTests, AttachToBistableButton) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   // enabling bistable button
@@ -237,6 +255,7 @@ TEST_F(ActionTriggerTests, AttachToBistableButton) {
 
 TEST_F(ActionTriggerTests, AttachToMotionSensorButton) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   // enabling motion sensor button
@@ -317,6 +336,7 @@ TEST_F(ActionTriggerTests, AttachToMotionSensorButton) {
 
 TEST_F(ActionTriggerTests, SendActionOnce) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::ActionTrigger at;
   Supla::Control::ActionTrigger at2;
@@ -355,6 +375,7 @@ TEST_F(ActionTriggerTests, SendActionOnce) {
 
 TEST_F(ActionTriggerTests, SendFewActions) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::ActionTrigger at;
 
@@ -383,6 +404,7 @@ TEST_F(ActionTriggerTests, SendFewActions) {
 
 TEST_F(ActionTriggerTests, ActionsShouldAddCaps) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::ActionTrigger at;
   Supla::Control::Button button(10, false, false);
@@ -402,8 +424,33 @@ TEST_F(ActionTriggerTests, ActionsShouldAddCaps) {
                 SUPLA_ACTION_CAP_SHORT_PRESS_x5);
 }
 
+TEST_F(ActionTriggerTests,
+       PreserveCapabilitiesWithoutAttachedButtonOnChannelConfig) {
+  Supla::Control::ActionTrigger at;
+
+  at.activateAction(Supla::SEND_AT_TURN_ON);
+  EXPECT_EQ(at.getChannel()->getActionTriggerCaps(),
+            SUPLA_ACTION_CAP_TURN_ON);
+
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger actionTriggerConfig = {};
+  actionTriggerConfig.ActiveActions = 0;
+  memcpy(config.Config, &actionTriggerConfig, sizeof(actionTriggerConfig));
+
+  at.handleChannelConfig(&config);
+  EXPECT_EQ(at.getChannel()->getActionTriggerCaps(),
+            SUPLA_ACTION_CAP_TURN_ON);
+
+  at.rebuildForAttachedButton();
+  EXPECT_EQ(at.getChannel()->getActionTriggerCaps(),
+            SUPLA_ACTION_CAP_TURN_ON);
+}
+
 TEST_F(ActionTriggerTests, RelatedChannel) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Channel ch0;
   Supla::ChannelElement che1;
@@ -433,8 +480,121 @@ TEST_F(ActionTriggerTests, RelatedChannel) {
       (Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()))[0], 2);
 }
 
+TEST_F(ActionTriggerTests, RelatedChannelChangeSendsChannelValueUpdate) {
+  SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
+  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(AnyNumber());
+  TimeInterfaceStub time;
+  Supla::Channel ch0;
+  Supla::Channel ch1;
+  Supla::Control::ActionTrigger at;
+
+  at.setRelatedChannel(ch0);
+  at.onRegistered(suplaSrpc);
+  at.iterateConnected();
+  testing::Mock::VerifyAndClearExpectations(&srpc);
+
+  TActionTriggerProperties expected = {};
+  expected.relatedChannelNumber = ch1.getChannelNumber() + 1;
+  std::vector<char> expectedValue(SUPLA_CHANNELVALUE_SIZE, 0);
+  memcpy(expectedValue.data(), &expected, sizeof(expected));
+  EXPECT_CALL(srpc,
+              valueChanged(nullptr,
+                           at.getChannelNumber(),
+                           ElementsAreArray(expectedValue),
+                           0,
+                           0));
+
+  at.setRelatedChannel(ch1);
+  at.iterateConnected();
+}
+
+TEST_F(ActionTriggerTests,
+       InitialRelatedChannelDoesNotSendChannelValueAfterRegistration) {
+  SrpcMock srpc;
+  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(AnyNumber());
+  TimeInterfaceStub time;
+  Supla::Channel ch0;
+  Supla::Control::ActionTrigger at;
+
+  at.setRelatedChannel(ch0);
+  at.onRegistered(suplaSrpc);
+
+  EXPECT_CALL(srpc, valueChanged(_, _, _, _, _)).Times(0);
+  at.iterateConnected();
+}
+
+TEST_F(ActionTriggerTests,
+       ServerConfigRebuildWithSameValueDoesNotSendChannelValue) {
+  SrpcMock srpc;
+  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(AnyNumber());
+  TimeInterfaceStub time;
+  Supla::Channel relatedChannel;
+  Supla::Control::Button button(10);
+  Supla::Control::ActionTrigger at;
+  ActionHandlerMock ah;
+
+  button.addAction(Supla::TOGGLE, ah, Supla::ON_PRESS);
+  at.attach(button);
+  at.setRelatedChannel(relatedChannel);
+  at.onInit();
+  at.onRegistered(suplaSrpc);
+  at.iterateConnected();
+  testing::Mock::VerifyAndClearExpectations(&srpc);
+
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger actionTriggerConfig = {};
+  actionTriggerConfig.ActiveActions = 0;
+  memcpy(config.Config, &actionTriggerConfig, sizeof(actionTriggerConfig));
+
+  EXPECT_CALL(srpc, valueChanged(_, _, _, _, _)).Times(0);
+  at.handleChannelConfig(&config);
+  at.iterateConnected();
+}
+
+TEST_F(ActionTriggerTests, PendingActionDoesNotDropChannelValueUpdate) {
+  SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
+  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(AnyNumber());
+  TimeInterfaceStub time;
+  Supla::Channel relatedChannel;
+  Supla::Control::ActionTrigger at;
+
+  at.onRegistered(suplaSrpc);
+
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger actionTriggerConfig = {};
+  actionTriggerConfig.ActiveActions = SUPLA_ACTION_CAP_TOGGLE_x1;
+  memcpy(config.Config, &actionTriggerConfig, sizeof(actionTriggerConfig));
+  at.handleChannelConfig(&config);
+
+  at.handleAction(0, Supla::SEND_AT_TOGGLE_x1);
+
+  TActionTriggerProperties expected = {};
+  expected.relatedChannelNumber = relatedChannel.getChannelNumber() + 1;
+  std::vector<char> expectedValue(SUPLA_CHANNELVALUE_SIZE, 0);
+  memcpy(expectedValue.data(), &expected, sizeof(expected));
+  EXPECT_CALL(srpc,
+              actionTrigger(at.getChannelNumber(), SUPLA_ACTION_CAP_TOGGLE_x1));
+  EXPECT_CALL(srpc,
+              valueChanged(nullptr,
+                           at.getChannelNumber(),
+                           ElementsAreArray(expectedValue),
+                           0,
+                           0));
+
+  at.setRelatedChannel(relatedChannel);
+  at.iterateConnected();
+  at.iterateConnected();
+}
+
 TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   Supla::Control::ActionTrigger at;
@@ -573,6 +733,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
 TEST_F(ActionTriggerTests,
        ManageLocalActionsForMonostableButtonConditionalOnPress) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   Supla::Control::ActionTrigger at;
@@ -713,6 +874,7 @@ TEST_F(ActionTriggerTests,
 
 TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   Supla::Control::ActionTrigger at;
@@ -846,6 +1008,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
 TEST_F(ActionTriggerTests,
        ManageLocalActionsForMonostableButtonConditionalOnRelease) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   Supla::Control::ActionTrigger at;
@@ -989,6 +1152,7 @@ TEST_F(ActionTriggerTests,
 TEST_F(ActionTriggerTests,
        ManageLocalActionsForMonostableButtonOnReleaseAndOnPress) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   Supla::Control::ActionTrigger at;
@@ -1125,6 +1289,7 @@ TEST_F(ActionTriggerTests,
 
 TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   b1.setMulticlickTime(500, true);  // enable bistable button
@@ -1251,6 +1416,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
 TEST_F(ActionTriggerTests,
        ManageLocalActionsForBistableButtonConditionalOnChange) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   b1.setMulticlickTime(500, true);  // enable bistable button
@@ -1384,6 +1550,7 @@ TEST_F(ActionTriggerTests,
 
 TEST_F(ActionTriggerTests, AlwaysEnabledLocalAction) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   Supla::Control::ActionTrigger at;
@@ -1468,6 +1635,7 @@ TEST_F(ActionTriggerTests, AlwaysEnabledLocalAction) {
 
 TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   StorageMock storage;
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
@@ -1583,6 +1751,7 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
 
 TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   Supla::Control::ActionTrigger at;
@@ -1720,6 +1889,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
 
 TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   StorageMock storage;
   ConfigMock cfg;
   TimeInterfaceStub time;
@@ -1845,6 +2015,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
 
 TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   StorageMock storage;
   ConfigMock cfg;
   TimeInterfaceStub time;
@@ -2003,6 +2174,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
 
 TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   StorageMock storage;
   ConfigMock cfg;
   TimeInterfaceStub time;
@@ -2139,6 +2311,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
 
 TEST_F(ActionTriggerTests, MqttSendAtTest) {
   SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
   MqttMock mqtt(&sd);
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
@@ -2155,33 +2328,7 @@ TEST_F(ActionTriggerTests, MqttSendAtTest) {
   b1.addAction(Supla::TURN_ON, ah, Supla::ON_CLICK_5);
   b1.addAction(Supla::TURN_ON, ah, Supla::ON_HOLD);
 
-  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
-  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
-  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x5));
-
-  EXPECT_CALL(
-      mqtt,
-      publishTest("supla/devices/supla-device/channels/0/button_short_press",
-                  "button_short_press",
-                  0,
-                  false));
-
-  EXPECT_CALL(
-      mqtt,
-      publishTest("supla/devices/supla-device/channels/0/button_long_press",
-                  "button_long_press",
-                  0,
-                  false));
-
-  EXPECT_CALL(
-      mqtt,
-      publishTest(
-          "supla/devices/supla-device/channels/0/button_quintuple_press",
-          "button_quintuple_press",
-          0,
-          false));
-
-  EXPECT_CALL(ah, handleAction(_, 0)).Times(4);
+  EXPECT_CALL(ah, handleAction(_, Supla::TURN_ON)).Times(3);
 
   EXPECT_TRUE(b1.isMonostable());
   b1.runAction(Supla::ON_PRESS);
@@ -2193,8 +2340,33 @@ TEST_F(ActionTriggerTests, MqttSendAtTest) {
   for (int i = 0; i < 10; i++) {
     at.iterateConnected();
   }
+  testing::Mock::VerifyAndClearExpectations(&ah);
 
   at.onInit();
+
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x5));
+
+  EXPECT_CALL(
+      mqtt,
+      publishTest("supla/devices/supla-device/channels/0/button_short_press",
+                  "button_short_press",
+                  0,
+                  false));
+  EXPECT_CALL(
+      mqtt,
+      publishTest("supla/devices/supla-device/channels/0/button_long_press",
+                  "button_long_press",
+                  0,
+                  false));
+  EXPECT_CALL(
+      mqtt,
+      publishTest(
+          "supla/devices/supla-device/channels/0/button_quintuple_press",
+          "button_quintuple_press",
+          0,
+          false));
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
@@ -2217,6 +2389,8 @@ TEST_F(ActionTriggerTests, MqttSendAtTest) {
   for (int i = 0; i < 10; i++) {
     at.iterateConnected();
   }
+  testing::Mock::VerifyAndClearExpectations(&srpc);
+  testing::Mock::VerifyAndClearExpectations(&mqtt);
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
@@ -2235,7 +2409,127 @@ TEST_F(ActionTriggerTests, MqttSendAtTest) {
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result, false);
 
-  // it should be executed on ah mock
+  EXPECT_CALL(ah, handleAction(Supla::ON_CLICK_1, Supla::TURN_ON));
+  EXPECT_CALL(srpc, actionTrigger(_, _)).Times(0);
+  EXPECT_CALL(mqtt, publishTest(_, _, _, _)).Times(0);
+
+  // It should be executed locally, without publishing an action trigger.
   b1.runAction(Supla::ON_CLICK_1);
+  at.iterateConnected();
 }
 
+TEST_F(ActionTriggerTests,
+       MqttModeCloudConfigPublishesOnlyConfiguredActionsToBothProtocols) {
+  SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
+  TimeInterfaceStub time;
+  Supla::Control::ActionTrigger at;
+
+  loadMqttActionTriggerMode(&at, 0);
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_HOLD);
+
+  MqttMock mqtt(&sd);
+  mqtt.onInit();
+  mqtt.setRegisteredAndReady();
+
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
+  EXPECT_CALL(
+      mqtt,
+      publishTest("supla/devices/supla-device/channels/0/button_long_press",
+                  "button_long_press",
+                  0,
+                  false));
+
+  at.handleAction(0, Supla::SEND_AT_HOLD);
+  at.handleAction(0, Supla::SEND_AT_SHORT_PRESS_x1);
+  at.iterateConnected();
+  at.iterateConnected();
+
+  testing::Mock::VerifyAndClearExpectations(&srpc);
+  testing::Mock::VerifyAndClearExpectations(&mqtt);
+
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
+  EXPECT_CALL(
+      mqtt,
+      publishTest("supla/devices/supla-device/channels/0/button_short_press",
+                  "button_short_press",
+                  0,
+                  false));
+
+  at.handleAction(0, Supla::SEND_AT_HOLD);
+  at.handleAction(0, Supla::SEND_AT_SHORT_PRESS_x1);
+  at.iterateConnected();
+  at.iterateConnected();
+}
+
+TEST_F(ActionTriggerTests,
+       MqttModePublishAllDisableNonePublishesAllToBothProtocols) {
+  SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
+  TimeInterfaceStub time;
+  Supla::Control::ActionTrigger at;
+
+  loadMqttActionTriggerMode(&at, 1);
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_HOLD);
+
+  MqttMock mqtt(&sd);
+  mqtt.onInit();
+  mqtt.setRegisteredAndReady();
+
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
+  EXPECT_CALL(
+      mqtt,
+      publishTest("supla/devices/supla-device/channels/0/button_long_press",
+                  "button_long_press",
+                  0,
+                  false));
+  EXPECT_CALL(
+      mqtt,
+      publishTest("supla/devices/supla-device/channels/0/button_short_press",
+                  "button_short_press",
+                  0,
+                  false));
+
+  at.handleAction(0, Supla::SEND_AT_HOLD);
+  at.handleAction(0, Supla::SEND_AT_SHORT_PRESS_x1);
+  at.iterateConnected();
+  at.iterateConnected();
+}
+
+TEST_F(ActionTriggerTests,
+       MqttModePublishAllDisableAllSurvivesEmptyCloudConfig) {
+  SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
+  TimeInterfaceStub time;
+  Supla::Control::ActionTrigger at;
+
+  loadMqttActionTriggerMode(&at, 2);
+  applyActionTriggerServerConfig(&at, 0);
+
+  MqttMock mqtt(&sd);
+  mqtt.onInit();
+  mqtt.setRegisteredAndReady();
+
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
+  EXPECT_CALL(
+      mqtt,
+      publishTest("supla/devices/supla-device/channels/0/button_long_press",
+                  "button_long_press",
+                  0,
+                  false));
+  EXPECT_CALL(
+      mqtt,
+      publishTest("supla/devices/supla-device/channels/0/button_short_press",
+                  "button_short_press",
+                  0,
+                  false));
+
+  at.handleAction(0, Supla::SEND_AT_HOLD);
+  at.handleAction(0, Supla::SEND_AT_SHORT_PRESS_x1);
+  at.iterateConnected();
+  at.iterateConnected();
+}

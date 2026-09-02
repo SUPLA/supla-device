@@ -1,30 +1,15 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "nvs_config.h"
 
-#ifdef SUPLA_DEVICE_ESP32
 #include <esp_random.h>
-#endif
-
 #include <supla/crc16.h>
 #include <esp_system.h>
 #include <nvs.h>
 #include <nvs_flash.h>
 #include <esp_flash_encrypt.h>
+#include <limits.h>
 #include <supla/log_wrapper.h>
 #include <supla-common/proto.h>
 #include <string.h>
@@ -218,9 +203,15 @@ bool NvsConfig::init() {
     nvs_handle_t suplaNamespace;
     err = nvs_open_from_partition(
         NVS_DEFAULT_PARTITION_NAME, "supla", NVS_READWRITE, &suplaNamespace);
-    nvs_erase_all(suplaNamespace);
-    nvs_commit(suplaNamespace);
-    nvs_close(suplaNamespace);
+    if (err == ESP_OK) {
+      nvs_erase_all(suplaNamespace);
+      nvs_commit(suplaNamespace);
+      nvs_close(suplaNamespace);
+    } else {
+      SUPLA_LOG_DEBUG("NvsConfig: failed to open legacy NVS namespace "
+                      "for cleanup (%s)",
+                      esp_err_to_name(err));
+    }
   }
 
   SUPLA_LOG_INFO("NvsConfig: initialized NVS storage on partition %s",
@@ -288,13 +279,15 @@ bool NvsConfig::getString(const char* key, char* value, size_t maxSize) {
 }
 
 int NvsConfig::getStringSize(const char* key) {
-  auto buf = new char[4000];
-  if (getString(key, buf, 4000)) {
-    int len = strnlen(buf, 4000);
-    delete [] buf;
-    return len;
+  size_t size = 0;
+  esp_err_t err = nvs_get_str(nvsHandle, key, nullptr, &size);
+  if (err != ESP_OK) {
+    return -1;
   }
-  return -1;
+  if (size > static_cast<size_t>(INT32_MAX)) {
+    return -1;
+  }
+  return static_cast<int>(size);
 }
 
 bool NvsConfig::setBlob(const char* key, const char* value, size_t blobSize) {
@@ -308,7 +301,15 @@ bool NvsConfig::getBlob(const char* key, char* value, size_t blobSize) {
 }
 
 int NvsConfig::getBlobSize(const char* key) {
-  return -1;
+  if (key == nullptr) {
+    return -1;
+  }
+  size_t size = 0;
+  esp_err_t err = nvs_get_blob(nvsHandle, key, nullptr, &size);
+  if (err != ESP_OK || size > static_cast<size_t>(INT32_MAX)) {
+    return -1;
+  }
+  return static_cast<int>(size);
 }
 
 bool NvsConfig::getInt8(const char* key, int8_t* result) {
@@ -417,7 +418,7 @@ bool NvsConfig::readDataPartitionImp(int address, char* buf, int size) {
   return true;
 }
 
-bool NvsConfig::isDeviceDataPartitionAvailable() {
+bool NvsConfig::isDeviceDataPartitionDeclared() {
   if (!dataPartitionInitiazlied) {
     dataPartitionInitiazlied = true;
     dataPartition = esp_partition_find_first(
@@ -426,28 +427,43 @@ bool NvsConfig::isDeviceDataPartitionAvailable() {
         SUPLA_DEVICE_DATA_PARTITION_NAME);
 
     if (dataPartition == nullptr) {
-      SUPLA_LOG_ERROR("Data partition partition not found");
-      return false;
-    }
-
-    if (dataPartition->size < 8192) {
-      SUPLA_LOG_ERROR("Data partition too small");
-      dataPartition = nullptr;
-      return false;
-    }
-
-    char buf[16] = {};
-    if (!readDataPartitionImp(0, buf, 16)) {
-      dataPartition = nullptr;
-      return false;
-    }
-    if (!initDeviceDataPartitionCopyAndChecksum()) {
-      dataPartition = nullptr;
+      SUPLA_LOG_INFO("Data partition not found");
       return false;
     }
   }
 
   return dataPartition != nullptr;
+}
+
+bool NvsConfig::isDeviceDataPartitionAvailable() {
+  if (!isDeviceDataPartitionDeclared()) {
+    return false;
+  }
+
+  if (dataPartitionValidated) {
+    return dataPartitionValid;
+  }
+
+  dataPartitionValidated = true;
+  dataPartitionValid = false;
+
+  if (dataPartition->size < 8192) {
+    SUPLA_LOG_ERROR("Data partition too small");
+    return false;
+  }
+
+  char buf[16] = {};
+  if (!readDataPartitionImp(0, buf, 16)) {
+    SUPLA_LOG_ERROR("Data partition declared but not readable");
+    return false;
+  }
+  if (!initDeviceDataPartitionCopyAndChecksum()) {
+    SUPLA_LOG_ERROR("Data partition declared but not usable");
+    return false;
+  }
+
+  dataPartitionValid = true;
+  return true;
 }
 
 bool NvsConfig::isDeviceDataValid(const DeviceDataBuf &buf) const {

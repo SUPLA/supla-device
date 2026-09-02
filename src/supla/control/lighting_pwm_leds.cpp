@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "lighting_pwm_leds.h"
 
@@ -22,6 +7,15 @@
 
 namespace Supla {
 namespace Control {
+
+namespace {
+uint32_t PwmMaxValueForBits(uint8_t bits) {
+  if (bits == 0) {
+    return 0;
+  }
+  return (1UL << bits) - 1;
+}
+}  // namespace
 
 LightingPwmLeds::LightingPwmLeds(
     LightingPwmLeds *parent, int out1, int out2, int out3, int out4, int out5)
@@ -92,27 +86,6 @@ void LightingPwmLeds::applyDefaultChannelFunctions() {
   getChannel()->setDefaultFunction(defaultFunction);
 }
 
-void LightingPwmLeds::setOutputIo(int outputIndex, Supla::Io::Base *io) {
-  if (outputIndex < 0 || outputIndex >= kMaxOutputs) {
-    return;
-  }
-  outputs[outputIndex].pin.io = io;
-}
-
-Supla::Io::Base *LightingPwmLeds::getOutputIo(int outputIndex) const {
-  if (outputIndex < 0 || outputIndex >= kMaxOutputs) {
-    return nullptr;
-  }
-  return outputs[outputIndex].pin.io;
-}
-
-int LightingPwmLeds::getOutputPin(int outputIndex) const {
-  if (outputIndex < 0 || outputIndex >= kMaxOutputs) {
-    return -1;
-  }
-  return outputs[outputIndex].pin.getPin();
-}
-
 void LightingPwmLeds::setRGBCCTValueOnDevice(uint32_t output[5],
                                              int usedOutputs) {
   if (!initDone || !enabled) {
@@ -138,7 +111,7 @@ void LightingPwmLeds::setRGBCCTValueOnDevice(uint32_t output[5],
   for (int i = 0; i < usedOutputs; i++) {
     outputs[i].lastSourceValue = static_cast<int32_t>(output[i]);
     uint32_t value = output[i];
-    uint32_t outputMax = outputs[i].pin.analogWriteMaxValue();
+    uint32_t outputMax = getPwmMaxValueForOutput(outputs[i]);
     if (outputMax > 0 && outputMax != maxHwValue) {
       value = static_cast<uint32_t>(
           (static_cast<uint64_t>(value) * outputMax + maxHwValue / 2) /
@@ -150,6 +123,59 @@ void LightingPwmLeds::setRGBCCTValueOnDevice(uint32_t output[5],
     outputs[i].lastDutyValue = static_cast<int32_t>(value);
     outputs[i].pin.analogWrite(value);
   }
+
+  for (int i = usedOutputs; i < lastUsedOutputs; i++) {
+    if (outputs[i].pin.isSet() && outputs[i].lastDutyValue != 0) {
+      outputs[i].lastSourceValue = 0;
+      outputs[i].lastDutyValue = 0;
+      outputs[i].pin.analogWrite(0);
+    }
+  }
+
+  lastUsedOutputs = usedOutputs;
+}
+
+bool LightingPwmLeds::isOutputSharedWithParent(
+    const OutputState &output) const {
+  if (!hasParent() || parentPwm == nullptr || !output.pin.isSet()) {
+    return false;
+  }
+
+  for (const auto &parentOutput : parentPwm->outputs) {
+    if (parentOutput.pin.isSet() && parentOutput.pin == output.pin) {
+      return true;
+    }
+  }
+  return false;
+}
+
+uint8_t LightingPwmLeds::getPwmResolutionBitsForOutput(
+    const OutputState &output) const {
+  if (!output.pin.isSet() || isOutputSharedWithParent(output)) {
+    return 0;
+  }
+
+  if (Supla::Io::canSetPwmResolutionBits(
+          static_cast<uint8_t>(output.pin.getPin()), output.pin.io)) {
+    return getPwmResolutionBits();
+  }
+  return Supla::Io::defaultPwmResolutionBits(
+      static_cast<uint8_t>(output.pin.getPin()), output.pin.io);
+}
+
+uint32_t LightingPwmLeds::getPwmMaxValueForOutput(
+    const OutputState &output) const {
+  return PwmMaxValueForBits(getPwmResolutionBitsForOutput(output));
+}
+
+void LightingPwmLeds::applyPwmResolutionBitsToOutputs() {
+  for (auto &output : outputs) {
+    if (output.pin.isSet() && !isOutputSharedWithParent(output) &&
+        Supla::Io::canSetPwmResolutionBits(
+            static_cast<uint8_t>(output.pin.getPin()), output.pin.io)) {
+      output.pin.setPwmResolutionBits(getPwmResolutionBits());
+    }
+  }
 }
 
 void LightingPwmLeds::applyPwmFrequencyToOutputs() {
@@ -157,7 +183,7 @@ void LightingPwmLeds::applyPwmFrequencyToOutputs() {
   Supla::Io::Base *configuredIo[kMaxOutputs] = {};
   int configuredIoCount = 0;
   for (auto &output : outputs) {
-    if (output.pin.io != nullptr) {
+    if (output.pin.isSet() && !isOutputSharedWithParent(output)) {
       bool alreadyConfigured = false;
       for (int i = 0; i < configuredIoCount; i++) {
         if (configuredIo[i] == output.pin.io) {
@@ -167,7 +193,7 @@ void LightingPwmLeds::applyPwmFrequencyToOutputs() {
       }
       if (!alreadyConfigured) {
         configuredIo[configuredIoCount++] = output.pin.io;
-        output.pin.setAnalogOutputFrequency(frequency);
+        output.pin.setPwmFrequency(frequency);
       }
     }
   }
@@ -175,6 +201,7 @@ void LightingPwmLeds::applyPwmFrequencyToOutputs() {
 
 void LightingPwmLeds::onLoadConfig(SuplaDeviceClass *sdc) {
   LightingPwmBase::onLoadConfig(sdc);
+  applyPwmResolutionBitsToOutputs();
   applyPwmFrequencyToOutputs();
 }
 
@@ -185,7 +212,7 @@ void LightingPwmLeds::onInit() {
 
   uint32_t outputMaxValue = 0;
   for (const auto &output : outputs) {
-    uint32_t value = output.pin.analogWriteMaxValue();
+    uint32_t value = getPwmMaxValueForOutput(output);
     if (value > outputMaxValue) {
       outputMaxValue = value;
     }
@@ -194,18 +221,20 @@ void LightingPwmLeds::onInit() {
     setMaxHwValue(static_cast<int>(outputMaxValue));
   }
 
+  applyPwmResolutionBitsToOutputs();
+
   if (hasParent()) {
     SUPLA_LOG_DEBUG("Light[%d]: initialize parent PWM", getChannelNumber());
     parentPwm->onInit();
-    LightingPwmBase::onInit();
-    return;
   }
 
   applyPwmFrequencyToOutputs();
 
   for (auto &output : outputs) {
-    output.pin.configureAnalogOutput();
-    output.pin.pinMode();
+    if (output.pin.isSet() && !isOutputSharedWithParent(output)) {
+      output.pin.configureAnalogOutput();
+      output.pin.pinMode();
+    }
   }
 
   LightingPwmBase::onInit();

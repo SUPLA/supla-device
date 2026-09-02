@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O.
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef EXTRAS_PORTING_ESP_IDF_ESP_IDF_WIFI_H_
 #define EXTRAS_PORTING_ESP_IDF_ESP_IDF_WIFI_H_
@@ -46,6 +31,9 @@ class EspIdfWifi : public Supla::Wifi {
   void setIpReady(bool ready);
   void setIpv4Addr(uint32_t ip);
   void setWifiConnected(bool state);
+  void setLastDisconnectReason(int reason);
+  bool isAccessPointConnected() const;
+  int getLastDisconnectReason() const;
   bool isIpSetupTimeout() override;
 
   bool isInConfigMode();
@@ -54,10 +42,12 @@ class EspIdfWifi : public Supla::Wifi {
 
   uint32_t getIP() override;
   void setMaxTxPower(int power);
+  uint32_t getConfiguredStaticIp() const;
+  bool isStaticIpConfigured() const;
+  void startConfigModeScan() override;
+  void finishConfigModeScan();
 
-#ifdef SUPLA_DEVICE_ESP32
   esp_netif_t *getStaNetIf() const;
-#endif
 
  protected:
   bool initDone = false;
@@ -65,15 +55,17 @@ class EspIdfWifi : public Supla::Wifi {
   bool isIpReady = false;
   bool allowDisable = false;
   uint32_t ipv4 = 0;
+  bool staticIpConfigured = false;
   uint8_t lastChannel = 0;
   int lastReasons[SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX] = {};
   int lastReasonIdx = 0;
+  int lastDisconnectReason = 0;
   uint32_t connectedToWifiTimestamp = 0;
   int maxTxPower = -1;
-#ifdef SUPLA_DEVICE_ESP32
+  bool configModeScanInProgress = false;
+  bool isConfigModeScanInProgress() const override;
   esp_netif_t *staNetIf = nullptr;
   esp_netif_t *apNetIf = nullptr;
-#endif
 };
 
 };  // namespace Supla

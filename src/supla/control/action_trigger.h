@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_CONTROL_ACTION_TRIGGER_H_
 #define SRC_SUPLA_CONTROL_ACTION_TRIGGER_H_
@@ -73,6 +58,7 @@ class ActionTrigger : public Element, public ActionHandler {
   void onLoadState() override;
   void onSaveState() override;
 
+  void rebuildForAttachedButton();
   void disableATCapability(uint32_t capToDisable);
   void enableStateStorage();
 
@@ -94,6 +80,8 @@ class ActionTrigger : public Element, public ActionHandler {
   Supla::Control::Button *attachedButton = nullptr;
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;
   Supla::ActionHandlerClient *localHandlerForDisabledAt = nullptr;
+  Supla::ActionHandler *localHandlerClient = nullptr;
+  uint16_t localHandlerAction = 0;
   uint32_t activeActionsFromServer = 0;
   uint32_t disablesLocalOperation = 0;
   uint32_t disabledCapabilities = 0;
@@ -104,6 +92,7 @@ class ActionTrigger : public Element, public ActionHandler {
   bool storageEnabled = false;
   bool alwaysUseOnClick1 = false;
   bool enabled = true;
+  bool localHandlerSwitchConfigured = false;
 };
 
 }  // namespace Control

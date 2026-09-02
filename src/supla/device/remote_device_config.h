@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_DEVICE_REMOTE_DEVICE_CONFIG_H_
 #define SRC_SUPLA_DEVICE_REMOTE_DEVICE_CONFIG_H_
@@ -22,6 +7,8 @@
 #include <supla-common/proto.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/modbus/modbus_configurator.h>
+#include <supla/device/input_activation_config.h>
+#include <supla/device/thermal_protection_config.h>
 
 namespace Supla {
 
@@ -52,7 +39,18 @@ class RemoteDeviceConfig {
   static uint64_t HomeScreenIntToBit(int mode);
   static void SetModbusProperties(
       const Supla::Modbus::ConfigProperties &modbusProperties);
+  static void SetThermalProtectionProperties(
+      const ThermalProtectionProperties &properties);
+  static void SetInputActivationProperties(
+      const InputActivationProperties &properties);
   static void ClearResendAttemptsCounter();
+#ifdef SUPLA_TEST
+  static uint64_t GetRegisteredConfigFieldsForTests();
+  static void SetRegisteredConfigFieldsForTests(uint64_t fields);
+  static InputActivationProperties GetInputActivationPropertiesForTests();
+  static void SetInputActivationPropertiesForTests(
+      const InputActivationProperties &properties);
+#endif
 
   explicit RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration = false);
   virtual ~RemoteDeviceConfig();
@@ -86,6 +84,10 @@ class RemoteDeviceConfig {
   void processHomeScreenDelayTypeConfig(
       uint64_t fieldBit, TDeviceConfig_HomeScreenOffDelayType *config);
   void processModbusConfig(uint64_t fieldBit, TDeviceConfig_Modbus *config);
+  void processThermalProtectionConfig(
+      uint64_t fieldBit, TDeviceConfig_ThermalProtection *config);
+  void processInputActivationConfig(
+      uint64_t fieldBit, TDeviceConfig_InputActivation *config);
   void processFirmwareUpdateConfig(
       uint64_t fieldBit, TDeviceConfig_FirmwareUpdate *config);
 
@@ -104,6 +106,10 @@ class RemoteDeviceConfig {
   void fillHomeScreenDelayTypeConfig(
       TDeviceConfig_HomeScreenOffDelayType *config) const;
   void fillModbusConfig(TDeviceConfig_Modbus *config) const;
+  void fillThermalProtectionConfig(
+      TDeviceConfig_ThermalProtection *config) const;
+  void fillInputActivationConfig(
+      TDeviceConfig_InputActivation *config) const;
   void fillFirmwareUpdateConfig(TDeviceConfig_FirmwareUpdate *config) const;
 
   bool endFlagReceived = false;
@@ -115,6 +121,8 @@ class RemoteDeviceConfig {
   static uint64_t fieldBitsUsedByDevice;
   static uint64_t homeScreenContentAvailable;
   static Supla::Modbus::ConfigProperties modbusProperties;
+  static ThermalProtectionProperties thermalProtectionProperties;
+  static InputActivationProperties inputActivationProperties;
   static uint8_t resendAttempts;
 };
 

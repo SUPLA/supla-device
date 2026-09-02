@@ -1,18 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_CONTROL_ROLLER_SHUTTER_H_
 #define SRC_SUPLA_CONTROL_ROLLER_SHUTTER_H_
@@ -86,6 +73,12 @@ class RollerShutter : public RollerShutterInterface {
                          int newTilt = UNKNOWN_POSITION) override;
 
  protected:
+  RollerShutter(Supla::Io::IoPin pinUp,
+                Supla::Io::IoPin pinDown,
+                bool tiltFunctionsEnabled,
+                Supla::Channel &externalChannel,
+                ElementMode mode);
+
   virtual void stopMovement();
   virtual void relayDownOn();
   virtual void relayUpOn();
@@ -105,6 +98,9 @@ class RollerShutter : public RollerShutterInterface {
   uint32_t doNothingTime = 0;
 
   uint32_t operationTimeoutMs = 0;
+  bool invalidTiltConfigurationWarningLogged = false;
+  bool invalidTiltConfigurationFallbackActive = false;
+  bool invalidTiltOnlyRuntimeWarningLogged = false;
 };
 
 }  // namespace Control

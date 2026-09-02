@@ -3,8 +3,9 @@
 
 name: My fancy device
 log_level: debug
+proto_verbose_log: false
 state_files_path: "/var/local/supla-device"
-security_level: 2 # disable certyficate verification
+security_level: 0 # disable certyficate verification
 
 supla:
   server: svr123.supla.org
@@ -34,6 +35,11 @@ channels:
     port: 80
     device_id: 0
     device_type: 2
+
+  - type: SolarEdge
+    api_key: your_api_key
+    site_id: your_site_id
+    inverter_serial_number: your_inverter_serial_number
 
   - type: ThermometerParsed
     name: t1
@@ -105,6 +111,6 @@ channels:
 
   - type: BinaryParsed
     state: 1
+    timeout_s: 2.5
     parser:
       use: parser_1
-

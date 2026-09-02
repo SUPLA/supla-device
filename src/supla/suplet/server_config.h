@@ -1,0 +1,153 @@
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#ifndef SRC_SUPLA_SUPLET_SERVER_CONFIG_H_
+#define SRC_SUPLA_SUPLET_SERVER_CONFIG_H_
+
+#include <stddef.h>
+#include <stdint.h>
+#include <supla/suplet/assignment_applier.h>
+#include <supla/suplet/definition_cache.h>
+#include <supla/suplet/json_definition.h>
+
+namespace Supla {
+namespace Suplet {
+
+enum class ServerConfigResult : uint8_t {
+  Applied = 0,
+  Removed = 1,
+  InvalidArgument = 2,
+  DefinitionNotSupported = 3,
+  InvalidDefinition = 4,
+  InvalidConfig = 5,
+  StorageError = 6,
+  ResourceLimitExceeded = 7,
+  CreateOnlyParamChanged = 8,
+  Busy = 9,
+  TopologyChangeNotAllowed = 10,
+  DefinitionNotFound = 11,
+  DefinitionCannotBeChanged = 12,
+  InstanceLimitExceeded = 13,
+  ChannelLimitExceeded = 14,
+  InstanceNotFound = 15,
+  VersionMismatch = 16,
+};
+
+struct CachedDefinitionDetails {
+  CachedDefinitionInfo cache = {};
+  Category category = Category::Unknown;
+  Kind kind = Kind::Unknown;
+  uint8_t schemaVersion = 0;
+  uint8_t handlerVersion = 0;
+  uint8_t maxInstances = 0;
+};
+
+class DownloadedDefinitionStore {
+ public:
+  bool load(const DefinitionCache &cache,
+            uint32_t definitionId,
+            uint16_t definitionVersion,
+            JsonDefinition *definition,
+            CachedDefinitionInfo *info = nullptr) const;
+  uint8_t getCount(const DefinitionCache &cache) const;
+};
+
+class ServerConfigHandler {
+ public:
+  ServerConfigHandler(
+      Manager *manager,
+      Registry *registry,
+      DefinitionCache *definitionCache = nullptr,
+      DownloadedDefinitionStore *downloadedDefinitions = nullptr);
+
+  ServerConfigResult loadDownloadedDefinitions();
+  ServerConfigResult saveDownloadedDefinition(uint32_t definitionId,
+                                              uint16_t definitionVersion,
+                                              const char *definitionJson,
+                                              const uint8_t *sha256);
+  ServerConfigResult beginStagedDownloadedDefinition(
+      uint32_t definitionId,
+      uint16_t definitionVersion,
+      uint16_t jsonSize,
+      const uint8_t *sha256,
+      DefinitionCacheHandle *handle);
+  ServerConfigResult writeStagedDownloadedDefinitionChunk(
+      DefinitionCacheHandle handle,
+      uint16_t chunkIndex,
+      const uint8_t *data,
+      uint16_t size);
+  ServerConfigResult commitStagedDownloadedDefinition(
+      DefinitionCacheHandle handle,
+      uint32_t definitionId,
+      uint16_t definitionVersion,
+      uint16_t jsonSize,
+      const uint8_t *sha256);
+  void abortStagedDownloadedDefinition(DefinitionCacheHandle handle);
+  ServerConfigResult removeDownloadedDefinition(uint32_t definitionId,
+                                                uint16_t definitionVersion);
+  uint8_t getCachedDefinitionCount() const;
+  bool getCachedDefinitionDetails(uint8_t listIndex,
+                                  CachedDefinitionDetails *details) const;
+  ServerConfigResult garbageCollectUnusedDefinitions();
+  ServerConfigResult applyAssignmentJson(const char *assignmentJson,
+                                         uint32_t definitionId,
+                                         uint16_t definitionVersion);
+  ServerConfigResult applyInstanceParams(uint8_t instanceId,
+                                         uint32_t definitionId,
+                                         uint16_t definitionVersion,
+                                         const char *paramsJson,
+                                         uint16_t paramsSize,
+                                         uint8_t *appliedInstanceId = nullptr);
+  ServerConfigResult applyInstanceUpgrade(uint8_t instanceId,
+                                          uint32_t definitionId,
+                                          uint16_t fromDefinitionVersion,
+                                          uint16_t toDefinitionVersion,
+                                          const char *paramsJson,
+                                          uint16_t paramsSize);
+  ServerConfigResult validateAssignmentJson(
+      const char *assignmentJson,
+      uint32_t definitionId,
+      uint16_t definitionVersion) const;
+  ServerConfigResult validateInstanceParams(
+      uint8_t instanceId,
+      uint32_t definitionId,
+      uint16_t definitionVersion,
+      const char *paramsJson,
+      uint16_t paramsSize) const;
+  ServerConfigResult validateInstanceUpgrade(uint8_t instanceId,
+                                             uint32_t definitionId,
+                                             uint16_t fromDefinitionVersion,
+                                             uint16_t toDefinitionVersion,
+                                             const char *paramsJson,
+                                             uint16_t paramsSize) const;
+  ServerConfigResult applyCommandJson(const char *commandJson);
+  ServerConfigResult validateCommandJson(const char *commandJson) const;
+  ServerConfigResult removeAssignment(uint8_t instanceId);
+  bool loadDownloadedDefinition(uint32_t definitionId,
+                                uint16_t definitionVersion,
+                                JsonDefinition *definition,
+                                CachedDefinitionInfo *info = nullptr) const;
+  bool loadDownloadedDefinitionJson(
+      uint32_t definitionId,
+      uint16_t definitionVersion,
+      char *definitionJson,
+      size_t definitionJsonSize,
+      CachedDefinitionInfo *info = nullptr) const;
+
+  bool isRuntimeRefreshRequired() const;
+  void clearRuntimeRefreshRequired();
+
+ private:
+  static ServerConfigResult fromAssignmentResult(AssignmentResult result);
+
+  Manager *manager = nullptr;
+  Registry *registry = nullptr;
+  DefinitionCache *definitionCache = nullptr;
+  DownloadedDefinitionStore *downloadedDefinitions = nullptr;
+  bool runtimeRefreshRequired = false;
+};
+
+}  // namespace Suplet
+}  // namespace Supla
+
+#endif  // SRC_SUPLA_SUPLET_SERVER_CONFIG_H_

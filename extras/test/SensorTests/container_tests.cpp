@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -23,6 +8,8 @@
 #include <arduino_mock.h>
 #include <supla/events.h>
 #include <supla/sensor/virtual_binary.h>
+
+#include <vector>
 
 class ActionHandlerMock : public Supla::ActionHandler {
  public:
@@ -306,6 +293,37 @@ TEST(ContainerTests, ContainerSettersAndGetters) {
   EXPECT_FALSE(container.isWarningActive());
   EXPECT_FALSE(container.isInvalidSensorStateActive());
   EXPECT_FALSE(container.isSoundAlarmOn());
+}
+
+TEST(ContainerTests, MuteAlarmSoundAuthorizationMatrix) {
+  struct TestCase {
+    bool muteWithoutAdditionalAuth;
+    bool superUserAuthorized;
+    int expectedResult;
+    bool expectedSoundAlarmOn;
+  };
+
+  const TestCase testCases[] = {
+      {false, false, SUPLA_CALCFG_RESULT_UNAUTHORIZED, true},
+      {false, true, SUPLA_CALCFG_RESULT_DONE, false},
+      {true, false, SUPLA_CALCFG_RESULT_DONE, false},
+      {true, true, SUPLA_CALCFG_RESULT_DONE, false},
+  };
+
+  for (const auto &testCase : testCases) {
+    Supla::Sensor::Container container;
+    container.setMuteAlarmSoundWithoutAdditionalAuth(
+        testCase.muteWithoutAdditionalAuth);
+    container.getChannel()->setContainerSoundAlarmOn(true);
+
+    TSD_DeviceCalCfgRequest request = {};
+    request.Command = SUPLA_CALCFG_CMD_MUTE_ALARM_SOUND;
+    request.SuperUserAuthorized = testCase.superUserAuthorized;
+
+    EXPECT_EQ(container.handleCalcfgFromServer(&request),
+              testCase.expectedResult);
+    EXPECT_EQ(container.isSoundAlarmOn(), testCase.expectedSoundAlarmOn);
+  }
 }
 
 TEST(ContainerTests, AlarmingTests) {
@@ -1028,4 +1046,3 @@ TEST(ContainerTests, SensorAndInternalReportingTests) {
   EXPECT_TRUE(container.isInvalidSensorStateActive());
   EXPECT_FALSE(container.isSoundAlarmOn());
 }
-

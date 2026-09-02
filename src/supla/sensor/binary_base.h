@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_SENSOR_BINARY_BASE_H_
 #define SRC_SUPLA_SENSOR_BINARY_BASE_H_
@@ -37,6 +22,9 @@ struct BinarySensorConfig {
       uint16_t filteringTimeMs;  // 0 - not used; > 0 - filtering time
       uint8_t sensitivity;       // 0 - not used; 1..101 -> 0..100 %;
                                      // value 1 is 0% -> off
+      uint8_t localAlarmIndication;  // 0 - not used,
+                                     // 1 - local alarm indication disabled,
+                                     // 2 - local alarm indication enabled
     };
   };
 
@@ -73,6 +61,13 @@ class BinaryBase : public ElementWithChannelActions {
    * @return true if invert logic was changed
    */
   bool setServerInvertLogic(bool invertLogic, bool local = true);
+
+  /**
+   * Enable a one-time local turn action after the initial sensor value has
+   * become stable. The default is disabled to preserve the existing startup
+   * behavior.
+   */
+  void setTurnActionSyncOnStartup(bool enabled = true);
 
   /**
    * Get the timeout in deciseconds (1 == 0.1 s). 0 - not used.
@@ -140,6 +135,28 @@ class BinaryBase : public ElementWithChannelActions {
   bool setSensitivity(uint8_t sensitivity, bool local = true);
 
   /**
+   * Get the local alarm indication state. 0 - not used, 1 - disabled,
+   * 2 - enabled.
+   *
+   * @return local alarm indication state
+   */
+  uint8_t getLocalAlarmIndication() const;
+
+  /**
+   * Set the local alarm indication state. 0 - not used, 1 - disabled,
+   * 2 - enabled.
+   * Parameter is synchronized with the server.
+   *
+   * @param localAlarmIndication
+   * @param local use true if change originates locally from the device (i.e.
+   *              from config mode)
+   *
+   * @return true if local alarm indication state was changed
+   */
+  bool setLocalAlarmIndication(uint8_t localAlarmIndication,
+                               bool local = true);
+
+  /**
    * Set the read interval in ms. Sensor will try to read value every
    * interval. Setting to 0 will configure default value 100 ms
    *
@@ -164,10 +181,27 @@ class BinaryBase : public ElementWithChannelActions {
                          uint8_t configType) override;
 
  protected:
+  void beginInitialChannelValueRead();
+  void setInitialChannelValue(bool value);
+  void notifyInputStateChangeCandidate();
+  void setChannelValueQuietly(bool value);
   void saveConfig();
   void printConfig();
+  void printConfig(const TChannelConfig_BinarySensor *serverConfig);
+
+  enum class LocalActionState : uint8_t {
+    LoadingConfig,
+    Initializing,
+    StartupSync,
+    Runtime,
+  };
+
   uint32_t lastReadTime = 0;
   uint32_t readIntervalMs = 100;
+  uint32_t startupSyncStartTimeMs = 0;
+  LocalActionState localActionState = LocalActionState::LoadingConfig;
+  bool turnActionSyncOnStartup = false;
+  bool initialStateCandidatePending = false;
   BinarySensorChannel channel;
   BinarySensorConfig config;
 };

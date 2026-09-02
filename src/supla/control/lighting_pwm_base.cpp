@@ -1,28 +1,16 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "lighting_pwm_base.h"
 
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <supla/io.h>
+#include <supla/auto_lock.h>
 #include <supla/control/button.h>
 #include <supla/log_wrapper.h>
+#include <supla/mutex.h>
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
 
@@ -108,6 +96,15 @@ LightingPwmBase::LightingPwmBase(LightingPwmBase *parent) : parent(parent) {
       SUPLA_RGBW_BIT_FUNC_DIMMER_CCT | SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB);
   channel.setDefault(SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB);
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  mutex = Supla::Mutex::Create();
+}
+
+LightingPwmBase::~LightingPwmBase() {
+  if (brightnessAdjuster) {
+    delete brightnessAdjuster;
+    brightnessAdjuster = nullptr;
+  }
+  delete mutex;
 }
 
 void LightingPwmBase::setBrightnessAdjuster(BrightnessAdjuster *adjuster) {
@@ -137,6 +134,9 @@ void LightingPwmBase::setRGBCCT(int red,
                                 int whiteTemperature,
                                 bool toggle,
                                 bool instant) {
+  SUPLA_LOG_DEBUG("Light[%d] entering setRGBCCT", getChannelNumber());
+  Supla::AutoLock autoLock(mutex);
+  SUPLA_LOG_DEBUG("Light[%d] setRGBCCT entered", getChannelNumber());
   if (!instant) {
     // Stop brightness adjustment when some command is received
     autoIterateMode = AutoIterateMode::OFF;
@@ -193,6 +193,7 @@ void LightingPwmBase::setRGBCCT(int red,
 
   // Schedule save in 5 s after state change
   Supla::Storage::ScheduleSave(5000, 2000);
+  SUPLA_LOG_DEBUG("Light[%d] setRGBCCT leaving", getChannelNumber());
 }
 
 void LightingPwmBase::iterateAlways() {
@@ -207,11 +208,19 @@ void LightingPwmBase::iterateAlways() {
                         requested.whiteBrightness,
                         requested.whiteTemperature);
   }
+
+  auto fn = getChannel()->getDefaultFunction();
+  if (fn != previousChannelFunction) {
+    autoIterateMode = AutoIterateMode::OFF;
+    previousChannelFunction = fn;
+    setRGBCCT(0, 255, 0, 0, 0, -1, 0, 1);
+  }
   updateEnabledState();
 }
 
 void LightingPwmBase::updateEnabledState() {
-  if (hasParent() && parent->getMissingGpioCount() > 0) {
+  if ((hasParent() && parent->getMissingGpioCount() > 0) ||
+      getChannel()->getDefaultFunction() == SUPLA_CHANNELFNC_NONE) {
     disableChannel();
   } else {
     enableChannel();
@@ -330,6 +339,7 @@ int32_t LightingPwmBase::handleNewValueFromServer(
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_DIMMER_START: {
+      Supla::AutoLock lock(mutex);
       timing.lastAutoIterateStartTimestamp = millis();
       if (autoIterateMode == AutoIterateMode::OFF) {
         autoIterateMode = AutoIterateMode::DIMMER;
@@ -339,6 +349,7 @@ int32_t LightingPwmBase::handleNewValueFromServer(
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_COLOR_START: {
+      Supla::AutoLock lock(mutex);
       timing.lastAutoIterateStartTimestamp = millis();
       if (autoIterateMode == AutoIterateMode::OFF) {
         autoIterateMode = AutoIterateMode::RGB;
@@ -348,11 +359,13 @@ int32_t LightingPwmBase::handleNewValueFromServer(
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_ALL_START: {
+      Supla::AutoLock lock(mutex);
       autoIterateMode = AutoIterateMode::ALL;
       timing.lastAutoIterateStartTimestamp = millis();
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_DIMMER_STOP: {
+      Supla::AutoLock lock(mutex);
       if (autoIterateMode == AutoIterateMode::DIMMER) {
         autoIterateMode = AutoIterateMode::OFF;
       } else if (autoIterateMode == AutoIterateMode::ALL) {
@@ -361,6 +374,7 @@ int32_t LightingPwmBase::handleNewValueFromServer(
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_COLOR_STOP: {
+      Supla::AutoLock lock(mutex);
       if (autoIterateMode == AutoIterateMode::RGB) {
         autoIterateMode = AutoIterateMode::OFF;
       } else if (autoIterateMode == AutoIterateMode::ALL) {
@@ -369,6 +383,7 @@ int32_t LightingPwmBase::handleNewValueFromServer(
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_ALL_STOP: {
+      Supla::AutoLock lock(mutex);
       autoIterateMode = AutoIterateMode::OFF;
       break;
     }
@@ -768,14 +783,9 @@ void LightingPwmBase::onFastTimer() {
   }
   uint32_t now = millis();
 
-  uint32_t fn = getChannel()->getDefaultFunction();
-  if (fn != previousChannelFunction) {
-    autoIterateMode = AutoIterateMode::OFF;
-    auto fnCopy = previousChannelFunction;
-    previousChannelFunction = fn;
-    fn = fnCopy;
-    setRGBCCT(0, 255, 0, 0, 0, -1, 0, 1);
-  }
+  int autoIterateAction = 0;
+
+  Supla::AutoLock autoLock(mutex);
 
   if (timing.lastTick == 0) {
     timing.lastTick = now;
@@ -788,22 +798,25 @@ void LightingPwmBase::onFastTimer() {
     return;
   }
 
+  uint32_t timeDiff = now - timing.lastTick;
+  if (timeDiff == 0) {
+    return;
+  }
+
   if (autoIterateMode != AutoIterateMode::OFF &&
       now - timing.lastAutoIterateStartTimestamp < 10000) {
     if (now - timing.lastIterateDimmerTimestamp >= 35) {
-      // timing.lastIterateDimmerTimestamp is updated in handleAction calls
-      // below
       switch (autoIterateMode) {
         case AutoIterateMode::DIMMER: {
-          handleAction(0, Supla::ITERATE_DIM_W);
+          autoIterateAction = Supla::ITERATE_DIM_W;
           break;
         }
         case AutoIterateMode::RGB: {
-          handleAction(0, Supla::ITERATE_DIM_RGB);
+          autoIterateAction = Supla::ITERATE_DIM_RGB;
           break;
         }
         case AutoIterateMode::ALL: {
-          handleAction(0, Supla::ITERATE_DIM_ALL);
+          autoIterateAction = Supla::ITERATE_DIM_ALL;
           break;
         }
         default:
@@ -811,14 +824,7 @@ void LightingPwmBase::onFastTimer() {
       }
     }
   } else {
-    // disable auto iterate after 10 s timeout
     autoIterateMode = AutoIterateMode::OFF;
-  }
-
-  uint32_t timeDiff = now - timing.lastTick;
-
-  if (timeDiff == 0) {
-    return;
   }
 
   timing.lastTick = now;
@@ -833,6 +839,8 @@ void LightingPwmBase::onFastTimer() {
     hardware.whiteTemperature = 0;
     valueChanged = true;
   }
+
+  auto fn = getChannel()->getDefaultFunction();
 
   const bool useRGB = (fn == SUPLA_CHANNELFNC_RGBLIGHTING) ||
                       (fn == SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING) ||
@@ -991,8 +999,8 @@ void LightingPwmBase::onFastTimer() {
     const uint32_t minBrightness =
         ratioToHwValue(minBrightnessRatio, maxHwValue);
     float white2Fraction = 1.0 * hardware.whiteTemperature / maxHwValue;
-    white2Brightness = adjBrightness * white2Fraction * warmWhiteGain;
-    white1Brightness = adjBrightness * (1.0 - white2Fraction) * coldWhiteGain;
+    white2Brightness = adjBrightness * white2Fraction * coldWhiteGain;
+    white1Brightness = adjBrightness * (1.0 - white2Fraction) * warmWhiteGain;
     if (white1Brightness > 0 && white1Brightness < minBrightness) {
       white1Brightness = minBrightness;
     }
@@ -1043,11 +1051,18 @@ void LightingPwmBase::onFastTimer() {
     valueAdj[usedChannels++] = white2Brightness;
   }
 
-  if (usedChannels > 0) {
-    setRGBCCTValueOnDevice(valueAdj, usedChannels);
-    for (int i = 0; i < usedChannels; i++) {
+  auto usedChannelsCopy = usedChannels;
+
+  autoLock.unlock();
+  if (usedChannelsCopy > 0) {
+    setRGBCCTValueOnDevice(valueAdj, usedChannelsCopy);
+    for (int i = 0; i < usedChannelsCopy; i++) {
       valueAdj[i] = valueAdj[i] * 100.0 / maxHwValue;
     }
+  }
+
+  if (autoIterateAction != 0) {
+    handleAction(0, autoIterateAction);
   }
 }
 
@@ -1570,6 +1585,7 @@ void LightingPwmBase::enableChannel() {
   timing.lastTick = 0;
   enabled = true;
   getChannel()->setStateOnline();
+  setRGBCCT(0, 255, 0, 0, 0, -1, 0, 1);
 }
 
 void LightingPwmBase::disableChannel() {
@@ -1579,6 +1595,8 @@ void LightingPwmBase::disableChannel() {
 
   uint32_t valueAdj[SUPLA_MAX_OUTPUT_COUNT] = {0};
   setRGBCCTValueOnDevice(valueAdj, usedChannels);
+
+  Supla::AutoLock lock(mutex);
   hardware.red = 0;
   hardware.green = 0;
   hardware.blue = 0;
@@ -1588,6 +1606,7 @@ void LightingPwmBase::disableChannel() {
   usedChannels = 0;
 
   enabled = false;
+  lock.unlock();
   getChannel()->setStateOnlineAndNotAvailable();
 }
 
@@ -1623,22 +1642,87 @@ void LightingPwmBase::setStepPwmFrequency(uint16_t stepPwmFrequency) {
   this->stepPwmFrequency = stepPwmFrequency;
 }
 
+void LightingPwmBase::setPwmResolutionBits(uint8_t resolutionBits) {
+  pwmResolutionBits = resolutionBits;
+
+  uint32_t hwMax = 0;
+  if (resolutionBits > 0) {
+    hwMax = (1UL << resolutionBits) - 1;
+  }
+  if (hwMax > UINT16_MAX) {
+    hwMax = UINT16_MAX;
+  }
+
+  setMaxHwValue(static_cast<int>(hwMax));
+}
+
+uint32_t LightingPwmBase::scalePwmValueForOutput(
+    const Supla::Io::IoPin &pin, uint32_t value) const {
+  if (!pin.isSet()) {
+    return 0;
+  }
+
+  const uint32_t sourceMax = maxHwValue > 0
+                                 ? static_cast<uint32_t>(maxHwValue)
+                                 : 0;
+  if (sourceMax == 0) {
+    return 0;
+  }
+
+  if (value > sourceMax) {
+    value = sourceMax;
+  }
+
+  uint32_t outputMax = sourceMax;
+  const uint8_t pinNumber = static_cast<uint8_t>(pin.getPin());
+  if (!Supla::Io::canSetPwmResolutionBits(pinNumber, pin.io)) {
+    const uint8_t outputBits =
+        Supla::Io::defaultPwmResolutionBits(pinNumber, pin.io);
+    if (outputBits > 0 && outputBits < 32) {
+      outputMax = (1UL << outputBits) - 1;
+    } else {
+      outputMax = 0;
+    }
+  }
+
+  if (outputMax == 0) {
+    return 0;
+  }
+  if (outputMax == sourceMax) {
+    return value;
+  }
+
+  const uint64_t scaled =
+      (static_cast<uint64_t>(value) * outputMax + sourceMax / 2) / sourceMax;
+  return scaled > outputMax ? outputMax : static_cast<uint32_t>(scaled);
+}
+
 void LightingPwmBase::setPwmFrequency(uint16_t frequency) {
+  pwmFrequency = normalizePwmFrequency(
+      frequency, minPwmFrequency, maxPwmFrequency, stepPwmFrequency);
+
+  SUPLA_LOG_INFO(
+      "Light[%d] PWM frequency set to %d", getChannelNumber(), pwmFrequency);
+}
+
+uint16_t LightingPwmBase::normalizePwmFrequency(uint16_t frequency,
+                                                uint16_t minPwmFrequency,
+                                                uint16_t maxPwmFrequency,
+                                                uint16_t stepPwmFrequency) {
   if (frequency < minPwmFrequency) {
     frequency = minPwmFrequency;
   } else if (frequency > maxPwmFrequency) {
     frequency = maxPwmFrequency;
   }
 
-  if ((frequency - minPwmFrequency) % stepPwmFrequency != 0) {
+  if (stepPwmFrequency != 0 &&
+      (frequency - minPwmFrequency) % stepPwmFrequency != 0) {
     frequency =
         minPwmFrequency +
         ((frequency - minPwmFrequency) / stepPwmFrequency) * stepPwmFrequency;
   }
 
-  pwmFrequency = frequency;
-  SUPLA_LOG_INFO(
-      "Light[%d] PWM frequency set to %d", getChannelNumber(), pwmFrequency);
+  return frequency;
 }
 
 uint16_t LightingPwmBase::getMinPwmFrequency() const {
@@ -1655,6 +1739,10 @@ uint16_t LightingPwmBase::getPwmFrequency() const {
 
 uint16_t LightingPwmBase::getStepPwmFrequency() const {
   return stepPwmFrequency;
+}
+
+uint8_t LightingPwmBase::getPwmResolutionBits() const {
+  return pwmResolutionBits;
 }
 
 };  // namespace Control

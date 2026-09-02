@@ -1,20 +1,5 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "hvac_base.h"
 
@@ -33,6 +18,8 @@
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
+#include <supla/protocol/mqtt/hvac_mqtt.h>
+#include <supla/tools.h>
 
 #include "hvac_weekly_schedule.h"
 #include "output_interface.h"
@@ -62,6 +49,7 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
   setTemperatureAuxMax(7500);             // 75 degrees
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST);
+  Supla::Protocol::RegisterHvacMqttHandler();
 
   // default function is set in onInit based on supported modes or loaded from
   // config
@@ -418,6 +406,31 @@ void HvacBase::onInit() {
       setBinarySensorChannelNo(getChannelNumber());
     }
   }
+  if (!setPumpSwitchChannelNo(getPumpSwitchChannelNo())) {
+    SUPLA_LOG_WARNING(
+        "HVAC[%d]: pump switch channel number %d is invalid. Clearing.",
+        getChannelNumber(),
+        getPumpSwitchChannelNo());
+    clearPumpSwitchChannelNo();
+  }
+  if (!setHeatOrColdSourceSwitchChannelNo(
+          getHeatOrColdSourceSwitchChannelNo())) {
+    SUPLA_LOG_WARNING(
+        "HVAC[%d]: heat or cold source switch channel number %d is invalid. "
+        "Clearing.",
+        getChannelNumber(),
+        getHeatOrColdSourceSwitchChannelNo());
+    clearHeatOrColdSourceSwitchChannelNo();
+  }
+  if (!setMasterThermostatChannelNo(getMasterThermostatChannelNo())) {
+    SUPLA_LOG_WARNING(
+        "HVAC[%d]: master thermostat channel number %d is invalid. "
+        "Clearing.",
+        getChannelNumber(),
+        getMasterThermostatChannelNo());
+    defaultMasterThermostat = -1;
+    clearMasterThermostatChannelNo();
+  }
 
   previousSubfunction = config.Subfunction;
 
@@ -621,6 +634,8 @@ void HvacBase::iterateAlways() {
         HvacCoolSubfunctionFlag::HeatSubfunctionOrNotUsed);
   }
 
+  emitCountdownTimerActionIfNeeded();
+
   // wait with reaction to new settings
   if (lastConfigChangeTimestampMs &&
       millis() - lastConfigChangeTimestampMs < 5000) {
@@ -689,22 +704,19 @@ void HvacBase::iterateAlways() {
   }
   lastTemperature = tMain;
 
-  if (checkAuxProtection(tAux)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler protection exit",
-                    getChannelNumber());
-    channel.setHvacFlagAntifreezeOverheatActive(false);
-    updateChannelState();
-    return;
-  }
+  // Auxiliary regulation must not affect protection evaluation. Keep its
+  // previous state only for the normal auxiliary regulation below, where it
+  // is used by the hysteresis evaluator.
+  const bool auxWasForcingOutput = forcedByAux;
   forcedByAux = false;
 
-  if (checkOverheatProtection(tMain)) {
+  if (checkOverheatProtection(tMain, tAux)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: overheat protection exit", getChannelNumber());
     updateChannelState();
     return;
   }
 
-  if (checkAntifreezeProtection(tMain)) {
+  if (checkAntifreezeProtection(tMain, tAux)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: antifreeze protection exit", getChannelNumber());
     updateChannelState();
     return;
@@ -723,6 +735,25 @@ void HvacBase::iterateAlways() {
   } else {
     channel.setHvacFlagForcedOffBySensor(false);
   }
+
+  // OFF is a user-level request. It must be retried on later iterations when
+  // setOutput() deferred the transition because of MinOnTimeS.
+  if (channel.getHvacMode() == SUPLA_HVAC_MODE_OFF) {
+    setOutput(0, false);
+    updateChannelState();
+    return;
+  }
+
+  // Auxiliary min/max is normal regulation at this point. It must not be
+  // allowed to hide the higher-priority forced-off and OFF handling above.
+  forcedByAux = auxWasForcingOutput;
+  if (checkAuxProtection(tAux)) {
+    SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler auxiliary regulation exit",
+                    getChannelNumber());
+    updateChannelState();
+    return;
+  }
+  forcedByAux = false;
 
   switch (channel.getHvacMode()) {
     case SUPLA_HVAC_MODE_HEAT_COOL: {
@@ -1107,6 +1138,14 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
     return false;
   }
 
+  if (newConfig->TemperatureControlType >
+      SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE) {
+    SUPLA_LOG_WARNING("HVAC[%d]: invalid temperature control type %d",
+                      channel.getChannelNumber(),
+                      newConfig->TemperatureControlType);
+    return false;
+  }
+
   // heater cooler thermometer is optional, but if set, it has to be set to a
   // local thermometer
   if (newConfig->AuxThermometerType !=
@@ -1154,6 +1193,22 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
                         newConfig->BinarySensorChannelNo);
       return false;
     }
+  }
+
+  if (newConfig->MasterThermostatIsSet != 0 &&
+      newConfig->MasterThermostatIsSet != 1) {
+    SUPLA_LOG_WARNING("HVAC[%d]: invalid master thermostat IsSet value %d",
+                      channel.getChannelNumber(),
+                      newConfig->MasterThermostatIsSet);
+    return false;
+  }
+
+  if (newConfig->MasterThermostatIsSet == 1 &&
+      !isChannelHvac(newConfig->MasterThermostatChannelNo)) {
+    SUPLA_LOG_WARNING("HVAC[%d]: invalid master thermostat channel %d",
+                      channel.getChannelNumber(),
+                      newConfig->MasterThermostatChannelNo);
+    return false;
   }
 
   if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
@@ -1582,6 +1637,49 @@ bool HvacBase::isChannelBinarySensor(int16_t channelNo) const {
       SUPLA_CHANNELTYPE_BINARYSENSOR) {
     return true;
   }
+  return false;
+}
+
+bool HvacBase::isChannelHvac(int16_t channelNo) const {
+  if (channelNo < 0 || channelNo == getChannelNumber()) {
+    return false;
+  }
+  auto element = Supla::Element::getElementByChannelNumber(channelNo);
+  if (element == nullptr) {
+    SUPLA_LOG_WARNING("HVAC[%d]: master thermostat not found for channel %d",
+                      getChannelNumber(),
+                      channelNo);
+    return false;
+  }
+  if (element->getChannel()->getChannelType() == SUPLA_CHANNELTYPE_HVAC) {
+    return true;
+  }
+  SUPLA_LOG_WARNING("HVAC[%d]: master thermostat channel %d has invalid type "
+                    "%d",
+                    getChannelNumber(),
+                    channelNo,
+                    element->getChannel()->getChannelType());
+  return false;
+}
+
+bool HvacBase::isChannelRelay(int16_t channelNo) const {
+  if (channelNo < 0 || channelNo == getChannelNumber()) {
+    return false;
+  }
+  auto element = Supla::Element::getElementByChannelNumber(channelNo);
+  if (element == nullptr) {
+    SUPLA_LOG_WARNING("HVAC[%d]: relay not found for channel %d",
+                      getChannelNumber(),
+                      channelNo);
+    return false;
+  }
+  if (element->getChannel()->getChannelType() == SUPLA_CHANNELTYPE_RELAY) {
+    return true;
+  }
+  SUPLA_LOG_WARNING("HVAC[%d]: channel %d has invalid relay type %d",
+                    getChannelNumber(),
+                    channelNo,
+                    element->getChannel()->getChannelType());
   return false;
 }
 
@@ -2177,14 +2275,13 @@ bool HvacBase::setMainThermometerChannelNo(int16_t newChannelNo) {
     defaultMainThermometer = newChannelNo;
     return true;
   }
-  if (channelNo == getChannelNumber()) {
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
     if (config.MainThermometerChannelNo != channelNo) {
       config.MainThermometerChannelNo = channelNo;
-      if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
-      }
+      channelConfigChangedOffline = 1;
+      saveConfig();
     }
+    return true;
   } else if (isChannelThermometer(newChannelNo)) {
     if (getAuxThermometerType() != SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
       if (channelNo == getAuxThermometerChannelNo()) {
@@ -2193,14 +2290,12 @@ bool HvacBase::setMainThermometerChannelNo(int16_t newChannelNo) {
     }
     if (config.MainThermometerChannelNo != channelNo) {
       config.MainThermometerChannelNo = channelNo;
-      if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
-      }
+      channelConfigChangedOffline = 1;
+      saveConfig();
     }
     return true;
   }
-  return true;
+  return false;
 }
 
 int16_t HvacBase::getMainThermometerChannelNo() const {
@@ -2229,25 +2324,24 @@ bool HvacBase::setAuxThermometerChannelNo(int16_t newChannelNo) {
     }
     if (config.AuxThermometerChannelNo != channelNo) {
       config.AuxThermometerChannelNo = channelNo;
-      if (getAuxThermometerType() == SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
-        setAuxThermometerType(SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED);
-        if (initDone) {
-          channelConfigChangedOffline = 1;
-          saveConfig();
-        }
+      if (getAuxThermometerType() ==
+          SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
+        setAuxThermometerType(
+            SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED);
+        channelConfigChangedOffline = 1;
+        saveConfig();
       }
     }
     return true;
   }
 
-  if (getChannelNumber() == channelNo) {
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
     if (config.AuxThermometerChannelNo != channelNo) {
       config.AuxThermometerChannelNo = channelNo;
-      setAuxThermometerType(SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
-      if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
-      }
+      setAuxThermometerType(
+          SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
+      channelConfigChangedOffline = 1;
+      saveConfig();
     }
     return true;
   }
@@ -2878,7 +2972,8 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
                  channel.getHvacModeCstr());
 }
 
-bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
+bool HvacBase::checkAntifreezeProtection(_supla_int16_t t,
+                                         _supla_int16_t tAux) {
   // antifreeze can be used when it is enabled, and when current function and
   // subfunction allows heating
   if (isAntiFreezeAndHeatProtectionEnabled() &&
@@ -2890,6 +2985,12 @@ bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
 
     auto outputValue = evaluateHeatOutputValue(t, tFreeze);
     if (outputValue > 0) {
+      // An auxiliary maximum is allowed to constrain protection heating. Do
+      // not report this as active protection when the request is blocked.
+      if (isAuxMaxLimitReached(tAux)) {
+        setOutput(0, false);
+        return false;
+      }
       setOutput(outputValue, false);
       channel.setHvacFlagAntifreezeOverheatActive(true);
       return true;
@@ -2898,7 +2999,8 @@ bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
   return false;
 }
 
-bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
+bool HvacBase::checkOverheatProtection(_supla_int16_t t,
+                                       _supla_int16_t tAux) {
   // overheat can be used when it is enabled, and when current function and
   // subfunction allows cooling
   if (isAntiFreezeAndHeatProtectionEnabled() &&
@@ -2910,6 +3012,12 @@ bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
 
     auto outputValue = evaluateCoolOutputValue(t, tOverheat);
     if (outputValue < 0) {
+      // An auxiliary minimum is allowed to constrain protection cooling. Do
+      // not report this as active protection when the request is blocked.
+      if (isAuxMinLimitReached(tAux)) {
+        setOutput(0, false);
+        return false;
+      }
       setOutput(outputValue, false);
       channel.setHvacFlagAntifreezeOverheatActive(true);
       return true;
@@ -2936,6 +3044,50 @@ bool HvacBase::isAuxProtectionEnabled() const {
   return true;
 }
 
+bool HvacBase::isAuxMinLimitReached(_supla_int16_t tAux) const {
+  if (!isAuxProtectionEnabled() || !isSensorTempValid(tAux)) {
+    return false;
+  }
+
+  auto tAuxMin = getTemperatureAuxMinSetpoint();
+  if (!isSensorTempValid(tAuxMin)) {
+    return false;
+  }
+
+  auto hysteresis = getCurrentHysteresis(true);
+  const auto algorithm = getUsedAlgorithm(true);
+  if (algorithm == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE) {
+    hysteresis >>= 1;
+  } else if (algorithm == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST) {
+    hysteresis = 0;
+  }
+
+  return static_cast<int32_t>(tAux) <
+         static_cast<int32_t>(tAuxMin) - hysteresis;
+}
+
+bool HvacBase::isAuxMaxLimitReached(_supla_int16_t tAux) const {
+  if (!isAuxProtectionEnabled() || !isSensorTempValid(tAux)) {
+    return false;
+  }
+
+  auto tAuxMax = getTemperatureAuxMaxSetpoint();
+  if (!isSensorTempValid(tAuxMax)) {
+    return false;
+  }
+
+  auto hysteresis = getCurrentHysteresis(true);
+  const auto algorithm = getUsedAlgorithm(true);
+  if (algorithm == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE) {
+    hysteresis >>= 1;
+  } else if (algorithm == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST) {
+    hysteresis = 0;
+  }
+
+  return static_cast<int32_t>(tAux) >
+         static_cast<int32_t>(tAuxMax) + hysteresis;
+}
+
 bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   if (!isAuxProtectionEnabled()) {
     return false;
@@ -2946,12 +3098,7 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   if (isSensorTempValid(tAuxMin)) {
     auto outputValue = evaluateHeatOutputValue(t, tAuxMin, true);
     if (outputValue > 0) {
-      if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF ||
-          channel.isHvacFlagCooling()) {
-        setOutput(outputValue, false);
-      } else if (isModeSupported(SUPLA_HVAC_MODE_HEAT)) {
-        return false;
-      }
+      setOutput(outputValue, false);
       forcedByAux = true;
       return true;
     }
@@ -2960,12 +3107,7 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   if (isSensorTempValid(tAuxMax)) {
     auto outputValue = evaluateCoolOutputValue(t, tAuxMax, true);
     if (outputValue < 0) {
-      if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF ||
-          channel.isHvacFlagHeating()) {
-        setOutput(outputValue, false);
-      } else if (isModeSupported(SUPLA_HVAC_MODE_COOL)) {
-        return false;
-      }
+      setOutput(outputValue, false);
       forcedByAux = true;
       return true;
     }
@@ -2995,6 +3137,7 @@ void HvacBase::copyFullChannelConfigTo(TChannelConfig_HVAC *hvac) const {
   }
 
   memcpy(hvac, &config, sizeof(TChannelConfig_HVAC));
+  hvac->ParameterFlags = parameterFlags;
 }
 
 bool HvacBase::applyNewRuntimeSettings(int mode, int32_t durationSec) {
@@ -4322,13 +4465,12 @@ bool HvacBase::setBinarySensorChannelNo(int16_t newChannelNo) {
     defaultBinarySensor = newChannelNo;
     return true;
   }
-  if (isChannelBinarySensor(newChannelNo)) {
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber() ||
+      isChannelBinarySensor(newChannelNo)) {
     if (config.BinarySensorChannelNo != channelNo) {
       config.BinarySensorChannelNo = channelNo;
-      if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
-      }
+      channelConfigChangedOffline = 1;
+      saveConfig();
     }
     return true;
   }
@@ -4497,6 +4639,38 @@ void HvacBase::updateTimerValue() {
         reinterpret_cast<unsigned char *>(&lastWorkingMode),
         senderId,
         true);
+  }
+}
+
+bool HvacBase::getRemainingCountdownTimerSec(uint32_t *remainingSec) const {
+  if (remainingSec) {
+    *remainingSec = 0;
+  }
+  if (!Supla::Clock::IsReady() || !channel.isHvacFlagCountdownTimer() ||
+      countdownTimerEnds <= 1) {
+    return false;
+  }
+
+  time_t now = Supla::Clock::GetTimeStamp();
+  if (countdownTimerEnds <= now) {
+    return false;
+  }
+
+  if (remainingSec) {
+    *remainingSec = countdownTimerEnds - now;
+  }
+  return true;
+}
+
+void HvacBase::emitCountdownTimerActionIfNeeded() {
+  uint32_t remainingSec = UINT32_MAX;
+  uint32_t currentRemainingSec = 0;
+  if (getRemainingCountdownTimerSec(&currentRemainingSec)) {
+    remainingSec = currentRemainingSec;
+  }
+  if (remainingSec != lastCountdownTimerRemainingSec) {
+    lastCountdownTimerRemainingSec = remainingSec;
+    runAction(Supla::ON_COUNTDOWN_TIMER);
   }
 }
 
@@ -4726,6 +4900,11 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
     return false;
   }
   bool readonlyViolation = false;
+  auto fixReadonlyTemp = [&](int32_t temperatureIndex) {
+    if (fixReadonlyTemperature(temperatureIndex, &hvacConfig->Temperatures)) {
+      readonlyViolation = true;
+    }
+  };
 
   if (parameterFlags.MainThermometerChannelNoReadonly) {
     if (config.MainThermometerChannelNo !=
@@ -4958,69 +5137,47 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   }
 
   if (parameterFlags.TemperaturesFreezeProtectionReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_FREEZE_PROTECTION,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_FREEZE_PROTECTION);
   }
 
   if (parameterFlags.TemperaturesEcoReadonly) {
-    readonlyViolation =
-        (readonlyViolation ||
-         fixReadonlyTemperature(TEMPERATURE_ECO, &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_ECO);
   }
 
   if (parameterFlags.TemperaturesComfortReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_COMFORT,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_COMFORT);
   }
 
   if (parameterFlags.TemperaturesBoostReadonly) {
-    readonlyViolation =
-        (readonlyViolation ||
-         fixReadonlyTemperature(TEMPERATURE_BOOST, &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_BOOST);
   }
 
   if (parameterFlags.TemperaturesHeatProtectionReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_HEAT_PROTECTION,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_HEAT_PROTECTION);
   }
 
   if (parameterFlags.TemperaturesHisteresisReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_HISTERESIS,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_HISTERESIS);
   }
 
   if (parameterFlags.TemperaturesAuxHisteresisReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_AUX_HISTERESIS,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_AUX_HISTERESIS);
   }
 
   if (parameterFlags.TemperaturesAboveAlarmReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_ABOVE_ALARM,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_ABOVE_ALARM);
   }
 
   if (parameterFlags.TemperaturesBelowAlarmReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_BELOW_ALARM,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_BELOW_ALARM);
   }
 
   if (parameterFlags.TemperaturesAuxMinSetpointReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_AUX_MIN_SETPOINT,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_AUX_MIN_SETPOINT);
   }
 
   if (parameterFlags.TemperaturesAuxMaxSetpointReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_AUX_MAX_SETPOINT,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_AUX_MAX_SETPOINT);
   }
 
   if (hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
@@ -5060,30 +5217,32 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
     readonlyViolation = true;
   }
 
-  if (fixReadonlyTemperature(TEMPERATURE_ROOM_MIN, &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_ROOM_MAX, &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_AUX_MIN, &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_AUX_MAX, &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_HISTERESIS_MIN,
-                             &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_HISTERESIS_MAX,
-                             &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_HEAT_COOL_OFFSET_MIN,
-                             &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_HEAT_COOL_OFFSET_MAX,
-                             &hvacConfig->Temperatures)) {
-    readonlyViolation = true;
-  }
+  fixReadonlyTemp(TEMPERATURE_ROOM_MIN);
+  fixReadonlyTemp(TEMPERATURE_ROOM_MAX);
+  fixReadonlyTemp(TEMPERATURE_AUX_MIN);
+  fixReadonlyTemp(TEMPERATURE_AUX_MAX);
+  fixReadonlyTemp(TEMPERATURE_HISTERESIS_MIN);
+  fixReadonlyTemp(TEMPERATURE_HISTERESIS_MAX);
+  fixReadonlyTemp(TEMPERATURE_HEAT_COOL_OFFSET_MIN);
+  fixReadonlyTemp(TEMPERATURE_HEAT_COOL_OFFSET_MAX);
 
   if (memcmp(&(hvacConfig->ParameterFlags),
              &parameterFlags,
              sizeof(parameterFlags)) != 0) {
+    char currentFlagsHex[sizeof(parameterFlags) * 2 + 1] = {};
+    char expectedFlagsHex[sizeof(parameterFlags) * 2 + 1] = {};
+    generateHexString(&hvacConfig->ParameterFlags,
+                      currentFlagsHex,
+                      sizeof(parameterFlags));
+    generateHexString(&parameterFlags,
+                      expectedFlagsHex,
+                      sizeof(parameterFlags));
     SUPLA_LOG_DEBUG(
-        "HVAC[%d] ParameterFlags change from 0x%X to 0x%X not allowed "
-        "(readonly)",
+        "HVAC[%d] ParameterFlags not allowed (readonly), raw current=%s "
+        "expected=%s",
         getChannelNumber(),
-        config.ParameterFlags,
-        parameterFlags);
+        currentFlagsHex,
+        expectedFlagsHex);
     config.ParameterFlags = parameterFlags;
     readonlyViolation = true;
   }
@@ -5135,46 +5294,61 @@ void HvacBase::stopCountDownTimer() {
 }
 
 int32_t HvacBase::getRemainingCountDownTimeSec() const {
-  if (countdownTimerEnds <= 1) {
-    return 0;
-  }
+  uint32_t remainingSec = 0;
   if (!Supla::Clock::IsReady()) {
     return -1;
   }
-  int32_t remainingTimeSec = countdownTimerEnds - Supla::Clock::GetTimeStamp();
-  if (remainingTimeSec < 0) {
-    remainingTimeSec = 0;
+  if (!getRemainingCountdownTimerSec(&remainingSec)) {
+    return 0;
   }
-  return remainingTimeSec;
+  return remainingSec;
 }
 
-bool HvacBase::setPumpSwitchChannelNo(uint8_t channelNo) {
+bool HvacBase::setPumpSwitchChannelNo(int16_t newChannelNo) {
+  uint8_t channelNo = getChannelNumber();
+  if (newChannelNo >= 0 && newChannelNo <= 255) {
+    channelNo = newChannelNo;
+  }
   if (initialConfig && !initDone) {
     initialConfig->PumpSwitchChannelNo = channelNo;
-    if (channelNo == getChannelNumber()) {
+    if (newChannelNo == -1 || channelNo == getChannelNumber()) {
       initialConfig->PumpSwitchIsSet = 0;
     } else {
       initialConfig->PumpSwitchIsSet = 1;
     }
   }
-  if (config.PumpSwitchChannelNo == channelNo) {
+  if (!initDone) {
+    config.PumpSwitchChannelNo = channelNo;
+    config.PumpSwitchIsSet =
+        newChannelNo == -1 || channelNo == getChannelNumber() ? 0 : 1;
+    defaultPumpSwitch = newChannelNo;
     return true;
   }
 
-  unregisterInAggregator(config.PumpSwitchChannelNo);
-  registeredInRelayHvacAggregator = false;
-  if (channelNo == getChannelNumber()) {
-    config.PumpSwitchIsSet = 0;
-  } else {
-    config.PumpSwitchIsSet = 1;
-    registerInAggregator(channelNo);
-  }
-  config.PumpSwitchChannelNo = channelNo;
-  if (!initDone) {
-    defaultPumpSwitch = channelNo;
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
+    if (config.PumpSwitchChannelNo != channelNo ||
+        config.PumpSwitchIsSet != 0) {
+      unregisterInAggregator(config.PumpSwitchChannelNo);
+      registeredInRelayHvacAggregator = false;
+      config.PumpSwitchChannelNo = channelNo;
+      config.PumpSwitchIsSet = 0;
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
     return true;
   }
-  if (initDone) {
+
+  if (!isChannelRelay(newChannelNo)) {
+    return false;
+  }
+
+  if (config.PumpSwitchChannelNo != channelNo ||
+      config.PumpSwitchIsSet == 0) {
+    unregisterInAggregator(config.PumpSwitchChannelNo);
+    registeredInRelayHvacAggregator = false;
+    config.PumpSwitchChannelNo = channelNo;
+    config.PumpSwitchIsSet = 1;
+    registerInAggregator(channelNo);
     channelConfigChangedOffline = 1;
     saveConfig();
   }
@@ -5192,33 +5366,51 @@ bool HvacBase::isPumpSwitchSet() const {
   return config.PumpSwitchIsSet != 0;
 }
 
-bool HvacBase::setHeatOrColdSourceSwitchChannelNo(uint8_t channelNo) {
+bool HvacBase::setHeatOrColdSourceSwitchChannelNo(int16_t newChannelNo) {
+  uint8_t channelNo = getChannelNumber();
+  if (newChannelNo >= 0 && newChannelNo <= 255) {
+    channelNo = newChannelNo;
+  }
   if (initialConfig && !initDone) {
     initialConfig->HeatOrColdSourceSwitchChannelNo = channelNo;
-    if (channelNo == getChannelNumber()) {
+    if (newChannelNo == -1 || channelNo == getChannelNumber()) {
       initialConfig->HeatOrColdSourceSwitchIsSet = 0;
     } else {
       initialConfig->HeatOrColdSourceSwitchIsSet = 1;
     }
   }
-  if (config.HeatOrColdSourceSwitchChannelNo == channelNo) {
+  if (!initDone) {
+    config.HeatOrColdSourceSwitchChannelNo = channelNo;
+    config.HeatOrColdSourceSwitchIsSet =
+        newChannelNo == -1 || channelNo == getChannelNumber() ? 0 : 1;
+    defaultHeatOrColdSourceSwitch = newChannelNo;
     return true;
   }
 
-  unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
-  registeredInRelayHvacAggregator = false;
-  if (channelNo == getChannelNumber()) {
-    config.HeatOrColdSourceSwitchIsSet = 0;
-  } else {
-    config.HeatOrColdSourceSwitchIsSet = 1;
-    registerInAggregator(channelNo);
-  }
-  config.HeatOrColdSourceSwitchChannelNo = channelNo;
-  if (!initDone) {
-    defaultHeatOrColdSourceSwitch = channelNo;
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
+    if (config.HeatOrColdSourceSwitchChannelNo != channelNo ||
+        config.HeatOrColdSourceSwitchIsSet != 0) {
+      unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
+      registeredInRelayHvacAggregator = false;
+      config.HeatOrColdSourceSwitchChannelNo = channelNo;
+      config.HeatOrColdSourceSwitchIsSet = 0;
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
     return true;
   }
-  if (initDone) {
+
+  if (!isChannelRelay(newChannelNo)) {
+    return false;
+  }
+
+  if (config.HeatOrColdSourceSwitchChannelNo != channelNo ||
+      config.HeatOrColdSourceSwitchIsSet == 0) {
+    unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
+    registeredInRelayHvacAggregator = false;
+    config.HeatOrColdSourceSwitchChannelNo = channelNo;
+    config.HeatOrColdSourceSwitchIsSet = 1;
+    registerInAggregator(channelNo);
     channelConfigChangedOffline = 1;
     saveConfig();
   }
@@ -5236,29 +5428,47 @@ bool HvacBase::isHeatOrColdSourceSwitchSet() const {
   return config.HeatOrColdSourceSwitchIsSet != 0;
 }
 
-bool HvacBase::setMasterThermostatChannelNo(uint8_t channelNo) {
+bool HvacBase::setMasterThermostatChannelNo(int16_t newChannelNo) {
+  uint8_t channelNo = getChannelNumber();
+  if (newChannelNo >= 0 && newChannelNo <= 255) {
+    channelNo = newChannelNo;
+  }
   if (initialConfig && !initDone) {
     initialConfig->MasterThermostatChannelNo = channelNo;
-    if (channelNo == getChannelNumber()) {
+    if (newChannelNo == -1 || channelNo == getChannelNumber()) {
       initialConfig->MasterThermostatIsSet = 0;
     } else {
       initialConfig->MasterThermostatIsSet = 1;
     }
   }
-  if (config.MasterThermostatChannelNo == channelNo) {
-    return true;
-  }
-  config.MasterThermostatChannelNo = channelNo;
-  if (channelNo == getChannelNumber()) {
-    config.MasterThermostatIsSet = 0;
-  } else {
-    config.MasterThermostatIsSet = 1;
-  }
   if (!initDone) {
-    defaultMasterThermostat = channelNo;
+    config.MasterThermostatChannelNo = channelNo;
+    config.MasterThermostatIsSet =
+        newChannelNo == -1 || channelNo == getChannelNumber() ? 0 : 1;
+    defaultMasterThermostat = newChannelNo;
     return true;
   }
-  if (initDone) {
+
+  if (newChannelNo != -1 && newChannelNo != getChannelNumber() &&
+      !isChannelHvac(newChannelNo)) {
+    return false;
+  }
+
+  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
+    if (config.MasterThermostatChannelNo != channelNo ||
+        config.MasterThermostatIsSet != 0) {
+      config.MasterThermostatChannelNo = channelNo;
+      config.MasterThermostatIsSet = 0;
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
+    return true;
+  }
+
+  if (config.MasterThermostatChannelNo != channelNo ||
+      config.MasterThermostatIsSet != 1) {
+    config.MasterThermostatChannelNo = channelNo;
+    config.MasterThermostatIsSet = 1;
     channelConfigChangedOffline = 1;
     saveConfig();
   }

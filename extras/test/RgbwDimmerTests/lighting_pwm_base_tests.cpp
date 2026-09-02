@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -34,6 +19,15 @@ class RgbCctBaseForTest : public Supla::Control::LightingPwmBase {
               setRGBCCTValueOnDevice,
               (uint32_t[5], int),
               (override));
+
+  void setCctGainsForTest(float warmGain, float coldGain) {
+    warmWhiteGain = warmGain;
+    coldWhiteGain = coldGain;
+  }
+
+  void setMaxHwValueForTest(int value) {
+    setMaxHwValue(value);
+  }
 };
 
 void setRGBCCTValues(TRGBW_Value *value,
@@ -223,6 +217,51 @@ TEST(RgbCctTests, BasicTests) {
   EXPECT_EQ(ch->getValueColorBrightness(), 40);
   EXPECT_EQ(ch->getValueBrightness(), 50);
   EXPECT_EQ(ch->getValueWhiteTemperature(), 60);
+}
+
+TEST(RgbCctTests, CctGainMappingUsesWarmAndColdChannels) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  RgbCctBaseForTest rgb;
+
+  rgb.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER_CCT);
+  rgb.setMaxHwValueForTest(1000);
+  rgb.setCctGainsForTest(0.25f, 2.0f);
+  rgb.setFadeEffectTime(0);
+
+  time.advance(1000);
+  rgb.onInit();
+
+  TSD_SuplaChannelNewValue msg = {};
+  setRGBCCTValues(reinterpret_cast<TRGBW_Value *>(msg.value),
+                  0,
+                  0,
+                  0,
+                  0,
+                  100,
+                  25,
+                  0,
+                  RGBW_COMMAND_NOT_SET);
+  rgb.handleNewValueFromServer(&msg);
+
+  uint32_t output[5] = {};
+  int usedOutputs = 0;
+  EXPECT_CALL(rgb, setRGBCCTValueOnDevice(_, 2))
+      .WillOnce([&](uint32_t values[5], int used) {
+        for (int i = 0; i < used; i++) {
+          output[i] = values[i];
+        }
+        usedOutputs = used;
+      });
+
+  time.advance(1);
+  rgb.onFastTimer();
+  time.advance(1);
+  rgb.onFastTimer();
+
+  EXPECT_EQ(usedOutputs, 2);
+  EXPECT_EQ(output[0], 187U);
+  EXPECT_EQ(output[1], 500U);
 }
 
 TEST(RgbCctTests, LegacyStorageMigrationIsOptIn) {

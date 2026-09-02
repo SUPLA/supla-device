@@ -4,7 +4,7 @@
 name: Android TV integration
 log_level: debug
 state_files_path: "/home/my_user/atv"
-security_level: 2
+security_level: 0
 
 supla:
   server: svrXX.supla.org

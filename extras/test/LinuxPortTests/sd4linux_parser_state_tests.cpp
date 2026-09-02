@@ -1,27 +1,16 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gtest/gtest.h>
 #include <simple_time.h>
+#include <supla/at_channel.h>
+#include <supla/control/action_trigger_parsed.h>
 #include <supla/parser/parser.h>
 #include <supla/sensor/binary_parsed.h>
+#include <supla/sensor/general_purpose_measurement_parsed.h>
 #include <supla/source/source.h>
 
+#include <cmath>
 #include <string>
 #include <variant>
 
@@ -48,10 +37,11 @@ class FakeSd4linuxParser : public Supla::Parser::Parser {
 
   bool validAfterRefresh = true;
   std::variant<int, bool, std::string> stateValue = 1;
+  double numericValue = 12.0;
   int refreshCount = 0;
 
   double getValue(const std::string &) override {
-    return 0;
+    return numericValue;
   }
 
   std::variant<int, bool, std::string> getStateValue(
@@ -70,6 +60,17 @@ class FakeSd4linuxParser : public Supla::Parser::Parser {
     return valid;
   }
 };
+
+static void configureActionTrigger(Supla::Control::ActionTriggerParsed *at,
+                                   uint32_t activeActions) {
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  auto actionTriggerConfig = reinterpret_cast<TChannelConfig_ActionTrigger *>(
+      config.Config);
+  actionTriggerConfig->ActiveActions = activeActions;
+  at->handleChannelConfig(&config);
+}
 
 class Sd4linuxParserStateTests : public ::testing::Test {
  protected:
@@ -259,6 +260,34 @@ TEST_F(Sd4linuxParserStateTests,
   EXPECT_EQ(parser.refreshCount, 2);
 }
 
+TEST_F(Sd4linuxParserStateTests,
+       GeneralPurposeMeasurementReturnsNanWhenStateIsNotActive) {
+  SimpleTime time;
+  FakeSd4linuxSource source;
+  FakeSd4linuxParser parser(&source);
+  parser.setRefreshTime(5000);
+  parser.stateValue = std::string("ready");
+  parser.numericValue = 67.0;
+
+  Supla::Sensor::GeneralPurposeMeasurementParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::Value, "progress");
+  sensor.setMapping(Supla::Parser::State, "state");
+  sensor.setOnValues({std::string("running")});
+  sensor.setChannelStateOnline(false);
+
+  time.advance(101);
+
+  EXPECT_TRUE(std::isnan(sensor.getValue()));
+  EXPECT_TRUE(sensor.getChannel()->isStateOnline());
+  EXPECT_EQ(parser.refreshCount, 1);
+
+  parser.stateValue = std::string("running");
+
+  EXPECT_EQ(sensor.getValue(), 67.0);
+  EXPECT_TRUE(sensor.getChannel()->isStateOnline());
+  EXPECT_EQ(parser.refreshCount, 1);
+}
+
 TEST_F(Sd4linuxParserStateTests, ReadsBinaryStateFromBoolValues) {
   SimpleTime time;
   FakeSd4linuxSource source;
@@ -314,4 +343,161 @@ TEST_F(Sd4linuxParserStateTests, ReadsBinaryStateFromTextValues) {
   sensor.iterateAlways();
   EXPECT_FALSE(sensor.getValue());
   EXPECT_FALSE(sensor.getChannel()->getValueBool());
+}
+
+TEST_F(Sd4linuxParserStateTests,
+       ActionTriggersUseRawIntegerValuesAndNormalizedState) {
+  SimpleTime time;
+  FakeSd4linuxSource source;
+  FakeSd4linuxParser parser(&source);
+  parser.stateValue = 0;
+
+  Supla::Control::ActionTriggerParsed at("raw_value_action_trigger");
+  configureActionTrigger(
+      &at,
+      SUPLA_ACTION_CAP_TURN_ON | SUPLA_ACTION_CAP_TURN_OFF |
+          SUPLA_ACTION_CAP_TOGGLE_x1);
+
+  Supla::Sensor::BinaryParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::State, "state");
+  sensor.setAtName("raw_value_action_trigger");
+  sensor.setOnValues({7});
+  sensor.onInit();
+
+  sensor.addAtOnValue({5, 0});
+  sensor.addAtOnValueChange({6, 7, 1});
+  sensor.addAtOnStateChange({0, 1, 2});
+
+  parser.stateValue = 5;
+  EXPECT_FALSE(sensor.getValue());
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(),
+            SUPLA_ACTION_CAP_TURN_ON);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0);
+
+  parser.stateValue = 6;
+  EXPECT_FALSE(sensor.getValue());
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0);
+
+  parser.stateValue = 7;
+  EXPECT_TRUE(sensor.getValue());
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(),
+            SUPLA_ACTION_CAP_TURN_OFF);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(),
+            SUPLA_ACTION_CAP_TOGGLE_x1);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0);
+}
+
+TEST_F(Sd4linuxParserStateTests,
+       StateOnValuesTreatsOtherValidValuesAsOff) {
+  SimpleTime time;
+  FakeSd4linuxSource source;
+  FakeSd4linuxParser parser(&source);
+  Supla::Sensor::BinaryParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::State, "state");
+  sensor.setOnValues({std::string("running")});
+  sensor.setUseOfflineOnInvalidState(true);
+
+  parser.stateValue = std::string("running");
+  sensor.onInit();
+  EXPECT_TRUE(sensor.getValue());
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+  EXPECT_TRUE(sensor.getChannel()->isStateOnline());
+
+  parser.stateValue = std::string("ready");
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getValue());
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+  EXPECT_TRUE(sensor.getChannel()->isStateOnline());
+}
+
+TEST_F(Sd4linuxParserStateTests,
+       TimeoutBlocksRepeatedSourceOneUntilSourceReturnsToZero) {
+  SimpleTime time;
+  FakeSd4linuxSource source;
+  FakeSd4linuxParser parser(&source);
+  Supla::Sensor::BinaryParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::State, "state");
+  sensor.setTimeoutDs(25);
+
+  parser.stateValue = 1;
+  sensor.onInit();
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+
+  for (int i = 0; i < 26; ++i) {
+    time.advance(100);
+    sensor.iterateAlways();
+  }
+
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 1;
+  time.advance(101);
+  sensor.iterateAlways();
+
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 0;
+  time.advance(101);
+  sensor.iterateAlways();
+
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = -1;
+  time.advance(101);
+  sensor.iterateAlways();
+
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 1;
+  time.advance(101);
+  sensor.iterateAlways();
+
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+}
+
+TEST_F(Sd4linuxParserStateTests,
+       InvalidStateDoesNotResetTimeoutSuppression) {
+  SimpleTime time;
+  FakeSd4linuxSource source;
+  FakeSd4linuxParser parser(&source);
+  Supla::Sensor::BinaryParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::State, "state");
+  sensor.setTimeoutDs(25);
+
+  parser.stateValue = 1;
+  sensor.onInit();
+  ASSERT_TRUE(sensor.getChannel()->getValueBool());
+
+  for (int i = 0; i < 26; ++i) {
+    time.advance(100);
+    sensor.iterateAlways();
+  }
+
+  ASSERT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 1;
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = -1;
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 1;
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 0;
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+
+  parser.stateValue = 1;
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
 }

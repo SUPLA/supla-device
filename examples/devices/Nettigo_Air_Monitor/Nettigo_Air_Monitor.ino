@@ -1,23 +1,13 @@
-/*
-   Copyright (C) malarz
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: malarz
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #define NAM_VERSION "0.5"
 #define DEV_NAME "NAM 0.3.3"
+
+// Debug/DIY only: ButtonUpdate exposes an unauthenticated OTA endpoint.
+// Do not use it on real devices or untrusted networks.
+// Uncomment the following line to enable it.
+// #define ADD_INSECURE_BUTTON_UPDATE
 
 #ifdef ARDUINO_ARCH_ESP32
 
@@ -60,7 +50,6 @@
 #include <supla/sensor/DS18B20.h>
 #include <supla/sensor/bh1750.h>
 #include <supla/sensor/particle_meter_sds011.h>
-#include <supla/sensor/sht3x.h>
 #include "heca.h"
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -82,7 +71,12 @@ void setup() {
   new Supla::Html::WifiParameters;
   new Supla::Html::ProtocolParameters;
   new Supla::Html::StatusLedParameters;
+
+#ifdef ADD_INSECURE_BUTTON_UPDATE
+  // Debug/DIY only: ButtonUpdate exposes an unauthenticated OTA endpoint.
+  // Do not use it on real devices or untrusted networks.
   new Supla::Html::ButtonUpdate(&suplaServer);
+#endif  // ADD_INSECURE_BUTTON_UPDATE
 
   // start parameters from memory
   Supla::Storage::Init();
@@ -126,7 +120,6 @@ void setup() {
   const char DeviceVersion[] = "NAM " NAM_VERSION " / " SUPLA_SHORT_VERSION;
   SuplaDevice.setSwVersion(DeviceVersion);
   SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
-  SuplaDevice.setPermanentWebServer();
   SuplaDevice.begin();
 }
 

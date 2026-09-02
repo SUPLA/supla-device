@@ -4,6 +4,6 @@ idf_component_register(SRCS "esp_uart_driver.cpp"
                     PRIV_REQUIRES
                       supla-device
                     REQUIRES
-                      driver
+                      esp_driver_uart
                     )
 

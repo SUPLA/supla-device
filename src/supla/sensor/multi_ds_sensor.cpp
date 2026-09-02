@@ -1,24 +1,12 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "multi_ds_sensor.h"
 #include "multi_ds_handler_base.h"
 
 #include <supla/log_wrapper.h>
 #include <supla/storage/config_tags.h>
+#include <supla/time.h>
 
 using Supla::Sensor::MultiDsSensor;
 
@@ -35,14 +23,13 @@ void MultiDsSensor::iterateAlways() {
 
 double MultiDsSensor::getValue() {
   double value = handler->getTemperature(address);
-  if (value == DEVICE_DISCONNECTED_C) {
+  // DallasTemperature uses -127 C for a disconnected device. Keep this
+  // platform-neutral so the common sensor implementation does not depend on
+  // Arduino headers.
+  if (value == -127.0) {
     channel.setStateOffline();
     lastValidValue = TEMPERATURE_NOT_AVAILABLE;
     return lastValidValue;
-  }
-
-  if (!channel.isStateOnline()) {
-    channel.setStateOnline();
   }
 
   if (value == 85.0) {
@@ -58,6 +45,9 @@ double MultiDsSensor::getValue() {
     }
   } else {
     retryCounter = 0;
+    if (!channel.isStateOnline()) {
+      channel.setStateOnline();
+    }
   }
 
   lastValidValue = value;
@@ -68,7 +58,7 @@ void MultiDsSensor::saveSensorConfig() {
   auto config = Supla::Storage::ConfigInstance();
   if (config) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    Supla::Config::generateKey(key, subDeviceId,
+    Supla::Config::generateKey(key, getSubDeviceId(),
                                Supla::ConfigTag::DsSensorConfig);
     SUPLA_LOG_DEBUG("MultiDS: Saving config for key %s", key);
     DsSensorConfig sensorConfig;
@@ -87,7 +77,7 @@ void MultiDsSensor::purgeConfig() {
   auto config = Supla::Storage::ConfigInstance();
   if (config) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    Supla::Config::generateKey(key, subDeviceId,
+    Supla::Config::generateKey(key, getSubDeviceId(),
                                Supla::ConfigTag::DsSensorConfig);
     SUPLA_LOG_DEBUG("MultiDS: Erasing config for key %s", key);
     config->eraseKey(key);

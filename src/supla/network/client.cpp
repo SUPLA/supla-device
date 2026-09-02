@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "client.h"
 
@@ -31,6 +16,10 @@ Supla::Client::Client() {
 Supla::Client::~Client() {
 }
 
+Supla::ConnectionError Supla::Client::getConnectionError() const {
+  return Supla::ConnectionError::NONE;
+}
+
 int Supla::Client::connect(IPAddress ip, uint16_t port) {
   char server[100] = {};
   snprintf(server,
@@ -45,7 +34,7 @@ int Supla::Client::connect(IPAddress ip, uint16_t port) {
 
 int Supla::Client::connect(const char *host, uint16_t port) {
   if (sslEnabled) {
-    if (rootCACert == nullptr) {
+    if (!isCertificateValidationEnabled()) {
       SUPLA_LOG_WARNING(
               "Connecting without certificate validation (INSECURE)");
     }
@@ -106,6 +95,12 @@ size_t Supla::Client::println(const char *str) {
   return dataSend;
 }
 
+#ifdef ARDUINO
+size_t Supla::Client::println(const ::__FlashStringHelper *str) {
+  return println(reinterpret_cast<const char *>(str));
+}
+#endif
+
 size_t Supla::Client::print(const char *str) {
   int size = strlen(str);
   int response = 0;
@@ -119,12 +114,22 @@ size_t Supla::Client::print(const char *str) {
   return response;
 }
 
+#ifdef ARDUINO
+size_t Supla::Client::print(const ::__FlashStringHelper *str) {
+  return print(reinterpret_cast<const char *>(str));
+}
+#endif
+
 void Supla::Client::setSSLEnabled(bool enabled) {
   sslEnabled = enabled;
 }
 
 void Supla::Client::setCACert(const char *rootCA) {
   rootCACert = rootCA;
+}
+
+bool Supla::Client::isCertificateValidationEnabled() const {
+  return rootCACert != nullptr;
 }
 
 int Supla::Client::read() {

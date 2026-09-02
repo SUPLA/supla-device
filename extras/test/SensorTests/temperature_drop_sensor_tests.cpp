@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -33,6 +18,10 @@ TEST(TemperatureDropSensorTests, ThermometerMissing) {
 
   sensor.onInit();
   elBinary->onInit();
+  sensor.iterateAlways();
+  elBinary->iterateAlways();
+
+  time.advance(30001);
   sensor.iterateAlways();
   elBinary->iterateAlways();
 
@@ -454,6 +443,70 @@ TEST(TemperatureDropSensorTests, DropFrom23To15WithDelay) {
   EXPECT_FALSE(sensor.isDropDetected());
 }
 
+TEST(TemperatureDropSensorTests,
+     AbortedDelayedDropStartsFreshDetectionDelay) {
+  SimpleTime time;
+  Supla::Sensor::VirtualThermometer thermometer;
+  Supla::Sensor::TemperatureDropSensor sensor(&thermometer);
+
+  auto elBinary = Supla::Element::getElementByChannelNumber(1);
+  ASSERT_NE(elBinary, nullptr);
+  auto ch = elBinary->getChannel();
+  ASSERT_NE(ch, nullptr);
+
+  sensor.setDropDetectionDelayMs(120000);
+  sensor.setTemperatureDropThreshold(-500);
+
+  thermometer.setValue(23);
+  thermometer.onInit();
+  elBinary->onInit();
+  sensor.onInit();
+  elBinary->iterateAlways();
+
+  auto iterate = [&]() {
+    thermometer.iterateAlways();
+    sensor.iterateAlways();
+    elBinary->iterateAlways();
+    time.advance(30000);
+  };
+
+  // Populate a stable temperature history.
+  for (int i = 0; i < 60; i++) {
+    iterate();
+  }
+
+  thermometer.setValue(15);
+  iterate();
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
+
+  // Recover before the delayed drop can be confirmed.
+  thermometer.setValue(23);
+  iterate();
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
+
+  // Let the old filtering timestamp exceed the detection delay.
+  for (int i = 0; i < 5; i++) {
+    iterate();
+  }
+
+  thermometer.setValue(15);
+  iterate();
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
+
+  // The second drop must remain pending for a fresh full delay.
+  for (int i = 0; i < 4; i++) {
+    iterate();
+    EXPECT_EQ(ch->getValueBool(), true);
+    EXPECT_FALSE(sensor.isDropDetected());
+  }
+
+  iterate();
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
+}
 
 
 

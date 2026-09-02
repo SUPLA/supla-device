@@ -1,22 +1,10 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+#include "web_server.h"
 
 #include <SuplaDevice.h>
+#include <stdio.h>
 #include <string.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/html_element.h>
@@ -25,9 +13,53 @@
 
 #include "supla/network/html_generator.h"
 #include "supla/network/network.h"
-#include "web_server.h"
 
 Supla::WebServer *Supla::WebServer::webServerInstance = nullptr;
+
+namespace {
+
+bool matchesSensitiveField(const char *key) {
+  if (key == nullptr || key[0] == '\0') {
+    return false;
+  }
+
+  static const char *const sensitiveFields[] = {
+      "cfg_pwd",       "old_cfg_pwd", "confirm_cfg_pwd", "wpw",
+      "altwpw",        "mqttpasswd",   "apiToken",        "apiKey",
+      "custom_ca",     "mqtt_ca",      "eml",             "mqttuser"
+  };
+
+  for (const char *field : sensitiveFields) {
+    if (strcmp(key, field) == 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+}  // namespace
+
+bool Supla::isSensitiveLogField(const char *key) {
+  return matchesSensitiveField(key);
+}
+
+const char *Supla::redactLogValue(const char *key,
+                                  const char *value,
+                                  char *buffer,
+                                  size_t bufferSize) {
+  if (!isSensitiveLogField(key)) {
+    return value ? value : "";
+  }
+
+  if (buffer == nullptr || bufferSize == 0) {
+    return "<redacted>";
+  }
+
+  size_t len = value ? strlen(value) : 0;
+  snprintf(buffer, bufferSize, "<redacted len=%zu>", len);
+  return buffer;
+}
 
 const unsigned char Supla::favico[] = {
     0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, 0x10, 0x00, 0x00, 0x01, 0x00,
@@ -158,6 +190,25 @@ void Supla::WebServer::notifyClientConnected(bool isPost) {
   }
 }
 
+#ifndef ARDUINO_ARCH_AVR
+const char *Supla::WebServer::getCsrfToken() {
+  if (csrfToken[0] == '\0') {
+    Supla::fillRandom(csrfSecret, sizeof(csrfSecret));
+    generateHexString(csrfSecret, csrfToken, sizeof(csrfSecret));
+  }
+
+  return csrfToken;
+}
+#endif  // ARDUINO_ARCH_AVR
+
+bool Supla::WebServer::isCsrfTokenValid(const char *token) {
+  if (token == nullptr || token[0] == '\0') {
+    return false;
+  }
+
+  return strcmp(getCsrfToken(), token) == 0;
+}
+
 void Supla::WebServer::addSecurityLog(Supla::SecurityLogSource source,
                                       const char *log) const {
   if (sdc) {
@@ -171,11 +222,25 @@ void Supla::WebServer::addSecurityLog(uint32_t source, const char *log) const {
   }
 }
 
+void Supla::WebServer::addLastStateLog(const char *log) const {
+  if (sdc) {
+    sdc->addLastStateLog(log);
+  }
+}
+
 void Supla::WebServer::parsePost(const char *postContent,
                                  int size,
                                  bool lastChunk) {
   if (postContent == nullptr || size <= 0) {
     resetParser();
+    return;
+  }
+
+  if (csrfRejected) {
+    if (!lastChunk) {
+      return;
+    }
+    cleanupParser();
     return;
   }
 
@@ -185,11 +250,14 @@ void Supla::WebServer::parsePost(const char *postContent,
   }
 
   const char *startPtr = postContent;
-  const char *endPtr = &postContent[size + 1];
+  const char *endPtr = &postContent[size];
 
   for (auto ptr = startPtr; ptr != endPtr; ptr++) {
     if (!keyFound && ((*ptr) == '=' || (ptr + 1) == endPtr)) {
       ptrdiff_t keyLength = (ptr - startPtr);
+      if (*ptr != '=' && (ptr + 1) == endPtr) {
+        keyLength++;
+      }
       if (keyLength > HTML_KEY_LENGTH - 1 - partialSize) {
         keyLength = HTML_KEY_LENGTH - 1 - partialSize;
       }
@@ -203,6 +271,9 @@ void Supla::WebServer::parsePost(const char *postContent,
       }
     } else if (keyFound && ((*ptr) == '&' || (ptr + 1) == endPtr)) {
       ptrdiff_t valLength = ptr - startPtr;
+      if (*ptr != '&' && (ptr + 1) == endPtr) {
+        valLength++;
+      }
       if (valLength > HTML_VAL_LENGTH - 1 - partialSize) {
         valLength = HTML_VAL_LENGTH - 1 - partialSize;
       }
@@ -210,11 +281,52 @@ void Supla::WebServer::parsePost(const char *postContent,
       startPtr = ptr + 1;
       if ((*ptr) == '&' || lastChunk) {
         keyFound = false;
+        if (!csrfValidated) {
+          if (strcmp(key, "csrf") == 0) {
+            if (!isCsrfTokenValid(value)) {
+              SUPLA_LOG_WARNING("SERVER: invalid CSRF token");
+              csrfRejected = true;
+              delete[] value;
+              value = nullptr;
+              break;
+            }
+            csrfValidated = true;
+            partialSize = 0;
+            memset(key, 0, HTML_KEY_LENGTH);
+            memset(value, 0, HTML_VAL_LENGTH);
+            continue;
+          }
+
+          if (csrfFirstFieldRequired) {
+            SUPLA_LOG_WARNING("SERVER: CSRF token is not the first field");
+            csrfRejected = true;
+            delete[] value;
+            value = nullptr;
+            break;
+          }
+
+          partialSize = 0;
+          memset(key, 0, HTML_KEY_LENGTH);
+          memset(value, 0, HTML_VAL_LENGTH);
+          continue;
+        }
+
+        if (strcmp(key, "csrf") == 0) {
+          partialSize = 0;
+          memset(key, 0, HTML_KEY_LENGTH);
+          memset(value, 0, HTML_VAL_LENGTH);
+          continue;
+        }
+
         // keys are alfanumeric only so we don't decode them. Values
         // are provided by user, so those have to be decoded
         urlDecodeInplace(value, HTML_VAL_LENGTH);
         // handle key value here
-        SUPLA_LOG_DEBUG("SERVER: key %s, value %s", key, value);
+        char redactedValue[REDACTED_LOG_VALUE_BUFFER_SIZE] = {};
+        (void)(redactedValue);
+        SUPLA_LOG_DEBUG("SERVER: key %s, value %s", key,
+                        redactLogValue(key, value, redactedValue,
+                                       sizeof(redactedValue)));
         for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
              htmlElement = htmlElement->next()) {
           if (isSectionAllowed(htmlElement->section)) {
@@ -226,10 +338,8 @@ void Supla::WebServer::parsePost(const char *postContent,
         if (strcmp(key, "rbt") == 0) {
           int reboot = stringToUInt(value);
           SUPLA_LOG_DEBUG("rbt found %d", reboot);
-          if (reboot == 2) {
-            sdc->scheduleSoftRestart(2500);
-          } else if (reboot) {
-            sdc->scheduleSoftRestart(1000);
+          if (reboot > pendingReboot) {
+            pendingReboot = reboot > 2 ? 2 : reboot;
           }
         }
         partialSize = 0;
@@ -242,8 +352,21 @@ void Supla::WebServer::parsePost(const char *postContent,
   }
 
   if (lastChunk) {
+    if (csrfRejected || !csrfValidated) {
+      cleanupParser();
+      return;
+    }
+
+    if (sdc != nullptr) {
+      if (pendingReboot == 2) {
+        sdc->scheduleSoftRestart(2500);
+      } else if (pendingReboot == 1) {
+        sdc->scheduleSoftRestart(1000);
+      }
+    }
+
     for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
-        htmlElement = htmlElement->next()) {
+         htmlElement = htmlElement->next()) {
       if (isSectionAllowed(htmlElement->section)) {
         htmlElement->onProcessingEnd();
       }
@@ -253,7 +376,8 @@ void Supla::WebServer::parsePost(const char *postContent,
       Supla::Storage::ConfigInstance()->commit();
       sdc->disableLocalActionsIfNeeded();
     }
-    resetParser();
+
+    cleanupParser();
   }
 }
 
@@ -261,9 +385,22 @@ void Supla::WebServer::resetParser() {
   partialSize = 0;
   keyFound = false;
   memset(key, 0, HTML_KEY_LENGTH);
-  delete [] value;
+  delete[] value;
   value = nullptr;
   betaProcessing = false;
+  csrfFirstFieldRequired = true;
+  csrfValidated = false;
+  csrfRejected = false;
+  pendingReboot = 0;
+}
+
+void Supla::WebServer::cleanupParser() {
+  partialSize = 0;
+  keyFound = false;
+  memset(key, 0, HTML_KEY_LENGTH);
+  delete[] value;
+  value = nullptr;
+  pendingReboot = 0;
 }
 
 bool Supla::WebServer::isSectionAllowed(Supla::HtmlSection section) const {
@@ -278,6 +415,25 @@ void Supla::WebServer::setBetaProcessing() {
   betaProcessing = true;
 }
 
-bool Supla::WebServer::verifyCertificatesFormat() {
+void Supla::WebServer::setCsrfFirstFieldRequired(bool required) {
+  csrfFirstFieldRequired = required;
+}
+
+void Supla::WebServer::setWebServerMode(WebServerMode mode) {
+  if (mode != WebServerMode::HttpOnly) {
+    SUPLA_LOG_ERROR(
+        "SERVER: setWebServerMode other than HttpOnly not implemented");
+  }
+}
+
+Supla::WebServer::WebServerMode Supla::WebServer::getWebServerMode() const {
+  return WebServerMode::HttpOnly;
+}
+
+Supla::WebServer::WebServerMode Supla::WebServer::resolveWebServerMode() const {
+  return WebServerMode::HttpOnly;
+}
+
+bool Supla::WebServer::verifyEmbeddedHttpsCertificates() {
   return false;
 }

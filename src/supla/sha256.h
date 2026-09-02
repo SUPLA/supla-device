@@ -1,28 +1,13 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_SHA256_H_
 #define SRC_SUPLA_SHA256_H_
 
-#ifndef SUPLA_TEST
-
 #include <stdint.h>
 
 /*
- * Simple wrapper for mbedTLS SHA256 methods without exposing mbedTLS types.
+ * Simple platform SHA256 wrapper without exposing platform-specific types.
  */
 
 namespace Supla {
@@ -35,10 +20,14 @@ class Sha256 {
   void digest(uint8_t *output, int length = 32);
 
  protected:
+#ifndef SUPLA_TEST
   void *ctx;
+#else
+  uint8_t state[32];
+  uint32_t offset;
+#endif
 };
 
 };  // namespace Supla
 
-#endif  // SUPLA_TEST
 #endif  // SRC_SUPLA_SHA256_H_

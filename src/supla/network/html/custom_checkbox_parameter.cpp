@@ -1,20 +1,5 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef ARDUINO_ARCH_AVR
 #include "custom_checkbox_parameter.h"
@@ -38,29 +23,38 @@ CustomCheckboxParameter::CustomCheckboxParameter(const char* paramTag,
 }
 
 void CustomCheckboxParameter::setTag(const char* tagValue) {
+  if (tag != nullptr) {
+    delete []tag;
+    tag = nullptr;
+  }
+  if (tagValue == nullptr) {
+    return;
+  }
+
   auto size = strnlen(tagValue, SUPLA_CONFIG_MAX_KEY_SIZE);
   if (size >= SUPLA_CONFIG_MAX_KEY_SIZE) {
     size = SUPLA_CONFIG_MAX_KEY_SIZE - 1;
     SUPLA_LOG_WARNING("Tag too long: \"%s\"; truncating", tagValue);
   }
-  if (tag != nullptr) {
-    delete []tag;
-    tag = nullptr;
-  }
-  if (tagValue == nullptr || size == 0) {
+  if (size == 0) {
     return;
   }
   tag = new char[size + 1];
-  strncpy(tag, tagValue, size + 1);
+  memcpy(tag, tagValue, size);
+  tag[size] = '\0';
 }
 
 void CustomCheckboxParameter::setLabel(const char *labelValue) {
-  auto size = strnlen(labelValue, MAX_LABEL_SIZE);
   if (label != nullptr) {
     delete []label;
     label = nullptr;
   }
-  if (labelValue == nullptr || size == 0) {
+  if (labelValue == nullptr) {
+    return;
+  }
+
+  auto size = strnlen(labelValue, MAX_LABEL_SIZE);
+  if (size == 0) {
     return;
   }
   if (size < MAX_LABEL_SIZE) {

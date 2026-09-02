@@ -1,20 +1,5 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_PROTOCOL_MQTT_H_
 #define SRC_SUPLA_PROTOCOL_MQTT_H_
@@ -24,6 +9,7 @@
 #include <supla-common/proto.h>
 #include <supla/uptime.h>
 #include <supla/protocol/mqtt_topic.h>
+#include <supla/protocol/mqtt_channel_handler.h>
 #include <supla/element.h>
 
 #include "protocol_layer.h"
@@ -54,6 +40,7 @@ enum HADeviceClass {
   HADeviceClass_ApparentPower,
   HADeviceClass_Current,
   HADeviceClass_Energy,
+  HADeviceClass_ReactiveEnergy,
   HADeviceClass_Frequency,
   HADeviceClass_PowerFactor,
   HADeviceClass_Power,
@@ -70,7 +57,10 @@ enum HADeviceClass {
   HADeviceClass_Curtain,
   HADeviceClass_Shutter,
   HADeviceClass_Shade,
+  HADeviceClass_GarageDoor,
 };
+
+class HvacMqttHandler;
 
 class Mqtt : public ProtocolLayer {
  public:
@@ -87,6 +77,7 @@ class Mqtt : public ProtocolLayer {
   uint32_t getConnectionFailTime() override;
   bool isConnectionError() override;
   bool isConnecting() override;
+  bool isMqtt() const override;
   void publish(const char *topic,
                const char *payload,
                int qos = -1,
@@ -116,7 +107,11 @@ class Mqtt : public ProtocolLayer {
   void publishChannelState(int channel);
   void publishExtendedChannelState(int channel);
   void subscribeChannel(int channel);
+  void unsubscribeChannel(int channel);
+  const char *getPrefix() const;
+  const char *getHostname() const;
   void subscribe(const char *topic, int qos = -1);
+  void unsubscribe(const char *topic);
   bool isUpdatePending() override;
   bool isRegisteredAndReady() override;
   void notifyConfigChange(int channelNumber) override;
@@ -130,38 +125,56 @@ class Mqtt : public ProtocolLayer {
   bool processData(const char *topic, const char *payload);
   void processRelayRequest(const char *topic,
                            const char *payload,
-                           Supla::Element *element);
+                           Supla::Element *element,
+                           Supla::Channel *channel);
   void processRGBWRequest(const char *topic,
                           const char *payload,
-                          Supla::Element *element);
+                          Supla::Element *element,
+                          int channelNumber);
   void processRGBRequest(const char *topic,
                          const char *payload,
-                         Supla::Element *element);
+                         Supla::Element *element,
+                         int channelNumber);
   void processDimmerRequest(const char *topic,
                             const char *payload,
-                            Supla::Element *element);
-  void processHVACRequest(const char *topic,
-                          const char *payload,
-                          Supla::Element *element);
+                            Supla::Element *element,
+                            int channelNumber);
   void processRollerShutterRequest(const char *topic,
                                    const char *payload,
-                                   Supla::Element *element);
+                                   Supla::Element *element,
+                                   int channelNumber);
 
  protected:
   void generateClientId(char result[MQTT_CLIENTID_MAX_SIZE]);
   void generateObjectId(char result[30], int channelNumber, int subId);
   MqttTopic getHADiscoveryTopic(const char *sensor, char *objectId);
   void publishDeviceStatus(bool onRegistration = false);
+  void publishChannelSetup(int channelNumber);
+  bool isChannelAvailableForHa(const Supla::Channel *channel) const;
+  void publishChannelAvailability(int channelNumber, bool force = false);
+  void resetChannelAvailabilityCache();
+  const char *getHAAvailability(const Supla::Channel *channel);
+  void getHAExpireAfter(const Supla::Channel *channel,
+                        char *result,
+                        size_t resultSize) const;
+  void processConfigChanges();
   void publishHADiscovery(int channel);
   void publishHADiscoveryRelay(Supla::Element *);
+  void publishHADiscoveryRelay(Supla::Element *, Supla::Channel *);
   void publishHADiscoveryRelayImpulse(Supla::Element *);
+  void publishHADiscoveryRelayImpulse(Supla::Element *, Supla::Channel *);
+  void clearHADiscoveryRelayAlternativeTypes(Supla::Channel *channel,
+                                             const char *currentType);
+  void clearHADiscoveryForChannel(Supla::Channel *channel);
+  void clearRelayAlternativeStateTopics(Supla::Channel *channel,
+                                        bool currentIsRoller);
+  void clearStateForChannel(Supla::Channel *channel);
   void publishHADiscoveryThermometer(Supla::Element *);
   void publishHADiscoveryHumidity(Supla::Element *);
   void publishHADiscoveryActionTrigger(Supla::Element *);
   void publishHADiscoveryEM(Supla::Element *);
   void publishHADiscoveryRGB(Supla::Element *);
   void publishHADiscoveryDimmer(Supla::Element *);
-  void publishHADiscoveryHVAC(Supla::Element *);
   void publishHADiscoveryBinarySensor(Supla::Element *);
   void publishHADiscoveryRollerShutter(Supla::Element *);
 
@@ -180,6 +193,7 @@ class Mqtt : public ProtocolLayer {
                           int qos,
                           bool retain) = 0;
   virtual void subscribeImp(const char *topic, int qos) = 0;
+  virtual void unsubscribeImp(const char *topic) = 0;
   const char *getStateClassStr(Supla::Protocol::HAStateClass stateClass);
   const char *getDeviceClassStr(Supla::Protocol::HADeviceClass deviceClass);
 
@@ -188,6 +202,10 @@ class Mqtt : public ProtocolLayer {
 
   bool isPayloadOn(const char *);
   bool isOpenClosedBinarySensorFunction(int channelFunction) const;
+
+  MqttChannelHandler *findChannelHandler(int channelType) const;
+
+  friend class HvacMqttHandler;
 
   char server[SUPLA_SERVER_NAME_MAXSIZE] = {};
   int32_t port = -1;
@@ -212,7 +230,20 @@ class Mqtt : public ProtocolLayer {
   // in current setup.
   // It is important to call publishDeviceStatus first, then to call
   // publishHADiscoveryActionTrigger for each AT channel.
-  uint8_t configChangedBit[8] = {};
+  static constexpr size_t CONFIG_CHANGED_BIT_SIZE =
+      (SUPLA_CHANNELMAXCOUNT + 7) / 8;
+  static_assert(CONFIG_CHANGED_BIT_SIZE * 8 >= SUPLA_CHANNELMAXCOUNT,
+                "MQTT config change bitset is too small");
+  uint8_t configChangedBit[CONFIG_CHANGED_BIT_SIZE] = {};
+  static constexpr size_t CHANNEL_AVAILABILITY_BIT_SIZE =
+      (SUPLA_CHANNELMAXCOUNT + 7) / 8;
+  static_assert(CHANNEL_AVAILABILITY_BIT_SIZE * 8 >= SUPLA_CHANNELMAXCOUNT,
+                "MQTT channel availability bitset is too small");
+  uint8_t channelAvailabilityKnownBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};
+  uint8_t channelAvailabilityValueBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};
+  uint8_t channelOnlineButNotAvailableBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};
+  static constexpr size_t HA_AVAILABILITY_BUFFER_SIZE = 400;
+  char haAvailability[HA_AVAILABILITY_BUFFER_SIZE] = {};
   Supla::Uptime uptime;
 };
 }  // namespace Protocol

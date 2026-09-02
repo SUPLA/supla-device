@@ -1,24 +1,12 @@
-/*
-  Copyright (C) AC SOFTWARE SP. Z O.O.
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef SRC_SUPLA_NETWORK_ESP32ETHSPI_H_
 #define SRC_SUPLA_NETWORK_ESP32ETHSPI_H_
 
 #include <Arduino.h>
 #include <ETH.h>
+#include <supla/network/arduino_netif_config.h>
 #include <supla/network/netif_lan.h>
 #include <supla/supla_lib_config.h>
 #include <supla/log_wrapper.h>
@@ -56,26 +44,44 @@ class ESPETHSPI : public Supla::LAN {
     static void networkEventHandler(arduino_event_id_t event) {
       switch (event) {
         case ARDUINO_EVENT_ETH_GOT_IP: {
-            Serial.print(F("[Ethernet] local IP: "));
-            Serial.println(ETH.localIP());
-            Serial.print(F("subnetMask: "));
-            Serial.println(ETH.subnetMask());
-            Serial.print(F("gatewayIP: "));
-            Serial.println(ETH.gatewayIP());
-            Serial.print(F("ETH MAC: "));
-            Serial.println(ETH.macAddress());
+            IPAddress localIP = ETH.localIP();
+            IPAddress subnetMaskIP = ETH.subnetMask();
+            IPAddress gatewayIP = ETH.gatewayIP();
+            uint8_t mac[6] = {};
+            ETH.macAddress(mac);
+            SUPLA_LOG_INFO("localIP: %d.%d.%d.%d",
+                           localIP[0],
+                           localIP[1],
+                           localIP[2],
+                           localIP[3]);
+            SUPLA_LOG_INFO("subnetMaskIP: %d.%d.%d.%d",
+                           subnetMaskIP[0],
+                           subnetMaskIP[1],
+                           subnetMaskIP[2],
+                           subnetMaskIP[3]);
+            SUPLA_LOG_INFO("gatewayIP: %d.%d.%d.%d",
+                           gatewayIP[0],
+                           gatewayIP[1],
+                           gatewayIP[2],
+                           gatewayIP[3]);
+            SUPLA_LOG_INFO("ETH MAC: %02X:%02X:%02X:%02X:%02X:%02X",
+                           mac[0],
+                           mac[1],
+                           mac[2],
+                           mac[3],
+                           mac[4],
+                           mac[5]);
+            SUPLA_LOG_INFO("speed: %d Mbps", ETH.linkSpeed());
             if (ETH.fullDuplex()) {
-              Serial.print(F("FULL_DUPLEX , "));
+              SUPLA_LOG_INFO("FULL_DUPLEX");
             }
-            Serial.print(ETH.linkSpeed());
-            Serial.println(F("Mbps"));
             if (thisSpiEth) {
               thisSpiEth->setIpv4Addr(ETH.localIP());
             }
             break;
           }
         case ARDUINO_EVENT_ETH_DISCONNECTED: {
-            Serial.println(F("[Ethernet] Disconnected"));
+            SUPLA_LOG_INFO("[Ethernet] Disconnected");
             if (thisSpiEth) {
               thisSpiEth->setIpv4Addr(0);
             }
@@ -92,7 +98,7 @@ class ESPETHSPI : public Supla::LAN {
 
       ::Network.onEvent(Supla::ESPETHSPI::networkEventHandler);
 
-      Serial.println(F("[Ethernet] establishing LAN connection"));
+      SUPLA_LOG_INFO("[Ethernet] establishing LAN connection");
       ETH.begin(ethspi_type,
                 ethspi_phy_addr,
                 cs_pin,
@@ -102,6 +108,17 @@ class ESPETHSPI : public Supla::LAN {
                 sck_pin,
                 miso_pin,
                 mosi_pin);
+      if (hasStaticIpConfig()) {
+        const auto &cfg = getNetifConfig();
+        IPAddress localIp = toArduinoIpAddress(cfg.ip);
+        IPAddress gateway = toArduinoIpAddress(cfg.gateway);
+        IPAddress subnet = toArduinoIpAddress(cfg.netmask);
+        IPAddress dns1 = toArduinoIpAddress(cfg.dns1);
+        IPAddress dns2 = toArduinoIpAddress(cfg.dns2);
+        if (!ETH.config(localIp, gateway, subnet, dns1, dns2)) {
+          SUPLA_LOG_WARNING("ETH SPI static IP config failed, continuing");
+        }
+      }
       initDone = true;
 
       char newHostname[32] = {};

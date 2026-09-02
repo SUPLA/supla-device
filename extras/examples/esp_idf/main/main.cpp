@@ -1,18 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 /*
  Example of supla-device project for ESP32 with EPS-IDF SDK
@@ -28,9 +15,10 @@
 #include <supla/control/roller_shutter.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/device/status_led.h>
+#include <supla/debug/debug_log_tcp_server.h>
 #include <supla/time.h>
 
-// Supla extras/porting/esp-idf files - specific to ESP-IDF and ESP8266 RTOS
+// Supla extras/porting/esp-idf files - specific to ESP-IDF
 // targets
 #include <esp_idf_web_server.h>
 #include <esp_idf_wifi.h>
@@ -104,12 +92,20 @@ void cpp_main(void* param) {
   SUPLA_LOG_DEBUG("Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
   SUPLA_LOG_DEBUG("port tick period %d", portTICK_PERIOD_MS);
 
+#if SUPLA_INSECURE_DEBUG_INTERFACE
+  Supla::Debug::DebugLogTcpServer debugLogServer(7778);
+  debugLogServer.begin();
+#endif
+
   unsigned int lastTime = 0;
   unsigned int lastTimeHeap = 0;
   int lastFreeHeap = 0;
 
   while (true) {
     SuplaDevice.iterate();
+#if SUPLA_INSECURE_DEBUG_INTERFACE
+    debugLogServer.iterate();
+#endif
     if (millis() - lastTime > 10) {
       lastTime = millis();
       delay(1);

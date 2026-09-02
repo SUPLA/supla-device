@@ -1,20 +1,5 @@
-/*
- Copyright (C) AC SOFTWARE SP. Z O.O.
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "roller_shutter.h"
 
@@ -62,6 +47,20 @@ RollerShutter::RollerShutter(Supla::Io::IoPin pinUp,
   channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
 }
 
+RollerShutter::RollerShutter(Supla::Io::IoPin pinUp,
+                             Supla::Io::IoPin pinDown,
+                             bool tiltFunctionsEnabled,
+                             Supla::Channel &externalChannel,
+                             ElementMode mode)
+    : RollerShutterInterface(tiltFunctionsEnabled, externalChannel, mode),
+      pinUp(pinUp),
+      pinDown(pinDown) {
+  this->pinUp.setMode(OUTPUT);
+  this->pinDown.setMode(OUTPUT);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
+}
+
 RollerShutter::RollerShutter(int pinUp,
                              int pinDown,
                              bool highIsOn,
@@ -79,12 +78,18 @@ void RollerShutter::onInit() {
 }
 
 void RollerShutter::setPinUp(int pin) {
+  if (pinUp.isSet() && pinUp.getPin() != pin) {
+    pinUp.writeInactive(channel.getChannelNumber());
+  }
   pinUp.setPin(pin);
   pinUp.setMode(OUTPUT);
   initGpio(pinUp);
 }
 
 void RollerShutter::setPinDown(int pin) {
+  if (pinDown.isSet() && pinDown.getPin() != pin) {
+    pinDown.writeInactive(channel.getChannelNumber());
+  }
   pinDown.setPin(pin);
   pinDown.setMode(OUTPUT);
   initGpio(pinDown);
@@ -99,6 +104,7 @@ void RollerShutter::stopMovement() {
   SUPLA_LOG_DEBUG("RS[%d] Stop movement", channel.getChannelNumber());
   switchOffRelays();
   currentDirection = Directions::STOP_DIR;
+  operationTimeoutMs = 0;
   doNothingTime = millis();
   // Schedule save in 5 s after stop movement of roller shutter
   Supla::Storage::ScheduleSave(rsStorageSaveDelay, 1000);
@@ -150,6 +156,11 @@ void RollerShutter::switchOffRelays() {
 }
 
 void RollerShutter::onTimer() {
+  if (!pinUp.isSet() || !pinDown.isSet()) {
+    switchOffRelays();
+    return;
+  }
+
   if (doNothingTime != 0 &&
       millis() - doNothingTime <
           500) {  // doNothingTime time is used when we change
@@ -158,6 +169,25 @@ void RollerShutter::onTimer() {
     return;
   }
   doNothingTime = 0;
+
+  const bool invalidTiltOnlyTarget =
+      targetPosition == UNKNOWN_POSITION && targetTilt >= 0 &&
+      !canExecuteTiltOnlyCommand(targetTilt);
+  if (invalidTiltOnlyTarget) {
+    if (!invalidTiltOnlyRuntimeWarningLogged) {
+      SUPLA_LOG_WARNING(
+          "RS[%d] cancelling unsafe tilt-only target before movement",
+          channel.getChannelNumber());
+      invalidTiltOnlyRuntimeWarningLogged = true;
+    }
+    targetPosition = STOP_POSITION;
+    targetTilt = UNKNOWN_POSITION;
+    newTargetPositionAvailable = false;
+    operationTimeoutMs = 0;
+    stopMovement();
+    return;
+  }
+  invalidTiltOnlyRuntimeWarningLogged = false;
 
   if ((targetPosition == STOP_POSITION && inMove()) ||
       targetPosition == STOP_REQUEST) {
@@ -242,6 +272,8 @@ void RollerShutter::onTimer() {
           if (targetTilt >= 0 && targetTilt > getCurrentTilt()) {
             stopMovement();
             setTargetPosition(UNKNOWN_POSITION, targetTilt);
+          } else if (invalidTiltConfigurationFallbackActive) {
+            stopMovement();
           } else if (targetPosition == 0 &&
                      (targetTilt == UNKNOWN_POSITION ||
                       (targetTilt == 0 && getCurrentTilt() == 0))) {
@@ -267,6 +299,8 @@ void RollerShutter::onTimer() {
           if (targetTilt >= 0 && targetTilt < getCurrentTilt()) {
             stopMovement();
             setTargetPosition(UNKNOWN_POSITION, targetTilt);
+          } else if (invalidTiltConfigurationFallbackActive) {
+            stopMovement();
           } else if (targetPosition == 100 &&
                      (targetTilt == UNKNOWN_POSITION ||
                       (targetTilt == 100 && getCurrentTilt() == 100))) {
@@ -302,6 +336,8 @@ void RollerShutter::onTimer() {
                         channel.getChannelNumber(),
                         operationTimeoutMs);
       } else {
+        const bool tiltOnlyTarget =
+            targetPosition == UNKNOWN_POSITION && targetTilt >= 0;
         operationTimeoutMs = 0;
         int newMovementValue = targetPosition != UNKNOWN_POSITION
                                    ? targetPosition - getCurrentPosition()
@@ -322,6 +358,20 @@ void RollerShutter::onTimer() {
           newDirection = Directions::DOWN_DIR;  // tilt down
         } else if (newTiltingValue < 0) {
           newDirection = Directions::UP_DIR;  // tilt up
+        }
+        if (tiltOnlyTarget && newDirection != Directions::STOP_DIR) {
+          const uint32_t directionMovementTime =
+              newDirection == Directions::UP_DIR ? openingTimeMs
+                                                 : closingTimeMs;
+          const uint32_t baseTimeout =
+              directionMovementTime > tiltConfig.tiltingTime
+                  ? directionMovementTime
+                  : tiltConfig.tiltingTime;
+          operationTimeoutMs = baseTimeout + getTimeMarginValue(baseTimeout);
+          SUPLA_LOG_DEBUG(
+              "RS[%d] tilt-only operation timeout: %d",
+              channel.getChannelNumber(),
+              operationTimeoutMs);
         }
       }
       // If new direction is the same as current move, then keep movin`
@@ -399,17 +449,57 @@ void RollerShutter::calculateCurrentPositionAndTilt() {
   }
 
   const bool upDir = (currentDirection == Directions::UP_DIR);
+  const bool tiltConfigured = isTiltConfigured();
+  const bool tiltConfigurationInvalid =
+      isTiltFunctionEnabled() &&
+      tiltConfig.tiltControlType != SUPLA_TILT_CONTROL_TYPE_UNKNOWN &&
+      (!isValidTiltControlType(tiltConfig.tiltControlType) ||
+       !isValidFacadeBlindTiming(tiltConfig.tiltControlType,
+                                 openingTimeMs,
+                                 closingTimeMs,
+                                 tiltConfig.tiltingTime));
+
+  if (isTiltFunctionEnabled() &&
+      (tiltConfigurationInvalid ||
+       (!tiltConfigured && targetTilt != UNKNOWN_POSITION))) {
+    const bool tiltOnlyTarget =
+        targetPosition == UNKNOWN_POSITION && targetTilt != UNKNOWN_POSITION;
+    if (tiltConfigurationInvalid && !invalidTiltConfigurationWarningLogged) {
+      SUPLA_LOG_WARNING(
+          "RS[%d] invalid tilt configuration during movement, using plain "
+          "roller-shutter calculation",
+          channel.getChannelNumber());
+      invalidTiltConfigurationWarningLogged = true;
+    }
+    // A stale tilt target must not keep an absolute-position movement active
+    // after the invalid tilt phase has been discarded.
+    targetTilt = UNKNOWN_POSITION;
+    invalidTiltConfigurationFallbackActive = true;
+    if (tiltOnlyTarget) {
+      stopMovement();
+      operationTimeoutMs = 0;
+      return;
+    }
+    if (tiltConfigurationInvalid && operationTimeoutMs == 0) {
+      operationTimeoutMs = RS_DEFAULT_OPERATION_TIMEOUT_MS;
+    }
+  } else if (!tiltConfigurationInvalid) {
+    invalidTiltConfigurationWarningLogged = false;
+    invalidTiltConfigurationFallbackActive = false;
+  }
 
   int newTilt = UNKNOWN_POSITION;
 
-  uint32_t fullTiltChangeTime = tiltConfig.tiltingTime;
+  uint32_t fullTiltChangeTime = tiltConfigured ? tiltConfig.tiltingTime : 0;
   uint32_t fullPositionChangeTime = upDir ? openingTimeMs : closingTimeMs;
 
-  switch (tiltConfig.tiltControlType) {
-    case SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING:
-    case SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED: {
-      fullPositionChangeTime -= tiltConfig.tiltingTime;
-      break;
+  if (tiltConfigured) {
+    switch (tiltConfig.tiltControlType) {
+      case SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING:
+      case SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED: {
+        fullPositionChangeTime -= tiltConfig.tiltingTime;
+        break;
+      }
     }
   }
 
@@ -427,39 +517,41 @@ void RollerShutter::calculateCurrentPositionAndTilt() {
   const uint32_t movementTimeElapsed = millis() - lastMovementStartTime;
   uint32_t positionChangeTimeElapsed = movementTimeElapsed;
   uint32_t tiltChangeTimeElapsed = movementTimeElapsed;
-  switch (tiltConfig.tiltControlType) {
-    case SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING: {
-      if (movementTimeElapsed <= tiltChangeTimeRequired) {
-        positionChangeTimeElapsed = 0;
-      } else {
-        positionChangeTimeElapsed =
-            movementTimeElapsed - tiltChangeTimeRequired;
-      }
-      break;
-    }
-    case SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED: {
-      if (lastPositionBeforeMovement < 10000) {
-        // first we move position
-        if (movementTimeElapsed <= positionChangeTimeRequired) {
-          tiltChangeTimeElapsed = 0;
-        } else {
-          tiltChangeTimeElapsed =
-              movementTimeElapsed - positionChangeTimeRequired;
-        }
-      } else {
-        // first we tilt
+  if (tiltConfigured) {
+    switch (tiltConfig.tiltControlType) {
+      case SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING: {
         if (movementTimeElapsed <= tiltChangeTimeRequired) {
           positionChangeTimeElapsed = 0;
         } else {
           positionChangeTimeElapsed =
               movementTimeElapsed - tiltChangeTimeRequired;
         }
+        break;
       }
-      break;
+      case SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED: {
+        if (lastPositionBeforeMovement < 10000) {
+          // first we move position
+          if (movementTimeElapsed <= positionChangeTimeRequired) {
+            tiltChangeTimeElapsed = 0;
+          } else {
+            tiltChangeTimeElapsed =
+                movementTimeElapsed - positionChangeTimeRequired;
+          }
+        } else {
+          // first we tilt
+          if (movementTimeElapsed <= tiltChangeTimeRequired) {
+            positionChangeTimeElapsed = 0;
+          } else {
+            positionChangeTimeElapsed =
+                movementTimeElapsed - tiltChangeTimeRequired;
+          }
+        }
+        break;
+      }
     }
   }
 
-  if (isTiltConfigured()) {
+  if (tiltConfigured) {
     newTilt = lastTiltBeforeMovement;
 
     if (tiltChangeTimeRequired && tiltChangeTimeElapsed) {
@@ -512,8 +604,12 @@ void RollerShutter::calculateCurrentPositionAndTilt() {
 }
 
 void RollerShutter::setTargetPosition(int newPosition, int newTilt) {
+  // Position adjustment requires nonzero movement times. They may legitimately
+  // be unavailable for channels with
+  // SUPLA_CHANNEL_FLAG_TIME_SETTING_NOT_AVAILABLE.
   if (isTiltConfigured() && newTilt > UNKNOWN_POSITION &&
-      newPosition > UNKNOWN_POSITION && isCalibrated() &&
+      newPosition > UNKNOWN_POSITION && isCalibrated() && openingTimeMs != 0 &&
+      closingTimeMs != 0 &&
       tiltConfig.tiltControlType ==
           SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING) {
     SUPLA_LOG_DEBUG("RS[%d] new target position before adjustment %d, tilt %d",

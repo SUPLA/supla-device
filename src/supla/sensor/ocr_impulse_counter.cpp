@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ocr_impulse_counter.h"
 
@@ -109,7 +94,8 @@ Supla::ApplyConfigResult OcrImpulseCounter::applyChannelConfig(
       ocrConfig.Host[sizeof(ocrConfig.Host) - 1] = '\0';
       bool ocrConfigReceived = true;
       SUPLA_LOG_DEBUG("OcrIC: OCR config:");
-      SUPLA_LOG_DEBUG("    AuthKey: %s", ocrConfig.AuthKey);
+      SUPLA_LOG_DEBUG("    AuthKey: %s",
+                      ocrConfig.AuthKey[0] == '\0' ? "not set" : "set");
       SUPLA_LOG_DEBUG("    Host: %s", ocrConfig.Host);
       SUPLA_LOG_DEBUG("    PhotoIntervalSec: %d", ocrConfig.PhotoIntervalSec);
       SUPLA_LOG_DEBUG("    LightingMode: %X%08X",
@@ -393,17 +379,18 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
         "OcrIC: parseStatus failed - missing resultMeasurement end");
     return;
   }
-  if (resultMeasurementEnd - resultMeasurementStart > 100) {
+  char buf[100] = {};
+  const size_t resultMeasurementSize =
+      resultMeasurementEnd - resultMeasurementStart;
+  if (resultMeasurementSize >= sizeof(buf)) {
     SUPLA_LOG_WARNING(
-        "OcrIC: parseStatus failed - resultMeasurement too long, %d > 100",
-        resultMeasurementEnd - resultMeasurementStart);
+        "OcrIC: parseStatus failed - resultMeasurement too long, %u >= %u",
+        static_cast<unsigned>(resultMeasurementSize),
+        static_cast<unsigned>(sizeof(buf)));
     return;
   }
-  char buf[100] = {};
-  strncpy(buf,
-          resultMeasurementStart,
-          resultMeasurementEnd - resultMeasurementStart);
-  buf[resultMeasurementEnd - resultMeasurementStart] = '\0';
+  strncpy(buf, resultMeasurementStart, resultMeasurementSize);
+  buf[resultMeasurementSize] = '\0';
   SUPLA_LOG_DEBUG("OcrIC: parseStatus - resultMeasurement: %s",
                   buf);
   uint64_t resultMeasurement = strtoull(buf, nullptr, 10);
@@ -532,7 +519,7 @@ void OcrImpulseCounter::onLoadConfig(SuplaDeviceClass *sdc) {
         SUPLA_LOG_ERROR("OcrIC: missing ocr_auth");
         return;
       }
-      SUPLA_LOG_INFO("OcrIC: ocr_auth = %s", ocrConfig.AuthKey);
+      SUPLA_LOG_INFO("OcrIC: ocr_auth is set");
       char buf[100];
       if (!cfg->getString("ocr_crop", buf, sizeof(buf))) {
         SUPLA_LOG_ERROR("OcrIC: missing ocr_crop");

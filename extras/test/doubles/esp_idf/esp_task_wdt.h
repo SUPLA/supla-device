@@ -1,0 +1,7 @@
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#ifndef EXTRAS_TEST_DOUBLES_ESP_IDF_ESP_TASK_WDT_H_
+#define EXTRAS_TEST_DOUBLES_ESP_IDF_ESP_TASK_WDT_H_
+
+#endif  // EXTRAS_TEST_DOUBLES_ESP_IDF_ESP_TASK_WDT_H_

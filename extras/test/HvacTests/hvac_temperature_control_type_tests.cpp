@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <clock_stub.h>
 #include <config_mock.h>
@@ -40,7 +25,7 @@ using ::testing::StrEq;
 
 class HvacTempControlTypeF : public ::testing::Test {
  protected:
-  ConfigMock cfg;
+  ::testing::NiceMock<ConfigMock> cfg;
   StorageMock storage;
   OutputSimulatorWithCheck primaryOutput;
   OutputSimulatorWithCheck secondaryOutput;
@@ -261,4 +246,55 @@ TEST_F(HvacTempControlTypeF, auxControlTypeTest) {
 
   t2->setValue(30.5);
   moveTime(50);
+}
+
+TEST_F(HvacTempControlTypeF, serverConfigValidatesTemperatureControlType) {
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(_)).Times(AtLeast(1));
+
+  TSD_ChannelConfig configFromServer = {};
+  configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+  configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC);
+
+  // The first server config selects the channel function. The next config is
+  // the one whose HVAC payload is validated and applied.
+  ASSERT_EQ(hvac->handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  auto *hvacConfig =
+      reinterpret_cast<TChannelConfig_HVAC *>(&configFromServer.Config);
+  hvacConfig->MainThermometerChannelNo = t1->getChannelNumber();
+  hvacConfig->AuxThermometerType =
+      SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET;
+  hvacConfig->Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
+  hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+
+  const uint8_t validTypes[] = {
+      0,
+      SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_ROOM_TEMPERATURE,
+      SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE};
+  for (const auto type : validTypes) {
+    hvac->setTemperatureControlType(type);
+    hvacConfig->TemperatureControlType = type;
+
+    EXPECT_EQ(hvac->handleChannelConfig(&configFromServer),
+              SUPLA_CONFIG_RESULT_TRUE);
+    TChannelConfig_HVAC liveConfig = {};
+    hvac->copyFullChannelConfigTo(&liveConfig);
+    EXPECT_EQ(liveConfig.TemperatureControlType, type);
+    hvac->clearChannelConfigChangedFlag();
+  }
+
+  TChannelConfig_HVAC liveConfig = {};
+  hvac->copyFullChannelConfigTo(&liveConfig);
+  const auto previouslyValidType = liveConfig.TemperatureControlType;
+  const uint8_t invalidTypes[] = {3, 255};
+  for (const auto type : invalidTypes) {
+    hvacConfig->TemperatureControlType = type;
+
+    EXPECT_EQ(hvac->handleChannelConfig(&configFromServer),
+              SUPLA_CONFIG_RESULT_DATA_ERROR);
+    hvac->copyFullChannelConfigTo(&liveConfig);
+    EXPECT_EQ(liveConfig.TemperatureControlType, previouslyValidType);
+  }
 }

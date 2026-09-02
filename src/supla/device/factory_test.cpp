@@ -1,20 +1,5 @@
-/*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "factory_test.h"
 
@@ -39,11 +24,21 @@
 namespace Supla {
 namespace Device {
 
+FactoryTest::InsecureOptions FactoryTest::insecureOptions = 0;
+
 FactoryTest::FactoryTest(SuplaDeviceClass *sdc, uint32_t timeoutS)
     : sdc(sdc), timeoutS(timeoutS) {
 }
 
 FactoryTest::~FactoryTest() {
+}
+
+void FactoryTest::setInsecureOptions(InsecureOptions options) {
+  insecureOptions = options;
+}
+
+FactoryTest::InsecureOptions FactoryTest::getInsecureOptions() {
+  return insecureOptions;
 }
 
 int16_t FactoryTest::getManufacturerId() {
@@ -194,8 +189,7 @@ void FactoryTest::onInit() {
   }
 
   if (cfg && !cfg->isEncryptionEnabled()) {
-#ifndef SUPLA_DEBUG
-    if (ensureAdvancedSecurity) {
+    if ((insecureOptions & AllowConfigEncryptionDisabled) == 0) {
       SUPLA_LOG_ERROR("TEST failed: config encryption is disabled");
       testFailed = true;
       failReason = 16;
@@ -203,9 +197,9 @@ void FactoryTest::onInit() {
         return;
       }
     } else {
-      SUPLA_LOG_WARNING("TEST skip check: config encryption is disabled");
+      SUPLA_LOG_WARNING(
+          "INSECURE PRODUCT PROFILE: config encryption is disabled");
     }
-#endif
   }
 
   auto webServer = Supla::WebServer::Instance();
@@ -217,16 +211,17 @@ void FactoryTest::onInit() {
       return;
     }
   }
-  if (webServer && !webServer->verifyCertificatesFormat()) {
-    if (ensureAdvancedSecurity) {
-      SUPLA_LOG_ERROR("TEST failed: invalid certificates format");
+  if (webServer && !webServer->verifyEmbeddedHttpsCertificates()) {
+    if ((insecureOptions & AllowMissingHttpsCertificates) == 0) {
+      SUPLA_LOG_ERROR("TEST failed: missing or invalid HTTPS certificates");
       testFailed = true;
       failReason = 18;
       if (!selfTestMode) {
         return;
       }
     } else {
-      SUPLA_LOG_WARNING("TEST skip failed check: invalid certificates format");
+      SUPLA_LOG_WARNING(
+          "INSECURE PRODUCT PROFILE: missing or invalid HTTPS certificates");
     }
   }
 
@@ -240,7 +235,7 @@ void FactoryTest::onInit() {
   }
 
   if (!sdc->isSecurityLogEnabled()) {
-    if (ensureAdvancedSecurity) {
+    if ((insecureOptions & AllowSecurityLogDisabled) == 0) {
       SUPLA_LOG_ERROR("TEST failed: security log is disabled");
       testFailed = true;
       failReason = 20;
@@ -248,12 +243,13 @@ void FactoryTest::onInit() {
         return;
       }
     } else {
-      SUPLA_LOG_WARNING("TEST skip failed check: security log is disabled");
+      SUPLA_LOG_WARNING(
+          "INSECURE PRODUCT PROFILE: security log is disabled");
     }
   }
 
   if (sdc->getInitialMode() == Supla::InitialMode::StartInCfgMode) {
-    if (ensureAdvancedSecurity) {
+    if ((insecureOptions & AllowStartInCfgMode) == 0) {
       SUPLA_LOG_ERROR("TEST failed: initial mode is set to config mode");
       testFailed = true;
       failReason = 21;
@@ -262,7 +258,7 @@ void FactoryTest::onInit() {
       }
     } else {
       SUPLA_LOG_WARNING(
-          "TEST skip failed check: initial mode is set to config mode");
+          "INSECURE PRODUCT PROFILE: StartInCfgMode allowed");
     }
   }
 }
@@ -401,6 +397,14 @@ void FactoryTest::setTestFinished() {
 
 Supla::TestStage FactoryTest::getTestStage() const {
   return testStage;
+}
+
+bool FactoryTest::hasFailed() const {
+  return testFailed;
+}
+
+int FactoryTest::getFailReason() const {
+  return failReason;
 }
 
 void FactoryTest::dontCheckAutomaticFirmwareUpdate() {

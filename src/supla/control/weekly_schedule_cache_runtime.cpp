@@ -57,9 +57,8 @@ bool WeeklyScheduleCacheRuntime::process(bool active, uint32_t now) {
     return false;
   }
 
-  if (inactiveSinceMs_ == 0 ||
-      static_cast<uint32_t>(now - inactiveSinceMs_) <
-          kWeeklyScheduleCacheReleaseDelayMs) {
+  if (static_cast<uint32_t>(now - inactiveSinceMs_) <
+      kWeeklyScheduleCacheReleaseDelayMs) {
     return false;
   }
 

@@ -1,20 +1,5 @@
-/*
-   Copyright (C) AC SOFTWARE SP. Z O.O
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-*/
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "modbus_configurator.h"
 
@@ -28,6 +13,7 @@ using Supla::Modbus::Configurator;
 
 bool Supla::Modbus::Config::operator==(const Config &other) const {
   return (role == other.role && modbusAddress == other.modbusAddress &&
+          slaveTimeoutMs == other.slaveTimeoutMs &&
           serial.mode == other.serial.mode &&
           serial.baudrate == other.serial.baudrate &&
           serial.stopBits == other.serial.stopBits &&
@@ -37,18 +23,6 @@ bool Supla::Modbus::Config::operator==(const Config &other) const {
 
 bool Supla::Modbus::Config::operator!=(const Config &other) const {
   return !(*this == other);
-}
-
-Supla::Modbus::Config &Supla::Modbus::Config::operator=(
-    const Supla::Modbus::Config &other) {
-  role = other.role;
-  modbusAddress = other.modbusAddress;
-  serial.mode = other.serial.mode;
-  serial.baudrate = other.serial.baudrate;
-  serial.stopBits = other.serial.stopBits;
-  network.mode = other.network.mode;
-  network.port = other.network.port;
-  return *this;
 }
 
 Supla::Modbus::ConfigProperties::ConfigProperties() {

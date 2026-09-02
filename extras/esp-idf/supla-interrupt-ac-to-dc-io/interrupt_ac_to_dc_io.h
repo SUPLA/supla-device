@@ -11,9 +11,9 @@ namespace Supla {
 
 #define INTERRUPT_AC_TO_DC_IO_MAX_GPIOS 50
 #define INTERRUPT_AC_TO_DC_IO_DEFAULT_MIN_QUIET_MS 5
-#define INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_ACTIVE_SAMPLES 4
-#define INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_EDGES 12
-#define INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_SPAN_MS 25
+#define INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_PACKETS 6
+#define INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_SPAN_MS 50
+#define INTERRUPT_AC_TO_DC_IO_AC_ON_MAX_PACKET_GAP_MS 20
 #define INTERRUPT_AC_TO_DC_IO_AC_ON_WINDOW_MS 80
 
 class InterruptAcToDcIo : public Io::Base, public Element {
@@ -47,8 +47,9 @@ class InterruptAcToDcIo : public Io::Base, public Element {
   uint32_t gpioLastRawTimestampMs[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
   uint32_t gpioAcCandidateFirstTimestampMs[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] =
       {};
-  uint16_t gpioAcCandidateEdges[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
-  uint8_t gpioAcCandidateActiveSamples[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
+  uint32_t gpioAcCandidateLastPacketTimestampMs[
+      INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
+  uint8_t gpioAcCandidatePackets[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
   uint8_t gpioState[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
   uint8_t gpioMinQuietBeforeNextActivityMs[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] =
       {};

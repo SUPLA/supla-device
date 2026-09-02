@@ -145,11 +145,106 @@ TEST_F(InterruptAcToDcIoFixture, AcDetectionStillWorksAfterGuard) {
   triggerAcSample(&io);
   time.advance(10);
   triggerAcSample(&io);
+  time.advance(10);
+  triggerAcSample(&io);
+  time.advance(10);
+  triggerAcSample(&io);
 
   EXPECT_EQ(1, io.customDigitalRead(0, kGpio));
 
   InterruptAcToDcIoTestSupport::setGpioLevel(kGpio, 0);
   time.advance(kMinOffTimeoutMs + 1);
   io.onFastTimer();
+  EXPECT_EQ(0, io.customDigitalRead(0, kGpio));
+}
+
+TEST_F(InterruptAcToDcIoFixture, AcDetectionAcceptsExactQuietBoundary) {
+  Supla::InterruptAcToDcIo io;
+  initialize(&io, 0);
+  InterruptAcToDcIoTestSupport::setGpioLevel(kGpio, 1);
+
+  for (int i = 0; i < 10; i++) {
+    InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+    io.onFastTimer();
+    time.advance(5);
+  }
+  EXPECT_EQ(0, io.customDigitalRead(0, kGpio));
+
+  InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+  io.onFastTimer();
+  EXPECT_EQ(1, io.customDigitalRead(0, kGpio));
+}
+
+TEST_F(InterruptAcToDcIoFixture, AcDetectionAcceptsLowEdgeCountActivity) {
+  Supla::InterruptAcToDcIo io;
+  initialize(&io, 0);
+  InterruptAcToDcIoTestSupport::setGpioLevel(kGpio, 1);
+
+  for (int i = 0; i < 6; i++) {
+    InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+    io.onFastTimer();
+    time.advance(10);
+  }
+  EXPECT_EQ(1, io.customDigitalRead(0, kGpio));
+}
+
+TEST_F(InterruptAcToDcIoFixture, AcDetectionAcceptsObservedSparseEdgeSequence) {
+  Supla::InterruptAcToDcIo io;
+  initialize(&io, 0);
+  InterruptAcToDcIoTestSupport::setGpioLevel(kGpio, 1);
+
+  InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio, 2);
+  io.onFastTimer();
+  time.advance(2);
+  InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+  io.onFastTimer();
+  time.advance(2);
+  InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+  io.onFastTimer();
+
+  for (int i = 0; i < 5; i++) {
+    time.advance(10);
+    InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+    io.onFastTimer();
+  }
+
+  EXPECT_EQ(1, io.customDigitalRead(0, kGpio));
+}
+
+TEST_F(InterruptAcToDcIoFixture, AcDetectionRejectsShortLowEdgeBurst) {
+  Supla::InterruptAcToDcIo io;
+  initialize(&io, 0);
+  InterruptAcToDcIoTestSupport::setGpioLevel(kGpio, 1);
+
+  for (int i = 0; i < 4; i++) {
+    InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+    io.onFastTimer();
+    time.advance(10);
+  }
+
+  EXPECT_EQ(0, io.customDigitalRead(0, kGpio));
+}
+
+TEST_F(InterruptAcToDcIoFixture, AcDetectionRejectsIrregularActivity) {
+  Supla::InterruptAcToDcIo io;
+  initialize(&io, 0);
+  InterruptAcToDcIoTestSupport::setGpioLevel(kGpio, 1);
+
+  for (int i = 0; i < 3; i++) {
+    InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+    io.onFastTimer();
+    time.advance(10);
+  }
+
+  time.advance(21);
+  InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+  io.onFastTimer();
+  time.advance(10);
+  InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+  io.onFastTimer();
+  time.advance(10);
+  InterruptAcToDcIoTestSupport::triggerInterrupt(kGpio);
+  io.onFastTimer();
+
   EXPECT_EQ(0, io.customDigitalRead(0, kGpio));
 }

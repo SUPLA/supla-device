@@ -179,9 +179,9 @@ void InterruptAcToDcIo::onFastTimer() {
       gpioInputNoiseGuardWasActive[i] = 1;
       gpioRawActivitySeen[i] = 0;
       gpioLastRawTimestampMs[i] = 0;
-      gpioAcCandidateEdges[i] = 0;
-      gpioAcCandidateActiveSamples[i] = 0;
+      gpioAcCandidatePackets[i] = 0;
       gpioAcCandidateFirstTimestampMs[i] = 0;
+      gpioAcCandidateLastPacketTimestampMs[i] = 0;
       if (gpioState[i] == 1 || gpioState[i] == 2) {
         gpioLastTimestampMs[i] = now;
       }
@@ -193,9 +193,9 @@ void InterruptAcToDcIo::onFastTimer() {
       gpioInputNoiseGuardWasActive[i] = 0;
       gpioRawActivitySeen[i] = 0;
       gpioLastRawTimestampMs[i] = 0;
-      gpioAcCandidateEdges[i] = 0;
-      gpioAcCandidateActiveSamples[i] = 0;
+      gpioAcCandidatePackets[i] = 0;
       gpioAcCandidateFirstTimestampMs[i] = 0;
+      gpioAcCandidateLastPacketTimestampMs[i] = 0;
 
       if (gpio_get_level(static_cast<gpio_num_t>(i)) == offStateLevel) {
         gpioLastTimestampMs[i] = gpioState[i] == 0 ? 0 : now;
@@ -210,6 +210,9 @@ void InterruptAcToDcIo::onFastTimer() {
 
     if (interruptCount > 0) {
 //      SUPLA_LOG_DEBUG("GPIO %d INTR COUNT %d", i, interruptCount);
+      bool acceptActivity = gpioRawActivitySeen[i] == 0 ||
+          now - gpioLastRawTimestampMs[i] >=
+              gpioMinQuietBeforeNextActivityMs[i];
       gpioRawActivitySeen[i] = 1;
       gpioLastRawTimestampMs[i] = now;
 
@@ -217,39 +220,41 @@ void InterruptAcToDcIo::onFastTimer() {
         gpioLastTimestampMs[i] = now;
       }
 
-      if (gpioState[i] == 0) {
-        gpioState[i] = 2;
-        gpioAcCandidateFirstTimestampMs[i] = now;
-        gpioAcCandidateEdges[i] = interruptCount;
-        gpioAcCandidateActiveSamples[i] = 1;
-        gpioLastTimestampMs[i] = now;
-      } else if (gpioState[i] == 2) {
-        uint32_t candidateSpanMs = now - gpioAcCandidateFirstTimestampMs[i];
-        if (gpioAcCandidateActiveSamples[i] == 0 ||
-            candidateSpanMs > INTERRUPT_AC_TO_DC_IO_AC_ON_WINDOW_MS) {
+      if (acceptActivity) {
+        // AC is accepted only after a periodic activity run. The interrupt
+        // count is deliberately ignored because it varies between GPIOs.
+        if (gpioState[i] == 0) {
+          gpioState[i] = 2;
           gpioAcCandidateFirstTimestampMs[i] = now;
-          gpioAcCandidateEdges[i] = interruptCount;
-          gpioAcCandidateActiveSamples[i] = 1;
-          candidateSpanMs = 0;
-        } else {
-          uint32_t candidateEdges = gpioAcCandidateEdges[i] + interruptCount;
-          gpioAcCandidateEdges[i] =
-              candidateEdges > 65535 ? 65535 : candidateEdges;
-          if (gpioAcCandidateActiveSamples[i] < 255) {
-            gpioAcCandidateActiveSamples[i]++;
+          gpioAcCandidateLastPacketTimestampMs[i] = now;
+          gpioAcCandidatePackets[i] = 1;
+          gpioLastTimestampMs[i] = now;
+        } else if (gpioState[i] == 2) {
+          uint32_t candidateSpanMs =
+              now - gpioAcCandidateFirstTimestampMs[i];
+          uint32_t packetGapMs =
+              now - gpioAcCandidateLastPacketTimestampMs[i];
+          if (gpioAcCandidatePackets[i] == 0 ||
+              candidateSpanMs > INTERRUPT_AC_TO_DC_IO_AC_ON_WINDOW_MS ||
+              packetGapMs > INTERRUPT_AC_TO_DC_IO_AC_ON_MAX_PACKET_GAP_MS) {
+            gpioAcCandidateFirstTimestampMs[i] = now;
+            gpioAcCandidateLastPacketTimestampMs[i] = now;
+            gpioAcCandidatePackets[i] = 1;
+            candidateSpanMs = 0;
+          } else if (gpioAcCandidatePackets[i] < 255) {
+            gpioAcCandidatePackets[i]++;
+            gpioAcCandidateLastPacketTimestampMs[i] = now;
           }
-        }
 
-        if (gpioAcCandidateActiveSamples[i] >=
-                INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_ACTIVE_SAMPLES &&
-            gpioAcCandidateEdges[i] >=
-                INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_EDGES &&
-            candidateSpanMs >= INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_SPAN_MS) {
-          SUPLA_LOG_DEBUG(" *** GPIO %d is ON (AC) ***", i);
-          gpioState[i] = 1;
-          gpioAcCandidateEdges[i] = 0;
-          gpioAcCandidateActiveSamples[i] = 0;
-          gpioAcCandidateFirstTimestampMs[i] = 0;
+          if (gpioAcCandidatePackets[i] >=
+                  INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_PACKETS &&
+              candidateSpanMs >= INTERRUPT_AC_TO_DC_IO_AC_ON_MIN_SPAN_MS) {
+            SUPLA_LOG_DEBUG(" *** GPIO %d is ON (AC) ***", i);
+            gpioState[i] = 1;
+            gpioAcCandidatePackets[i] = 0;
+            gpioAcCandidateFirstTimestampMs[i] = 0;
+            gpioAcCandidateLastPacketTimestampMs[i] = 0;
+          }
         }
       }
       continue;
@@ -258,9 +263,9 @@ void InterruptAcToDcIo::onFastTimer() {
         now - static_cast<uint32_t>(gpioLastTimestampMs[i]) >
             static_cast<uint32_t>(gpioMinOffTimeout[i])) {
       gpioLastTimestampMs[i] = 0;
-      gpioAcCandidateEdges[i] = 0;
-      gpioAcCandidateActiveSamples[i] = 0;
+      gpioAcCandidatePackets[i] = 0;
       gpioAcCandidateFirstTimestampMs[i] = 0;
+      gpioAcCandidateLastPacketTimestampMs[i] = 0;
       if (gpio_get_level(static_cast<gpio_num_t>(i)) == offStateLevel) {
         gpioState[i] = 0;
         SUPLA_LOG_DEBUG(" *** GPIO %d is OFF ***", i);

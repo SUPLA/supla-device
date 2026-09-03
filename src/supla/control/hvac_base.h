@@ -81,7 +81,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isThermostatDisabled();
   bool isManualModeEnabled();
 
-  void saveConfig();
+  void saveConfig(bool localChange = false);
   void saveWeeklySchedule();
   void syncWeeklyScheduleConfigTypes();
 
@@ -464,7 +464,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setIgnoreDefaultHeatOrColdSourceForAggregator(bool);
 
   bool isAltWeeklySchedulePossible() const;
-  void requestWeeklyScheduleResend(bool isAltWeeklySchedule = false);
+  void requestWeeklyScheduleResend(bool isAltWeeklySchedule = false,
+                                   bool localChange = false);
 
   /**
    * Returns true if thermostat output is disabled by binary sensor state
@@ -518,6 +519,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
   void updateWeeklyScheduleConfigTypes();
+  void markWeeklyScheduleConfigReceived(bool isAltWeeklySchedule);
+  bool isLocalConfigChangePending(int configType) const;
+  void persistChannelConfigChangeState();
   void emitCountdownTimerActionIfNeeded();
   bool fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig);
   bool fixReadonlyTemperature(int32_t temperatureIndex,
@@ -540,8 +544,6 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   THVACValue lastWorkingMode = {};
 
-  bool configFinishedReceived = true;
-  bool defaultConfigReceived = false;
   bool initDone = false;
   bool serverChannelFunctionValid = true;
   bool wrapAroundTemperatureSetpoints = false;
@@ -549,7 +551,6 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool startupDelay = true;
   bool forcedByAux = false;
 
-  uint8_t channelConfigChangedOffline = 0;
   uint8_t lastManualMode = 0;
   uint8_t previousSubfunction = 0;
   uint8_t defaultSubfunction = 0;

@@ -176,26 +176,38 @@ bool HvacWeeklySchedulePolicy::processWeeklySchedule(
 }
 
 void HvacWeeklySchedulePolicy::initDefaultWeeklySchedule(
-    HvacWeeklySchedule &weeklySchedule) const {
+    HvacWeeklySchedule &weeklySchedule,
+    bool isAltWeeklySchedule,
+    bool requestResend) const {
   auto *owner = weeklySchedule.owner_;
   weeklySchedule.isWeeklyScheduleConfigured_ = true;
   auto prevInitDone = owner->isInitDone();
   if (owner->isInitDone()) {
-    weeklySchedule.weeklyScheduleChangedOffline_ = 1;
     owner->setInitDone(false);
   }
 
-  weeklySchedule.weeklyScheduleBuffer_.clearAll();
-  weeklySchedule.weeklyScheduleBuffer_.set(false,
-                                           new TChannelConfig_WeeklySchedule());
-  weeklySchedule.weeklyScheduleBuffer_.set(true,
-                                           new TChannelConfig_WeeklySchedule());
-  memset(weeklySchedule.weeklyScheduleBuffer_.get(false),
-         0,
-         sizeof(TChannelConfig_WeeklySchedule));
-  memset(weeklySchedule.weeklyScheduleBuffer_.get(true),
-         0,
-         sizeof(TChannelConfig_WeeklySchedule));
+  bool initializeMain =
+      !isAltWeeklySchedule &&
+      weeklySchedule.weeklyScheduleBuffer_.get(false) == nullptr;
+  bool initializeAlt =
+      isAltWeeklySchedule &&
+      owner->getChannel()->getDefaultFunction() ==
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
+      weeklySchedule.weeklyScheduleBuffer_.get(true) == nullptr;
+  if (initializeMain) {
+    weeklySchedule.weeklyScheduleBuffer_.set(
+        false, new TChannelConfig_WeeklySchedule());
+    memset(weeklySchedule.weeklyScheduleBuffer_.get(false),
+           0,
+           sizeof(TChannelConfig_WeeklySchedule));
+  }
+  if (initializeAlt) {
+    weeklySchedule.weeklyScheduleBuffer_.set(
+        true, new TChannelConfig_WeeklySchedule());
+    memset(weeklySchedule.weeklyScheduleBuffer_.get(true),
+           0,
+           sizeof(TChannelConfig_WeeklySchedule));
+  }
 
   switch (owner->getChannel()->getDefaultFunction()) {
     default: {
@@ -209,44 +221,54 @@ void HvacWeeklySchedulePolicy::initDefaultWeeklySchedule(
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
-      weeklySchedule.setProgram(1, SUPLA_HVAC_MODE_HEAT, 1900, 0);
-      weeklySchedule.setProgram(2, SUPLA_HVAC_MODE_HEAT, 2100, 0);
-      weeklySchedule.setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0);
-      weeklySchedule.setProgram(4, SUPLA_HVAC_MODE_HEAT, 1200, 0);
-
-      weeklySchedule.setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2400, true);
-      weeklySchedule.setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2100, true);
-      weeklySchedule.setProgram(3, SUPLA_HVAC_MODE_COOL, 0, 1800, true);
-      weeklySchedule.setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2800, true);
+      if (initializeMain) {
+        weeklySchedule.setProgram(1, SUPLA_HVAC_MODE_HEAT, 1900, 0);
+        weeklySchedule.setProgram(2, SUPLA_HVAC_MODE_HEAT, 2100, 0);
+        weeklySchedule.setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0);
+        weeklySchedule.setProgram(4, SUPLA_HVAC_MODE_HEAT, 1200, 0);
+      }
+      if (initializeAlt) {
+        weeklySchedule.setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2400, true);
+        weeklySchedule.setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2100, true);
+        weeklySchedule.setProgram(3, SUPLA_HVAC_MODE_COOL, 0, 1800, true);
+        weeklySchedule.setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2800, true);
+      }
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
-      weeklySchedule.setProgram(1, SUPLA_HVAC_MODE_HEAT_COOL, 1800, 2500);
-      weeklySchedule.setProgram(2, SUPLA_HVAC_MODE_HEAT_COOL, 2100, 2400);
-      weeklySchedule.setProgram(3, SUPLA_HVAC_MODE_HEAT, 2300, 0);
-      weeklySchedule.setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2400);
+      if (initializeMain) {
+        weeklySchedule.setProgram(1, SUPLA_HVAC_MODE_HEAT_COOL, 1800, 2500);
+        weeklySchedule.setProgram(2, SUPLA_HVAC_MODE_HEAT_COOL, 2100, 2400);
+        weeklySchedule.setProgram(3, SUPLA_HVAC_MODE_HEAT, 2300, 0);
+        weeklySchedule.setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2400);
+      }
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL: {
-      weeklySchedule.setProgram(1, SUPLA_HVAC_MODE_HEAT, -500, 0);
-      weeklySchedule.setProgram(2, SUPLA_HVAC_MODE_HEAT, -200, 0);
-      weeklySchedule.setProgram(3, SUPLA_HVAC_MODE_HEAT, -1000, 0);
-      weeklySchedule.setProgram(4, SUPLA_HVAC_MODE_HEAT, -1500, 0);
+      if (initializeMain) {
+        weeklySchedule.setProgram(1, SUPLA_HVAC_MODE_HEAT, -500, 0);
+        weeklySchedule.setProgram(2, SUPLA_HVAC_MODE_HEAT, -200, 0);
+        weeklySchedule.setProgram(3, SUPLA_HVAC_MODE_HEAT, -1000, 0);
+        weeklySchedule.setProgram(4, SUPLA_HVAC_MODE_HEAT, -1500, 0);
+      }
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
-      weeklySchedule.setProgram(1, SUPLA_HVAC_MODE_HEAT, 4000, 0);
-      weeklySchedule.setProgram(2, SUPLA_HVAC_MODE_HEAT, 5000, 0);
-      weeklySchedule.setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0);
-      weeklySchedule.setProgram(4, SUPLA_HVAC_MODE_HEAT, 6000, 0);
+      if (initializeMain) {
+        weeklySchedule.setProgram(1, SUPLA_HVAC_MODE_HEAT, 4000, 0);
+        weeklySchedule.setProgram(2, SUPLA_HVAC_MODE_HEAT, 5000, 0);
+        weeklySchedule.setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0);
+        weeklySchedule.setProgram(4, SUPLA_HVAC_MODE_HEAT, 6000, 0);
+      }
       break;
     }
   }
 
   auto channelFunction = owner->getChannel()->getDefaultFunction();
-  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT ||
-      channelFunction == SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER ||
-      channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
+  if (initializeMain &&
+      (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT ||
+       channelFunction == SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER ||
+       channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL)) {
     for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
       int program = 1;
       for (int hour = 0; hour < 24; hour++) {
@@ -262,7 +284,8 @@ void HvacWeeklySchedulePolicy::initDefaultWeeklySchedule(
       }
     }
   }
-  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
+  if (initializeAlt &&
+      channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
       int program = 0;
       for (int hour = 0; hour < 24; hour++) {
@@ -282,7 +305,8 @@ void HvacWeeklySchedulePolicy::initDefaultWeeklySchedule(
       }
     }
   }
-  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL) {
+  if (initializeMain &&
+      channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL) {
     for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
       int program = 1;
       for (int hour = 0; hour < 24; hour++) {
@@ -300,7 +324,8 @@ void HvacWeeklySchedulePolicy::initDefaultWeeklySchedule(
   }
 
   owner->setInitDone(prevInitDone);
-  weeklySchedule.saveWeeklySchedule(true);
+  weeklySchedule.saveWeeklyScheduleForType(
+      isAltWeeklySchedule, requestResend);
 }
 
 }  // namespace Control

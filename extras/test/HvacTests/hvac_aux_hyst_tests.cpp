@@ -115,8 +115,7 @@ TEST_F(HvacAuxTestsF, auxHysteresisMaxCheck) {
       cfg,
       getBlob(
           StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .Times(1)
-      .WillOnce(Return(false));
+      .Times(0);
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
@@ -393,8 +392,7 @@ TEST_F(HvacAuxTestsF, auxHysteresisMinCheck) {
       cfg,
       getBlob(
           StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .Times(1)
-      .WillOnce(Return(false));
+      .Times(0);
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
@@ -598,8 +596,7 @@ TEST_F(HvacAuxTestsF, auxHysteresisMaxCoolinCheck) {
       cfg,
       getBlob(
           StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .Times(1)
-      .WillOnce(Return(false));
+      .Times(0);
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
@@ -851,8 +848,7 @@ TEST_F(HvacAuxTestsF, auxHysteresisMinCoolinCheck) {
       cfg,
       getBlob(
           StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .Times(1)
-      .WillOnce(Return(false));
+      .Times(0);
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)

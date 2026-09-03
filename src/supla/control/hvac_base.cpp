@@ -159,7 +159,7 @@ bool HvacBase::iterateConnected() {
     updateTimerValue();
     return false;
   }
-  auto result = Supla::ElementWithChannelActions::iterateConnected();
+  auto result = Supla::Element::iterateConnected();
 
   if (!result) {
     SUPLA_LOG_DEBUG(
@@ -179,6 +179,14 @@ bool HvacBase::iterateConnected() {
     return result;
   }
   lastConfigChangeTimestampMs = 0;
+
+  if (!serverChannelFunctionValid) {
+    return result;
+  }
+
+  if (!Supla::ElementWithChannelActions::iterateConfigExchange()) {
+    return false;
+  }
 
   return result;
 }
@@ -226,14 +234,8 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     weeklyScheduleHelper->onLoadConfig();
     updateWeeklyScheduleConfigTypes();
 
-    // load config changed offline flags
-    if (cfg->isChannelConfigChangeFlagSet(getChannelNumber())) {
-      SUPLA_LOG_INFO("HVAC[%d]: config changed offline flag is set",
-                     getChannelNumber());
-      channelConfigChangedOffline = 1;
-    } else {
-      channelConfigChangedOffline = 0;
-    }
+    // Load the common channel-config exchange state.
+    loadConfigChangeFlag();
 
   } else {
     SUPLA_LOG_ERROR("HVAC[%d]: can't work without config storage",
@@ -371,10 +373,6 @@ void HvacBase::onInit() {
 
   initDefaultAlgorithm();
 
-  if (!weeklyScheduleHelper->isConfigured()) {
-    weeklyScheduleHelper->initDefaultWeeklySchedule();
-  }
-
   updateWeeklyScheduleConfigTypes();
 
   initDone = true;
@@ -462,23 +460,11 @@ void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   Supla::ElementWithChannelActions::onRegistered(suplaSrpc);
   configFixAttempt = 0;
   serverChannelFunctionValid = true;
-  configFinishedReceived = false;
-  if (channelConfigChangedOffline) {
-    channelConfigChangedOffline = 1;
-  }
-  defaultConfigReceived = false;
   timerUpdateTimestamp = 0;
-  weeklyScheduleHelper->onRegistered();
 }
 
 void HvacBase::handleChannelConfigFinished() {
-  configFinishedReceived = true;
-  if (!defaultConfigReceived) {
-    // trigger sending channel config to server
-    channelConfigChangedOffline = 1;
-  }
   Supla::ElementWithChannelActions::handleChannelConfigFinished();
-  weeklyScheduleHelper->handleChannelConfigFinished();
 }
 
 void HvacBase::fillChannelConfig(void *channelConfig,
@@ -867,17 +853,17 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     if (channelFunction == 0) {
       // Channel function set to "none/disabled"
       changeFunction(channelFunction, false);
+      markAllChannelConfigsReceived();
       return SUPLA_CONFIG_RESULT_TRUE;
     }
     return SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED;
   }
   serverChannelFunctionValid = true;
 
-  if (channelConfigChangedOffline && !local) {
+  if (isLocalConfigChangePending(SUPLA_CONFIG_TYPE_DEFAULT) && !local) {
     SUPLA_LOG_INFO(
         "HVAC[%d]: Ignoring channel config (local config changed offline)",
         getChannelNumber());
-    defaultConfigReceived = true;
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
@@ -891,13 +877,15 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
                    Supla::channelFunctionToString(channelFunction),
                    channelFunction);
     changeFunction(channelFunction, false);
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
   bool applyServerConfig = (newConfig->ConfigSize > 0);
   if (!applyServerConfig) {
     // server doesn't have channel configuration, so we'll send it
-    channelConfigChangedOffline = 1;
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    return SUPLA_CONFIG_RESULT_TRUE;
   }
 
   if (applyServerConfig &&
@@ -918,12 +906,12 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   if (applyServerConfig && !isConfigValid(hvacConfig)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: invalid config", getChannelNumber());
     // server have invalid channel config
-    if (!configFinishedReceived) {
+    if (!isChannelConfigFinishedReceived()) {
       // if first config after register is invalid, we try to send out config
       // to server in order to fix it. If next channel configs will be also
       // invalid, we reject them without sending out config to server to avoid
       // message infinite loop
-      channelConfigChangedOffline = 1;
+      triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
     }
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
@@ -972,13 +960,11 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     }
   }
 
-  defaultConfigReceived = true;
   if (memcmp(&config, &configCopy, sizeof(TChannelConfig_HVAC)) != 0) {
-    if (local && initDone) {
-      channelConfigChangedOffline = 1;
-    }
-    saveConfig();
+    saveConfig(local && initDone);
   }
+
+  markChannelConfigReceived(SUPLA_CONFIG_TYPE_DEFAULT);
 
   // check if readonly fields have correct values on server
   // if not, then send update to server
@@ -986,7 +972,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   if (readonlyChanged || additionalValidationChanged) {
     if (configFixAttempt < 2) {
       configFixAttempt++;
-      channelConfigChangedOffline = 1;
+      triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
     } else {
       SUPLA_LOG_WARNING("HVAC[%d]: failed to fix config", getChannelNumber());
     }
@@ -1846,8 +1832,7 @@ bool HvacBase::setTemperatureFreezeProtection(_supla_int16_t temperature) {
     setTemperatureInStruct(
         &config.Temperatures, TEMPERATURE_FREEZE_PROTECTION, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -1866,8 +1851,7 @@ bool HvacBase::setTemperatureHeatProtection(_supla_int16_t temperature) {
     setTemperatureInStruct(
         &config.Temperatures, TEMPERATURE_HEAT_PROTECTION, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -1884,8 +1868,7 @@ bool HvacBase::setTemperatureEco(_supla_int16_t temperature) {
   if (temperature != getTemperatureEco()) {
     setTemperatureInStruct(&config.Temperatures, TEMPERATURE_ECO, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -1903,8 +1886,7 @@ bool HvacBase::setTemperatureComfort(_supla_int16_t temperature) {
     setTemperatureInStruct(
         &config.Temperatures, TEMPERATURE_COMFORT, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -1922,8 +1904,7 @@ bool HvacBase::setTemperatureBoost(_supla_int16_t temperature) {
     setTemperatureInStruct(
         &config.Temperatures, TEMPERATURE_BOOST, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -1941,8 +1922,7 @@ bool HvacBase::setTemperatureHisteresis(_supla_int16_t temperature) {
     setTemperatureInStruct(
         &config.Temperatures, TEMPERATURE_HISTERESIS, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -1961,8 +1941,7 @@ bool HvacBase::setTemperatureAuxHisteresis(_supla_int16_t temperature) {
     setTemperatureInStruct(
         &config.Temperatures, TEMPERATURE_AUX_HISTERESIS, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -1980,8 +1959,7 @@ bool HvacBase::setTemperatureBelowAlarm(_supla_int16_t temperature) {
     setTemperatureInStruct(
         &config.Temperatures, TEMPERATURE_BELOW_ALARM, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -1999,8 +1977,7 @@ bool HvacBase::setTemperatureAboveAlarm(_supla_int16_t temperature) {
     setTemperatureInStruct(
         &config.Temperatures, TEMPERATURE_ABOVE_ALARM, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -2019,8 +1996,7 @@ bool HvacBase::setTemperatureAuxMinSetpoint(_supla_int16_t temperature) {
     setTemperatureInStruct(
         &config.Temperatures, TEMPERATURE_AUX_MIN_SETPOINT, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -2039,8 +2015,7 @@ bool HvacBase::setTemperatureAuxMaxSetpoint(_supla_int16_t temperature) {
     setTemperatureInStruct(
         &config.Temperatures, TEMPERATURE_AUX_MAX_SETPOINT, temperature);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -2227,8 +2202,7 @@ bool HvacBase::setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm) {
     if (config.UsedAlgorithm != newAlgorithm) {
       config.UsedAlgorithm = newAlgorithm;
       if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
+        saveConfig(true);
       }
     }
     return true;
@@ -2242,9 +2216,8 @@ void HvacBase::setSubfunction(uint8_t subfunction) {
   }
   if (config.Subfunction != subfunction) {
     config.Subfunction = subfunction;
-  if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+    if (initDone) {
+      saveConfig(true);
     }
   }
   updateWeeklyScheduleConfigTypes();
@@ -2278,8 +2251,7 @@ bool HvacBase::setMainThermometerChannelNo(int16_t newChannelNo) {
   if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
     if (config.MainThermometerChannelNo != channelNo) {
       config.MainThermometerChannelNo = channelNo;
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
     return true;
   } else if (isChannelThermometer(newChannelNo)) {
@@ -2290,8 +2262,7 @@ bool HvacBase::setMainThermometerChannelNo(int16_t newChannelNo) {
     }
     if (config.MainThermometerChannelNo != channelNo) {
       config.MainThermometerChannelNo = channelNo;
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
     return true;
   }
@@ -2328,8 +2299,7 @@ bool HvacBase::setAuxThermometerChannelNo(int16_t newChannelNo) {
           SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
         setAuxThermometerType(
             SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED);
-        channelConfigChangedOffline = 1;
-        saveConfig();
+        saveConfig(true);
       }
     }
     return true;
@@ -2340,8 +2310,7 @@ bool HvacBase::setAuxThermometerChannelNo(int16_t newChannelNo) {
       config.AuxThermometerChannelNo = channelNo;
       setAuxThermometerType(
           SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
     return true;
   }
@@ -2362,8 +2331,7 @@ void HvacBase::setAuxThermometerType(uint8_t type) {
   if (config.AuxThermometerType != type) {
     config.AuxThermometerType = type;
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   updateWeeklyScheduleConfigTypes();
@@ -2380,8 +2348,7 @@ void HvacBase::setAntiFreezeAndHeatProtectionEnabled(bool enabled) {
   if (config.AntiFreezeAndOverheatProtectionEnabled != enabled) {
     config.AntiFreezeAndOverheatProtectionEnabled = enabled;
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
 }
@@ -2408,8 +2375,7 @@ void HvacBase::setAuxMinMaxSetpointEnabled(bool enabled) {
   if (config.AuxMinMaxSetpointEnabled != enabled) {
     config.AuxMinMaxSetpointEnabled = enabled;
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
 }
@@ -2436,8 +2402,7 @@ void HvacBase::setTemperatureSetpointChangeSwitchesToManualMode(bool enabled) {
   if (config.TemperatureSetpointChangeSwitchesToManualMode != enabled) {
     config.TemperatureSetpointChangeSwitchesToManualMode = enabled;
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
 }
@@ -2453,8 +2418,7 @@ void HvacBase::setUseSeparateHeatCoolOutputs(bool enabled) {
   if (config.UseSeparateHeatCoolOutputs != enabled) {
     config.UseSeparateHeatCoolOutputs = enabled;
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
 }
@@ -2475,8 +2439,7 @@ bool HvacBase::setMinOnTimeS(uint16_t seconds) {
     if (config.MinOnTimeS != seconds) {
       config.MinOnTimeS = seconds;
       if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
+        saveConfig(true);
       }
     }
     return true;
@@ -2496,8 +2459,7 @@ bool HvacBase::setMinOffTimeS(uint16_t seconds) {
     if (config.MinOffTimeS != seconds) {
       config.MinOffTimeS = seconds;
       if (initDone) {
-        channelConfigChangedOffline = 1;
-        saveConfig();
+        saveConfig(true);
       }
     }
     return true;
@@ -2523,8 +2485,7 @@ bool HvacBase::setOutputValueOnError(signed char value) {
   if (config.OutputValueOnError != value) {
     config.OutputValueOnError = value;
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -2534,9 +2495,12 @@ signed char HvacBase::getOutputValueOnError() const {
   return config.OutputValueOnError;
 }
 
-void HvacBase::saveConfig() {
+void HvacBase::saveConfig(bool localChange) {
   auto cfg = Supla::Storage::ConfigInstance();
   lastConfigChangeTimestampMs = millis();
+  if (localChange) {
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+  }
   if (cfg) {
     // Generic HVAC configuration
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
@@ -2549,12 +2513,7 @@ void HvacBase::saveConfig() {
       SUPLA_LOG_WARNING("HVAC[%d]: failed to save config", getChannelNumber());
     }
 
-    if (channelConfigChangedOffline) {
-      cfg->setChannelConfigChangeFlag(getChannelNumber());
-    } else {
-      cfg->clearChannelConfigChangeFlag(getChannelNumber());
-    }
-
+    saveConfigChangeFlag();
     cfg->saveWithDelay(5000);
   }
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
@@ -2581,7 +2540,6 @@ void HvacBase::handleSetChannelConfigResult(
                    getChannelNumber(),
                    success ? "succeeded" : "failed",
                    result->Result);
-    clearChannelConfigChangedFlag();
     return;
   }
   weeklyScheduleHelper->handleSetChannelConfigResult(result);
@@ -2592,17 +2550,12 @@ void HvacBase::handleSetChannelConfigResult(
 }
 
 void HvacBase::clearChannelConfigChangedFlag() {
-  if (channelConfigChangedOffline) {
-    channelConfigChangedOffline = 0;
-    auto cfg = Supla::Storage::ConfigInstance();
-    if (cfg) {
-      cfg->clearChannelConfigChangeFlag(getChannelNumber());
-      cfg->saveWithDelay(1000);
-    }
-  }
+  clearLocalConfigChanges(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
 void HvacBase::clearWeeklyScheduleChangedFlag() {
+  clearLocalConfigChanges(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
+                          SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
   weeklyScheduleHelper->clearWeeklyScheduleChangedFlag();
 }
 
@@ -3726,10 +3679,7 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
 
   channel.clearHvacState();
 
-  if (changedLocally) {
-    channelConfigChangedOffline = 1;
-  }
-  saveConfig();
+  saveConfig(changedLocally);
 
   clearLastOutputValue();
   setOutput(0, true);
@@ -3737,10 +3687,26 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
   updateWeeklyScheduleConfigTypes();
 }
 
-void HvacBase::requestWeeklyScheduleResend(bool isAltWeeklySchedule) {
+void HvacBase::requestWeeklyScheduleResend(bool isAltWeeklySchedule,
+                                           bool localChange) {
   triggerSetChannelConfig(isAltWeeklySchedule
                              ? SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE
-                             : SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+                             : SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
+                          localChange);
+}
+
+void HvacBase::markWeeklyScheduleConfigReceived(bool isAltWeeklySchedule) {
+  markChannelConfigReceived(isAltWeeklySchedule
+                                ? SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE
+                                : SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+}
+
+bool HvacBase::isLocalConfigChangePending(int configType) const {
+  return isLocalChannelConfigChangePending(configType);
+}
+
+void HvacBase::persistChannelConfigChangeState() {
+  saveConfigChangeFlag();
 }
 
 void HvacBase::updateWeeklyScheduleConfigTypes() {
@@ -4469,8 +4435,7 @@ bool HvacBase::setBinarySensorChannelNo(int16_t newChannelNo) {
       isChannelBinarySensor(newChannelNo)) {
     if (config.BinarySensorChannelNo != channelNo) {
       config.BinarySensorChannelNo = channelNo;
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
     return true;
   }
@@ -5332,8 +5297,7 @@ bool HvacBase::setPumpSwitchChannelNo(int16_t newChannelNo) {
       registeredInRelayHvacAggregator = false;
       config.PumpSwitchChannelNo = channelNo;
       config.PumpSwitchIsSet = 0;
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
     return true;
   }
@@ -5349,8 +5313,7 @@ bool HvacBase::setPumpSwitchChannelNo(int16_t newChannelNo) {
     config.PumpSwitchChannelNo = channelNo;
     config.PumpSwitchIsSet = 1;
     registerInAggregator(channelNo);
-    channelConfigChangedOffline = 1;
-    saveConfig();
+    saveConfig(true);
   }
   return true;
 }
@@ -5394,8 +5357,7 @@ bool HvacBase::setHeatOrColdSourceSwitchChannelNo(int16_t newChannelNo) {
       registeredInRelayHvacAggregator = false;
       config.HeatOrColdSourceSwitchChannelNo = channelNo;
       config.HeatOrColdSourceSwitchIsSet = 0;
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
     return true;
   }
@@ -5411,8 +5373,7 @@ bool HvacBase::setHeatOrColdSourceSwitchChannelNo(int16_t newChannelNo) {
     config.HeatOrColdSourceSwitchChannelNo = channelNo;
     config.HeatOrColdSourceSwitchIsSet = 1;
     registerInAggregator(channelNo);
-    channelConfigChangedOffline = 1;
-    saveConfig();
+    saveConfig(true);
   }
   return true;
 }
@@ -5459,8 +5420,7 @@ bool HvacBase::setMasterThermostatChannelNo(int16_t newChannelNo) {
         config.MasterThermostatIsSet != 0) {
       config.MasterThermostatChannelNo = channelNo;
       config.MasterThermostatIsSet = 0;
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
     return true;
   }
@@ -5469,8 +5429,7 @@ bool HvacBase::setMasterThermostatChannelNo(int16_t newChannelNo) {
       config.MasterThermostatIsSet != 1) {
     config.MasterThermostatChannelNo = channelNo;
     config.MasterThermostatIsSet = 1;
-    channelConfigChangedOffline = 1;
-    saveConfig();
+    saveConfig(true);
   }
   return true;
 }
@@ -5599,8 +5558,7 @@ bool HvacBase::setLocalUILock(enum LocalUILock lock) {
   if (lock != getLocalUILock()) {
     config.LocalUILock = static_cast<uint8_t>(lock);
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
   return true;
@@ -5625,8 +5583,7 @@ void HvacBase::setLocalUILockTemperatureMin(int16_t min) {
   }
   config.MinAllowedTemperatureSetpointFromLocalUI = min;
   if (initDone) {
-    channelConfigChangedOffline = 1;
-    saveConfig();
+    saveConfig(true);
   }
 }
 
@@ -5660,8 +5617,7 @@ void HvacBase::setLocalUILockTemperatureMax(int16_t max) {
 
   config.MaxAllowedTemperatureSetpointFromLocalUI = max;
   if (initDone) {
-    channelConfigChangedOffline = 1;
-    saveConfig();
+    saveConfig(true);
   }
 }
 
@@ -5727,8 +5683,7 @@ void HvacBase::setTemperatureControlType(uint8_t type) {
     config.TemperatureControlType = type;
     fixTemperatureSetpoints();
     if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
+      saveConfig(true);
     }
   }
 }

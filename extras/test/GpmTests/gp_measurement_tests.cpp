@@ -609,7 +609,7 @@ TEST_F(GpMeasurementTestsFixture, localConfigChangeShouldBeSavedAndSend) {
       .Times(1)
       .WillOnce(Return(
           sizeof(Supla::Sensor::GeneralPurposeChannelBase::GPMCommonConfig)));
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 1))
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 1))
       .Times(1)
       .WillOnce(Return(1));
 

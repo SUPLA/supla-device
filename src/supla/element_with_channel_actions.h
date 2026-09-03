@@ -134,6 +134,10 @@ class ElementWithChannelActions : public Element, public LocalAction {
   virtual bool saveConfigChangeFlag() const;
   virtual bool loadConfigChangeFlag();
   void clearChannelConfigChangedFlag();
+  void markChannelConfigReceived(int configType);
+  void markAllChannelConfigsReceived();
+  bool isChannelConfigFinishedReceived() const;
+  bool isLocalChannelConfigChangePending(int configType) const;
   bool iterateConfigExchange();
   /**
    * @brief Returns the next config type to be sent
@@ -141,10 +145,20 @@ class ElementWithChannelActions : public Element, public LocalAction {
    * @return -1 if no more config types to be sent, otherwise the config type
    */
   int getNextConfigType() const;
+  int getNextLocalConfigType() const;
+  bool setLocalConfigChange(int configType, bool value = true);
+  void clearLocalConfigChanges(int configType, int secondConfigType = -1);
+  uint8_t getUsedLocalConfigTypes() const;
   Supla::ChannelConfigState channelConfigState =
       Supla::ChannelConfigState::None;
 
   uint8_t setChannelConfigAttempts = 0;
+  // Bit number maps directly to SUPLA_CONFIG_TYPE_*. NVS stores the bitmap as
+  // uint32_t, but currently only four types are locally changeable (DEFAULT,
+  // WEEKLY_SCHEDULE, ALT_WEEKLY_SCHEDULE and EXTENDED), and all their type IDs
+  // fit in 0..7. Widen this field and the related helpers to uint16_t or
+  // uint32_t before adding a locally changed config type >= 8.
+  uint8_t locallyChangedConfigTypes = 0;
   ConfigTypesBitmap usedConfigTypes;
   ConfigTypesBitmap receivedConfigTypes;
 };

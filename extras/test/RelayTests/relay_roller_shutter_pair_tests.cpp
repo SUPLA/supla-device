@@ -64,6 +64,11 @@ class RelayRollerShutterPairFixture : public testing::Test {
     EXPECT_CALL(ioMock, digitalRead(gpio1)).WillRepeatedly(Return(0));
   }
 
+  void expectMissingSecondaryLegacyWeeklyFlag(ConfigMock &config) {
+    EXPECT_CALL(config, getUInt8(StrEq("1_weekly_chng"), _))
+        .WillOnce(Return(false));
+  }
+
   const int8_t *channelValue(int channelNumber) {
     return Supla::RegisterDevice::getChannelValuePtr(channelNumber);
   }
@@ -321,6 +326,7 @@ TEST_F(RelayRollerShutterPairFixture,
 
   EXPECT_TRUE(pair.isInRollerShutterMode());
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
+  expectMissingSecondaryLegacyWeeklyFlag(config);
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(DoAll(SetArgPointee<1>(primaryFunction), Return(true)));
@@ -749,12 +755,16 @@ TEST_F(RelayRollerShutterPairFixture,
   EXPECT_CALL(config, eraseKey(StrEq("0_fnc"))).WillOnce(Return(true));
   EXPECT_CALL(config, eraseKey(StrEq("0_cfg_chng")))
       .WillOnce(Return(true));
+  EXPECT_CALL(config, eraseKey(StrEq("0_cfg_chng_t")))
+      .WillOnce(Return(true));
   EXPECT_CALL(config, eraseKey(StrEq("0_oc_thr"))).WillOnce(Return(true));
   EXPECT_CALL(config, eraseKey(StrEq("0_r_weekly"))).WillOnce(Return(true));
   EXPECT_CALL(config, eraseKey(StrEq("0_weekly_chng")))
       .WillOnce(Return(true));
   EXPECT_CALL(config, eraseKey(StrEq("1_fnc"))).WillOnce(Return(true));
   EXPECT_CALL(config, eraseKey(StrEq("1_cfg_chng"))).WillOnce(Return(true));
+  EXPECT_CALL(config, eraseKey(StrEq("1_cfg_chng_t")))
+      .WillOnce(Return(true));
   EXPECT_CALL(config, eraseKey(StrEq("1_oc_thr"))).WillOnce(Return(true));
   EXPECT_CALL(config, eraseKey(StrEq("1_r_weekly"))).WillOnce(Return(true));
   EXPECT_CALL(config, eraseKey(StrEq("1_weekly_chng")))
@@ -771,6 +781,7 @@ TEST_F(RelayRollerShutterPairFixture,
   Supla::Control::RelayRollerShutterPair pair(gpio0, gpio1);
 
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
+  expectMissingSecondaryLegacyWeeklyFlag(config);
 
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -801,6 +812,7 @@ TEST_F(RelayRollerShutterPairFixture,
   int32_t primaryFunction = SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND;
 
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
+  expectMissingSecondaryLegacyWeeklyFlag(config);
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(DoAll(SetArgPointee<1>(primaryFunction), Return(true)));
@@ -838,6 +850,7 @@ TEST_F(RelayRollerShutterPairFixture,
   int32_t primaryFunction = SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER;
 
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
+  expectMissingSecondaryLegacyWeeklyFlag(config);
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(DoAll(SetArgPointee<1>(primaryFunction), Return(true)));
@@ -874,6 +887,7 @@ TEST_F(RelayRollerShutterPairFixture,
   int32_t primaryFunction = SUPLA_CHANNELFNC_STAIRCASETIMER;
 
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
+  expectMissingSecondaryLegacyWeeklyFlag(config);
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(DoAll(SetArgPointee<1>(primaryFunction), Return(true)));

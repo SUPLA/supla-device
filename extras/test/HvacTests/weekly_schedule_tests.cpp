@@ -77,6 +77,10 @@ class HvacBaseForTests : public Supla::Control::HvacBase {
   bool setAndSaveFunctionForTesting(uint32_t channelFunction) {
     return setAndSaveFunction(channelFunction);
   }
+
+  bool isLocalConfigChangePendingForTesting(int configType) const {
+    return isLocalChannelConfigChangePending(configType);
+  }
 };
 
 class HvacWeeklyScheduleTestsF : public ::testing::Test {
@@ -87,6 +91,30 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
   HvacBaseForTests *hvac = {};
   Supla::Sensor::Thermometer *t1 = {};
   Supla::Sensor::ThermHygroMeter *t2 = {};
+
+  void receiveCurrentConfigsFromDevice() {
+    for (uint8_t configType : {SUPLA_CONFIG_TYPE_DEFAULT,
+                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
+                               SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE}) {
+      TSD_ChannelConfig serverConfig = {};
+      serverConfig.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+      serverConfig.ConfigType = configType;
+      int size = 0;
+      hvac->fillChannelConfig(serverConfig.Config, &size, configType);
+      ASSERT_GT(size, 0);
+      serverConfig.ConfigSize = size;
+      if (configType == SUPLA_CONFIG_TYPE_DEFAULT) {
+        ASSERT_EQ(hvac->handleChannelConfig(&serverConfig, false),
+                  SUPLA_CONFIG_RESULT_TRUE);
+      } else {
+        ASSERT_EQ(hvac->handleWeeklySchedule(
+                      &serverConfig,
+                      configType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE,
+                      false),
+                  SUPLA_CONFIG_RESULT_TRUE);
+      }
+    }
+  }
 
   void SetUp() override {
     Supla::Channel::resetToDefaults();
@@ -258,9 +286,438 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
             3);
 }
 
+TEST_F(HvacWeeklyScheduleTestsF,
+       CompleteServerConfigDoesNotTriggerConfigUpload) {
+  ProtocolLayerMock proto;
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_weekly"), _,
+                           sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_aweekly"), _,
+                           sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _,
+                           sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _,
+                           sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000)).Times(2);
+
+  hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac->onInit();
+  hvac->onRegistered(nullptr);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0)).Times(1);
+  EXPECT_FALSE(hvac->iterateConnected());
+  receiveCurrentConfigsFromDevice();
+  hvac->handleChannelConfigFinished();
+
+  EXPECT_CALL(proto, setChannelConfig(_, _, _, _, _)).Times(0);
+  for (int i = 0; i < 5; ++i) {
+    hvac->iterateConnected();
+  }
+}
+
+TEST_F(HvacWeeklyScheduleTestsF,
+       UnsupportedServerFunctionDoesNotTriggerConfigUpload) {
+  ProtocolLayerMock proto;
+
+  hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac->onInit();
+  hvac->onRegistered(nullptr);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0)).Times(1);
+  EXPECT_FALSE(hvac->iterateConnected());
+
+  TSD_ChannelConfig serverConfig = {};
+  serverConfig.Func = SUPLA_CHANNELFNC_HVAC_FAN;
+  serverConfig.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  serverConfig.ConfigSize = sizeof(TChannelConfig_HVAC);
+  ASSERT_EQ(hvac->handleChannelConfig(&serverConfig, false),
+            SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED);
+  hvac->handleChannelConfigFinished();
+
+  EXPECT_CALL(proto, setChannelConfig(_, _, _, _, _)).Times(0);
+  EXPECT_TRUE(hvac->iterateConnected());
+}
+
+TEST_F(HvacWeeklyScheduleTestsF, ConfigChangeFlagsAreClearedPerConfigType) {
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 12))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 0))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(3);
+
+  hvac->triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+  hvac->triggerSetChannelConfig(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE, true);
+  hvac->triggerSetChannelConfig(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE, true);
+
+  hvac->clearChannelConfigChangedFlag();
+  EXPECT_FALSE(hvac->isLocalConfigChangePendingForTesting(
+      SUPLA_CONFIG_TYPE_DEFAULT));
+  EXPECT_TRUE(hvac->isLocalConfigChangePendingForTesting(
+      SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE));
+  EXPECT_TRUE(hvac->isLocalConfigChangePendingForTesting(
+      SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE));
+
+  hvac->clearWeeklyScheduleChangedFlag();
+  EXPECT_FALSE(hvac->isLocalConfigChangePendingForTesting(
+      SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE));
+  EXPECT_FALSE(hvac->isLocalConfigChangePendingForTesting(
+      SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE));
+}
+
+TEST_F(HvacWeeklyScheduleTestsF, InitDefaultWeeklyScheduleResetsExistingData) {
+  EXPECT_CALL(cfg, getBlob(_, _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(2)
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, setBlob(_, _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), _))
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AnyNumber());
+
+  hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac->onInit();
+  ASSERT_TRUE(hvac->setProgram(1, SUPLA_HVAC_MODE_HEAT, 2500, 0));
+  ASSERT_TRUE(hvac->setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2600, true));
+  ASSERT_EQ(hvac->getProgramById(1).SetpointTemperatureHeat, 2500);
+  ASSERT_EQ(hvac->getProgramById(1, true).SetpointTemperatureCool, 2600);
+
+  hvac->initDefaultWeeklySchedule();
+
+  EXPECT_EQ(hvac->getProgramById(1).SetpointTemperatureHeat, 1900);
+  EXPECT_EQ(hvac->getProgramById(1, true).SetpointTemperatureCool, 2400);
+}
+
+TEST_F(HvacWeeklyScheduleTestsF,
+       EmptyWeeklyConfigAfterSynchronizationTriggersOnlyWeeklyUpload) {
+  ProtocolLayerMock proto;
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_weekly"), _,
+                           sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_aweekly"), _,
+                           sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _, _))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000)).Times(2);
+
+  hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac->onInit();
+  hvac->onRegistered(nullptr);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0)).Times(1);
+  EXPECT_FALSE(hvac->iterateConnected());
+  receiveCurrentConfigsFromDevice();
+  hvac->handleChannelConfigFinished();
+
+  TSD_ChannelConfig emptyWeekly = {};
+  emptyWeekly.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+  emptyWeekly.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  emptyWeekly.ConfigSize = 0;
+  ASSERT_EQ(hvac->handleWeeklySchedule(&emptyWeekly, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  EXPECT_CALL(proto,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
+                               _,
+                               sizeof(TChannelConfig_WeeklySchedule),
+                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_FALSE(hvac->iterateConnected());
+}
+
+TEST_F(HvacWeeklyScheduleTestsF,
+       MissingServerConfigsAreUploadedOneByOne) {
+  ProtocolLayerMock proto;
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_aweekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, setBlob(_, _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(2)
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000)).Times(2);
+
+  hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac->onInit();
+  hvac->onRegistered(nullptr);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0)).Times(1);
+  EXPECT_FALSE(hvac->iterateConnected());
+  hvac->handleChannelConfigFinished();
+
+  const uint8_t configTypes[] = {
+      SUPLA_CONFIG_TYPE_DEFAULT,
+      SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
+      SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE};
+  const int configSizes[] = {sizeof(TChannelConfig_HVAC),
+                             sizeof(TChannelConfig_WeeklySchedule),
+                             sizeof(TChannelConfig_WeeklySchedule)};
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_CALL(proto,
+                setChannelConfig(0,
+                                 SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
+                                 _,
+                                 configSizes[i],
+                                 configTypes[i]))
+        .Times(1)
+        .WillOnce(Return(true));
+    EXPECT_FALSE(hvac->iterateConnected());
+
+    TSDS_SetChannelConfigResult result = {
+        .Result = SUPLA_CONFIG_RESULT_TRUE,
+        .ConfigType = configTypes[i],
+        .ChannelNumber = 0};
+    hvac->handleSetChannelConfigResult(&result);
+  }
+
+  EXPECT_CALL(proto, setChannelConfig(_, _, _, _, _)).Times(0);
+  EXPECT_TRUE(hvac->iterateConnected());
+}
+
+TEST_F(HvacWeeklyScheduleTestsF,
+       LocalDefaultConfigChangeDoesNotBlockServerWeeklySchedule) {
+  ProtocolLayerMock proto;
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_weekly"), _,
+                           sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_aweekly"), _,
+                           sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
+      .Times(2)
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _, _))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000)).Times(AtLeast(1));
+
+  hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac->onInit();
+  hvac->onRegistered(nullptr);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0)).Times(1);
+  EXPECT_FALSE(hvac->iterateConnected());
+  receiveCurrentConfigsFromDevice();
+  hvac->handleChannelConfigFinished();
+
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 1))
+      .Times(1)
+      .WillOnce(Return(true));
+  hvac->setOutputValueOnError(100);
+
+  TSD_ChannelConfig configFromServer = {};
+  configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+  configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  auto *weeklySchedule = reinterpret_cast<TChannelConfig_WeeklySchedule *>(
+      &configFromServer.Config);
+  weeklySchedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
+  weeklySchedule->Program[0].SetpointTemperatureHeat = 2100;
+  weeklySchedule->Quarters[0] = 1;
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(hvac->getProgramById(1).SetpointTemperatureHeat, 2100);
+
+  EXPECT_CALL(proto,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
+                               _,
+                               sizeof(TChannelConfig_HVAC),
+                               SUPLA_CONFIG_TYPE_DEFAULT))
+      .Times(1)
+      .WillOnce([](uint8_t, int, void *data, int, uint8_t) {
+        auto *config = reinterpret_cast<TChannelConfig_HVAC *>(data);
+        EXPECT_EQ(config->OutputValueOnError, 100);
+        return true;
+      });
+  time.advance(5000);
+  EXPECT_FALSE(hvac->iterateConnected());
+
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 0))
+      .Times(1)
+      .WillOnce(Return(true));
+  TSDS_SetChannelConfigResult result = {
+      .Result = SUPLA_CONFIG_RESULT_TRUE,
+      .ConfigType = SUPLA_CONFIG_TYPE_DEFAULT,
+      .ChannelNumber = 0};
+  hvac->handleSetChannelConfigResult(&result);
+}
+
+TEST_F(HvacWeeklyScheduleTestsF,
+       ServerScheduleRemainsUsableWhenStorageWriteFails) {
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(0);
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_aweekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(0);
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, saveWithDelay(5000)).Times(1);
+
+  hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac->onInit();
+
+  TSD_ChannelConfig serverConfig = {};
+  serverConfig.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+  serverConfig.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  serverConfig.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  auto *schedule = reinterpret_cast<TChannelConfig_WeeklySchedule *>(
+      serverConfig.Config);
+  schedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
+  schedule->Program[0].SetpointTemperatureHeat = 2150;
+  schedule->Quarters[0] = 1;
+
+  ASSERT_EQ(hvac->handleWeeklySchedule(&serverConfig, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  auto program = hvac->getProgramAt(0);
+  EXPECT_EQ(program.Mode, SUPLA_HVAC_MODE_HEAT);
+  EXPECT_EQ(program.SetpointTemperatureHeat, 2150);
+}
+
+TEST_F(HvacWeeklyScheduleTestsF,
+       FailedStorageWritePreventsScheduleCacheEviction) {
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(2)
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 4))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(2));
+
+  hvac->getChannel()->setDefault(
+      SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
+  hvac->onInit();
+  ASSERT_TRUE(hvac->setProgram(1, SUPLA_HVAC_MODE_HEAT, 2250, 0));
+
+  time.advance(16000);
+  hvac->iterateAlways();
+
+  auto program = hvac->getProgramById(1);
+  EXPECT_EQ(program.Mode, SUPLA_HVAC_MODE_HEAT);
+  EXPECT_EQ(program.SetpointTemperatureHeat, 2250);
+}
+
+TEST_F(HvacWeeklyScheduleTestsF, MainScheduleUpdateDoesNotTouchAltSchedule) {
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_aweekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(0);
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(2)
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_aweekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(0);
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 4))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000)).Times(AtLeast(2));
+
+  hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac->onInit();
+
+  EXPECT_TRUE(hvac->setProgram(1, SUPLA_HVAC_MODE_HEAT, 2250, 0));
+}
+
+TEST_F(HvacWeeklyScheduleTestsF,
+       CoolingScheduleLoadsWithoutPrimarySchedule) {
+  TChannelConfig_WeeklySchedule storedAltSchedule = {};
+  storedAltSchedule.Program[0].Mode = SUPLA_HVAC_MODE_COOL;
+  storedAltSchedule.Program[0].SetpointTemperatureCool = 2220;
+  storedAltSchedule.Quarters[0] = 1;
+
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(0);
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_aweekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce([&storedAltSchedule](const char *, char *buf, int size) {
+        memcpy(buf, &storedAltSchedule, size);
+        return true;
+      });
+
+  hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac->setSubfunction(SUPLA_HVAC_SUBFUNCTION_COOL);
+  hvac->onInit();
+
+  auto program = hvac->getProgramAt(0);
+  EXPECT_EQ(program.Mode, SUPLA_HVAC_MODE_COOL);
+  EXPECT_EQ(program.SetpointTemperatureCool, 2220);
+}
+
 TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   EXPECT_CALL(cfg, init());
-  ::testing::Sequence s1;
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
@@ -272,12 +729,6 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
       setBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .WillOnce([](const char *, const char *buf, int size) {
         TChannelConfig_WeeklySchedule expectedData = {};
-        EXPECT_NE(0, memcmp(buf, &expectedData, size));
-        return 1;
-      })
-      .WillOnce([](const char *, const char *buf, int size) {
-        TChannelConfig_WeeklySchedule expectedData = {};
-
         EXPECT_EQ(0, memcmp(buf, &expectedData, size));
         return 1;
       })
@@ -298,26 +749,9 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
       });
   EXPECT_CALL(
       cfg,
-      setBlob(
-          StrEq("0_hvac_aweekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .WillRepeatedly([](const char *, const char *buf, int size) {
-        TChannelConfig_WeeklySchedule expectedData = {};
-        EXPECT_NE(0, memcmp(buf, &expectedData, size));
-        return 1;
-      });
-
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
-      .Times(1)
-      .InSequence(s1)
-      .WillOnce(Return(true));
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
-      .Times(1)
-      .InSequence(s1)
-      .WillOnce(Return(true));
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
-      .Times(1)
-      .InSequence(s1)
-      .WillOnce(Return(true));
+      getBlob(StrEq("0_hvac_aweekly"), _,
+              sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(0);
 
   hvac->onInit();
   TSD_ChannelConfig configFromServer = {};
@@ -408,11 +842,16 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
       getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq("0_hvac_aweekly"), _,
+              sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(0);
   EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
       .WillOnce(Return(true));
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
-      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 1))
+      .Times(0);
   EXPECT_CALL(
       cfg,
       setBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
@@ -466,6 +905,7 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
 
 TEST_F(HvacWeeklyScheduleTestsF,
        weeklyScheduleCacheReleasesAfterDelayWhenInactive) {
+  TChannelConfig_WeeklySchedule storedWeeklySchedule = {};
   EXPECT_CALL(cfg, init());
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
@@ -486,6 +926,11 @@ TEST_F(HvacWeeklyScheduleTestsF,
       getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq("0_hvac_aweekly"), _,
+              sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(0);
   EXPECT_CALL(cfg, setUInt8(_, _))
       .Times(AnyNumber())
       .WillRepeatedly(Return(true));
@@ -495,8 +940,13 @@ TEST_F(HvacWeeklyScheduleTestsF,
   EXPECT_CALL(
       cfg,
       setBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .Times(AnyNumber())
-      .WillRepeatedly(Return(true));
+      .Times(1)
+      .WillOnce([&storedWeeklySchedule](const char *,
+                                       const char *buf,
+                                       int size) {
+        memcpy(&storedWeeklySchedule, buf, size);
+        return true;
+      });
   EXPECT_CALL(
       cfg,
       setBlob(
@@ -536,14 +986,17 @@ TEST_F(HvacWeeklyScheduleTestsF,
       cfg,
       getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
-      .WillOnce(Return(false));
+      .WillOnce([&storedWeeklySchedule](const char *, char *buf, int size) {
+        memcpy(buf, &storedWeeklySchedule, size);
+        return true;
+      });
 
   time.advance(16000);
   hvac->iterateAlways();
 
   EXPECT_EQ(hvac->getWeeklyScheduleProgramId(
                 nullptr, hvac->calculateIndex(Supla::DayOfWeek_Sunday, 0, 0)),
-            0);
+            1);
 }
 
 TEST_F(HvacWeeklyScheduleTestsF,
@@ -574,6 +1027,12 @@ TEST_F(HvacWeeklyScheduleTestsF,
       getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq("0_hvac_aweekly"), _,
+              sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
   EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
       .WillOnce(Return(true));
@@ -588,18 +1047,14 @@ TEST_F(HvacWeeklyScheduleTestsF,
       cfg,
       setBlob(
           StrEq("0_hvac_aweekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(2)
       .WillRepeatedly(Return(1));
 
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 1))
-      .Times(AtLeast(1))
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 4))
+      .Times(1)
       .WillRepeatedly(Return(true));
-
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 0))
-      .Times(AtLeast(1))
-      .WillRepeatedly(Return(true));
-
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
-      .Times(AtLeast(1))
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 12))
+      .Times(1)
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(
@@ -618,6 +1073,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
   hvac->onInit();
 
   hvac->setProgram(1, SUPLA_HVAC_MODE_HEAT, 1800, 0);
+  hvac->setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2400, true);
 
   hvac->onRegistered(nullptr);
 
@@ -627,6 +1083,17 @@ TEST_F(HvacWeeklyScheduleTestsF,
   }
 
   // send config from server
+  TSD_ChannelConfig defaultConfigFromServer = {};
+  defaultConfigFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  defaultConfigFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+  int defaultConfigSize = 0;
+  hvac->fillChannelConfig(defaultConfigFromServer.Config,
+                          &defaultConfigSize,
+                          SUPLA_CONFIG_TYPE_DEFAULT);
+  defaultConfigFromServer.ConfigSize = defaultConfigSize;
+  EXPECT_EQ(hvac->handleChannelConfig(&defaultConfigFromServer, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
@@ -647,9 +1114,9 @@ TEST_F(HvacWeeklyScheduleTestsF,
               setChannelConfig(0,
                                SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
                                _,
-                               sizeof(TChannelConfig_HVAC),
-                               SUPLA_CONFIG_TYPE_DEFAULT))
-      .Times(AtLeast(1))
+                               sizeof(TChannelConfig_WeeklySchedule),
+                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
+      .Times(1)
       .WillRepeatedly(Return(true));
 
   for (int i = 0; i < 10; ++i) {
@@ -658,18 +1125,35 @@ TEST_F(HvacWeeklyScheduleTestsF,
   }
 
   // send reply from server
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 8))
+      .Times(1)
+      .WillOnce(Return(true));
   TSDS_SetChannelConfigResult result = {.Result = SUPLA_CONFIG_RESULT_FALSE,
-                                        .ConfigType = SUPLA_CONFIG_TYPE_DEFAULT,
+                                        .ConfigType =
+                                            SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
                                         .ChannelNumber = 0};
 
   hvac->handleSetChannelConfigResult(&result);
+
+  EXPECT_CALL(proto,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
+                               _,
+                               sizeof(TChannelConfig_WeeklySchedule),
+                               SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE))
+      .Times(1)
+      .WillOnce(Return(true));
 
   for (int i = 0; i < 10; ++i) {
     hvac->iterateAlways();
     hvac->iterateConnected();
   }
 
-  result.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 0))
+      .Times(1)
+      .WillOnce(Return(true));
+  result.Result = SUPLA_CONFIG_RESULT_TRUE;
+  result.ConfigType = SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE;
   hvac->handleSetChannelConfigResult(&result);
 
   // send anothoer set channel config from server - this time it should be
@@ -683,9 +1167,6 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
-      .Times(AtLeast(1))
-      .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(Return(false));
@@ -701,21 +1182,13 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
   EXPECT_CALL(
       cfg,
       getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .Times(1)
-      .WillOnce(Return(false));
+      .Times(0);
 
   EXPECT_CALL(
       cfg,
       setBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .WillOnce([](const char *, const char *buf, int size) {
         TChannelConfig_WeeklySchedule expectedData = {};
-
-        EXPECT_NE(0, memcmp(buf, &expectedData, size));
-        return 1;
-      })
-      .WillOnce([](const char *, const char *buf, int size) {
-        TChannelConfig_WeeklySchedule expectedData = {};
-
         EXPECT_EQ(0, memcmp(buf, &expectedData, size));
         return 1;
       })

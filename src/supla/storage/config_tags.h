@@ -11,6 +11,7 @@ const char DeviceConfigChangeCfgTag[] = "devcfg_chng";
 
 const char ChannelFunctionTag[] = "fnc";
 const char ChannelConfigChangedFlagTag[] = "cfg_chng";
+const char ChannelConfigChangedTypesTag[] = "cfg_chng_t";
 
 const char ScreenBrightnessCfgTag[] = "bright";
 const char ScreenAdjustmentForAutomaticCfgTag[] = "adj_auto_br";
@@ -85,6 +86,7 @@ const char DsSensorConfig[] = "ds_sensor";
 static_assert(sizeof(DeviceConfigChangeCfgTag) < 16);
 static_assert(sizeof(ChannelFunctionTag) < 12);
 static_assert(sizeof(ChannelConfigChangedFlagTag) < 12);
+static_assert(sizeof(ChannelConfigChangedTypesTag) < 12);
 static_assert(sizeof(ScreenBrightnessCfgTag) < 16);
 static_assert(sizeof(ScreenAdjustmentForAutomaticCfgTag) < 16);
 static_assert(sizeof(HomeScreenContentTag) < 16);

@@ -98,9 +98,12 @@ void Relay::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     loadFunctionFromConfig();
-    loadConfigChangeFlag();
   }
   loadRelayConfigOnly();
+  if (cfg) {
+    // Load pending config types after WEEKLY/EXTENDED support is known.
+    loadConfigChangeFlag();
+  }
 }
 
 void Relay::loadRelayConfigOnly() {
@@ -1267,8 +1270,6 @@ void Relay::purgeRelayConfigOnly() {
     generateKey(key, Supla::ConfigTag::RelayOvercurrentThreshold);
     cfg->eraseKey(key);
     generateKey(key, Supla::ConfigTag::RelayWeeklyCfgTag);
-    cfg->eraseKey(key);
-    generateKey(key, Supla::ConfigTag::WeeklyScheduleChangedFlagTag);
     cfg->eraseKey(key);
   }
 }

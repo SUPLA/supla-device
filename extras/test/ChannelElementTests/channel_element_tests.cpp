@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <config_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <simple_time.h>
@@ -142,6 +143,30 @@ class TestingChannelElement : public Supla::ChannelElement {
     return channelConfigState;
   }
 
+  uint8_t getLocallyChangedConfigTypes() const {
+    return locallyChangedConfigTypes;
+  }
+
+  bool isLocalConfigChangePending(int configType) const {
+    return isLocalChannelConfigChangePending(configType);
+  }
+
+  bool loadConfigChangeFlagForTesting() {
+    return loadConfigChangeFlag();
+  }
+
+  bool saveConfigChangeFlagForTesting() const {
+    return saveConfigChangeFlag();
+  }
+
+  void clearLocalConfigChangesForTesting(int configType) {
+    clearLocalConfigChanges(configType);
+  }
+
+  void markChannelConfigReceivedForTesting(int configType) {
+    markChannelConfigReceived(configType);
+  }
+
   int getAppliedConfigCount() const {
     return appliedConfigCount;
   }
@@ -185,6 +210,8 @@ class TestingChannelElement : public Supla::ChannelElement {
 
 using ::testing::_;
 using ::testing::Return;
+using ::testing::SetArgPointee;
+using ::testing::StrEq;
 
 TEST(ChannelElementTests, ConfigExchangeNoConfigOnServer) {
   Supla::Channel::resetToDefaults();
@@ -499,4 +526,262 @@ TEST(ChannelElementTests, GenericConfigResendKeepsGenericState) {
   EXPECT_FALSE(element.iterateConnected());
   EXPECT_EQ(element.getChannelConfigState(),
             Supla::ChannelConfigState::SetChannelConfigSend);
+}
+
+TEST(ChannelElementTests, LocalChangeBlocksOnlyMatchingConfigType) {
+  Supla::Channel::resetToDefaults();
+
+  SuplaSrpcLayerMock srpc;
+  TestingChannelElement element;
+  auto channel = element.getChannel();
+  channel->setType(SUPLA_CHANNELTYPE_RELAY);
+  channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  configTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  element.setUsedConfigTypes(configTypes);
+  element.onRegistered(&srpc);
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE, true);
+
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = channel->getChannelNumber();
+  config.Func = SUPLA_CHANNELFNC_POWERSWITCH;
+  config.ConfigSize = 4;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  EXPECT_EQ(element.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(element.getAppliedConfigCount(), 1);
+
+  config.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  EXPECT_EQ(element.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(element.getAppliedConfigCount(), 1);
+  element.handleChannelConfigFinished();
+
+  EXPECT_CALL(srpc,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_POWERSWITCH,
+                               _,
+                               4,
+                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
+      .WillOnce(Return(true));
+  EXPECT_FALSE(element.iterateConnected());
+
+  TSDS_SetChannelConfigResult result = {};
+  result.ChannelNumber = channel->getChannelNumber();
+  result.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  result.Result = SUPLA_CONFIG_RESULT_TRUE;
+  element.handleSetChannelConfigResult(&result);
+  EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
+}
+
+TEST(ChannelElementTests, FailedLocalTypeDoesNotBlockNextLocalType) {
+  Supla::Channel::resetToDefaults();
+
+  SuplaSrpcLayerMock srpc;
+  TestingChannelElement element;
+  auto channel = element.getChannel();
+  channel->setType(SUPLA_CHANNELTYPE_RELAY);
+  channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  configTypes.set(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
+  element.setUsedConfigTypes(configTypes);
+  element.onRegistered(&srpc);
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE, true);
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE, true);
+  element.handleChannelConfigFinished();
+
+  EXPECT_CALL(srpc,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_POWERSWITCH,
+                               _,
+                               4,
+                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
+      .WillOnce(Return(true));
+  EXPECT_FALSE(element.iterateConnected());
+
+  TSDS_SetChannelConfigResult result = {};
+  result.ChannelNumber = channel->getChannelNumber();
+  result.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  result.Result = SUPLA_CONFIG_RESULT_FALSE;
+  element.handleSetChannelConfigResult(&result);
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::LocalChangePending);
+
+  EXPECT_CALL(srpc,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_POWERSWITCH,
+                               _,
+                               4,
+                               SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE))
+      .WillOnce(Return(true));
+  EXPECT_FALSE(element.iterateConnected());
+}
+
+TEST(ChannelElementTests, LocalConfigTypesAreStoredAsUInt32) {
+  Supla::Channel::resetToDefaults();
+
+  ConfigMock cfg;
+  TestingChannelElement element;
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  configTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  element.setUsedConfigTypes(configTypes);
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE, true);
+
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 5))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000));
+  EXPECT_TRUE(element.saveConfigChangeFlagForTesting());
+}
+
+TEST(ChannelElementTests, ClearingLastLocalChangeResumesMissingConfigUpload) {
+  Supla::Channel::resetToDefaults();
+
+  ConfigMock cfg;
+  SuplaSrpcLayerMock srpc;
+  TestingChannelElement element;
+  auto channel = element.getChannel();
+  channel->setType(SUPLA_CHANNELTYPE_RELAY);
+  channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  configTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  element.setUsedConfigTypes(configTypes);
+  element.onRegistered(&srpc);
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+  element.markChannelConfigReceivedForTesting(SUPLA_CONFIG_TYPE_DEFAULT);
+  element.handleChannelConfigFinished();
+
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 0))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000));
+  element.clearLocalConfigChangesForTesting(SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::ResendConfig);
+
+  EXPECT_CALL(
+      srpc,
+      setChannelConfig(0,
+                       SUPLA_CHANNELFNC_POWERSWITCH,
+                       _,
+                       4,
+                       SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
+      .WillOnce(Return(true));
+  EXPECT_FALSE(element.iterateConnected());
+}
+
+TEST(ChannelElementTests, ClearingSentLocalChangeWaitsForAcknowledgement) {
+  Supla::Channel::resetToDefaults();
+
+  ConfigMock cfg;
+  SuplaSrpcLayerMock srpc;
+  TestingChannelElement element;
+  auto channel = element.getChannel();
+  channel->setType(SUPLA_CHANNELTYPE_RELAY);
+  channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  element.setUsedConfigTypes(configTypes);
+  element.onRegistered(&srpc);
+  element.markChannelConfigReceivedForTesting(SUPLA_CONFIG_TYPE_DEFAULT);
+  element.handleChannelConfigFinished();
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+
+  EXPECT_CALL(
+      srpc,
+      setChannelConfig(
+          0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_DEFAULT))
+      .WillOnce(Return(true));
+  EXPECT_FALSE(element.iterateConnected());
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::LocalChangeSent);
+
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 0))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000));
+  element.clearLocalConfigChangesForTesting(SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::LocalChangeSent);
+
+  TSDS_SetChannelConfigResult result = {};
+  result.ChannelNumber = channel->getChannelNumber();
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  result.Result = SUPLA_CONFIG_RESULT_TRUE;
+  element.handleSetChannelConfigResult(&result);
+  EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
+}
+
+TEST(ChannelElementTests, LegacyConfigFlagsAreMigratedToTypedBitmap) {
+  Supla::Channel::resetToDefaults();
+
+  ConfigMock cfg;
+  TestingChannelElement element;
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  configTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  configTypes.set(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
+  configTypes.set(SUPLA_CONFIG_TYPE_EXTENDED);
+  element.setUsedConfigTypes(configTypes);
+
+  EXPECT_CALL(cfg, getUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_cfg_chng"), _))
+      .WillOnce(::testing::DoAll(SetArgPointee<1>(1), Return(true)));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
+      .WillOnce(::testing::DoAll(SetArgPointee<1>(1), Return(true)));
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 45))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 0))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000));
+
+  EXPECT_TRUE(element.loadConfigChangeFlagForTesting());
+  EXPECT_EQ(element.getLocallyChangedConfigTypes(), 45);
+  EXPECT_TRUE(
+      element.isLocalConfigChangePending(SUPLA_CONFIG_TYPE_DEFAULT));
+  EXPECT_TRUE(element.isLocalConfigChangePending(
+      SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE));
+  EXPECT_TRUE(element.isLocalConfigChangePending(
+      SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE));
+  EXPECT_TRUE(
+      element.isLocalConfigChangePending(SUPLA_CONFIG_TYPE_EXTENDED));
+}
+
+TEST(ChannelElementTests, StoredConfigTypesAreSanitizedToUsedRuntimeBitmap) {
+  Supla::Channel::resetToDefaults();
+
+  ConfigMock cfg;
+  TestingChannelElement element;
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  element.setUsedConfigTypes(configTypes);
+
+  EXPECT_CALL(cfg, getUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillOnce(::testing::DoAll(
+          SetArgPointee<1>(0x80000005UL), Return(true)));
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 4))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000));
+
+  EXPECT_TRUE(element.loadConfigChangeFlagForTesting());
+  EXPECT_EQ(element.getLocallyChangedConfigTypes(), 4);
+}
+
+TEST(ChannelElementTests, LocalConfigTypeOutsideRuntimeBitmapIsRejected) {
+  Supla::Channel::resetToDefaults();
+
+  TestingChannelElement element;
+  element.triggerSetChannelConfig(8, true);
+
+  EXPECT_EQ(element.getLocallyChangedConfigTypes(), 0);
+  EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
 }

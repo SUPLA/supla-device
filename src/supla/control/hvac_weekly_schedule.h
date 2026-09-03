@@ -36,9 +36,6 @@ class HvacWeeklySchedule {
   ~HvacWeeklySchedule();
 
   void onLoadConfig();
-  void onRegistered();
-  void handleChannelConfigFinished();
-  bool iterateConfigExchange();
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
                                bool isAltWeeklySchedule,
                                bool local);
@@ -76,10 +73,10 @@ class HvacWeeklySchedule {
                                         bool isAltWeeklySchedule = false) const;
   void fillChannelConfig(void *channelConfig,
                          int *size,
-                         bool isAltWeeklySchedule) const;
+                         bool isAltWeeklySchedule);
   bool turnOnWeeklySchedule();
   bool processWeeklySchedule();
-  void initDefaultWeeklySchedule();
+  void initDefaultWeeklySchedule(bool requestResend = true);
   void processCacheRelease();
 
   friend class HvacWeeklySchedulePolicy;
@@ -91,15 +88,20 @@ class HvacWeeklySchedule {
   const TChannelConfig_WeeklySchedule *getSchedule(
       bool isAltWeeklySchedule, bool loadIfMissing = true) const;
   bool loadSchedule(bool isAltWeeklySchedule);
+  bool ensureScheduleForUse(bool isAltWeeklySchedule);
+  void saveWeeklyScheduleForType(bool isAltWeeklySchedule,
+                                 bool requestResend);
+  void initDefaultWeeklyScheduleForType(bool isAltWeeklySchedule,
+                                        bool requestResend);
   void unloadSchedulesIfPossible();
-  void markWeeklyScheduleChangedOffline();
   static const char *getStorageTag(bool isAltWeeklySchedule);
 
   HvacBase *owner_ = nullptr;
   HvacWeeklySchedulePolicy policy_;
   WeeklyScheduleBuffer weeklyScheduleBuffer_;
   bool isWeeklyScheduleConfigured_ = false;
-  uint8_t weeklyScheduleChangedOffline_ = 0;
+  bool weeklySchedulePersisted_ = false;
+  bool altWeeklySchedulePersisted_ = false;
   WeeklyScheduleCacheRuntime cacheRuntime_;
 };
 

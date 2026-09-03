@@ -35,7 +35,9 @@ class HvacWeeklySchedulePolicy {
 
   bool turnOnWeeklySchedule(HvacWeeklySchedule &weeklySchedule) const;
   bool processWeeklySchedule(HvacWeeklySchedule &weeklySchedule) const;
-  void initDefaultWeeklySchedule(HvacWeeklySchedule &weeklySchedule) const;
+  void initDefaultWeeklySchedule(HvacWeeklySchedule &weeklySchedule,
+                                 bool isAltWeeklySchedule,
+                                 bool requestResend) const;
 };
 
 }  // namespace Control

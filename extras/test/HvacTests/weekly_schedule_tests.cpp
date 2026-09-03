@@ -11,7 +11,7 @@
 #include <supla/control/hvac_base.h>
 #include <supla/control/weekly_schedule_buffer.h>
 #include <supla/control/weekly_schedule_cache_runtime.h>
-#include <supla/control/weekly_schedule_provider.h>
+#include <supla/control/weekly_schedule_component.h>
 #include <supla/control/weekly_schedule_storage.h>
 #include <supla/sensor/therm_hygro_meter.h>
 #include <supla/sensor/thermometer.h>
@@ -60,10 +60,13 @@ TEST(WeeklyScheduleInfrastructureTests,
       "weekly",
       false,
       schedule,
-      [](char *key, const char *) {
+      nullptr,
+      [](void *, char *key, const char *) {
         snprintf(key, SUPLA_CONFIG_MAX_KEY_SIZE, "0_weekly");
       },
-      [](const TChannelConfig_WeeklySchedule *) { return false; }));
+      [](void *, const TChannelConfig_WeeklySchedule *, bool) {
+        return false;
+      }));
   EXPECT_EQ(schedule, originalSchedule);
 
   delete schedule;
@@ -289,8 +292,8 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
 
 TEST_F(HvacWeeklyScheduleTestsF,
        ExternalWeeklyScheduleDoesNotExposeNativeConfigOrApi) {
-  ASSERT_TRUE(hvac->setWeeklyScheduleProvider(
-      new Supla::Control::ExternalManagedWeeklyScheduleProvider()));
+  ASSERT_TRUE(hvac->setWeeklyScheduleController(
+      new Supla::Control::ExternalManagedWeeklySchedule()));
 
   EXPECT_FALSE(hvac->getChannel()->isWeeklyScheduleAvailable());
   EXPECT_FALSE(hvac->setProgram(1, SUPLA_HVAC_MODE_HEAT, 2100, 0));
@@ -371,9 +374,7 @@ TEST_F(HvacWeeklyScheduleTestsF, ConfigChangeFlagsAreClearedPerConfigType) {
       .WillOnce(Return(true));
   EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 0))
       .WillOnce(Return(true));
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
-      .WillOnce(Return(true));
-  EXPECT_CALL(cfg, saveWithDelay(_)).Times(3);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(2);
 
   hvac->triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
   hvac->triggerSetChannelConfig(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE, true);

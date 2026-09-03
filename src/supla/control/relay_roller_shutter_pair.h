@@ -31,6 +31,7 @@ class ManagedRelay : public Relay {
   void purgeEngineConfigOnly();
   void refreshWeeklyScheduleCapabilities();
   bool isWeeklyScheduleConfigUsed() const;
+  WeeklyScheduleConfigHandler *getWeeklyScheduleConfigHandlerForOwner() const;
   void setupButtonActions(Button *button);
 
   void turnOn(_supla_int_t duration = 0) override;

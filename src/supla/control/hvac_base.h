@@ -479,8 +479,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   friend class HvacWeeklySchedule;
  protected:
-  void onWeeklyScheduleProviderChanged(
-      Supla::Control::WeeklyScheduleProvider *provider) override;
+  void onWeeklyScheduleControllerChanged(
+      Supla::Control::WeeklyScheduleController *controller) override;
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
   void setOutput(int value, bool force = false);
   void updateChannelState();
@@ -521,7 +521,6 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
   void updateWeeklyScheduleConfigTypes();
-  void markWeeklyScheduleConfigReceived(bool isAltWeeklySchedule);
   bool isLocalConfigChangePending(int configType) const;
   void persistChannelConfigChangeState();
   void emitCountdownTimerActionIfNeeded();

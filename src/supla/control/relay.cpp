@@ -49,7 +49,9 @@ void Relay::setRelayStorageSaveDelay(uint32_t delayMs) {
 
 Relay::Relay(Supla::Io::IoPin outputPin, _supla_int_t functions)
     : outputPin(outputPin) {
-  setWeeklyScheduleProvider(new RelayWeeklySchedule(this));
+  auto *nativeWeeklySchedule = new RelayWeeklySchedule(this);
+  setWeeklyScheduleController(nativeWeeklySchedule);
+  weeklyScheduleHelper = nativeWeeklySchedule;
   this->outputPin.setMode(OUTPUT);
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
   channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
@@ -63,7 +65,9 @@ Relay::Relay(Supla::Io::IoPin outputPin,
              Supla::Channel &externalChannel,
              ElementMode mode)
     : ChannelElement(externalChannel, mode), outputPin(outputPin) {
-  setWeeklyScheduleProvider(new RelayWeeklySchedule(this));
+  auto *nativeWeeklySchedule = new RelayWeeklySchedule(this);
+  setWeeklyScheduleController(nativeWeeklySchedule);
+  weeklyScheduleHelper = nativeWeeklySchedule;
   this->outputPin.setMode(OUTPUT);
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
   channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
@@ -93,13 +97,10 @@ Relay::~Relay() {
   Supla::Control::RelayHvacAggregator::Remove(getChannelNumber());
 }
 
-void Relay::onWeeklyScheduleProviderChanged(
-    Supla::Control::WeeklyScheduleProvider *provider) {
-  weeklyScheduleHelper =
-      provider && provider->getProviderType() ==
-                      WeeklyScheduleProviderType::NativeRelay
-          ? static_cast<RelayWeeklySchedule *>(provider)
-          : nullptr;
+void Relay::onWeeklyScheduleControllerChanged(
+    Supla::Control::WeeklyScheduleController *controller) {
+  (void)(controller);
+  weeklyScheduleHelper = nullptr;
 }
 
 void Relay::onLoadConfig(SuplaDeviceClass *) {
@@ -135,8 +136,8 @@ void Relay::loadRelayConfigOnly() {
     }
   }
   updateWeeklyScheduleCapabilities();
-  if (getWeeklyScheduleProvider() != nullptr) {
-    loadWeeklyScheduleProviderConfig();
+  if (getWeeklyScheduleController() != nullptr) {
+    loadWeeklyScheduleConfig();
   }
   if (isStaircaseFunction() || isImpulseFunction()) {
     if (storedTurnOnDurationMs == 0) {
@@ -151,13 +152,12 @@ void Relay::loadRelayConfigOnly() {
 }
 
 void Relay::updateWeeklyScheduleCapabilities() {
-  auto *provider = getWeeklyScheduleProvider();
+  auto *controller = getWeeklyScheduleController();
+  auto *configHandler = getWeeklyScheduleConfigHandler();
   const bool nativeWeeklySchedule =
-      provider &&
-      provider->supportsConfigType(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
-  const bool externalWeeklySchedule =
-      provider && provider->getProviderType() ==
-                      WeeklyScheduleProviderType::ExternalManaged;
+      configHandler && configHandler->supportsConfigType(
+                           SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  const bool externalWeeklySchedule = controller && !nativeWeeklySchedule;
   if (isWeeklyScheduleSupported() && nativeWeeklySchedule) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
     channel.setFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_ONCE_SUPPORTED);
@@ -176,8 +176,8 @@ void Relay::updateWeeklyScheduleCapabilities() {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED);
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED);
     usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
-    if (getWeeklyScheduleProvider() != nullptr) {
-      getWeeklyScheduleProvider()->switchToManualMode();
+    if (getWeeklyScheduleController() != nullptr) {
+      getWeeklyScheduleController()->switchToManualMode();
     } else {
       channel.setRelayWeeklyScheduleEnabled(false);
       channel.setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
@@ -204,10 +204,10 @@ Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
 
   updateRelayHvacAggregator();
 
-  if (getWeeklyScheduleProvider() != nullptr &&
+  if (getWeeklyScheduleConfigHandler() != nullptr &&
       result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE &&
       isWeeklyScheduleSupported()) {
-    return getWeeklyScheduleProvider()->applyChannelConfig(result, local);
+    return getWeeklyScheduleConfigHandler()->applyChannelConfig(result, local);
   }
 
   if (result->ConfigSize == 0) {
@@ -413,8 +413,8 @@ void Relay::iterateAlways() {
     }
   }
 
-  if (getWeeklyScheduleProvider() != nullptr && isWeeklyScheduleSupported()) {
-    getWeeklyScheduleProvider()->processWeeklySchedule();
+  if (getWeeklyScheduleController() != nullptr && isWeeklyScheduleSupported()) {
+    getWeeklyScheduleController()->processWeeklySchedule();
   }
 
   if (durationMs && millis() - durationTimestamp > durationMs) {
@@ -535,14 +535,16 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
     }
   }
 
-  if (getWeeklyScheduleProvider() != nullptr && isWeeklyScheduleSupported()) {
+  if (getWeeklyScheduleController() != nullptr && isWeeklyScheduleSupported()) {
     switch (relayValue->RelayMode) {
       case SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE: {
-        if (getWeeklyScheduleProvider()->switchToWeeklySchedule()) {
-          if (getWeeklyScheduleProvider()->getProviderType() ==
-              WeeklyScheduleProviderType::ExternalManaged) {
-            channel.setRelayWeeklyScheduleEnabled(true);
-            channel.setRelayMode(SUPLA_RELAY_MODE_AUTOMATIC);
+        if (getWeeklyScheduleController()->switchToWeeklySchedule()) {
+          if (weeklyScheduleHelper == nullptr) {
+            channel.setRelayWeeklyScheduleEnabled(
+                getWeeklyScheduleController()->isActive());
+            channel.setRelayMode(getWeeklyScheduleController()->isActive()
+                                     ? SUPLA_RELAY_MODE_AUTOMATIC
+                                     : SUPLA_RELAY_MODE_NOT_SET);
           }
           Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
           return 1;
@@ -550,7 +552,7 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
         return 0;
       }
       case SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL: {
-        getWeeklyScheduleProvider()->switchToManualMode();
+        getWeeklyScheduleController()->switchToManualMode();
         channel.setRelayWeeklyScheduleEnabled(false);
         channel.setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
         Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
@@ -563,9 +565,7 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
 
   int result = -1;
   if (newValue->value[0] == 1) {
-    if (getWeeklyScheduleProvider() != nullptr &&
-        isWeeklyScheduleSupported() &&
-        !getWeeklyScheduleProvider()->isManualActionAllowed(true)) {
+    if (!isManualActionAllowedByWeeklySchedule(true)) {
       SUPLA_LOG_DEBUG(
           "Relay[%d] ignoring server turn ON due to weekly schedule",
           channel.getChannelNumber());
@@ -592,9 +592,7 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
     storedTurnOnDurationMs = copyDurationMs;
     result = 1;
   } else if (newValue->value[0] == 0) {
-    if (getWeeklyScheduleProvider() != nullptr &&
-        isWeeklyScheduleSupported() &&
-        !getWeeklyScheduleProvider()->isManualActionAllowed(false)) {
+    if (!isManualActionAllowedByWeeklySchedule(false)) {
       SUPLA_LOG_DEBUG(
           "Relay[%d] ignoring server turn OFF due to weekly schedule",
           channel.getChannelNumber());
@@ -724,9 +722,7 @@ void Relay::handleAction(int event, int action) {
   (void)(event);
   switch (action) {
     case TURN_ON_WITHOUT_TIMER: {
-      if (getWeeklyScheduleProvider() != nullptr &&
-          isWeeklyScheduleSupported() &&
-          !getWeeklyScheduleProvider()->isManualActionAllowed(true)) {
+      if (!isManualActionAllowedByWeeklySchedule(true)) {
         SUPLA_LOG_DEBUG("Relay[%d] ignoring TURN_ON due to weekly schedule",
                         channel.getChannelNumber());
         return;
@@ -740,9 +736,7 @@ void Relay::handleAction(int event, int action) {
       break;
     }
     case TURN_ON: {
-      if (getWeeklyScheduleProvider() != nullptr &&
-          isWeeklyScheduleSupported() &&
-          !getWeeklyScheduleProvider()->isManualActionAllowed(true)) {
+      if (!isManualActionAllowedByWeeklySchedule(true)) {
         SUPLA_LOG_DEBUG("Relay[%d] ignoring TURN_ON due to weekly schedule",
                         channel.getChannelNumber());
         return;
@@ -751,9 +745,7 @@ void Relay::handleAction(int event, int action) {
       break;
     }
     case TURN_OFF: {
-      if (getWeeklyScheduleProvider() != nullptr &&
-          isWeeklyScheduleSupported() &&
-          !getWeeklyScheduleProvider()->isManualActionAllowed(false)) {
+      if (!isManualActionAllowedByWeeklySchedule(false)) {
         SUPLA_LOG_DEBUG("Relay[%d] ignoring TURN_OFF due to weekly schedule",
                         channel.getChannelNumber());
         return;
@@ -762,17 +754,16 @@ void Relay::handleAction(int event, int action) {
       break;
     }
     case TOGGLE_WITH_POSTPONED_COMM: {
-      if (getWeeklyScheduleProvider() != nullptr &&
-          isWeeklyScheduleSupported()) {
+      if (weeklyScheduleHelper && isWeeklyScheduleSupported()) {
         if (isOn() &&
-            !getWeeklyScheduleProvider()->isManualActionAllowed(false)) {
+            !weeklyScheduleHelper->isManualActionAllowed(false)) {
           SUPLA_LOG_DEBUG(
               "Relay[%d] ignoring TOGGLE-off due to weekly schedule",
               channel.getChannelNumber());
           return;
         }
         if (!isOn() &&
-            !getWeeklyScheduleProvider()->isManualActionAllowed(true)) {
+            !weeklyScheduleHelper->isManualActionAllowed(true)) {
           SUPLA_LOG_DEBUG("Relay[%d] ignoring TOGGLE-on due to weekly schedule",
                           channel.getChannelNumber());
           return;
@@ -782,17 +773,16 @@ void Relay::handleAction(int event, int action) {
       [[fallthrough]];
     }
     case TOGGLE: {
-      if (getWeeklyScheduleProvider() != nullptr &&
-          isWeeklyScheduleSupported()) {
+      if (weeklyScheduleHelper && isWeeklyScheduleSupported()) {
         if (isOn() &&
-            !getWeeklyScheduleProvider()->isManualActionAllowed(false)) {
+            !weeklyScheduleHelper->isManualActionAllowed(false)) {
           SUPLA_LOG_DEBUG(
               "Relay[%d] ignoring TOGGLE-off due to weekly schedule",
               channel.getChannelNumber());
           return;
         }
         if (!isOn() &&
-            !getWeeklyScheduleProvider()->isManualActionAllowed(true)) {
+            !weeklyScheduleHelper->isManualActionAllowed(true)) {
           SUPLA_LOG_DEBUG("Relay[%d] ignoring TOGGLE-on due to weekly schedule",
                           channel.getChannelNumber());
           return;
@@ -814,8 +804,8 @@ void Relay::onSaveState() {
   RelayFlags relayFlags;
   relayFlags.flags.overcurrent = channel.isRelayOvercurrentCutOff();
   relayFlags.flags.weeklySchedule =
-      getWeeklyScheduleProvider() != nullptr && isWeeklyScheduleSupported() &&
-      getWeeklyScheduleProvider()->isActive();
+      getWeeklyScheduleController() != nullptr && isWeeklyScheduleSupported() &&
+      getWeeklyScheduleController()->isActive();
   if (isStaircaseFunction()) {
     relayFlags.flags.staircaseFunction = 1;
   } else if (isImpulseFunction()) {
@@ -894,14 +884,13 @@ void Relay::onLoadState() {
   if (relayFlags.flags.overcurrent) {
     channel.setRelayOvercurrentCutOff(true);
   }
-  if (getWeeklyScheduleProvider() != nullptr) {
-    getWeeklyScheduleProvider()->restoreWeeklyScheduleMode(
+  if (getWeeklyScheduleController() != nullptr) {
+    getWeeklyScheduleController()->restoreWeeklyScheduleMode(
         relayFlags.flags.weeklySchedule && isWeeklyScheduleSupported());
-    if (getWeeklyScheduleProvider()->getProviderType() ==
-        WeeklyScheduleProviderType::ExternalManaged) {
+    if (weeklyScheduleHelper == nullptr) {
       channel.setRelayWeeklyScheduleEnabled(
-          getWeeklyScheduleProvider()->isActive());
-      channel.setRelayMode(getWeeklyScheduleProvider()->isActive()
+          getWeeklyScheduleController()->isActive());
+      channel.setRelayMode(getWeeklyScheduleController()->isActive()
                                ? SUPLA_RELAY_MODE_AUTOMATIC
                                : SUPLA_RELAY_MODE_NOT_SET);
     }
@@ -1122,9 +1111,9 @@ void Relay::fillChannelConfig(void *channelConfig,
   }
 
   if (configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
-    if (getWeeklyScheduleProvider() != nullptr &&
+    if (getWeeklyScheduleConfigHandler() != nullptr &&
         isWeeklyScheduleSupported()) {
-      getWeeklyScheduleProvider()->fillChannelConfig(
+      getWeeklyScheduleConfigHandler()->fillChannelConfig(
           channelConfig, size, configType);
     }
     return;
@@ -1225,6 +1214,11 @@ bool Relay::isWeeklyScheduleSupported() const {
   auto func = channel.getDefaultFunction();
   return func == SUPLA_CHANNELFNC_LIGHTSWITCH ||
          func == SUPLA_CHANNELFNC_POWERSWITCH;
+}
+
+bool Relay::isManualActionAllowedByWeeklySchedule(bool turnOn) const {
+  return !isWeeklyScheduleSupported() || weeklyScheduleHelper == nullptr ||
+         weeklyScheduleHelper->isManualActionAllowed(turnOn);
 }
 
 bool Relay::isDefaultRelatedMeterChannelSet() const {

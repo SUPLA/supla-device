@@ -15,7 +15,7 @@
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 
-#include "control/weekly_schedule_provider.h"
+#include "control/weekly_schedule_component.h"
 
 namespace Supla {
 class ActionHandler;
@@ -70,47 +70,56 @@ Supla::ElementWithChannelActions::ElementWithChannelActions(ElementMode mode)
 }
 
 Supla::ElementWithChannelActions::~ElementWithChannelActions() {
-  delete weeklyScheduleProvider_;
-  weeklyScheduleProvider_ = nullptr;
+  delete weeklyScheduleController_;
+  weeklyScheduleController_ = nullptr;
 }
 
-bool Supla::ElementWithChannelActions::setWeeklyScheduleProvider(
-    Supla::Control::WeeklyScheduleProvider *provider) {
-  if (weeklyScheduleProviderLifecycleStarted_ ||
-      provider == weeklyScheduleProvider_) {
-    return provider == weeklyScheduleProvider_;
+bool Supla::ElementWithChannelActions::setWeeklyScheduleController(
+    Supla::Control::WeeklyScheduleController *controller) {
+  if (weeklyScheduleLifecycleStarted_ ||
+      controller == weeklyScheduleController_) {
+    return controller == weeklyScheduleController_;
   }
-  delete weeklyScheduleProvider_;
-  weeklyScheduleProvider_ = provider;
-  onWeeklyScheduleProviderChanged(provider);
+  delete weeklyScheduleController_;
+  weeklyScheduleController_ = controller;
+  onWeeklyScheduleControllerChanged(controller);
   usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   usedConfigTypes.clear(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
-  if (provider) {
+  auto *configHandler = getWeeklyScheduleConfigHandler();
+  if (configHandler) {
     usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
-                        provider->supportsConfigType(
+                        configHandler->supportsConfigType(
                             SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE));
     usedConfigTypes.set(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE,
-                        provider->supportsConfigType(
+                        configHandler->supportsConfigType(
                             SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE));
   }
   return true;
 }
 
-void Supla::ElementWithChannelActions::loadWeeklyScheduleProviderConfig() {
-  weeklyScheduleProviderLifecycleStarted_ = true;
-  if (weeklyScheduleProvider_) {
-    weeklyScheduleProvider_->onLoadConfig();
+void Supla::ElementWithChannelActions::loadWeeklyScheduleConfig() {
+  weeklyScheduleLifecycleStarted_ = true;
+  auto *configHandler = getWeeklyScheduleConfigHandler();
+  if (configHandler) {
+    configHandler->onLoadConfig();
   }
 }
 
-Supla::Control::WeeklyScheduleProvider *
-Supla::ElementWithChannelActions::getWeeklyScheduleProvider() const {
-  return weeklyScheduleProvider_;
+Supla::Control::WeeklyScheduleController *
+Supla::ElementWithChannelActions::getWeeklyScheduleController() const {
+  return weeklyScheduleController_;
 }
 
-void Supla::ElementWithChannelActions::onWeeklyScheduleProviderChanged(
-    Supla::Control::WeeklyScheduleProvider *provider) {
-  (void)(provider);
+Supla::Control::WeeklyScheduleConfigHandler *
+Supla::ElementWithChannelActions::getWeeklyScheduleConfigHandler() const {
+  return weeklyScheduleController_
+             ? weeklyScheduleController_->getConfigHandler()
+             : nullptr;
+}
+
+void Supla::ElementWithChannelActions::onWeeklyScheduleControllerChanged(
+    Supla::Control::WeeklyScheduleController *controller) {
+  (void)(controller);
 }
 
 void ConfigTypesBitmap::clear(int configType) {
@@ -606,6 +615,16 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
 
 uint8_t Supla::ElementWithChannelActions::handleWeeklySchedule(
     TSD_ChannelConfig *result, bool altSchedule, bool local) {
+  return handleWeeklyScheduleWithConfigHandler(
+      result, altSchedule, local, getWeeklyScheduleConfigHandler());
+}
+
+uint8_t
+Supla::ElementWithChannelActions::handleWeeklyScheduleWithConfigHandler(
+    TSD_ChannelConfig *result,
+    bool altSchedule,
+    bool local,
+    Supla::Control::WeeklyScheduleConfigHandler *configHandler) {
   if (result == nullptr) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
@@ -614,8 +633,8 @@ uint8_t Supla::ElementWithChannelActions::handleWeeklySchedule(
                              : SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
   if (result->ConfigType != expectedType ||
       !usedConfigTypes.isSet(expectedType) ||
-      weeklyScheduleProvider_ == nullptr ||
-      !weeklyScheduleProvider_->supportsConfigType(expectedType)) {
+      configHandler == nullptr ||
+      !configHandler->supportsConfigType(expectedType)) {
     return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
   }
   if (isLocalChannelConfigChangePending(expectedType) && !local) {
@@ -624,8 +643,8 @@ uint8_t Supla::ElementWithChannelActions::handleWeeklySchedule(
         getChannelNumber());
     return SUPLA_CONFIG_RESULT_TRUE;
   }
-  return finishChannelConfig(
-      result, weeklyScheduleProvider_->applyChannelConfig(result, local));
+  return finishChannelConfig(result,
+                             configHandler->applyChannelConfig(result, local));
 }
 
 uint8_t Supla::ElementWithChannelActions::finishChannelConfig(
@@ -740,8 +759,9 @@ void Supla::ElementWithChannelActions::purgeConfig() {
     generateKey(key, Supla::ConfigTag::ChannelConfigChangedTypesTag);
     cfg->eraseKey(key);
   }
-  if (weeklyScheduleProvider_) {
-    weeklyScheduleProvider_->purgeConfig();
+  auto *configHandler = getWeeklyScheduleConfigHandler();
+  if (configHandler) {
+    configHandler->purgeConfig();
   }
 }
 

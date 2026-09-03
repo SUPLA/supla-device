@@ -19,104 +19,69 @@
 #ifndef SRC_SUPLA_CONTROL_WEEKLY_SCHEDULE_STORAGE_H_
 #define SRC_SUPLA_CONTROL_WEEKLY_SCHEDULE_STORAGE_H_
 
-#include <string.h>
-
 #include <supla-common/proto.h>
-#include <supla/log_wrapper.h>
-#include <supla/storage/config.h>
-#include <supla/storage/storage.h>
 
 #include "weekly_schedule_common.h"
+#include "weekly_schedule_buffer.h"
+#include "weekly_schedule_cache_runtime.h"
 
 namespace Supla {
 namespace Control {
 
 class WeeklyScheduleStorage {
  public:
-  template <typename GenerateKeyFn, typename ValidateFn>
+  using GenerateKeyFn = void (*)(void *context,
+                                 char *key,
+                                 const char *storageTag);
+  using ValidateFn = bool (*)(
+      void *context,
+      const TChannelConfig_WeeklySchedule *schedule,
+      bool alt);
+
   static bool load(int channelNumber,
                    const char *deviceLabel,
                    const char *scheduleLabel,
                    const char *storageTag,
                    bool alt,
                    TChannelConfig_WeeklySchedule *&schedule,
-                   GenerateKeyFn &&generateKey,
-                   ValidateFn &&validate) {
-    auto cfg = Supla::Storage::ConfigInstance();
-    if (!cfg) {
-      return false;
-    }
+                   void *context,
+                   GenerateKeyFn generateKey,
+                   ValidateFn validate);
 
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, storageTag);
-    SUPLA_LOG_DEBUG("%s[%d]: loading%s %s from storage",
-                    deviceLabel,
-                    channelNumber,
-                    alt ? " alt" : "",
-                    scheduleLabel);
-    if (schedule == nullptr) {
-      schedule = new TChannelConfig_WeeklySchedule();
-      memset(schedule, 0, sizeof(TChannelConfig_WeeklySchedule));
-    }
-
-    if (!cfg->getBlob(key,
-                      reinterpret_cast<char *>(schedule),
-                      sizeof(TChannelConfig_WeeklySchedule))) {
-      SUPLA_LOG_DEBUG("%s[%d]: %s%s not found in storage",
-                      deviceLabel,
-                      channelNumber,
-                      scheduleLabel,
-                      alt ? " alt" : "");
-      return false;
-    }
-
-    if (!validate(schedule)) {
-      SUPLA_LOG_WARNING("%s[%d]: loaded%s %s is invalid",
-                        deviceLabel,
-                        channelNumber,
-                        alt ? " alt" : "",
-                        scheduleLabel);
-      return false;
-    }
-
-    SUPLA_LOG_DEBUG("%s[%d]: loaded%s %s successfully",
-                    deviceLabel,
-                    channelNumber,
-                    alt ? " alt" : "",
-                    scheduleLabel);
-    return true;
-  }
-
-  template <typename GenerateKeyFn>
   static bool save(int channelNumber,
                    const char *deviceLabel,
                    const char *scheduleLabel,
                    const char *storageTag,
                    const TChannelConfig_WeeklySchedule *schedule,
-                   GenerateKeyFn &&generateKey) {
-    auto cfg = Supla::Storage::ConfigInstance();
-    if (!cfg || schedule == nullptr) {
-      return false;
-    }
+                   void *context,
+                   GenerateKeyFn generateKey);
+};
 
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, storageTag);
-    if (cfg->setBlob(key,
-                     reinterpret_cast<const char *>(schedule),
-                     sizeof(TChannelConfig_WeeklySchedule))) {
-      SUPLA_LOG_INFO("%s[%d]: %s saved successfully",
-                     deviceLabel,
-                     channelNumber,
-                     scheduleLabel);
-      return true;
-    }
+struct NativeWeeklyScheduleStorageAccess {
+  int channelNumber;
+  const char *deviceLabel;
+  const char *scheduleLabel;
+  const char *storageTag;
+  void *context;
+  WeeklyScheduleStorage::GenerateKeyFn generateKey;
+  WeeklyScheduleStorage::ValidateFn validate;
+};
 
-    SUPLA_LOG_WARNING("%s[%d]: failed to save %s",
-                      deviceLabel,
-                      channelNumber,
-                      scheduleLabel);
-    return false;
-  }
+class NativeWeeklyScheduleStorage {
+ public:
+  bool load(bool alt, const NativeWeeklyScheduleStorageAccess &access);
+  bool save(bool alt, const NativeWeeklyScheduleStorageAccess &access);
+  void erase(bool alt, const NativeWeeklyScheduleStorageAccess &access);
+
+  bool isPersisted(bool alt) const;
+  void reset();
+
+  WeeklyScheduleBuffer buffer;
+  WeeklyScheduleCacheRuntime cacheRuntime;
+  bool configured = false;
+
+ private:
+  bool schedulePersisted_[2] = {false, false};
 };
 
 }  // namespace Control

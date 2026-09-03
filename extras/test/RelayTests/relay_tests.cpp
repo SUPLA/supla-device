@@ -18,7 +18,7 @@
 #include <supla/control/light_relay.h>
 #include <supla/control/relay.h>
 #include <supla/control/weekly_schedule_buffer.h>
-#include <supla/control/weekly_schedule_provider.h>
+#include <supla/control/weekly_schedule_component.h>
 #include <supla/events.h>
 #include <supla/device/register_device.h>
 #include <supla/io.h>
@@ -362,8 +362,8 @@ TEST_F(RelayFixture,
   ::testing::NiceMock<ConfigMock> cfg;
   Supla::Control::Relay relay(1);
   relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
-  ASSERT_TRUE(relay.setWeeklyScheduleProvider(
-      new Supla::Control::ExternalManagedWeeklyScheduleProvider()));
+  ASSERT_TRUE(relay.setWeeklyScheduleController(
+      new Supla::Control::ExternalManagedWeeklySchedule()));
 
   relay.onLoadConfig(nullptr);
 
@@ -393,7 +393,7 @@ TEST_F(RelayFixture,
   EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_NOT_SET);
 }
 
-TEST_F(RelayFixture, weeklyScheduleProviderCannotChangeAfterConfigLoad) {
+TEST_F(RelayFixture, weeklyScheduleControllerCannotChangeAfterConfigLoad) {
   ::testing::NiceMock<ConfigMock> cfg;
   ON_CALL(cfg, getBlobSize(_)).WillByDefault(Return(-1));
   Supla::Control::Relay relay(1);
@@ -401,8 +401,8 @@ TEST_F(RelayFixture, weeklyScheduleProviderCannotChangeAfterConfigLoad) {
   relay.onLoadConfig(nullptr);
 
   auto *external =
-      new Supla::Control::ExternalManagedWeeklyScheduleProvider();
-  EXPECT_FALSE(relay.setWeeklyScheduleProvider(external));
+      new Supla::Control::ExternalManagedWeeklySchedule();
+  EXPECT_FALSE(relay.setWeeklyScheduleController(external));
   delete external;
   EXPECT_TRUE(relay.getChannel()->isWeeklyScheduleAvailable());
 }

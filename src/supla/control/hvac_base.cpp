@@ -32,7 +32,9 @@ using Supla::Control::HvacBase;
 
 HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
                    Supla::Control::OutputInterface *secondaryOutput) {
-  setWeeklyScheduleProvider(new HvacWeeklySchedule(this));
+  auto *nativeWeeklySchedule = new HvacWeeklySchedule(this);
+  setWeeklyScheduleController(nativeWeeklySchedule);
+  weeklyScheduleHelper = nativeWeeklySchedule;
   channel.setType(SUPLA_CHANNELTYPE_HVAC);
   channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
@@ -59,15 +61,12 @@ HvacBase::~HvacBase() {
   Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
 }
 
-void HvacBase::onWeeklyScheduleProviderChanged(
-    Supla::Control::WeeklyScheduleProvider *provider) {
-  weeklyScheduleHelper =
-      provider && provider->getProviderType() ==
-                      WeeklyScheduleProviderType::NativeHvac
-          ? static_cast<HvacWeeklySchedule *>(provider)
-          : nullptr;
-  if (provider && provider->getProviderType() ==
-                      WeeklyScheduleProviderType::NativeHvac) {
+void HvacBase::onWeeklyScheduleControllerChanged(
+    Supla::Control::WeeklyScheduleController *controller) {
+  weeklyScheduleHelper = nullptr;
+  auto *configHandler = controller ? controller->getConfigHandler() : nullptr;
+  if (controller && configHandler &&
+      configHandler->supportsConfigType(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE)) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   } else {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
@@ -212,7 +211,7 @@ bool HvacBase::isAltWeeklySchedulePossible() const {
 
 void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
-  loadWeeklyScheduleProviderConfig();
+  loadWeeklyScheduleConfig();
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
@@ -269,7 +268,7 @@ void HvacBase::onLoadState() {
       SUPLA_LOG_WARNING("HVAC[%d]: invalid HVAC value in state",
                         getChannelNumber());
     }
-    auto *weeklyScheduleProvider = getWeeklyScheduleProvider();
+    auto *weeklyScheduleProvider = getWeeklyScheduleController();
     if (weeklyScheduleProvider) {
       weeklyScheduleProvider->restoreWeeklyScheduleMode(
           channel.isHvacFlagWeeklySchedule());
@@ -451,7 +450,7 @@ void HvacBase::onInit() {
   previousSubfunction = config.Subfunction;
 
   if (channel.isHvacFlagWeeklySchedule()) {
-    auto provider = getWeeklyScheduleProvider();
+    auto provider = getWeeklyScheduleController();
     if (provider == nullptr || !provider->processWeeklySchedule()) {
       return;
     }
@@ -508,18 +507,18 @@ void HvacBase::fillChannelConfig(void *channelConfig,
   }
 
   if (configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
-    auto provider = getWeeklyScheduleProvider();
-    if (provider) {
-      provider->fillChannelConfig(channelConfig, size, configType);
+    auto configHandler = getWeeklyScheduleConfigHandler();
+    if (configHandler) {
+      configHandler->fillChannelConfig(channelConfig, size, configType);
     }
     return;
   }
 
   if (configType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE &&
       isAltWeeklySchedulePossible()) {
-    auto provider = getWeeklyScheduleProvider();
-    if (provider) {
-      provider->fillChannelConfig(channelConfig, size, configType);
+    auto configHandler = getWeeklyScheduleConfigHandler();
+    if (configHandler) {
+      configHandler->fillChannelConfig(channelConfig, size, configType);
     }
   }
 }
@@ -551,8 +550,8 @@ void HvacBase::iterateAlways() {
   }
 
   updateChannelState();
-  if (getWeeklyScheduleProvider()) {
-    getWeeklyScheduleProvider()->processCacheRelease();
+  if (weeklyScheduleHelper) {
+    weeklyScheduleHelper->processCacheRelease();
   }
 
   if (startupDelay && millis() > 30000) {
@@ -2571,9 +2570,6 @@ void HvacBase::handleSetChannelConfigResult(
                    result->Result);
     return;
   }
-  if (weeklyScheduleHelper) {
-    weeklyScheduleHelper->handleSetChannelConfigResult(result);
-  }
   if (result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE ||
       result->ConfigType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE) {
     updateWeeklyScheduleConfigTypes();
@@ -2587,9 +2583,6 @@ void HvacBase::clearChannelConfigChangedFlag() {
 void HvacBase::clearWeeklyScheduleChangedFlag() {
   clearLocalConfigChanges(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
                           SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
-  if (weeklyScheduleHelper) {
-    weeklyScheduleHelper->clearWeeklyScheduleChangedFlag();
-  }
 }
 
 void HvacBase::debugPrintProgram(const TWeeklyScheduleProgram *program,
@@ -2689,8 +2682,8 @@ bool HvacBase::isModeSupported(int mode) const {
       return onOffSupported;
     }
     case SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE: {
-      auto provider = getWeeklyScheduleProvider();
-      return provider && provider->isConfigured();
+      auto provider = getWeeklyScheduleController();
+      return provider && provider->canActivate();
     }
   }
 
@@ -2730,22 +2723,13 @@ int HvacBase::getCurrentQuarter() const {
 }
 
 TWeeklyScheduleProgram HvacBase::getCurrentProgram() const {
-  TWeeklyScheduleProgram program = {};
-  auto provider = getWeeklyScheduleProvider();
-  if (provider) {
-    provider->getCurrentProgram(&program, nullptr);
-  }
-  return program;
+  return weeklyScheduleHelper ? weeklyScheduleHelper->getCurrentProgram()
+                              : TWeeklyScheduleProgram{};
 }
 
 int HvacBase::getCurrentProgramId() const {
-  int programId = -1;
-  TWeeklyScheduleProgram program = {};
-  auto provider = getWeeklyScheduleProvider();
-  if (provider) {
-    provider->getCurrentProgram(&program, &programId);
-  }
-  return programId;
+  return weeklyScheduleHelper ? weeklyScheduleHelper->getCurrentProgramId()
+                              : -1;
 }
 
 bool HvacBase::setProgram(int programId,
@@ -3404,20 +3388,17 @@ void HvacBase::turnOn() {
 }
 
 bool HvacBase::turnOnWeeklySchedlue() {
-  auto provider = getWeeklyScheduleProvider();
-  if (provider == nullptr || !provider->switchToWeeklySchedule()) {
+  auto controller = getWeeklyScheduleController();
+  if (controller == nullptr || !controller->switchToWeeklySchedule()) {
     return false;
   }
-  if (provider->getProviderType() ==
-      WeeklyScheduleProviderType::ExternalManaged) {
-    channel.setHvacFlagWeeklySchedule(true);
-  }
+  channel.setHvacFlagWeeklySchedule(controller->isActive());
   return true;
 }
 
 bool HvacBase::processWeeklySchedule() {
-  auto provider = getWeeklyScheduleProvider();
-  return provider && provider->processWeeklySchedule();
+  auto controller = getWeeklyScheduleController();
+  return controller && controller->processWeeklySchedule();
 }
 
 void HvacBase::setSetpointTemperaturesForCurrentMode(int16_t tHeat,
@@ -3469,10 +3450,9 @@ bool HvacBase::isWeeklyScheduleEnabled() const {
 
 void HvacBase::setWeeklyScheduleEnabled(bool enabled) {
   channel.setHvacFlagWeeklySchedule(enabled);
-  auto provider = getWeeklyScheduleProvider();
-  if (provider && provider->getProviderType() ==
-                      WeeklyScheduleProviderType::ExternalManaged) {
-    provider->restoreWeeklyScheduleMode(enabled);
+  auto controller = getWeeklyScheduleController();
+  if (controller) {
+    controller->restoreWeeklyScheduleMode(enabled);
   }
 }
 
@@ -3769,12 +3749,6 @@ void HvacBase::requestWeeklyScheduleResend(bool isAltWeeklySchedule,
                           localChange);
 }
 
-void HvacBase::markWeeklyScheduleConfigReceived(bool isAltWeeklySchedule) {
-  markChannelConfigReceived(isAltWeeklySchedule
-                                ? SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE
-                                : SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
-}
-
 bool HvacBase::isLocalConfigChangePending(int configType) const {
   return isLocalChannelConfigChangePending(configType);
 }
@@ -3785,7 +3759,7 @@ void HvacBase::persistChannelConfigChangeState() {
 
 void HvacBase::updateWeeklyScheduleConfigTypes() {
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
-  auto provider = getWeeklyScheduleProvider();
+  auto provider = getWeeklyScheduleConfigHandler();
   usedConfigTypes.set(
       SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
       provider &&

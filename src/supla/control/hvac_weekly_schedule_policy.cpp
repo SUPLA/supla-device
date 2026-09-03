@@ -180,7 +180,7 @@ void HvacWeeklySchedulePolicy::initDefaultWeeklySchedule(
     bool isAltWeeklySchedule,
     bool requestResend) const {
   auto *owner = weeklySchedule.owner_;
-  weeklySchedule.isWeeklyScheduleConfigured_ = true;
+  weeklySchedule.nativeStorage_.configured = true;
   auto prevInitDone = owner->isInitDone();
   if (owner->isInitDone()) {
     owner->setInitDone(false);
@@ -188,23 +188,23 @@ void HvacWeeklySchedulePolicy::initDefaultWeeklySchedule(
 
   bool initializeMain =
       !isAltWeeklySchedule &&
-      weeklySchedule.weeklyScheduleBuffer_.get(false) == nullptr;
+      weeklySchedule.nativeStorage_.buffer.get(false) == nullptr;
   bool initializeAlt =
       isAltWeeklySchedule &&
       owner->getChannel()->getDefaultFunction() ==
           SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-      weeklySchedule.weeklyScheduleBuffer_.get(true) == nullptr;
+      weeklySchedule.nativeStorage_.buffer.get(true) == nullptr;
   if (initializeMain) {
-    weeklySchedule.weeklyScheduleBuffer_.set(
+    weeklySchedule.nativeStorage_.buffer.set(
         false, new TChannelConfig_WeeklySchedule());
-    memset(weeklySchedule.weeklyScheduleBuffer_.get(false),
+    memset(weeklySchedule.nativeStorage_.buffer.get(false),
            0,
            sizeof(TChannelConfig_WeeklySchedule));
   }
   if (initializeAlt) {
-    weeklySchedule.weeklyScheduleBuffer_.set(
+    weeklySchedule.nativeStorage_.buffer.set(
         true, new TChannelConfig_WeeklySchedule());
-    memset(weeklySchedule.weeklyScheduleBuffer_.get(true),
+    memset(weeklySchedule.nativeStorage_.buffer.get(true),
            0,
            sizeof(TChannelConfig_WeeklySchedule));
   }

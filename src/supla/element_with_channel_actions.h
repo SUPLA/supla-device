@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <supla-common/proto.h>
+#include <supla/apply_config_result.h>
 #include <supla/element.h>
 #include <supla/local_action.h>
 
@@ -19,13 +20,6 @@ enum class ChannelConfigState : uint8_t {
   WaitForConfigFinished = 4,
   ResendConfig = 5,
   LocalChangeSent = 6
-};
-
-enum class ApplyConfigResult : uint8_t {
-  NotSupported,
-  Success,
-  DataError,
-  SetChannelConfigNeeded,
 };
 
 #pragma pack(push, 1)
@@ -63,7 +57,8 @@ namespace Protocol {
 class SuplaSrpc;
 }  // namespace Protocol
 namespace Control {
-class WeeklyScheduleProvider;
+class WeeklyScheduleController;
+class WeeklyScheduleConfigHandler;
 }  // namespace Control
 
 class ElementWithChannelActions : public Element, public LocalAction {
@@ -132,10 +127,10 @@ class ElementWithChannelActions : public Element, public LocalAction {
   void triggerSetChannelConfig(
       int configType = SUPLA_CONFIG_TYPE_DEFAULT,
       bool localChange = false);
-  // Replaces the owned provider before configuration loading begins. Ownership
-  // is transferred only when true is returned.
-  bool setWeeklyScheduleProvider(
-      Supla::Control::WeeklyScheduleProvider *provider);
+  // Replaces the owned runtime controller before configuration loading begins.
+  // Ownership of the controller is transferred only when true is returned.
+  bool setWeeklyScheduleController(
+      Supla::Control::WeeklyScheduleController *controller);
 
  protected:
   // returns true if function was changed (previous one was different)
@@ -160,12 +155,17 @@ class ElementWithChannelActions : public Element, public LocalAction {
   bool setLocalConfigChange(int configType, bool value = true);
   void clearLocalConfigChanges(int configType, int secondConfigType = -1);
   uint8_t getUsedLocalConfigTypes() const;
-  void loadWeeklyScheduleProviderConfig();
-  Supla::Control::WeeklyScheduleProvider *getWeeklyScheduleProvider() const;
-  virtual void onWeeklyScheduleProviderChanged(
-      Supla::Control::WeeklyScheduleProvider *provider);
-  uint8_t finishChannelConfig(
-      TSD_ChannelConfig *result, Supla::ApplyConfigResult applyResult);
+  void loadWeeklyScheduleConfig();
+  Supla::Control::WeeklyScheduleController *getWeeklyScheduleController() const;
+  Supla::Control::WeeklyScheduleConfigHandler *
+  getWeeklyScheduleConfigHandler() const;
+  virtual void onWeeklyScheduleControllerChanged(
+      Supla::Control::WeeklyScheduleController *controller);
+  uint8_t handleWeeklyScheduleWithConfigHandler(
+      TSD_ChannelConfig *result,
+      bool altSchedule,
+      bool local,
+      Supla::Control::WeeklyScheduleConfigHandler *configHandler);
   Supla::ChannelConfigState channelConfigState =
       Supla::ChannelConfigState::None;
 
@@ -180,8 +180,10 @@ class ElementWithChannelActions : public Element, public LocalAction {
   ConfigTypesBitmap receivedConfigTypes;
 
  private:
-  Supla::Control::WeeklyScheduleProvider *weeklyScheduleProvider_ = nullptr;
-  bool weeklyScheduleProviderLifecycleStarted_ = false;
+  uint8_t finishChannelConfig(
+      TSD_ChannelConfig *result, Supla::ApplyConfigResult applyResult);
+  Supla::Control::WeeklyScheduleController *weeklyScheduleController_ = nullptr;
+  bool weeklyScheduleLifecycleStarted_ = false;
 };
 
 };  // namespace Supla

@@ -234,8 +234,8 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isWeeklyScheduleSupported() const;
 
  protected:
-  void onWeeklyScheduleProviderChanged(
-      Supla::Control::WeeklyScheduleProvider *provider) override;
+  void onWeeklyScheduleControllerChanged(
+      Supla::Control::WeeklyScheduleController *controller) override;
   Relay(Supla::Io::IoPin outputPin,
         _supla_int_t functions,
         Supla::Channel &externalChannel,
@@ -258,6 +258,7 @@ class Relay : public ChannelElement, public ActionHandler {
   void updateTimerValue();
   void emitCountdownTimerActionIfNeeded();
   void updateRelayHvacAggregator();
+  bool isManualActionAllowedByWeeklySchedule(bool turnOn) const;
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;

@@ -23,18 +23,24 @@
 #include <supla-common/proto.h>
 
 #include "hvac_weekly_schedule_policy.h"
-#include "weekly_schedule_provider.h"
+#include "weekly_schedule_component.h"
+#include "weekly_schedule_storage.h"
 
 namespace Supla {
 
 namespace Control {
 
-class HvacWeeklySchedule : public NativeWeeklyScheduleProvider {
+class HvacWeeklySchedule : public WeeklyScheduleController,
+                           public WeeklyScheduleConfigHandler {
  public:
   explicit HvacWeeklySchedule(HvacBase *owner);
   ~HvacWeeklySchedule();
 
-  WeeklyScheduleProviderType getProviderType() const override;
+  WeeklyScheduleConfigHandler *getConfigHandler() override {
+    return this;
+  }
+  bool canActivate() const override;
+  bool isConfigured() const;
   void onLoadConfig() override;
   bool supportsConfigType(uint8_t configType) const override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *config,
@@ -43,18 +49,12 @@ class HvacWeeklySchedule : public NativeWeeklyScheduleProvider {
                          int *size,
                          uint8_t configType) override;
   void purgeConfig() override;
-  void handleSetChannelConfigResult(TSDS_SetChannelConfigResult *result);
   void saveWeeklySchedule(bool requestResend = false);
-  void clearWeeklyScheduleChangedFlag();
 
   bool isActive() const override;
   bool switchToWeeklySchedule() override;
   void switchToManualMode() override;
   void restoreWeeklyScheduleMode(bool enabled) override;
-  bool isManualActionAllowed(bool turnOn) const override;
-  bool getCurrentProgram(TWeeklyScheduleProgram *program,
-                         int *programId) const override;
-  bool isWeeklyScheduleChangedOffline() const;
   bool isWeeklyScheduleValid(const TChannelConfig_WeeklySchedule *newSchedule,
                              bool isAltWeeklySchedule = false) const;
   int getWeeklyScheduleProgramId(const TChannelConfig_WeeklySchedule *schedule,
@@ -87,7 +87,7 @@ class HvacWeeklySchedule : public NativeWeeklyScheduleProvider {
   bool turnOnWeeklySchedule();
   bool processWeeklySchedule() override;
   void initDefaultWeeklySchedule(bool requestResend = true);
-  void processCacheRelease() override;
+  void processCacheRelease();
 
   friend class HvacWeeklySchedulePolicy;
 
@@ -104,19 +104,27 @@ class HvacWeeklySchedule : public NativeWeeklyScheduleProvider {
   void initDefaultWeeklyScheduleForType(bool isAltWeeklySchedule,
                                         bool requestResend);
   void unloadSchedulesIfPossible();
-  int getScheduleOwnerChannelNumber() const override;
-  const char *getScheduleOwnerLabel() const override;
-  const char *getScheduleLabel(bool isAltWeeklySchedule) const override;
-  const char *getScheduleStorageTag(
-      bool isAltWeeklySchedule) const override;
+  int getScheduleOwnerChannelNumber() const;
+  const char *getScheduleOwnerLabel() const;
+  const char *getScheduleLabel(bool isAltWeeklySchedule) const;
+  const char *getScheduleStorageTag(bool isAltWeeklySchedule) const;
   void generateScheduleStorageKey(char *key,
-                                  const char *storageTag) const override;
+                                  const char *storageTag) const;
   bool validateNativeSchedule(
       const TChannelConfig_WeeklySchedule *schedule,
-      bool isAltWeeklySchedule) const override;
+      bool isAltWeeklySchedule) const;
+  NativeWeeklyScheduleStorageAccess getStorageAccess(
+      bool isAltWeeklySchedule);
+  static void generateScheduleStorageKeyCallback(
+      void *context, char *key, const char *storageTag);
+  static bool validateNativeScheduleCallback(
+      void *context,
+      const TChannelConfig_WeeklySchedule *schedule,
+      bool isAltWeeklySchedule);
 
   HvacBase *owner_ = nullptr;
   HvacWeeklySchedulePolicy policy_;
+  NativeWeeklyScheduleStorage nativeStorage_;
 };
 
 }  // namespace Control

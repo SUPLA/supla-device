@@ -39,8 +39,12 @@ RelayWeeklySchedule::RelayWeeklySchedule(Relay *owner) : owner_(owner) {
 RelayWeeklySchedule::~RelayWeeklySchedule() {
 }
 
-WeeklyScheduleProviderType RelayWeeklySchedule::getProviderType() const {
-  return WeeklyScheduleProviderType::NativeRelay;
+bool RelayWeeklySchedule::canActivate() const {
+  return isConfigured();
+}
+
+bool RelayWeeklySchedule::isConfigured() const {
+  return nativeStorage_.configured;
 }
 
 bool RelayWeeklySchedule::supportsConfigType(uint8_t configType) const {
@@ -76,6 +80,33 @@ bool RelayWeeklySchedule::validateNativeSchedule(
   return isWeeklyScheduleValid(schedule);
 }
 
+NativeWeeklyScheduleStorageAccess RelayWeeklySchedule::getStorageAccess(
+    bool alt) {
+  NativeWeeklyScheduleStorageAccess access;
+  access.channelNumber = getScheduleOwnerChannelNumber();
+  access.deviceLabel = getScheduleOwnerLabel();
+  access.scheduleLabel = getScheduleLabel(alt);
+  access.storageTag = getScheduleStorageTag(alt);
+  access.context = this;
+  access.generateKey = generateScheduleStorageKeyCallback;
+  access.validate = validateNativeScheduleCallback;
+  return access;
+}
+
+void RelayWeeklySchedule::generateScheduleStorageKeyCallback(
+    void *context, char *key, const char *storageTag) {
+  static_cast<RelayWeeklySchedule *>(context)->generateScheduleStorageKey(
+      key, storageTag);
+}
+
+bool RelayWeeklySchedule::validateNativeScheduleCallback(
+    void *context,
+    const TChannelConfig_WeeklySchedule *schedule,
+    bool alt) {
+  return static_cast<RelayWeeklySchedule *>(context)->validateNativeSchedule(
+      schedule, alt);
+}
+
 bool RelayWeeklySchedule::isWeeklyScheduleEnabled() const {
   return weeklyScheduleEnabled_;
 }
@@ -95,7 +126,7 @@ void RelayWeeklySchedule::setWeeklyScheduleEnabled(bool enabled) {
       owner_->getChannel()->setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
     }
   }
-  cacheRuntime_.touch(enabled, millis());
+  nativeStorage_.cacheRuntime.touch(enabled, millis());
 }
 
 void RelayWeeklySchedule::syncRelayMode(uint8_t programMode) {
@@ -150,7 +181,7 @@ bool RelayWeeklySchedule::isWeeklyScheduleValid(
   }
 
   for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; i++) {
-    int programId = weeklyScheduleBuffer_.getProgramId(newSchedule, i);
+    int programId = nativeStorage_.buffer.getProgramId(newSchedule, i);
     if (programId < 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
       SUPLA_LOG_WARNING(
           "Relay[%d]: weekly schedule references invalid program %d",
@@ -178,13 +209,12 @@ bool RelayWeeklySchedule::isNoOpSchedule(
 }
 
 void RelayWeeklySchedule::clearSchedule(bool eraseStorage) {
-  const bool eraseStoredSchedule = eraseStorage && isWeeklyScheduleConfigured_;
-  isWeeklyScheduleConfigured_ = false;
+  const bool eraseStoredSchedule = eraseStorage && nativeStorage_.configured;
+  nativeStorage_.configured = false;
   weeklyScheduleEnabled_ = false;
-  weeklyScheduleChangedOffline_ = 0;
   lastCurrentProgramId_ = -1;
-  weeklyScheduleBuffer_.clearAll();
-  cacheRuntime_.reset();
+  nativeStorage_.buffer.clearAll();
+  nativeStorage_.cacheRuntime.reset();
   syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
   Supla::Storage::ScheduleSave(Relay::relayStorageSaveDelay, 2000);
 
@@ -204,18 +234,18 @@ bool RelayWeeklySchedule::loadSchedule() {
     return false;
   }
 
-  if (!loadNativeSchedule(false)) {
-    isWeeklyScheduleConfigured_ = false;
+  if (!nativeStorage_.load(false, getStorageAccess(false))) {
+    nativeStorage_.configured = false;
     weeklyScheduleEnabled_ = false;
     lastCurrentProgramId_ = -1;
-    cacheRuntime_.reset();
+    nativeStorage_.cacheRuntime.reset();
     syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
     Supla::Storage::ScheduleSave(Relay::relayStorageSaveDelay, 2000);
     return false;
   }
 
-  isWeeklyScheduleConfigured_ = true;
-  cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
+  nativeStorage_.configured = true;
+  nativeStorage_.cacheRuntime.touch(weeklyScheduleEnabled_, millis());
   return true;
 }
 
@@ -226,12 +256,12 @@ const TChannelConfig_WeeklySchedule *RelayWeeklySchedule::getSchedule(
 
 TChannelConfig_WeeklySchedule *RelayWeeklySchedule::getSchedule(
     bool loadIfMissing) {
-  auto *schedule = weeklyScheduleBuffer_.get(false);
+  auto *schedule = nativeStorage_.buffer.get(false);
   if (schedule == nullptr && loadIfMissing) {
     if (!loadSchedule()) {
       return nullptr;
     }
-    schedule = weeklyScheduleBuffer_.get(false);
+    schedule = nativeStorage_.buffer.get(false);
   }
   return schedule;
 }
@@ -246,16 +276,13 @@ void RelayWeeklySchedule::saveWeeklySchedule() {
     return;
   }
 
-  saveNativeSchedule(false);
+  nativeStorage_.save(false, getStorageAccess(false));
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
     return;
   }
-  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  owner_->generateKey(key, Supla::ConfigTag::WeeklyScheduleChangedFlagTag);
-  cfg->setUInt8(key, weeklyScheduleChangedOffline_ ? 1 : 0);
   cfg->saveWithDelay(5000);
-  cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
+  nativeStorage_.cacheRuntime.touch(weeklyScheduleEnabled_, millis());
 }
 
 bool RelayWeeklySchedule::switchToWeeklySchedule() {
@@ -264,7 +291,7 @@ bool RelayWeeklySchedule::switchToWeeklySchedule() {
   }
   weeklyScheduleEnabled_ = true;
   lastCurrentProgramId_ = -1;
-  cacheRuntime_.touch(true, millis());
+  nativeStorage_.cacheRuntime.touch(true, millis());
   syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
   if (!isWaitingForClock()) {
     applyCurrentState();
@@ -275,36 +302,36 @@ bool RelayWeeklySchedule::switchToWeeklySchedule() {
 void RelayWeeklySchedule::switchToManualMode() {
   weeklyScheduleEnabled_ = false;
   lastCurrentProgramId_ = -1;
-  if (isWeeklyScheduleConfigured_) {
-    cacheRuntime_.touch(false, millis());
+  if (nativeStorage_.configured) {
+    nativeStorage_.cacheRuntime.touch(false, millis());
   } else {
-    cacheRuntime_.reset();
+    nativeStorage_.cacheRuntime.reset();
   }
   syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
 }
 
 void RelayWeeklySchedule::restoreWeeklyScheduleMode(bool enabled) {
-  weeklyScheduleEnabled_ = enabled && isWeeklyScheduleConfigured_;
+  weeklyScheduleEnabled_ = enabled && nativeStorage_.configured;
   lastCurrentProgramId_ = -1;
   startupDelay_ = true;
   if (weeklyScheduleEnabled_) {
-    cacheRuntime_.touch(true, millis());
+    nativeStorage_.cacheRuntime.touch(true, millis());
   }
   syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
 }
 
 void RelayWeeklySchedule::onLoadConfig() {
-  isWeeklyScheduleConfigured_ = false;
+  nativeStorage_.configured = false;
   weeklyScheduleEnabled_ = false;
   lastCurrentProgramId_ = -1;
   startupDelay_ = true;
-  resetNativeScheduleLifecycle();
+  nativeStorage_.reset();
 
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg && owner_ != nullptr) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     owner_->generateKey(key, getScheduleStorageTag(false));
-    isWeeklyScheduleConfigured_ =
+    nativeStorage_.configured =
         cfg->getBlobSize(key) == sizeof(TChannelConfig_WeeklySchedule);
   }
   syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
@@ -314,12 +341,12 @@ void RelayWeeklySchedule::purgeConfig() {
   if (owner_ == nullptr) {
     return;
   }
-  eraseNativeSchedule(false);
+  nativeStorage_.erase(false, getStorageAccess(false));
   clearSchedule(false);
 }
 
 bool RelayWeeklySchedule::iterateAlways() {
-  if (!owner_ || !isWeeklyScheduleConfigured_) {
+  if (!owner_ || !nativeStorage_.configured) {
     return false;
   }
 
@@ -328,7 +355,7 @@ bool RelayWeeklySchedule::iterateAlways() {
     return false;
   }
 
-  cacheRuntime_.touch(true, millis());
+  nativeStorage_.cacheRuntime.touch(true, millis());
 
   if (startupDelay_ && millis() > 30000) {
     startupDelay_ = false;
@@ -355,7 +382,7 @@ void RelayWeeklySchedule::applyCurrentState() {
     return;
   }
 
-  int currentProgramId = weeklyScheduleBuffer_.getCurrentProgramId(schedule);
+  int currentProgramId = nativeStorage_.buffer.getCurrentProgramId(schedule);
   if (currentProgramId < 0) {
     return;
   }
@@ -363,7 +390,7 @@ void RelayWeeklySchedule::applyCurrentState() {
   uint8_t currentProgramMode = SUPLA_RELAY_MODE_NOT_SET;
   if (currentProgramId > 0) {
     currentProgramMode =
-        weeklyScheduleBuffer_.getProgramById(schedule, currentProgramId).Mode;
+        nativeStorage_.buffer.getProgramById(schedule, currentProgramId).Mode;
   }
 
   bool programChanged = currentProgramId != lastCurrentProgramId_;
@@ -417,32 +444,12 @@ uint8_t RelayWeeklySchedule::getCurrentProgramMode() const {
     return SUPLA_RELAY_MODE_NOT_SET;
   }
 
-  int currentProgramId = weeklyScheduleBuffer_.getCurrentProgramId(schedule);
+  int currentProgramId = nativeStorage_.buffer.getCurrentProgramId(schedule);
   if (currentProgramId <= 0) {
     return SUPLA_RELAY_MODE_NOT_SET;
   }
 
-  return weeklyScheduleBuffer_.getProgramById(schedule, currentProgramId).Mode;
-}
-
-bool RelayWeeklySchedule::getCurrentProgram(
-    TWeeklyScheduleProgram *program, int *programId) const {
-  if (program == nullptr) {
-    return false;
-  }
-  auto *schedule = getSchedule(true);
-  if (schedule == nullptr) {
-    return false;
-  }
-  int id = weeklyScheduleBuffer_.getCurrentProgramId(schedule);
-  if (id < 1 || id > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
-    return false;
-  }
-  *program = weeklyScheduleBuffer_.getProgramById(schedule, id);
-  if (programId) {
-    *programId = id;
-  }
-  return true;
+  return nativeStorage_.buffer.getProgramById(schedule, currentProgramId).Mode;
 }
 
 bool RelayWeeklySchedule::isWaitingForClock() const {
@@ -462,9 +469,6 @@ Supla::ApplyConfigResult RelayWeeklySchedule::applyChannelConfig(
   }
 
   if (result->ConfigSize == 0) {
-    if (isConfigured()) {
-      weeklyScheduleChangedOffline_ = 1;
-    }
     return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
@@ -482,10 +486,10 @@ Supla::ApplyConfigResult RelayWeeklySchedule::applyChannelConfig(
     return Supla::ApplyConfigResult::Success;
   }
 
-  auto *schedule = weeklyScheduleBuffer_.get(false);
+  auto *schedule = nativeStorage_.buffer.get(false);
   if (schedule == nullptr) {
     schedule = new TChannelConfig_WeeklySchedule();
-    weeklyScheduleBuffer_.set(false, schedule);
+    nativeStorage_.buffer.set(false, schedule);
     memset(schedule, 0, sizeof(TChannelConfig_WeeklySchedule));
   }
 
@@ -493,16 +497,15 @@ Supla::ApplyConfigResult RelayWeeklySchedule::applyChannelConfig(
       memcmp(schedule, newSchedule, sizeof(TChannelConfig_WeeklySchedule)) !=
           0) {
     memcpy(schedule, newSchedule, sizeof(TChannelConfig_WeeklySchedule));
-    isWeeklyScheduleConfigured_ = true;
+    nativeStorage_.configured = true;
     lastCurrentProgramId_ = -1;
-    weeklyScheduleChangedOffline_ = 0;
     saveWeeklySchedule();
     if (weeklyScheduleEnabled_) {
       applyCurrentState();
     }
   }
 
-  cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
+  nativeStorage_.cacheRuntime.touch(weeklyScheduleEnabled_, millis());
   return Supla::ApplyConfigResult::Success;
 }
 
@@ -528,7 +531,7 @@ void RelayWeeklySchedule::fillChannelConfig(void *channelConfig,
 
   *reinterpret_cast<TChannelConfig_WeeklySchedule *>(channelConfig) = *schedule;
   *size = sizeof(TChannelConfig_WeeklySchedule);
-  cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
+  nativeStorage_.cacheRuntime.touch(weeklyScheduleEnabled_, millis());
 }
 
 void RelayWeeklySchedule::unloadScheduleIfPossible() {
@@ -538,7 +541,7 @@ void RelayWeeklySchedule::unloadScheduleIfPossible() {
 
   SUPLA_LOG_DEBUG("Relay[%d]: unloading weekly schedule cache",
                   owner_->getChannelNumber());
-  weeklyScheduleBuffer_.clearAll();
+  nativeStorage_.buffer.clearAll();
 }
 
 void RelayWeeklySchedule::processCacheRelease() {
@@ -546,7 +549,7 @@ void RelayWeeklySchedule::processCacheRelease() {
     return;
   }
 
-  if (cacheRuntime_.process(weeklyScheduleEnabled_, millis())) {
+  if (nativeStorage_.cacheRuntime.process(weeklyScheduleEnabled_, millis())) {
     unloadScheduleIfPossible();
   }
 }

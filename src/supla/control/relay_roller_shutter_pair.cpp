@@ -14,7 +14,7 @@
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 
-#include "weekly_schedule_provider.h"
+#include "weekly_schedule_component.h"
 
 namespace Supla {
 namespace Control {
@@ -52,8 +52,8 @@ void ManagedRelay::loadEngineConfigOnly() {
 
 void ManagedRelay::purgeEngineConfigOnly() {
   Relay::purgeRelayConfigOnly();
-  if (getWeeklyScheduleProvider()) {
-    getWeeklyScheduleProvider()->purgeConfig();
+  if (getWeeklyScheduleConfigHandler()) {
+    getWeeklyScheduleConfigHandler()->purgeConfig();
   }
 }
 
@@ -63,6 +63,11 @@ void ManagedRelay::refreshWeeklyScheduleCapabilities() {
 
 bool ManagedRelay::isWeeklyScheduleConfigUsed() const {
   return usedConfigTypes.isSet(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+}
+
+WeeklyScheduleConfigHandler *
+ManagedRelay::getWeeklyScheduleConfigHandlerForOwner() const {
+  return getWeeklyScheduleConfigHandler();
 }
 
 void ManagedRelay::setupButtonActions(Button *button) {
@@ -814,17 +819,11 @@ uint8_t RelayRollerShutterPair::handleWeeklySchedule(
   }
   if (isPrimaryChannel(config->ChannelNumber)) {
     syncPrimaryWeeklyScheduleConfigType();
-    if (config->ConfigType != SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE ||
-        !usedConfigTypes.isSet(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE)) {
-      return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
-    }
-    if (isLocalChannelConfigChangePending(
-            SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) &&
-        !local) {
-      return SUPLA_CONFIG_RESULT_TRUE;
-    }
-    return finishChannelConfig(config,
-                               relay0.applyChannelConfig(config, local));
+    return handleWeeklyScheduleWithConfigHandler(
+        config,
+        false,
+        local,
+        relay0.getWeeklyScheduleConfigHandlerForOwner());
   }
   if (isSecondaryChannel(config->ChannelNumber)) {
     return relay1.handleWeeklySchedule(config, false, local);

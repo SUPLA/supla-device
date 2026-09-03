@@ -45,6 +45,7 @@ class RelayWeeklySchedule {
                          uint8_t configType);
   bool switchToWeeklySchedule();
   void switchToManualMode();
+  void restoreWeeklyScheduleMode(bool enabled);
 
   bool isConfigured() const;
   bool isWeeklyScheduleEnabled() const;
@@ -68,6 +69,7 @@ class RelayWeeklySchedule {
   bool isProgramValid(const TWeeklyScheduleProgram &program) const;
   uint8_t getCurrentProgramMode() const;
   void applyCurrentState();
+  bool isWaitingForClock() const;
 
   static const char *getStorageTag();
 
@@ -77,6 +79,7 @@ class RelayWeeklySchedule {
   bool weeklyScheduleEnabled_ = false;
   uint8_t weeklyScheduleChangedOffline_ = 0;
   int lastCurrentProgramId_ = -1;
+  bool startupDelay_ = true;
   WeeklyScheduleCacheRuntime cacheRuntime_;
 };
 

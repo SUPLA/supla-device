@@ -512,12 +512,14 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
     switch (relayValue->RelayMode) {
       case SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE: {
         if (weeklyScheduleHelper->switchToWeeklySchedule()) {
+          Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
           return 1;
         }
         return 0;
       }
       case SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL: {
         weeklyScheduleHelper->switchToManualMode();
+        Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
         return 1;
       }
       default: {
@@ -766,6 +768,9 @@ void Relay::onSaveState() {
   uint32_t durationForState = storedTurnOnDurationMs;
   RelayFlags relayFlags;
   relayFlags.flags.overcurrent = channel.isRelayOvercurrentCutOff();
+  relayFlags.flags.weeklySchedule =
+      weeklyScheduleHelper != nullptr && isWeeklyScheduleSupported() &&
+      weeklyScheduleHelper->isWeeklyScheduleEnabled();
   if (isStaircaseFunction()) {
     relayFlags.flags.staircaseFunction = 1;
   } else if (isImpulseFunction()) {
@@ -843,6 +848,10 @@ void Relay::onLoadState() {
   }
   if (relayFlags.flags.overcurrent) {
     channel.setRelayOvercurrentCutOff(true);
+  }
+  if (weeklyScheduleHelper != nullptr) {
+    weeklyScheduleHelper->restoreWeeklyScheduleMode(
+        relayFlags.flags.weeklySchedule && isWeeklyScheduleSupported());
   }
 
   if (isStaircaseFunction() || isImpulseFunction()) {

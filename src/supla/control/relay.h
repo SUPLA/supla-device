@@ -37,6 +37,8 @@ class RelayWeeklySchedule;
 
 class Relay : public ChannelElement, public ActionHandler {
  public:
+  friend class RelayWeeklySchedule;
+
   union RelayFlags {
     struct {
       uint8_t relayOn : 1;

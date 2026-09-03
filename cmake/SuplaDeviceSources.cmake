@@ -175,6 +175,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay_roller_shutter_pair.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay_hvac_aggregator.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/weekly_schedule_cache_runtime.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/control/weekly_schedule_provider.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/hvac_weekly_schedule.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/hvac_weekly_schedule_policy.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/weekly_schedule_buffer.cpp

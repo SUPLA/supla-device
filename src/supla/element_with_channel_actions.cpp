@@ -15,6 +15,8 @@
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 
+#include "control/weekly_schedule_provider.h"
+
 namespace Supla {
 class ActionHandler;
 namespace Protocol {
@@ -65,6 +67,50 @@ const char *configTypeToString(int configType) {
 
 Supla::ElementWithChannelActions::ElementWithChannelActions(ElementMode mode)
     : Element(mode) {
+}
+
+Supla::ElementWithChannelActions::~ElementWithChannelActions() {
+  delete weeklyScheduleProvider_;
+  weeklyScheduleProvider_ = nullptr;
+}
+
+bool Supla::ElementWithChannelActions::setWeeklyScheduleProvider(
+    Supla::Control::WeeklyScheduleProvider *provider) {
+  if (weeklyScheduleProviderLifecycleStarted_ ||
+      provider == weeklyScheduleProvider_) {
+    return provider == weeklyScheduleProvider_;
+  }
+  delete weeklyScheduleProvider_;
+  weeklyScheduleProvider_ = provider;
+  onWeeklyScheduleProviderChanged(provider);
+  usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  usedConfigTypes.clear(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
+  if (provider) {
+    usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
+                        provider->supportsConfigType(
+                            SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE));
+    usedConfigTypes.set(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE,
+                        provider->supportsConfigType(
+                            SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE));
+  }
+  return true;
+}
+
+void Supla::ElementWithChannelActions::loadWeeklyScheduleProviderConfig() {
+  weeklyScheduleProviderLifecycleStarted_ = true;
+  if (weeklyScheduleProvider_) {
+    weeklyScheduleProvider_->onLoadConfig();
+  }
+}
+
+Supla::Control::WeeklyScheduleProvider *
+Supla::ElementWithChannelActions::getWeeklyScheduleProvider() const {
+  return weeklyScheduleProvider_;
+}
+
+void Supla::ElementWithChannelActions::onWeeklyScheduleProviderChanged(
+    Supla::Control::WeeklyScheduleProvider *provider) {
+  (void)(provider);
 }
 
 void ConfigTypesBitmap::clear(int configType) {
@@ -555,7 +601,35 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     }
   }
 
-  auto applyResult = applyChannelConfig(result, local);
+  return finishChannelConfig(result, applyChannelConfig(result, local));
+}
+
+uint8_t Supla::ElementWithChannelActions::handleWeeklySchedule(
+    TSD_ChannelConfig *result, bool altSchedule, bool local) {
+  if (result == nullptr) {
+    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+  }
+  uint8_t expectedType = altSchedule
+                             ? SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE
+                             : SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  if (result->ConfigType != expectedType ||
+      !usedConfigTypes.isSet(expectedType) ||
+      weeklyScheduleProvider_ == nullptr ||
+      !weeklyScheduleProvider_->supportsConfigType(expectedType)) {
+    return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
+  }
+  if (isLocalChannelConfigChangePending(expectedType) && !local) {
+    SUPLA_LOG_INFO(
+        "Channel[%d] Ignoring weekly config (local config changed offline)",
+        getChannelNumber());
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
+  return finishChannelConfig(
+      result, weeklyScheduleProvider_->applyChannelConfig(result, local));
+}
+
+uint8_t Supla::ElementWithChannelActions::finishChannelConfig(
+    TSD_ChannelConfig *result, ApplyConfigResult applyResult) {
   switch (applyResult) {
     case ApplyConfigResult::Success: {
       SUPLA_LOG_INFO("Channel[%d] ConfigType %d applied",
@@ -665,6 +739,9 @@ void Supla::ElementWithChannelActions::purgeConfig() {
     cfg->eraseKey(key);
     generateKey(key, Supla::ConfigTag::ChannelConfigChangedTypesTag);
     cfg->eraseKey(key);
+  }
+  if (weeklyScheduleProvider_) {
+    weeklyScheduleProvider_->purgeConfig();
   }
 }
 

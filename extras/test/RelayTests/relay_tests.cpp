@@ -18,6 +18,7 @@
 #include <supla/control/light_relay.h>
 #include <supla/control/relay.h>
 #include <supla/control/weekly_schedule_buffer.h>
+#include <supla/control/weekly_schedule_provider.h>
 #include <supla/events.h>
 #include <supla/device/register_device.h>
 #include <supla/io.h>
@@ -343,6 +344,69 @@ TEST_F(RelayFixture, weeklyScheduleAvailabilityFollowsRelayFunction) {
   EXPECT_FALSE(relay.getChannel()->isWeeklyScheduleAvailable());
 }
 
+TEST_F(RelayFixture, weeklyScheduleConfigIsRejectedForUnsupportedFunction) {
+  Supla::Control::Relay relay(1);
+  ASSERT_TRUE(
+      relay.setAndSaveFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE));
+
+  TSD_ChannelConfig config = {};
+  config.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEGATE;
+  config.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+
+  EXPECT_EQ(relay.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
+}
+
+TEST_F(RelayFixture,
+       externalWeeklyScheduleReportsAutomaticWithoutNativeConfig) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  Supla::Control::Relay relay(1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  ASSERT_TRUE(relay.setWeeklyScheduleProvider(
+      new Supla::Control::ExternalManagedWeeklyScheduleProvider()));
+
+  relay.onLoadConfig(nullptr);
+
+  EXPECT_FALSE(relay.getChannel()->isWeeklyScheduleAvailable());
+  EXPECT_NE(relay.getChannel()->getFlags() &
+                SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED,
+            0);
+
+  TSD_ChannelConfig weeklyConfig = {};
+  weeklyConfig.Func = SUPLA_CHANNELFNC_LIGHTSWITCH;
+  weeklyConfig.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  EXPECT_EQ(relay.handleWeeklySchedule(&weeklyConfig, false, false),
+            SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
+
+  enableWeeklySchedule(&relay);
+  const auto *value = relayValue(relay);
+  ASSERT_NE(value, nullptr);
+  EXPECT_TRUE(value->flags & SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(value->RelayMode, SUPLA_RELAY_MODE_AUTOMATIC);
+
+  TSD_SuplaChannelNewValue manualValue = {};
+  reinterpret_cast<TRelayChannel_Value *>(manualValue.value)->RelayMode =
+      SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL;
+  EXPECT_EQ(relay.handleNewValueFromServer(&manualValue), 1);
+  EXPECT_FALSE(relayValue(relay)->flags &
+               SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_NOT_SET);
+}
+
+TEST_F(RelayFixture, weeklyScheduleProviderCannotChangeAfterConfigLoad) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  ON_CALL(cfg, getBlobSize(_)).WillByDefault(Return(-1));
+  Supla::Control::Relay relay(1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.onLoadConfig(nullptr);
+
+  auto *external =
+      new Supla::Control::ExternalManagedWeeklyScheduleProvider();
+  EXPECT_FALSE(relay.setWeeklyScheduleProvider(external));
+  delete external;
+  EXPECT_TRUE(relay.getChannel()->isWeeklyScheduleAvailable());
+}
+
 TEST_F(RelayFixture, missingWeeklyScheduleKeepsLegacyRelayBehavior) {
   ::testing::NiceMock<ConfigMock> cfg;
   EXPECT_CALL(cfg, getBlobSize(StrEq("0_r_weekly")))
@@ -365,7 +429,7 @@ TEST_F(RelayFixture, missingWeeklyScheduleKeepsLegacyRelayBehavior) {
   TSD_ChannelConfig emptyConfig = {};
   emptyConfig.Func = SUPLA_CHANNELFNC_LIGHTSWITCH;
   emptyConfig.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
-  EXPECT_EQ(relay.handleChannelConfig(&emptyConfig, false),
+  EXPECT_EQ(relay.handleWeeklySchedule(&emptyConfig, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
   TChannelConfig_WeeklySchedule schedule;
@@ -407,7 +471,8 @@ TEST_F(RelayFixture, noOpWeeklyScheduleClearsConfiguredSchedule) {
   noOp.Func = SUPLA_CHANNELFNC_LIGHTSWITCH;
   noOp.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
   noOp.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
-  EXPECT_EQ(relay.handleChannelConfig(&noOp, true), SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(relay.handleWeeklySchedule(&noOp, false, true),
+            SUPLA_CONFIG_RESULT_TRUE);
 
   value = relayValue(relay);
   ASSERT_NE(value, nullptr);

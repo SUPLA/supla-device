@@ -14,6 +14,8 @@
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 
+#include "weekly_schedule_provider.h"
+
 namespace Supla {
 namespace Control {
 
@@ -50,6 +52,17 @@ void ManagedRelay::loadEngineConfigOnly() {
 
 void ManagedRelay::purgeEngineConfigOnly() {
   Relay::purgeRelayConfigOnly();
+  if (getWeeklyScheduleProvider()) {
+    getWeeklyScheduleProvider()->purgeConfig();
+  }
+}
+
+void ManagedRelay::refreshWeeklyScheduleCapabilities() {
+  updateWeeklyScheduleCapabilities();
+}
+
+bool ManagedRelay::isWeeklyScheduleConfigUsed() const {
+  return usedConfigTypes.isSet(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
 }
 
 void ManagedRelay::setupButtonActions(Button *button) {
@@ -298,6 +311,8 @@ RelayRollerShutterPair::RelayRollerShutterPair(
   secondaryChannel.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
 
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  relay0.refreshWeeklyScheduleCapabilities();
+  relay1.refreshWeeklyScheduleCapabilities();
   applyRuntimeMode();
 }
 
@@ -498,6 +513,8 @@ bool RelayRollerShutterPair::setDefaultFunctions(
 
   primaryChannel.setDefaultFunction(primaryFunction);
   secondaryChannel.setDefaultFunction(secondaryFunction);
+  relay0.refreshWeeklyScheduleCapabilities();
+  relay1.refreshWeeklyScheduleCapabilities();
 
   if (buttonActionsInitialized && functionChanged) {
     if (isRollerFunction(primaryFunction)) {
@@ -575,6 +592,14 @@ void RelayRollerShutterPair::applyRuntimeMode() {
     relay1.setRuntimeActive(true);
     secondaryChannel.setStateOnline();
   }
+  syncPrimaryWeeklyScheduleConfigType();
+}
+
+void RelayRollerShutterPair::syncPrimaryWeeklyScheduleConfigType() {
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
+                      !isPrimaryRollerFunction() &&
+                          relay0.isWeeklyScheduleConfigUsed());
+  usedConfigTypes.clear(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
 }
 
 void RelayRollerShutterPair::switchToRelayMode() {
@@ -779,6 +804,34 @@ uint8_t RelayRollerShutterPair::handleChannelConfig(TSD_ChannelConfig *config,
   return SUPLA_CONFIG_RESULT_FALSE;
 }
 
+uint8_t RelayRollerShutterPair::handleWeeklySchedule(
+    TSD_ChannelConfig *config, bool altSchedule, bool local) {
+  if (config == nullptr) {
+    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+  }
+  if (altSchedule || isPrimaryRollerFunction()) {
+    return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
+  }
+  if (isPrimaryChannel(config->ChannelNumber)) {
+    syncPrimaryWeeklyScheduleConfigType();
+    if (config->ConfigType != SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE ||
+        !usedConfigTypes.isSet(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE)) {
+      return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
+    }
+    if (isLocalChannelConfigChangePending(
+            SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) &&
+        !local) {
+      return SUPLA_CONFIG_RESULT_TRUE;
+    }
+    return finishChannelConfig(config,
+                               relay0.applyChannelConfig(config, local));
+  }
+  if (isSecondaryChannel(config->ChannelNumber)) {
+    return relay1.handleWeeklySchedule(config, false, local);
+  }
+  return SUPLA_CONFIG_RESULT_FALSE;
+}
+
 void RelayRollerShutterPair::handleSetChannelConfigResult(
     TSDS_SetChannelConfigResult *result) {
   if (result == nullptr) {
@@ -924,6 +977,7 @@ void RelayRollerShutterPair::onTimer() {
 
 void RelayRollerShutterPair::onFunctionChange(uint32_t currentFunction,
                                               uint32_t newFunction) {
+  relay0.refreshWeeklyScheduleCapabilities();
   if (loadingConfig) {
     applyRuntimeMode();
     return;

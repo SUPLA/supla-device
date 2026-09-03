@@ -11,6 +11,7 @@
 #include <supla/control/hvac_base.h>
 #include <supla/control/weekly_schedule_buffer.h>
 #include <supla/control/weekly_schedule_cache_runtime.h>
+#include <supla/control/weekly_schedule_provider.h>
 #include <supla/control/weekly_schedule_storage.h>
 #include <supla/sensor/therm_hygro_meter.h>
 #include <supla/sensor/thermometer.h>
@@ -284,6 +285,27 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
   EXPECT_EQ(hvac->getWeeklyScheduleProgramId(
                 nullptr, hvac->calculateIndex(Supla::DayOfWeek_Monday, 0, 0)),
             3);
+}
+
+TEST_F(HvacWeeklyScheduleTestsF,
+       ExternalWeeklyScheduleDoesNotExposeNativeConfigOrApi) {
+  ASSERT_TRUE(hvac->setWeeklyScheduleProvider(
+      new Supla::Control::ExternalManagedWeeklyScheduleProvider()));
+
+  EXPECT_FALSE(hvac->getChannel()->isWeeklyScheduleAvailable());
+  EXPECT_FALSE(hvac->setProgram(1, SUPLA_HVAC_MODE_HEAT, 2100, 0));
+  EXPECT_FALSE(hvac->setWeeklySchedule(0, 1));
+
+  TChannelConfig_WeeklySchedule schedule = {};
+  int size = -1;
+  hvac->fillChannelConfig(
+      &schedule, &size, SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  EXPECT_EQ(size, 0);
+
+  EXPECT_TRUE(hvac->turnOnWeeklySchedlue());
+  EXPECT_TRUE(hvac->isWeeklyScheduleEnabled());
+  hvac->setWeeklyScheduleEnabled(false);
+  EXPECT_FALSE(hvac->isWeeklyScheduleEnabled());
 }
 
 TEST_F(HvacWeeklyScheduleTestsF,

@@ -234,6 +234,8 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isWeeklyScheduleSupported() const;
 
  protected:
+  void onWeeklyScheduleProviderChanged(
+      Supla::Control::WeeklyScheduleProvider *provider) override;
   Relay(Supla::Io::IoPin outputPin,
         _supla_int_t functions,
         Supla::Channel &externalChannel,
@@ -251,6 +253,7 @@ class Relay : public ChannelElement, public ActionHandler {
 
   void saveConfig() const;
   void loadRelayConfigOnly();
+  void updateWeeklyScheduleCapabilities();
   void purgeRelayConfigOnly();
   void updateTimerValue();
   void emitCountdownTimerActionIfNeeded();

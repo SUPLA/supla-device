@@ -74,24 +74,7 @@ int WeeklyScheduleBuffer::getProgramId(
 
 bool WeeklyScheduleBuffer::setWeeklySchedule(
     TChannelConfig_WeeklySchedule *schedule, int index, int programId) const {
-  if (schedule == nullptr) {
-    return false;
-  }
-  if (index < 0 || index >= SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) {
-    return false;
-  }
-  if (programId < 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
-    return false;
-  }
-
-  if (index % 2) {
-    schedule->Quarters[index / 2] =
-        (schedule->Quarters[index / 2] & 0x0F) | (programId << 4);
-  } else {
-    schedule->Quarters[index / 2] =
-        (schedule->Quarters[index / 2] & 0xF0) | programId;
-  }
-  return true;
+  return setWeeklyScheduleProgramId(schedule, index, programId);
 }
 
 bool WeeklyScheduleBuffer::setWeeklySchedule(

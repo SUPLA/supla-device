@@ -25,19 +25,11 @@ namespace Supla {
 namespace Control {
 
 class HvacBase;
-class HvacWeeklySchedule;
-
 class HvacWeeklySchedulePolicy {
  public:
   bool isProgramValid(const HvacBase &owner,
                       const TWeeklyScheduleProgram &program,
                       bool isAltWeeklySchedule) const;
-
-  bool turnOnWeeklySchedule(HvacWeeklySchedule &weeklySchedule) const;
-  bool processWeeklySchedule(HvacWeeklySchedule &weeklySchedule) const;
-  void initDefaultWeeklySchedule(HvacWeeklySchedule &weeklySchedule,
-                                 bool isAltWeeklySchedule,
-                                 bool requestResend) const;
 };
 
 }  // namespace Control

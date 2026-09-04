@@ -48,6 +48,23 @@ class CountingActionHandler : public Supla::ActionHandler {
   int lastAction = -1;
 };
 
+class RelayWithCustomWeeklySchedule : public Supla::Control::Relay {
+ public:
+  using Supla::Control::Relay::Relay;
+
+  bool hasWeeklyScheduleController() const {
+    return getWeeklyScheduleController() != nullptr;
+  }
+
+ protected:
+  void fillDefaultWeeklySchedule(
+      TChannelConfig_WeeklySchedule *schedule) override {
+    schedule->Program[0].Mode = SUPLA_RELAY_MODE_FORCED_OFF;
+    Supla::Control::WeeklyScheduleBuffer buffer;
+    buffer.setWeeklySchedule(schedule, 0, 1);
+  }
+};
+
 }  // namespace
 
 class RelayFixture : public testing::Test {
@@ -344,6 +361,18 @@ TEST_F(RelayFixture, weeklyScheduleAvailabilityFollowsRelayFunction) {
   EXPECT_FALSE(relay.getChannel()->isWeeklyScheduleAvailable());
 }
 
+TEST_F(RelayFixture, nativeWeeklyScheduleControllerIsAllocatedLazily) {
+  RelayWithCustomWeeklySchedule relay(1);
+
+  EXPECT_FALSE(relay.hasWeeklyScheduleController());
+
+  EXPECT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE));
+  EXPECT_FALSE(relay.hasWeeklyScheduleController());
+
+  EXPECT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_LIGHTSWITCH));
+  EXPECT_TRUE(relay.hasWeeklyScheduleController());
+}
+
 TEST_F(RelayFixture, weeklyScheduleConfigIsRejectedForUnsupportedFunction) {
   Supla::Control::Relay relay(1);
   ASSERT_TRUE(
@@ -447,7 +476,23 @@ TEST_F(RelayFixture, missingWeeklyScheduleKeepsLegacyRelayBehavior) {
   EXPECT_EQ(value->RelayMode, SUPLA_RELAY_MODE_NOT_SET);
 }
 
-TEST_F(RelayFixture, noOpWeeklyScheduleClearsConfiguredSchedule) {
+TEST_F(RelayFixture, relayClassCanDefineItsDefaultWeeklySchedule) {
+  RelayWithCustomWeeklySchedule relay(1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+
+  TChannelConfig_WeeklySchedule schedule;
+  memset(&schedule, 0xA5, sizeof(schedule));
+  int size = -1;
+  relay.fillChannelConfig(
+      &schedule, &size, SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+
+  ASSERT_EQ(size, sizeof(TChannelConfig_WeeklySchedule));
+  EXPECT_EQ(schedule.Program[0].Mode, SUPLA_RELAY_MODE_FORCED_OFF);
+  EXPECT_EQ(Supla::Control::getWeeklyScheduleProgramId(&schedule, 0), 1);
+  EXPECT_EQ(Supla::Control::getWeeklyScheduleProgramId(&schedule, 1), 0);
+}
+
+TEST_F(RelayFixture, noOpWeeklyScheduleIsStoredWithoutEnablingSchedule) {
   ::testing::NiceMock<ConfigMock> cfg;
   ON_CALL(cfg, getBlobSize(_)).WillByDefault(Return(-1));
 
@@ -463,8 +508,16 @@ TEST_F(RelayFixture, noOpWeeklyScheduleClearsConfiguredSchedule) {
   ASSERT_NE(value, nullptr);
   EXPECT_FALSE(value->flags & SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
 
-  EXPECT_CALL(cfg, eraseKey(StrEq("0_r_weekly"))).WillOnce(Return(true));
-  EXPECT_CALL(cfg, eraseKey(StrEq("0_weekly_chng"))).WillOnce(Return(true));
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_r_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .WillOnce([](const char *, const char *data, size_t size) {
+        const TChannelConfig_WeeklySchedule expected = {};
+        EXPECT_EQ(size, sizeof(expected));
+        EXPECT_EQ(memcmp(data, &expected, sizeof(expected)), 0);
+        return true;
+      });
   EXPECT_CALL(cfg, saveWithDelay(5000)).Times(1);
 
   TSD_ChannelConfig noOp = {};
@@ -482,7 +535,11 @@ TEST_F(RelayFixture, noOpWeeklyScheduleClearsConfiguredSchedule) {
   TSD_SuplaChannelNewValue newValue = {};
   reinterpret_cast<TRelayChannel_Value *>(newValue.value)->RelayMode =
       SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE;
-  EXPECT_EQ(relay.handleNewValueFromServer(&newValue), 0);
+  EXPECT_EQ(relay.handleNewValueFromServer(&newValue), 1);
+  value = relayValue(relay);
+  ASSERT_NE(value, nullptr);
+  EXPECT_TRUE(value->flags & SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(value->RelayMode, SUPLA_RELAY_MODE_NOT_SET);
 }
 
 TEST_F(RelayFixture, storedWeeklyScheduleLoadsOnlyAfterEnableCommand) {

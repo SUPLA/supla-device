@@ -71,14 +71,76 @@ class NativeWeeklyScheduleStorage {
              const Supla::Element &owner,
              const char *storageTag);
 
-  bool isPersisted(bool alt) const;
-  void reset();
+  bool isConfigured() const {
+    return configured_;
+  }
+  bool isPersisted(bool alt) const {
+    return schedulePersisted_[alt ? 1 : 0];
+  }
+  void reset(bool configured = false);
 
-  WeeklyScheduleBuffer buffer;
-  WeeklyScheduleCacheRuntime cacheRuntime;
-  bool configured = false;
+  TChannelConfig_WeeklySchedule *getSchedule(bool alt) {
+    return buffer_.get(alt);
+  }
+  const TChannelConfig_WeeklySchedule *getSchedule(bool alt) const {
+    return buffer_.get(alt);
+  }
+  TChannelConfig_WeeklySchedule *ensureSchedule(bool alt);
+  bool updateSchedule(bool alt,
+                      const TChannelConfig_WeeklySchedule &schedule);
+  void clearSchedule(bool alt) {
+    buffer_.clear(alt);
+  }
+  void clearSchedules() {
+    buffer_.clearAll();
+  }
+
+  int calculateIndex(enum DayOfWeek dayOfWeek, int hour, int quarter) const {
+    return buffer_.calculateIndex(dayOfWeek, hour, quarter);
+  }
+  int getProgramId(const TChannelConfig_WeeklySchedule *schedule,
+                   int index) const {
+    return buffer_.getProgramId(schedule, index);
+  }
+  bool setWeeklySchedule(TChannelConfig_WeeklySchedule *schedule,
+                         int index,
+                         int programId) const {
+    return buffer_.setWeeklySchedule(schedule, index, programId);
+  }
+  TWeeklyScheduleProgram getProgramById(
+      const TChannelConfig_WeeklySchedule *schedule, int programId) const {
+    return buffer_.getProgramById(schedule, programId);
+  }
+  TWeeklyScheduleProgram getProgramAt(
+      const TChannelConfig_WeeklySchedule *schedule, int quarterIndex) const {
+    return buffer_.getProgramAt(schedule, quarterIndex);
+  }
+  int getCurrentQuarter() const {
+    return buffer_.getCurrentQuarter();
+  }
+  int getCurrentProgramId(
+      const TChannelConfig_WeeklySchedule *schedule) const {
+    return buffer_.getCurrentProgramId(schedule);
+  }
+  TWeeklyScheduleProgram getCurrentProgram(
+      const TChannelConfig_WeeklySchedule *schedule) const {
+    return buffer_.getCurrentProgram(schedule);
+  }
+
+  void touchCache(bool active, uint32_t nowMs) {
+    cacheRuntime_.touch(active, nowMs);
+  }
+  bool processCache(bool active, uint32_t nowMs) {
+    return cacheRuntime_.process(active, nowMs);
+  }
+  void resetCache() {
+    cacheRuntime_.reset();
+  }
 
  private:
+  WeeklyScheduleBuffer buffer_;
+  WeeklyScheduleCacheRuntime cacheRuntime_;
+  bool configured_ = false;
   bool schedulePersisted_[2] = {false, false};
 };
 

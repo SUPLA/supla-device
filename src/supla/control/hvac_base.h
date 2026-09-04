@@ -488,6 +488,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // to HVAC configuration. Return true when correction was done and it will
   // be shared with server.
   virtual bool applyAdditionalValidation(TChannelConfig_HVAC *hvacConfig);
+  virtual void fillDefaultWeeklySchedule(
+      TChannelConfig_WeeklySchedule *schedule, bool isAltWeeklySchedule);
   void clearLastOutputValue();
 
  private:
@@ -505,6 +507,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool checkAuxProtection(_supla_int16_t t);
   bool isAuxProtectionEnabled() const;
   bool processWeeklySchedule();
+  bool applyWeeklyScheduleProgram(const TWeeklyScheduleProgram &program,
+                                  int currentProgramId);
   void setSetpointTemperaturesForCurrentMode(int16_t tHeat, int16_t tCool);
   bool checkThermometersStatusForCurrentMode(_supla_int16_t t1,
                                              _supla_int16_t t2) const;

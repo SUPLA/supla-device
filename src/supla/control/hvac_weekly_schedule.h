@@ -89,8 +89,6 @@ class HvacWeeklySchedule : public WeeklyScheduleController,
   void initDefaultWeeklySchedule(bool requestResend = true);
   void processCacheRelease();
 
-  friend class HvacWeeklySchedulePolicy;
-
  private:
   bool ensureScheduleLoaded(bool isAltWeeklySchedule);
   TChannelConfig_WeeklySchedule *getSchedule(bool isAltWeeklySchedule,

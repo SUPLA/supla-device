@@ -58,7 +58,7 @@ class RelayWeeklySchedule : public WeeklyScheduleController,
 
   bool isWeeklyScheduleEnabled() const;
   bool isActive() const override;
-  bool isManualActionAllowed(bool turnOn) const;
+  bool isManualActionAllowed(bool turnOn) const override;
   void processCacheRelease();
 
  private:
@@ -71,8 +71,6 @@ class RelayWeeklySchedule : public WeeklyScheduleController,
       const;
   TChannelConfig_WeeklySchedule *getSchedule(bool loadIfMissing = true);
   bool isWeeklyScheduleValid(
-      const TChannelConfig_WeeklySchedule *newSchedule) const;
-  bool isNoOpSchedule(
       const TChannelConfig_WeeklySchedule *newSchedule) const;
   void clearSchedule(bool eraseStorage = true);
   bool isProgramValid(const TWeeklyScheduleProgram &program) const;
@@ -92,8 +90,6 @@ class RelayWeeklySchedule : public WeeklyScheduleController,
   Relay *owner_ = nullptr;
   NativeWeeklyScheduleStorage nativeStorage_;
   bool weeklyScheduleEnabled_ = false;
-  int lastCurrentProgramId_ = -1;
-  bool startupDelay_ = true;
 };
 
 }  // namespace Control

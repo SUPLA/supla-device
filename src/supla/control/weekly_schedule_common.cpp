@@ -48,5 +48,24 @@ int getWeeklyScheduleProgramId(const TChannelConfig_WeeklySchedule *schedule,
   return (schedule->Quarters[index / 2] >> (index % 2 * 4)) & 0xF;
 }
 
+bool setWeeklyScheduleProgramId(TChannelConfig_WeeklySchedule *schedule,
+                                int index,
+                                int programId) {
+  if (schedule == nullptr || index < 0 ||
+      index >= SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE || programId < 0 ||
+      programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
+    return false;
+  }
+
+  if (index % 2) {
+    schedule->Quarters[index / 2] =
+        (schedule->Quarters[index / 2] & 0x0F) | (programId << 4);
+  } else {
+    schedule->Quarters[index / 2] =
+        (schedule->Quarters[index / 2] & 0xF0) | programId;
+  }
+  return true;
+}
+
 }  // namespace Control
 }  // namespace Supla

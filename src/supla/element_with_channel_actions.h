@@ -156,6 +156,8 @@ class ElementWithChannelActions : public Element, public LocalAction {
   void clearLocalConfigChanges(int configType, int secondConfigType = -1);
   uint8_t getUsedLocalConfigTypes() const;
   void loadWeeklyScheduleConfig();
+  bool isWeeklyScheduleControllerAssigned() const;
+  bool isWeeklyScheduleLifecycleStarted() const;
   Supla::Control::WeeklyScheduleController *getWeeklyScheduleController() const;
   Supla::Control::WeeklyScheduleConfigHandler *
   getWeeklyScheduleConfigHandler() const;
@@ -180,10 +182,17 @@ class ElementWithChannelActions : public Element, public LocalAction {
   ConfigTypesBitmap receivedConfigTypes;
 
  private:
+  enum class WeeklyScheduleLifecycleState : uint8_t {
+    Unassigned,
+    Assigned,
+    Started,
+  };
+
   uint8_t finishChannelConfig(
       TSD_ChannelConfig *result, Supla::ApplyConfigResult applyResult);
+  WeeklyScheduleLifecycleState weeklyScheduleLifecycleState_ =
+      WeeklyScheduleLifecycleState::Unassigned;
   Supla::Control::WeeklyScheduleController *weeklyScheduleController_ = nullptr;
-  bool weeklyScheduleLifecycleStarted_ = false;
 };
 
 };  // namespace Supla

@@ -250,15 +250,19 @@ class Relay : public ChannelElement, public ActionHandler {
   void setOvercurrentThreshold(uint32_t value, bool local);
 
   virtual void setNewChannelValue(bool value);
+  virtual void fillDefaultWeeklySchedule(
+      TChannelConfig_WeeklySchedule *schedule);
 
   void saveConfig() const;
   void loadRelayConfigOnly();
+  bool ensureNativeWeeklyScheduleController();
   void updateWeeklyScheduleCapabilities();
   void purgeRelayConfigOnly();
   void updateTimerValue();
   void emitCountdownTimerActionIfNeeded();
   void updateRelayHvacAggregator();
   bool isManualActionAllowedByWeeklySchedule(bool turnOn) const;
+  void applyWeeklyScheduleProgram(uint8_t programMode, bool programChanged);
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
@@ -289,7 +293,6 @@ class Relay : public ChannelElement, public ActionHandler {
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
   Supla::Io::IoPin outputPin;
-  RelayWeeklySchedule *weeklyScheduleHelper = nullptr;
 
   static uint16_t relayStorageSaveDelay;
 };

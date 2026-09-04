@@ -107,7 +107,7 @@ bool NativeWeeklyScheduleStorage::load(
     const char *storageTag,
     void *validationContext,
     WeeklyScheduleStorage::ValidateFn validate) {
-  auto *schedule = buffer.get(alt);
+  auto *schedule = buffer_.get(alt);
   if (!WeeklyScheduleStorage::load(owner,
                                    deviceLabel,
                                    scheduleLabel,
@@ -116,12 +116,13 @@ bool NativeWeeklyScheduleStorage::load(
                                    schedule,
                                    validationContext,
                                    validate)) {
-    buffer.set(alt, schedule);
-    buffer.clear(alt);
+    buffer_.set(alt, schedule);
+    buffer_.clear(alt);
     schedulePersisted_[alt ? 1 : 0] = false;
     return false;
   }
-  buffer.set(alt, schedule);
+  buffer_.set(alt, schedule);
+  configured_ = true;
   schedulePersisted_[alt ? 1 : 0] = true;
   return true;
 }
@@ -133,7 +134,7 @@ bool NativeWeeklyScheduleStorage::save(
     const char *scheduleLabel,
     const char *storageTag) {
   bool persisted = WeeklyScheduleStorage::save(
-      owner, deviceLabel, scheduleLabel, storageTag, buffer.get(alt));
+      owner, deviceLabel, scheduleLabel, storageTag, buffer_.get(alt));
   schedulePersisted_[alt ? 1 : 0] = persisted;
   return persisted;
 }
@@ -146,20 +147,43 @@ void NativeWeeklyScheduleStorage::erase(
     owner.generateKey(key, storageTag);
     cfg->eraseKey(key);
   }
-  buffer.clear(alt);
+  buffer_.clear(alt);
   schedulePersisted_[alt ? 1 : 0] = false;
 }
 
-bool NativeWeeklyScheduleStorage::isPersisted(bool alt) const {
-  return schedulePersisted_[alt ? 1 : 0];
-}
-
-void NativeWeeklyScheduleStorage::reset() {
-  buffer.clearAll();
-  configured = false;
+void NativeWeeklyScheduleStorage::reset(bool configured) {
+  buffer_.clearAll();
+  configured_ = configured;
   schedulePersisted_[0] = false;
   schedulePersisted_[1] = false;
-  cacheRuntime.reset();
+  cacheRuntime_.reset();
+}
+
+TChannelConfig_WeeklySchedule *NativeWeeklyScheduleStorage::ensureSchedule(
+    bool alt) {
+  auto *schedule = buffer_.get(alt);
+  if (schedule == nullptr) {
+    schedule = new TChannelConfig_WeeklySchedule();
+    memset(schedule, 0, sizeof(TChannelConfig_WeeklySchedule));
+    buffer_.set(alt, schedule);
+  }
+  configured_ = true;
+  return schedule;
+}
+
+bool NativeWeeklyScheduleStorage::updateSchedule(
+    bool alt, const TChannelConfig_WeeklySchedule &schedule) {
+  auto *currentSchedule = buffer_.get(alt);
+  bool changed = currentSchedule == nullptr || !configured_ ||
+                 memcmp(currentSchedule,
+                        &schedule,
+                        sizeof(TChannelConfig_WeeklySchedule)) != 0;
+  if (changed) {
+    currentSchedule = ensureSchedule(alt);
+    memcpy(currentSchedule, &schedule, sizeof(TChannelConfig_WeeklySchedule));
+  }
+  configured_ = true;
+  return changed;
 }
 
 }  // namespace Control

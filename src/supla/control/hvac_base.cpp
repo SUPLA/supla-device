@@ -24,6 +24,7 @@
 #include "hvac_weekly_schedule.h"
 #include "output_interface.h"
 #include "relay_hvac_aggregator.h"
+#include "weekly_schedule_common.h"
 
 #define SUPLA_HVAC_DEFAULT_TEMP_HEAT 2100  // 21.00 C
 #define SUPLA_HVAC_DEFAULT_TEMP_COOL 2500  // 25.00 C
@@ -3401,6 +3402,52 @@ bool HvacBase::processWeeklySchedule() {
   return controller && controller->processWeeklySchedule();
 }
 
+bool HvacBase::applyWeeklyScheduleProgram(
+    const TWeeklyScheduleProgram &program, int currentProgramId) {
+  if (program.Mode == SUPLA_HVAC_MODE_NOT_SET) {
+    SUPLA_LOG_INFO("HVAC[%d]: Invalid program mode. Disabling schedule.",
+                   getChannelNumber());
+    setTargetMode(SUPLA_HVAC_MODE_OFF, false);
+    return false;
+  }
+
+  if (isWeelkySchedulManualOverrideMode()) {
+    if (currentProgramId != getWeeklyScheduleLastProgramManualOverride()) {
+      SUPLA_LOG_DEBUG("HVAC[%d]: leaving manual override mode",
+                      getChannelNumber());
+      setWeeklyScheduleLastProgramManualOverride(-1);
+    } else {
+      if (getMode() == SUPLA_HVAC_MODE_OFF) {
+        int mode = getWeeklyScheduleLastManualMode();
+        if (mode == 0) {
+          mode = getDefaultManualMode();
+        }
+        SUPLA_LOG_DEBUG("HVAC[%d]: Manual override mode %d",
+                        getChannelNumber(),
+                        mode);
+        setTargetMode(mode, true);
+      }
+      if (!isWeeklyScheduleTemporalOverride()) {
+        SUPLA_LOG_DEBUG("HVAC[%d]: Manual override mode", getChannelNumber());
+      }
+      setWeeklyScheduleTemporalOverride(true);
+      return true;
+    }
+  }
+  setWeeklyScheduleTemporalOverride(false);
+  setTargetMode(program.Mode, true);
+  int16_t tHeat = program.SetpointTemperatureHeat;
+  int16_t tCool = program.SetpointTemperatureCool;
+  if (program.Mode == SUPLA_HVAC_MODE_HEAT) {
+    tCool = INT16_MIN;
+  }
+  if (program.Mode == SUPLA_HVAC_MODE_COOL) {
+    tHeat = INT16_MIN;
+  }
+  applyWeeklyScheduleSetpoints(tHeat, tCool);
+  return true;
+}
+
 void HvacBase::setSetpointTemperaturesForCurrentMode(int16_t tHeat,
                                                      int16_t tCool) {
   if (!channel.isHvacFlagWeeklySchedule()) {
@@ -4418,6 +4465,93 @@ void HvacBase::initDefaultConfig() {
 void HvacBase::initDefaultWeeklySchedule() {
   if (weeklyScheduleHelper) {
     weeklyScheduleHelper->initDefaultWeeklySchedule();
+  }
+}
+
+void HvacBase::fillDefaultWeeklySchedule(
+    TChannelConfig_WeeklySchedule *schedule, bool isAltWeeklySchedule) {
+  if (schedule == nullptr) {
+    return;
+  }
+
+  auto setProgram = [this, schedule, isAltWeeklySchedule](
+                        int id, uint8_t mode, int16_t heat, int16_t cool) {
+    TWeeklyScheduleProgram program = {};
+    program.Mode = mode;
+    program.SetpointTemperatureHeat = heat;
+    program.SetpointTemperatureCool = cool;
+    if (weeklyScheduleHelper != nullptr &&
+        weeklyScheduleHelper->isProgramValid(program, isAltWeeklySchedule)) {
+      schedule->Program[id - 1] = program;
+    }
+  };
+
+  auto channelFunction = getChannel()->getDefaultFunction();
+  if (isAltWeeklySchedule) {
+    if (channelFunction != SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
+      return;
+    }
+    setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2400);
+    setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2100);
+    setProgram(3, SUPLA_HVAC_MODE_COOL, 0, 1800);
+    setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2800);
+  } else {
+    switch (channelFunction) {
+      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
+        setProgram(1, SUPLA_HVAC_MODE_HEAT, 1900, 0);
+        setProgram(2, SUPLA_HVAC_MODE_HEAT, 2100, 0);
+        setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0);
+        setProgram(4, SUPLA_HVAC_MODE_HEAT, 1200, 0);
+        break;
+      }
+      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
+        setProgram(1, SUPLA_HVAC_MODE_HEAT_COOL, 1800, 2500);
+        setProgram(2, SUPLA_HVAC_MODE_HEAT_COOL, 2100, 2400);
+        setProgram(3, SUPLA_HVAC_MODE_HEAT, 2300, 0);
+        setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2400);
+        break;
+      }
+      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL: {
+        setProgram(1, SUPLA_HVAC_MODE_HEAT, -500, 0);
+        setProgram(2, SUPLA_HVAC_MODE_HEAT, -200, 0);
+        setProgram(3, SUPLA_HVAC_MODE_HEAT, -1000, 0);
+        setProgram(4, SUPLA_HVAC_MODE_HEAT, -1500, 0);
+        break;
+      }
+      case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
+        setProgram(1, SUPLA_HVAC_MODE_HEAT, 4000, 0);
+        setProgram(2, SUPLA_HVAC_MODE_HEAT, 5000, 0);
+        setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0);
+        setProgram(4, SUPLA_HVAC_MODE_HEAT, 6000, 0);
+        break;
+      }
+      default: {
+        SUPLA_LOG_WARNING(
+            "HVAC[%d]: no default weekly schedule defined for "
+            "function %s (%d)",
+            getChannelNumber(),
+            Supla::channelFunctionToString(channelFunction),
+            channelFunction);
+        return;
+      }
+    }
+  }
+
+  int dayProgram = isAltWeeklySchedule ? 1 : 2;
+  int nightProgram = isAltWeeklySchedule ? 0 : 1;
+  for (int dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+    for (int hour = 0; hour < 24; hour++) {
+      int program = hour >= 6 && hour < 21 ? dayProgram : nightProgram;
+      if (program > 0 &&
+          schedule->Program[program - 1].Mode == SUPLA_HVAC_MODE_NOT_SET) {
+        continue;
+      }
+      for (int quarter = 0; quarter < 4; quarter++) {
+        int index = Supla::Control::calculateWeeklyScheduleIndex(
+            static_cast<enum Supla::DayOfWeek>(dayOfWeek), hour, quarter);
+        Supla::Control::setWeeklyScheduleProgramId(schedule, index, program);
+      }
+    }
   }
 }
 

@@ -40,6 +40,9 @@ int calculateWeeklyScheduleIndex(enum DayOfWeek dayOfWeek, int hour,
 
 int getWeeklyScheduleProgramId(const TChannelConfig_WeeklySchedule *schedule,
                                int index);
+bool setWeeklyScheduleProgramId(TChannelConfig_WeeklySchedule *schedule,
+                                int index,
+                                int programId);
 
 }  // namespace Control
 }  // namespace Supla

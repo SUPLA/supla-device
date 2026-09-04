@@ -83,6 +83,27 @@ class HvacBaseForTests : public Supla::Control::HvacBase {
   bool isLocalConfigChangePendingForTesting(int configType) const {
     return isLocalChannelConfigChangePending(configType);
   }
+
+  void useCustomDefaultWeeklySchedule() {
+    customDefaultWeeklySchedule = true;
+  }
+
+ protected:
+  void fillDefaultWeeklySchedule(
+      TChannelConfig_WeeklySchedule *schedule,
+      bool isAltWeeklySchedule) override {
+    if (!customDefaultWeeklySchedule) {
+      HvacBase::fillDefaultWeeklySchedule(schedule, isAltWeeklySchedule);
+      return;
+    }
+    schedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
+    schedule->Program[0].SetpointTemperatureHeat = 2250;
+    Supla::Control::WeeklyScheduleBuffer buffer;
+    buffer.setWeeklySchedule(schedule, 0, 1);
+  }
+
+ private:
+  bool customDefaultWeeklySchedule = false;
 };
 
 class HvacWeeklyScheduleTestsF : public ::testing::Test {
@@ -416,6 +437,22 @@ TEST_F(HvacWeeklyScheduleTestsF, InitDefaultWeeklyScheduleResetsExistingData) {
 
   EXPECT_EQ(hvac->getProgramById(1).SetpointTemperatureHeat, 1900);
   EXPECT_EQ(hvac->getProgramById(1, true).SetpointTemperatureCool, 2400);
+}
+
+TEST_F(HvacWeeklyScheduleTestsF, HvacClassCanDefineItsDefaultWeeklySchedule) {
+  EXPECT_CALL(cfg, setBlob(_, _, sizeof(TChannelConfig_WeeklySchedule)))
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, saveWithDelay(5000));
+
+  hvac->getChannel()->setDefault(
+      SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
+  hvac->useCustomDefaultWeeklySchedule();
+  hvac->initDefaultWeeklySchedule();
+
+  EXPECT_EQ(hvac->getProgramById(1).Mode, SUPLA_HVAC_MODE_HEAT);
+  EXPECT_EQ(hvac->getProgramById(1).SetpointTemperatureHeat, 2250);
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(nullptr, 0), 1);
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(nullptr, 1), 0);
 }
 
 TEST_F(HvacWeeklyScheduleTestsF,

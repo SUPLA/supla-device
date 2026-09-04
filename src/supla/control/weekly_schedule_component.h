@@ -13,6 +13,12 @@ namespace Control {
 
 class WeeklyScheduleConfigHandler;
 
+enum class WeeklyScheduleClockState : uint8_t {
+  Ready,
+  Waiting,
+  TimedOut,
+};
+
 class WeeklyScheduleController {
  public:
   virtual ~WeeklyScheduleController() = default;
@@ -25,6 +31,22 @@ class WeeklyScheduleController {
   virtual void switchToManualMode() = 0;
   virtual void restoreWeeklyScheduleMode(bool enabled) = 0;
   virtual bool processWeeklySchedule() = 0;
+  virtual bool isManualActionAllowed(bool turnOn) const {
+    (void)(turnOn);
+    return true;
+  }
+  virtual bool isExternallyManaged() const {
+    return false;
+  }
+
+ protected:
+  WeeklyScheduleClockState getClockState() const;
+  WeeklyScheduleClockState getClockState(bool startupDelay) const;
+  bool updateCurrentProgramId(int programId);
+  void resetCurrentProgramId();
+
+ private:
+  int currentProgramId_ = -1;
 };
 
 class WeeklyScheduleConfigHandler {
@@ -48,6 +70,9 @@ class ExternalManagedWeeklySchedule : public WeeklyScheduleController {
   void switchToManualMode() override;
   void restoreWeeklyScheduleMode(bool enabled) override;
   bool processWeeklySchedule() override;
+  bool isExternallyManaged() const override {
+    return true;
+  }
 
  private:
   bool active_ = false;

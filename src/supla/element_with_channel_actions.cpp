@@ -76,12 +76,15 @@ Supla::ElementWithChannelActions::~ElementWithChannelActions() {
 
 bool Supla::ElementWithChannelActions::setWeeklyScheduleController(
     Supla::Control::WeeklyScheduleController *controller) {
-  if (weeklyScheduleLifecycleStarted_ ||
-      controller == weeklyScheduleController_) {
+  if (weeklyScheduleLifecycleState_ == WeeklyScheduleLifecycleState::Started ||
+      (weeklyScheduleLifecycleState_ !=
+           WeeklyScheduleLifecycleState::Unassigned &&
+       controller == weeklyScheduleController_)) {
     return controller == weeklyScheduleController_;
   }
   delete weeklyScheduleController_;
   weeklyScheduleController_ = controller;
+  weeklyScheduleLifecycleState_ = WeeklyScheduleLifecycleState::Assigned;
   onWeeklyScheduleControllerChanged(controller);
   usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   usedConfigTypes.clear(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
@@ -98,11 +101,23 @@ bool Supla::ElementWithChannelActions::setWeeklyScheduleController(
 }
 
 void Supla::ElementWithChannelActions::loadWeeklyScheduleConfig() {
-  weeklyScheduleLifecycleStarted_ = true;
+  weeklyScheduleLifecycleState_ = WeeklyScheduleLifecycleState::Started;
   auto *configHandler = getWeeklyScheduleConfigHandler();
   if (configHandler) {
     configHandler->onLoadConfig();
   }
+}
+
+bool Supla::ElementWithChannelActions::isWeeklyScheduleControllerAssigned()
+    const {
+  return weeklyScheduleLifecycleState_ !=
+         WeeklyScheduleLifecycleState::Unassigned;
+}
+
+bool Supla::ElementWithChannelActions::isWeeklyScheduleLifecycleStarted()
+    const {
+  return weeklyScheduleLifecycleState_ ==
+         WeeklyScheduleLifecycleState::Started;
 }
 
 Supla::Control::WeeklyScheduleController *

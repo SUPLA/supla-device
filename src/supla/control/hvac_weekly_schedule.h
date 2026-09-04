@@ -36,9 +36,6 @@ class HvacWeeklySchedule : public WeeklyScheduleController,
   explicit HvacWeeklySchedule(HvacBase *owner);
   ~HvacWeeklySchedule();
 
-  WeeklyScheduleConfigHandler *getConfigHandler() override {
-    return this;
-  }
   bool canActivate() const override;
   bool isConfigured() const;
   void saveWeeklySchedule(bool requestResend = false);

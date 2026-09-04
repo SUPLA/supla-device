@@ -98,11 +98,6 @@ Relay::~Relay() {
   Supla::Control::RelayHvacAggregator::Remove(getChannelNumber());
 }
 
-void Relay::onWeeklyScheduleControllerChanged(
-    Supla::Control::WeeklyScheduleController *controller) {
-  (void)(controller);
-}
-
 void Relay::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
@@ -136,7 +131,7 @@ void Relay::loadRelayConfigOnly() {
     }
   }
   updateWeeklyScheduleCapabilities();
-  if (getWeeklyScheduleController() != nullptr) {
+  if (areWeeklyScheduleComponentsAssigned()) {
     loadWeeklyScheduleConfig();
   }
   if (isStaircaseFunction() || isImpulseFunction()) {
@@ -153,12 +148,12 @@ void Relay::loadRelayConfigOnly() {
 
 bool Relay::ensureNativeWeeklyScheduleController() {
   if (!isWeeklyScheduleSupported() ||
-      isWeeklyScheduleControllerAssigned()) {
+      areWeeklyScheduleComponentsAssigned()) {
     return false;
   }
 
   auto *controller = new RelayWeeklySchedule(this);
-  if (!setWeeklyScheduleController(controller)) {
+  if (!setWeeklyScheduleController(controller, controller)) {
     delete controller;
     return false;
   }

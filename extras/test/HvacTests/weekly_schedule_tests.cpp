@@ -172,6 +172,45 @@ class WeeklyScheduleControllerForTests
   }
 };
 
+class WeeklyScheduleConfigHandlerForTests
+    : public Supla::Control::WeeklyScheduleConfigHandler {
+ public:
+  void onLoadConfig() override {
+    loadCount++;
+  }
+  bool supportsConfigType(uint8_t configType) const override {
+    return configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  }
+  Supla::ApplyConfigResult applyChannelConfig(
+      TSD_ChannelConfig *config, bool local) override {
+    (void)(config);
+    (void)(local);
+    applyCount++;
+    return Supla::ApplyConfigResult::Success;
+  }
+  void fillChannelConfig(void *config,
+                         int *size,
+                         uint8_t configType) override {
+    (void)(config);
+    (void)(configType);
+    *size = 0;
+  }
+  void purgeConfig() override {
+  }
+
+  int loadCount = 0;
+  int applyCount = 0;
+};
+
+class WeeklyScheduleElementForTests : public Supla::ChannelElement {
+ public:
+  using Supla::ChannelElement::ChannelElement;
+
+  void loadWeeklyScheduleConfigForTests() {
+    loadWeeklyScheduleConfig();
+  }
+};
+
 }  // namespace
 
 TEST(WeeklyScheduleInfrastructureTests, ControllerUsesOneClockSnapshot) {
@@ -224,6 +263,28 @@ TEST(WeeklyScheduleInfrastructureTests,
   EXPECT_EQ(controller.resolveCount, 2);
   EXPECT_EQ(controller.applyCount, 2);
   EXPECT_FALSE(controller.appliedProgramChanged);
+}
+
+TEST(WeeklyScheduleInfrastructureTests,
+     ConfigHandlerIsIndependentFromRuntimeController) {
+  WeeklyScheduleConfigHandlerForTests configHandler;
+  WeeklyScheduleConfigHandlerForTests replacementConfigHandler;
+  WeeklyScheduleElementForTests element(0);
+  auto *controller = new Supla::Control::ExternalManagedWeeklySchedule();
+  ASSERT_TRUE(element.setWeeklyScheduleController(controller, &configHandler));
+  ASSERT_TRUE(element.setWeeklyScheduleController(
+      controller, &replacementConfigHandler));
+
+  element.loadWeeklyScheduleConfigForTests();
+  EXPECT_EQ(configHandler.loadCount, 0);
+  EXPECT_EQ(replacementConfigHandler.loadCount, 1);
+
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  EXPECT_EQ(element.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(configHandler.applyCount, 0);
+  EXPECT_EQ(replacementConfigHandler.applyCount, 1);
 }
 
 TEST(WeeklyScheduleInfrastructureTests, InvalidStoredScheduleIsDiscarded) {

@@ -37,9 +37,6 @@ class RelayWeeklySchedule : public WeeklyScheduleController,
   explicit RelayWeeklySchedule(Relay *owner);
   ~RelayWeeklySchedule();
 
-  WeeklyScheduleConfigHandler *getConfigHandler() override {
-    return this;
-  }
   bool canActivate() const override;
   bool isConfigured() const;
   bool iterateAlways();

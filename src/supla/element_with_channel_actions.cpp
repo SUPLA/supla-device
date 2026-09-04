@@ -70,25 +70,35 @@ Supla::ElementWithChannelActions::ElementWithChannelActions(ElementMode mode)
 }
 
 Supla::ElementWithChannelActions::~ElementWithChannelActions() {
+  weeklyScheduleConfigHandler_ = nullptr;
   delete weeklyScheduleController_;
   weeklyScheduleController_ = nullptr;
 }
 
 bool Supla::ElementWithChannelActions::setWeeklyScheduleController(
-    Supla::Control::WeeklyScheduleController *controller) {
-  if (weeklyScheduleLifecycleState_ == WeeklyScheduleLifecycleState::Started ||
-      (weeklyScheduleLifecycleState_ !=
-           WeeklyScheduleLifecycleState::Unassigned &&
-       controller == weeklyScheduleController_)) {
-    return controller == weeklyScheduleController_;
+    Supla::Control::WeeklyScheduleController *controller,
+    Supla::Control::WeeklyScheduleConfigHandler *configHandler) {
+  bool sameComponents = controller == weeklyScheduleController_ &&
+                        configHandler == weeklyScheduleConfigHandler_;
+  if (weeklyScheduleLifecycleState_ == WeeklyScheduleLifecycleState::Started) {
+    return sameComponents;
   }
-  delete weeklyScheduleController_;
-  weeklyScheduleController_ = controller;
+  if (weeklyScheduleLifecycleState_ !=
+          WeeklyScheduleLifecycleState::Unassigned &&
+      sameComponents) {
+    return true;
+  }
+  const bool controllerChanged = controller != weeklyScheduleController_;
+  if (controllerChanged) {
+    weeklyScheduleConfigHandler_ = nullptr;
+    delete weeklyScheduleController_;
+    weeklyScheduleController_ = controller;
+  }
+  weeklyScheduleConfigHandler_ = configHandler;
   weeklyScheduleLifecycleState_ = WeeklyScheduleLifecycleState::Assigned;
-  onWeeklyScheduleControllerChanged(controller);
+  onWeeklyScheduleComponentsChanged(controller, controllerChanged);
   usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   usedConfigTypes.clear(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
-  auto *configHandler = getWeeklyScheduleConfigHandler();
   if (configHandler) {
     usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
                         configHandler->supportsConfigType(
@@ -108,7 +118,7 @@ void Supla::ElementWithChannelActions::loadWeeklyScheduleConfig() {
   }
 }
 
-bool Supla::ElementWithChannelActions::isWeeklyScheduleControllerAssigned()
+bool Supla::ElementWithChannelActions::areWeeklyScheduleComponentsAssigned()
     const {
   return weeklyScheduleLifecycleState_ !=
          WeeklyScheduleLifecycleState::Unassigned;
@@ -127,14 +137,14 @@ Supla::ElementWithChannelActions::getWeeklyScheduleController() const {
 
 Supla::Control::WeeklyScheduleConfigHandler *
 Supla::ElementWithChannelActions::getWeeklyScheduleConfigHandler() const {
-  return weeklyScheduleController_
-             ? weeklyScheduleController_->getConfigHandler()
-             : nullptr;
+  return weeklyScheduleConfigHandler_;
 }
 
-void Supla::ElementWithChannelActions::onWeeklyScheduleControllerChanged(
-    Supla::Control::WeeklyScheduleController *controller) {
+void Supla::ElementWithChannelActions::onWeeklyScheduleComponentsChanged(
+    Supla::Control::WeeklyScheduleController *controller,
+    bool controllerChanged) {
   (void)(controller);
+  (void)(controllerChanged);
 }
 
 void ConfigTypesBitmap::clear(int configType) {

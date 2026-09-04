@@ -34,7 +34,7 @@ using Supla::Control::HvacBase;
 HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
                    Supla::Control::OutputInterface *secondaryOutput) {
   auto *nativeWeeklySchedule = new HvacWeeklySchedule(this);
-  setWeeklyScheduleController(nativeWeeklySchedule);
+  setWeeklyScheduleController(nativeWeeklySchedule, nativeWeeklySchedule);
   weeklyScheduleHelper = nativeWeeklySchedule;
   channel.setType(SUPLA_CHANNELTYPE_HVAC);
   channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
@@ -62,10 +62,13 @@ HvacBase::~HvacBase() {
   Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
 }
 
-void HvacBase::onWeeklyScheduleControllerChanged(
-    Supla::Control::WeeklyScheduleController *controller) {
-  weeklyScheduleHelper = nullptr;
-  auto *configHandler = controller ? controller->getConfigHandler() : nullptr;
+void HvacBase::onWeeklyScheduleComponentsChanged(
+    Supla::Control::WeeklyScheduleController *controller,
+    bool controllerChanged) {
+  if (controllerChanged) {
+    weeklyScheduleHelper = nullptr;
+  }
+  auto *configHandler = getWeeklyScheduleConfigHandler();
   if (controller && configHandler &&
       configHandler->supportsConfigType(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE)) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);

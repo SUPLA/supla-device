@@ -31,9 +31,6 @@ struct WeeklyScheduleTimeSnapshot {
 class WeeklyScheduleController {
  public:
   virtual ~WeeklyScheduleController() = default;
-  virtual WeeklyScheduleConfigHandler *getConfigHandler() {
-    return nullptr;
-  }
   virtual bool canActivate() const = 0;
   virtual bool isActive() const = 0;
   virtual bool switchToWeeklySchedule() = 0;

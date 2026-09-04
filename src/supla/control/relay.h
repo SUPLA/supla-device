@@ -240,8 +240,6 @@ class Relay : public ChannelElement, public ActionHandler {
   bool setAutomaticMode(bool enabled);
 
  protected:
-  void onWeeklyScheduleControllerChanged(
-      Supla::Control::WeeklyScheduleController *controller) override;
   Relay(Supla::Io::IoPin outputPin,
         _supla_int_t functions,
         Supla::Channel &externalChannel,

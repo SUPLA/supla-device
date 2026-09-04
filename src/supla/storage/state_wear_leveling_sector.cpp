@@ -489,6 +489,10 @@ bool StateWearLevelingSector::initFromStorage() {
 }
 
 void StateWearLevelingSector::deleteAll() {
+  const unsigned char emptyTag[5] = {};
+  const uint32_t backupPreambleOffset =
+      sectionOffset - sizeof(Preamble) + getSectorSize();
+  writeStorage(backupPreambleOffset, emptyTag, sizeof(emptyTag));
 }
 
 bool StateWearLevelingSector::prepareSaveState() {

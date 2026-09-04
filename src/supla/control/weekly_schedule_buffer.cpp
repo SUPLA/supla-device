@@ -138,6 +138,14 @@ bool WeeklyScheduleBuffer::resolveCurrentProgram(
     const TChannelConfig_WeeklySchedule *schedule,
     TWeeklyScheduleProgram *program,
     int *programId) const {
+  return resolveProgramAt(schedule, getCurrentQuarter(), program, programId);
+}
+
+bool WeeklyScheduleBuffer::resolveProgramAt(
+    const TChannelConfig_WeeklySchedule *schedule,
+    int quarterIndex,
+    TWeeklyScheduleProgram *program,
+    int *programId) const {
   if (schedule == nullptr || program == nullptr || programId == nullptr) {
     return false;
   }
@@ -147,7 +155,6 @@ bool WeeklyScheduleBuffer::resolveCurrentProgram(
   program->SetpointTemperatureHeat = INT16_MIN;
 
   int resolvedProgramId = 1;
-  int quarterIndex = getCurrentQuarter();
   if (quarterIndex >= 0) {
     resolvedProgramId = getProgramId(schedule, quarterIndex);
   }

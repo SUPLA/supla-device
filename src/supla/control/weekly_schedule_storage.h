@@ -111,6 +111,10 @@ class NativeWeeklyScheduleConfigHandler : public WeeklyScheduleConfigHandler {
   bool resolveCurrentProgram(bool alt,
                              TWeeklyScheduleProgram *program,
                              int *programId) const;
+  bool resolveCurrentProgram(bool alt,
+                             const WeeklyScheduleTimeSnapshot &time,
+                             TWeeklyScheduleProgram *program,
+                             int *programId);
 
   void touchCache(bool active, uint32_t nowMs);
   bool processCache(bool active, uint32_t nowMs);

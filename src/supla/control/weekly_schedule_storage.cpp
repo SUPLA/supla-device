@@ -373,6 +373,23 @@ bool NativeWeeklyScheduleConfigHandler::resolveCurrentProgram(
       ->resolveCurrentProgram(alt, program, programId);
 }
 
+bool NativeWeeklyScheduleConfigHandler::resolveCurrentProgram(
+    bool alt,
+    const WeeklyScheduleTimeSnapshot &time,
+    TWeeklyScheduleProgram *program,
+    int *programId) {
+  if (!ensureScheduleForUse(alt)) {
+    return false;
+  }
+  int quarterIndex = -1;
+  if (time.state == WeeklyScheduleClockState::Ready) {
+    quarterIndex = buffer_.calculateIndex(
+        time.dayOfWeek, time.hour, time.quarter);
+  }
+  return buffer_.resolveProgramAt(
+      getSchedule(alt, false), quarterIndex, program, programId);
+}
+
 void NativeWeeklyScheduleConfigHandler::touchCache(bool active,
                                                    uint32_t nowMs) {
   cacheRuntime_.touch(active, nowMs);

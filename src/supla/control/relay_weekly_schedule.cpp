@@ -105,7 +105,7 @@ void RelayWeeklySchedule::syncRelayMode(uint8_t programMode) {
 }
 
 bool RelayWeeklySchedule::isManualActionAllowed(bool turnOn) const {
-  if (!weeklyScheduleEnabled_ || isWaitingForClock()) {
+  if (!weeklyScheduleEnabled_) {
     return true;
   }
   auto currentProgramMode = getCurrentProgramMode();
@@ -200,9 +200,7 @@ bool RelayWeeklySchedule::switchToWeeklySchedule() {
   resetCurrentProgramId();
   touchCache(true, millis());
   syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
-  if (!isWaitingForClock()) {
-    applyCurrentState();
-  }
+  applyCurrentState();
   return true;
 }
 
@@ -245,52 +243,58 @@ bool RelayWeeklySchedule::iterateAlways() {
 
   touchCache(true, millis());
 
-  if (isWaitingForClock()) {
-    return false;
-  }
-
-  applyCurrentState();
-  return true;
+  return applyCurrentState();
 }
 
 bool RelayWeeklySchedule::processWeeklySchedule() {
   return iterateAlways();
 }
 
-void RelayWeeklySchedule::applyCurrentState() {
-  if (!weeklyScheduleEnabled_ || isWaitingForClock()) {
-    return;
+bool RelayWeeklySchedule::applyCurrentState() {
+  if (!weeklyScheduleEnabled_) {
+    return false;
   }
-  TWeeklyScheduleProgram program = {};
-  int currentProgramId = -1;
-  if (!resolveCurrentProgram(false, &program, &currentProgramId)) {
-    return;
-  }
+  return processCurrentProgram(millis() <= 30000);
+}
 
+bool RelayWeeklySchedule::resolveWeeklyScheduleProgram(
+    const WeeklyScheduleTimeSnapshot &time,
+    TWeeklyScheduleProgram *program,
+    int *programId) {
+  return NativeWeeklyScheduleConfigHandler::resolveCurrentProgram(
+      false, time, program, programId);
+}
+
+bool RelayWeeklySchedule::applyResolvedWeeklyScheduleProgram(
+    const TWeeklyScheduleProgram &program,
+    int currentProgramId,
+    bool programChanged) {
   uint8_t currentProgramMode = SUPLA_RELAY_MODE_NOT_SET;
   if (currentProgramId > 0) {
     currentProgramMode = program.Mode;
   }
 
-  bool programChanged = updateCurrentProgramId(currentProgramId);
-
   syncRelayMode(currentProgramMode);
 
   if (currentProgramMode == SUPLA_RELAY_MODE_NOT_SET) {
-    return;
+    return true;
   }
 
   owner_->applyWeeklyScheduleProgram(currentProgramMode, programChanged);
+  return true;
 }
 
 uint8_t RelayWeeklySchedule::getCurrentProgramMode() const {
-  if (isWaitingForClock()) {
+  if (!isConfigured()) {
     return SUPLA_RELAY_MODE_NOT_SET;
   }
   TWeeklyScheduleProgram program = {};
   int currentProgramId = -1;
-  if (!isConfigured() ||
-      !resolveCurrentProgram(false, &program, &currentProgramId)) {
+  auto time = getWeeklyScheduleTimeSnapshot(millis() <= 30000);
+  auto *self = const_cast<RelayWeeklySchedule *>(this);
+  if (time.state == WeeklyScheduleClockState::Waiting ||
+      !self->resolveWeeklyScheduleProgram(
+          time, &program, &currentProgramId)) {
     return SUPLA_RELAY_MODE_NOT_SET;
   }
 
@@ -299,10 +303,6 @@ uint8_t RelayWeeklySchedule::getCurrentProgramMode() const {
   }
 
   return program.Mode;
-}
-
-bool RelayWeeklySchedule::isWaitingForClock() const {
-  return getClockState() == WeeklyScheduleClockState::Waiting;
 }
 
 void RelayWeeklySchedule::unloadScheduleIfPossible() {

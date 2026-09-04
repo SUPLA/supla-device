@@ -82,6 +82,17 @@ class HvacWeeklySchedule : public WeeklyScheduleController,
   bool shouldUseAltSchedule() const;
   bool resolveCurrentHvacProgram(TWeeklyScheduleProgram *program,
                                  int *programId) const;
+  bool resolveCurrentHvacProgram(const WeeklyScheduleTimeSnapshot &time,
+                                 TWeeklyScheduleProgram *program,
+                                 int *programId);
+  bool resolveWeeklyScheduleProgram(const WeeklyScheduleTimeSnapshot &time,
+                                    TWeeklyScheduleProgram *program,
+                                    int *programId) override;
+  bool applyResolvedWeeklyScheduleProgram(
+      const TWeeklyScheduleProgram &program,
+      int programId,
+      bool programChanged) override;
+  void onWeeklyScheduleClockState(WeeklyScheduleClockState state) override;
   void initDefaultWeeklyScheduleForType(bool isAltWeeklySchedule,
                                         bool requestResend);
   void unloadSchedulesIfPossible();

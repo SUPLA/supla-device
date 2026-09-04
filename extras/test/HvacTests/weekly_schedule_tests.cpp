@@ -23,7 +23,9 @@
 using ::testing::_;
 using ::testing::AnyNumber;
 using ::testing::AtLeast;
+using ::testing::DoAll;
 using ::testing::Return;
+using ::testing::SetArgPointee;
 using ::testing::StrEq;
 
 TEST(WeeklyScheduleInfrastructureTests, CacheCanBecomeInactiveAtMillisZero) {
@@ -47,23 +49,15 @@ TEST(WeeklyScheduleInfrastructureTests, SettingSameBufferKeepsOwnership) {
   EXPECT_EQ(buffer.get(false)->Program[0].Mode, SUPLA_HVAC_MODE_HEAT);
 }
 
-TEST(WeeklyScheduleInfrastructureTests,
-     CurrentProgramAndIdUseSingleClockSnapshot) {
-  ClockMock clock;
+TEST(WeeklyScheduleInfrastructureTests, BufferReturnsProgramAndIdTogether) {
   Supla::Control::WeeklyScheduleBuffer buffer;
   TChannelConfig_WeeklySchedule schedule = {};
   schedule.Program[1].Mode = SUPLA_RELAY_MODE_FORCED_ON;
   ASSERT_TRUE(buffer.setWeeklySchedule(&schedule, 0, 2));
 
-  EXPECT_CALL(clock, isReady()).Times(4).WillRepeatedly(Return(true));
-  EXPECT_CALL(clock, getHvacDayOfWeek())
-      .WillOnce(Return(Supla::DayOfWeek_Sunday));
-  EXPECT_CALL(clock, getHour()).WillOnce(Return(0));
-  EXPECT_CALL(clock, getQuarter()).WillOnce(Return(0));
-
   TWeeklyScheduleProgram program = {};
   int programId = 0;
-  EXPECT_TRUE(buffer.resolveCurrentProgram(&schedule, &program, &programId));
+  EXPECT_TRUE(buffer.resolveProgramAt(&schedule, 0, &program, &programId));
   EXPECT_EQ(programId, 2);
   EXPECT_EQ(program.Mode, SUPLA_RELAY_MODE_FORCED_ON);
 }
@@ -118,7 +112,119 @@ class NativeWeeklyScheduleHandlerForTests
   bool valid_ = false;
 };
 
+class WeeklyScheduleControllerForTests
+    : public Supla::Control::WeeklyScheduleController {
+ public:
+  bool canActivate() const override {
+    return true;
+  }
+  bool isActive() const override {
+    return active;
+  }
+  bool switchToWeeklySchedule() override {
+    active = true;
+    return true;
+  }
+  void switchToManualMode() override {
+    active = false;
+  }
+  void restoreWeeklyScheduleMode(bool enabled) override {
+    active = enabled;
+  }
+  bool processWeeklySchedule() override {
+    return processCurrentProgram(startupDelay);
+  }
+
+  bool active = true;
+  bool startupDelay = true;
+  int resolvedProgramId = 1;
+  int appliedProgramId = -1;
+  bool appliedProgramChanged = false;
+  int resolveCount = 0;
+  int applyCount = 0;
+  Supla::Control::WeeklyScheduleTimeSnapshot resolvedTime;
+  Supla::Control::WeeklyScheduleClockState observedClockState =
+      Supla::Control::WeeklyScheduleClockState::TimedOut;
+
+ protected:
+  void onWeeklyScheduleClockState(
+      Supla::Control::WeeklyScheduleClockState state) override {
+    observedClockState = state;
+  }
+  bool resolveWeeklyScheduleProgram(
+      const Supla::Control::WeeklyScheduleTimeSnapshot &time,
+      TWeeklyScheduleProgram *program,
+      int *programId) override {
+    resolveCount++;
+    resolvedTime = time;
+    program->Mode = SUPLA_RELAY_MODE_FORCED_ON;
+    *programId = resolvedProgramId;
+    return true;
+  }
+  bool applyResolvedWeeklyScheduleProgram(
+      const TWeeklyScheduleProgram &program,
+      int programId,
+      bool programChanged) override {
+    applyCount++;
+    appliedProgramId = programId;
+    appliedProgramChanged = programChanged;
+    return program.Mode == SUPLA_RELAY_MODE_FORCED_ON;
+  }
+};
+
 }  // namespace
+
+TEST(WeeklyScheduleInfrastructureTests, ControllerUsesOneClockSnapshot) {
+  ClockMock clock;
+  WeeklyScheduleControllerForTests controller;
+
+  struct tm localTime = {};
+  localTime.tm_wday = Supla::DayOfWeek_Wednesday;
+  localTime.tm_hour = 12;
+  localTime.tm_min = 45;
+  EXPECT_CALL(clock, isReady()).WillOnce(Return(true));
+  EXPECT_CALL(clock, getLocalTime(_))
+      .WillOnce(DoAll(SetArgPointee<0>(localTime), Return(true)));
+
+  EXPECT_TRUE(controller.processWeeklySchedule());
+  EXPECT_EQ(controller.resolveCount, 1);
+  EXPECT_EQ(controller.applyCount, 1);
+  EXPECT_EQ(controller.resolvedTime.state,
+            Supla::Control::WeeklyScheduleClockState::Ready);
+  EXPECT_EQ(controller.resolvedTime.dayOfWeek, Supla::DayOfWeek_Wednesday);
+  EXPECT_EQ(controller.resolvedTime.hour, 12);
+  EXPECT_EQ(controller.resolvedTime.quarter, 3);
+  EXPECT_EQ(controller.appliedProgramId, 1);
+  EXPECT_TRUE(controller.appliedProgramChanged);
+}
+
+TEST(WeeklyScheduleInfrastructureTests,
+     ControllerWaitsForClockAndKeepsProgramTransitionPending) {
+  ClockMock clock;
+  WeeklyScheduleControllerForTests controller;
+
+  EXPECT_CALL(clock, isReady()).WillOnce(Return(false));
+  EXPECT_FALSE(controller.processWeeklySchedule());
+  EXPECT_EQ(controller.observedClockState,
+            Supla::Control::WeeklyScheduleClockState::Waiting);
+  EXPECT_EQ(controller.resolveCount, 0);
+  EXPECT_EQ(controller.applyCount, 0);
+
+  controller.startupDelay = false;
+  EXPECT_CALL(clock, isReady()).WillOnce(Return(false));
+  EXPECT_TRUE(controller.processWeeklySchedule());
+  EXPECT_EQ(controller.observedClockState,
+            Supla::Control::WeeklyScheduleClockState::TimedOut);
+  EXPECT_EQ(controller.resolveCount, 1);
+  EXPECT_EQ(controller.applyCount, 1);
+  EXPECT_TRUE(controller.appliedProgramChanged);
+
+  EXPECT_CALL(clock, isReady()).WillOnce(Return(false));
+  EXPECT_TRUE(controller.processWeeklySchedule());
+  EXPECT_EQ(controller.resolveCount, 2);
+  EXPECT_EQ(controller.applyCount, 2);
+  EXPECT_FALSE(controller.appliedProgramChanged);
+}
 
 TEST(WeeklyScheduleInfrastructureTests, InvalidStoredScheduleIsDiscarded) {
   ConfigMock cfg;

@@ -10,7 +10,16 @@
 
 class ClockMock : public Supla::Clock {
  public:
-  ClockMock() {}
+  ClockMock() {
+    ON_CALL(*this, getLocalTime(::testing::_))
+        .WillByDefault([](struct tm *timeInfo) {
+          if (timeInfo == nullptr) {
+            return false;
+          }
+          *timeInfo = {};
+          return true;
+        });
+  }
   virtual ~ClockMock() {}
 
   MOCK_METHOD(bool, isReady, (), (override));
@@ -24,6 +33,7 @@ class ClockMock : public Supla::Clock {
   MOCK_METHOD(int, getMin, (), (override));
   MOCK_METHOD(int, getSec, (), (override));
   MOCK_METHOD(time_t, getTimeStamp, (), (override));
+  MOCK_METHOD(bool, getLocalTime, (struct tm *timeInfo), (override));
 
   MOCK_METHOD(void,
               parseLocaltimeFromServer,

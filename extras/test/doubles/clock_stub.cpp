@@ -76,3 +76,10 @@ time_t ClockStub::getTimeStamp() {
   return now + (millis() / 1000);
 }
 
+bool ClockStub::getLocalTime(struct tm *timeInfo) {
+  if (timeInfo == nullptr) {
+    return false;
+  }
+  time_t t = getTimeStamp();
+  return gmtime_r(&t, timeInfo) != nullptr;
+}

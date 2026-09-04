@@ -8,6 +8,8 @@
 #include <supla-common/proto.h>
 #include <supla/apply_config_result.h>
 
+#include "weekly_schedule_common.h"
+
 namespace Supla {
 namespace Control {
 
@@ -17,6 +19,13 @@ enum class WeeklyScheduleClockState : uint8_t {
   Ready,
   Waiting,
   TimedOut,
+};
+
+struct WeeklyScheduleTimeSnapshot {
+  WeeklyScheduleClockState state = WeeklyScheduleClockState::TimedOut;
+  enum DayOfWeek dayOfWeek = DayOfWeek_Sunday;
+  uint8_t hour = 0;
+  uint8_t quarter = 0;
 };
 
 class WeeklyScheduleController {
@@ -42,8 +51,23 @@ class WeeklyScheduleController {
  protected:
   WeeklyScheduleClockState getClockState() const;
   WeeklyScheduleClockState getClockState(bool startupDelay) const;
+  WeeklyScheduleTimeSnapshot getWeeklyScheduleTimeSnapshot(
+      bool startupDelay) const;
+  bool processCurrentProgram(bool startupDelay);
   bool updateCurrentProgramId(int programId);
   void resetCurrentProgramId();
+
+  virtual void onWeeklyScheduleClockState(WeeklyScheduleClockState state) {
+    (void)(state);
+  }
+  virtual bool resolveWeeklyScheduleProgram(
+      const WeeklyScheduleTimeSnapshot &time,
+      TWeeklyScheduleProgram *program,
+      int *programId);
+  virtual bool applyResolvedWeeklyScheduleProgram(
+      const TWeeklyScheduleProgram &program,
+      int programId,
+      bool programChanged);
 
  private:
   int currentProgramId_ = -1;

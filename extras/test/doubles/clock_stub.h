@@ -21,6 +21,7 @@ class ClockStub : public Supla::Clock {
   int getMin() override;
   int getSec() override;
   time_t getTimeStamp() override;
+  bool getLocalTime(struct tm *timeInfo) override;
 
  protected:
   time_t now = 1672531200;  // 2023-01-01 00:00:00

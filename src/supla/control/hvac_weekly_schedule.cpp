@@ -368,14 +368,59 @@ bool HvacWeeklySchedule::shouldUseAltSchedule() const {
 
 bool HvacWeeklySchedule::resolveCurrentHvacProgram(
     TWeeklyScheduleProgram *program, int *programId) const {
+  auto time = getWeeklyScheduleTimeSnapshot(false);
+  return const_cast<HvacWeeklySchedule *>(this)->resolveCurrentHvacProgram(
+      time, program, programId);
+}
+
+bool HvacWeeklySchedule::resolveCurrentHvacProgram(
+    const WeeklyScheduleTimeSnapshot &time,
+    TWeeklyScheduleProgram *program,
+    int *programId) {
   if (!NativeWeeklyScheduleConfigHandler::resolveCurrentProgram(
-          shouldUseAltSchedule(), program, programId)) {
+          shouldUseAltSchedule(), time, program, programId)) {
     return false;
   }
   if (*programId == 0) {
     program->Mode = SUPLA_HVAC_MODE_OFF;
   }
   return true;
+}
+
+bool HvacWeeklySchedule::resolveWeeklyScheduleProgram(
+    const WeeklyScheduleTimeSnapshot &time,
+    TWeeklyScheduleProgram *program,
+    int *programId) {
+  return resolveCurrentHvacProgram(time, program, programId);
+}
+
+bool HvacWeeklySchedule::applyResolvedWeeklyScheduleProgram(
+    const TWeeklyScheduleProgram &program,
+    int programId,
+    bool programChanged) {
+  (void)(programChanged);
+  return owner_->applyWeeklyScheduleProgram(program, programId);
+}
+
+void HvacWeeklySchedule::onWeeklyScheduleClockState(
+    WeeklyScheduleClockState state) {
+  if (state == WeeklyScheduleClockState::Waiting) {
+    SUPLA_LOG_DEBUG(
+        "HVAC[%d]: Weekly schedule enabled, clock not ready -> startup "
+        "delay...",
+        owner_->getChannelNumber());
+    return;
+  }
+  if (state == WeeklyScheduleClockState::TimedOut) {
+    if (!owner_->isWeeklyScheduleClockError()) {
+      SUPLA_LOG_WARNING(
+          "HVAC[%d]: processs weekly schedule failed - clock is not ready",
+          owner_->getChannelNumber());
+    }
+    owner_->setWeeklyScheduleClockError(true);
+    return;
+  }
+  owner_->setWeeklyScheduleClockError(false);
 }
 
 bool HvacWeeklySchedule::turnOnWeeklySchedule() {
@@ -402,32 +447,7 @@ bool HvacWeeklySchedule::processWeeklySchedule() {
     return false;
   }
 
-  auto clockState = getClockState(owner_->isWeeklyScheduleStartupDelay());
-  if (clockState == WeeklyScheduleClockState::Waiting) {
-    SUPLA_LOG_DEBUG(
-        "HVAC[%d]: Weekly schedule enabled, clock not ready -> startup "
-        "delay...",
-        owner_->getChannelNumber());
-    return false;
-  }
-  if (clockState == WeeklyScheduleClockState::TimedOut) {
-    if (!owner_->isWeeklyScheduleClockError()) {
-      SUPLA_LOG_WARNING(
-          "HVAC[%d]: processs weekly schedule failed - clock is not ready",
-          owner_->getChannelNumber());
-    }
-    owner_->setWeeklyScheduleClockError(true);
-  } else {
-    owner_->setWeeklyScheduleClockError(false);
-  }
-
-  TWeeklyScheduleProgram program = {};
-  int currentProgramId = 1;
-  if (!resolveCurrentHvacProgram(&program, &currentProgramId)) {
-    return false;
-  }
-  updateCurrentProgramId(currentProgramId);
-  return owner_->applyWeeklyScheduleProgram(program, currentProgramId);
+  return processCurrentProgram(owner_->isWeeklyScheduleStartupDelay());
 }
 
 void HvacWeeklySchedule::initDefaultWeeklySchedule(bool requestResend) {

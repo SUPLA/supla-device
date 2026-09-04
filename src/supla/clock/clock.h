@@ -27,6 +27,7 @@ class Clock : public Element {
   static int GetMin();
   static int GetSec();
   static time_t GetTimeStamp();
+  static bool GetLocalTime(struct tm *timeInfo);
 
   static Clock* GetInstance();
 
@@ -44,6 +45,7 @@ class Clock : public Element {
   virtual int getMin();
   virtual int getSec();
   virtual time_t getTimeStamp();
+  virtual bool getLocalTime(struct tm *timeInfo);
 
   void onTimer() override;
   bool iterateConnected() override;

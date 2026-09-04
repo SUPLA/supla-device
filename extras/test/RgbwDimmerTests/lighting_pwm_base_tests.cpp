@@ -244,6 +244,53 @@ TEST(RgbCctTests, ManualSuspensionPersistsAcrossIteration) {
   EXPECT_FALSE(rgb.getChannel()->isStateOnlineAndNotAvailable());
 }
 
+TEST(RgbCctTests, ManualSuspensionRejectsControlCommands) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  RgbCctBaseForTest rgb;
+
+  time.advance(500);
+  rgb.onInit();
+  time.advance(500);
+  rgb.iterateAlways();
+
+  auto channel = rgb.getChannel();
+  ASSERT_NE(channel, nullptr);
+  ASSERT_EQ(channel->getValueRed(), 0);
+  ASSERT_EQ(channel->getValueGreen(), 255);
+  ASSERT_EQ(channel->getValueBlue(), 0);
+  ASSERT_EQ(channel->getValueColorBrightness(), 0);
+  ASSERT_EQ(channel->getValueBrightness(), 0);
+
+  EXPECT_CALL(rgb, setRGBCCTValueOnDevice(_, 0));
+  rgb.setChannelSuspended(true);
+
+  StorageMock storage;
+  EXPECT_CALL(storage, scheduleSave(_, _)).Times(0);
+
+  TSD_SuplaChannelNewValue msg = {};
+  setRGBCCTValues(reinterpret_cast<TRGBW_Value *>(msg.value),
+                  10,
+                  20,
+                  30,
+                  40,
+                  50,
+                  60,
+                  0,
+                  RGBW_COMMAND_NOT_SET);
+  EXPECT_EQ(rgb.handleNewValueFromServer(&msg), 0);
+  rgb.handleAction(0, Supla::TURN_ON);
+
+  time.advance(500);
+  rgb.iterateAlways();
+  EXPECT_EQ(channel->getValueRed(), 0);
+  EXPECT_EQ(channel->getValueGreen(), 255);
+  EXPECT_EQ(channel->getValueBlue(), 0);
+  EXPECT_EQ(channel->getValueColorBrightness(), 0);
+  EXPECT_EQ(channel->getValueBrightness(), 0);
+  EXPECT_EQ(channel->getValueWhiteTemperature(), 0);
+}
+
 TEST(RgbCctTests, CctGainMappingUsesWarmAndColdChannels) {
   Supla::Channel::resetToDefaults();
   SimpleTime time;

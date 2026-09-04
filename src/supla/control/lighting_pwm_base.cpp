@@ -239,6 +239,10 @@ bool LightingPwmBase::isChannelSuspended() const {
 
 int32_t LightingPwmBase::handleNewValueFromServer(
     TSD_SuplaChannelNewValue *newValue) {
+  if (manuallySuspended) {
+    return 0;
+  }
+
   uint8_t whiteTemperature = static_cast<uint8_t>(newValue->value[7]);
   uint8_t command = static_cast<uint8_t>(newValue->value[6]);
   uint8_t toggleOnOff = static_cast<uint8_t>(newValue->value[5]);
@@ -448,6 +452,10 @@ uint8_t LightingPwmBase::addWithLimit(int value, int addition, int limit) {
 
 void LightingPwmBase::handleAction(int event, int action) {
   (void)(event);
+  if (manuallySuspended) {
+    return;
+  }
+
   switch (action) {
     case TURN_ON: {
       turnOn();

@@ -1,0 +1,420 @@
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#include "ssd1306.h"
+
+#include <driver/i2c_master.h>
+#include <esp_err.h>
+#include <string.h>
+#include <supla/log_wrapper.h>
+
+namespace {
+const uint8_t kFont[][5] = {
+    {0x00, 0x00, 0x00, 0x00, 0x00},  // space
+    {0x3E, 0x51, 0x49, 0x45, 0x3E},  // 0
+    {0x00, 0x42, 0x7F, 0x40, 0x00},  // 1
+    {0x42, 0x61, 0x51, 0x49, 0x46},  // 2
+    {0x21, 0x41, 0x45, 0x4B, 0x31},  // 3
+    {0x18, 0x14, 0x12, 0x7F, 0x10},  // 4
+    {0x27, 0x45, 0x45, 0x45, 0x39},  // 5
+    {0x3C, 0x4A, 0x49, 0x49, 0x30},  // 6
+    {0x01, 0x71, 0x09, 0x05, 0x03},  // 7
+    {0x36, 0x49, 0x49, 0x49, 0x36},  // 8
+    {0x06, 0x49, 0x49, 0x29, 0x1E},  // 9
+    {0x7E, 0x11, 0x11, 0x11, 0x7E},  // A
+    {0x7F, 0x49, 0x49, 0x49, 0x36},  // B
+    {0x3E, 0x41, 0x41, 0x41, 0x22},  // C
+    {0x7F, 0x41, 0x41, 0x22, 0x1C},  // D
+    {0x7F, 0x49, 0x49, 0x49, 0x41},  // E
+    {0x7F, 0x09, 0x09, 0x09, 0x01},  // F
+    {0x3E, 0x41, 0x49, 0x49, 0x7A},  // G
+    {0x7F, 0x08, 0x08, 0x08, 0x7F},  // H
+    {0x00, 0x41, 0x7F, 0x41, 0x00},  // I
+    {0x20, 0x40, 0x41, 0x3F, 0x01},  // J
+    {0x7F, 0x08, 0x14, 0x22, 0x41},  // K
+    {0x7F, 0x40, 0x40, 0x40, 0x40},  // L
+    {0x7F, 0x02, 0x0C, 0x02, 0x7F},  // M
+    {0x7F, 0x04, 0x08, 0x10, 0x7F},  // N
+    {0x3E, 0x41, 0x41, 0x41, 0x3E},  // O
+    {0x7F, 0x09, 0x09, 0x09, 0x06},  // P
+    {0x3E, 0x41, 0x51, 0x21, 0x5E},  // Q
+    {0x7F, 0x09, 0x19, 0x29, 0x46},  // R
+    {0x46, 0x49, 0x49, 0x49, 0x31},  // S
+    {0x01, 0x01, 0x7F, 0x01, 0x01},  // T
+    {0x3F, 0x40, 0x40, 0x40, 0x3F},  // U
+    {0x1F, 0x20, 0x40, 0x20, 0x1F},  // V
+    {0x3F, 0x40, 0x38, 0x40, 0x3F},  // W
+    {0x63, 0x14, 0x08, 0x14, 0x63},  // X
+    {0x07, 0x08, 0x70, 0x08, 0x07},  // Y
+    {0x61, 0x51, 0x49, 0x45, 0x43},  // Z
+    {0x08, 0x08, 0x08, 0x08, 0x08},  // -
+    {0x00, 0x60, 0x60, 0x00, 0x00},  // .
+    {0x00, 0x36, 0x36, 0x00, 0x00},  // :
+    {0x02, 0x01, 0x51, 0x09, 0x06},  // ?
+    {0x00, 0x08, 0x08, 0x08, 0x00},  // +
+    {0x20, 0x10, 0x08, 0x04, 0x02},  // /
+    {0x00, 0x00, 0x5F, 0x00, 0x00},  // !
+    {0x08, 0x04, 0x02, 0x04, 0x08},  // ~
+    {0x00, 0x00, 0x07, 0x00, 0x00},  // '
+    {0x00, 0x41, 0x22, 0x1C, 0x00},  // )
+    {0x06, 0x09, 0x06, 0x00, 0x00},  // degree
+};
+
+const uint16_t kFont7x9[][7] = {
+    {0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000},  // space
+    {0x07C, 0x082, 0x101, 0x101, 0x082, 0x07C, 0x000},  // 0
+    {0x000, 0x104, 0x102, 0x1FF, 0x100, 0x100, 0x000},  // 1
+    {0x186, 0x141, 0x121, 0x121, 0x111, 0x10E, 0x000},  // 2
+    {0x081, 0x101, 0x111, 0x119, 0x115, 0x0E3, 0x000},  // 3
+    {0x070, 0x048, 0x044, 0x042, 0x1FF, 0x040, 0x000},  // 4
+    {0x09F, 0x111, 0x109, 0x109, 0x109, 0x0F1, 0x000},  // 5
+    {0x0FC, 0x122, 0x111, 0x111, 0x111, 0x0E0, 0x000},  // 6
+    {0x001, 0x181, 0x061, 0x019, 0x005, 0x003, 0x000},  // 7
+    {0x0EE, 0x111, 0x111, 0x111, 0x111, 0x0EE, 0x000},  // 8
+    {0x00E, 0x111, 0x111, 0x111, 0x089, 0x07E, 0x000},  // 9
+    {0x1FC, 0x022, 0x021, 0x021, 0x022, 0x1FC, 0x000},  // A
+    {0x101, 0x1FF, 0x111, 0x111, 0x111, 0x0EE, 0x000},  // B
+    {0x0FE, 0x101, 0x101, 0x101, 0x101, 0x082, 0x000},  // C
+    {0x101, 0x1FF, 0x101, 0x101, 0x101, 0x0FE, 0x000},  // D
+    {0x1FF, 0x111, 0x111, 0x111, 0x101, 0x101, 0x000},  // E
+    {0x1FF, 0x011, 0x011, 0x011, 0x001, 0x001, 0x000},  // F
+    {0x0FE, 0x101, 0x101, 0x121, 0x0A1, 0x1E2, 0x000},  // G
+    {0x1FF, 0x010, 0x010, 0x010, 0x010, 0x1FF, 0x000},  // H
+    {0x000, 0x101, 0x101, 0x1FF, 0x101, 0x101, 0x000},  // I
+    {0x080, 0x100, 0x100, 0x101, 0x0FF, 0x001, 0x000},  // J
+    {0x1FF, 0x010, 0x028, 0x044, 0x082, 0x101, 0x000},  // K
+    {0x1FF, 0x100, 0x100, 0x100, 0x100, 0x100, 0x000},  // L
+    {0x1FF, 0x006, 0x018, 0x018, 0x006, 0x1FF, 0x000},  // M
+    {0x1FF, 0x004, 0x008, 0x010, 0x020, 0x1FF, 0x000},  // N
+    {0x0FE, 0x101, 0x101, 0x101, 0x101, 0x0FE, 0x000},  // O
+    {0x1FF, 0x011, 0x011, 0x011, 0x011, 0x00E, 0x000},  // P
+    {0x0FE, 0x101, 0x141, 0x181, 0x101, 0x0FE, 0x000},  // Q
+    {0x1FF, 0x011, 0x031, 0x051, 0x091, 0x10E, 0x000},  // R
+    {0x08E, 0x111, 0x111, 0x111, 0x111, 0x0E2, 0x000},  // S
+    {0x000, 0x001, 0x001, 0x1FF, 0x001, 0x001, 0x000},  // T
+    {0x0FF, 0x100, 0x100, 0x100, 0x100, 0x0FF, 0x000},  // U
+    {0x007, 0x038, 0x1C0, 0x1C0, 0x038, 0x007, 0x000},  // V
+    {0x1FF, 0x0C0, 0x030, 0x030, 0x0C0, 0x1FF, 0x000},  // W
+    {0x183, 0x06C, 0x010, 0x010, 0x06C, 0x183, 0x000},  // X
+    {0x000, 0x003, 0x00C, 0x1F0, 0x00C, 0x003, 0x000},  // Y
+    {0x181, 0x141, 0x131, 0x119, 0x105, 0x103, 0x000},  // Z
+    {0x000, 0x010, 0x010, 0x010, 0x010, 0x010, 0x000},  // -
+    {0x000, 0x000, 0x100, 0x180, 0x100, 0x000, 0x000},  // .
+    {0x000, 0x000, 0x108, 0x19C, 0x108, 0x000, 0x000},  // :
+    {0x006, 0x001, 0x001, 0x161, 0x011, 0x00E, 0x000},  // ?
+    {0x000, 0x010, 0x010, 0x07C, 0x010, 0x010, 0x000},  // +
+    {0x000, 0x180, 0x060, 0x010, 0x00C, 0x003, 0x000},  // /
+    {0x000, 0x000, 0x000, 0x17F, 0x000, 0x000, 0x000},  // !
+    {0x000, 0x040, 0x080, 0x040, 0x020, 0x010, 0x000},  // ~
+    {0x000, 0x000, 0x01C, 0x000, 0x000, 0x000, 0x000},  // '
+    {0x000, 0x000, 0x101, 0x183, 0x0FE, 0x000, 0x000},  // )
+    {0x00E, 0x011, 0x011, 0x011, 0x00E, 0x000, 0x000},  // degree
+};
+
+int fontIndex(char value) {
+  if (value == ' ') {
+    return 0;
+  }
+  if (value >= '0' && value <= '9') {
+    return 1 + value - '0';
+  }
+  if (value >= 'a' && value <= 'z') {
+    value = value - 'a' + 'A';
+  }
+  if (value >= 'A' && value <= 'Z') {
+    return 11 + value - 'A';
+  }
+  switch (value) {
+    case '-':
+      return 37;
+    case '.':
+      return 38;
+    case ':':
+      return 39;
+    case '?':
+      return 40;
+    case '+':
+      return 41;
+    case '/':
+      return 42;
+    case '!':
+      return 43;
+    case '~':
+      return 44;
+    case '\'':
+      return 45;
+    case ')':
+      return 46;
+    case static_cast<char>(0xB0):
+      return 47;
+    default:
+      return 0;
+  }
+}
+}  // namespace
+
+namespace Supla {
+namespace Display {
+
+SSD1306::SSD1306(Supla::I2CDriver *driver,
+                 uint8_t address,
+                 uint32_t frequency)
+    : address(address), frequency(frequency), driver(driver) {
+}
+
+bool SSD1306::initialize() {
+  initialized = false;
+  screenOn = false;
+  if (driver == nullptr) {
+    return false;
+  }
+
+  driver->initialize();
+  if (!driver->isInitialized()) {
+    return false;
+  }
+
+  if (devHandle == nullptr) {
+    driver->aquire();
+    devHandle = driver->addDevice(address, frequency);
+    driver->release();
+  }
+  if (devHandle == nullptr) {
+    SUPLA_LOG_ERROR("SSD1306 init failed at 0x%02X", address);
+    return false;
+  }
+
+  const uint8_t commands[] = {
+      0xAE, 0x20, 0x00, 0xB0, 0xC8, 0x00, 0x10, 0x40, 0x81, 0x59,
+      0xA1, 0xA6, 0xA8, 0x3F, 0xA4, 0xD3, 0x00, 0xD5, 0x80, 0xD9,
+      0xF1, 0xDA, 0x12, 0xDB, 0x40, 0x8D, 0x14, 0xAF,
+  };
+  driver->aquire();
+  bool success = true;
+  for (uint8_t command : commands) {
+    if (!sendCommand(command)) {
+      success = false;
+      break;
+    }
+  }
+  driver->release();
+  if (!success) {
+    return false;
+  }
+
+  initialized = true;
+  screenOn = true;
+  clear();
+  flush();
+  return true;
+}
+
+bool SSD1306::isInitialized() const {
+  if (driver != nullptr) {
+    driver->aquire();
+  }
+  bool result = initialized;
+  if (driver != nullptr) {
+    driver->release();
+  }
+  return result;
+}
+
+bool SSD1306::isOn() const {
+  if (driver != nullptr) {
+    driver->aquire();
+  }
+  bool result = screenOn;
+  if (driver != nullptr) {
+    driver->release();
+  }
+  return result;
+}
+
+void SSD1306::displayOn() {
+  if (driver != nullptr) {
+    driver->aquire();
+  }
+  if (initialized && !screenOn && sendCommand(0xAF)) {
+    screenOn = true;
+  }
+  if (driver != nullptr) {
+    driver->release();
+  }
+}
+
+void SSD1306::displayOff() {
+  if (driver != nullptr) {
+    driver->aquire();
+  }
+  if (initialized && screenOn && sendCommand(0xAE)) {
+    screenOn = false;
+  }
+  if (driver != nullptr) {
+    driver->release();
+  }
+}
+
+void SSD1306::setContrast(uint8_t contrast) {
+  if (driver != nullptr) {
+    driver->aquire();
+  }
+  if (initialized) {
+    sendCommand(0x81);
+    sendCommand(contrast);
+  }
+  if (driver != nullptr) {
+    driver->release();
+  }
+}
+
+void SSD1306::clear() {
+  memset(buffer, 0, sizeof(buffer));
+}
+
+void SSD1306::text(int y, int x, const char *value) {
+  if (value == nullptr) {
+    return;
+  }
+  while (*value != '\0' && x <= WIDTH - 7) {
+    drawChar7x9(y, x, *value++);
+    x += 8;
+  }
+}
+
+void SSD1306::smallText(int page, int column, const char *value) {
+  if (value == nullptr) {
+    return;
+  }
+  while (*value != '\0' && column <= WIDTH - 6) {
+    drawChar5x7(page, column, *value++);
+    column += 6;
+  }
+}
+
+void SSD1306::pixel(int x, int y, bool on) {
+  if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) {
+    return;
+  }
+  uint8_t &value = buffer[(y / 8) * WIDTH + x];
+  uint8_t mask = 1U << (y % 8);
+  if (on) {
+    value |= mask;
+  } else {
+    value &= ~mask;
+  }
+}
+
+void SSD1306::rect(int x, int y, int width, int height) {
+  for (int px = x; px < x + width; px++) {
+    pixel(px, y, true);
+    pixel(px, y + height - 1, true);
+  }
+  for (int py = y; py < y + height; py++) {
+    pixel(x, py, true);
+    pixel(x + width - 1, py, true);
+  }
+}
+
+void SSD1306::fillRect(int x, int y, int width, int height) {
+  for (int px = x; px < x + width; px++) {
+    for (int py = y; py < y + height; py++) {
+      pixel(px, py, true);
+    }
+  }
+}
+
+void SSD1306::stateDot(int x, int y, bool active) {
+  if (active) {
+    fillRect(x, y, 5, 5);
+  } else {
+    rect(x, y, 5, 5);
+  }
+}
+
+void SSD1306::progressBar(int y, uint8_t percent) {
+  if (percent > 100) {
+    percent = 100;
+  }
+  rect(0, y, WIDTH, 10);
+  int fillWidth = percent * (WIDTH - 2) / 100;
+  fillRect(1, y + 1, fillWidth, 8);
+}
+
+void SSD1306::flush() {
+  flushRegion(0, DISPLAY_PAGES, 0, WIDTH);
+}
+
+bool SSD1306::flushRegion(int firstPage,
+                          int pageCount,
+                          int firstColumn,
+                          int columnCount) {
+  if (firstPage < 0 || pageCount < 1 ||
+      firstPage + pageCount > DISPLAY_PAGES || firstColumn < 0 ||
+      columnCount < 1 || firstColumn + columnCount > WIDTH ||
+      driver == nullptr || !initialized || !screenOn) {
+    return false;
+  }
+
+  driver->aquire();
+  bool success = true;
+  for (int page = firstPage; page < firstPage + pageCount; page++) {
+    success = sendCommand(0xB0 + page) && success;
+    success = sendCommand(firstColumn & 0x0F) && success;
+    success = sendCommand(0x10 | (firstColumn >> 4)) && success;
+    success = sendData(&buffer[page * WIDTH + firstColumn], columnCount) &&
+              success;
+  }
+  driver->release();
+  return success;
+}
+
+void SSD1306::drawChar7x9(int y, int x, char value) {
+  int index = fontIndex(value);
+  for (int glyphX = 0; glyphX < 7; glyphX++) {
+    for (int glyphY = 0; glyphY < 9; glyphY++) {
+      bool on = (kFont7x9[index][glyphX] & (1U << glyphY)) != 0;
+      pixel(x + glyphX, y + glyphY, on);
+    }
+  }
+}
+
+void SSD1306::drawChar5x7(int page, int column, char value) {
+  if (page < 0 || page >= DISPLAY_PAGES || column < 0 || column >= WIDTH) {
+    return;
+  }
+  int index = fontIndex(value);
+  for (int i = 0; i < 5 && column + i < WIDTH; i++) {
+    buffer[page * WIDTH + column + i] = kFont[index][i];
+  }
+  if (column + 5 < WIDTH) {
+    buffer[page * WIDTH + column + 5] = 0;
+  }
+}
+
+bool SSD1306::sendCommand(uint8_t command) {
+  uint8_t data[] = {0x00, command};
+  esp_err_t result = i2c_master_transmit(devHandle, data, sizeof(data), 100);
+  if (result != ESP_OK) {
+    SUPLA_LOG_WARNING("SSD1306 command failed: %s", esp_err_to_name(result));
+    return false;
+  }
+  return true;
+}
+
+bool SSD1306::sendData(const uint8_t *data, size_t size) {
+  if (data == nullptr || size > WIDTH) {
+    return false;
+  }
+  uint8_t transfer[1 + WIDTH] = {0x40};
+  memcpy(transfer + 1, data, size);
+  esp_err_t result = i2c_master_transmit(devHandle, transfer, size + 1, 100);
+  if (result != ESP_OK) {
+    SUPLA_LOG_WARNING("SSD1306 data failed: %s", esp_err_to_name(result));
+    return false;
+  }
+  return true;
+}
+
+}  // namespace Display
+}  // namespace Supla

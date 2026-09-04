@@ -335,6 +335,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>getCurrentDimmerBright
 <tr class="memitem:ad080d39e83eea325411dc6745814c3c7" id="r_ad080d39e83eea325411dc6745814c3c7"><td class="memItemLeft" align="right" valign="top"><a id="ad080d39e83eea325411dc6745814c3c7" name="ad080d39e83eea325411dc6745814c3c7"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>getCurrentRGBBrightness</b> () const</td></tr>
 <tr class="separator:ad080d39e83eea325411dc6745814c3c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78c073317531b33d4de36ea41dcc020d" id="r_a78c073317531b33d4de36ea41dcc020d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a78c073317531b33d4de36ea41dcc020d">setChannelSuspended</a> (bool suspended)</td></tr>
+<tr class="memdesc:a78c073317531b33d4de36ea41dcc020d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Suspends or resumes channel control of the physical outputs.  <br /></td></tr>
+<tr class="separator:a78c073317531b33d4de36ea41dcc020d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fc6ede39f7c3f5a8789a7fa70c1e6ce" id="r_a0fc6ede39f7c3f5a8789a7fa70c1e6ce"><td class="memItemLeft" align="right" valign="top"><a id="a0fc6ede39f7c3f5a8789a7fa70c1e6ce" name="a0fc6ede39f7c3f5a8789a7fa70c1e6ce"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isChannelSuspended</b> () const</td></tr>
+<tr class="separator:a0fc6ede39f7c3f5a8789a7fa70c1e6ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d5027e4b7c5fe6706ef544f3a44b6c7" id="r_a2d5027e4b7c5fe6706ef544f3a44b6c7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2d5027e4b7c5fe6706ef544f3a44b6c7">setMinPwmFrequency</a> (uint16_t minPwmFrequency)</td></tr>
 <tr class="memdesc:a2d5027e4b7c5fe6706ef544f3a44b6c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets minimum PWM frequency.  <br /></td></tr>
 <tr class="separator:a2d5027e4b7c5fe6706ef544f3a44b6c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -692,6 +698,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>instant</b> = false</
 <tr class="memitem:aeb371b8e33a8b9698f95156286fc1145" id="r_aeb371b8e33a8b9698f95156286fc1145"><td class="memItemLeft" align="right" valign="top"><a id="aeb371b8e33a8b9698f95156286fc1145" name="aeb371b8e33a8b9698f95156286fc1145"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>enabled</b> = true</td></tr>
 <tr class="separator:aeb371b8e33a8b9698f95156286fc1145"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3318e46e3f85e3a6101616b8794759f" id="r_ae3318e46e3f85e3a6101616b8794759f"><td class="memItemLeft" align="right" valign="top"><a id="ae3318e46e3f85e3a6101616b8794759f" name="ae3318e46e3f85e3a6101616b8794759f"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>manuallySuspended</b> = false</td></tr>
+<tr class="separator:ae3318e46e3f85e3a6101616b8794759f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a926b6febaf3d51538c9b70d4fb3a1566" id="r_a926b6febaf3d51538c9b70d4fb3a1566"><td class="memItemLeft" align="right" valign="top"><a id="a926b6febaf3d51538c9b70d4fb3a1566" name="a926b6febaf3d51538c9b70d4fb3a1566"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>initDone</b> = false</td></tr>
 <tr class="separator:a926b6febaf3d51538c9b70d4fb3a1566"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1496,6 +1505,26 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 <p>Removes all configration data related to the element from Storage::Config. </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html#a0230d0fb743c8cfff02ce21c6cfae360">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="a78c073317531b33d4de36ea41dcc020d" name="a78c073317531b33d4de36ea41dcc020d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78c073317531b33d4de36ea41dcc020d">&#9670;&#160;</a></span>setChannelSuspended()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Control::LightingPwmBase::setChannelSuspended </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>suspended</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Suspends or resumes channel control of the physical outputs. </p>
+<p>A suspended channel is marked as temporarily unavailable and its outputs are switched off. The suspension persists regardless of the configured channel function until this method is called with false. </p>
 
 </div>
 </div>

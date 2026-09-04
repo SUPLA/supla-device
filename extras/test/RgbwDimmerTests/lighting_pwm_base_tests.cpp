@@ -219,6 +219,31 @@ TEST(RgbCctTests, BasicTests) {
   EXPECT_EQ(ch->getValueWhiteTemperature(), 60);
 }
 
+TEST(RgbCctTests, ManualSuspensionPersistsAcrossIteration) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  RgbCctBaseForTest rgb;
+
+  time.advance(500);
+  rgb.onInit();
+  ASSERT_FALSE(rgb.isChannelSuspended());
+
+  EXPECT_CALL(rgb, setRGBCCTValueOnDevice(_, 0));
+  rgb.setChannelSuspended(true);
+
+  EXPECT_TRUE(rgb.isChannelSuspended());
+  EXPECT_TRUE(rgb.getChannel()->isStateOnlineAndNotAvailable());
+
+  time.advance(500);
+  rgb.iterateAlways();
+  EXPECT_TRUE(rgb.isChannelSuspended());
+  EXPECT_TRUE(rgb.getChannel()->isStateOnlineAndNotAvailable());
+
+  rgb.setChannelSuspended(false);
+  EXPECT_FALSE(rgb.isChannelSuspended());
+  EXPECT_FALSE(rgb.getChannel()->isStateOnlineAndNotAvailable());
+}
+
 TEST(RgbCctTests, CctGainMappingUsesWarmAndColdChannels) {
   Supla::Channel::resetToDefaults();
   SimpleTime time;

@@ -219,12 +219,22 @@ void LightingPwmBase::iterateAlways() {
 }
 
 void LightingPwmBase::updateEnabledState() {
-  if ((hasParent() && parent->getMissingGpioCount() > 0) ||
+  if (manuallySuspended ||
+      (hasParent() && parent->getMissingGpioCount() > 0) ||
       getChannel()->getDefaultFunction() == SUPLA_CHANNELFNC_NONE) {
     disableChannel();
   } else {
     enableChannel();
   }
+}
+
+void LightingPwmBase::setChannelSuspended(bool suspended) {
+  manuallySuspended = suspended;
+  updateEnabledState();
+}
+
+bool LightingPwmBase::isChannelSuspended() const {
+  return manuallySuspended;
 }
 
 int32_t LightingPwmBase::handleNewValueFromServer(

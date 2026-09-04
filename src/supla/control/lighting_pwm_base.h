@@ -154,6 +154,16 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   int getCurrentRGBBrightness() const;
 
   /**
+   * Suspends or resumes channel control of the physical outputs.
+   *
+   * A suspended channel is marked as temporarily unavailable and its outputs
+   * are switched off. The suspension persists regardless of the configured
+   * channel function until this method is called with false.
+   */
+  void setChannelSuspended(bool suspended);
+  bool isChannelSuspended() const;
+
+  /**
    * Sets minimum PWM frequency.
    * This will only set class member. Actual usage of PWM frequency settings
    * depends on RGBCCT object implementation.
@@ -347,6 +357,7 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   bool resetDisance = false;
   bool instant = false;
   bool enabled = true;
+  bool manuallySuspended = false;
   bool initDone = false;
   bool skipLegacyMigration = false;
   int8_t stateOnInit = RGBW_STATE_ON_INIT_RESTORE;

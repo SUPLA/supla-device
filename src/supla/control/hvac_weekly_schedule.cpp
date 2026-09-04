@@ -44,84 +44,30 @@ bool HvacWeeklySchedule::canActivate() const {
 }
 
 bool HvacWeeklySchedule::isConfigured() const {
-  return nativeStorage_.isConfigured();
+  return NativeWeeklyScheduleConfigHandler::isConfigured();
 }
 
-bool HvacWeeklySchedule::supportsConfigType(uint8_t configType) const {
-  if (configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
-    return true;
-  }
-  return configType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE && owner_ &&
-         owner_->isAltWeeklySchedulePossible();
+Supla::Element *HvacWeeklySchedule::getScheduleOwner() const {
+  return owner_;
 }
 
-Supla::ApplyConfigResult HvacWeeklySchedule::applyChannelConfig(
-    TSD_ChannelConfig *config, bool local) {
-  if (config == nullptr || !supportsConfigType(config->ConfigType)) {
-    return Supla::ApplyConfigResult::NotSupported;
-  }
-  const bool isAltWeeklySchedule =
-      config->ConfigType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE;
-
-  if (config->ConfigSize == 0) {
-    SUPLA_LOG_DEBUG(
-        "HVAC[%d]: Missing weekly schedule on server. Sending local schedule",
-        owner_->getChannelNumber());
-    if (!ensureScheduleForUse(isAltWeeklySchedule)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d]: No weekly schedule configured. Using SW defaults",
-          owner_->getChannelNumber());
-      return Supla::ApplyConfigResult::DataError;
-    }
-    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
-  }
-
-  if (config->ConfigSize < sizeof(TChannelConfig_WeeklySchedule)) {
-    SUPLA_LOG_WARNING("HVAC[%d]: Invalid weekly schedule",
-                      owner_->getChannelNumber());
-    return Supla::ApplyConfigResult::DataError;
-  }
-
-  auto *newSchedule =
-      reinterpret_cast<TChannelConfig_WeeklySchedule *>(config->Config);
-  if (!isWeeklyScheduleValid(newSchedule, isAltWeeklySchedule)) {
-    return Supla::ApplyConfigResult::DataError;
-  }
-
-  if (nativeStorage_.updateSchedule(isAltWeeklySchedule, *newSchedule)) {
-    saveWeeklyScheduleForType(isAltWeeklySchedule, local);
-  }
-
-  return Supla::ApplyConfigResult::Success;
+const char *HvacWeeklySchedule::getDeviceLabel() const {
+  return "HVAC";
 }
 
-void HvacWeeklySchedule::fillChannelConfig(void *channelConfig,
-                                           int *size,
-                                           uint8_t configType) {
-  if (!supportsConfigType(configType)) {
-    if (size) {
-      *size = 0;
-    }
-    return;
-  }
-  fillChannelConfig(
-      channelConfig,
-      size,
-      configType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
+bool HvacWeeklySchedule::supportsAltSchedule() const {
+  return owner_ && owner_->isAltWeeklySchedulePossible();
 }
 
-void HvacWeeklySchedule::purgeConfig() {
-  if (owner_ == nullptr) {
-    return;
-  }
-  nativeStorage_.erase(false, *owner_, getScheduleStorageTag(false));
-  nativeStorage_.erase(true, *owner_, getScheduleStorageTag(true));
-  nativeStorage_.reset(true);
+bool HvacWeeklySchedule::hasPersistentDefaultSchedule(bool alt) const {
+  return !alt || supportsAltSchedule();
 }
 
-const char *HvacWeeklySchedule::getScheduleLabel(
-    bool isAltWeeklySchedule) const {
-  return isAltWeeklySchedule ? "alt weekly schedule" : "weekly schedule";
+void HvacWeeklySchedule::fillDefaultSchedule(
+    TChannelConfig_WeeklySchedule *schedule, bool isAltWeeklySchedule) {
+  if (owner_) {
+    owner_->fillDefaultWeeklySchedule(schedule, isAltWeeklySchedule);
+  }
 }
 
 const char *HvacWeeklySchedule::getScheduleStorageTag(
@@ -130,18 +76,26 @@ const char *HvacWeeklySchedule::getScheduleStorageTag(
                              : Supla::ConfigTag::HvacWeeklyCfgTag;
 }
 
-bool HvacWeeklySchedule::validateNativeSchedule(
+bool HvacWeeklySchedule::validateSchedule(
     const TChannelConfig_WeeklySchedule *schedule,
     bool isAltWeeklySchedule) const {
   return isWeeklyScheduleValid(schedule, isAltWeeklySchedule);
 }
 
-bool HvacWeeklySchedule::validateNativeScheduleCallback(
-    void *context,
-    const TChannelConfig_WeeklySchedule *schedule,
-    bool isAltWeeklySchedule) {
-  return static_cast<HvacWeeklySchedule *>(context)->validateNativeSchedule(
-      schedule, isAltWeeklySchedule);
+void HvacWeeklySchedule::onNativeScheduleLoaded() {
+  resetCurrentProgramId();
+}
+
+void HvacWeeklySchedule::onNativeScheduleSaved(bool alt, bool notify) {
+  if (owner_ == nullptr) {
+    return;
+  }
+  if (notify && owner_->initDone) {
+    owner_->requestWeeklyScheduleResend(alt, true);
+    owner_->syncWeeklyScheduleConfigTypes();
+    owner_->persistChannelConfigChangeState();
+  }
+  touchCache(owner_->channel.isHvacFlagWeeklySchedule(), millis());
 }
 
 bool HvacWeeklySchedule::isActive() const {
@@ -166,58 +120,9 @@ void HvacWeeklySchedule::restoreWeeklyScheduleMode(bool enabled) {
   }
 }
 
-bool HvacWeeklySchedule::ensureScheduleLoaded(bool isAltWeeklySchedule) {
-  return getSchedule(isAltWeeklySchedule, true) != nullptr;
-}
-
 bool HvacWeeklySchedule::isProgramValid(const TWeeklyScheduleProgram &program,
                                         bool isAltWeeklySchedule) const {
   return policy_.isProgramValid(*owner_, program, isAltWeeklySchedule);
-}
-
-bool HvacWeeklySchedule::loadSchedule(bool isAltWeeklySchedule) {
-  if (owner_ == nullptr || owner_->getChannelNumber() < 0) {
-    return false;
-  }
-  if (!nativeStorage_.load(isAltWeeklySchedule,
-                           *owner_,
-                           "HVAC",
-                           getScheduleLabel(isAltWeeklySchedule),
-                           getScheduleStorageTag(isAltWeeklySchedule),
-                           this,
-                           validateNativeScheduleCallback)) {
-    return false;
-  }
-  nativeStorage_.touchCache(
-      owner_->channel.isHvacFlagWeeklySchedule(), millis());
-  return true;
-}
-
-bool HvacWeeklySchedule::ensureScheduleForUse(bool isAltWeeklySchedule) {
-  if (ensureScheduleLoaded(isAltWeeklySchedule)) {
-    return true;
-  }
-
-  initDefaultWeeklyScheduleForType(isAltWeeklySchedule, false);
-  return nativeStorage_.getSchedule(isAltWeeklySchedule) != nullptr;
-}
-
-TChannelConfig_WeeklySchedule *HvacWeeklySchedule::getSchedule(
-    bool isAltWeeklySchedule, bool loadIfMissing) {
-  auto *schedule = nativeStorage_.getSchedule(isAltWeeklySchedule);
-  if (schedule == nullptr && loadIfMissing) {
-    if (!loadSchedule(isAltWeeklySchedule)) {
-      return nullptr;
-    }
-    schedule = nativeStorage_.getSchedule(isAltWeeklySchedule);
-  }
-  return schedule;
-}
-
-const TChannelConfig_WeeklySchedule *HvacWeeklySchedule::getSchedule(
-    bool isAltWeeklySchedule, bool loadIfMissing) const {
-  return const_cast<HvacWeeklySchedule *>(this)->getSchedule(
-      isAltWeeklySchedule, loadIfMissing);
 }
 
 void HvacWeeklySchedule::unloadSchedulesIfPossible() {
@@ -227,30 +132,12 @@ void HvacWeeklySchedule::unloadSchedulesIfPossible() {
 
   SUPLA_LOG_DEBUG("HVAC[%d]: unloading weekly schedule cache",
                   owner_->getChannelNumber());
-  if (nativeStorage_.isPersisted(false)) {
-    nativeStorage_.clearSchedule(false);
+  if (isPersisted(false)) {
+    unloadSchedule(false);
   }
-  if (nativeStorage_.isPersisted(true)) {
-    nativeStorage_.clearSchedule(true);
+  if (isPersisted(true)) {
+    unloadSchedule(true);
   }
-}
-
-void HvacWeeklySchedule::onLoadConfig() {
-  if (owner_ == nullptr) {
-    return;
-  }
-
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg) {
-    SUPLA_LOG_ERROR("HVAC[%d]: can't work without config storage",
-                    owner_->getChannelNumber());
-    return;
-  }
-
-  // HVAC has a built-in default schedule. Keep it logical until the schedule
-  // is actually needed, so startup does not allocate either large buffer.
-  nativeStorage_.reset(true);
-  resetCurrentProgramId();
 }
 
 void HvacWeeklySchedule::processCacheRelease() {
@@ -258,8 +145,7 @@ void HvacWeeklySchedule::processCacheRelease() {
     return;
   }
 
-  if (nativeStorage_.processCache(
-          owner_->channel.isHvacFlagWeeklySchedule(), millis())) {
+  if (processCache(owner_->channel.isHvacFlagWeeklySchedule(), millis())) {
     unloadSchedulesIfPossible();
   }
 }
@@ -269,44 +155,12 @@ void HvacWeeklySchedule::saveWeeklySchedule(bool requestResend) {
     return;
   }
 
-  if (nativeStorage_.getSchedule(false) != nullptr) {
-    saveWeeklyScheduleForType(false, requestResend);
+  if (getSchedule(false, false) != nullptr) {
+    saveSchedule(false, requestResend);
   }
-  if (nativeStorage_.getSchedule(true) != nullptr) {
-    saveWeeklyScheduleForType(true, requestResend);
+  if (getSchedule(true, false) != nullptr) {
+    saveSchedule(true, requestResend);
   }
-}
-
-void HvacWeeklySchedule::saveWeeklyScheduleForType(bool isAltWeeklySchedule,
-                                                   bool requestResend) {
-  if (owner_ == nullptr) {
-    return;
-  }
-
-  auto schedule = getSchedule(isAltWeeklySchedule, false);
-  if (schedule == nullptr) {
-    return;
-  }
-
-  nativeStorage_.save(isAltWeeklySchedule,
-                      *owner_,
-                      "HVAC",
-                      getScheduleLabel(isAltWeeklySchedule),
-                      getScheduleStorageTag(isAltWeeklySchedule));
-
-  if (requestResend && owner_->initDone) {
-    owner_->requestWeeklyScheduleResend(isAltWeeklySchedule, true);
-    owner_->syncWeeklyScheduleConfigTypes();
-    owner_->persistChannelConfigChangeState();
-  }
-
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg) {
-    return;
-  }
-  cfg->saveWithDelay(5000);
-  nativeStorage_.touchCache(
-      owner_->channel.isHvacFlagWeeklySchedule(), millis());
 }
 
 bool HvacWeeklySchedule::isWeeklyScheduleValid(
@@ -361,13 +215,14 @@ int HvacWeeklySchedule::getWeeklyScheduleProgramId(
       schedule = self->getSchedule(false, false);
     }
   }
-  return nativeStorage_.getProgramId(schedule, index);
+  return NativeWeeklyScheduleConfigHandler::getProgramId(schedule, index);
 }
 
 int HvacWeeklySchedule::calculateIndex(enum DayOfWeek dayOfWeek,
                                        int hour,
                                        int quarter) const {
-  return nativeStorage_.calculateIndex(dayOfWeek, hour, quarter);
+  return NativeWeeklyScheduleConfigHandler::calculateIndex(
+      dayOfWeek, hour, quarter);
 }
 
 bool HvacWeeklySchedule::setWeeklySchedule(int index,
@@ -400,10 +255,11 @@ bool HvacWeeklySchedule::setWeeklySchedule(int index,
     return false;
   }
 
-  nativeStorage_.setWeeklySchedule(schedule, index, programId);
+  NativeWeeklyScheduleConfigHandler::setWeeklySchedule(
+      schedule, index, programId);
 
   if (owner_->initDone) {
-    saveWeeklyScheduleForType(isAltWeeklySchedule, true);
+    saveSchedule(isAltWeeklySchedule, true);
   }
 
   return true;
@@ -446,7 +302,7 @@ bool HvacWeeklySchedule::setProgram(int programId,
   schedule->Program[programId - 1].SetpointTemperatureCool = tCool;
 
   if (owner_->initDone) {
-    saveWeeklyScheduleForType(isAltWeeklySchedule, true);
+    saveSchedule(isAltWeeklySchedule, true);
   }
   return true;
 }
@@ -463,26 +319,8 @@ TWeeklyScheduleProgram HvacWeeklySchedule::getProgramById(
   }
   auto schedule = self->getSchedule(isAltWeeklySchedule, false);
 
-  return nativeStorage_.getProgramById(schedule, programId);
-}
-
-void HvacWeeklySchedule::fillChannelConfig(void *channelConfig,
-                                           int *size,
-                                           bool isAltWeeklySchedule) {
-  if (size) {
-    *size = 0;
-  }
-  if (channelConfig == nullptr || size == nullptr) {
-    return;
-  }
-
-  if (!ensureScheduleForUse(isAltWeeklySchedule)) {
-    return;
-  }
-  auto schedule = getSchedule(isAltWeeklySchedule, false);
-
-  memcpy(channelConfig, schedule, sizeof(TChannelConfig_WeeklySchedule));
-  *size = sizeof(TChannelConfig_WeeklySchedule);
+  return NativeWeeklyScheduleConfigHandler::getProgramById(
+      schedule, programId);
 }
 
 TWeeklyScheduleProgram HvacWeeklySchedule::getProgramAt(
@@ -492,14 +330,16 @@ TWeeklyScheduleProgram HvacWeeklySchedule::getProgramAt(
                 owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL;
   auto *self = const_cast<HvacWeeklySchedule *>(this);
   if (!self->ensureScheduleForUse(useAlt)) {
-    return nativeStorage_.getProgramAt(nullptr, quarterIndex);
+    return NativeWeeklyScheduleConfigHandler::getProgramAt(
+        nullptr, quarterIndex);
   }
   auto schedule = self->getSchedule(useAlt, false);
-  return nativeStorage_.getProgramAt(schedule, quarterIndex);
+  return NativeWeeklyScheduleConfigHandler::getProgramAt(
+      schedule, quarterIndex);
 }
 
 int HvacWeeklySchedule::getCurrentQuarter() const {
-  return nativeStorage_.getCurrentQuarter();
+  return NativeWeeklyScheduleConfigHandler::getCurrentQuarter();
 }
 
 TWeeklyScheduleProgram HvacWeeklySchedule::getCurrentProgram() const {
@@ -508,10 +348,10 @@ TWeeklyScheduleProgram HvacWeeklySchedule::getCurrentProgram() const {
                 owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL;
   auto *self = const_cast<HvacWeeklySchedule *>(this);
   if (!self->ensureScheduleForUse(useAlt)) {
-    return nativeStorage_.getCurrentProgram(nullptr);
+    return NativeWeeklyScheduleConfigHandler::getCurrentProgram(nullptr);
   }
   auto schedule = self->getSchedule(useAlt, false);
-  return nativeStorage_.getCurrentProgram(schedule);
+  return NativeWeeklyScheduleConfigHandler::getCurrentProgram(schedule);
 }
 
 int HvacWeeklySchedule::getCurrentProgramId() const {
@@ -523,7 +363,7 @@ int HvacWeeklySchedule::getCurrentProgramId() const {
     return 1;
   }
   auto schedule = self->getSchedule(useAlt, false);
-  return nativeStorage_.getCurrentProgramId(schedule);
+  return NativeWeeklyScheduleConfigHandler::getCurrentProgramId(schedule);
 }
 
 bool HvacWeeklySchedule::turnOnWeeklySchedule() {
@@ -533,7 +373,7 @@ bool HvacWeeklySchedule::turnOnWeeklySchedule() {
   if (!ensureScheduleForUse(useAlt)) {
     return false;
   }
-  nativeStorage_.touchCache(true, millis());
+  touchCache(true, millis());
   owner_->setWeeklyScheduleEnabled(true);
   resetCurrentProgramId();
   return processWeeklySchedule();
@@ -546,7 +386,7 @@ bool HvacWeeklySchedule::processWeeklySchedule() {
   if (!ensureScheduleForUse(useAlt)) {
     return false;
   }
-  nativeStorage_.touchCache(true, millis());
+  touchCache(true, millis());
   if (!owner_->isWeeklyScheduleEnabled()) {
     SUPLA_LOG_WARNING(
         "HVAC[%d]: processs weekly schedule failed - it is not enabled",
@@ -580,7 +420,7 @@ bool HvacWeeklySchedule::processWeeklySchedule() {
 }
 
 void HvacWeeklySchedule::initDefaultWeeklySchedule(bool requestResend) {
-  nativeStorage_.clearSchedules();
+  clearSchedules();
   initDefaultWeeklyScheduleForType(false, requestResend);
   if (owner_ != nullptr && owner_->getChannel()->getDefaultFunction() ==
                                SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
@@ -591,15 +431,15 @@ void HvacWeeklySchedule::initDefaultWeeklySchedule(bool requestResend) {
 void HvacWeeklySchedule::initDefaultWeeklyScheduleForType(
     bool isAltWeeklySchedule, bool requestResend) {
   bool shouldInitialize =
-      nativeStorage_.getSchedule(isAltWeeklySchedule) == nullptr &&
+      getSchedule(isAltWeeklySchedule, false) == nullptr &&
       (!isAltWeeklySchedule ||
        owner_->getChannel()->getDefaultFunction() ==
            SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
   if (shouldInitialize) {
-    auto *schedule = nativeStorage_.ensureSchedule(isAltWeeklySchedule);
+    auto *schedule = ensureSchedule(isAltWeeklySchedule);
     owner_->fillDefaultWeeklySchedule(schedule, isAltWeeklySchedule);
   }
-  saveWeeklyScheduleForType(isAltWeeklySchedule, requestResend);
+  saveSchedule(isAltWeeklySchedule, requestResend);
 }
 
 }  // namespace Control

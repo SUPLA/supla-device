@@ -21,127 +21,110 @@
 
 #include <supla-common/proto.h>
 
-#include "weekly_schedule_common.h"
 #include "weekly_schedule_buffer.h"
 #include "weekly_schedule_cache_runtime.h"
+#include "weekly_schedule_common.h"
+#include "weekly_schedule_component.h"
 
 namespace Supla {
 class Element;
 
 namespace Control {
 
-class WeeklyScheduleStorage {
+class NativeWeeklyScheduleConfigHandler : public WeeklyScheduleConfigHandler {
  public:
-  using ValidateFn = bool (*)(
-      void *context,
-      const TChannelConfig_WeeklySchedule *schedule,
-      bool alt);
+  void onLoadConfig() override;
+  Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *config,
+                                              bool local) override;
+  void fillChannelConfig(void *config,
+                         int *size,
+                         uint8_t configType) override;
+  void purgeConfig() override;
+  bool supportsConfigType(uint8_t configType) const override;
 
-  static bool load(const Supla::Element &owner,
-                   const char *deviceLabel,
-                   const char *scheduleLabel,
-                   const char *storageTag,
-                   bool alt,
-                   TChannelConfig_WeeklySchedule *&schedule,
-                   void *context,
-                   ValidateFn validate);
-
-  static bool save(const Supla::Element &owner,
-                   const char *deviceLabel,
-                   const char *scheduleLabel,
-                   const char *storageTag,
-                   const TChannelConfig_WeeklySchedule *schedule);
-};
-
-class NativeWeeklyScheduleStorage {
- public:
-  bool load(bool alt,
-            const Supla::Element &owner,
-            const char *deviceLabel,
-            const char *scheduleLabel,
-            const char *storageTag,
-            void *validationContext,
-            WeeklyScheduleStorage::ValidateFn validate);
-  bool save(bool alt,
-            const Supla::Element &owner,
-            const char *deviceLabel,
-            const char *scheduleLabel,
-            const char *storageTag);
-  void erase(bool alt,
-             const Supla::Element &owner,
-             const char *storageTag);
-
-  bool isConfigured() const {
-    return configured_;
+ protected:
+  virtual Supla::Element *getScheduleOwner() const = 0;
+  virtual const char *getDeviceLabel() const = 0;
+  virtual const char *getScheduleStorageTag(bool alt) const = 0;
+  virtual bool validateSchedule(
+      const TChannelConfig_WeeklySchedule *schedule, bool alt) const = 0;
+  virtual void fillDefaultSchedule(TChannelConfig_WeeklySchedule *schedule,
+                                   bool alt) = 0;
+  virtual bool supportsAltSchedule() const {
+    return false;
   }
-  bool isPersisted(bool alt) const {
-    return schedulePersisted_[alt ? 1 : 0];
+  virtual bool hasAltScheduleStorage() const {
+    return false;
   }
-  void reset(bool configured = false);
+  virtual bool hasPersistentDefaultSchedule(bool alt) const {
+    (void)(alt);
+    return false;
+  }
+  virtual void onNativeScheduleLoaded() {
+  }
+  virtual void onNativeScheduleLoadFailed(bool alt) {
+    (void)(alt);
+  }
+  virtual void onNativeScheduleApplied(bool alt, bool local, bool changed) {
+    (void)(alt);
+    (void)(local);
+    (void)(changed);
+  }
+  virtual void onNativeScheduleSaved(bool alt, bool notify) {
+    (void)(alt);
+    (void)(notify);
+  }
+  virtual void onNativeSchedulePurged() {
+  }
 
-  TChannelConfig_WeeklySchedule *getSchedule(bool alt) {
-    return buffer_.get(alt);
-  }
-  const TChannelConfig_WeeklySchedule *getSchedule(bool alt) const {
-    return buffer_.get(alt);
-  }
+  bool isConfigured() const;
+  bool isConfigured(bool alt) const;
+  bool isPersisted(bool alt) const;
+
+  TChannelConfig_WeeklySchedule *getSchedule(bool alt,
+                                             bool loadIfMissing = true);
+  const TChannelConfig_WeeklySchedule *getSchedule(
+      bool alt, bool loadIfMissing = true) const;
   TChannelConfig_WeeklySchedule *ensureSchedule(bool alt);
+  bool ensureScheduleForUse(bool alt);
   bool updateSchedule(bool alt,
                       const TChannelConfig_WeeklySchedule &schedule);
-  void clearSchedule(bool alt) {
-    buffer_.clear(alt);
-  }
-  void clearSchedules() {
-    buffer_.clearAll();
-  }
+  bool saveSchedule(bool alt, bool notify = false);
+  void clearSchedule(bool alt);
+  void clearSchedules();
+  void unloadSchedule(bool alt);
 
-  int calculateIndex(enum DayOfWeek dayOfWeek, int hour, int quarter) const {
-    return buffer_.calculateIndex(dayOfWeek, hour, quarter);
-  }
+  int calculateIndex(enum DayOfWeek dayOfWeek, int hour, int quarter) const;
   int getProgramId(const TChannelConfig_WeeklySchedule *schedule,
-                   int index) const {
-    return buffer_.getProgramId(schedule, index);
-  }
+                   int index) const;
   bool setWeeklySchedule(TChannelConfig_WeeklySchedule *schedule,
                          int index,
-                         int programId) const {
-    return buffer_.setWeeklySchedule(schedule, index, programId);
-  }
+                         int programId) const;
   TWeeklyScheduleProgram getProgramById(
-      const TChannelConfig_WeeklySchedule *schedule, int programId) const {
-    return buffer_.getProgramById(schedule, programId);
-  }
+      const TChannelConfig_WeeklySchedule *schedule, int programId) const;
   TWeeklyScheduleProgram getProgramAt(
-      const TChannelConfig_WeeklySchedule *schedule, int quarterIndex) const {
-    return buffer_.getProgramAt(schedule, quarterIndex);
-  }
-  int getCurrentQuarter() const {
-    return buffer_.getCurrentQuarter();
-  }
+      const TChannelConfig_WeeklySchedule *schedule, int quarterIndex) const;
+  int getCurrentQuarter() const;
   int getCurrentProgramId(
-      const TChannelConfig_WeeklySchedule *schedule) const {
-    return buffer_.getCurrentProgramId(schedule);
-  }
+      const TChannelConfig_WeeklySchedule *schedule) const;
   TWeeklyScheduleProgram getCurrentProgram(
-      const TChannelConfig_WeeklySchedule *schedule) const {
-    return buffer_.getCurrentProgram(schedule);
-  }
+      const TChannelConfig_WeeklySchedule *schedule) const;
 
-  void touchCache(bool active, uint32_t nowMs) {
-    cacheRuntime_.touch(active, nowMs);
-  }
-  bool processCache(bool active, uint32_t nowMs) {
-    return cacheRuntime_.process(active, nowMs);
-  }
-  void resetCache() {
-    cacheRuntime_.reset();
-  }
+  void touchCache(bool active, uint32_t nowMs);
+  bool processCache(bool active, uint32_t nowMs);
+  void resetCache();
 
  private:
+  bool loadSchedule(bool alt);
+  void eraseSchedule(bool alt);
+  bool configTypeToAlt(uint8_t configType, bool *alt) const;
+  const char *getScheduleLabel(bool alt) const;
+
   WeeklyScheduleBuffer buffer_;
   WeeklyScheduleCacheRuntime cacheRuntime_;
-  bool configured_ = false;
-  bool schedulePersisted_[2] = {false, false};
+  bool configured_[2] = {false, false};
+  bool persisted_[2] = {false, false};
+  bool loadAttempted_[2] = {false, false};
 };
 
 }  // namespace Control

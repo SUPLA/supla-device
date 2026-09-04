@@ -45,29 +45,115 @@ TEST(WeeklyScheduleInfrastructureTests, SettingSameBufferKeepsOwnership) {
   EXPECT_EQ(buffer.get(false)->Program[0].Mode, SUPLA_HVAC_MODE_HEAT);
 }
 
-TEST(WeeklyScheduleInfrastructureTests,
-     InvalidStorageDataLeavesCleanupToBufferOwner) {
+namespace {
+
+class NativeWeeklyScheduleHandlerForTests
+    : public Supla::Control::NativeWeeklyScheduleConfigHandler {
+ public:
+  explicit NativeWeeklyScheduleHandlerForTests(Supla::Element *owner,
+                                               bool valid = false)
+      : owner_(owner), valid_(valid) {
+  }
+
+  bool hasCachedSchedule() const {
+    return getSchedule(false, false) != nullptr;
+  }
+
+  bool releaseInactiveSchedule(uint32_t now) {
+    if (!processCache(false, now)) {
+      return false;
+    }
+    unloadSchedule(false);
+    return true;
+  }
+
+ protected:
+  Supla::Element *getScheduleOwner() const override {
+    return owner_;
+  }
+  const char *getDeviceLabel() const override {
+    return "Test";
+  }
+  const char *getScheduleStorageTag(bool alt) const override {
+    (void)(alt);
+    return "weekly";
+  }
+  bool validateSchedule(const TChannelConfig_WeeklySchedule *schedule,
+                        bool alt) const override {
+    (void)(schedule);
+    (void)(alt);
+    return valid_;
+  }
+  void fillDefaultSchedule(TChannelConfig_WeeklySchedule *schedule,
+                           bool alt) override {
+    (void)(schedule);
+    (void)(alt);
+  }
+
+ private:
+  Supla::Element *owner_ = nullptr;
+  bool valid_ = false;
+};
+
+}  // namespace
+
+TEST(WeeklyScheduleInfrastructureTests, InvalidStoredScheduleIsDiscarded) {
   ConfigMock cfg;
   Supla::ChannelElement storageOwner(0);
-  auto *schedule = new TChannelConfig_WeeklySchedule{};
-  auto *originalSchedule = schedule;
-  EXPECT_CALL(cfg, getBlob(StrEq("0_weekly"), _, sizeof(*schedule)))
+  NativeWeeklyScheduleHandlerForTests handler(&storageOwner);
+  EXPECT_CALL(cfg, getBlobSize(StrEq("0_weekly")))
+      .WillOnce(Return(sizeof(TChannelConfig_WeeklySchedule)));
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
       .WillOnce(Return(true));
 
-  EXPECT_FALSE(Supla::Control::WeeklyScheduleStorage::load(
-      storageOwner,
-      "test",
-      "weekly schedule",
-      "weekly",
-      false,
-      schedule,
-      nullptr,
-      [](void *, const TChannelConfig_WeeklySchedule *, bool) {
-        return false;
-      }));
-  EXPECT_EQ(schedule, originalSchedule);
+  handler.onLoadConfig();
+  TChannelConfig_WeeklySchedule schedule;
+  memset(&schedule, 0xA5, sizeof(schedule));
+  int size = 0;
+  handler.fillChannelConfig(
+      &schedule, &size, SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
 
-  delete schedule;
+  EXPECT_EQ(size, sizeof(schedule));
+  EXPECT_FALSE(handler.hasCachedSchedule());
+  const TChannelConfig_WeeklySchedule emptySchedule = {};
+  EXPECT_EQ(memcmp(&schedule, &emptySchedule, sizeof(schedule)), 0);
+}
+
+TEST(WeeklyScheduleInfrastructureTests,
+     LoadedStoredScheduleIsReleasedWhenInactive) {
+  ConfigMock cfg;
+  SimpleTime time;
+  Supla::ChannelElement storageOwner(0);
+  NativeWeeklyScheduleHandlerForTests handler(&storageOwner, true);
+  TChannelConfig_WeeklySchedule storedSchedule = {};
+  storedSchedule.Program[0].Mode = SUPLA_RELAY_MODE_FORCED_ON;
+
+  EXPECT_CALL(cfg, getBlobSize(StrEq("0_weekly")))
+      .WillOnce(Return(sizeof(TChannelConfig_WeeklySchedule)));
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_weekly"),
+                      _,
+                      sizeof(TChannelConfig_WeeklySchedule)))
+      .WillOnce([&storedSchedule](const char *, char *buf, int size) {
+        memcpy(buf, &storedSchedule, size);
+        return true;
+      });
+
+  handler.onLoadConfig();
+  TChannelConfig_WeeklySchedule schedule = {};
+  int size = 0;
+  handler.fillChannelConfig(
+      &schedule, &size, SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+
+  EXPECT_EQ(size, sizeof(schedule));
+  EXPECT_EQ(schedule.Program[0].Mode, SUPLA_RELAY_MODE_FORCED_ON);
+  EXPECT_TRUE(handler.hasCachedSchedule());
+  EXPECT_FALSE(handler.releaseInactiveSchedule(14999));
+  EXPECT_TRUE(handler.releaseInactiveSchedule(15000));
+  EXPECT_FALSE(handler.hasCachedSchedule());
 }
 
 class HvacBaseForTests : public Supla::Control::HvacBase {

@@ -32,7 +32,7 @@ namespace Control {
 class Relay;
 
 class RelayWeeklySchedule : public WeeklyScheduleController,
-                            public WeeklyScheduleConfigHandler {
+                            public NativeWeeklyScheduleConfigHandler {
  public:
   explicit RelayWeeklySchedule(Relay *owner);
   ~RelayWeeklySchedule();
@@ -42,15 +42,7 @@ class RelayWeeklySchedule : public WeeklyScheduleController,
   }
   bool canActivate() const override;
   bool isConfigured() const;
-  void onLoadConfig() override;
   bool iterateAlways();
-  Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
-                                              bool local = false) override;
-  void fillChannelConfig(void *channelConfig,
-                         int *size,
-                         uint8_t configType) override;
-  void purgeConfig() override;
-  bool supportsConfigType(uint8_t configType) const override;
   bool switchToWeeklySchedule() override;
   void switchToManualMode() override;
   void restoreWeeklyScheduleMode(bool enabled) override;
@@ -62,8 +54,6 @@ class RelayWeeklySchedule : public WeeklyScheduleController,
   void processCacheRelease();
 
  private:
-  bool loadSchedule();
-  void saveWeeklySchedule();
   void syncRelayMode(uint8_t programMode);
   void unloadScheduleIfPossible();
   void setWeeklyScheduleEnabled(bool enabled);
@@ -72,23 +62,27 @@ class RelayWeeklySchedule : public WeeklyScheduleController,
   TChannelConfig_WeeklySchedule *getSchedule(bool loadIfMissing = true);
   bool isWeeklyScheduleValid(
       const TChannelConfig_WeeklySchedule *newSchedule) const;
-  void clearSchedule(bool eraseStorage = true);
   bool isProgramValid(const TWeeklyScheduleProgram &program) const;
   uint8_t getCurrentProgramMode() const;
   void applyCurrentState();
   bool isWaitingForClock() const;
 
-  const char *getScheduleLabel(bool alt) const;
-  const char *getScheduleStorageTag(bool alt) const;
-  bool validateNativeSchedule(
-      const TChannelConfig_WeeklySchedule *schedule, bool alt) const;
-  static bool validateNativeScheduleCallback(
-      void *context,
-      const TChannelConfig_WeeklySchedule *schedule,
-      bool alt);
+  Supla::Element *getScheduleOwner() const override;
+  const char *getDeviceLabel() const override;
+  const char *getScheduleStorageTag(bool alt) const override;
+  bool validateSchedule(const TChannelConfig_WeeklySchedule *schedule,
+                        bool alt) const override;
+  void fillDefaultSchedule(TChannelConfig_WeeklySchedule *schedule,
+                           bool alt) override;
+  void onNativeScheduleLoaded() override;
+  void onNativeScheduleLoadFailed(bool alt) override;
+  void onNativeScheduleApplied(bool alt,
+                               bool local,
+                               bool changed) override;
+  void onNativeScheduleSaved(bool alt, bool notify) override;
+  void onNativeSchedulePurged() override;
 
   Relay *owner_ = nullptr;
-  NativeWeeklyScheduleStorage nativeStorage_;
   bool weeklyScheduleEnabled_ = false;
 };
 

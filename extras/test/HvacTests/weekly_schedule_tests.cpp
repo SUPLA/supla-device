@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <config_mock.h>
+#include <clock_mock.h>
+#include <clock_stub.h>
 #include <gtest/gtest.h>
 #include <output_mock.h>
 #include <protocol_layer_mock.h>
@@ -43,6 +45,27 @@ TEST(WeeklyScheduleInfrastructureTests, SettingSameBufferKeepsOwnership) {
   ASSERT_EQ(buffer.get(false), schedule);
   schedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
   EXPECT_EQ(buffer.get(false)->Program[0].Mode, SUPLA_HVAC_MODE_HEAT);
+}
+
+TEST(WeeklyScheduleInfrastructureTests,
+     CurrentProgramAndIdUseSingleClockSnapshot) {
+  ClockMock clock;
+  Supla::Control::WeeklyScheduleBuffer buffer;
+  TChannelConfig_WeeklySchedule schedule = {};
+  schedule.Program[1].Mode = SUPLA_RELAY_MODE_FORCED_ON;
+  ASSERT_TRUE(buffer.setWeeklySchedule(&schedule, 0, 2));
+
+  EXPECT_CALL(clock, isReady()).Times(4).WillRepeatedly(Return(true));
+  EXPECT_CALL(clock, getHvacDayOfWeek())
+      .WillOnce(Return(Supla::DayOfWeek_Sunday));
+  EXPECT_CALL(clock, getHour()).WillOnce(Return(0));
+  EXPECT_CALL(clock, getQuarter()).WillOnce(Return(0));
+
+  TWeeklyScheduleProgram program = {};
+  int programId = 0;
+  EXPECT_TRUE(buffer.resolveCurrentProgram(&schedule, &program, &programId));
+  EXPECT_EQ(programId, 2);
+  EXPECT_EQ(program.Mode, SUPLA_RELAY_MODE_FORCED_ON);
 }
 
 namespace {
@@ -393,6 +416,29 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
   EXPECT_EQ(hvac->getWeeklyScheduleProgramId(
                 nullptr, hvac->calculateIndex(Supla::DayOfWeek_Monday, 0, 0)),
             3);
+}
+
+TEST_F(HvacWeeklyScheduleTestsF, ZeroProgramIsResolvedAsHvacOff) {
+  ClockStub clock;
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AnyNumber());
+  EXPECT_CALL(cfg, setInt32(_, _))
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, setUInt8(_, _))
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, setBlob(_, _, _))
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(true));
+
+  hvac->onInit();
+  ASSERT_TRUE(hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 0));
+  time.advance(1);
+
+  EXPECT_EQ(hvac->getCurrentProgramId(), 0);
+  EXPECT_EQ(hvac->getCurrentProgram().Mode, SUPLA_HVAC_MODE_OFF);
 }
 
 TEST_F(HvacWeeklyScheduleTestsF,

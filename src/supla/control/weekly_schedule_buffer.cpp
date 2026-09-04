@@ -134,19 +134,35 @@ int WeeklyScheduleBuffer::getCurrentQuarter() const {
   return -1;
 }
 
-int WeeklyScheduleBuffer::getCurrentProgramId(
-    const TChannelConfig_WeeklySchedule *schedule) const {
-  int quarterIndex = getCurrentQuarter();
-  int programId = 1;
-  if (quarterIndex >= 0 && schedule != nullptr) {
-    programId = getProgramId(schedule, quarterIndex);
+bool WeeklyScheduleBuffer::resolveCurrentProgram(
+    const TChannelConfig_WeeklySchedule *schedule,
+    TWeeklyScheduleProgram *program,
+    int *programId) const {
+  if (schedule == nullptr || program == nullptr || programId == nullptr) {
+    return false;
   }
-  return programId;
-}
 
-TWeeklyScheduleProgram WeeklyScheduleBuffer::getCurrentProgram(
-    const TChannelConfig_WeeklySchedule *schedule) const {
-  return getProgramAt(schedule, getCurrentQuarter());
+  *program = {};
+  program->SetpointTemperatureCool = INT16_MIN;
+  program->SetpointTemperatureHeat = INT16_MIN;
+
+  int resolvedProgramId = 1;
+  int quarterIndex = getCurrentQuarter();
+  if (quarterIndex >= 0) {
+    resolvedProgramId = getProgramId(schedule, quarterIndex);
+  }
+  *programId = resolvedProgramId;
+
+  if (resolvedProgramId == 0) {
+    return true;
+  }
+  if (resolvedProgramId < 1 ||
+      resolvedProgramId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
+    return false;
+  }
+
+  *program = schedule->Program[resolvedProgramId - 1];
+  return true;
 }
 
 }  // namespace Control

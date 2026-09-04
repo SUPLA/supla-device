@@ -325,9 +325,7 @@ TWeeklyScheduleProgram HvacWeeklySchedule::getProgramById(
 
 TWeeklyScheduleProgram HvacWeeklySchedule::getProgramAt(
     int quarterIndex) const {
-  bool useAlt = owner_->getChannel()->getDefaultFunction() ==
-                    SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-                owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL;
+  bool useAlt = shouldUseAltSchedule();
   auto *self = const_cast<HvacWeeklySchedule *>(this);
   if (!self->ensureScheduleForUse(useAlt)) {
     return NativeWeeklyScheduleConfigHandler::getProgramAt(
@@ -343,33 +341,45 @@ int HvacWeeklySchedule::getCurrentQuarter() const {
 }
 
 TWeeklyScheduleProgram HvacWeeklySchedule::getCurrentProgram() const {
-  bool useAlt = owner_->getChannel()->getDefaultFunction() ==
-                    SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-                owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL;
-  auto *self = const_cast<HvacWeeklySchedule *>(this);
-  if (!self->ensureScheduleForUse(useAlt)) {
-    return NativeWeeklyScheduleConfigHandler::getCurrentProgram(nullptr);
+  TWeeklyScheduleProgram program = {};
+  int programId = 1;
+  if (!resolveCurrentHvacProgram(&program, &programId)) {
+    program.SetpointTemperatureCool = INT16_MIN;
+    program.SetpointTemperatureHeat = INT16_MIN;
   }
-  auto schedule = self->getSchedule(useAlt, false);
-  return NativeWeeklyScheduleConfigHandler::getCurrentProgram(schedule);
+  return program;
 }
 
 int HvacWeeklySchedule::getCurrentProgramId() const {
-  bool useAlt = owner_->getChannel()->getDefaultFunction() ==
-                    SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-                owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL;
-  auto *self = const_cast<HvacWeeklySchedule *>(this);
-  if (!self->ensureScheduleForUse(useAlt)) {
+  TWeeklyScheduleProgram program = {};
+  int programId = 1;
+  if (!resolveCurrentHvacProgram(&program, &programId)) {
     return 1;
   }
-  auto schedule = self->getSchedule(useAlt, false);
-  return NativeWeeklyScheduleConfigHandler::getCurrentProgramId(schedule);
+  return programId;
+}
+
+bool HvacWeeklySchedule::shouldUseAltSchedule() const {
+  return owner_ != nullptr &&
+         owner_->getChannel()->getDefaultFunction() ==
+             SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
+         owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL;
+}
+
+bool HvacWeeklySchedule::resolveCurrentHvacProgram(
+    TWeeklyScheduleProgram *program, int *programId) const {
+  if (!NativeWeeklyScheduleConfigHandler::resolveCurrentProgram(
+          shouldUseAltSchedule(), program, programId)) {
+    return false;
+  }
+  if (*programId == 0) {
+    program->Mode = SUPLA_HVAC_MODE_OFF;
+  }
+  return true;
 }
 
 bool HvacWeeklySchedule::turnOnWeeklySchedule() {
-  bool useAlt = owner_->getChannel()->getDefaultFunction() ==
-                    SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-                owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL;
+  bool useAlt = shouldUseAltSchedule();
   if (!ensureScheduleForUse(useAlt)) {
     return false;
   }
@@ -380,9 +390,7 @@ bool HvacWeeklySchedule::turnOnWeeklySchedule() {
 }
 
 bool HvacWeeklySchedule::processWeeklySchedule() {
-  bool useAlt = owner_->getChannel()->getDefaultFunction() ==
-                    SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-                owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL;
+  bool useAlt = shouldUseAltSchedule();
   if (!ensureScheduleForUse(useAlt)) {
     return false;
   }
@@ -413,8 +421,11 @@ bool HvacWeeklySchedule::processWeeklySchedule() {
     owner_->setWeeklyScheduleClockError(false);
   }
 
-  TWeeklyScheduleProgram program = getCurrentProgram();
-  int currentProgramId = getCurrentProgramId();
+  TWeeklyScheduleProgram program = {};
+  int currentProgramId = 1;
+  if (!resolveCurrentHvacProgram(&program, &currentProgramId)) {
+    return false;
+  }
   updateCurrentProgramId(currentProgramId);
   return owner_->applyWeeklyScheduleProgram(program, currentProgramId);
 }

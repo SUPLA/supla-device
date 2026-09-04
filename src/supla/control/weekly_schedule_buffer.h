@@ -54,10 +54,9 @@ class WeeklyScheduleBuffer {
   TWeeklyScheduleProgram getProgramAt(
       const TChannelConfig_WeeklySchedule *schedule, int quarterIndex) const;
   int getCurrentQuarter() const;
-  int getCurrentProgramId(
-      const TChannelConfig_WeeklySchedule *schedule) const;
-  TWeeklyScheduleProgram getCurrentProgram(
-      const TChannelConfig_WeeklySchedule *schedule) const;
+  bool resolveCurrentProgram(const TChannelConfig_WeeklySchedule *schedule,
+                             TWeeklyScheduleProgram *program,
+                             int *programId) const;
 
  private:
   TChannelConfig_WeeklySchedule *weeklySchedule_ = nullptr;

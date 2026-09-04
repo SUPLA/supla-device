@@ -358,14 +358,19 @@ int NativeWeeklyScheduleConfigHandler::getCurrentQuarter() const {
   return buffer_.getCurrentQuarter();
 }
 
-int NativeWeeklyScheduleConfigHandler::getCurrentProgramId(
-    const TChannelConfig_WeeklySchedule *schedule) const {
-  return buffer_.getCurrentProgramId(schedule);
+bool NativeWeeklyScheduleConfigHandler::resolveCurrentProgram(
+    bool alt, TWeeklyScheduleProgram *program, int *programId) {
+  if (!ensureScheduleForUse(alt)) {
+    return false;
+  }
+  return buffer_.resolveCurrentProgram(
+      getSchedule(alt, false), program, programId);
 }
 
-TWeeklyScheduleProgram NativeWeeklyScheduleConfigHandler::getCurrentProgram(
-    const TChannelConfig_WeeklySchedule *schedule) const {
-  return buffer_.getCurrentProgram(schedule);
+bool NativeWeeklyScheduleConfigHandler::resolveCurrentProgram(
+    bool alt, TWeeklyScheduleProgram *program, int *programId) const {
+  return const_cast<NativeWeeklyScheduleConfigHandler *>(this)
+      ->resolveCurrentProgram(alt, program, programId);
 }
 
 void NativeWeeklyScheduleConfigHandler::touchCache(bool active,

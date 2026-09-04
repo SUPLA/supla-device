@@ -105,10 +105,12 @@ class NativeWeeklyScheduleConfigHandler : public WeeklyScheduleConfigHandler {
   TWeeklyScheduleProgram getProgramAt(
       const TChannelConfig_WeeklySchedule *schedule, int quarterIndex) const;
   int getCurrentQuarter() const;
-  int getCurrentProgramId(
-      const TChannelConfig_WeeklySchedule *schedule) const;
-  TWeeklyScheduleProgram getCurrentProgram(
-      const TChannelConfig_WeeklySchedule *schedule) const;
+  bool resolveCurrentProgram(bool alt,
+                             TWeeklyScheduleProgram *program,
+                             int *programId);
+  bool resolveCurrentProgram(bool alt,
+                             TWeeklyScheduleProgram *program,
+                             int *programId) const;
 
   void touchCache(bool active, uint32_t nowMs);
   bool processCache(bool active, uint32_t nowMs);

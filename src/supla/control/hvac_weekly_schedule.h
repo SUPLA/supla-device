@@ -79,6 +79,9 @@ class HvacWeeklySchedule : public WeeklyScheduleController,
   void processCacheRelease();
 
  private:
+  bool shouldUseAltSchedule() const;
+  bool resolveCurrentHvacProgram(TWeeklyScheduleProgram *program,
+                                 int *programId) const;
   void initDefaultWeeklyScheduleForType(bool isAltWeeklySchedule,
                                         bool requestResend);
   void unloadSchedulesIfPossible();

@@ -271,20 +271,15 @@ void RelayWeeklySchedule::applyCurrentState() {
   if (!weeklyScheduleEnabled_ || isWaitingForClock()) {
     return;
   }
-  auto *schedule = getSchedule(true);
-  if (schedule == nullptr) {
-    return;
-  }
-
-  int currentProgramId = getCurrentProgramId(schedule);
-  if (currentProgramId < 0) {
+  TWeeklyScheduleProgram program = {};
+  int currentProgramId = -1;
+  if (!resolveCurrentProgram(false, &program, &currentProgramId)) {
     return;
   }
 
   uint8_t currentProgramMode = SUPLA_RELAY_MODE_NOT_SET;
   if (currentProgramId > 0) {
-    currentProgramMode =
-        getProgramById(schedule, currentProgramId).Mode;
+    currentProgramMode = program.Mode;
   }
 
   bool programChanged = updateCurrentProgramId(currentProgramId);
@@ -302,17 +297,18 @@ uint8_t RelayWeeklySchedule::getCurrentProgramMode() const {
   if (isWaitingForClock()) {
     return SUPLA_RELAY_MODE_NOT_SET;
   }
-  auto *schedule = getSchedule(true);
-  if (schedule == nullptr || !isConfigured()) {
+  TWeeklyScheduleProgram program = {};
+  int currentProgramId = -1;
+  if (!isConfigured() ||
+      !resolveCurrentProgram(false, &program, &currentProgramId)) {
     return SUPLA_RELAY_MODE_NOT_SET;
   }
 
-  int currentProgramId = getCurrentProgramId(schedule);
   if (currentProgramId <= 0) {
     return SUPLA_RELAY_MODE_NOT_SET;
   }
 
-  return getProgramById(schedule, currentProgramId).Mode;
+  return program.Mode;
 }
 
 bool RelayWeeklySchedule::isWaitingForClock() const {

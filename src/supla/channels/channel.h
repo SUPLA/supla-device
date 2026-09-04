@@ -17,6 +17,12 @@ enum class HvacCoolSubfunctionFlag {
   CoolSubfunction,
 };
 
+enum class BatteryState : uint8_t {
+  Normal = SUPLA_BATTERY_STATE_OK,
+  Low = SUPLA_BATTERY_STATE_LOW,
+  NotSet = 0xFF,
+};
+
 class Channel : public LocalAction {
  public:
   explicit Channel(int number = -1);
@@ -303,6 +309,11 @@ class Channel : public LocalAction {
    */
   void setBatteryLevel(int level);
 
+  BatteryState getBatteryState() const;
+  void setBatteryState(BatteryState state,
+                       bool applyToWholeDevice = false);
+  bool isBatteryStateAppliedToWholeDevice() const;
+
   // Sets bridge signal strength. Allowed values are 0..100, or 255 to disable
   void setBridgeSignalStrength(unsigned char level);
   uint8_t getBridgeSignalStrength() const;
@@ -386,6 +397,8 @@ class Channel : public LocalAction {
 
   uint8_t batteryLevel = 255;          // 0 - 100%; 255 - not used
   uint8_t batteryPowered = 0;  // 0 - not used, 1 - true, 2 - false
+  BatteryState batteryState = BatteryState::NotSet;
+  bool batteryStateAppliedToWholeDevice = false;
   unsigned char bridgeSignalStrength = 255;  // 0 - 100%; 255 - not used
 
   // registration parameter

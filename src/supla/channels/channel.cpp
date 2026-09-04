@@ -810,6 +810,29 @@ void Channel::setBatteryLevel(int level) {
   }
 }
 
+Supla::BatteryState Channel::getBatteryState() const {
+  return batteryState;
+}
+
+void Channel::setBatteryState(BatteryState state, bool applyToWholeDevice) {
+  if (state == BatteryState::NotSet) {
+    applyToWholeDevice = false;
+  }
+
+  if (state != batteryState ||
+      applyToWholeDevice != batteryStateAppliedToWholeDevice) {
+    SUPLA_LOG_DEBUG("Channel[%d] battery state changed to %u", channelNumber,
+                    static_cast<unsigned>(state));
+    batteryState = state;
+    batteryStateAppliedToWholeDevice = applyToWholeDevice;
+    setSendStateInfo();
+  }
+}
+
+bool Channel::isBatteryStateAppliedToWholeDevice() const {
+  return batteryStateAppliedToWholeDevice;
+}
+
 uint8_t Channel::getBridgeSignalStrength() const {
   return bridgeSignalStrength;
 }

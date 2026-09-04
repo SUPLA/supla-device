@@ -265,6 +265,24 @@ void Element::handleGetChannelState(TDSC_ChannelState *channelState) {
         channelState->BatteryLevel = 0;
       }
 
+      switch (channel->getBatteryState()) {
+        case BatteryState::Normal:
+          channelState->BatteryState = SUPLA_BATTERY_STATE_OK;
+          channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_BATTERY_STATE;
+          break;
+        case BatteryState::Low:
+          channelState->BatteryState = SUPLA_BATTERY_STATE_LOW;
+          channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_BATTERY_STATE;
+          break;
+        case BatteryState::NotSet:
+          break;
+      }
+      if ((channelState->Fields & SUPLA_CHANNELSTATE_FIELD_BATTERY_STATE) &&
+          channel->isBatteryStateAppliedToWholeDevice()) {
+        channelState->Fields |=
+            SUPLA_CHANNELSTATE_FIELD_DEVICE_BATTERY_STATE;
+      }
+
       if (channel->isBridgeSignalStrengthAvailable()) {
         channelState->Fields |=
             SUPLA_CHANNELSTATE_FIELD_BRIDGENODESIGNALSTRENGTH;

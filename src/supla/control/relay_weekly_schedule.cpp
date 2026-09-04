@@ -117,18 +117,8 @@ bool RelayWeeklySchedule::isManualActionAllowed(bool turnOn) const {
 
 bool RelayWeeklySchedule::isProgramValid(
     const TWeeklyScheduleProgram &program) const {
-  switch (program.Mode) {
-    case SUPLA_RELAY_MODE_NOT_SET:
-    case SUPLA_RELAY_MODE_OFF_ONCE:
-    case SUPLA_RELAY_MODE_ON_ONCE:
-    case SUPLA_RELAY_MODE_FORCED_ON:
-    case SUPLA_RELAY_MODE_FORCED_OFF: {
-      return true;
-    }
-    default: {
-      return false;
-    }
-  }
+  return owner_ != nullptr &&
+         owner_->isWeeklyScheduleProgramModeSupported(program.Mode);
 }
 
 bool RelayWeeklySchedule::isWeeklyScheduleValid(

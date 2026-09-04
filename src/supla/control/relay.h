@@ -25,6 +25,7 @@
 #define RELAY_FLAGS_STAIRCASE        (1 << 1)
 #define RELAY_FLAGS_IMPULSE_FUNCTION (1 << 2)  // i.e. gate, door, gateway
 #define RELAY_FLAGS_OVERCURRENT      (1 << 3)
+#define RELAY_FLAGS_AUTOMATIC_MODE   (1 << 5)
 
 namespace Supla {
 namespace Io {
@@ -46,7 +47,8 @@ class Relay : public ChannelElement, public ActionHandler {
       uint8_t impulseFunction : 1;
       uint8_t overcurrent : 1;
       uint8_t weeklySchedule : 1;
-      uint8_t reserved : 3;
+      uint8_t automaticMode : 1;
+      uint8_t reserved : 2;
     } flags;
     uint8_t rawValue = 0;
   };
@@ -232,6 +234,10 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isCyclicMode() const;
 
   bool isWeeklyScheduleSupported() const;
+  Relay &setAutomaticModeSupported(bool supported = true);
+  bool isAutomaticModeSupported() const;
+  bool isAutomaticMode() const;
+  bool setAutomaticMode(bool enabled);
 
  protected:
   void onWeeklyScheduleControllerChanged(
@@ -252,11 +258,14 @@ class Relay : public ChannelElement, public ActionHandler {
   virtual void setNewChannelValue(bool value);
   virtual void fillDefaultWeeklySchedule(
       TChannelConfig_WeeklySchedule *schedule);
+  virtual bool isWeeklyScheduleProgramModeSupported(uint8_t mode) const;
+  virtual void iterateAutomaticMode();
 
   void saveConfig() const;
   void loadRelayConfigOnly();
   bool ensureNativeWeeklyScheduleController();
   void updateWeeklyScheduleCapabilities();
+  void updateAutomaticModeCapability();
   void purgeRelayConfigOnly();
   void updateTimerValue();
   void emitCountdownTimerActionIfNeeded();
@@ -290,6 +299,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool restartTimerOnToggle = false;
   bool skipInitialStateSetting = false;
   bool preloadStateOnSoftReset = false;
+  bool automaticModeSupported = false;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
   Supla::Io::IoPin outputPin;

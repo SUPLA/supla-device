@@ -104,19 +104,11 @@ class HvacWeeklySchedule : public WeeklyScheduleController,
   void initDefaultWeeklyScheduleForType(bool isAltWeeklySchedule,
                                         bool requestResend);
   void unloadSchedulesIfPossible();
-  int getScheduleOwnerChannelNumber() const;
-  const char *getScheduleOwnerLabel() const;
   const char *getScheduleLabel(bool isAltWeeklySchedule) const;
   const char *getScheduleStorageTag(bool isAltWeeklySchedule) const;
-  void generateScheduleStorageKey(char *key,
-                                  const char *storageTag) const;
   bool validateNativeSchedule(
       const TChannelConfig_WeeklySchedule *schedule,
       bool isAltWeeklySchedule) const;
-  NativeWeeklyScheduleStorageAccess getStorageAccess(
-      bool isAltWeeklySchedule);
-  static void generateScheduleStorageKeyCallback(
-      void *context, char *key, const char *storageTag);
   static bool validateNativeScheduleCallback(
       void *context,
       const TChannelConfig_WeeklySchedule *schedule,

@@ -51,14 +51,6 @@ bool RelayWeeklySchedule::supportsConfigType(uint8_t configType) const {
   return configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
 }
 
-int RelayWeeklySchedule::getScheduleOwnerChannelNumber() const {
-  return owner_ ? owner_->getChannelNumber() : -1;
-}
-
-const char *RelayWeeklySchedule::getScheduleOwnerLabel() const {
-  return "Relay";
-}
-
 const char *RelayWeeklySchedule::getScheduleLabel(bool alt) const {
   (void)(alt);
   return "weekly schedule";
@@ -69,34 +61,10 @@ const char *RelayWeeklySchedule::getScheduleStorageTag(bool alt) const {
   return Supla::ConfigTag::RelayWeeklyCfgTag;
 }
 
-void RelayWeeklySchedule::generateScheduleStorageKey(
-    char *key, const char *storageTag) const {
-  owner_->generateKey(key, storageTag);
-}
-
 bool RelayWeeklySchedule::validateNativeSchedule(
     const TChannelConfig_WeeklySchedule *schedule, bool alt) const {
   (void)(alt);
   return isWeeklyScheduleValid(schedule);
-}
-
-NativeWeeklyScheduleStorageAccess RelayWeeklySchedule::getStorageAccess(
-    bool alt) {
-  NativeWeeklyScheduleStorageAccess access;
-  access.channelNumber = getScheduleOwnerChannelNumber();
-  access.deviceLabel = getScheduleOwnerLabel();
-  access.scheduleLabel = getScheduleLabel(alt);
-  access.storageTag = getScheduleStorageTag(alt);
-  access.context = this;
-  access.generateKey = generateScheduleStorageKeyCallback;
-  access.validate = validateNativeScheduleCallback;
-  return access;
-}
-
-void RelayWeeklySchedule::generateScheduleStorageKeyCallback(
-    void *context, char *key, const char *storageTag) {
-  static_cast<RelayWeeklySchedule *>(context)->generateScheduleStorageKey(
-      key, storageTag);
 }
 
 bool RelayWeeklySchedule::validateNativeScheduleCallback(
@@ -234,7 +202,13 @@ bool RelayWeeklySchedule::loadSchedule() {
     return false;
   }
 
-  if (!nativeStorage_.load(false, getStorageAccess(false))) {
+  if (!nativeStorage_.load(false,
+                           *owner_,
+                           "Relay",
+                           getScheduleLabel(false),
+                           getScheduleStorageTag(false),
+                           this,
+                           validateNativeScheduleCallback)) {
     nativeStorage_.configured = false;
     weeklyScheduleEnabled_ = false;
     lastCurrentProgramId_ = -1;
@@ -276,7 +250,11 @@ void RelayWeeklySchedule::saveWeeklySchedule() {
     return;
   }
 
-  nativeStorage_.save(false, getStorageAccess(false));
+  nativeStorage_.save(false,
+                      *owner_,
+                      "Relay",
+                      getScheduleLabel(false),
+                      getScheduleStorageTag(false));
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
     return;
@@ -341,7 +319,7 @@ void RelayWeeklySchedule::purgeConfig() {
   if (owner_ == nullptr) {
     return;
   }
-  nativeStorage_.erase(false, getStorageAccess(false));
+  nativeStorage_.erase(false, *owner_, getScheduleStorageTag(false));
   clearSchedule(false);
 }
 

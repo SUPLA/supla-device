@@ -5,6 +5,7 @@
 
 #include <string.h>
 
+#include <supla/element.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
@@ -13,22 +14,22 @@ namespace Supla {
 namespace Control {
 
 bool WeeklyScheduleStorage::load(
-    int channelNumber,
+    const Supla::Element &owner,
     const char *deviceLabel,
     const char *scheduleLabel,
     const char *storageTag,
     bool alt,
     TChannelConfig_WeeklySchedule *&schedule,
     void *context,
-    GenerateKeyFn generateKey,
     ValidateFn validate) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg || generateKey == nullptr || validate == nullptr) {
+  if (!cfg || validate == nullptr) {
     return false;
   }
 
+  const int channelNumber = owner.getChannelNumber();
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  generateKey(context, key, storageTag);
+  owner.generateKey(key, storageTag);
   SUPLA_LOG_DEBUG("%s[%d]: loading%s %s from storage",
                   deviceLabel,
                   channelNumber,
@@ -68,20 +69,19 @@ bool WeeklyScheduleStorage::load(
 }
 
 bool WeeklyScheduleStorage::save(
-    int channelNumber,
+    const Supla::Element &owner,
     const char *deviceLabel,
     const char *scheduleLabel,
     const char *storageTag,
-    const TChannelConfig_WeeklySchedule *schedule,
-    void *context,
-    GenerateKeyFn generateKey) {
+    const TChannelConfig_WeeklySchedule *schedule) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg || schedule == nullptr || generateKey == nullptr) {
+  if (!cfg || schedule == nullptr) {
     return false;
   }
 
+  const int channelNumber = owner.getChannelNumber();
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  generateKey(context, key, storageTag);
+  owner.generateKey(key, storageTag);
   if (cfg->setBlob(key,
                    reinterpret_cast<const char *>(schedule),
                    sizeof(TChannelConfig_WeeklySchedule))) {
@@ -100,17 +100,22 @@ bool WeeklyScheduleStorage::save(
 }
 
 bool NativeWeeklyScheduleStorage::load(
-    bool alt, const NativeWeeklyScheduleStorageAccess &access) {
+    bool alt,
+    const Supla::Element &owner,
+    const char *deviceLabel,
+    const char *scheduleLabel,
+    const char *storageTag,
+    void *validationContext,
+    WeeklyScheduleStorage::ValidateFn validate) {
   auto *schedule = buffer.get(alt);
-  if (!WeeklyScheduleStorage::load(access.channelNumber,
-                                   access.deviceLabel,
-                                   access.scheduleLabel,
-                                   access.storageTag,
+  if (!WeeklyScheduleStorage::load(owner,
+                                   deviceLabel,
+                                   scheduleLabel,
+                                   storageTag,
                                    alt,
                                    schedule,
-                                   access.context,
-                                   access.generateKey,
-                                   access.validate)) {
+                                   validationContext,
+                                   validate)) {
     buffer.set(alt, schedule);
     buffer.clear(alt);
     schedulePersisted_[alt ? 1 : 0] = false;
@@ -122,24 +127,23 @@ bool NativeWeeklyScheduleStorage::load(
 }
 
 bool NativeWeeklyScheduleStorage::save(
-    bool alt, const NativeWeeklyScheduleStorageAccess &access) {
-  bool persisted = WeeklyScheduleStorage::save(access.channelNumber,
-                                                access.deviceLabel,
-                                                access.scheduleLabel,
-                                                access.storageTag,
-                                                buffer.get(alt),
-                                                access.context,
-                                                access.generateKey);
+    bool alt,
+    const Supla::Element &owner,
+    const char *deviceLabel,
+    const char *scheduleLabel,
+    const char *storageTag) {
+  bool persisted = WeeklyScheduleStorage::save(
+      owner, deviceLabel, scheduleLabel, storageTag, buffer.get(alt));
   schedulePersisted_[alt ? 1 : 0] = persisted;
   return persisted;
 }
 
 void NativeWeeklyScheduleStorage::erase(
-    bool alt, const NativeWeeklyScheduleStorageAccess &access) {
+    bool alt, const Supla::Element &owner, const char *storageTag) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg && access.generateKey) {
+  if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    access.generateKey(access.context, key, access.storageTag);
+    owner.generateKey(key, storageTag);
     cfg->eraseKey(key);
   }
   buffer.clear(alt);

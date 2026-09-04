@@ -48,22 +48,20 @@ TEST(WeeklyScheduleInfrastructureTests, SettingSameBufferKeepsOwnership) {
 TEST(WeeklyScheduleInfrastructureTests,
      InvalidStorageDataLeavesCleanupToBufferOwner) {
   ConfigMock cfg;
+  Supla::ChannelElement storageOwner(0);
   auto *schedule = new TChannelConfig_WeeklySchedule{};
   auto *originalSchedule = schedule;
   EXPECT_CALL(cfg, getBlob(StrEq("0_weekly"), _, sizeof(*schedule)))
       .WillOnce(Return(true));
 
   EXPECT_FALSE(Supla::Control::WeeklyScheduleStorage::load(
-      0,
+      storageOwner,
       "test",
       "weekly schedule",
       "weekly",
       false,
       schedule,
       nullptr,
-      [](void *, char *key, const char *) {
-        snprintf(key, SUPLA_CONFIG_MAX_KEY_SIZE, "0_weekly");
-      },
       [](void *, const TChannelConfig_WeeklySchedule *, bool) {
         return false;
       }));

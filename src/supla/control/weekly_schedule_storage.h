@@ -26,52 +26,50 @@
 #include "weekly_schedule_cache_runtime.h"
 
 namespace Supla {
+class Element;
+
 namespace Control {
 
 class WeeklyScheduleStorage {
  public:
-  using GenerateKeyFn = void (*)(void *context,
-                                 char *key,
-                                 const char *storageTag);
   using ValidateFn = bool (*)(
       void *context,
       const TChannelConfig_WeeklySchedule *schedule,
       bool alt);
 
-  static bool load(int channelNumber,
+  static bool load(const Supla::Element &owner,
                    const char *deviceLabel,
                    const char *scheduleLabel,
                    const char *storageTag,
                    bool alt,
                    TChannelConfig_WeeklySchedule *&schedule,
                    void *context,
-                   GenerateKeyFn generateKey,
                    ValidateFn validate);
 
-  static bool save(int channelNumber,
+  static bool save(const Supla::Element &owner,
                    const char *deviceLabel,
                    const char *scheduleLabel,
                    const char *storageTag,
-                   const TChannelConfig_WeeklySchedule *schedule,
-                   void *context,
-                   GenerateKeyFn generateKey);
-};
-
-struct NativeWeeklyScheduleStorageAccess {
-  int channelNumber;
-  const char *deviceLabel;
-  const char *scheduleLabel;
-  const char *storageTag;
-  void *context;
-  WeeklyScheduleStorage::GenerateKeyFn generateKey;
-  WeeklyScheduleStorage::ValidateFn validate;
+                   const TChannelConfig_WeeklySchedule *schedule);
 };
 
 class NativeWeeklyScheduleStorage {
  public:
-  bool load(bool alt, const NativeWeeklyScheduleStorageAccess &access);
-  bool save(bool alt, const NativeWeeklyScheduleStorageAccess &access);
-  void erase(bool alt, const NativeWeeklyScheduleStorageAccess &access);
+  bool load(bool alt,
+            const Supla::Element &owner,
+            const char *deviceLabel,
+            const char *scheduleLabel,
+            const char *storageTag,
+            void *validationContext,
+            WeeklyScheduleStorage::ValidateFn validate);
+  bool save(bool alt,
+            const Supla::Element &owner,
+            const char *deviceLabel,
+            const char *scheduleLabel,
+            const char *storageTag);
+  void erase(bool alt,
+             const Supla::Element &owner,
+             const char *storageTag);
 
   bool isPersisted(bool alt) const;
   void reset();

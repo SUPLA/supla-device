@@ -80,17 +80,10 @@ class RelayWeeklySchedule : public WeeklyScheduleController,
   void applyCurrentState();
   bool isWaitingForClock() const;
 
-  int getScheduleOwnerChannelNumber() const;
-  const char *getScheduleOwnerLabel() const;
   const char *getScheduleLabel(bool alt) const;
   const char *getScheduleStorageTag(bool alt) const;
-  void generateScheduleStorageKey(char *key,
-                                  const char *storageTag) const;
   bool validateNativeSchedule(
       const TChannelConfig_WeeklySchedule *schedule, bool alt) const;
-  NativeWeeklyScheduleStorageAccess getStorageAccess(bool alt);
-  static void generateScheduleStorageKeyCallback(
-      void *context, char *key, const char *storageTag);
   static bool validateNativeScheduleCallback(
       void *context,
       const TChannelConfig_WeeklySchedule *schedule,

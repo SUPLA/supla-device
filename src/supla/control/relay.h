@@ -275,11 +275,6 @@ class Relay : public ChannelElement, public ActionHandler {
   void updateRelayHvacAggregator();
   bool isManualActionAllowedByWeeklySchedule(bool turnOn) const;
   void applyWeeklyScheduleProgram(uint8_t programMode, bool programChanged);
-  WeeklyScheduleController *getWeeklyScheduleController() const;
-  WeeklyScheduleConfigHandler *getWeeklyScheduleConfigHandler() const;
-  bool areWeeklyScheduleComponentsAssigned() const;
-  bool isWeeklyScheduleLifecycleStarted() const;
-  void loadWeeklyScheduleConfig();
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;

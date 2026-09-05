@@ -52,8 +52,9 @@ void ManagedRelay::loadEngineConfigOnly() {
 
 void ManagedRelay::purgeEngineConfigOnly() {
   Relay::purgeRelayConfigOnly();
-  if (getWeeklyScheduleConfigHandler()) {
-    getWeeklyScheduleConfigHandler()->purgeConfig();
+  auto *configHandler = weeklyScheduleComponents.getConfigHandler();
+  if (configHandler) {
+    configHandler->purgeConfig();
   }
 }
 

@@ -53,7 +53,7 @@ class RelayWithCustomWeeklySchedule : public Supla::Control::Relay {
   using Supla::Control::Relay::Relay;
 
   bool hasWeeklyScheduleController() const {
-    return getWeeklyScheduleController() != nullptr;
+    return weeklyScheduleComponents.getController() != nullptr;
   }
 
  protected:
@@ -72,8 +72,8 @@ class RelayWithAutomaticWeeklySchedule : public Supla::Control::Relay {
   int automaticModeIterationCount = 0;
 
   bool isWeeklyScheduleActive() const {
-    return getWeeklyScheduleController() != nullptr &&
-           getWeeklyScheduleController()->isActive();
+    auto *controller = weeklyScheduleComponents.getController();
+    return controller != nullptr && controller->isActive();
   }
 
  protected:

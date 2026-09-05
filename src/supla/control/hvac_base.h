@@ -527,9 +527,6 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
   void updateWeeklyScheduleConfigTypes();
-  WeeklyScheduleController *getWeeklyScheduleController() const;
-  WeeklyScheduleConfigHandler *getWeeklyScheduleConfigHandler() const;
-  void loadWeeklyScheduleConfig();
   bool isLocalConfigChangePending(int configType) const;
   void persistChannelConfigChangeState();
   void emitCountdownTimerActionIfNeeded();

@@ -98,6 +98,42 @@ void applyActionTriggerServerConfig(Supla::Control::ActionTrigger *at,
   at->handleChannelConfig(&result);
 }
 
+TEST_F(ActionTriggerTests, DefaultConfigIgnoresFunctionField) {
+  Supla::Control::ActionTrigger at;
+  TSD_ChannelConfig result = {};
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  auto *config =
+      reinterpret_cast<TChannelConfig_ActionTrigger *>(result.Config);
+  config->ActiveActions = SUPLA_ACTION_CAP_HOLD;
+
+  EXPECT_EQ(at.handleChannelConfig(&result), SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_TRUE(at.isAnyActionEnabledOnServer());
+  EXPECT_EQ(at.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_ACTIONTRIGGER);
+}
+
+TEST_F(ActionTriggerTests, InvalidDefaultConfigDoesNotChangeActiveActions) {
+  Supla::Control::ActionTrigger at;
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_HOLD);
+  TSD_ChannelConfig result = {};
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger) - 1;
+
+  EXPECT_EQ(at.handleChannelConfig(&result), SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_TRUE(at.isAnyActionEnabledOnServer());
+}
+
+TEST_F(ActionTriggerTests, EmptyDefaultConfigPreservesActiveActions) {
+  Supla::Control::ActionTrigger at;
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_HOLD);
+  TSD_ChannelConfig result = {};
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+
+  EXPECT_EQ(at.handleChannelConfig(&result), SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_TRUE(at.isAnyActionEnabledOnServer());
+}
+
 TEST_F(ActionTriggerTests, AttachToMonostableButton) {
   SrpcMock srpc;
   ignoreAtValueUpdates(&srpc);

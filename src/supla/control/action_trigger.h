@@ -9,7 +9,7 @@
 #include <supla/action_handler.h>
 #include <supla/actions.h>
 #include <supla/at_channel.h>
-#include <supla/element.h>
+#include <supla/element_with_channel_actions.h>
 
 namespace Supla {
 
@@ -27,7 +27,7 @@ namespace Control {
 
 class Button;
 
-class ActionTrigger : public Element, public ActionHandler {
+class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
  public:
   ActionTrigger();
   virtual ~ActionTrigger();
@@ -52,8 +52,6 @@ class ActionTrigger : public Element, public ActionHandler {
   const Supla::Channel *getChannel() const override;
   void onInit() override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr) override;
-  uint8_t handleChannelConfig(TSD_ChannelConfig *result,
-                              bool local = false) override;
   void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onSaveState() override;
@@ -74,6 +72,9 @@ class ActionTrigger : public Element, public ActionHandler {
   void disable();
 
  protected:
+  ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
+                                       bool local) override;
+  bool shouldProcessChannelFunctionFromConfig() const override;
   void addActionToButtonAndDisableIt(int event, int action);
   void parseActiveActionsFromServer();
 

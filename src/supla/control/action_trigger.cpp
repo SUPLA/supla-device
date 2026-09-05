@@ -17,6 +17,7 @@
 Supla::Control::ActionTrigger::ActionTrigger() {
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_ACTIONTRIGGER);
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
 Supla::Control::ActionTrigger::~ActionTrigger() {
@@ -183,7 +184,7 @@ int Supla::Control::ActionTrigger::actionTriggerCapToButtonEvent(
 
 void Supla::Control::ActionTrigger::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
-  Supla::Element::onRegistered(suplaSrpc);
+  Supla::ElementWithChannelActions::onRegistered(suplaSrpc);
   // cleanup actions to be send
   while (channel.popAction()) {
   }
@@ -298,26 +299,38 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
   }
 }
 
-uint8_t Supla::Control::ActionTrigger::handleChannelConfig(
+Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
     TSD_ChannelConfig *result, bool local) {
   (void)(local);
-  if (result->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT &&
-      result->ConfigSize == sizeof(TChannelConfig_ActionTrigger)) {
-    TChannelConfig_ActionTrigger *config =
-      reinterpret_cast<TChannelConfig_ActionTrigger *>(result->Config);
-    activeActionsFromServer = config->ActiveActions;
-    SUPLA_LOG_DEBUG(
-        "AT[%d] received config with active actions: 0x%X",
-        channel.getChannelNumber(),
-        activeActionsFromServer);
-    Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
-    rebuildForAttachedButton();
-    if (storageEnabled) {
-      // Schedule save in 2 s after state change
-      Supla::Storage::ScheduleSave(2000);
-    }
+  if (result == nullptr || result->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
+    return Supla::ApplyConfigResult::NotSupported;
   }
-  return SUPLA_RESULTCODE_TRUE;
+  if (result->ConfigSize == 0) {
+    return Supla::ApplyConfigResult::Success;
+  }
+  if (result->ConfigSize != sizeof(TChannelConfig_ActionTrigger)) {
+    return Supla::ApplyConfigResult::DataError;
+  }
+
+  TChannelConfig_ActionTrigger *config =
+      reinterpret_cast<TChannelConfig_ActionTrigger *>(result->Config);
+  activeActionsFromServer = config->ActiveActions;
+  SUPLA_LOG_DEBUG(
+      "AT[%d] received config with active actions: 0x%X",
+      channel.getChannelNumber(),
+      activeActionsFromServer);
+  Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
+  rebuildForAttachedButton();
+  if (storageEnabled) {
+    // Schedule save in 2 s after state change
+    Supla::Storage::ScheduleSave(2000);
+  }
+  return Supla::ApplyConfigResult::Success;
+}
+
+bool Supla::Control::ActionTrigger::shouldProcessChannelFunctionFromConfig()
+    const {
+  return false;
 }
 
 void Supla::Control::ActionTrigger::setRelatedChannel(Element *element) {
@@ -593,6 +606,7 @@ void Supla::Control::ActionTrigger::onLoadConfig(SuplaDeviceClass *sdc) {
                              getChannel()->getChannelNumber(),
                              Supla::ConfigTag::BtnActionTriggerCfgTagPrefix);
   cfg->getInt32(key, &value);
+  loadConfigChangeFlag();
 
   switch (value) {
     case 0:

@@ -518,25 +518,28 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
       result->ConfigType,
       result->ConfigSize);
 
-  // Apply channel function setting
-  auto newFunction = static_cast<uint32_t>(result->Func);
-  if (newFunction != getChannel()->getDefaultFunction()) {
-    SUPLA_LOG_INFO("Channel[%d] function changed to %s (%d)",
-                   getChannelNumber(),
-                   Supla::channelFunctionToString(newFunction),
-                   newFunction);
-    setAndSaveFunction(newFunction);
-    for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-         proto = proto->next()) {
-      proto->notifyConfigChange(getChannelNumber());
+  if (shouldProcessChannelFunctionFromConfig()) {
+    // Apply channel function setting
+    auto newFunction = static_cast<uint32_t>(result->Func);
+    if (newFunction != getChannel()->getDefaultFunction()) {
+      SUPLA_LOG_INFO("Channel[%d] function changed to %s (%d)",
+                     getChannelNumber(),
+                     Supla::channelFunctionToString(newFunction),
+                     newFunction);
+      setAndSaveFunction(newFunction);
+      for (auto proto = Supla::Protocol::ProtocolLayer::first();
+           proto != nullptr;
+           proto = proto->next()) {
+        proto->notifyConfigChange(getChannelNumber());
+      }
     }
-  }
 
-  // Channel disabled on server
-  if (result->Func == 0) {
-    SUPLA_LOG_DEBUG("Channel[%d] disabled on server", getChannelNumber());
-    markAllChannelConfigsReceived();
-    return SUPLA_CONFIG_RESULT_TRUE;
+    // Channel disabled on server
+    if (result->Func == 0) {
+      SUPLA_LOG_DEBUG("Channel[%d] disabled on server", getChannelNumber());
+      markAllChannelConfigsReceived();
+      return SUPLA_CONFIG_RESULT_TRUE;
+    }
   }
 
   // Reject unexpected ConfigType
@@ -621,6 +624,11 @@ ApplyConfigResult Supla::ElementWithChannelActions::applyChannelConfig(
   SUPLA_LOG_WARNING("Channel[%d] applyChannelConfig missing",
                     getChannelNumber());
   return ApplyConfigResult::NotSupported;
+}
+
+bool Supla::ElementWithChannelActions::shouldProcessChannelFunctionFromConfig()
+    const {
+  return true;
 }
 
 void Supla::ElementWithChannelActions::fillChannelConfig(void *,

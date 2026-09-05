@@ -101,7 +101,8 @@ class ElementWithChannelActions : public Element, public LocalAction {
   bool iterateConnected() override;
   void handleChannelConfigFinished() override;
   void handleChannelConfigFinished(int channelNumber) override;
-  uint8_t handleChannelConfig(TSD_ChannelConfig *result, bool local) override;
+  uint8_t handleChannelConfig(TSD_ChannelConfig *result,
+                              bool local = false) override;
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *result,
                                bool altSchedule,
                                bool local) override;
@@ -127,6 +128,7 @@ class ElementWithChannelActions : public Element, public LocalAction {
   // returns true if function was changed (previous one was different)
   virtual bool setAndSaveFunction(uint32_t channelFunction);
   virtual bool loadFunctionFromConfig();
+  virtual bool shouldProcessChannelFunctionFromConfig() const;
   bool setAndSaveConfigChangeFlag(bool value);
   virtual bool saveConfigChangeFlag() const;
   virtual bool loadConfigChangeFlag();

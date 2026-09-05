@@ -56,11 +56,6 @@ class ActionHandler;
 namespace Protocol {
 class SuplaSrpc;
 }  // namespace Protocol
-namespace Control {
-class WeeklyScheduleController;
-class WeeklyScheduleConfigHandler;
-}  // namespace Control
-
 class ElementWithChannelActions : public Element, public LocalAction {
  public:
   explicit ElementWithChannelActions(
@@ -127,12 +122,6 @@ class ElementWithChannelActions : public Element, public LocalAction {
   void triggerSetChannelConfig(
       int configType = SUPLA_CONFIG_TYPE_DEFAULT,
       bool localChange = false);
-  // Replaces weekly schedule components before configuration loading begins.
-  // Ownership of the controller is transferred only when true is returned.
-  // The config handler is not owned and has to remain valid while registered.
-  bool setWeeklyScheduleController(
-      Supla::Control::WeeklyScheduleController *controller,
-      Supla::Control::WeeklyScheduleConfigHandler *configHandler = nullptr);
 
  protected:
   // returns true if function was changed (previous one was different)
@@ -157,20 +146,6 @@ class ElementWithChannelActions : public Element, public LocalAction {
   bool setLocalConfigChange(int configType, bool value = true);
   void clearLocalConfigChanges(int configType, int secondConfigType = -1);
   uint8_t getUsedLocalConfigTypes() const;
-  void loadWeeklyScheduleConfig();
-  bool areWeeklyScheduleComponentsAssigned() const;
-  bool isWeeklyScheduleLifecycleStarted() const;
-  Supla::Control::WeeklyScheduleController *getWeeklyScheduleController() const;
-  Supla::Control::WeeklyScheduleConfigHandler *
-  getWeeklyScheduleConfigHandler() const;
-  virtual void onWeeklyScheduleComponentsChanged(
-      Supla::Control::WeeklyScheduleController *controller,
-      bool controllerChanged);
-  uint8_t handleWeeklyScheduleWithConfigHandler(
-      TSD_ChannelConfig *result,
-      bool altSchedule,
-      bool local,
-      Supla::Control::WeeklyScheduleConfigHandler *configHandler);
   Supla::ChannelConfigState channelConfigState =
       Supla::ChannelConfigState::None;
 
@@ -185,19 +160,8 @@ class ElementWithChannelActions : public Element, public LocalAction {
   ConfigTypesBitmap receivedConfigTypes;
 
  private:
-  enum class WeeklyScheduleLifecycleState : uint8_t {
-    Unassigned,
-    Assigned,
-    Started,
-  };
-
   uint8_t finishChannelConfig(
       TSD_ChannelConfig *result, Supla::ApplyConfigResult applyResult);
-  WeeklyScheduleLifecycleState weeklyScheduleLifecycleState_ =
-      WeeklyScheduleLifecycleState::Unassigned;
-  Supla::Control::WeeklyScheduleController *weeklyScheduleController_ = nullptr;
-  Supla::Control::WeeklyScheduleConfigHandler *weeklyScheduleConfigHandler_ =
-      nullptr;
 };
 
 };  // namespace Supla

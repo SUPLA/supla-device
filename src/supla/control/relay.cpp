@@ -98,6 +98,49 @@ Relay::~Relay() {
   Supla::Control::RelayHvacAggregator::Remove(getChannelNumber());
 }
 
+bool Relay::setWeeklyScheduleController(
+    WeeklyScheduleController *controller,
+    WeeklyScheduleConfigHandler *configHandler,
+    WeeklyScheduleProgramSource *programSource) {
+  if (!weeklyScheduleComponents.set(
+          controller, configHandler, programSource)) {
+    return false;
+  }
+  usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  usedConfigTypes.clear(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
+  if (configHandler) {
+    usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
+                        configHandler->supportsConfigType(
+                            SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE));
+    usedConfigTypes.set(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE,
+                        configHandler->supportsConfigType(
+                            SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE));
+  }
+  return true;
+}
+
+Supla::Control::WeeklyScheduleController *
+Relay::getWeeklyScheduleController() const {
+  return weeklyScheduleComponents.getController();
+}
+
+Supla::Control::WeeklyScheduleConfigHandler *
+Relay::getWeeklyScheduleConfigHandler() const {
+  return weeklyScheduleComponents.getConfigHandler();
+}
+
+bool Relay::areWeeklyScheduleComponentsAssigned() const {
+  return weeklyScheduleComponents.isAssigned();
+}
+
+bool Relay::isWeeklyScheduleLifecycleStarted() const {
+  return weeklyScheduleComponents.isStarted();
+}
+
+void Relay::loadWeeklyScheduleConfig() {
+  weeklyScheduleComponents.loadConfig();
+}
+
 void Relay::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
@@ -153,7 +196,7 @@ bool Relay::ensureNativeWeeklyScheduleController() {
   }
 
   auto *controller = new RelayWeeklySchedule(this);
-  if (!setWeeklyScheduleController(controller, controller)) {
+  if (!setWeeklyScheduleController(controller, controller, controller)) {
     delete controller;
     return false;
   }
@@ -1457,6 +1500,10 @@ void Relay::saveConfig() const {
 
 void Relay::purgeConfig() {
   Supla::ChannelElement::purgeConfig();
+  auto *configHandler = getWeeklyScheduleConfigHandler();
+  if (configHandler) {
+    configHandler->purgeConfig();
+  }
   purgeRelayConfigOnly();
 }
 

@@ -102,6 +102,70 @@ void WeeklyScheduleController::setWeeklyScheduleProgramSource(
   programSource_ = source;
 }
 
+WeeklyScheduleComponents::~WeeklyScheduleComponents() {
+  configHandler_ = nullptr;
+  programSource_ = nullptr;
+  delete controller_;
+  controller_ = nullptr;
+}
+
+bool WeeklyScheduleComponents::set(
+    WeeklyScheduleController *controller,
+    WeeklyScheduleConfigHandler *configHandler,
+    WeeklyScheduleProgramSource *programSource) {
+  bool sameComponents = controller == controller_ &&
+                        configHandler == configHandler_ &&
+                        programSource == programSource_;
+  if (lifecycleState_ == LifecycleState::Started) {
+    return sameComponents;
+  }
+  if (lifecycleState_ != LifecycleState::Unassigned && sameComponents) {
+    return true;
+  }
+  if (controller != controller_) {
+    configHandler_ = nullptr;
+    programSource_ = nullptr;
+    delete controller_;
+    controller_ = controller;
+  }
+  configHandler_ = configHandler;
+  programSource_ = programSource;
+  if (controller_) {
+    controller_->setWeeklyScheduleProgramSource(programSource_);
+  }
+  lifecycleState_ = LifecycleState::Assigned;
+  return true;
+}
+
+void WeeklyScheduleComponents::loadConfig() {
+  lifecycleState_ = LifecycleState::Started;
+  if (configHandler_) {
+    configHandler_->onLoadConfig();
+  }
+}
+
+bool WeeklyScheduleComponents::isAssigned() const {
+  return lifecycleState_ != LifecycleState::Unassigned;
+}
+
+bool WeeklyScheduleComponents::isStarted() const {
+  return lifecycleState_ == LifecycleState::Started;
+}
+
+WeeklyScheduleController *WeeklyScheduleComponents::getController() const {
+  return controller_;
+}
+
+WeeklyScheduleConfigHandler *
+WeeklyScheduleComponents::getConfigHandler() const {
+  return configHandler_;
+}
+
+WeeklyScheduleProgramSource *
+WeeklyScheduleComponents::getProgramSource() const {
+  return programSource_;
+}
+
 bool ExternalManagedWeeklySchedule::canActivate() const {
   return true;
 }

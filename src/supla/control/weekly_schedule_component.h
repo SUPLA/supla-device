@@ -81,6 +81,7 @@ class WeeklyScheduleController {
       bool programChanged);
 
  private:
+  friend class WeeklyScheduleComponents;
   WeeklyScheduleProgramSource *programSource_ = nullptr;
   int currentProgramId_ = -1;
 };
@@ -96,6 +97,39 @@ class WeeklyScheduleConfigHandler {
                                  int *size,
                                  uint8_t configType) = 0;
   virtual void purgeConfig() = 0;
+};
+
+class WeeklyScheduleComponents {
+ public:
+  WeeklyScheduleComponents() = default;
+  ~WeeklyScheduleComponents();
+  WeeklyScheduleComponents(const WeeklyScheduleComponents &) = delete;
+  WeeklyScheduleComponents &operator=(const WeeklyScheduleComponents &) =
+      delete;
+
+  // Ownership of the controller is transferred only when true is returned.
+  // The config handler and program source are not owned.
+  bool set(WeeklyScheduleController *controller,
+           WeeklyScheduleConfigHandler *configHandler = nullptr,
+           WeeklyScheduleProgramSource *programSource = nullptr);
+  void loadConfig();
+  bool isAssigned() const;
+  bool isStarted() const;
+  WeeklyScheduleController *getController() const;
+  WeeklyScheduleConfigHandler *getConfigHandler() const;
+  WeeklyScheduleProgramSource *getProgramSource() const;
+
+ private:
+  enum class LifecycleState : uint8_t {
+    Unassigned,
+    Assigned,
+    Started,
+  };
+
+  LifecycleState lifecycleState_ = LifecycleState::Unassigned;
+  WeeklyScheduleController *controller_ = nullptr;
+  WeeklyScheduleConfigHandler *configHandler_ = nullptr;
+  WeeklyScheduleProgramSource *programSource_ = nullptr;
 };
 
 class ExternalManagedWeeklySchedule : public WeeklyScheduleController {

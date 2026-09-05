@@ -34,7 +34,6 @@ namespace Supla {
 namespace Control {
 
 HvacWeeklySchedule::HvacWeeklySchedule(HvacBase *owner) : owner_(owner) {
-  setWeeklyScheduleProgramSource(this);
 }
 
 HvacWeeklySchedule::~HvacWeeklySchedule() {

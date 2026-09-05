@@ -14,6 +14,7 @@
 #include "../action_handler.h"
 #include "../channel_element.h"
 #include "../io.h"
+#include "weekly_schedule_component.h"
 
 #define STATE_ON_INIT_RESTORED_OFF -3
 #define STATE_ON_INIT_RESTORED_ON  -2
@@ -238,6 +239,10 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isAutomaticModeSupported() const;
   bool isAutomaticMode() const;
   bool setAutomaticMode(bool enabled);
+  bool setWeeklyScheduleController(
+      WeeklyScheduleController *controller,
+      WeeklyScheduleConfigHandler *configHandler = nullptr,
+      WeeklyScheduleProgramSource *programSource = nullptr);
 
  protected:
   Relay(Supla::Io::IoPin outputPin,
@@ -270,6 +275,11 @@ class Relay : public ChannelElement, public ActionHandler {
   void updateRelayHvacAggregator();
   bool isManualActionAllowedByWeeklySchedule(bool turnOn) const;
   void applyWeeklyScheduleProgram(uint8_t programMode, bool programChanged);
+  WeeklyScheduleController *getWeeklyScheduleController() const;
+  WeeklyScheduleConfigHandler *getWeeklyScheduleConfigHandler() const;
+  bool areWeeklyScheduleComponentsAssigned() const;
+  bool isWeeklyScheduleLifecycleStarted() const;
+  void loadWeeklyScheduleConfig();
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
@@ -301,6 +311,7 @@ class Relay : public ChannelElement, public ActionHandler {
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
   Supla::Io::IoPin outputPin;
+  WeeklyScheduleComponents weeklyScheduleComponents;
 
   static uint16_t relayStorageSaveDelay;
 };

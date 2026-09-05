@@ -9,6 +9,7 @@
 #include <time.h>
 
 #include "weekly_schedule_common.h"
+#include "weekly_schedule_component.h"
 
 #define HVAC_BASE_FLAG_IGNORE_DEFAULT_PUMP         (1 << 0)
 #define HVAC_BASE_FLAG_IGNORE_DEFAULT_HEAT_OR_COLD (1 << 1)
@@ -55,9 +56,6 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *config,
                               bool local = false) override;
-  uint8_t handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
-                               bool altSchedule = false,
-                               bool local = false) override;
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;
   void handleChannelConfigFinished() override;
@@ -84,6 +82,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void saveConfig(bool localChange = false);
   void saveWeeklySchedule();
   void syncWeeklyScheduleConfigTypes();
+  bool setWeeklyScheduleController(
+      WeeklyScheduleController *controller,
+      WeeklyScheduleConfigHandler *configHandler = nullptr,
+      WeeklyScheduleProgramSource *programSource = nullptr);
 
   // Below functions are used to set device capabilities.
   void setHeatingAndCoolingSupported(bool supported);
@@ -479,9 +481,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   friend class HvacWeeklySchedule;
  protected:
-  void onWeeklyScheduleComponentsChanged(
-      Supla::Control::WeeklyScheduleController *controller,
-      bool controllerChanged) override;
+  ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *config,
+                                       bool local) override;
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
   void setOutput(int value, bool force = false);
   void updateChannelState();
@@ -526,6 +527,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
   void updateWeeklyScheduleConfigTypes();
+  WeeklyScheduleController *getWeeklyScheduleController() const;
+  WeeklyScheduleConfigHandler *getWeeklyScheduleConfigHandler() const;
+  void loadWeeklyScheduleConfig();
   bool isLocalConfigChangePending(int configType) const;
   void persistChannelConfigChangeState();
   void emitCountdownTimerActionIfNeeded();
@@ -601,6 +605,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
       5000,  // DIFFERENTIAL
       7500,  // DOMESTIC_HOT_WATER
   };
+  WeeklyScheduleComponents weeklyScheduleComponents;
 };
 
 }  // namespace Control

@@ -33,7 +33,6 @@ namespace Supla {
 namespace Control {
 
 RelayWeeklySchedule::RelayWeeklySchedule(Relay *owner) : owner_(owner) {
-  setWeeklyScheduleProgramSource(this);
 }
 
 RelayWeeklySchedule::~RelayWeeklySchedule() {

@@ -65,11 +65,6 @@ bool ManagedRelay::isWeeklyScheduleConfigUsed() const {
   return usedConfigTypes.isSet(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
 }
 
-WeeklyScheduleConfigHandler *
-ManagedRelay::getWeeklyScheduleConfigHandlerForOwner() const {
-  return getWeeklyScheduleConfigHandler();
-}
-
 void ManagedRelay::setupButtonActions(Button *button) {
   if (button == nullptr) {
     return;
@@ -819,11 +814,8 @@ uint8_t RelayRollerShutterPair::handleWeeklySchedule(
   }
   if (isPrimaryChannel(config->ChannelNumber)) {
     syncPrimaryWeeklyScheduleConfigType();
-    return handleWeeklyScheduleWithConfigHandler(
-        config,
-        false,
-        local,
-        relay0.getWeeklyScheduleConfigHandlerForOwner());
+    return ElementWithChannelActions::handleWeeklySchedule(
+        config, false, local);
   }
   if (isSecondaryChannel(config->ChannelNumber)) {
     return relay1.handleWeeklySchedule(config, false, local);

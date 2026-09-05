@@ -33,6 +33,7 @@ namespace Supla {
 namespace Control {
 
 RelayWeeklySchedule::RelayWeeklySchedule(Relay *owner) : owner_(owner) {
+  setWeeklyScheduleProgramSource(this);
 }
 
 RelayWeeklySchedule::~RelayWeeklySchedule() {
@@ -255,14 +256,6 @@ bool RelayWeeklySchedule::applyCurrentState() {
     return false;
   }
   return processCurrentProgram(millis() <= 30000);
-}
-
-bool RelayWeeklySchedule::resolveWeeklyScheduleProgram(
-    const WeeklyScheduleTimeSnapshot &time,
-    TWeeklyScheduleProgram *program,
-    int *programId) {
-  return NativeWeeklyScheduleConfigHandler::resolveCurrentProgram(
-      false, time, program, programId);
 }
 
 bool RelayWeeklySchedule::applyResolvedWeeklyScheduleProgram(

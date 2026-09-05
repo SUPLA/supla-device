@@ -70,10 +70,11 @@ bool WeeklyScheduleController::resolveWeeklyScheduleProgram(
     const WeeklyScheduleTimeSnapshot &time,
     TWeeklyScheduleProgram *program,
     int *programId) {
-  (void)(time);
-  (void)(program);
-  (void)(programId);
-  return false;
+  if (programSource_ == nullptr) {
+    return false;
+  }
+  return programSource_->resolveProgram(
+      time, shouldUseAltWeeklySchedule(), program, programId);
 }
 
 bool WeeklyScheduleController::applyResolvedWeeklyScheduleProgram(
@@ -94,6 +95,11 @@ bool WeeklyScheduleController::updateCurrentProgramId(int programId) {
 
 void WeeklyScheduleController::resetCurrentProgramId() {
   currentProgramId_ = -1;
+}
+
+void WeeklyScheduleController::setWeeklyScheduleProgramSource(
+    WeeklyScheduleProgramSource *source) {
+  programSource_ = source;
 }
 
 bool ExternalManagedWeeklySchedule::canActivate() const {

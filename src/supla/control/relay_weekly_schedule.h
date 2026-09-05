@@ -60,9 +60,6 @@ class RelayWeeklySchedule : public WeeklyScheduleController,
   bool isWeeklyScheduleValid(
       const TChannelConfig_WeeklySchedule *newSchedule) const;
   bool isProgramValid(const TWeeklyScheduleProgram &program) const;
-  bool resolveWeeklyScheduleProgram(const WeeklyScheduleTimeSnapshot &time,
-                                    TWeeklyScheduleProgram *program,
-                                    int *programId) override;
   bool applyResolvedWeeklyScheduleProgram(
       const TWeeklyScheduleProgram &program,
       int programId,

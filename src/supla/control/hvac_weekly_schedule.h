@@ -82,9 +82,7 @@ class HvacWeeklySchedule : public WeeklyScheduleController,
   bool resolveCurrentHvacProgram(const WeeklyScheduleTimeSnapshot &time,
                                  TWeeklyScheduleProgram *program,
                                  int *programId);
-  bool resolveWeeklyScheduleProgram(const WeeklyScheduleTimeSnapshot &time,
-                                    TWeeklyScheduleProgram *program,
-                                    int *programId) override;
+  bool shouldUseAltWeeklySchedule() const override;
   bool applyResolvedWeeklyScheduleProgram(
       const TWeeklyScheduleProgram &program,
       int programId,

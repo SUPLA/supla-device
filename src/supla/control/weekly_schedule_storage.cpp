@@ -390,6 +390,14 @@ bool NativeWeeklyScheduleConfigHandler::resolveCurrentProgram(
       getSchedule(alt, false), quarterIndex, program, programId);
 }
 
+bool NativeWeeklyScheduleConfigHandler::resolveProgram(
+    const WeeklyScheduleTimeSnapshot &time,
+    bool alt,
+    TWeeklyScheduleProgram *program,
+    int *programId) {
+  return resolveCurrentProgram(alt, time, program, programId);
+}
+
 void NativeWeeklyScheduleConfigHandler::touchCache(bool active,
                                                    uint32_t nowMs) {
   cacheRuntime_.touch(active, nowMs);

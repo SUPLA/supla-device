@@ -34,6 +34,7 @@ namespace Supla {
 namespace Control {
 
 HvacWeeklySchedule::HvacWeeklySchedule(HvacBase *owner) : owner_(owner) {
+  setWeeklyScheduleProgramSource(this);
 }
 
 HvacWeeklySchedule::~HvacWeeklySchedule() {
@@ -377,8 +378,7 @@ bool HvacWeeklySchedule::resolveCurrentHvacProgram(
     const WeeklyScheduleTimeSnapshot &time,
     TWeeklyScheduleProgram *program,
     int *programId) {
-  if (!NativeWeeklyScheduleConfigHandler::resolveCurrentProgram(
-          shouldUseAltSchedule(), time, program, programId)) {
+  if (!resolveWeeklyScheduleProgram(time, program, programId)) {
     return false;
   }
   if (*programId == 0) {
@@ -387,11 +387,8 @@ bool HvacWeeklySchedule::resolveCurrentHvacProgram(
   return true;
 }
 
-bool HvacWeeklySchedule::resolveWeeklyScheduleProgram(
-    const WeeklyScheduleTimeSnapshot &time,
-    TWeeklyScheduleProgram *program,
-    int *programId) {
-  return resolveCurrentHvacProgram(time, program, programId);
+bool HvacWeeklySchedule::shouldUseAltWeeklySchedule() const {
+  return shouldUseAltSchedule();
 }
 
 bool HvacWeeklySchedule::applyResolvedWeeklyScheduleProgram(
@@ -399,7 +396,11 @@ bool HvacWeeklySchedule::applyResolvedWeeklyScheduleProgram(
     int programId,
     bool programChanged) {
   (void)(programChanged);
-  return owner_->applyWeeklyScheduleProgram(program, programId);
+  TWeeklyScheduleProgram hvacProgram = program;
+  if (programId == 0) {
+    hvacProgram.Mode = SUPLA_HVAC_MODE_OFF;
+  }
+  return owner_->applyWeeklyScheduleProgram(hvacProgram, programId);
 }
 
 void HvacWeeklySchedule::onWeeklyScheduleClockState(

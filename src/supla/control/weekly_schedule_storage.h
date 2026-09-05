@@ -31,7 +31,8 @@ class Element;
 
 namespace Control {
 
-class NativeWeeklyScheduleConfigHandler : public WeeklyScheduleConfigHandler {
+class NativeWeeklyScheduleConfigHandler : public WeeklyScheduleConfigHandler,
+                                          public WeeklyScheduleProgramSource {
  public:
   void onLoadConfig() override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *config,
@@ -115,6 +116,10 @@ class NativeWeeklyScheduleConfigHandler : public WeeklyScheduleConfigHandler {
                              const WeeklyScheduleTimeSnapshot &time,
                              TWeeklyScheduleProgram *program,
                              int *programId);
+  bool resolveProgram(const WeeklyScheduleTimeSnapshot &time,
+                      bool alt,
+                      TWeeklyScheduleProgram *program,
+                      int *programId) override;
 
   void touchCache(bool active, uint32_t nowMs);
   bool processCache(bool active, uint32_t nowMs);

@@ -28,6 +28,15 @@ struct WeeklyScheduleTimeSnapshot {
   uint8_t quarter = 0;
 };
 
+class WeeklyScheduleProgramSource {
+ public:
+  virtual ~WeeklyScheduleProgramSource() = default;
+  virtual bool resolveProgram(const WeeklyScheduleTimeSnapshot &time,
+                              bool alt,
+                              TWeeklyScheduleProgram *program,
+                              int *programId) = 0;
+};
+
 class WeeklyScheduleController {
  public:
   virtual ~WeeklyScheduleController() = default;
@@ -53,11 +62,16 @@ class WeeklyScheduleController {
   bool processCurrentProgram(bool startupDelay);
   bool updateCurrentProgramId(int programId);
   void resetCurrentProgramId();
+  // The source is not owned and has to remain valid while registered.
+  void setWeeklyScheduleProgramSource(WeeklyScheduleProgramSource *source);
 
   virtual void onWeeklyScheduleClockState(WeeklyScheduleClockState state) {
     (void)(state);
   }
-  virtual bool resolveWeeklyScheduleProgram(
+  virtual bool shouldUseAltWeeklySchedule() const {
+    return false;
+  }
+  bool resolveWeeklyScheduleProgram(
       const WeeklyScheduleTimeSnapshot &time,
       TWeeklyScheduleProgram *program,
       int *programId);
@@ -67,6 +81,7 @@ class WeeklyScheduleController {
       bool programChanged);
 
  private:
+  WeeklyScheduleProgramSource *programSource_ = nullptr;
   int currentProgramId_ = -1;
 };
 

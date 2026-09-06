@@ -16,9 +16,11 @@ var searchData=
   ['applycorrections_13',['applyCorrections',['../classSupla_1_1Sensor_1_1ThermHygroMeter.html#a1c2119eb738ac047405a2337f3339e3c',1,'Supla::Sensor::ThermHygroMeter']]],
   ['applycorrectionsandstoreit_14',['applyCorrectionsAndStoreIt',['../classSupla_1_1Sensor_1_1ThermHygroMeter.html#a37fe739927b270a3adfc6e17792e0aec',1,'Supla::Sensor::ThermHygroMeter']]],
   ['aqieco_15',['AQIECO',['../classSupla_1_1Protocol_1_1AQIECO.html',1,'Supla::Protocol']]],
-  ['assignmentapplier_16',['AssignmentApplier',['../classSupla_1_1Suplet_1_1AssignmentApplier.html',1,'Supla::Suplet']]],
-  ['atchannel_17',['AtChannel',['../classSupla_1_1AtChannel.html',1,'Supla']]],
-  ['attr_18',['attr',['../classSupla_1_1HtmlTag.html#a96fd2a63ba84b169aaccaf1fe2e68d37',1,'Supla::HtmlTag::attr(const char *name, const char *value)'],['../classSupla_1_1HtmlTag.html#a6c0b7ba3dcf3cb73c17082e0e5aa98ac',1,'Supla::HtmlTag::attr(const char *name, int value)'],['../classSupla_1_1HtmlTag.html#a322be605c1d799edbe49d4049ea27e3c',1,'Supla::HtmlTag::attr(const char *name, int value, int precision)']]],
-  ['attrif_19',['attrIf',['../classSupla_1_1HtmlTag.html#af40942a31cea4e011b92657e500d7716',1,'Supla::HtmlTag']]],
-  ['autolock_20',['AutoLock',['../classSupla_1_1AutoLock.html',1,'Supla']]]
+  ['artifactreader_16',['ArtifactReader',['../classSupla_1_1Suplet_1_1ArtifactReader.html',1,'Supla::Suplet']]],
+  ['artifactstoragehandle_17',['ArtifactStorageHandle',['../structSupla_1_1Suplet_1_1ArtifactStorageHandle.html',1,'Supla::Suplet']]],
+  ['assignmentapplier_18',['AssignmentApplier',['../classSupla_1_1Suplet_1_1AssignmentApplier.html',1,'Supla::Suplet']]],
+  ['atchannel_19',['AtChannel',['../classSupla_1_1AtChannel.html',1,'Supla']]],
+  ['attr_20',['attr',['../classSupla_1_1HtmlTag.html#a96fd2a63ba84b169aaccaf1fe2e68d37',1,'Supla::HtmlTag::attr(const char *name, const char *value)'],['../classSupla_1_1HtmlTag.html#a6c0b7ba3dcf3cb73c17082e0e5aa98ac',1,'Supla::HtmlTag::attr(const char *name, int value)'],['../classSupla_1_1HtmlTag.html#a322be605c1d799edbe49d4049ea27e3c',1,'Supla::HtmlTag::attr(const char *name, int value, int precision)']]],
+  ['attrif_21',['attrIf',['../classSupla_1_1HtmlTag.html#af40942a31cea4e011b92657e500d7716',1,'Supla::HtmlTag']]],
+  ['autolock_22',['AutoLock',['../classSupla_1_1AutoLock.html',1,'Supla']]]
 ];

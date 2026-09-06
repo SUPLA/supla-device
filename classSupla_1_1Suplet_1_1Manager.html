@@ -126,9 +126,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>load</b> ()</td></tr>
 <tr class="memitem:a7f0c3b3fdd381b76d6aef0de523e8d31" id="r_a7f0c3b3fdd381b76d6aef0de523e8d31"><td class="memItemLeft" align="right" valign="top"><a id="a7f0c3b3fdd381b76d6aef0de523e8d31" name="a7f0c3b3fdd381b76d6aef0de523e8d31"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>loadInstance</b> (uint8_t instanceId, <a class="el" href="structSupla_1_1Suplet_1_1InstanceRecord.html">InstanceRecord</a> *record)</td></tr>
 <tr class="separator:a7f0c3b3fdd381b76d6aef0de523e8d31"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a903b4d537578392cc1b066a3268b02e0" id="r_a903b4d537578392cc1b066a3268b02e0"><td class="memItemLeft" align="right" valign="top"><a id="a903b4d537578392cc1b066a3268b02e0" name="a903b4d537578392cc1b066a3268b02e0"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>save</b> ()</td></tr>
-<tr class="separator:a903b4d537578392cc1b066a3268b02e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a267269dff81c93926a6471400d9148da" id="r_a267269dff81c93926a6471400d9148da"><td class="memItemLeft" align="right" valign="top"><a id="a267269dff81c93926a6471400d9148da" name="a267269dff81c93926a6471400d9148da"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>save</b> (const <a class="el" href="structSupla_1_1Suplet_1_1ArtifactStorageHandle.html">ArtifactStorageHandle</a> *stagedArtifact=nullptr)</td></tr>
+<tr class="separator:a267269dff81c93926a6471400d9148da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83d5a92840adf1d345f81d1159acdb77" id="r_a83d5a92840adf1d345f81d1159acdb77"><td class="memItemLeft" align="right" valign="top"><a id="a83d5a92840adf1d345f81d1159acdb77" name="a83d5a92840adf1d345f81d1159acdb77"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>erase</b> ()</td></tr>
 <tr class="separator:a83d5a92840adf1d345f81d1159acdb77"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -177,9 +177,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>addInstanceFromDefini
 <tr class="memitem:ab343190d0e5ad18cf81f8780b53496d4" id="r_ab343190d0e5ad18cf81f8780b53496d4"><td class="memItemLeft" align="right" valign="top"><a id="ab343190d0e5ad18cf81f8780b53496d4" name="ab343190d0e5ad18cf81f8780b53496d4"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>canUpsertInstanceFromDefinition</b> (<a class="el" href="structSupla_1_1Suplet_1_1InstanceRecord.html">InstanceRecord</a> record, const <a class="el" href="structSupla_1_1Suplet_1_1Definition.html">Definition</a> &amp;definition) const</td></tr>
 <tr class="separator:ab343190d0e5ad18cf81f8780b53496d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a573ff222399d95ffce82fe0dc5346893" id="r_a573ff222399d95ffce82fe0dc5346893"><td class="memItemLeft" align="right" valign="top"><a id="a573ff222399d95ffce82fe0dc5346893" name="a573ff222399d95ffce82fe0dc5346893"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>upsertInstanceFromDefinition</b> (<a class="el" href="structSupla_1_1Suplet_1_1InstanceRecord.html">InstanceRecord</a> record, const <a class="el" href="structSupla_1_1Suplet_1_1Definition.html">Definition</a> &amp;definition)</td></tr>
-<tr class="separator:a573ff222399d95ffce82fe0dc5346893"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae04531538978981e01cae022d8ce5957" id="r_ae04531538978981e01cae022d8ce5957"><td class="memItemLeft" align="right" valign="top"><a id="ae04531538978981e01cae022d8ce5957" name="ae04531538978981e01cae022d8ce5957"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>upsertInstanceFromDefinition</b> (<a class="el" href="structSupla_1_1Suplet_1_1InstanceRecord.html">InstanceRecord</a> record, const <a class="el" href="structSupla_1_1Suplet_1_1Definition.html">Definition</a> &amp;definition, const <a class="el" href="structSupla_1_1Suplet_1_1ArtifactStorageHandle.html">ArtifactStorageHandle</a> *stagedArtifact=nullptr)</td></tr>
+<tr class="separator:ae04531538978981e01cae022d8ce5957"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9799679a0119f1a740d33d38478578cb" id="r_a9799679a0119f1a740d33d38478578cb"><td class="memItemLeft" align="right" valign="top"><a id="a9799679a0119f1a740d33d38478578cb" name="a9799679a0119f1a740d33d38478578cb"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>createElementsFromRegistry</b> (const <a class="el" href="classSupla_1_1Suplet_1_1Registry.html">Registry</a> &amp;registry, <a class="el" href="classSupla_1_1Element.html">Supla::Element</a> **created, uint16_t createdSize, uint16_t *createdCount=nullptr)</td></tr>
 <tr class="separator:a9799679a0119f1a740d33d38478578cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -198,6 +198,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>initRuntimeElements</
 <tr class="memitem:a289adc62995dacf6c67bfbb675e7a1ec" id="r_a289adc62995dacf6c67bfbb675e7a1ec"><td class="memItemLeft" align="right" valign="top"><a id="a289adc62995dacf6c67bfbb675e7a1ec" name="a289adc62995dacf6c67bfbb675e7a1ec"></a>
 uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getRuntimeElementCount</b> () const</td></tr>
 <tr class="separator:a289adc62995dacf6c67bfbb675e7a1ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b4e141437c652dfcd4109e30d372e3a" id="r_a3b4e141437c652dfcd4109e30d372e3a"><td class="memItemLeft" align="right" valign="top"><a id="a3b4e141437c652dfcd4109e30d372e3a" name="a3b4e141437c652dfcd4109e30d372e3a"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>beginStagedArtifact</b> (uint8_t instanceId, uint32_t artifactSize, <a class="el" href="structSupla_1_1Suplet_1_1ArtifactStorageHandle.html">ArtifactStorageHandle</a> *handle)</td></tr>
+<tr class="separator:a3b4e141437c652dfcd4109e30d372e3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a834d656d2a49ca0e64daf0ddeb6eaa79" id="r_a834d656d2a49ca0e64daf0ddeb6eaa79"><td class="memItemLeft" align="right" valign="top"><a id="a834d656d2a49ca0e64daf0ddeb6eaa79" name="a834d656d2a49ca0e64daf0ddeb6eaa79"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>writeStagedArtifactChunk</b> (<a class="el" href="structSupla_1_1Suplet_1_1ArtifactStorageHandle.html">ArtifactStorageHandle</a> *handle, const uint8_t *data, uint16_t size)</td></tr>
+<tr class="separator:a834d656d2a49ca0e64daf0ddeb6eaa79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1882e352d8fce95d5a35f996aac713f" id="r_af1882e352d8fce95d5a35f996aac713f"><td class="memItemLeft" align="right" valign="top"><a id="af1882e352d8fce95d5a35f996aac713f" name="af1882e352d8fce95d5a35f996aac713f"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>abortStagedArtifact</b> (<a class="el" href="structSupla_1_1Suplet_1_1ArtifactStorageHandle.html">ArtifactStorageHandle</a> *handle)</td></tr>
+<tr class="separator:af1882e352d8fce95d5a35f996aac713f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07a1b394c29c4d04dfdb59df442367df" id="r_a07a1b394c29c4d04dfdb59df442367df"><td class="memItemLeft" align="right" valign="top"><a id="a07a1b394c29c4d04dfdb59df442367df" name="a07a1b394c29c4d04dfdb59df442367df"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>readArtifact</b> (uint8_t instanceId, uint32_t offset, uint8_t *data, uint16_t size) const</td></tr>
+<tr class="separator:a07a1b394c29c4d04dfdb59df442367df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac6c43bcaf95774058ecb49b5b37d9822" id="r_ac6c43bcaf95774058ecb49b5b37d9822"><td class="memItemLeft" align="right" valign="top"><a id="ac6c43bcaf95774058ecb49b5b37d9822" name="ac6c43bcaf95774058ecb49b5b37d9822"></a>
 ServerConfigResult&#160;</td><td class="memItemRight" valign="bottom"><b>applyCommandJson</b> (const char *commandJson)</td></tr>
 <tr class="separator:ac6c43bcaf95774058ecb49b5b37d9822"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -207,30 +219,18 @@ ServerConfigResult&#160;</td><td class="memItemRight" valign="bottom"><b>validat
 <tr class="memitem:a1f34a0b4b862970ed40e13ce39d083c3" id="r_a1f34a0b4b862970ed40e13ce39d083c3"><td class="memItemLeft" align="right" valign="top"><a id="a1f34a0b4b862970ed40e13ce39d083c3" name="a1f34a0b4b862970ed40e13ce39d083c3"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>handleCalcfg</b> (<a class="el" href="structTSD__DeviceCalCfgRequest.html">TSD_DeviceCalCfgRequest</a> *request, <a class="el" href="structTDS__DeviceCalCfgResult.html">TDS_DeviceCalCfgResult</a> *result)</td></tr>
 <tr class="separator:a1f34a0b4b862970ed40e13ce39d083c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5d443a65c1038f5586340825ffff93f0" id="r_a5d443a65c1038f5586340825ffff93f0"><td class="memItemLeft" align="right" valign="top"><a id="a5d443a65c1038f5586340825ffff93f0" name="a5d443a65c1038f5586340825ffff93f0"></a>
-<a class="el" href="structSupla_1_1Suplet_1_1InstanceCalcfgSession.html">InstanceCalcfgSession</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getInstanceCalcfgSession</b> ()</td></tr>
-<tr class="separator:a5d443a65c1038f5586340825ffff93f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad97bcab6944c84e58079d999fc9b8e02" id="r_ad97bcab6944c84e58079d999fc9b8e02"><td class="memItemLeft" align="right" valign="top"><a id="ad97bcab6944c84e58079d999fc9b8e02" name="ad97bcab6944c84e58079d999fc9b8e02"></a>
-const <a class="el" href="structSupla_1_1Suplet_1_1InstanceCalcfgSession.html">InstanceCalcfgSession</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getInstanceCalcfgSession</b> () const</td></tr>
-<tr class="separator:ad97bcab6944c84e58079d999fc9b8e02"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a48b8437e435c86dc65c7fcc9ce765418" id="r_a48b8437e435c86dc65c7fcc9ce765418"><td class="memItemLeft" align="right" valign="top"><a id="a48b8437e435c86dc65c7fcc9ce765418" name="a48b8437e435c86dc65c7fcc9ce765418"></a>
-<a class="el" href="structSupla_1_1Suplet_1_1InstanceCalcfgSession.html">InstanceCalcfgSession</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>beginInstanceCalcfgSession</b> ()</td></tr>
-<tr class="separator:a48b8437e435c86dc65c7fcc9ce765418"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ad11224e4f6b5aba244c9d000558339" id="r_a9ad11224e4f6b5aba244c9d000558339"><td class="memItemLeft" align="right" valign="top"><a id="a9ad11224e4f6b5aba244c9d000558339" name="a9ad11224e4f6b5aba244c9d000558339"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>clearInstanceCalcfgSession</b> ()</td></tr>
-<tr class="separator:a9ad11224e4f6b5aba244c9d000558339"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a862186541e1f35b6ee1ca119a5016830" id="r_a862186541e1f35b6ee1ca119a5016830"><td class="memItemLeft" align="right" valign="top"><a id="a862186541e1f35b6ee1ca119a5016830" name="a862186541e1f35b6ee1ca119a5016830"></a>
-<a class="el" href="structSupla_1_1Suplet_1_1DefinitionCalcfgSession.html">DefinitionCalcfgSession</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getDefinitionCalcfgSession</b> ()</td></tr>
-<tr class="separator:a862186541e1f35b6ee1ca119a5016830"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22027c1d724282d11f1e0c61ee5c66d1" id="r_a22027c1d724282d11f1e0c61ee5c66d1"><td class="memItemLeft" align="right" valign="top"><a id="a22027c1d724282d11f1e0c61ee5c66d1" name="a22027c1d724282d11f1e0c61ee5c66d1"></a>
-const <a class="el" href="structSupla_1_1Suplet_1_1DefinitionCalcfgSession.html">DefinitionCalcfgSession</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getDefinitionCalcfgSession</b> () const</td></tr>
-<tr class="separator:a22027c1d724282d11f1e0c61ee5c66d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc69e17700fa2d8684b40946a1985d4b" id="r_afc69e17700fa2d8684b40946a1985d4b"><td class="memItemLeft" align="right" valign="top"><a id="afc69e17700fa2d8684b40946a1985d4b" name="afc69e17700fa2d8684b40946a1985d4b"></a>
-<a class="el" href="structSupla_1_1Suplet_1_1DefinitionCalcfgSession.html">DefinitionCalcfgSession</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>beginDefinitionCalcfgSession</b> ()</td></tr>
-<tr class="separator:afc69e17700fa2d8684b40946a1985d4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adebc54193f18b6f9fcbf98117c6a0307" id="r_adebc54193f18b6f9fcbf98117c6a0307"><td class="memItemLeft" align="right" valign="top"><a id="adebc54193f18b6f9fcbf98117c6a0307" name="adebc54193f18b6f9fcbf98117c6a0307"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>clearDefinitionCalcfgSession</b> ()</td></tr>
-<tr class="separator:adebc54193f18b6f9fcbf98117c6a0307"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99fe36baa0bc809cdff3429df650a251" id="r_a99fe36baa0bc809cdff3429df650a251"><td class="memItemLeft" align="right" valign="top"><a id="a99fe36baa0bc809cdff3429df650a251" name="a99fe36baa0bc809cdff3429df650a251"></a>
+<a class="el" href="structSupla_1_1Suplet_1_1CalcfgSession.html">CalcfgSession</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getCalcfgSession</b> ()</td></tr>
+<tr class="separator:a99fe36baa0bc809cdff3429df650a251"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab56d3a76df837bfb2c60f7008426ef33" id="r_ab56d3a76df837bfb2c60f7008426ef33"><td class="memItemLeft" align="right" valign="top"><a id="ab56d3a76df837bfb2c60f7008426ef33" name="ab56d3a76df837bfb2c60f7008426ef33"></a>
+const <a class="el" href="structSupla_1_1Suplet_1_1CalcfgSession.html">CalcfgSession</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getCalcfgSession</b> () const</td></tr>
+<tr class="separator:ab56d3a76df837bfb2c60f7008426ef33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ca4cc1bae4974ef1173337273a369bd" id="r_a6ca4cc1bae4974ef1173337273a369bd"><td class="memItemLeft" align="right" valign="top"><a id="a6ca4cc1bae4974ef1173337273a369bd" name="a6ca4cc1bae4974ef1173337273a369bd"></a>
+<a class="el" href="structSupla_1_1Suplet_1_1CalcfgSession.html">CalcfgSession</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>beginCalcfgSession</b> ()</td></tr>
+<tr class="separator:a6ca4cc1bae4974ef1173337273a369bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51e9f4a03ef2d512c9e8ae59fb4188e6" id="r_a51e9f4a03ef2d512c9e8ae59fb4188e6"><td class="memItemLeft" align="right" valign="top"><a id="a51e9f4a03ef2d512c9e8ae59fb4188e6" name="a51e9f4a03ef2d512c9e8ae59fb4188e6"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>clearCalcfgSession</b> ()</td></tr>
+<tr class="separator:a51e9f4a03ef2d512c9e8ae59fb4188e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b5fc887b4a3aba9c9a751360bc11bef" id="r_a8b5fc887b4a3aba9c9a751360bc11bef"><td class="memItemLeft" align="right" valign="top"><a id="a8b5fc887b4a3aba9c9a751360bc11bef" name="a8b5fc887b4a3aba9c9a751360bc11bef"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>cleanupExpiredCalcfgSessions</b> (uint32_t nowMs)</td></tr>
 <tr class="separator:a8b5fc887b4a3aba9c9a751360bc11bef"><td class="memSeparator" colspan="2">&#160;</td></tr>

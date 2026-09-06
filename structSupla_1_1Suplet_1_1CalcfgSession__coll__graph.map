@@ -1,0 +1,7 @@
+<map id="Supla::Suplet::CalcfgSession" name="Supla::Suplet::CalcfgSession">
+<area shape="rect" id="Node000001" title=" " alt="" coords="88,109,276,135"/>
+<area shape="rect" id="Node000002" href="$structSupla_1_1Suplet_1_1DefinitionCacheHandle.html" title=" " alt="" coords="5,5,162,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,58,121,83,156,106,153,111,118,87,98,61"/>
+<area shape="rect" id="Node000003" href="$structSupla_1_1Suplet_1_1ArtifactStorageHandle.html" title=" " alt="" coords="186,5,376,46"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="271,62,253,87,236,101,217,111,215,106,233,96,250,83,266,59"/>
+</map>

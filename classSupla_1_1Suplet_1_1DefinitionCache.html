@@ -97,12 +97,12 @@ $(function(){ initResizable(false); });
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a6f9b1f06a5a5d89a15f73d0036e38e3e" id="r_a6f9b1f06a5a5d89a15f73d0036e38e3e"><td class="memItemLeft" align="right" valign="top"><a id="a6f9b1f06a5a5d89a15f73d0036e38e3e" name="a6f9b1f06a5a5d89a15f73d0036e38e3e"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>DefinitionCache</b> (<a class="el" href="classSupla_1_1Config.html">Supla::Config</a> *config, <a class="el" href="classSupla_1_1Suplet_1_1Sha256Provider.html">Sha256Provider</a> *sha256Provider)</td></tr>
-<tr class="separator:a6f9b1f06a5a5d89a15f73d0036e38e3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a48fdf4b8fc1910fe6568162435c8cb09" id="r_a48fdf4b8fc1910fe6568162435c8cb09"><td class="memItemLeft" align="right" valign="top"><a id="a48fdf4b8fc1910fe6568162435c8cb09" name="a48fdf4b8fc1910fe6568162435c8cb09"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>save</b> (uint32_t definitionId, uint16_t definitionVersion, const char *json, const uint8_t *expectedSha256)</td></tr>
-<tr class="separator:a48fdf4b8fc1910fe6568162435c8cb09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24f4eb3d570ce923626b67624c54b042" id="r_a24f4eb3d570ce923626b67624c54b042"><td class="memItemLeft" align="right" valign="top"><a id="a24f4eb3d570ce923626b67624c54b042" name="a24f4eb3d570ce923626b67624c54b042"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>DefinitionCache</b> (<a class="el" href="classSupla_1_1Config.html">Supla::Config</a> *config)</td></tr>
+<tr class="separator:a24f4eb3d570ce923626b67624c54b042"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ea0321c5c622b808d23fa9362cb4ef1" id="r_a5ea0321c5c622b808d23fa9362cb4ef1"><td class="memItemLeft" align="right" valign="top"><a id="a5ea0321c5c622b808d23fa9362cb4ef1" name="a5ea0321c5c622b808d23fa9362cb4ef1"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>save</b> (uint32_t definitionId, uint16_t definitionVersion, const char *json)</td></tr>
+<tr class="separator:a5ea0321c5c622b808d23fa9362cb4ef1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a098a6ac34fbc0dc897ded235959c0832" id="r_a098a6ac34fbc0dc897ded235959c0832"><td class="memItemLeft" align="right" valign="top"><a id="a098a6ac34fbc0dc897ded235959c0832" name="a098a6ac34fbc0dc897ded235959c0832"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>load</b> (uint32_t definitionId, uint16_t definitionVersion, char *json, size_t jsonSize, <a class="el" href="structSupla_1_1Suplet_1_1CachedDefinitionInfo.html">CachedDefinitionInfo</a> *info=nullptr) const</td></tr>
 <tr class="separator:a098a6ac34fbc0dc897ded235959c0832"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -118,18 +118,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>getInfo</b> (uint8_t 
 <tr class="memitem:a4af575caab765580d44c885c0004845a" id="r_a4af575caab765580d44c885c0004845a"><td class="memItemLeft" align="right" valign="top"><a id="a4af575caab765580d44c885c0004845a" name="a4af575caab765580d44c885c0004845a"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>getInfoAndRepair</b> (uint8_t index, <a class="el" href="structSupla_1_1Suplet_1_1CachedDefinitionInfo.html">CachedDefinitionInfo</a> *info) const</td></tr>
 <tr class="separator:a4af575caab765580d44c885c0004845a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a58a718378d9bd441e7b792338984f779" id="r_a58a718378d9bd441e7b792338984f779"><td class="memItemLeft" align="right" valign="top"><a id="a58a718378d9bd441e7b792338984f779" name="a58a718378d9bd441e7b792338984f779"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>beginStagedSave</b> (uint32_t definitionId, uint16_t definitionVersion, uint16_t jsonSize, const uint8_t *sha256, <a class="el" href="structSupla_1_1Suplet_1_1DefinitionCacheHandle.html">DefinitionCacheHandle</a> *handle)</td></tr>
-<tr class="separator:a58a718378d9bd441e7b792338984f779"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a1852dd7d10b20358fe85a450934fef" id="r_a4a1852dd7d10b20358fe85a450934fef"><td class="memItemLeft" align="right" valign="top"><a id="a4a1852dd7d10b20358fe85a450934fef" name="a4a1852dd7d10b20358fe85a450934fef"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>beginStagedSave</b> (uint32_t definitionId, uint16_t definitionVersion, uint16_t jsonSize, <a class="el" href="structSupla_1_1Suplet_1_1DefinitionCacheHandle.html">DefinitionCacheHandle</a> *handle)</td></tr>
+<tr class="separator:a4a1852dd7d10b20358fe85a450934fef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4c971310765b0b238a6ed6abb523628" id="r_ac4c971310765b0b238a6ed6abb523628"><td class="memItemLeft" align="right" valign="top"><a id="ac4c971310765b0b238a6ed6abb523628" name="ac4c971310765b0b238a6ed6abb523628"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>writeStagedChunk</b> (<a class="el" href="structSupla_1_1Suplet_1_1DefinitionCacheHandle.html">DefinitionCacheHandle</a> handle, uint16_t chunkIndex, const uint8_t *data, uint16_t size)</td></tr>
 <tr class="separator:ac4c971310765b0b238a6ed6abb523628"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30a1ccb39f7415994d0850d1648756b7" id="r_a30a1ccb39f7415994d0850d1648756b7"><td class="memItemLeft" align="right" valign="top"><a id="a30a1ccb39f7415994d0850d1648756b7" name="a30a1ccb39f7415994d0850d1648756b7"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>loadStaged</b> (<a class="el" href="structSupla_1_1Suplet_1_1DefinitionCacheHandle.html">DefinitionCacheHandle</a> handle, uint32_t definitionId, uint16_t definitionVersion, char *json, size_t jsonSize, <a class="el" href="structSupla_1_1Suplet_1_1CachedDefinitionInfo.html">CachedDefinitionInfo</a> *info=nullptr) const</td></tr>
 <tr class="separator:a30a1ccb39f7415994d0850d1648756b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a473e1c675223061e4c4f88f7e88cc4e8" id="r_a473e1c675223061e4c4f88f7e88cc4e8"><td class="memItemLeft" align="right" valign="top"><a id="a473e1c675223061e4c4f88f7e88cc4e8" name="a473e1c675223061e4c4f88f7e88cc4e8"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>commitStaged</b> (<a class="el" href="structSupla_1_1Suplet_1_1DefinitionCacheHandle.html">DefinitionCacheHandle</a> handle, uint32_t definitionId, uint16_t definitionVersion, uint16_t jsonSize, const uint8_t *sha256)</td></tr>
-<tr class="separator:a473e1c675223061e4c4f88f7e88cc4e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac57e99e41829c9d009477ae140760422" id="r_ac57e99e41829c9d009477ae140760422"><td class="memItemLeft" align="right" valign="top"><a id="ac57e99e41829c9d009477ae140760422" name="ac57e99e41829c9d009477ae140760422"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>commitStaged</b> (<a class="el" href="structSupla_1_1Suplet_1_1DefinitionCacheHandle.html">DefinitionCacheHandle</a> handle, uint32_t definitionId, uint16_t definitionVersion, uint16_t jsonSize)</td></tr>
+<tr class="separator:ac57e99e41829c9d009477ae140760422"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a729fbdcc79d730c950702d8b1eec7464" id="r_a729fbdcc79d730c950702d8b1eec7464"><td class="memItemLeft" align="right" valign="top"><a id="a729fbdcc79d730c950702d8b1eec7464" name="a729fbdcc79d730c950702d8b1eec7464"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>abortStaged</b> (<a class="el" href="structSupla_1_1Suplet_1_1DefinitionCacheHandle.html">DefinitionCacheHandle</a> handle)</td></tr>
 <tr class="separator:a729fbdcc79d730c950702d8b1eec7464"><td class="memSeparator" colspan="2">&#160;</td></tr>

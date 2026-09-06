@@ -20,6 +20,10 @@ class RuntimeHandler {
  public:
   virtual ~RuntimeHandler() = default;
 
+  virtual uint8_t getRequiredElementCount(
+      const Definition &definition,
+      const InstanceRecord &instance) const;
+
   virtual bool createElements(const Definition &definition,
                               const InstanceRecord &instance,
                               Supla::Element **created,
@@ -81,6 +85,7 @@ struct Capability {
   uint8_t handlerVersion = 1;
   uint8_t maxInstances = 1;
   uint8_t supportsDownloadedDefinition = 0;
+  uint32_t maxArtifactSize = 0;
 };
 
 struct ChannelDefinition {
@@ -128,6 +133,7 @@ struct Definition {
   uint32_t definitionId = 0;
   uint16_t definitionVersion = 0;
   uint8_t maxInstances = 1;
+  uint32_t maxArtifactSize = 0;
   const char *name = nullptr;
   const ChannelDefinition *channels = nullptr;
   uint8_t channelCount = 0;

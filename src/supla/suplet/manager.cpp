@@ -149,8 +149,7 @@ Manager::Manager(Supla::Config *config) : storage(config) {
 
 Manager::~Manager() {
   deleteRuntimeElements();
-  clearInstanceCalcfgSession();
-  clearDefinitionCalcfgSession();
+  clearCalcfgSession();
 }
 
 bool Manager::load() {
@@ -161,8 +160,8 @@ bool Manager::loadInstance(uint8_t instanceId, InstanceRecord *record) {
   return storage.loadInstance(instanceId, record);
 }
 
-bool Manager::save() {
-  return storage.save(table);
+bool Manager::save(const ArtifactStorageHandle *stagedArtifact) {
+  return storage.save(table, stagedArtifact);
 }
 
 bool Manager::erase() {
@@ -220,6 +219,7 @@ bool Manager::isServerConfigReady() const {
 
 bool Manager::addInstance(const InstanceRecord &record) {
   InstanceRecord normalized = record;
+  normalized.artifactReader = &storage;
   if (!normalizeInstanceSlot(&normalized, nullptr, table)) {
     return false;
   }
@@ -241,7 +241,8 @@ bool Manager::addInstanceFromDefinition(InstanceRecord record,
 bool Manager::canUpsertInstanceFromDefinition(
     InstanceRecord record,
     const Definition &definition) const {
-  if (!Runtime::validateDefinition(definition)) {
+  if (!Runtime::validateDefinition(definition) ||
+      record.artifactSize > definition.maxArtifactSize) {
     return false;
   }
 
@@ -294,7 +295,8 @@ bool Manager::canUpsertInstanceFromDefinition(
 }
 
 bool Manager::upsertInstanceFromDefinition(InstanceRecord record,
-                                           const Definition &definition) {
+    const Definition &definition,
+    const ArtifactStorageHandle *stagedArtifact) {
   if (!canUpsertInstanceFromDefinition(record, definition)) {
     return false;
   }
@@ -333,6 +335,7 @@ bool Manager::upsertInstanceFromDefinition(InstanceRecord record,
   record.definitionId = definition.definitionId;
   record.definitionVersion = definition.definitionVersion;
   record.channelMap = inputMap;
+  record.artifactReader = &storage;
 
   if (hadOldRecord && !table.removeByInstanceId(record.instanceId)) {
     return false;
@@ -343,7 +346,7 @@ bool Manager::upsertInstanceFromDefinition(InstanceRecord record,
     }
     return false;
   }
-  if (!save()) {
+  if (!save(stagedArtifact)) {
     table.removeByInstanceId(record.instanceId);
     if (hadOldRecord) {
       table.add(oldRecord);
@@ -373,8 +376,7 @@ bool Manager::createElementsFromRegistry(const Registry &registry,
     ScopedJsonDefinition downloadedDefinition;
     const Definition *definition = findDefinitionForRecord(
         registry, serverConfigHandler, *record, &downloadedDefinition, nullptr);
-    if (definition == nullptr ||
-        count + definition->channelCount > createdSize) {
+    if (definition == nullptr) {
       if (createdCount != nullptr) {
         *createdCount = 0;
       }
@@ -382,8 +384,27 @@ bool Manager::createElementsFromRegistry(const Registry &registry,
     }
 
     InstanceRecord runtimeRecord = *record;
-    if (runtimeRecord.config == nullptr && runtimeRecord.configSize > 0 &&
+    if (((runtimeRecord.config == nullptr && runtimeRecord.configSize > 0) ||
+         (runtimeRecord.artifactReader == nullptr &&
+          runtimeRecord.artifactSize > 0)) &&
         !storage.loadInstance(record->instanceId, &runtimeRecord)) {
+      for (uint16_t j = 0; j < count; j++) {
+        delete created[j];
+        created[j] = nullptr;
+      }
+      if (createdCount != nullptr) {
+        *createdCount = 0;
+      }
+      return false;
+    }
+
+    const uint8_t requiredElementCount =
+        definition->runtimeHandler == nullptr
+            ? definition->channelCount
+            : definition->runtimeHandler->getRequiredElementCount(
+                  *definition, runtimeRecord);
+    if (requiredElementCount == 0 ||
+        static_cast<uint32_t>(count) + requiredElementCount > createdSize) {
       for (uint16_t j = 0; j < count; j++) {
         delete created[j];
         created[j] = nullptr;
@@ -398,7 +419,7 @@ bool Manager::createElementsFromRegistry(const Registry &registry,
     if (!Runtime::createElements(*definition,
                                  runtimeRecord,
                                  &created[count],
-                                 definition->channelCount,
+                                 requiredElementCount,
                                  &createdChannelMap)) {
       for (uint16_t j = 0; j < count; j++) {
         delete created[j];
@@ -413,7 +434,7 @@ bool Manager::createElementsFromRegistry(const Registry &registry,
       record->channelMap = createdChannelMap;
       tableChanged = true;
     }
-    count += definition->channelCount;
+    count += requiredElementCount;
   }
 
   if (tableChanged && !save()) {
@@ -510,6 +531,29 @@ uint16_t Manager::getRuntimeElementCount() const {
   return runtimeElementCount;
 }
 
+bool Manager::beginStagedArtifact(uint8_t instanceId,
+                                  uint32_t artifactSize,
+                                  ArtifactStorageHandle *handle) {
+  return storage.beginStagedArtifact(instanceId, artifactSize, handle);
+}
+
+bool Manager::writeStagedArtifactChunk(ArtifactStorageHandle *handle,
+                                       const uint8_t *data,
+                                       uint16_t size) {
+  return storage.writeStagedArtifactChunk(handle, data, size);
+}
+
+bool Manager::abortStagedArtifact(ArtifactStorageHandle *handle) {
+  return storage.abortStagedArtifact(handle);
+}
+
+bool Manager::readArtifact(uint8_t instanceId,
+                           uint32_t offset,
+                           uint8_t *data,
+                           uint16_t size) const {
+  return storage.readArtifact(instanceId, offset, data, size);
+}
+
 ServerConfigResult Manager::applyCommandJson(const char *commandJson) {
   if (serverConfigHandler == nullptr) {
     return ServerConfigResult::InvalidArgument;
@@ -524,67 +568,42 @@ ServerConfigResult Manager::validateCommandJson(const char *commandJson) const {
   return serverConfigHandler->validateCommandJson(commandJson);
 }
 
-InstanceCalcfgSession *Manager::getInstanceCalcfgSession() {
-  return instanceCalcfgSession;
+CalcfgSession *Manager::getCalcfgSession() {
+  return calcfgSession;
 }
 
-const InstanceCalcfgSession *Manager::getInstanceCalcfgSession() const {
-  return instanceCalcfgSession;
+const CalcfgSession *Manager::getCalcfgSession() const {
+  return calcfgSession;
 }
 
-InstanceCalcfgSession *Manager::beginInstanceCalcfgSession() {
-  clearInstanceCalcfgSession();
-  instanceCalcfgSession = new InstanceCalcfgSession();
-  return instanceCalcfgSession;
+CalcfgSession *Manager::beginCalcfgSession() {
+  clearCalcfgSession();
+  calcfgSession = new CalcfgSession();
+  return calcfgSession;
 }
 
-void Manager::clearInstanceCalcfgSession() {
-  if (instanceCalcfgSession != nullptr) {
-    delete instanceCalcfgSession;
-    instanceCalcfgSession = nullptr;
-  }
-}
-
-DefinitionCalcfgSession *Manager::getDefinitionCalcfgSession() {
-  return definitionCalcfgSession;
-}
-
-const DefinitionCalcfgSession *Manager::getDefinitionCalcfgSession() const {
-  return definitionCalcfgSession;
-}
-
-DefinitionCalcfgSession *Manager::beginDefinitionCalcfgSession() {
-  clearDefinitionCalcfgSession();
-  definitionCalcfgSession = new DefinitionCalcfgSession();
-  return definitionCalcfgSession;
-}
-
-void Manager::clearDefinitionCalcfgSession() {
-  if (definitionCalcfgSession != nullptr) {
-    if (serverConfigHandler != nullptr && definitionCalcfgSession->active) {
+void Manager::clearCalcfgSession() {
+  if (calcfgSession != nullptr) {
+    if (serverConfigHandler != nullptr && calcfgSession->active &&
+        calcfgSession->type == CalcfgTransferType::Definition) {
       serverConfigHandler->abortStagedDownloadedDefinition(
-          definitionCalcfgSession->cacheHandle);
+          calcfgSession->definitionCacheHandle);
+    } else if (calcfgSession->active &&
+               calcfgSession->type == CalcfgTransferType::Instance &&
+               calcfgSession->artifactStorageHandle.valid) {
+      abortStagedArtifact(&calcfgSession->artifactStorageHandle);
     }
-    delete definitionCalcfgSession;
-    definitionCalcfgSession = nullptr;
+    delete calcfgSession;
+    calcfgSession = nullptr;
   }
 }
 
 void Manager::cleanupExpiredCalcfgSessions(uint32_t nowMs) {
-  if (instanceCalcfgSession != nullptr && instanceCalcfgSession->active &&
-      nowMs - instanceCalcfgSession->lastActivityMs >
+  if (calcfgSession != nullptr && calcfgSession->active &&
+      nowMs - calcfgSession->lastActivityMs >
           SUPLA_SUPLET_CALCFG_SESSION_TIMEOUT_MS) {
-    SUPLA_LOG_WARNING("Suplet CALCFG instance session timeout: session=%u",
-                      instanceCalcfgSession->sessionId);
-    clearInstanceCalcfgSession();
-  }
-
-  if (definitionCalcfgSession != nullptr && definitionCalcfgSession->active &&
-      nowMs - definitionCalcfgSession->lastActivityMs >
-          SUPLA_SUPLET_CALCFG_SESSION_TIMEOUT_MS) {
-    SUPLA_LOG_WARNING("Suplet CALCFG definition session timeout: session=%u",
-                      definitionCalcfgSession->sessionId);
-    clearDefinitionCalcfgSession();
+    SUPLA_LOG_WARNING("Suplet CALCFG transfer timeout");
+    clearCalcfgSession();
   }
 }
 
@@ -650,7 +669,7 @@ bool Manager::isChannelMissingOnServer(uint8_t *channelReport,
 }
 
 bool Manager::getRequiredRuntimeElementCount(const Registry &registry,
-                                             uint16_t *count) const {
+                                             uint16_t *count) {
   if (count == nullptr) {
     return false;
   }
@@ -667,11 +686,24 @@ bool Manager::getRequiredRuntimeElementCount(const Registry &registry,
     if (definition == nullptr) {
       return false;
     }
-    if (static_cast<uint32_t>(*count) + definition->channelCount >
+    InstanceRecord runtimeRecord = *record;
+    if (((runtimeRecord.config == nullptr && runtimeRecord.configSize > 0) ||
+         (runtimeRecord.artifactReader == nullptr &&
+          runtimeRecord.artifactSize > 0)) &&
+        !storage.loadInstance(record->instanceId, &runtimeRecord)) {
+      return false;
+    }
+    const uint8_t requiredElementCount =
+        definition->runtimeHandler == nullptr
+            ? definition->channelCount
+            : definition->runtimeHandler->getRequiredElementCount(
+                  *definition, runtimeRecord);
+    if (requiredElementCount == 0 ||
+        static_cast<uint32_t>(*count) + requiredElementCount >
         SUPLA_CHANNELMAXCOUNT) {
       return false;
     }
-    *count += definition->channelCount;
+    *count += requiredElementCount;
   }
   return true;
 }

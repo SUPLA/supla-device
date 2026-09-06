@@ -10,6 +10,11 @@
 namespace Supla {
 namespace Suplet {
 
+uint8_t RuntimeHandler::getRequiredElementCount(
+    const Definition &definition, const InstanceRecord &) const {
+  return definition.channelCount;
+}
+
 bool getDefinitionChannelIds(const Definition &definition,
                              uint8_t *output,
                              uint8_t outputSize) {

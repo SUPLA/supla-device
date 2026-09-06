@@ -93,6 +93,7 @@ TEST(SupletJsonDefinitionTests, ParsesVirtualDefinition) {
       "\"definitionId\":1001,"
       "\"definitionVersion\":7,"
       "\"maxInstances\":6,"
+      "\"maxArtifactSize\":4096,"
       "\"category\":\"virtual\","
       "\"kind\":\"virtualRelay\","
       "\"name\":\"Virtual controls\","
@@ -126,6 +127,7 @@ TEST(SupletJsonDefinitionTests, ParsesVirtualDefinition) {
   EXPECT_EQ(definition->definitionId, 1001u);
   EXPECT_EQ(definition->definitionVersion, 7u);
   EXPECT_EQ(definition->maxInstances, 6);
+  EXPECT_EQ(definition->maxArtifactSize, 4096u);
   EXPECT_EQ(definition->category, Supla::Suplet::Category::Virtual);
   EXPECT_EQ(definition->kind, Supla::Suplet::Kind::VirtualRelay);
   EXPECT_STREQ(definition->name, "Virtual controls");
@@ -210,6 +212,7 @@ TEST(SupletJsonDefinitionTests, ParsesCompactDefinitionAliases) {
       "\"di\":3001,"
       "\"dv\":3,"
       "\"mi\":4,"
+      "\"mas\":8192,"
       "\"c\":\"virt\","
       "\"k\":\"virtRelay\","
       "\"n\":\"Compact controls\","
@@ -238,6 +241,7 @@ TEST(SupletJsonDefinitionTests, ParsesCompactDefinitionAliases) {
   EXPECT_EQ(definition->definitionId, 3001u);
   EXPECT_EQ(definition->definitionVersion, 3u);
   EXPECT_EQ(definition->maxInstances, 4);
+  EXPECT_EQ(definition->maxArtifactSize, 8192u);
   EXPECT_EQ(definition->category, Supla::Suplet::Category::Virtual);
   EXPECT_EQ(definition->kind, Supla::Suplet::Kind::VirtualRelay);
   EXPECT_STREQ(definition->name, "Compact controls");

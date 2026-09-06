@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -44,55 +45,35 @@ class SuplaDeviceSupletStartupTests : public ::testing::Test {
   }
 };
 
-class FakeSha256Provider : public Supla::Suplet::Sha256Provider {
+class ArtifactRuntimeHandler : public Supla::Suplet::RuntimeHandler {
  public:
-  bool calculate(const uint8_t *data,
-                 size_t dataSize,
-                 uint8_t *output,
-                 size_t outputSize) override {
-    if (data == nullptr || output == nullptr || outputSize < 32) {
+  uint8_t getRequiredElementCount(
+      const Supla::Suplet::Definition &,
+      const Supla::Suplet::InstanceRecord &) const override {
+    return 1;
+  }
+
+  bool createElements(const Supla::Suplet::Definition &,
+                      const Supla::Suplet::InstanceRecord &instance,
+                      Supla::Element **created,
+                      uint8_t createdSize,
+                      Supla::Suplet::ChannelMap *) override {
+    uint8_t data[4] = {};
+    artifactRead = created != nullptr && createdSize == 1 &&
+                   instance.artifactSize == sizeof(data) &&
+                   instance.artifactReader != nullptr &&
+                   instance.artifactReader->readArtifact(
+                       instance.instanceId, 0, data, sizeof(data)) &&
+                   data[0] == 1 && data[1] == 2 && data[2] == 3 &&
+                   data[3] == 4;
+    if (!artifactRead) {
       return false;
     }
-    uint8_t sum = 0;
-    for (size_t i = 0; i < dataSize; i++) {
-      sum = static_cast<uint8_t>(sum + data[i] + i);
-    }
-    for (uint8_t i = 0; i < 32; i++) {
-      output[i] = static_cast<uint8_t>(sum + i);
-    }
-    return true;
+    created[0] = new Supla::Element;
+    return created[0] != nullptr;
   }
-};
 
-void makeSha(FakeSha256Provider *provider, const char *json, uint8_t *sha) {
-  ASSERT_TRUE(provider->calculate(
-      reinterpret_cast<const uint8_t *>(json), strlen(json), sha, 32));
-}
-
-void makeDeviceTestSha(const char *data, uint16_t dataSize, uint8_t *sha) {
-  ASSERT_NE(sha, nullptr);
-  memset(sha, 0, 32);
-  for (uint16_t i = 0; i < dataSize; i++) {
-    sha[i % 32] = static_cast<uint8_t>(sha[i % 32] + data[i] + i);
-  }
-}
-
-class DeviceTestShaProvider : public Supla::Suplet::Sha256Provider {
- public:
-  bool calculate(const uint8_t *data,
-                 size_t dataSize,
-                 uint8_t *output,
-                 size_t outputSize) override {
-    if (data == nullptr || output == nullptr || outputSize < 32 ||
-        dataSize > UINT16_MAX) {
-      return false;
-    }
-    memset(output, 0, 32);
-    for (uint16_t i = 0; i < dataSize; i++) {
-      output[i % 32] = static_cast<uint8_t>(output[i % 32] + data[i] + i);
-    }
-    return true;
-  }
+  bool artifactRead = false;
 };
 
 int sendSupletDefinitionCalcfg(SuplaDeviceClass *sd,
@@ -104,19 +85,14 @@ int sendSupletDefinitionCalcfg(SuplaDeviceClass *sd,
     return SUPLA_CALCFG_RESULT_FALSE;
   }
 
-  uint8_t sha[32] = {};
-  makeDeviceTestSha(definitionJson, strlen(definitionJson), sha);
-
   TSD_DeviceCalCfgRequest request = {};
   request.ChannelNumber = -1;
   request.SuperUserAuthorized = 1;
   request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN;
   TCalCfg_SupletDefinitionBegin begin = {};
-  begin.SessionId = 2345;
   begin.DefinitionId = definitionId;
   begin.DefinitionVersion = definitionVersion;
-  begin.JsonSize = strlen(definitionJson);
-  memcpy(begin.JsonSha256, sha, sizeof(sha));
+  begin.Size = strlen(definitionJson);
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));
   int calcfgResult = sd->handleCalcfgFromServer(&request, result);
@@ -133,13 +109,13 @@ int sendSupletDefinitionCalcfg(SuplaDeviceClass *sd,
     *result = {};
     request.ChannelNumber = -1;
     request.SuperUserAuthorized = 1;
-    request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_CHUNK;
-    TCalCfg_SupletDefinitionChunk chunk = {};
-    chunk.SessionId = begin.SessionId;
+    request.Command = SUPLA_CALCFG_CMD_SUPLET_TRANSFER_CHUNK;
+    TCalCfg_SupletTransferChunk chunk = {};
+    chunk.Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_DEFINITION;
     chunk.Offset = offset;
     chunk.Size = size;
     memcpy(chunk.Data, definitionJson + offset, size);
-    request.DataSize = offsetof(TCalCfg_SupletDefinitionChunk, Data) + size;
+    request.DataSize = offsetof(TCalCfg_SupletTransferChunk, Data) + size;
     memcpy(request.Data, &chunk, request.DataSize);
     calcfgResult = sd->handleCalcfgFromServer(&request, result);
     if (calcfgResult != SUPLA_CALCFG_RESULT_DONE) {
@@ -152,11 +128,8 @@ int sendSupletDefinitionCalcfg(SuplaDeviceClass *sd,
   *result = {};
   request.ChannelNumber = -1;
   request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_COMMIT;
-  TCalCfg_SupletSessionRequest commit = {};
-  commit.SessionId = begin.SessionId;
-  request.DataSize = sizeof(commit);
-  memcpy(request.Data, &commit, sizeof(commit));
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_TRANSFER_COMMIT;
+  request.DataSize = 0;
   return sd->handleCalcfgFromServer(&request, result);
 }
 
@@ -171,20 +144,16 @@ int sendSupletInstanceParamsCalcfg(SuplaDeviceClass *sd,
     return SUPLA_CALCFG_RESULT_FALSE;
   }
 
-  uint8_t sha[32] = {};
-  makeDeviceTestSha(paramsJson, paramsSize, sha);
-
   TSD_DeviceCalCfgRequest request = {};
   request.ChannelNumber = -1;
   request.SuperUserAuthorized = 1;
   request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN;
   TCalCfg_SupletInstanceBegin begin = {};
-  begin.SessionId = 4321;
   begin.InstanceId = instanceId;
   begin.DefinitionId = definitionId;
   begin.DefinitionVersion = definitionVersion;
-  begin.ParamsSize = paramsSize;
-  memcpy(begin.ParamsSha256, sha, sizeof(sha));
+  begin.ConfigSize = paramsSize;
+  begin.Revision = 1;
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));
   int calcfgResult = sd->handleCalcfgFromServer(&request, result);
@@ -195,20 +164,20 @@ int sendSupletInstanceParamsCalcfg(SuplaDeviceClass *sd,
   uint16_t offset = 0;
   while (offset < paramsSize) {
     const uint8_t size =
-        paramsSize - offset > SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
-            ? SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
+        paramsSize - offset > SUPLA_CALCFG_SUPLET_TRANSFER_CHUNK_MAXSIZE
+            ? SUPLA_CALCFG_SUPLET_TRANSFER_CHUNK_MAXSIZE
             : static_cast<uint8_t>(paramsSize - offset);
     request = {};
     *result = {};
     request.ChannelNumber = -1;
     request.SuperUserAuthorized = 1;
-    request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_CHUNK;
-    TCalCfg_SupletInstanceChunk chunk = {};
-    chunk.SessionId = begin.SessionId;
+    request.Command = SUPLA_CALCFG_CMD_SUPLET_TRANSFER_CHUNK;
+    TCalCfg_SupletTransferChunk chunk = {};
+    chunk.Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG;
     chunk.Offset = offset;
     chunk.Size = size;
     memcpy(chunk.Data, paramsJson + offset, size);
-    request.DataSize = offsetof(TCalCfg_SupletInstanceChunk, Data) + size;
+    request.DataSize = offsetof(TCalCfg_SupletTransferChunk, Data) + size;
     memcpy(request.Data, &chunk, request.DataSize);
     calcfgResult = sd->handleCalcfgFromServer(&request, result);
     if (calcfgResult != SUPLA_CALCFG_RESULT_DONE) {
@@ -221,11 +190,8 @@ int sendSupletInstanceParamsCalcfg(SuplaDeviceClass *sd,
   *result = {};
   request.ChannelNumber = -1;
   request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_COMMIT;
-  TCalCfg_SupletSessionRequest commit = {};
-  commit.SessionId = begin.SessionId;
-  request.DataSize = sizeof(commit);
-  memcpy(request.Data, &commit, sizeof(commit));
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_TRANSFER_COMMIT;
+  request.DataSize = 0;
   return sd->handleCalcfgFromServer(&request, result);
 }
 
@@ -241,45 +207,40 @@ int sendSupletInstanceUpgradeCalcfg(SuplaDeviceClass *sd,
     return SUPLA_CALCFG_RESULT_FALSE;
   }
 
-  uint8_t sha[32] = {};
-  makeDeviceTestSha(paramsJson, paramsSize, sha);
-
+  (void)fromDefinitionVersion;
   TSD_DeviceCalCfgRequest request = {};
   request.ChannelNumber = -1;
   request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_BEGIN;
-  TCalCfg_SupletInstanceUpgradeBegin begin = {};
-  begin.SessionId = 5432;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN;
+  TCalCfg_SupletInstanceBegin begin = {};
   begin.InstanceId = instanceId;
   begin.DefinitionId = definitionId;
-  begin.FromDefinitionVersion = fromDefinitionVersion;
-  begin.ToDefinitionVersion = toDefinitionVersion;
-  begin.ParamsSize = paramsSize;
-  memcpy(begin.ParamsSha256, sha, sizeof(sha));
+  begin.DefinitionVersion = toDefinitionVersion;
+  begin.ConfigSize = paramsSize;
+  begin.Revision = 2;
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));
   int calcfgResult = sd->handleCalcfgFromServer(&request, result);
   if (calcfgResult != SUPLA_CALCFG_RESULT_DONE) {
     return calcfgResult;
   }
-
   uint16_t offset = 0;
   while (offset < paramsSize) {
     const uint8_t size =
-        paramsSize - offset > SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
-            ? SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
+        paramsSize - offset > SUPLA_CALCFG_SUPLET_TRANSFER_CHUNK_MAXSIZE
+            ? SUPLA_CALCFG_SUPLET_TRANSFER_CHUNK_MAXSIZE
             : static_cast<uint8_t>(paramsSize - offset);
     request = {};
     *result = {};
     request.ChannelNumber = -1;
     request.SuperUserAuthorized = 1;
-    request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_CHUNK;
-    TCalCfg_SupletInstanceChunk chunk = {};
-    chunk.SessionId = begin.SessionId;
+    request.Command = SUPLA_CALCFG_CMD_SUPLET_TRANSFER_CHUNK;
+    TCalCfg_SupletTransferChunk chunk = {};
+    chunk.Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG;
     chunk.Offset = offset;
     chunk.Size = size;
     memcpy(chunk.Data, paramsJson + offset, size);
-    request.DataSize = offsetof(TCalCfg_SupletInstanceChunk, Data) + size;
+    request.DataSize = offsetof(TCalCfg_SupletTransferChunk, Data) + size;
     memcpy(request.Data, &chunk, request.DataSize);
     calcfgResult = sd->handleCalcfgFromServer(&request, result);
     if (calcfgResult != SUPLA_CALCFG_RESULT_DONE) {
@@ -287,16 +248,87 @@ int sendSupletInstanceUpgradeCalcfg(SuplaDeviceClass *sd,
     }
     offset += size;
   }
+  request = {};
+  *result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_TRANSFER_COMMIT;
+  return sd->handleCalcfgFromServer(&request, result);
+}
+
+int sendSupletInstanceDataCalcfg(SuplaDeviceClass *sd,
+                                 uint8_t instanceId,
+                                 uint32_t definitionId,
+                                 uint16_t definitionVersion,
+                                 uint32_t revision,
+                                 const uint8_t *config,
+                                 uint16_t configSize,
+                                 const uint8_t *artifact,
+                                 uint32_t artifactSize,
+                                 TDS_DeviceCalCfgResult *result) {
+  if (sd == nullptr || result == nullptr ||
+      (configSize > 0 && config == nullptr) ||
+      (artifactSize > 0 && artifact == nullptr)) {
+    return SUPLA_CALCFG_RESULT_FALSE;
+  }
+  TSD_DeviceCalCfgRequest request = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN;
+  TCalCfg_SupletInstanceBegin begin = {};
+  begin.InstanceId = instanceId;
+  begin.DefinitionId = definitionId;
+  begin.DefinitionVersion = definitionVersion;
+  begin.Revision = revision;
+  begin.ConfigSize = configSize;
+  begin.ArtifactSize = artifactSize;
+  request.DataSize = sizeof(begin);
+  memcpy(request.Data, &begin, sizeof(begin));
+  int calcfgResult = sd->handleCalcfgFromServer(&request, result);
+  if (calcfgResult != SUPLA_CALCFG_RESULT_DONE) {
+    return calcfgResult;
+  }
+
+  for (uint8_t part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG;
+       part <= SUPLA_CALCFG_SUPLET_TRANSFER_PART_ARTIFACT;
+       part++) {
+    const uint8_t *data = part == SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG
+                              ? config
+                              : artifact;
+    const uint32_t total = part == SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG
+                               ? configSize
+                               : artifactSize;
+    uint32_t offset = 0;
+    while (offset < total) {
+      const uint8_t size =
+          total - offset > SUPLA_CALCFG_SUPLET_TRANSFER_CHUNK_MAXSIZE
+              ? SUPLA_CALCFG_SUPLET_TRANSFER_CHUNK_MAXSIZE
+              : static_cast<uint8_t>(total - offset);
+      request = {};
+      *result = {};
+      request.ChannelNumber = -1;
+      request.SuperUserAuthorized = 1;
+      request.Command = SUPLA_CALCFG_CMD_SUPLET_TRANSFER_CHUNK;
+      TCalCfg_SupletTransferChunk chunk = {};
+      chunk.Part = part;
+      chunk.Offset = offset;
+      chunk.Size = size;
+      memcpy(chunk.Data, data + offset, size);
+      request.DataSize = offsetof(TCalCfg_SupletTransferChunk, Data) + size;
+      memcpy(request.Data, &chunk, request.DataSize);
+      calcfgResult = sd->handleCalcfgFromServer(&request, result);
+      if (calcfgResult != SUPLA_CALCFG_RESULT_DONE) {
+        return calcfgResult;
+      }
+      offset += size;
+    }
+  }
 
   request = {};
   *result = {};
   request.ChannelNumber = -1;
   request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_COMMIT;
-  TCalCfg_SupletSessionRequest commit = {};
-  commit.SessionId = begin.SessionId;
-  request.DataSize = sizeof(commit);
-  memcpy(request.Data, &commit, sizeof(commit));
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_TRANSFER_COMMIT;
   return sd->handleCalcfgFromServer(&request, result);
 }
 
@@ -627,8 +659,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   ASSERT_TRUE(manager.addInstance(record));
 
   Supla::Suplet::Registry registry;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
@@ -655,10 +686,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"caption\":\"Late relay\""
       "}]"
       "}";
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, definitionJson, sha);
-
-  EXPECT_EQ(handler.saveDownloadedDefinition(5001, 1, definitionJson, sha),
+  EXPECT_EQ(handler.saveDownloadedDefinition(5001, 1, definitionJson),
             Supla::Suplet::ServerConfigResult::Applied);
   EXPECT_TRUE(handler.isRuntimeRefreshRequired());
 
@@ -683,8 +711,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
 
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
-  DeviceTestShaProvider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
@@ -711,57 +738,8 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"caption\":\"CALCFG relay\""
       "}]"
       "}";
-  uint8_t sha[32] = {};
-  makeDeviceTestSha(definitionJson, strlen(definitionJson), sha);
-
-  TSD_DeviceCalCfgRequest request = {};
   TDS_DeviceCalCfgResult result = {};
-  request.ChannelNumber = -1;
-  request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN;
-  TCalCfg_SupletDefinitionBegin begin = {};
-  begin.SessionId = 2345;
-  begin.DefinitionId = 5002;
-  begin.DefinitionVersion = 1;
-  begin.JsonSize = strlen(definitionJson);
-  memcpy(begin.JsonSha256, sha, sizeof(sha));
-  request.DataSize = sizeof(begin);
-  memcpy(request.Data, &begin, sizeof(begin));
-  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
-            SUPLA_CALCFG_RESULT_DONE);
-
-  const uint16_t jsonSize = strlen(definitionJson);
-  uint16_t offset = 0;
-  while (offset < jsonSize) {
-    const uint8_t size =
-        jsonSize - offset > 53 ? 53 : static_cast<uint8_t>(jsonSize - offset);
-    request = {};
-    result = {};
-    request.ChannelNumber = -1;
-    request.SuperUserAuthorized = 1;
-    request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_CHUNK;
-    TCalCfg_SupletDefinitionChunk chunk = {};
-    chunk.SessionId = begin.SessionId;
-    chunk.Offset = offset;
-    chunk.Size = size;
-    memcpy(chunk.Data, definitionJson + offset, size);
-    request.DataSize = offsetof(TCalCfg_SupletDefinitionChunk, Data) + size;
-    memcpy(request.Data, &chunk, request.DataSize);
-    EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
-              SUPLA_CALCFG_RESULT_DONE);
-    offset += size;
-  }
-
-  request = {};
-  result = {};
-  request.ChannelNumber = -1;
-  request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_COMMIT;
-  TCalCfg_SupletSessionRequest commit = {};
-  commit.SessionId = begin.SessionId;
-  request.DataSize = sizeof(commit);
-  memcpy(request.Data, &commit, sizeof(commit));
-  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+  EXPECT_EQ(sendSupletDefinitionCalcfg(&sd, 5002, 1, definitionJson, &result),
             SUPLA_CALCFG_RESULT_DONE);
   ASSERT_EQ(result.DataSize, sizeof(TCalCfg_SupletResult));
   TCalCfg_SupletResult supletResult = {};
@@ -802,8 +780,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
 
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
@@ -816,10 +793,9 @@ TEST_F(SuplaDeviceSupletStartupTests,
   request.SuperUserAuthorized = 1;
   request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN;
   TCalCfg_SupletDefinitionBegin begin = {};
-  begin.SessionId = 100;
   begin.DefinitionId = 5100;
   begin.DefinitionVersion = 1;
-  begin.JsonSize = 2;
+  begin.Size = 2;
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));
   EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
@@ -827,15 +803,35 @@ TEST_F(SuplaDeviceSupletStartupTests,
   expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
 
   result = {};
-  begin.SessionId = 101;
   memcpy(request.Data, &begin, sizeof(begin));
   EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
-            SUPLA_CALCFG_RESULT_FALSE);
-  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_BUSY);
+            SUPLA_CALCFG_RESULT_DONE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
 
   time.advance(SUPLA_SUPLET_CALCFG_SESSION_TIMEOUT_MS + 1);
 
+  request = {};
   result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_TRANSFER_CHUNK;
+  TCalCfg_SupletTransferChunk chunk = {};
+  chunk.Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_DEFINITION;
+  chunk.Size = 2;
+  memcpy(chunk.Data, "{}", chunk.Size);
+  request.DataSize = offsetof(TCalCfg_SupletTransferChunk, Data) + chunk.Size;
+  memcpy(request.Data, &chunk, request.DataSize);
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_FALSE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST);
+
+  request = {};
+  result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN;
+  request.DataSize = sizeof(begin);
+  memcpy(request.Data, &begin, sizeof(begin));
   EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
             SUPLA_CALCFG_RESULT_DONE);
   expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
@@ -848,8 +844,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
 
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
@@ -862,20 +857,15 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"kind\":\"virtualRelay\",\"channels\":[{\"channelId\":1,"
       "\"key\":\"relay\",\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\"}]}";
-  uint8_t sha[32] = {};
-  makeDeviceTestSha(definitionJson, strlen(definitionJson), sha);
-
   TSD_DeviceCalCfgRequest request = {};
   TDS_DeviceCalCfgResult result = {};
   request.ChannelNumber = -1;
   request.SuperUserAuthorized = 1;
   request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN;
   TCalCfg_SupletDefinitionBegin begin = {};
-  begin.SessionId = 777;
   begin.DefinitionId = 5200;
   begin.DefinitionVersion = 1;
-  begin.JsonSize = strlen(definitionJson);
-  memcpy(begin.JsonSha256, sha, sizeof(sha));
+  begin.Size = strlen(definitionJson);
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));
   ASSERT_EQ(sd.handleCalcfgFromServer(&request, &result),
@@ -885,13 +875,13 @@ TEST_F(SuplaDeviceSupletStartupTests,
   result = {};
   request.ChannelNumber = -1;
   request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_CHUNK;
-  TCalCfg_SupletDefinitionChunk chunk = {};
-  chunk.SessionId = begin.SessionId;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_TRANSFER_CHUNK;
+  TCalCfg_SupletTransferChunk chunk = {};
+  chunk.Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_DEFINITION;
   chunk.Offset = 1;
   chunk.Size = 3;
   memcpy(chunk.Data, definitionJson, chunk.Size);
-  request.DataSize = offsetof(TCalCfg_SupletDefinitionChunk, Data) + chunk.Size;
+  request.DataSize = offsetof(TCalCfg_SupletTransferChunk, Data) + chunk.Size;
   memcpy(request.Data, &chunk, request.DataSize);
   EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
             SUPLA_CALCFG_RESULT_FALSE);
@@ -917,11 +907,11 @@ TEST_F(SuplaDeviceSupletStartupTests,
   request.SuperUserAuthorized = 1;
   request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN;
   TCalCfg_SupletInstanceBegin begin = {};
-  begin.SessionId = 200;
   begin.InstanceId = 88;
   begin.DefinitionId = definition.definitionId;
   begin.DefinitionVersion = definition.definitionVersion;
-  begin.ParamsSize = 2;
+  begin.ConfigSize = 2;
+  begin.Revision = 1;
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));
   EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
@@ -929,11 +919,10 @@ TEST_F(SuplaDeviceSupletStartupTests,
   expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
 
   result = {};
-  begin.SessionId = 201;
   memcpy(request.Data, &begin, sizeof(begin));
   EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
-            SUPLA_CALCFG_RESULT_FALSE);
-  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_BUSY);
+            SUPLA_CALCFG_RESULT_DONE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
 
   time.advance(SUPLA_SUPLET_CALCFG_SESSION_TIMEOUT_MS + 1);
 
@@ -1008,8 +997,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   capability.supportsDownloadedDefinition = 1;
   ASSERT_TRUE(capabilities.add(capability));
   Supla::Suplet::Manager manager(&config);
-  DeviceTestShaProvider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
@@ -1063,14 +1051,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   EXPECT_EQ(cachedItem->Source,
             SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_CACHED);
   EXPECT_EQ(cachedItem->DefinitionVersion, 1);
-  EXPECT_EQ(cachedItem->JsonSize, strlen(definitionJson));
-  EXPECT_EQ(cachedItem->Category,
-            static_cast<uint8_t>(Supla::Suplet::Category::Virtual));
-  EXPECT_EQ(cachedItem->Kind,
-            static_cast<uint8_t>(Supla::Suplet::Kind::VirtualRelay));
-  EXPECT_EQ(cachedItem->SchemaVersion, 1);
-  EXPECT_EQ(cachedItem->HandlerVersion, 1);
-  EXPECT_EQ(cachedItem->MaxInstances, 3);
+  EXPECT_EQ(cachedItem->Size, strlen(definitionJson));
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,
@@ -1083,8 +1064,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
 
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
-  DeviceTestShaProvider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
@@ -1132,8 +1112,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   Supla::Suplet::Registry registry;
   ASSERT_TRUE(registry.add(&builtin));
   Supla::Suplet::Manager manager(&config);
-  DeviceTestShaProvider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
@@ -1156,10 +1135,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"caption\":\"Cached relay\""
       "}]"
       "}";
-  uint8_t sha[32] = {};
-  makeDeviceTestSha(sameVersionJson, strlen(sameVersionJson), sha);
-
-  EXPECT_EQ(handler.saveDownloadedDefinition(3001, 1, sameVersionJson, sha),
+  EXPECT_EQ(handler.saveDownloadedDefinition(3001, 1, sameVersionJson),
             Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged);
   Supla::Suplet::JsonDefinition loadedDefinition;
   EXPECT_FALSE(downloadedDefinitions.load(cache, 3001, 1, &loadedDefinition));
@@ -1174,8 +1150,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   Supla::Suplet::Registry registry;
   ASSERT_TRUE(registry.add(&builtin));
   Supla::Suplet::Manager manager(&config);
-  DeviceTestShaProvider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
@@ -1198,10 +1173,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"caption\":\"Cached relay v2\""
       "}]"
       "}";
-  uint8_t sha[32] = {};
-  makeDeviceTestSha(newVersionJson, strlen(newVersionJson), sha);
-
-  EXPECT_EQ(handler.saveDownloadedDefinition(3001, 2, newVersionJson, sha),
+  EXPECT_EQ(handler.saveDownloadedDefinition(3001, 2, newVersionJson),
             Supla::Suplet::ServerConfigResult::Applied);
   Supla::Suplet::JsonDefinition loadedDefinition;
   ASSERT_TRUE(downloadedDefinitions.load(cache, 3001, 2, &loadedDefinition));
@@ -1238,8 +1210,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   ASSERT_TRUE(registry.add(&builtin));
 
   Supla::Suplet::Manager manager(&config);
-  DeviceTestShaProvider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
@@ -1262,9 +1233,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"caption\":\"Cached relay v2\""
       "}]"
       "}";
-  uint8_t sha[32] = {};
-  makeDeviceTestSha(cachedJson, strlen(cachedJson), sha);
-  ASSERT_EQ(handler.saveDownloadedDefinition(3001, 2, cachedJson, sha),
+  ASSERT_EQ(handler.saveDownloadedDefinition(3001, 2, cachedJson),
             Supla::Suplet::ServerConfigResult::Applied);
 
   TSD_DeviceCalCfgRequest request = {};
@@ -1275,7 +1244,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   TCalCfg_SupletDefinitionConfigRequest configRequest = {};
   configRequest.DefinitionId = 3001;
   configRequest.DefinitionVersion = 1;
-  configRequest.MaxSize = SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE;
+  configRequest.MaxSize = SUPLA_CALCFG_SUPLET_DATA_CHUNK_MAXSIZE;
   request.DataSize = sizeof(configRequest);
   memcpy(request.Data, &configRequest, sizeof(configRequest));
 
@@ -1300,7 +1269,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   configRequest = {};
   configRequest.DefinitionId = 3001;
   configRequest.DefinitionVersion = 2;
-  configRequest.MaxSize = SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE;
+  configRequest.MaxSize = SUPLA_CALCFG_SUPLET_DATA_CHUNK_MAXSIZE;
   request.DataSize = sizeof(configRequest);
   memcpy(request.Data, &configRequest, sizeof(configRequest));
 
@@ -1327,8 +1296,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   Supla::Suplet::Registry registry;
   ASSERT_TRUE(registry.add(&builtin));
   Supla::Suplet::Manager manager(&config);
-  DeviceTestShaProvider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
@@ -1341,10 +1309,9 @@ TEST_F(SuplaDeviceSupletStartupTests,
   request.SuperUserAuthorized = 1;
   request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN;
   TCalCfg_SupletDefinitionBegin begin = {};
-  begin.SessionId = 2233;
   begin.DefinitionId = 3001;
   begin.DefinitionVersion = 1;
-  begin.JsonSize = 128;
+  begin.Size = 128;
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));
 
@@ -1368,72 +1335,23 @@ TEST_F(SuplaDeviceSupletStartupTests,
   sd.setSupletServerConfigHandler(&handler);
 
   const char params[] = "{\"relay.count\":1,\"host\":\"192.168.1.50\"}";
-  uint8_t sha[32] = {};
-  makeDeviceTestSha(params, strlen(params), sha);
-
-  TSD_DeviceCalCfgRequest request = {};
   TDS_DeviceCalCfgResult result = {};
-  request.ChannelNumber = -1;
-  request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN;
-  TCalCfg_SupletInstanceBegin begin = {};
-  begin.SessionId = 1234;
-  begin.InstanceId = 91;
-  begin.DefinitionId = definition.definitionId;
-  begin.DefinitionVersion = definition.definitionVersion;
-  begin.ParamsSize = strlen(params);
-  memcpy(begin.ParamsSha256, sha, sizeof(sha));
-  request.DataSize = sizeof(begin);
-  memcpy(request.Data, &begin, sizeof(begin));
-  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
-            SUPLA_CALCFG_RESULT_DONE);
-
-  request = {};
-  result = {};
-  request.ChannelNumber = -1;
-  request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_CHUNK;
-  TCalCfg_SupletInstanceChunk chunk = {};
-  chunk.SessionId = begin.SessionId;
-  chunk.Offset = 0;
-  chunk.Size = strlen(params);
-  memcpy(chunk.Data, params, chunk.Size);
-  request.DataSize = offsetof(TCalCfg_SupletInstanceChunk, Data) + chunk.Size;
-  memcpy(request.Data, &chunk, request.DataSize);
-  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
-            SUPLA_CALCFG_RESULT_DONE);
-
-  request = {};
-  result = {};
-  request.ChannelNumber = -1;
-  request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_COMMIT;
-  TCalCfg_SupletSessionRequest commit = {};
-  commit.SessionId = begin.SessionId;
-  request.DataSize = sizeof(commit);
-  memcpy(request.Data, &commit, sizeof(commit));
-  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+  EXPECT_EQ(sendSupletInstanceParamsCalcfg(&sd,
+                                           91,
+                                           definition.definitionId,
+                                           definition.definitionVersion,
+                                           params,
+                                           strlen(params),
+                                           &result),
             SUPLA_CALCFG_RESULT_DONE);
   EXPECT_EQ(result.DataSize, sizeof(TCalCfg_SupletResult));
 
-  auto record = manager.getInstanceTable()->findByInstanceId(begin.InstanceId);
+  auto record = manager.getInstanceTable()->findByInstanceId(91);
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->configSize, strlen(params));
   EXPECT_EQ(memcmp(record->config, params, strlen(params)), 0);
 
-  request = {};
-  result = {};
-  request.ChannelNumber = -1;
-  request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_COUNT;
-  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
-            SUPLA_CALCFG_RESULT_TRUE);
-  ASSERT_EQ(result.DataSize, sizeof(TCalCfg_SupletInstanceCount));
-  TCalCfg_SupletInstanceCount count = {};
-  memcpy(&count, result.Data, sizeof(count));
-  EXPECT_EQ(count.Count, 1);
-
-  request = {};
+  TSD_DeviceCalCfgRequest request = {};
   result = {};
   request.ChannelNumber = -1;
   request.SuperUserAuthorized = 1;
@@ -1448,43 +1366,29 @@ TEST_F(SuplaDeviceSupletStartupTests,
   TCalCfg_SupletInstanceList list = {};
   memcpy(&list, result.Data, sizeof(list));
   ASSERT_EQ(list.Count, 1);
-  EXPECT_EQ(list.Items[0].InstanceId, begin.InstanceId);
+  EXPECT_EQ(list.Items[0].InstanceId, 91);
   EXPECT_EQ(list.Items[0].DefinitionId, definition.definitionId);
+  EXPECT_EQ(list.Items[0].Revision, 1u);
+  EXPECT_EQ(list.Items[0].ConfigSize, strlen(params));
+  EXPECT_EQ(list.Items[0].ArtifactSize, 0u);
 
   request = {};
   result = {};
   request.ChannelNumber = -1;
   request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_INFO;
-  TCalCfg_SupletInstanceRequest infoRequest = {};
-  infoRequest.InstanceId = begin.InstanceId;
-  request.DataSize = sizeof(infoRequest);
-  memcpy(request.Data, &infoRequest, sizeof(infoRequest));
-  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
-            SUPLA_CALCFG_RESULT_TRUE);
-  ASSERT_EQ(result.DataSize, sizeof(TCalCfg_SupletInstanceInfo));
-  TCalCfg_SupletInstanceInfo info = {};
-  memcpy(&info, result.Data, sizeof(info));
-  EXPECT_EQ(info.InstanceId, begin.InstanceId);
-  EXPECT_EQ(info.DefinitionId, definition.definitionId);
-  EXPECT_EQ(info.ParamsSize, strlen(params));
-  EXPECT_EQ(memcmp(info.ParamsSha256, sha, sizeof(sha)), 0);
-
-  request = {};
-  result = {};
-  request.ChannelNumber = -1;
-  request.SuperUserAuthorized = 1;
-  request.Command = SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_CONFIG;
-  TCalCfg_SupletInstanceConfigRequest configRequest = {};
-  configRequest.InstanceId = begin.InstanceId;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_DATA;
+  TCalCfg_SupletInstanceDataRequest configRequest = {};
+  configRequest.InstanceId = 91;
+  configRequest.Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG;
   configRequest.MaxSize = 20;
   request.DataSize = sizeof(configRequest);
   memcpy(request.Data, &configRequest, sizeof(configRequest));
   EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
             SUPLA_CALCFG_RESULT_TRUE);
-  TCalCfg_SupletInstanceConfigChunk configChunk = {};
+  TCalCfg_SupletInstanceDataChunk configChunk = {};
   memcpy(&configChunk, result.Data, result.DataSize);
-  EXPECT_EQ(configChunk.InstanceId, begin.InstanceId);
+  EXPECT_EQ(configChunk.InstanceId, 91);
+  EXPECT_EQ(configChunk.Part, SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG);
   EXPECT_EQ(configChunk.TotalSize, strlen(params));
   EXPECT_EQ(configChunk.Size, 20);
   EXPECT_EQ(memcmp(configChunk.Data, params, configChunk.Size), 0);
@@ -1535,6 +1439,174 @@ TEST_F(SuplaDeviceSupletStartupTests, CalcfgUpgradesInstanceVersion) {
   EXPECT_EQ(record->definitionVersion, 2);
   EXPECT_EQ(record->configSize, strlen(paramsV2));
   EXPECT_EQ(memcmp(record->config, paramsV2, strlen(paramsV2)), 0);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       CalcfgTransfersAndReadsConfigAndArtifact) {
+  ConfigSimulator configStorage;
+  SuplaDeviceClass sd;
+  auto definition = makeRelayDefinition(6010);
+  definition.maxArtifactSize = 300;
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&definition, 4));
+  Supla::Suplet::Manager manager(&configStorage);
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  const uint8_t config[] = {'{', '}'};
+  std::vector<uint8_t> artifact(250);
+  for (size_t i = 0; i < artifact.size(); i++) {
+    artifact[i] = static_cast<uint8_t>(i);
+  }
+  TDS_DeviceCalCfgResult result = {};
+  ASSERT_EQ(sendSupletInstanceDataCalcfg(&sd,
+                                         96,
+                                         definition.definitionId,
+                                         definition.definitionVersion,
+                                         7,
+                                         config,
+                                         sizeof(config),
+                                         artifact.data(),
+                                         artifact.size(),
+                                         &result),
+            SUPLA_CALCFG_RESULT_DONE);
+
+  const auto *record = manager.getInstanceTable()->findByInstanceId(96);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->revision, 7u);
+  EXPECT_EQ(record->configSize, sizeof(config));
+  EXPECT_EQ(record->artifactSize, artifact.size());
+
+  std::vector<uint8_t> downloaded;
+  uint32_t offset = 0;
+  while (offset < artifact.size()) {
+    TSD_DeviceCalCfgRequest request = {};
+    request.ChannelNumber = -1;
+    request.SuperUserAuthorized = 1;
+    request.Command = SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_DATA;
+    TCalCfg_SupletInstanceDataRequest input = {};
+    input.InstanceId = 96;
+    input.Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_ARTIFACT;
+    input.Offset = offset;
+    input.MaxSize = 37;
+    request.DataSize = sizeof(input);
+    memcpy(request.Data, &input, sizeof(input));
+    result = {};
+    ASSERT_EQ(sd.handleCalcfgFromServer(&request, &result),
+              SUPLA_CALCFG_RESULT_TRUE);
+    TCalCfg_SupletInstanceDataChunk output = {};
+    memcpy(&output, result.Data, result.DataSize);
+    ASSERT_GT(output.Size, 0);
+    EXPECT_EQ(output.Part, SUPLA_CALCFG_SUPLET_TRANSFER_PART_ARTIFACT);
+    EXPECT_EQ(output.Offset, offset);
+    EXPECT_EQ(output.TotalSize, artifact.size());
+    downloaded.insert(
+        downloaded.end(), output.Data, output.Data + output.Size);
+    offset += output.Size;
+  }
+  EXPECT_EQ(downloaded, artifact);
+
+  result = {};
+  EXPECT_EQ(sendSupletInstanceDataCalcfg(&sd,
+                                         96,
+                                         definition.definitionId,
+                                         definition.definitionVersion,
+                                         8,
+                                         nullptr,
+                                         0,
+                                         nullptr,
+                                         0,
+                                         &result),
+            SUPLA_CALCFG_RESULT_DONE);
+  record = manager.getInstanceTable()->findByInstanceId(96);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->revision, 8u);
+  EXPECT_EQ(record->configSize, 0);
+  EXPECT_EQ(record->artifactSize, 0u);
+
+  result = {};
+  EXPECT_EQ(sendSupletInstanceDataCalcfg(&sd,
+                                         96,
+                                         definition.definitionId,
+                                         definition.definitionVersion,
+                                         8,
+                                         nullptr,
+                                         0,
+                                         nullptr,
+                                         0,
+                                         &result),
+            SUPLA_CALCFG_RESULT_FALSE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_VERSION_MISMATCH);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       CalcfgRejectsArtifactLargerThanDefinitionLimit) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+  auto definition = makeRelayDefinition(6011);
+  definition.maxArtifactSize = 10;
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&definition, 4));
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+  const uint8_t artifact[11] = {};
+  TDS_DeviceCalCfgResult result = {};
+
+  EXPECT_EQ(sendSupletInstanceDataCalcfg(&sd,
+                                         97,
+                                         definition.definitionId,
+                                         definition.definitionVersion,
+                                         1,
+                                         nullptr,
+                                         0,
+                                         artifact,
+                                         sizeof(artifact),
+                                         &result),
+            SUPLA_CALCFG_RESULT_FALSE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_INVALID_CONFIG);
+  EXPECT_EQ(manager.getInstanceTable()->findByInstanceId(97), nullptr);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       ArtifactOnlyZeroChannelSupletCreatesRuntimeElement) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+  ArtifactRuntimeHandler runtimeHandler;
+  Supla::Suplet::Definition definition = {};
+  definition.definitionId = 6012;
+  definition.definitionVersion = 1;
+  definition.category = Supla::Suplet::Category::Virtual;
+  definition.kind = Supla::Suplet::Kind::VirtualRelay;
+  definition.maxArtifactSize = 16;
+  definition.runtimeHandler = &runtimeHandler;
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&definition, 4));
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+  const uint8_t artifact[] = {1, 2, 3, 4};
+  TDS_DeviceCalCfgResult result = {};
+
+  ASSERT_EQ(sendSupletInstanceDataCalcfg(&sd,
+                                         98,
+                                         definition.definitionId,
+                                         definition.definitionVersion,
+                                         1,
+                                         nullptr,
+                                         0,
+                                         artifact,
+                                         sizeof(artifact),
+                                         &result),
+            SUPLA_CALCFG_RESULT_DONE);
+  ASSERT_TRUE(manager.loadRuntimeElementsFromRegistry(registry));
+  EXPECT_EQ(manager.getRuntimeElementCount(), 1);
+  EXPECT_TRUE(runtimeHandler.artifactRead);
+  ASSERT_NE(Supla::Element::begin(), nullptr);
+  EXPECT_EQ(Supla::Element::begin()->getChannel(), nullptr);
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,

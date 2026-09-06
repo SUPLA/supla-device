@@ -6,7 +6,6 @@
 
 #include <stdint.h>
 
-#include <supla/sha256.h>
 #include <supla/suplet/config.h>
 #include <supla/suplet/definition_cache.h>
 #include <supla/suplet/storage.h>
@@ -14,37 +13,47 @@
 namespace Supla {
 namespace Suplet {
 
-struct InstanceCalcfgSession {
-  bool active = false;
-  uint32_t sessionId = 0;
-  uint32_t lastActivityMs = 0;
-  uint8_t instanceId = 0;
-  bool upgrade = false;
-  uint32_t definitionId = 0;
-  uint16_t fromDefinitionVersion = 0;
-  uint16_t definitionVersion = 0;
-  uint16_t paramsSize = 0;
-  uint16_t receivedSize = 0;
-  uint8_t expectedSha256[32] = {};
-  uint8_t params[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
-  uint8_t received[SUPLA_SUPLET_MAX_CONFIG_SIZE] = {};
+#if SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE > \
+    SUPLA_SUPLET_ARTIFACT_STORAGE_CHUNK_SIZE
+#define SUPLA_SUPLET_TRANSFER_STORAGE_CHUNK_SIZE \
+  SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE
+#else
+#define SUPLA_SUPLET_TRANSFER_STORAGE_CHUNK_SIZE \
+  SUPLA_SUPLET_ARTIFACT_STORAGE_CHUNK_SIZE
+#endif
+
+enum class CalcfgTransferType : uint8_t {
+  None = 0,
+  Definition = 1,
+  Instance = 2,
 };
 
-struct DefinitionCalcfgSession {
+struct CalcfgSession {
   bool active = false;
-  uint32_t sessionId = 0;
+  CalcfgTransferType type = CalcfgTransferType::None;
   uint32_t lastActivityMs = 0;
+
   uint32_t definitionId = 0;
   uint16_t definitionVersion = 0;
-  uint16_t jsonSize = 0;
-  uint16_t receivedSize = 0;
-  DefinitionCacheHandle cacheHandle = {};
-  uint16_t currentChunkIndex = 0;
-  uint16_t currentChunkSize = 0;
-  uint8_t expectedSha256[32] = {};
-  uint8_t currentChunk[SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE] = {};
-  Supla::Sha256 sha256 = {};
+  uint16_t definitionSize = 0;
+  uint16_t definitionReceivedSize = 0;
+  DefinitionCacheHandle definitionCacheHandle = {};
+
+  uint8_t instanceId = 0;
+  uint32_t revision = 0;
+  uint16_t configSize = 0;
+  uint16_t configReceivedSize = 0;
+  uint32_t artifactSize = 0;
+  uint32_t artifactReceivedSize = 0;
+  ArtifactStorageHandle artifactStorageHandle = {};
+  uint8_t config[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
+
+  uint16_t storageChunkIndex = 0;
+  uint16_t storageChunkSize = 0;
+  uint8_t storageChunk[SUPLA_SUPLET_TRANSFER_STORAGE_CHUNK_SIZE] = {};
 };
+
+#undef SUPLA_SUPLET_TRANSFER_STORAGE_CHUNK_SIZE
 
 }  // namespace Suplet
 }  // namespace Supla

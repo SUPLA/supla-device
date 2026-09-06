@@ -12,7 +12,6 @@
 #include <supla-common/proto.h>
 #include <supla/debug/command_processor.h>
 #include <supla/log_wrapper.h>
-#include <supla/sha256.h>
 #include <supla/storage/config.h>
 #include <supla/suplet/capability_registry.h>
 #include <supla/suplet/definition_cache.h>
@@ -28,24 +27,6 @@
 #include <string>
 
 namespace {
-
-class LinuxSupletSha256Provider : public Supla::Suplet::Sha256Provider {
- public:
-  bool calculate(const uint8_t *data,
-                 size_t dataSize,
-                 uint8_t *output,
-                 size_t outputSize) override {
-    if (output == nullptr || outputSize < 32) {
-      return false;
-    }
-    Supla::Sha256 sha256;
-    if (data != nullptr && dataSize > 0) {
-      sha256.update(data, dataSize);
-    }
-    sha256.digest(output, outputSize);
-    return true;
-  }
-};
 
 class SocketResponseWriter : public Supla::Debug::ResponseWriter {
  public:
@@ -260,9 +241,7 @@ bool setupLinuxSupletRuntime(Supla::Config *config) {
   static Supla::Suplet::Registry registry;
   static Supla::Suplet::CapabilityRegistry capabilityRegistry;
   static Supla::Suplet::Manager manager(config);
-  static LinuxSupletSha256Provider sha256Provider;
-  static Supla::Suplet::DefinitionCache definitionCache(config,
-                                                        &sha256Provider);
+  static Supla::Suplet::DefinitionCache definitionCache(config);
   static Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   static Supla::Suplet::ServerConfigHandler serverConfigHandler(
       &manager, &registry, &definitionCache, &downloadedDefinitions);

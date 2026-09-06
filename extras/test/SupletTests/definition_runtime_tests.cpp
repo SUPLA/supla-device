@@ -35,6 +35,30 @@ class SupletRuntimeFixture : public testing::Test {
   }
 };
 
+class ZeroChannelRuntimeHandler : public Supla::Suplet::RuntimeHandler {
+ public:
+  uint8_t getRequiredElementCount(
+      const Supla::Suplet::Definition &,
+      const Supla::Suplet::InstanceRecord &) const override {
+    return 1;
+  }
+
+  bool createElements(const Supla::Suplet::Definition &,
+                      const Supla::Suplet::InstanceRecord &,
+                      Supla::Element **created,
+                      uint8_t createdSize,
+                      Supla::Suplet::ChannelMap *createdChannelMap) override {
+    if (created == nullptr || createdSize != 1) {
+      return false;
+    }
+    created[0] = new Supla::Element;
+    if (createdChannelMap != nullptr) {
+      *createdChannelMap = Supla::Suplet::ChannelMap();
+    }
+    return created[0] != nullptr;
+  }
+};
+
 }  // namespace
 
 TEST(SupletDefinitionTests, ExtractsAndValidatesDefinitionChannelIds) {
@@ -57,6 +81,38 @@ TEST(SupletDefinitionTests, ExtractsAndValidatesDefinitionChannelIds) {
   EXPECT_EQ(ids[1], 20u);
 
   channels[1].channelId = 10;
+  EXPECT_FALSE(Supla::Suplet::Runtime::validateDefinition(definition));
+}
+
+TEST_F(SupletRuntimeFixture, CreatesElementForZeroChannelDefinition) {
+  ZeroChannelRuntimeHandler handler;
+  Supla::Suplet::Definition definition = {};
+  definition.definitionId = 90;
+  definition.definitionVersion = 1;
+  definition.category = Supla::Suplet::Category::Virtual;
+  definition.kind = Supla::Suplet::Kind::VirtualRelay;
+  definition.runtimeHandler = &handler;
+  Supla::Suplet::InstanceRecord instance = {};
+  instance.instanceId = 20;
+  instance.subDeviceId = 3;
+
+  ASSERT_TRUE(Supla::Suplet::Runtime::validateDefinition(definition));
+  Supla::Element *created[1] = {};
+  Supla::Suplet::ChannelMap channelMap;
+  ASSERT_TRUE(Supla::Suplet::Runtime::createElements(
+      definition, instance, created, 1, &channelMap));
+  ASSERT_NE(created[0], nullptr);
+  EXPECT_EQ(created[0]->getChannel(), nullptr);
+  EXPECT_EQ(channelMap.getCount(), 0);
+}
+
+TEST_F(SupletRuntimeFixture, RejectsZeroChannelDefinitionWithoutHandler) {
+  Supla::Suplet::Definition definition = {};
+  definition.definitionId = 91;
+  definition.definitionVersion = 1;
+  definition.category = Supla::Suplet::Category::Virtual;
+  definition.kind = Supla::Suplet::Kind::VirtualRelay;
+
   EXPECT_FALSE(Supla::Suplet::Runtime::validateDefinition(definition));
 }
 

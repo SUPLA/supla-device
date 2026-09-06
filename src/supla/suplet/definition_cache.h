@@ -14,31 +14,11 @@ class Config;
 
 namespace Suplet {
 
-class Sha256Provider {
- public:
-  virtual ~Sha256Provider() {
-  }
-  virtual bool calculate(const uint8_t *data,
-                         size_t dataSize,
-                         uint8_t *output,
-                         size_t outputSize) = 0;
-};
-
-#if !defined(SUPLA_TEST) && (defined(ESP32) || defined(SUPLA_DEVICE_ESP32))
-class DefaultSha256Provider : public Sha256Provider {
- public:
-  bool calculate(const uint8_t *data,
-                 size_t dataSize,
-                 uint8_t *output,
-                 size_t outputSize) override;
-};
-#endif
-
 struct CachedDefinitionInfo {
   uint32_t definitionId = 0;
   uint16_t definitionVersion = 0;
   uint16_t jsonSize = 0;
-  uint8_t sha256[32] = {};
+  uint32_t crc32 = 0;
 };
 
 struct DefinitionCacheHandle {
@@ -48,12 +28,11 @@ struct DefinitionCacheHandle {
 
 class DefinitionCache {
  public:
-  DefinitionCache(Supla::Config *config, Sha256Provider *sha256Provider);
+  explicit DefinitionCache(Supla::Config *config);
 
   bool save(uint32_t definitionId,
             uint16_t definitionVersion,
-            const char *json,
-            const uint8_t *expectedSha256);
+            const char *json);
   bool load(uint32_t definitionId,
             uint16_t definitionVersion,
             char *json,
@@ -66,7 +45,6 @@ class DefinitionCache {
   bool beginStagedSave(uint32_t definitionId,
                        uint16_t definitionVersion,
                        uint16_t jsonSize,
-                       const uint8_t *sha256,
                        DefinitionCacheHandle *handle);
   bool writeStagedChunk(DefinitionCacheHandle handle,
                         uint16_t chunkIndex,
@@ -81,15 +59,13 @@ class DefinitionCache {
   bool commitStaged(DefinitionCacheHandle handle,
                     uint32_t definitionId,
                     uint16_t definitionVersion,
-                    uint16_t jsonSize,
-                    const uint8_t *sha256);
+                    uint16_t jsonSize);
   bool abortStaged(DefinitionCacheHandle handle);
 
  private:
-  bool calculateAndVerify(const char *json,
-                          uint16_t jsonSize,
-                          const uint8_t *expectedSha256,
-                          uint8_t *calculatedSha256) const;
+  bool verifyCrc32(const char *json,
+                   uint16_t jsonSize,
+                   uint32_t expectedCrc32) const;
   bool readActiveHeader(uint8_t index,
                         CachedDefinitionInfo *info,
                         uint8_t *activeVariant = nullptr,
@@ -110,7 +86,7 @@ class DefinitionCache {
                 uint16_t definitionVersion,
                 const char *json,
                 uint16_t jsonSize,
-                const uint8_t *sha256);
+                uint32_t crc32);
   bool saveHeader(uint8_t index,
                   uint8_t variant,
                   const CachedDefinitionInfo &info,
@@ -156,7 +132,6 @@ class DefinitionCache {
                                  size_t outputSize);
 
   Supla::Config *config = nullptr;
-  Sha256Provider *sha256Provider = nullptr;
 };
 
 }  // namespace Suplet

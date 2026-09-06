@@ -54,10 +54,7 @@ class CommandProcessor {
                       const char *value,
                       const char *suffix);
 
-  uint32_t nextSessionId();
-
   SuplaDeviceClass *device = nullptr;
-  uint32_t sessionCounter = 1;
 #if SUPLA_TEST
   TestCalcfgHandler testCalcfgHandler = nullptr;
   void *testCalcfgContext = nullptr;

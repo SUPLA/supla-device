@@ -66,20 +66,21 @@ class CalcfgChunkResponder {
           offsetof(TCalCfg_SupletDefinitionConfigChunk, Data) + output.Size;
       memcpy(result->Data, &output, result->DataSize);
     } else if (request->Command ==
-               SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_CONFIG) {
-      TCalCfg_SupletInstanceConfigRequest configRequest = {};
+               SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_DATA) {
+      TCalCfg_SupletInstanceDataRequest configRequest = {};
       memcpy(&configRequest, request->Data, sizeof(configRequest));
       if (configRequest.Offset != expectedOffset) {
         return SUPLA_CALCFG_RESULT_FALSE;
       }
-      TCalCfg_SupletInstanceConfigChunk output = {};
+      TCalCfg_SupletInstanceDataChunk output = {};
       output.InstanceId = instanceId;
+      output.Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG;
       output.Offset = expectedOffset;
       output.TotalSize = chunk.totalSize;
       output.Size = chunk.data.size();
       memcpy(output.Data, chunk.data.data(), output.Size);
       result->DataSize =
-          offsetof(TCalCfg_SupletInstanceConfigChunk, Data) + output.Size;
+          offsetof(TCalCfg_SupletInstanceDataChunk, Data) + output.Size;
       memcpy(result->Data, &output, result->DataSize);
     } else {
       return SUPLA_CALCFG_RESULT_FALSE;

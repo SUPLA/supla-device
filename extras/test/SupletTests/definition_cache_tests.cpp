@@ -120,46 +120,16 @@ class KeyValueConfig : public Supla::KeyValue {
   }
 };
 
-class FakeSha256Provider : public Supla::Suplet::Sha256Provider {
- public:
-  bool calculate(const uint8_t *data,
-                 size_t dataSize,
-                 uint8_t *output,
-                 size_t outputSize) override {
-    if (data == nullptr || output == nullptr || outputSize < 32) {
-      return false;
-    }
-    uint8_t sum = 0;
-    uint8_t x = 0x5A;
-    for (size_t i = 0; i < dataSize; i++) {
-      sum = static_cast<uint8_t>(sum + data[i]);
-      x = static_cast<uint8_t>((x << 1) ^ data[i] ^ (x >> 7));
-    }
-    for (uint8_t i = 0; i < 32; i++) {
-      output[i] = static_cast<uint8_t>(sum + x + i + dataSize);
-    }
-    return true;
-  }
-};
-
-void makeSha(FakeSha256Provider *provider, const char *json, uint8_t *sha) {
-  ASSERT_TRUE(provider->calculate(
-      reinterpret_cast<const uint8_t *>(json), strlen(json), sha, 32));
-}
-
-constexpr size_t kDefinitionCacheHeaderSize = 50;
+constexpr size_t kDefinitionCacheHeaderSize = 22;
 
 }  // namespace
 
 TEST(SupletDefinitionCacheTests, SavesLoadsAndReportsInfo) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   const char json[] = "{\"definitionId\":10,\"definitionVersion\":1}";
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, json, sha);
 
-  ASSERT_TRUE(cache.save(10, 1, json, sha));
+  ASSERT_TRUE(cache.save(10, 1, json));
   EXPECT_GE(config.commitCount, 1);
   ASSERT_GT(config.uint8Values.count("spld0_act"), 0);
   EXPECT_EQ(config.uint8Values["spld0_act"], 1);
@@ -175,7 +145,7 @@ TEST(SupletDefinitionCacheTests, SavesLoadsAndReportsInfo) {
   EXPECT_EQ(info.definitionId, 10u);
   EXPECT_EQ(info.definitionVersion, 1u);
   EXPECT_EQ(info.jsonSize, strlen(json));
-  EXPECT_EQ(memcmp(info.sha256, sha, sizeof(sha)), 0);
+  EXPECT_NE(info.crc32, 0u);
 
   Supla::Suplet::CachedDefinitionInfo slotInfo = {};
   ASSERT_TRUE(cache.getInfo(0, &slotInfo));
@@ -184,27 +154,21 @@ TEST(SupletDefinitionCacheTests, SavesLoadsAndReportsInfo) {
 
 TEST(SupletDefinitionCacheTests, MissingKeyValueSlotIsNotAnEmptyBlob) {
   KeyValueConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
 
   EXPECT_FALSE(cache.contains(0x2010, 1));
 }
 
 TEST(SupletDefinitionCacheTests, StoresVariableSizeBlobs) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   const char shortJson[] = "{\"definitionId\":20,\"definitionVersion\":1}";
   const char longJson[] =
       "{\"definitionId\":21,\"definitionVersion\":1,\"channels\":[{"
       "\"channelId\":1,\"key\":\"relay\",\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\"}]}";
-  uint8_t sha[32] = {};
-
-  makeSha(&shaProvider, shortJson, sha);
-  ASSERT_TRUE(cache.save(20, 1, shortJson, sha));
-  makeSha(&shaProvider, longJson, sha);
-  ASSERT_TRUE(cache.save(21, 1, longJson, sha));
+  ASSERT_TRUE(cache.save(20, 1, shortJson));
+  ASSERT_TRUE(cache.save(21, 1, longJson));
 
   ASSERT_GT(config.blobs.count("spld0_1"), 0);
   ASSERT_GT(config.blobs.count("spld1_1"), 0);
@@ -219,15 +183,11 @@ TEST(SupletDefinitionCacheTests, StoresVariableSizeBlobs) {
 
 TEST(SupletDefinitionCacheTests, StoresPayloadInTwoKilobyteChunks) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   std::string json = "{\"definitionId\":22,\"definitionVersion\":1,\"data\":\"";
   json += std::string(SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE + 17, 'x');
   json += "\"}";
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, json.c_str(), sha);
-
-  ASSERT_TRUE(cache.save(22, 1, json.c_str(), sha));
+  ASSERT_TRUE(cache.save(22, 1, json.c_str()));
   ASSERT_GT(config.blobs.count("spld0_1"), 0);
   ASSERT_GT(config.blobs.count("spld0_1c0"), 0);
   ASSERT_GT(config.blobs.count("spld0_1c1"), 0);
@@ -244,16 +204,13 @@ TEST(SupletDefinitionCacheTests, StoresPayloadInTwoKilobyteChunks) {
 
 TEST(SupletDefinitionCacheTests, UsesSlotsAboveThree) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
-  uint8_t sha[32] = {};
+  Supla::Suplet::DefinitionCache cache(&config);
 
   for (uint8_t i = 0; i < 5; i++) {
     std::string json = "{\"definitionId\":";
     json += std::to_string(30 + i);
     json += ",\"definitionVersion\":1}";
-    makeSha(&shaProvider, json.c_str(), sha);
-    ASSERT_TRUE(cache.save(30 + i, 1, json.c_str(), sha));
+    ASSERT_TRUE(cache.save(30 + i, 1, json.c_str()));
   }
 
   ASSERT_GT(config.blobs.count("spld4_1"), 0);
@@ -265,49 +222,33 @@ TEST(SupletDefinitionCacheTests, UsesSlotsAboveThree) {
 
 TEST(SupletDefinitionCacheTests, RejectsSaveWhenCacheIsFull) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
-  uint8_t sha[32] = {};
+  Supla::Suplet::DefinitionCache cache(&config);
 
   for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
     std::string json = "{\"definitionId\":";
     json += std::to_string(100 + i);
     json += ",\"definitionVersion\":1}";
-    makeSha(&shaProvider, json.c_str(), sha);
-    ASSERT_TRUE(cache.save(100 + i, 1, json.c_str(), sha));
+    ASSERT_TRUE(cache.save(100 + i, 1, json.c_str()));
   }
 
   const char overflowJson[] = "{\"definitionId\":999,\"definitionVersion\":1}";
-  makeSha(&shaProvider, overflowJson, sha);
-  EXPECT_FALSE(cache.save(999, 1, overflowJson, sha));
+  EXPECT_FALSE(cache.save(999, 1, overflowJson));
 }
 
-TEST(SupletDefinitionCacheTests, RejectsWrongShaAndSmallOutputBuffer) {
+TEST(SupletDefinitionCacheTests, RejectsSmallOutputBuffer) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   const char json[] = "{\"definitionId\":11,\"definitionVersion\":1}";
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, json, sha);
-  sha[0] ^= 0xFF;
-
-  EXPECT_FALSE(cache.save(11, 1, json, sha));
-  EXPECT_TRUE(config.blobs.empty());
-
-  sha[0] ^= 0xFF;
-  ASSERT_TRUE(cache.save(11, 1, json, sha));
+  ASSERT_TRUE(cache.save(11, 1, json));
   char small[4] = {};
   EXPECT_FALSE(cache.load(11, 1, small, sizeof(small)));
 }
 
 TEST(SupletDefinitionCacheTests, DetectsCorruptedStoredJson) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   const char json[] = "{\"definitionId\":12,\"definitionVersion\":1}";
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, json, sha);
-  ASSERT_TRUE(cache.save(12, 1, json, sha));
+  ASSERT_TRUE(cache.save(12, 1, json));
 
   ASSERT_GT(config.blobs.count("spld0_1c0"), 0);
   for (auto &byte : config.blobs["spld0_1c0"]) {
@@ -323,12 +264,9 @@ TEST(SupletDefinitionCacheTests, DetectsCorruptedStoredJson) {
 
 TEST(SupletDefinitionCacheTests, RejectsInvalidStoredHeaderAndTerminator) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   const char json[] = "{\"definitionId\":14,\"definitionVersion\":1}";
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, json, sha);
-  ASSERT_TRUE(cache.save(14, 1, json, sha));
+  ASSERT_TRUE(cache.save(14, 1, json));
 
   ASSERT_GT(config.blobs.count("spld0_1"), 0);
   auto original = config.blobs["spld0_1"];
@@ -348,18 +286,13 @@ TEST(SupletDefinitionCacheTests, RejectsInvalidStoredHeaderAndTerminator) {
 
 TEST(SupletDefinitionCacheTests, UpdatesExistingSlotAndErasesIt) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   const char jsonA[] = "{\"definitionId\":13,\"definitionVersion\":1}";
   const char jsonB[] = "{\"definitionId\":13,\"definitionVersion\":1,\"x\":2}";
-  uint8_t sha[32] = {};
-
-  makeSha(&shaProvider, jsonA, sha);
-  ASSERT_TRUE(cache.save(13, 1, jsonA, sha));
+  ASSERT_TRUE(cache.save(13, 1, jsonA));
   ASSERT_GT(config.blobs.count("spld0_1"), 0);
   ASSERT_GT(config.blobs.count("spld0_1c0"), 0);
-  makeSha(&shaProvider, jsonB, sha);
-  ASSERT_TRUE(cache.save(13, 1, jsonB, sha));
+  ASSERT_TRUE(cache.save(13, 1, jsonB));
 
   char output[128] = {};
   EXPECT_TRUE(cache.contains(13, 1));
@@ -381,18 +314,13 @@ TEST(SupletDefinitionCacheTests, UpdatesExistingSlotAndErasesIt) {
 
 TEST(SupletDefinitionCacheTests, CommitsActivationBeforeErasingOldVariant) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   const char jsonA[] = "{\"definitionId\":17,\"definitionVersion\":1}";
   const char jsonB[] = "{\"definitionId\":17,\"definitionVersion\":1,\"x\":2}";
-  uint8_t sha[32] = {};
-
-  makeSha(&shaProvider, jsonA, sha);
-  ASSERT_TRUE(cache.save(17, 1, jsonA, sha));
+  ASSERT_TRUE(cache.save(17, 1, jsonA));
   config.operations.clear();
 
-  makeSha(&shaProvider, jsonB, sha);
-  ASSERT_TRUE(cache.save(17, 1, jsonB, sha));
+  ASSERT_TRUE(cache.save(17, 1, jsonB));
 
   auto setActive = std::find(config.operations.begin(),
                              config.operations.end(),
@@ -410,13 +338,9 @@ TEST(SupletDefinitionCacheTests, CommitsActivationBeforeErasingOldVariant) {
 
 TEST(SupletDefinitionCacheTests, GetInfoDoesNotRepairOrCleanupVariants) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   const char json[] = "{\"definitionId\":18,\"definitionVersion\":1}";
-  uint8_t sha[32] = {};
-
-  makeSha(&shaProvider, json, sha);
-  ASSERT_TRUE(cache.save(18, 1, json, sha));
+  ASSERT_TRUE(cache.save(18, 1, json));
   config.blobs["spld0_2"] = config.blobs["spld0_1"];
   config.blobs["spld0_2c0"] = config.blobs["spld0_1c0"];
   config.operations.clear();
@@ -430,19 +354,14 @@ TEST(SupletDefinitionCacheTests, GetInfoDoesNotRepairOrCleanupVariants) {
 
 TEST(SupletDefinitionCacheTests, FallsBackToOtherVariantWhenActiveIsCorrupted) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   const char jsonA[] = "{\"definitionId\":15,\"definitionVersion\":1}";
   const char jsonB[] = "{\"definitionId\":15,\"definitionVersion\":1,\"x\":2}";
-  uint8_t sha[32] = {};
-
-  makeSha(&shaProvider, jsonA, sha);
-  ASSERT_TRUE(cache.save(15, 1, jsonA, sha));
+  ASSERT_TRUE(cache.save(15, 1, jsonA));
   auto headerA = config.blobs["spld0_1"];
   auto chunkA = config.blobs["spld0_1c0"];
 
-  makeSha(&shaProvider, jsonB, sha);
-  ASSERT_TRUE(cache.save(15, 1, jsonB, sha));
+  ASSERT_TRUE(cache.save(15, 1, jsonB));
   ASSERT_EQ(config.uint8Values["spld0_act"], 2);
 
   config.blobs["spld0_1"] = headerA;
@@ -459,13 +378,9 @@ TEST(SupletDefinitionCacheTests, FallsBackToOtherVariantWhenActiveIsCorrupted) {
 
 TEST(SupletDefinitionCacheTests, OrphanedSlotWithoutActiveMarkerIsCleaned) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   const char json[] = "{\"definitionId\":16,\"definitionVersion\":1}";
-  uint8_t sha[32] = {};
-
-  makeSha(&shaProvider, json, sha);
-  ASSERT_TRUE(cache.save(16, 1, json, sha));
+  ASSERT_TRUE(cache.save(16, 1, json));
   ASSERT_FALSE(config.blobs.empty());
   ASSERT_FALSE(config.uint8Values.empty());
 
@@ -479,8 +394,7 @@ TEST(SupletDefinitionCacheTests, OrphanedSlotWithoutActiveMarkerIsCleaned) {
 TEST(SupletDefinitionCacheTests,
      LegacySlotWithoutActiveMarkerIsNotDeletedByRepairLookup) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
 
   const char legacyHeader[] = "legacy-header";
   const char legacyChunk[] = "{\"definitionId\":42,\"definitionVersion\":7}";

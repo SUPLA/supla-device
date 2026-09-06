@@ -15,6 +15,25 @@ class Config;
 
 namespace Suplet {
 
+class ArtifactReader {
+ public:
+  virtual ~ArtifactReader() = default;
+  virtual bool readArtifact(uint8_t instanceId,
+                            uint32_t offset,
+                            uint8_t *data,
+                            uint16_t size) const = 0;
+};
+
+struct ArtifactStorageHandle {
+  bool valid = false;
+  uint8_t instanceId = 0;
+  uint8_t variant = 0;
+  uint16_t chunkIndex = 0;
+  uint32_t artifactSize = 0;
+  uint32_t receivedSize = 0;
+  uint32_t crc32State = 0xFFFFFFFF;
+};
+
 struct InstanceRecord {
   InstanceRecord();
   InstanceRecord(const InstanceRecord &other);
@@ -27,10 +46,14 @@ struct InstanceRecord {
   uint8_t instanceId = 0;
   uint32_t definitionId = 0;
   uint16_t definitionVersion = 0;
+  uint32_t revision = 0;
   uint8_t subDeviceId = 0;
   uint16_t configSize = 0;
+  uint32_t artifactSize = 0;
+  uint32_t artifactCrc32 = 0;
   ChannelMap channelMap = {};
   uint8_t *config = nullptr;
+  const ArtifactReader *artifactReader = nullptr;
 };
 
 class InstanceTable {
@@ -59,19 +82,45 @@ class InstanceTable {
   uint8_t count = 0;
 };
 
-class Storage {
+class Storage : public ArtifactReader {
  public:
   explicit Storage(Supla::Config *config);
 
   bool load(InstanceTable *table);
   bool loadIndex(InstanceTable *table);
   bool loadInstance(uint8_t instanceId, InstanceRecord *record);
-  bool save(const InstanceTable &table);
+  bool save(const InstanceTable &table,
+            const ArtifactStorageHandle *stagedArtifact = nullptr);
   bool erase();
+  bool beginStagedArtifact(uint8_t instanceId,
+                           uint32_t artifactSize,
+                           ArtifactStorageHandle *handle);
+  bool writeStagedArtifactChunk(ArtifactStorageHandle *handle,
+                                const uint8_t *data,
+                                uint16_t size);
+  bool abortStagedArtifact(ArtifactStorageHandle *handle);
+  bool readArtifact(uint8_t instanceId,
+                    uint32_t offset,
+                    uint8_t *data,
+                    uint16_t size) const override;
+  static uint32_t stagedArtifactCrc32(
+      const ArtifactStorageHandle &handle);
 
  private:
 #pragma pack(push, 1)
   struct StoredInstanceHeader {
+    uint8_t version = 0;
+    uint8_t reserved = 0;
+    uint32_t definitionId = 0;
+    uint16_t definitionVersion = 0;
+    uint8_t channelCount = 0;
+    uint16_t configSize = 0;
+    uint32_t revision = 0;
+    uint32_t artifactSize = 0;
+    uint32_t artifactCrc32 = 0;
+  };
+
+  struct StoredInstanceHeaderV3 {
     uint8_t version = 0;
     uint8_t reserved = 0;
     uint32_t definitionId = 0;
@@ -97,7 +146,16 @@ class Storage {
                          InstanceRecord *record,
                          bool loadConfig,
                          bool cleanup);
-  bool saveVariant(const InstanceRecord &record, uint8_t variant);
+  bool saveVariant(const InstanceRecord &record,
+                   uint8_t variant,
+                   const ArtifactStorageHandle *stagedArtifact);
+  bool copyActiveArtifact(const InstanceRecord &record, uint8_t targetVariant);
+  bool validateArtifact(uint8_t instanceId,
+                        uint8_t variant,
+                        uint32_t artifactSize,
+                        uint32_t expectedCrc32) const;
+  bool getActiveVariant(uint8_t instanceId, uint8_t *variant) const;
+  bool eraseArtifactChunks(uint8_t instanceId, uint8_t variant);
   bool eraseVariant(uint8_t instanceId, uint8_t variant);
   bool eraseInstance(uint8_t instanceId);
   bool cleanupLoadedInstance(uint8_t instanceId,
@@ -110,6 +168,10 @@ class Storage {
                          uint8_t variant,
                          char *output) const;
   void makeConfigKey(uint8_t instanceId, uint8_t variant, char *output) const;
+  void makeArtifactChunkKey(uint8_t instanceId,
+                            uint8_t variant,
+                            uint16_t chunkIndex,
+                            char *output) const;
   bool readBlobExact(const char *key, char *output, size_t expectedSize) const;
 
   Supla::Config *config = nullptr;

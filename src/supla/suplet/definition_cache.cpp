@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <supla/storage/config.h>
-#if !defined(SUPLA_TEST) && (defined(ESP32) || defined(SUPLA_DEVICE_ESP32))
-#include <supla/sha256.h>
-#endif
 #include <supla/suplet/config.h>
 
 #if SUPLA_SUPLET_ENABLED
@@ -20,7 +17,7 @@ namespace Suplet {
 namespace {
 
 constexpr uint32_t kCacheMagic = 0x5344504C;  // SDPL
-constexpr uint8_t kCacheVersion = 3;
+constexpr uint8_t kCacheVersion = 4;
 constexpr uint16_t kChunkSize = SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE;
 constexpr uint8_t kMaxCacheSlots = SUPLA_SUPLET_MAX_CACHED_DEFINITIONS;
 constexpr uint16_t kMaxChunkCount =
@@ -39,7 +36,7 @@ struct BlobHeader {
   uint16_t definitionVersion = 0;
   uint16_t chunkCount = 0;
   uint16_t chunkSize = 0;
-  uint8_t sha256[32] = {};
+  uint32_t crc32 = 0;
 };
 #pragma pack(pop)
 
@@ -56,50 +53,33 @@ uint16_t chunkPayloadSize(uint16_t jsonSize, uint16_t chunkIndex) {
   return remaining > kChunkSize ? kChunkSize : static_cast<uint16_t>(remaining);
 }
 
+uint32_t calculateCrc32(const uint8_t *data, size_t size) {
+  uint32_t crc = 0xFFFFFFFFUL;
+  for (size_t i = 0; i < size; i++) {
+    crc ^= data[i];
+    for (uint8_t bit = 0; bit < 8; bit++) {
+      crc = (crc >> 1) ^ (0xEDB88320UL & (0U - (crc & 1U)));
+    }
+  }
+  return crc ^ 0xFFFFFFFFUL;
+}
+
 }  // namespace
 
-DefinitionCache::DefinitionCache(Supla::Config *config,
-                                 Sha256Provider *sha256Provider)
-    : config(config), sha256Provider(sha256Provider) {
+DefinitionCache::DefinitionCache(Supla::Config *config) : config(config) {
 }
-
-#if !defined(SUPLA_TEST) && (defined(ESP32) || defined(SUPLA_DEVICE_ESP32))
-bool DefaultSha256Provider::calculate(const uint8_t *data,
-                                      size_t dataSize,
-                                      uint8_t *output,
-                                      size_t outputSize) {
-  if (data == nullptr || output == nullptr || outputSize < 32 ||
-      dataSize > static_cast<size_t>(INT_MAX)) {
-    return false;
-  }
-
-  Supla::Sha256 sha256;
-  sha256.update(data, static_cast<int>(dataSize));
-  sha256.digest(output, 32);
-  return true;
-}
-#endif
 
 bool DefinitionCache::save(uint32_t definitionId,
                            uint16_t definitionVersion,
-                           const char *json,
-                           const uint8_t *expectedSha256) {
+                           const char *json) {
   if (config == nullptr || definitionId == 0 || definitionVersion == 0 ||
-      json == nullptr || expectedSha256 == nullptr) {
+      json == nullptr) {
     return false;
   }
 
   size_t jsonSize = strlen(json);
   if (jsonSize == 0 || jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE ||
       jsonSize > UINT16_MAX) {
-    return false;
-  }
-
-  uint8_t calculatedSha[32] = {};
-  if (!calculateAndVerify(json,
-                          static_cast<uint16_t>(jsonSize),
-                          expectedSha256,
-                          calculatedSha)) {
     return false;
   }
 
@@ -115,7 +95,6 @@ bool DefinitionCache::save(uint32_t definitionId,
   if (!beginStagedSave(definitionId,
                        definitionVersion,
                        static_cast<uint16_t>(jsonSize),
-                       calculatedSha,
                        &handle)) {
     return false;
   }
@@ -137,8 +116,7 @@ bool DefinitionCache::save(uint32_t definitionId,
   if (!commitStaged(handle,
                     definitionId,
                     definitionVersion,
-                    static_cast<uint16_t>(jsonSize),
-                    calculatedSha)) {
+                    static_cast<uint16_t>(jsonSize))) {
     abortStaged(handle);
     return false;
   }
@@ -177,8 +155,7 @@ bool DefinitionCache::load(uint32_t definitionId,
                    chunkSize,
                    json,
                    jsonSize) ||
-      !calculateAndVerify(
-          json, loadedInfo.jsonSize, loadedInfo.sha256, nullptr)) {
+      !verifyCrc32(json, loadedInfo.jsonSize, loadedInfo.crc32)) {
     return false;
   }
 
@@ -213,11 +190,10 @@ bool DefinitionCache::getInfoAndRepair(uint8_t index,
 bool DefinitionCache::beginStagedSave(uint32_t definitionId,
                                       uint16_t definitionVersion,
                                       uint16_t jsonSize,
-                                      const uint8_t *sha256,
                                       DefinitionCacheHandle *handle) {
   if (config == nullptr || handle == nullptr || definitionId == 0 ||
       definitionVersion == 0 || jsonSize == 0 ||
-      jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || sha256 == nullptr) {
+      jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE) {
     return false;
   }
 
@@ -297,11 +273,10 @@ bool DefinitionCache::loadStaged(DefinitionCacheHandle handle,
 bool DefinitionCache::commitStaged(DefinitionCacheHandle handle,
                                    uint32_t definitionId,
                                    uint16_t definitionVersion,
-                                   uint16_t jsonSize,
-                                   const uint8_t *sha256) {
+                                   uint16_t jsonSize) {
   if (config == nullptr || !isValidHandle(handle) || definitionId == 0 ||
       definitionVersion == 0 || jsonSize == 0 ||
-      jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || sha256 == nullptr) {
+      jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE) {
     return false;
   }
 
@@ -309,7 +284,6 @@ bool DefinitionCache::commitStaged(DefinitionCacheHandle handle,
   stagedInfo.definitionId = definitionId;
   stagedInfo.definitionVersion = definitionVersion;
   stagedInfo.jsonSize = jsonSize;
-  memcpy(stagedInfo.sha256, sha256, sizeof(stagedInfo.sha256));
   uint16_t stagedChunkCount = chunkCountForSize(jsonSize);
   uint16_t stagedChunkSize = kChunkSize;
 
@@ -322,6 +296,24 @@ bool DefinitionCache::commitStaged(DefinitionCacheHandle handle,
         makeChunkKey(handle.slot, handle.variant, i, key, sizeof(key)) &&
         config->getBlobSize(key) == expectedSize;
   }
+
+  char *json = nullptr;
+  if (validPayload) {
+    json = new char[static_cast<size_t>(jsonSize) + 1];
+    validPayload = json != nullptr &&
+                   loadPayload(handle.slot,
+                               handle.variant,
+                               stagedInfo,
+                               stagedChunkCount,
+                               stagedChunkSize,
+                               json,
+                               static_cast<size_t>(jsonSize) + 1);
+  }
+  if (validPayload) {
+    stagedInfo.crc32 = calculateCrc32(
+        reinterpret_cast<const unsigned char *>(json), jsonSize);
+  }
+  delete[] json;
 
   if (!validPayload ||
       !saveHeader(handle.slot,
@@ -352,28 +344,13 @@ bool DefinitionCache::abortStaged(DefinitionCacheHandle handle) {
   return result;
 }
 
-bool DefinitionCache::calculateAndVerify(const char *json,
-                                         uint16_t jsonSize,
-                                         const uint8_t *expectedSha256,
-                                         uint8_t *calculatedSha256) const {
-  if (sha256Provider == nullptr || json == nullptr ||
-      expectedSha256 == nullptr) {
-    return false;
-  }
-  uint8_t digest[32] = {};
-  if (!sha256Provider->calculate(reinterpret_cast<const uint8_t *>(json),
-                                 jsonSize,
-                                 digest,
-                                 sizeof(digest))) {
-    return false;
-  }
-  if (memcmp(digest, expectedSha256, sizeof(digest)) != 0) {
-    return false;
-  }
-  if (calculatedSha256 != nullptr) {
-    memcpy(calculatedSha256, digest, sizeof(digest));
-  }
-  return true;
+bool DefinitionCache::verifyCrc32(const char *json,
+                                  uint16_t jsonSize,
+                                  uint32_t expectedCrc32) const {
+  return json != nullptr &&
+         calculateCrc32(
+             reinterpret_cast<const unsigned char *>(json), jsonSize) ==
+             expectedCrc32;
 }
 
 bool DefinitionCache::readActiveHeader(uint8_t index,
@@ -483,7 +460,7 @@ bool DefinitionCache::loadHeader(uint8_t index,
   info->definitionId = header.definitionId;
   info->definitionVersion = header.definitionVersion;
   info->jsonSize = header.jsonSize;
-  memcpy(info->sha256, header.sha256, sizeof(info->sha256));
+  info->crc32 = header.crc32;
   if (chunkCount != nullptr) {
     *chunkCount = header.chunkCount;
   }
@@ -498,10 +475,10 @@ bool DefinitionCache::saveSlot(uint8_t index,
                                uint16_t definitionVersion,
                                const char *json,
                                uint16_t jsonSize,
-                               const uint8_t *sha256) {
+                               uint32_t crc32) {
   if (config == nullptr || index >= kMaxCacheSlots || definitionId == 0 ||
       definitionVersion == 0 || json == nullptr || jsonSize == 0 ||
-      jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || sha256 == nullptr) {
+      jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE) {
     return false;
   }
 
@@ -526,7 +503,7 @@ bool DefinitionCache::saveSlot(uint8_t index,
   info.definitionId = definitionId;
   info.definitionVersion = definitionVersion;
   info.jsonSize = jsonSize;
-  memcpy(info.sha256, sha256, sizeof(info.sha256));
+  info.crc32 = crc32;
   if (!saveHeader(index, variant, info, chunkCount, kChunkSize) ||
       !setActiveVariant(index, variant)) {
     eraseSlot(index);
@@ -558,7 +535,7 @@ bool DefinitionCache::saveHeader(uint8_t index,
   header.jsonSize = info.jsonSize;
   header.chunkCount = chunkCount;
   header.chunkSize = chunkSize;
-  memcpy(header.sha256, info.sha256, sizeof(header.sha256));
+  header.crc32 = info.crc32;
 
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   return makeHeaderKey(index, variant, key, sizeof(key)) &&

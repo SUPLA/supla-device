@@ -70,7 +70,7 @@ printf '%s\n' '{"calcfg":"saveDefinition","definitionId":2010,"definitionVersion
 Create an instance. `instanceId: 0` asks the runtime to allocate a free slot.
 
 ```sh
-printf '%s\n' '{"calcfg":"upsertInstance","instanceId":0,"definitionId":2010,"definitionVersion":1,"paramsJson":"{\"relay.count\":2,\"mode\":\"max\",\"host\":\"192.168.1.50\"}","state":"active"}' | nc -U /tmp/sd4linux-debug.sock
+printf '%s\n' '{"calcfg":"upsertInstance","instanceId":0,"definitionId":2010,"definitionVersion":1,"revision":1,"paramsJson":"{\"relay.count\":2,\"mode\":\"max\",\"host\":\"192.168.1.50\"}","state":"active"}' | nc -U /tmp/sd4linux-debug.sock
 ```
 
 List instances:
@@ -79,10 +79,10 @@ List instances:
 printf '%s\n' '{"calcfg":"getInstanceList"}' | nc -U /tmp/sd4linux-debug.sock
 ```
 
-Inspect an instance. Replace `2` with the instance id returned by the list:
+Inspect an instance. The list contains all instance metadata. Replace `2` with
+the instance id returned by the list to fetch its config:
 
 ```sh
-printf '%s\n' '{"calcfg":"getInstanceInfo","instanceId":2}' | nc -U /tmp/sd4linux-debug.sock
 printf '%s\n' '{"calcfg":"getInstanceConfig","instanceId":2}' | nc -U /tmp/sd4linux-debug.sock
 ```
 
@@ -92,16 +92,17 @@ Save version 2 of the same definition:
 printf '%s\n' '{"calcfg":"saveDefinition","definitionId":2010,"definitionVersion":2,"definitionJson":"{\"schemaVersion\":1,\"handlerVersion\":1,\"definitionId\":2010,\"definitionVersion\":2,\"maxInstances\":3,\"category\":\"virtual\",\"kind\":\"virtualRelay\",\"parameters\":[{\"key\":\"relay.count\",\"type\":\"uint8\",\"default\":2,\"min\":1,\"max\":4,\"lifecycle\":\"createOnly\",\"affectsTopology\":true},{\"key\":\"startup.delay\",\"type\":\"uint16\",\"default\":5,\"min\":0,\"max\":3600,\"lifecycle\":\"createOnly\"},{\"key\":\"mode\",\"type\":\"enum\",\"default\":\"avg\",\"values\":[\"avg\",\"min\",\"max\"],\"required\":true},{\"key\":\"host\",\"type\":\"string\",\"required\":true},{\"key\":\"display.name\",\"type\":\"string\",\"default\":\"Relay group\"}],\"channels\":[{\"channelId\":1,\"key\":\"relay\",\"kind\":\"virtualRelay\",\"function\":\"powerSwitch\",\"caption\":\"Param relay v2\"}]}"}' | nc -U /tmp/sd4linux-debug.sock
 ```
 
-Upgrade an existing instance from definition version 1 to 2:
+Set an existing instance to definition version 2. The same operation handles
+ordinary updates and definition-version changes; use a newer revision:
 
 ```sh
-printf '%s\n' '{"calcfg":"upgradeInstance","instanceId":1,"definitionId":2010,"fromDefinitionVersion":1,"toDefinitionVersion":2,"paramsJson":"{\"relay.count\":2,\"startup.delay\":5,\"mode\":\"max\",\"host\":\"192.168.1.50\",\"display.name\":\"Relay group v2\"}"}' | nc -U /tmp/sd4linux-debug.sock
+printf '%s\n' '{"calcfg":"upsertInstance","instanceId":1,"definitionId":2010,"definitionVersion":2,"revision":2,"paramsJson":"{\"relay.count\":2,\"startup.delay\":5,\"mode\":\"max\",\"host\":\"192.168.1.50\",\"display.name\":\"Relay group v2\"}"}' | nc -U /tmp/sd4linux-debug.sock
 ```
 
 Inspect the upgraded instance:
 
 ```sh
-printf '%s\n' '{"calcfg":"getInstanceInfo","instanceId":1}' | nc -U /tmp/sd4linux-debug.sock
+printf '%s\n' '{"calcfg":"getInstanceList"}' | nc -U /tmp/sd4linux-debug.sock
 printf '%s\n' '{"calcfg":"getInstanceConfig","instanceId":1}' | nc -U /tmp/sd4linux-debug.sock
 ```
 
@@ -117,7 +118,6 @@ Other currently supported CALCFG operations:
 printf '%s\n' '{"calcfg":"getCapabilities"}' | nc -U /tmp/sd4linux-debug.sock
 printf '%s\n' '{"calcfg":"getDefinitionList"}' | nc -U /tmp/sd4linux-debug.sock
 printf '%s\n' '{"calcfg":"getDefinitionConfig","definitionId":2010,"definitionVersion":1}' | nc -U /tmp/sd4linux-debug.sock
-printf '%s\n' '{"calcfg":"getInstanceCount"}' | nc -U /tmp/sd4linux-debug.sock
 ```
 
 ## Direct Suplet Command JSON

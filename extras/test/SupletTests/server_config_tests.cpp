@@ -105,45 +105,6 @@ class InMemoryConfig : public Supla::Config {
   int commitCount = 0;
 };
 
-class FakeSha256Provider : public Supla::Suplet::Sha256Provider {
- public:
-  bool calculate(const uint8_t *data,
-                 size_t dataSize,
-                 uint8_t *output,
-                 size_t outputSize) override {
-    if (data == nullptr || output == nullptr || outputSize < 32) {
-      return false;
-    }
-    uint8_t sum = 0;
-    uint8_t x = 0x5A;
-    for (size_t i = 0; i < dataSize; i++) {
-      sum = static_cast<uint8_t>(sum + data[i]);
-      x = static_cast<uint8_t>((x << 1) ^ data[i] ^ (x >> 7));
-    }
-    for (uint8_t i = 0; i < 32; i++) {
-      output[i] = static_cast<uint8_t>(sum + x + i + dataSize);
-    }
-    return true;
-  }
-};
-
-void makeSha(FakeSha256Provider *provider, const char *json, uint8_t *sha) {
-  ASSERT_TRUE(provider->calculate(
-      reinterpret_cast<const uint8_t *>(json), strlen(json), sha, 32));
-}
-
-void shaToHex(const uint8_t *sha, char *hex, size_t hexSize) {
-  ASSERT_NE(sha, nullptr);
-  ASSERT_NE(hex, nullptr);
-  ASSERT_GE(hexSize, 65u);
-  static const char chars[] = "0123456789abcdef";
-  for (uint8_t i = 0; i < 32; i++) {
-    hex[i * 2] = chars[(sha[i] >> 4) & 0x0F];
-    hex[i * 2 + 1] = chars[sha[i] & 0x0F];
-  }
-  hex[64] = '\0';
-}
-
 void escapeJsonString(const char *input, char *output, size_t outputSize) {
   ASSERT_NE(input, nullptr);
   ASSERT_NE(output, nullptr);
@@ -360,6 +321,7 @@ TEST(SupletServerConfigTests, AppliesBuiltInAssignmentAndRequestsRefresh) {
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   auto definition = makeRelayDefinition();
+  definition.maxArtifactSize = 4;
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
 
@@ -369,8 +331,31 @@ TEST(SupletServerConfigTests, AppliesBuiltInAssignmentAndRequestsRefresh) {
 
   auto record = manager.getInstanceTable()->findByInstanceId(70);
   ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->revision, 1u);
   EXPECT_EQ(record->channelMap.getChannelNumber(1),
             Supla::Suplet::kInvalidChannelNumber);
+
+  const uint8_t artifact[] = {1, 2, 3, 4};
+  Supla::Suplet::ArtifactStorageHandle stagedArtifact;
+  ASSERT_TRUE(manager.beginStagedArtifact(
+      record->instanceId, sizeof(artifact), &stagedArtifact));
+  ASSERT_TRUE(manager.writeStagedArtifactChunk(
+      &stagedArtifact, artifact, sizeof(artifact)));
+  record->artifactSize = sizeof(artifact);
+  record->artifactCrc32 =
+      Supla::Suplet::Storage::stagedArtifactCrc32(stagedArtifact);
+  ASSERT_TRUE(manager.save(&stagedArtifact));
+
+  EXPECT_EQ(handler.applyAssignmentJson(relayAssignment, 700, 2),
+            Supla::Suplet::ServerConfigResult::Applied);
+  record = manager.getInstanceTable()->findByInstanceId(70);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->revision, 2u);
+  EXPECT_EQ(record->artifactSize, sizeof(artifact));
+  uint8_t loadedArtifact[sizeof(artifact)] = {};
+  ASSERT_TRUE(manager.readArtifact(
+      record->instanceId, 0, loadedArtifact, sizeof(loadedArtifact)));
+  EXPECT_EQ(memcmp(loadedArtifact, artifact, sizeof(artifact)), 0);
 }
 
 TEST(SupletServerConfigTests, RemovesAssignmentAndRequestsRefresh) {
@@ -908,27 +893,24 @@ TEST(SupletServerConfigTests, RejectsInvalidCommandJson) {
             Supla::Suplet::ServerConfigResult::InvalidArgument);
   EXPECT_EQ(handler.applyCommandJson(
                 "{\"op\":\"saveDefinition\",\"definitionId\":1701,"
-                "\"definitionVersion\":1,\"sha256\":\"xyz\"}"),
+                "\"definitionVersion\":1}"),
             Supla::Suplet::ServerConfigResult::InvalidArgument);
 }
 
 TEST(SupletServerConfigTests, SavesDownloadedDefinitionAndAppliesAssignment) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
 
   EXPECT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   EXPECT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   EXPECT_EQ(downloadedDefinitions.getCount(cache), 1);
   EXPECT_EQ(registry.findDefinition(1701, 1), nullptr);
@@ -946,22 +928,18 @@ TEST(SupletServerConfigTests, SavesDownloadedDefinitionAndAppliesAssignment) {
 
 TEST(SupletServerConfigTests, ReplacesUnusedConflictingDownloadedDefinition) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
   ASSERT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
 
-  makeSha(&shaProvider, conflictingDownloadedDefinitionJson, sha);
   EXPECT_EQ(handler.saveDownloadedDefinition(
-                1701, 1, conflictingDownloadedDefinitionJson, sha),
+                1701, 1, conflictingDownloadedDefinitionJson),
             Supla::Suplet::ServerConfigResult::Applied);
 
   char storedJson[1024] = {};
@@ -976,25 +954,21 @@ TEST(SupletServerConfigTests, ReplacesUnusedConflictingDownloadedDefinition) {
 TEST(SupletServerConfigTests,
      RejectsChangingDownloadedDefinitionUsedByInstance) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
   ASSERT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson(downloadedAssignmentJson, 1701, 1),
       Supla::Suplet::ServerConfigResult::Applied);
 
-  makeSha(&shaProvider, conflictingDownloadedDefinitionJson, sha);
   EXPECT_EQ(handler.saveDownloadedDefinition(
-                1701, 1, conflictingDownloadedDefinitionJson, sha),
+                1701, 1, conflictingDownloadedDefinitionJson),
             Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged);
 
   char storedJson[1024] = {};
@@ -1005,17 +979,14 @@ TEST(SupletServerConfigTests,
 TEST(SupletServerConfigTests,
      RejectsChangingUsedDownloadedDefinitionWhenActiveCacheVariantIsStale) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
   ASSERT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson(downloadedAssignmentJson, 1701, 1),
@@ -1023,9 +994,8 @@ TEST(SupletServerConfigTests,
 
   forceDownloadedDefinitionActiveVariantToMissingB(&config);
 
-  makeSha(&shaProvider, conflictingDownloadedDefinitionJson, sha);
   EXPECT_EQ(handler.saveDownloadedDefinition(
-                1701, 1, conflictingDownloadedDefinitionJson, sha),
+                1701, 1, conflictingDownloadedDefinitionJson),
             Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged);
 
   char storedJson[1024] = {};
@@ -1036,17 +1006,14 @@ TEST(SupletServerConfigTests,
 TEST(SupletServerConfigTests,
      RejectsStagedChangingUsedDownloadedDefWhenActiveCacheVariantIsStale) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
   ASSERT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson(downloadedAssignmentJson, 1701, 1),
@@ -1054,13 +1021,11 @@ TEST(SupletServerConfigTests,
 
   forceDownloadedDefinitionActiveVariantToMissingB(&config);
 
-  makeSha(&shaProvider, conflictingDownloadedDefinitionJson, sha);
   Supla::Suplet::DefinitionCacheHandle handle = {};
   ASSERT_EQ(handler.beginStagedDownloadedDefinition(
                 1701,
                 1,
                 strlen(conflictingDownloadedDefinitionJson),
-                sha,
                 &handle),
             Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_TRUE(cache.writeStagedChunk(
@@ -1073,8 +1038,7 @@ TEST(SupletServerConfigTests,
                 handle,
                 1701,
                 1,
-                strlen(conflictingDownloadedDefinitionJson),
-                sha),
+                strlen(conflictingDownloadedDefinitionJson)),
             Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged);
 
   char storedJson[1024] = {};
@@ -1084,8 +1048,7 @@ TEST(SupletServerConfigTests,
 
 TEST(SupletServerConfigTests, LoadsMultipleDownloadedDefinitionVersions) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
@@ -1127,12 +1090,9 @@ TEST(SupletServerConfigTests, LoadsMultipleDownloadedDefinitionVersions) {
       "}]"
       "}";
 
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, v1, sha);
-  ASSERT_EQ(handler.saveDownloadedDefinition(1701, 1, v1, sha),
+  ASSERT_EQ(handler.saveDownloadedDefinition(1701, 1, v1),
             Supla::Suplet::ServerConfigResult::Applied);
-  makeSha(&shaProvider, v2, sha);
-  ASSERT_EQ(handler.saveDownloadedDefinition(1701, 2, v2, sha),
+  ASSERT_EQ(handler.saveDownloadedDefinition(1701, 2, v2),
             Supla::Suplet::ServerConfigResult::Applied);
 
   EXPECT_EQ(downloadedDefinitions.getCount(cache), 2);
@@ -1148,18 +1108,15 @@ TEST(SupletServerConfigTests, LoadsMultipleDownloadedDefinitionVersions) {
 
 TEST(SupletServerConfigTests, RemovesDownloadedDefinitionWhenUnused) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
 
   ASSERT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_TRUE(cache.contains(1701, 1));
   EXPECT_EQ(registry.findDefinition(1701, 1), nullptr);
@@ -1177,17 +1134,14 @@ TEST(SupletServerConfigTests, RemovesDownloadedDefinitionWhenUnused) {
 
 TEST(SupletServerConfigTests, RejectsRemovingDefinitionUsedByInstance) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
   ASSERT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson(downloadedAssignmentJson, 1701, 1),
@@ -1201,17 +1155,14 @@ TEST(SupletServerConfigTests, RejectsRemovingDefinitionUsedByInstance) {
 
 TEST(SupletServerConfigTests, RemoveAssignmentGarbageCollectsUnusedDefinition) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
   ASSERT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson(downloadedAssignmentJson, 1701, 1),
@@ -1228,17 +1179,14 @@ TEST(SupletServerConfigTests, RemoveAssignmentGarbageCollectsUnusedDefinition) {
 TEST(SupletServerConfigTests,
      RemoveAssignmentKeepsDefinitionUsedByOtherInstance) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
   ASSERT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson("{\"instanceId\":71,\"definitionId\":1701,"
@@ -1263,13 +1211,10 @@ TEST(SupletServerConfigTests,
 TEST(SupletServerConfigTests,
      DownloadedDefinitionMaxInstancesSurvivesCacheReload) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Registry registry;
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
-  ASSERT_TRUE(cache.save(1701, 1, downloadedDefinitionJson, sha));
+  ASSERT_TRUE(cache.save(1701, 1, downloadedDefinitionJson));
 
   Supla::Suplet::JsonDefinition loadedDefinition;
   ASSERT_TRUE(downloadedDefinitions.load(cache, 1701, 1, &loadedDefinition));
@@ -1278,17 +1223,14 @@ TEST(SupletServerConfigTests,
 
 TEST(SupletServerConfigTests, DownloadedDefinitionMaxInstancesIsEnforced) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
   ASSERT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson("{\"instanceId\":71,\"definitionId\":1701,"
@@ -1321,8 +1263,7 @@ TEST(SupletServerConfigTests, DownloadedDefinitionMaxInstancesIsEnforced) {
 TEST(SupletServerConfigTests, RuntimeLoadsDownloadedDefinitionOnDemand) {
   Supla::Channel::resetToDefaults();
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
@@ -1331,10 +1272,8 @@ TEST(SupletServerConfigTests, RuntimeLoadsDownloadedDefinitionOnDemand) {
   manager.setRegistry(&registry);
   manager.setServerConfigHandler(&handler);
 
-  uint8_t sha[32] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
   ASSERT_EQ(
-      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson, sha),
+      handler.saveDownloadedDefinition(1701, 1, downloadedDefinitionJson),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson(downloadedAssignmentJson, 1701, 1),
@@ -1353,18 +1292,13 @@ TEST(SupletServerConfigTests, RuntimeLoadsDownloadedDefinitionOnDemand) {
 
 TEST(SupletServerConfigTests, SavesDownloadedDefinitionFromCommandJson) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
-  char shaHex[65] = {};
   char escapedDefinitionJson[1024] = {};
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
-  shaToHex(sha, shaHex, sizeof(shaHex));
   escapeJsonString(downloadedDefinitionJson,
                    escapedDefinitionJson,
                    sizeof(escapedDefinitionJson));
@@ -1376,10 +1310,8 @@ TEST(SupletServerConfigTests, SavesDownloadedDefinitionFromCommandJson) {
            "\"op\":\"saveDefinition\","
            "\"definitionId\":1701,"
            "\"definitionVersion\":1,"
-           "\"sha256\":\"%s\","
            "\"definitionJson\":\"%s\""
            "}",
-           shaHex,
            escapedDefinitionJson);
 
   EXPECT_EQ(
@@ -1398,18 +1330,15 @@ TEST(SupletServerConfigTests, SavesDownloadedDefinitionFromCommandJson) {
 
 TEST(SupletServerConfigTests, RejectsInvalidDownloadedDefinition) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   Supla::Suplet::ServerConfigHandler handler(
       &manager, &registry, &cache, &downloadedDefinitions);
-  uint8_t sha[32] = {};
   const char badJson[] = "{\"definitionId\":1701,\"definitionVersion\":1}";
-  makeSha(&shaProvider, badJson, sha);
 
-  EXPECT_EQ(handler.saveDownloadedDefinition(1701, 1, badJson, sha),
+  EXPECT_EQ(handler.saveDownloadedDefinition(1701, 1, badJson),
             Supla::Suplet::ServerConfigResult::InvalidDefinition);
   EXPECT_EQ(downloadedDefinitions.getCount(cache), 0);
 }
@@ -1417,14 +1346,11 @@ TEST(SupletServerConfigTests, RejectsInvalidDownloadedDefinition) {
 TEST(SupletServerConfigTests,
      DownloadedDefinitionsLoadIsAtomicOnBadCacheEntry) {
   InMemoryConfig config;
-  FakeSha256Provider shaProvider;
-  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DefinitionCache cache(&config);
   Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
   Supla::Suplet::Registry registry;
-  uint8_t sha[32] = {};
 
-  makeSha(&shaProvider, downloadedDefinitionJson, sha);
-  ASSERT_TRUE(cache.save(1701, 1, downloadedDefinitionJson, sha));
+  ASSERT_TRUE(cache.save(1701, 1, downloadedDefinitionJson));
 
   const char badJson[] =
       "{"
@@ -1435,8 +1361,7 @@ TEST(SupletServerConfigTests,
       "\"category\":\"virtual\","
       "\"kind\":\"virtualRelay\""
       "}";
-  makeSha(&shaProvider, badJson, sha);
-  ASSERT_TRUE(cache.save(702, 1, badJson, sha));
+  ASSERT_TRUE(cache.save(702, 1, badJson));
 
   Supla::Suplet::JsonDefinition loadedDefinition;
   EXPECT_FALSE(downloadedDefinitions.load(cache, 702, 1, &loadedDefinition));

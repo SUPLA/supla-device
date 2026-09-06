@@ -14,7 +14,6 @@
 #include <supla/suplet/config.h>
 
 #if SUPLA_SUPLET_ENABLED
-#include <supla/sha256.h>
 #include <supla/suplet/server_config.h>
 #endif
 
@@ -273,12 +272,10 @@ struct CommandProcessor::Command {
   }
 
   char operation[32] = {};
-  uint32_t sessionId = 0;
   uint32_t instanceId = 0;
   uint32_t definitionId = 0;
   uint32_t definitionVersion = 0;
-  uint32_t fromDefinitionVersion = 0;
-  uint32_t toDefinitionVersion = 0;
+  uint32_t revision = 0;
   char *definitionJson = nullptr;
   char *paramsJson = nullptr;
 };
@@ -335,10 +332,6 @@ bool CommandProcessor::parseCommand(const char *json, Command *command) {
       if (!reader.readString(command->operation, sizeof(command->operation))) {
         return false;
       }
-    } else if (equalText(key, "sessionId")) {
-      if (!reader.readUInt32(&command->sessionId)) {
-        return false;
-      }
     } else if (equalText(key, "instanceId")) {
       if (!reader.readUInt32(&command->instanceId)) {
         return false;
@@ -351,12 +344,8 @@ bool CommandProcessor::parseCommand(const char *json, Command *command) {
       if (!reader.readUInt32(&command->definitionVersion)) {
         return false;
       }
-    } else if (equalText(key, "fromDefinitionVersion")) {
-      if (!reader.readUInt32(&command->fromDefinitionVersion)) {
-        return false;
-      }
-    } else if (equalText(key, "toDefinitionVersion")) {
-      if (!reader.readUInt32(&command->toDefinitionVersion)) {
+    } else if (equalText(key, "revision")) {
+      if (!reader.readUInt32(&command->revision)) {
         return false;
       }
     } else if (equalText(key, "definitionJson")) {
@@ -399,18 +388,6 @@ bool CommandProcessor::parseCommand(const char *json, Command *command) {
 void CommandProcessor::processCommand(const Command &command,
                                       ResponseWriter *writer) {
 #if SUPLA_SUPLET_ENABLED
-  auto calculateSha256 = [](const char *data, uint16_t dataSize,
-                            uint8_t *output) {
-    if (output == nullptr) {
-      return;
-    }
-    Supla::Sha256 sha256;
-    if (data != nullptr && dataSize > 0) {
-      sha256.update(reinterpret_cast<const uint8_t *>(data), dataSize);
-    }
-    sha256.digest(output, 32);
-  };
-
   auto sendLocalCalcfg =
       [&](uint32_t commandId, const void *data, uint32_t dataSize,
           const char *op, TDS_DeviceCalCfgResult **output = nullptr) -> int {
@@ -502,17 +479,10 @@ void CommandProcessor::processCommand(const Command &command,
       sendError(writer, "definition_too_large");
       return;
     }
-    uint32_t sessionId =
-        command.sessionId == 0 ? nextSessionId() : command.sessionId;
-    uint8_t sha256[32] = {};
-    calculateSha256(command.definitionJson, static_cast<uint16_t>(jsonSize),
-                    sha256);
     TCalCfg_SupletDefinitionBegin begin = {};
-    begin.SessionId = sessionId;
     begin.DefinitionId = command.definitionId;
     begin.DefinitionVersion = command.definitionVersion;
-    begin.JsonSize = static_cast<uint16_t>(jsonSize);
-    memcpy(begin.JsonSha256, sha256, sizeof(sha256));
+    begin.Size = static_cast<uint16_t>(jsonSize);
     if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN,
                         &begin,
                         sizeof(begin),
@@ -521,7 +491,7 @@ void CommandProcessor::processCommand(const Command &command,
       return;
     }
     uint16_t offset = 0;
-    auto *chunk = new TCalCfg_SupletDefinitionChunk;
+    auto *chunk = new TCalCfg_SupletTransferChunk;
     if (chunk == nullptr) {
       sendError(writer, "no_memory");
       return;
@@ -529,16 +499,16 @@ void CommandProcessor::processCommand(const Command &command,
     while (offset < jsonSize) {
       memset(chunk, 0, sizeof(*chunk));
       uint8_t chunkSize =
-          jsonSize - offset > SUPLA_CALCFG_SUPLET_DEFINITION_CHUNK_MAXSIZE
-              ? SUPLA_CALCFG_SUPLET_DEFINITION_CHUNK_MAXSIZE
+          jsonSize - offset > SUPLA_CALCFG_SUPLET_TRANSFER_CHUNK_MAXSIZE
+              ? SUPLA_CALCFG_SUPLET_TRANSFER_CHUNK_MAXSIZE
               : static_cast<uint8_t>(jsonSize - offset);
-      chunk->SessionId = sessionId;
+      chunk->Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_DEFINITION;
       chunk->Offset = offset;
       chunk->Size = chunkSize;
       memcpy(chunk->Data, command.definitionJson + offset, chunkSize);
       uint32_t payloadSize =
-          offsetof(TCalCfg_SupletDefinitionChunk, Data) + chunkSize;
-      if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_DEFINITION_CHUNK,
+          offsetof(TCalCfg_SupletTransferChunk, Data) + chunkSize;
+      if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_TRANSFER_CHUNK,
                           chunk,
                           payloadSize,
                           "definition.chunk") != SUPLA_CALCFG_RESULT_DONE) {
@@ -549,10 +519,9 @@ void CommandProcessor::processCommand(const Command &command,
       offset += chunkSize;
     }
     delete chunk;
-    TCalCfg_SupletSessionRequest commit = {};
-    bool ok = sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_DEFINITION_COMMIT,
-                              &commit,
-                              sizeof(commit),
+    bool ok = sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_TRANSFER_COMMIT,
+                              nullptr,
+                              0,
                               "definition.commit") == SUPLA_CALCFG_RESULT_DONE;
     sendDone(writer, ok);
     return;
@@ -578,7 +547,7 @@ void CommandProcessor::processCommand(const Command &command,
   if (equalText(command.operation, "upsertInstance")) {
     if (command.definitionId == 0 || command.definitionVersion == 0 ||
         command.definitionVersion > UINT16_MAX ||
-        command.instanceId > UINT8_MAX) {
+        command.instanceId > UINT8_MAX || command.revision == 0) {
       sendError(writer, "invalid_arguments");
       return;
     }
@@ -588,17 +557,12 @@ void CommandProcessor::processCommand(const Command &command,
       sendError(writer, "params_too_large");
       return;
     }
-    uint32_t sessionId =
-        command.sessionId == 0 ? nextSessionId() : command.sessionId;
-    uint8_t sha256[32] = {};
-    calculateSha256(paramsJson, static_cast<uint16_t>(paramsSize), sha256);
     TCalCfg_SupletInstanceBegin begin = {};
-    begin.SessionId = sessionId;
     begin.InstanceId = command.instanceId;
     begin.DefinitionId = command.definitionId;
     begin.DefinitionVersion = command.definitionVersion;
-    begin.ParamsSize = static_cast<uint16_t>(paramsSize);
-    memcpy(begin.ParamsSha256, sha256, sizeof(sha256));
+    begin.Revision = command.revision;
+    begin.ConfigSize = static_cast<uint16_t>(paramsSize);
     if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN,
                         &begin,
                         sizeof(begin),
@@ -607,7 +571,7 @@ void CommandProcessor::processCommand(const Command &command,
       return;
     }
     uint16_t offset = 0;
-    auto *chunk = new TCalCfg_SupletInstanceChunk;
+    auto *chunk = new TCalCfg_SupletTransferChunk;
     if (chunk == nullptr) {
       sendError(writer, "no_memory");
       return;
@@ -615,16 +579,16 @@ void CommandProcessor::processCommand(const Command &command,
     while (offset < paramsSize) {
       memset(chunk, 0, sizeof(*chunk));
       uint8_t chunkSize =
-          paramsSize - offset > SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
-              ? SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
+          paramsSize - offset > SUPLA_CALCFG_SUPLET_TRANSFER_CHUNK_MAXSIZE
+              ? SUPLA_CALCFG_SUPLET_TRANSFER_CHUNK_MAXSIZE
               : static_cast<uint8_t>(paramsSize - offset);
-      chunk->SessionId = sessionId;
+      chunk->Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG;
       chunk->Offset = offset;
       chunk->Size = chunkSize;
       memcpy(chunk->Data, paramsJson + offset, chunkSize);
       uint32_t payloadSize =
-          offsetof(TCalCfg_SupletInstanceChunk, Data) + chunkSize;
-      if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_CHUNK,
+          offsetof(TCalCfg_SupletTransferChunk, Data) + chunkSize;
+      if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_TRANSFER_CHUNK,
                           chunk,
                           payloadSize,
                           "instance.chunk") != SUPLA_CALCFG_RESULT_DONE) {
@@ -635,10 +599,9 @@ void CommandProcessor::processCommand(const Command &command,
       offset += chunkSize;
     }
     delete chunk;
-    TCalCfg_SupletSessionRequest commit = {};
-    bool ok = sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_COMMIT,
-                              &commit,
-                              sizeof(commit),
+    bool ok = sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_TRANSFER_COMMIT,
+                              nullptr,
+                              0,
                               "instance.commit") == SUPLA_CALCFG_RESULT_DONE;
     sendDone(writer, ok);
     return;
@@ -656,80 +619,6 @@ void CommandProcessor::processCommand(const Command &command,
                                  sizeof(request),
                                  "instance.remove");
     sendDone(writer, result == SUPLA_CALCFG_RESULT_DONE);
-    return;
-  }
-
-  if (equalText(command.operation, "upgradeInstance")) {
-    if (command.instanceId == 0 || command.instanceId > UINT8_MAX ||
-        command.definitionId == 0 || command.fromDefinitionVersion == 0 ||
-        command.toDefinitionVersion == 0 ||
-        command.fromDefinitionVersion > UINT16_MAX ||
-        command.toDefinitionVersion > UINT16_MAX) {
-      sendError(writer, "invalid_arguments");
-      return;
-    }
-    const char *paramsJson = command.paramsJson ? command.paramsJson : "{}";
-    size_t paramsSize = strlen(paramsJson);
-    if (paramsSize > UINT16_MAX || paramsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE) {
-      sendError(writer, "params_too_large");
-      return;
-    }
-    uint32_t sessionId =
-        command.sessionId == 0 ? nextSessionId() : command.sessionId;
-    uint8_t sha256[32] = {};
-    calculateSha256(paramsJson, static_cast<uint16_t>(paramsSize), sha256);
-    TCalCfg_SupletInstanceUpgradeBegin begin = {};
-    begin.SessionId = sessionId;
-    begin.InstanceId = command.instanceId;
-    begin.DefinitionId = command.definitionId;
-    begin.FromDefinitionVersion = command.fromDefinitionVersion;
-    begin.ToDefinitionVersion = command.toDefinitionVersion;
-    begin.ParamsSize = static_cast<uint16_t>(paramsSize);
-    memcpy(begin.ParamsSha256, sha256, sizeof(sha256));
-    if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_BEGIN,
-                        &begin,
-                        sizeof(begin),
-                        "instance.upgrade.begin") != SUPLA_CALCFG_RESULT_DONE) {
-      sendDone(writer, false);
-      return;
-    }
-    uint16_t offset = 0;
-    auto *chunk = new TCalCfg_SupletInstanceChunk;
-    if (chunk == nullptr) {
-      sendError(writer, "no_memory");
-      return;
-    }
-    while (offset < paramsSize) {
-      memset(chunk, 0, sizeof(*chunk));
-      uint8_t chunkSize =
-          paramsSize - offset > SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
-              ? SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE
-              : static_cast<uint8_t>(paramsSize - offset);
-      chunk->SessionId = sessionId;
-      chunk->Offset = offset;
-      chunk->Size = chunkSize;
-      memcpy(chunk->Data, paramsJson + offset, chunkSize);
-      uint32_t payloadSize =
-          offsetof(TCalCfg_SupletInstanceChunk, Data) + chunkSize;
-      if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_CHUNK,
-                          chunk,
-                          payloadSize,
-                          "instance.upgrade.chunk") !=
-          SUPLA_CALCFG_RESULT_DONE) {
-        delete chunk;
-        sendDone(writer, false);
-        return;
-      }
-      offset += chunkSize;
-    }
-    delete chunk;
-    TCalCfg_SupletSessionRequest commit = {};
-    bool ok = sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_UPGRADE_COMMIT,
-                              &commit,
-                              sizeof(commit),
-                              "instance.upgrade.commit") ==
-        SUPLA_CALCFG_RESULT_DONE;
-    sendDone(writer, ok);
     return;
   }
 
@@ -764,7 +653,8 @@ void CommandProcessor::processCommand(const Command &command,
                "%s{\"category\":%u,\"kind\":%u,\"schemaMin\":%u,"
                "\"schemaMax\":%u,\"handler\":%u,\"maxInstances\":%u,"
                "\"downloaded\":%u,\"definitionId\":%u,"
-               "\"definitionVersionMin\":%u,\"definitionVersionMax\":%u}",
+               "\"definitionVersionMin\":%u,\"definitionVersionMax\":%u,"
+               "\"maxArtifactSize\":%u}",
                i == 0 ? "" : ",",
                item.Category,
                item.Kind,
@@ -775,7 +665,8 @@ void CommandProcessor::processCommand(const Command &command,
                item.SupportsDownloadedDefinition,
                static_cast<unsigned>(item.DefinitionId),
                item.MinDefinitionVersion,
-               item.MaxDefinitionVersion);
+               item.MaxDefinitionVersion,
+               static_cast<unsigned>(item.MaxArtifactSize));
       sendText(writer, line);
     }
     sendText(writer, "]}\n");
@@ -811,20 +702,13 @@ void CommandProcessor::processCommand(const Command &command,
       char line[256] = {};
       snprintf(line,
                sizeof(line),
-               "%s{\"source\":%u,\"category\":%u,\"kind\":%u,"
-               "\"schema\":%u,\"handler\":%u,\"maxInstances\":%u,"
-               "\"definitionId\":%u,\"definitionVersion\":%u,"
-               "\"jsonSize\":%u}",
+               "%s{\"source\":%u,\"definitionId\":%u,"
+               "\"definitionVersion\":%u,\"size\":%u}",
                i == 0 ? "" : ",",
                item.Source,
-               item.Category,
-               item.Kind,
-               item.SchemaVersion,
-               item.HandlerVersion,
-               item.MaxInstances,
                static_cast<unsigned>(item.DefinitionId),
                item.DefinitionVersion,
-               item.JsonSize);
+               item.Size);
       sendText(writer, line);
     }
     sendText(writer, "]}\n");
@@ -852,7 +736,7 @@ void CommandProcessor::processCommand(const Command &command,
       request.DefinitionId = command.definitionId;
       request.DefinitionVersion = command.definitionVersion;
       request.Offset = offset;
-      request.MaxSize = SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE;
+      request.MaxSize = SUPLA_CALCFG_SUPLET_DATA_CHUNK_MAXSIZE;
       TDS_DeviceCalCfgResult *result = nullptr;
       if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_GET_DEFINITION_CONFIG,
                           &request,
@@ -909,35 +793,6 @@ void CommandProcessor::processCommand(const Command &command,
     return;
   }
 
-  if (equalText(command.operation, "getInstanceCount")) {
-    TDS_DeviceCalCfgResult *result = nullptr;
-    if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_COUNT,
-                        nullptr,
-                        0,
-                        "instance.count",
-                        &result) != SUPLA_CALCFG_RESULT_TRUE ||
-        result == nullptr ||
-        result->DataSize != sizeof(TCalCfg_SupletInstanceCount)) {
-      delete result;
-      return;
-    }
-    auto *count =
-        reinterpret_cast<TCalCfg_SupletInstanceCount *>(result->Data);
-    char line[192] = {};
-    snprintf(line,
-             sizeof(line),
-             "{\"op\":\"instance.count.data\",\"count\":%u,"
-             "\"maxInstances\":%u,\"maxChannelsPerInstance\":%u,"
-             "\"maxCachedDefinitions\":%u}\n",
-             count->Count,
-             count->MaxInstances,
-             count->MaxChannelsPerInstance,
-             count->MaxCachedDefinitions);
-    sendText(writer, line);
-    delete result;
-    return;
-  }
-
   if (equalText(command.operation, "getInstanceList")) {
     TCalCfg_SupletListRequest request = {};
     request.Limit = SUPLA_CALCFG_SUPLET_INSTANCE_LIST_MAX_ITEMS;
@@ -963,57 +818,25 @@ void CommandProcessor::processCommand(const Command &command,
     sendText(writer, header);
     for (uint8_t i = 0; i < list->Count; i++) {
       const auto &item = list->Items[i];
-      char line[192] = {};
+      char line[256] = {};
       snprintf(line,
                sizeof(line),
                "%s{\"instanceId\":%u,\"definitionId\":%u,"
-               "\"definitionVersion\":%u,\"subDeviceId\":%u,"
-               "\"channelCount\":%u}",
+               "\"definitionVersion\":%u,\"revision\":%u,"
+               "\"subDeviceId\":%u,\"channelCount\":%u,"
+               "\"configSize\":%u,\"artifactSize\":%u}",
                i == 0 ? "" : ",",
                item.InstanceId,
                static_cast<unsigned>(item.DefinitionId),
                item.DefinitionVersion,
+               static_cast<unsigned>(item.Revision),
                item.SubDeviceId,
-               item.ChannelCount);
+               item.ChannelCount,
+               item.ConfigSize,
+               static_cast<unsigned>(item.ArtifactSize));
       sendText(writer, line);
     }
     sendText(writer, "]}\n");
-    delete result;
-    return;
-  }
-
-  if (equalText(command.operation, "getInstanceInfo")) {
-    if (command.instanceId == 0 || command.instanceId > UINT8_MAX) {
-      sendError(writer, "invalid_arguments");
-      return;
-    }
-    TCalCfg_SupletInstanceRequest request = {};
-    request.InstanceId = command.instanceId;
-    TDS_DeviceCalCfgResult *result = nullptr;
-    if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_INFO,
-                        &request,
-                        sizeof(request),
-                        "instance.info",
-                        &result) != SUPLA_CALCFG_RESULT_TRUE ||
-        result == nullptr ||
-        result->DataSize != sizeof(TCalCfg_SupletInstanceInfo)) {
-      delete result;
-      return;
-    }
-    auto *info = reinterpret_cast<TCalCfg_SupletInstanceInfo *>(result->Data);
-    char line[256] = {};
-    snprintf(line,
-             sizeof(line),
-             "{\"op\":\"instance.info.data\",\"instanceId\":%u,"
-             "\"definitionId\":%u,\"definitionVersion\":%u,"
-             "\"subDeviceId\":%u,\"channelCount\":%u,\"paramsSize\":%u}\n",
-             info->InstanceId,
-             static_cast<unsigned>(info->DefinitionId),
-             info->DefinitionVersion,
-             info->SubDeviceId,
-             info->ChannelCount,
-             info->ParamsSize);
-    sendText(writer, line);
     delete result;
     return;
   }
@@ -1031,30 +854,31 @@ void CommandProcessor::processCommand(const Command &command,
     uint16_t offset = 0;
     uint16_t totalSize = 0;
     while (true) {
-      TCalCfg_SupletInstanceConfigRequest request = {};
+      TCalCfg_SupletInstanceDataRequest request = {};
       request.InstanceId = command.instanceId;
+      request.Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG;
       request.Offset = offset;
-      request.MaxSize = SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE;
+      request.MaxSize = SUPLA_CALCFG_SUPLET_DATA_CHUNK_MAXSIZE;
       TDS_DeviceCalCfgResult *result = nullptr;
-      if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_CONFIG,
+      if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_DATA,
                           &request,
                           sizeof(request),
                           "instance.config",
                           &result) != SUPLA_CALCFG_RESULT_TRUE ||
           result == nullptr ||
           result->DataSize <
-              offsetof(TCalCfg_SupletInstanceConfigChunk, Data)) {
+              offsetof(TCalCfg_SupletInstanceDataChunk, Data)) {
         delete result;
         delete[] config;
         return;
       }
       auto *chunk =
-          reinterpret_cast<TCalCfg_SupletInstanceConfigChunk *>(result->Data);
-      const uint16_t chunkTotalSize = chunk->TotalSize;
+          reinterpret_cast<TCalCfg_SupletInstanceDataChunk *>(result->Data);
+      const uint32_t chunkTotalSize = chunk->TotalSize;
       const uint8_t chunkSize = chunk->Size;
       if (chunk->InstanceId != command.instanceId ||
           result->DataSize !=
-              offsetof(TCalCfg_SupletInstanceConfigChunk, Data) +
+              offsetof(TCalCfg_SupletInstanceDataChunk, Data) +
                   chunkSize ||
           chunkTotalSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
           offset + chunkSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
@@ -1186,13 +1010,6 @@ void CommandProcessor::sendJsonString(ResponseWriter *writer,
   }
   sendText(writer, "\"");
   sendText(writer, suffix);
-}
-
-uint32_t CommandProcessor::nextSessionId() {
-  if (sessionCounter == 0) {
-    sessionCounter = 1;
-  }
-  return sessionCounter++;
 }
 
 }  // namespace Debug

@@ -371,11 +371,36 @@ TEST_F(RelayFixture, weeklyScheduleAvailabilityFollowsRelayFunction) {
 
   EXPECT_FALSE(relay.getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_LIGHTSWITCH));
-  EXPECT_TRUE(relay.getChannel()->isWeeklyScheduleAvailable());
+  const uint32_t supportedFunctions[] = {
+      SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK,
+      SUPLA_CHANNELFNC_CONTROLLINGTHEGATE,
+      SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR,
+      SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK,
+      SUPLA_CHANNELFNC_POWERSWITCH,
+      SUPLA_CHANNELFNC_LIGHTSWITCH,
+      SUPLA_CHANNELFNC_STAIRCASETIMER,
+  };
+  for (auto function : supportedFunctions) {
+    EXPECT_TRUE(relay.setAndSaveFunction(function));
+    EXPECT_TRUE(relay.getChannel()->isWeeklyScheduleAvailable());
+  }
 
-  EXPECT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE));
-  EXPECT_FALSE(relay.getChannel()->isWeeklyScheduleAvailable());
+  const uint32_t unsupportedFunctions[] = {
+      SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER,
+      SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW,
+      SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND,
+      SUPLA_CHANNELFNC_TERRACE_AWNING,
+      SUPLA_CHANNELFNC_PROJECTOR_SCREEN,
+      SUPLA_CHANNELFNC_CURTAIN,
+      SUPLA_CHANNELFNC_VERTICAL_BLIND,
+      SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR,
+      SUPLA_CHANNELFNC_PUMPSWITCH,
+      SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH,
+  };
+  for (auto function : unsupportedFunctions) {
+    EXPECT_TRUE(relay.setAndSaveFunction(function));
+    EXPECT_FALSE(relay.getChannel()->isWeeklyScheduleAvailable());
+  }
 }
 
 TEST_F(RelayFixture, nativeWeeklyScheduleControllerIsAllocatedLazily) {
@@ -383,24 +408,70 @@ TEST_F(RelayFixture, nativeWeeklyScheduleControllerIsAllocatedLazily) {
 
   EXPECT_FALSE(relay.hasWeeklyScheduleController());
 
-  EXPECT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE));
+  EXPECT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_PUMPSWITCH));
   EXPECT_FALSE(relay.hasWeeklyScheduleController());
 
-  EXPECT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_LIGHTSWITCH));
+  EXPECT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE));
   EXPECT_TRUE(relay.hasWeeklyScheduleController());
 }
 
 TEST_F(RelayFixture, weeklyScheduleConfigIsRejectedForUnsupportedFunction) {
   Supla::Control::Relay relay(1);
-  ASSERT_TRUE(
-      relay.setAndSaveFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE));
+  ASSERT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_PUMPSWITCH));
 
   TSD_ChannelConfig config = {};
-  config.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEGATE;
+  config.Func = SUPLA_CHANNELFNC_PUMPSWITCH;
   config.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
 
   EXPECT_EQ(relay.handleWeeklySchedule(&config, false, false),
             SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
+}
+
+TEST_F(RelayFixture, impulseWeeklyScheduleFunctionsSupportOnlyOnceModes) {
+  Supla::Control::Relay relay(1);
+
+  const uint32_t impulseFunctions[] = {
+      SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK,
+      SUPLA_CHANNELFNC_CONTROLLINGTHEGATE,
+      SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR,
+      SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK,
+  };
+  for (auto function : impulseFunctions) {
+    ASSERT_TRUE(relay.setAndSaveFunction(function));
+    const auto flags = relay.getChannel()->getFlags();
+    EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE, 0);
+    EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_ONCE_SUPPORTED, 0);
+    EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED, 0);
+
+    auto onceConfig = makeSingleProgramWeeklySchedule(
+        function, SUPLA_RELAY_MODE_ON_ONCE);
+    EXPECT_EQ(relay.handleChannelConfig(&onceConfig, false),
+              SUPLA_CONFIG_RESULT_TRUE);
+
+    auto forcedConfig = makeSingleProgramWeeklySchedule(
+        function, SUPLA_RELAY_MODE_FORCED_ON);
+    EXPECT_EQ(relay.handleChannelConfig(&forcedConfig, false),
+              SUPLA_CONFIG_RESULT_DATA_ERROR);
+  }
+
+  ASSERT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_STAIRCASETIMER));
+  EXPECT_NE(relay.getChannel()->getFlags() &
+                SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED,
+            0);
+  auto staircaseForcedConfig = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_STAIRCASETIMER, SUPLA_RELAY_MODE_FORCED_ON);
+  EXPECT_EQ(relay.handleChannelConfig(&staircaseForcedConfig, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  relay.setAutomaticModeSupported();
+  EXPECT_NE(relay.getChannel()->getFlags() &
+                SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED,
+            0);
+
+  ASSERT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_LIGHTSWITCH));
+  EXPECT_NE(relay.getChannel()->getFlags() &
+                SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED,
+            0);
 }
 
 TEST_F(RelayFixture,
@@ -541,7 +612,7 @@ TEST_F(RelayFixture, automaticModeCanBeEnabledWithoutWeeklySchedule) {
 TEST_F(RelayFixture, automaticModeCapabilityDoesNotDependOnWeeklySchedule) {
   ::testing::NiceMock<ConfigMock> cfg;
   RelayWithAutomaticWeeklySchedule relay(1);
-  relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
   relay.setAutomaticModeSupported();
 
   relay.onLoadConfig(nullptr);
@@ -1020,6 +1091,90 @@ TEST_F(RelayFixture, weeklyScheduleOnOnceTriggersOnlyOnTransition) {
   time.advance(15 * 60 * 1000);
   relay.iterateAlways();
   EXPECT_TRUE(relay.isOn());
+}
+
+TEST_F(RelayFixture, weeklyScheduleOnOnceDoesNotRetriggerImpulse) {
+  ClockStub clock;
+  EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
+
+  Supla::Control::Relay relay(1);
+  ASSERT_TRUE(
+      relay.setAndSaveFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE));
+  relay.onLoadConfig(nullptr);
+
+  int relayPinValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(1)).Times(::testing::AnyNumber());
+  EXPECT_CALL(ioMock, digitalWrite(1, _)).Times(::testing::AnyNumber());
+  ON_CALL(ioMock, digitalRead(1))
+      .WillByDefault(::testing::ReturnPointee(&relayPinValue));
+  ON_CALL(ioMock, digitalWrite(1, _))
+      .WillByDefault(::testing::SaveArg<1>(&relayPinValue));
+  relay.onInit();
+
+  auto config = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_CONTROLLINGTHEGATE, SUPLA_RELAY_MODE_ON_ONCE);
+  ASSERT_EQ(relay.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  enableWeeklySchedule(&relay);
+
+  time.advance(1000);
+  relay.iterateAlways();
+  EXPECT_TRUE(relay.isOn());
+
+  time.advance(501);
+  relay.iterateAlways();
+  EXPECT_FALSE(relay.isOn());
+
+  time.advance(1000);
+  relay.iterateAlways();
+  EXPECT_FALSE(relay.isOn());
+}
+
+TEST_F(RelayFixture, weeklyScheduleForcedOnKeepsStaircaseOnWithoutTimer) {
+  ClockStub clock;
+  EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
+
+  Supla::Control::Relay relay(1);
+  ASSERT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_STAIRCASETIMER));
+  relay.setDefaultStaircaseDurationMs(500);
+  relay.onLoadConfig(nullptr);
+
+  int relayPinValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(1)).Times(::testing::AnyNumber());
+  EXPECT_CALL(ioMock, digitalWrite(1, _)).Times(::testing::AnyNumber());
+  ON_CALL(ioMock, digitalRead(1))
+      .WillByDefault(::testing::ReturnPointee(&relayPinValue));
+  ON_CALL(ioMock, digitalWrite(1, _))
+      .WillByDefault(::testing::SaveArg<1>(&relayPinValue));
+  relay.onInit();
+
+  auto config = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_STAIRCASETIMER, SUPLA_RELAY_MODE_FORCED_ON);
+  ASSERT_EQ(relay.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  enableWeeklySchedule(&relay);
+
+  time.advance(1000);
+  relay.iterateAlways();
+  EXPECT_TRUE(relay.isOn());
+  uint32_t remainingSec = 0;
+  EXPECT_FALSE(relay.getRemainingCountdownTimerSec(&remainingSec));
+
+  time.advance(1000);
+  relay.iterateAlways();
+  EXPECT_TRUE(relay.isOn());
+
+  TSD_SuplaChannelNewValue manualValue = {};
+  reinterpret_cast<TRelayChannel_Value *>(manualValue.value)->RelayMode =
+      SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL;
+  ASSERT_EQ(relay.handleNewValueFromServer(&manualValue), 1);
+  relay.turnOff();
+  relay.turnOn();
+  ASSERT_TRUE(relay.isOn());
+
+  time.advance(501);
+  relay.iterateAlways();
+  EXPECT_FALSE(relay.isOn());
 }
 
 TEST_F(RelayFixture,

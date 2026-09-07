@@ -1295,7 +1295,8 @@ void Relay::setTurnOffWhenEmptyAggregator(bool turnOff) {
 bool Relay::isWeeklyScheduleSupported() const {
   auto func = channel.getDefaultFunction();
   return func == SUPLA_CHANNELFNC_LIGHTSWITCH ||
-         func == SUPLA_CHANNELFNC_POWERSWITCH;
+         func == SUPLA_CHANNELFNC_POWERSWITCH ||
+         isStaircaseFunction(func) || isImpulseFunction(func);
 }
 
 Relay &Relay::setAutomaticModeSupported(bool supported) {
@@ -1343,13 +1344,22 @@ bool Relay::isManualActionAllowedByWeeklySchedule(bool turnOn) const {
 }
 
 bool Relay::isWeeklyScheduleProgramModeSupported(uint8_t mode) const {
+  if (!isWeeklyScheduleSupported()) {
+    return false;
+  }
+
   switch (mode) {
     case SUPLA_RELAY_MODE_NOT_SET:
     case SUPLA_RELAY_MODE_OFF_ONCE:
-    case SUPLA_RELAY_MODE_ON_ONCE:
+    case SUPLA_RELAY_MODE_ON_ONCE: {
+      return true;
+    }
     case SUPLA_RELAY_MODE_FORCED_ON:
     case SUPLA_RELAY_MODE_FORCED_OFF: {
-      return true;
+      // Forced modes are advertised as a pair. FORCED_ON would repeatedly
+      // retrigger an impulse function after its duration expires, so impulse
+      // functions support neither forced mode.
+      return !isImpulseFunction();
     }
     case SUPLA_RELAY_MODE_AUTOMATIC: {
       return isAutomaticModeSupported();
@@ -1378,7 +1388,16 @@ void Relay::applyWeeklyScheduleProgram(uint8_t programMode,
     }
     case SUPLA_RELAY_MODE_FORCED_ON: {
       if (!getChannel()->isRelayOvercurrentCutOff() && !isOn()) {
-        turnOn();
+        if (isStaircaseFunction()) {
+          // FORCED_ON keeps a staircase relay continuously active. Preserve
+          // its configured duration for manual operation after forced mode.
+          const auto storedDuration = storedTurnOnDurationMs;
+          storedTurnOnDurationMs = 0;
+          turnOn();
+          storedTurnOnDurationMs = storedDuration;
+        } else {
+          turnOn();
+        }
       }
       return;
     }

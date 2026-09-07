@@ -949,6 +949,7 @@ TEST_F(RelayRollerShutterPairFixture,
   int32_t primaryFunction = SUPLA_CHANNELFNC_STAIRCASETIMER;
 
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
+  expectMissingPrimaryLegacyWeeklyFlag(config);
   expectMissingSecondaryLegacyWeeklyFlag(config);
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)

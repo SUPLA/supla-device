@@ -42,6 +42,14 @@ bool RelayWeeklySchedule::isConfigured() const {
   return isWeeklyScheduleConfigured();
 }
 
+bool RelayWeeklySchedule::canActivate() const {
+  if (!NativeWeeklyScheduleController::canActivate()) {
+    return false;
+  }
+  auto *schedule = getSchedule(false, true);
+  return schedule != nullptr && isWeeklyScheduleValid(schedule);
+}
+
 Supla::Element *RelayWeeklySchedule::getScheduleOwner() const {
   return owner_;
 }
@@ -139,6 +147,12 @@ bool RelayWeeklySchedule::iterateAlways() {
 bool RelayWeeklySchedule::applyWeeklyScheduleMode(
     uint8_t currentProgramMode,
     bool programChanged) {
+  if (owner_ == nullptr ||
+      !owner_->isWeeklyScheduleProgramModeSupported(currentProgramMode)) {
+    switchToManualMode();
+    scheduleWeeklyScheduleStateSave();
+    return false;
+  }
   syncWeeklyScheduleMode(currentProgramMode);
 
   if (currentProgramMode == SUPLA_RELAY_MODE_NOT_SET) {

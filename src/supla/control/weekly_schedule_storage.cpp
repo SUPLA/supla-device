@@ -421,7 +421,7 @@ bool NativeWeeklyScheduleController::isActive() const {
 }
 
 bool NativeWeeklyScheduleController::switchToWeeklySchedule() {
-  if (!isConfigured(false) || getSchedule(false, true) == nullptr) {
+  if (!canActivate() || getSchedule(false, true) == nullptr) {
     return false;
   }
   enabled_ = true;
@@ -444,6 +444,8 @@ void NativeWeeklyScheduleController::switchToManualMode() {
 }
 
 void NativeWeeklyScheduleController::restoreWeeklyScheduleMode(bool enabled) {
+  // Keep state restoration lazy. A persisted schedule is loaded and validated
+  // only when it is first resolved for execution.
   enabled_ = enabled && isConfigured(false);
   resetCurrentProgramId();
   if (enabled_) {

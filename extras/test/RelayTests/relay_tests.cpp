@@ -1130,6 +1130,51 @@ TEST_F(RelayFixture, weeklyScheduleOnOnceDoesNotRetriggerImpulse) {
   EXPECT_FALSE(relay.isOn());
 }
 
+TEST_F(RelayFixture,
+       functionChangeToImpulseDisablesIncompatibleActiveSchedule) {
+  ClockStub clock;
+  EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
+
+  Supla::Control::Relay relay(1);
+  ASSERT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_LIGHTSWITCH));
+  relay.onLoadConfig(nullptr);
+
+  int relayPinValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(1)).Times(::testing::AnyNumber());
+  EXPECT_CALL(ioMock, digitalWrite(1, _)).Times(::testing::AnyNumber());
+  ON_CALL(ioMock, digitalRead(1))
+      .WillByDefault(::testing::ReturnPointee(&relayPinValue));
+  ON_CALL(ioMock, digitalWrite(1, _))
+      .WillByDefault(::testing::SaveArg<1>(&relayPinValue));
+  relay.onInit();
+
+  auto config = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_FORCED_ON);
+  ASSERT_EQ(relay.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  enableWeeklySchedule(&relay);
+  time.advance(1000);
+  relay.iterateAlways();
+  ASSERT_TRUE(relay.isOn());
+
+  ASSERT_TRUE(
+      relay.setAndSaveFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE));
+  const auto *value = relayValue(relay);
+  ASSERT_NE(value, nullptr);
+  EXPECT_FALSE(value->flags & SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(value->RelayMode, SUPLA_RELAY_MODE_NOT_SET);
+  EXPECT_FALSE(relay.isOn());
+
+  TSD_SuplaChannelNewValue weeklyValue = {};
+  reinterpret_cast<TRelayChannel_Value *>(weeklyValue.value)->RelayMode =
+      SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE;
+  EXPECT_EQ(relay.handleNewValueFromServer(&weeklyValue), 0);
+
+  time.advance(1000);
+  relay.iterateAlways();
+  EXPECT_FALSE(relay.isOn());
+}
+
 TEST_F(RelayFixture, weeklyScheduleForcedOnKeepsStaircaseOnWithoutTimer) {
   ClockStub clock;
   EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
@@ -1147,6 +1192,10 @@ TEST_F(RelayFixture, weeklyScheduleForcedOnKeepsStaircaseOnWithoutTimer) {
   ON_CALL(ioMock, digitalWrite(1, _))
       .WillByDefault(::testing::SaveArg<1>(&relayPinValue));
   relay.onInit();
+  relay.turnOn();
+  ASSERT_TRUE(relay.isOn());
+  uint32_t remainingSec = 0;
+  ASSERT_TRUE(relay.getRemainingCountdownTimerSec(&remainingSec));
 
   auto config = makeSingleProgramWeeklySchedule(
       SUPLA_CHANNELFNC_STAIRCASETIMER, SUPLA_RELAY_MODE_FORCED_ON);
@@ -1157,7 +1206,6 @@ TEST_F(RelayFixture, weeklyScheduleForcedOnKeepsStaircaseOnWithoutTimer) {
   time.advance(1000);
   relay.iterateAlways();
   EXPECT_TRUE(relay.isOn());
-  uint32_t remainingSec = 0;
   EXPECT_FALSE(relay.getRemainingCountdownTimerSec(&remainingSec));
 
   time.advance(1000);

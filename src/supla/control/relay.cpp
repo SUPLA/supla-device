@@ -1118,6 +1118,11 @@ bool Relay::setRuntimeFunction(uint32_t newFunction) {
   bool weeklyScheduleControllerCreated =
       ensureNativeWeeklyScheduleController();
   updateWeeklyScheduleCapabilities();
+  auto *weeklySchedule = weeklyScheduleComponents.getController();
+  if (functionChanged && weeklySchedule != nullptr &&
+      weeklySchedule->isActive() && !weeklySchedule->canActivate()) {
+    weeklySchedule->switchToManualMode();
+  }
   if (weeklyScheduleControllerCreated && initDone &&
       !weeklyScheduleComponents.isStarted()) {
     weeklyScheduleComponents.loadConfig();
@@ -1387,15 +1392,20 @@ void Relay::applyWeeklyScheduleProgram(uint8_t programMode,
       return;
     }
     case SUPLA_RELAY_MODE_FORCED_ON: {
-      if (!getChannel()->isRelayOvercurrentCutOff() && !isOn()) {
+      if (!getChannel()->isRelayOvercurrentCutOff()) {
         if (isStaircaseFunction()) {
+          durationMs = 0;
+          durationTimestamp = 0;
+          if (isOn()) {
+            return;
+          }
           // FORCED_ON keeps a staircase relay continuously active. Preserve
           // its configured duration for manual operation after forced mode.
           const auto storedDuration = storedTurnOnDurationMs;
           storedTurnOnDurationMs = 0;
           turnOn();
           storedTurnOnDurationMs = storedDuration;
-        } else {
+        } else if (!isOn()) {
           turnOn();
         }
       }

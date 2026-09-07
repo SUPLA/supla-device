@@ -121,41 +121,48 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>  Instance = 2,</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>};</div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
-<div class="foldopen" id="foldopen00031" data-start="{" data-end="};">
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="structSupla_1_1Suplet_1_1CalcfgSession.html">   31</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structSupla_1_1Suplet_1_1CalcfgSession.html">CalcfgSession</a> {</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>  <span class="keywordtype">bool</span> active = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>  CalcfgTransferType type = CalcfgTransferType::None;</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>  uint32_t lastActivityMs = 0;</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  uint32_t definitionId = 0;</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  uint16_t definitionVersion = 0;</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>  uint16_t definitionSize = 0;</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>  uint16_t definitionReceivedSize = 0;</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>  <a class="code hl_struct" href="structSupla_1_1Suplet_1_1DefinitionCacheHandle.html">DefinitionCacheHandle</a> definitionCacheHandle = {};</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keyword">enum class</span> ArtifactUpdateMode : uint8_t {</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>  Replace = 0,</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>  Remove = 1,</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>  Keep = 2,</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>};</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
+<div class="foldopen" id="foldopen00037" data-start="{" data-end="};">
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="structSupla_1_1Suplet_1_1CalcfgSession.html">   37</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structSupla_1_1Suplet_1_1CalcfgSession.html">CalcfgSession</a> {</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>  <span class="keywordtype">bool</span> active = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>  CalcfgTransferType type = CalcfgTransferType::None;</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>  uint32_t lastActivityMs = 0;</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  uint8_t instanceId = 0;</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  uint32_t revision = 0;</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  uint16_t configSize = 0;</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>  uint16_t configReceivedSize = 0;</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  uint32_t artifactSize = 0;</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  uint32_t artifactReceivedSize = 0;</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  <a class="code hl_struct" href="structSupla_1_1Suplet_1_1ArtifactStorageHandle.html">ArtifactStorageHandle</a> artifactStorageHandle = {};</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>  uint8_t config[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>  uint16_t storageChunkIndex = 0;</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>  uint16_t storageChunkSize = 0;</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>  uint8_t storageChunk[SUPLA_SUPLET_TRANSFER_STORAGE_CHUNK_SIZE] = {};</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>};</div>
-</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="preprocessor">#undef SUPLA_SUPLET_TRANSFER_STORAGE_CHUNK_SIZE</span></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  uint32_t definitionId = 0;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  uint16_t definitionVersion = 0;</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  uint16_t definitionSize = 0;</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>  uint16_t definitionReceivedSize = 0;</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  <a class="code hl_struct" href="structSupla_1_1Suplet_1_1DefinitionCacheHandle.html">DefinitionCacheHandle</a> definitionCacheHandle = {};</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  uint8_t instanceId = 0;</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>  uint32_t revision = 0;</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>  uint16_t configSize = 0;</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>  uint16_t configReceivedSize = 0;</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>  uint32_t artifactSize = 0;</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>  uint32_t artifactReceivedSize = 0;</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>  ArtifactUpdateMode artifactUpdateMode = ArtifactUpdateMode::Remove;</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>  <a class="code hl_struct" href="structSupla_1_1Suplet_1_1ArtifactStorageHandle.html">ArtifactStorageHandle</a> artifactStorageHandle = {};</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>  uint8_t config[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};</div>
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span> </div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>}  <span class="comment">// namespace Suplet</span></div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>}  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SUPLET_CALCFG_SESSION_H_</span></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>  uint16_t storageChunkIndex = 0;</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>  uint16_t storageChunkSize = 0;</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>  uint8_t storageChunk[SUPLA_SUPLET_TRANSFER_STORAGE_CHUNK_SIZE] = {};</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>};</div>
+</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span><span class="preprocessor">#undef SUPLA_SUPLET_TRANSFER_STORAGE_CHUNK_SIZE</span></div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>}  <span class="comment">// namespace Suplet</span></div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>}  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span> </div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SUPLET_CALCFG_SESSION_H_</span></div>
 <div class="ttc" id="astructSupla_1_1Suplet_1_1ArtifactStorageHandle_html"><div class="ttname"><a href="structSupla_1_1Suplet_1_1ArtifactStorageHandle.html">Supla::Suplet::ArtifactStorageHandle</a></div><div class="ttdef"><b>Definition</b> storage.h:27</div></div>
-<div class="ttc" id="astructSupla_1_1Suplet_1_1CalcfgSession_html"><div class="ttname"><a href="structSupla_1_1Suplet_1_1CalcfgSession.html">Supla::Suplet::CalcfgSession</a></div><div class="ttdef"><b>Definition</b> calcfg_session.h:31</div></div>
+<div class="ttc" id="astructSupla_1_1Suplet_1_1CalcfgSession_html"><div class="ttname"><a href="structSupla_1_1Suplet_1_1CalcfgSession.html">Supla::Suplet::CalcfgSession</a></div><div class="ttdef"><b>Definition</b> calcfg_session.h:37</div></div>
 <div class="ttc" id="astructSupla_1_1Suplet_1_1DefinitionCacheHandle_html"><div class="ttname"><a href="structSupla_1_1Suplet_1_1DefinitionCacheHandle.html">Supla::Suplet::DefinitionCacheHandle</a></div><div class="ttdef"><b>Definition</b> definition_cache.h:24</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

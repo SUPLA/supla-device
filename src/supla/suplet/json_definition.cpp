@@ -263,8 +263,8 @@ bool equalText(const char *value, const char *verbose, const char *compact) {
  *
  * Top-level fields:
  * - schemaVersion/sv, handlerVersion/hv, definitionId/di,
- *   definitionVersion/dv, maxInstances/mi, category/c, kind/k, name/n,
- *   parameters/p, channels/ch.
+ *   definitionVersion/dv, maxInstances/mi, maxArtifactSize/mas, category/c,
+ *   kind/k, name/n, parameters/p, channels/ch.
  *
  * Channel fields:
  * - channelId/id, kind/k, function/fn, defaultFunction/df, caption/cap.
@@ -675,7 +675,8 @@ char *JsonDefinition::getParameterEnumValuesBuffer(uint8_t index) {
   return parameterEnumValues[index];
 }
 
-bool JsonDefinitionParser::parse(const char *json, JsonDefinition *output) {
+bool JsonDefinitionParser::parseUnvalidated(const char *json,
+                                            JsonDefinition *output) {
   if (json == nullptr || output == nullptr) {
     return false;
   }
@@ -723,6 +724,11 @@ bool JsonDefinitionParser::parse(const char *json, JsonDefinition *output) {
           definition->maxInstances == 0) {
         return false;
       }
+    } else if (equalText(key, "maxArtifactSize", "mas")) {
+      if (!reader.readUInt32(&definition->maxArtifactSize) ||
+          definition->maxArtifactSize > SUPLA_SUPLET_MAX_ARTIFACT_SIZE) {
+        return false;
+      }
     } else if (equalText(key, "category", "c")) {
       if (!reader.readString(tmp, sizeof(tmp)) ||
           !parseCategory(tmp, &definition->category)) {
@@ -764,7 +770,12 @@ bool JsonDefinitionParser::parse(const char *json, JsonDefinition *output) {
   if (!reader.atEnd()) {
     return false;
   }
-  return Runtime::validateDefinition(*definition);
+  return true;
+}
+
+bool JsonDefinitionParser::parse(const char *json, JsonDefinition *output) {
+  return parseUnvalidated(json, output) &&
+         Runtime::validateDefinition(*output->getDefinition());
 }
 
 bool JsonDefinitionParser::parseCategory(const char *value,

@@ -19,9 +19,13 @@ bool Runtime::validateDefinition(const Definition &definition) {
       definition.category == Category::Unknown ||
       definition.kind == Kind::Unknown || definition.schemaVersion == 0 ||
       definition.handlerVersion == 0 || definition.maxInstances == 0 ||
-      definition.channelCount == 0 ||
       definition.channelCount > SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE ||
-      definition.channels == nullptr) {
+      (definition.channelCount > 0 && definition.channels == nullptr) ||
+      definition.maxArtifactSize > SUPLA_SUPLET_MAX_ARTIFACT_SIZE) {
+    return false;
+  }
+
+  if (definition.channelCount == 0 && definition.runtimeHandler == nullptr) {
     return false;
   }
 
@@ -138,19 +142,40 @@ bool Runtime::createElements(const Definition &definition,
                              Supla::Element **created,
                              uint8_t createdSize,
                              ChannelMap *createdChannelMap) {
-  if (!validateDefinition(definition) ||
-      definition.channelCount > createdSize ||
-      (definition.channelCount > 0 && created == nullptr)) {
+  if (!validateDefinition(definition)) {
     return false;
   }
 
-  for (uint8_t i = 0; i < definition.channelCount; i++) {
+  const uint8_t requiredElementCount =
+      definition.runtimeHandler == nullptr
+          ? definition.channelCount
+          : definition.runtimeHandler->getRequiredElementCount(
+                definition, instance);
+  if (requiredElementCount == 0 || requiredElementCount > createdSize ||
+      created == nullptr) {
+    return false;
+  }
+
+  for (uint8_t i = 0; i < requiredElementCount; i++) {
     created[i] = nullptr;
   }
 
   if (definition.runtimeHandler != nullptr) {
-    return definition.runtimeHandler->createElements(
-        definition, instance, created, createdSize, createdChannelMap);
+    const bool result = definition.runtimeHandler->createElements(
+        definition, instance, created, requiredElementCount,
+        createdChannelMap);
+    bool complete = result;
+    for (uint8_t i = 0; i < requiredElementCount; i++) {
+      complete = complete && created[i] != nullptr;
+    }
+    if (complete) {
+      return true;
+    }
+    for (uint8_t i = 0; i < requiredElementCount; i++) {
+      delete created[i];
+      created[i] = nullptr;
+    }
+    return false;
   }
 
   for (uint8_t i = 0; i < definition.channelCount; i++) {

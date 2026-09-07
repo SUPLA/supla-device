@@ -52,6 +52,12 @@ bool KeyValue::initFromMemory(uint8_t* input, size_t inputSize) {
     return false;
   }
 
+  auto parseError = [this](KeyValueElement* element) {
+    delete element;
+    removeAllMemory();
+    return false;
+  };
+
   auto endPtr = input + inputSize;
   while (input + SUPLA_STORAGE_KEY_SIZE + 1 + 2 < endPtr) {
     char key[SUPLA_STORAGE_KEY_SIZE + 1] = {};
@@ -66,8 +72,7 @@ bool KeyValue::initFromMemory(uint8_t* input, size_t inputSize) {
         if (input < endPtr) {
           element->setUInt8(*input);
         } else {
-          delete element;
-          return false;
+          return parseError(element);
         }
         input++;
         break;
@@ -78,8 +83,7 @@ bool KeyValue::initFromMemory(uint8_t* input, size_t inputSize) {
         if (input < endPtr) {
           element->setInt8(static_cast<int8_t>(*input));
         } else {
-          delete element;
-          return false;
+          return parseError(element);
         }
         input++;
         break;
@@ -92,8 +96,7 @@ bool KeyValue::initFromMemory(uint8_t* input, size_t inputSize) {
           memcpy(&value, input, sizeof(value));
           element->setUInt32(value);
         } else {
-          delete element;
-          return false;
+          return parseError(element);
         }
         input += 4;
         break;
@@ -106,8 +109,7 @@ bool KeyValue::initFromMemory(uint8_t* input, size_t inputSize) {
           memcpy(&value, input, sizeof(value));
           element->setInt32(value);
         } else {
-          delete element;
-          return false;
+          return parseError(element);
         }
         input += 4;
         break;
@@ -123,8 +125,7 @@ bool KeyValue::initFromMemory(uint8_t* input, size_t inputSize) {
           element->setBlob(buffer, size);
           delete[] buffer;
         } else {
-          delete element;
-          return false;
+          return parseError(element);
         }
         input += size;
         break;
@@ -140,15 +141,13 @@ bool KeyValue::initFromMemory(uint8_t* input, size_t inputSize) {
           element->setString(buffer);
           delete[] buffer;
         } else {
-          delete element;
-          return false;
+          return parseError(element);
         }
         input += size;
         break;
       }
       default: {
-        delete element;
-        return false;
+        return parseError(element);
       }
     }
     if (!first) {
@@ -159,6 +158,7 @@ bool KeyValue::initFromMemory(uint8_t* input, size_t inputSize) {
   }
 
   if (input < endPtr) {
+    removeAllMemory();
     return false;
   }
   return true;

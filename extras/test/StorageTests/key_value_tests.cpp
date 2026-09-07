@@ -6,6 +6,8 @@
 #include <supla/storage/key_value.h>
 #include <supla-common/proto.h>
 #include <stdio.h>
+#include <array>
+#include <cstring>
 
 #include "supla/storage/config.h"
 
@@ -393,6 +395,59 @@ TEST(KeyValueTests, integrationTest) {
   // make sure that serialized data is the same after serialization ->
   // deserialization -> serialization
   EXPECT_EQ(memcmp(buffer, secondBuffer, 1024), 0);
+}
+
+TEST(KeyValueTests, initFromMemoryRollsBackAfterPartialParseAndCanBeRetried) {
+  constexpr size_t firstRecordSize = SUPLA_STORAGE_KEY_SIZE + 1 + 2 + 1;
+  constexpr size_t secondRecordHeaderAndOneByte =
+      SUPLA_STORAGE_KEY_SIZE + 1 + 2 + 1;
+
+  KeyValueTest source;
+  ASSERT_TRUE(source.setUInt8("rollback_first", 11));
+  ASSERT_TRUE(source.setUInt32("rollback_second", 22));
+
+  std::array<uint8_t, 128> validBuffer = {};
+  const size_t validSize =
+      source.serializeToMemory(validBuffer.data(), validBuffer.size());
+  ASSERT_EQ(validSize, firstRecordSize + SUPLA_STORAGE_KEY_SIZE + 1 + 2 + 4);
+
+  std::array<uint8_t, 128> malformedBuffer = {};
+  const size_t malformedSize =
+      firstRecordSize + secondRecordHeaderAndOneByte;
+  std::memcpy(malformedBuffer.data(), validBuffer.data(), malformedSize);
+
+  KeyValueTest storage;
+  EXPECT_FALSE(storage.initFromMemory(malformedBuffer.data(), malformedSize));
+
+  uint8_t resultU8 = 0;
+  uint32_t resultU32 = 0;
+  EXPECT_FALSE(storage.getUInt8("rollback_first", &resultU8));
+  EXPECT_FALSE(storage.getUInt32("rollback_second", &resultU32));
+
+  EXPECT_TRUE(storage.initFromMemory(validBuffer.data(), validSize));
+  EXPECT_TRUE(storage.getUInt8("rollback_first", &resultU8));
+  EXPECT_EQ(resultU8, 11);
+  EXPECT_TRUE(storage.getUInt32("rollback_second", &resultU32));
+  EXPECT_EQ(resultU32, 22);
+}
+
+TEST(KeyValueTests, initFromMemoryRejectsNonEmptyStorageWithoutClearingIt) {
+  KeyValueTest source;
+  ASSERT_TRUE(source.setUInt8("new_value", 22));
+
+  std::array<uint8_t, 64> buffer = {};
+  const size_t dataSize =
+      source.serializeToMemory(buffer.data(), buffer.size());
+
+  KeyValueTest storage;
+  ASSERT_TRUE(storage.setUInt8("existing", 11));
+
+  EXPECT_FALSE(storage.initFromMemory(buffer.data(), dataSize));
+
+  uint8_t resultU8 = 0;
+  EXPECT_TRUE(storage.getUInt8("existing", &resultU8));
+  EXPECT_EQ(resultU8, 11);
+  EXPECT_FALSE(storage.getUInt8("new_value", &resultU8));
 }
 
 TEST(KeyValueTests, blobSizeReturnsExactPayloadSize) {

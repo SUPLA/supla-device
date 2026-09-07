@@ -19,6 +19,10 @@ class CapabilityRegistry {
 
   uint8_t getCount() const;
   bool getCapability(uint8_t index, Capability *capability) const;
+  bool find(Category category,
+            Kind kind,
+            uint8_t handlerVersion,
+            Capability *capability) const;
 
  private:
   struct Entry {

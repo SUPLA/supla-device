@@ -214,6 +214,45 @@ TEST_F(ElementTests, ChannelElementMethods) {
   EXPECT_EQ(el1.iterateConnected(), true);   // #7
 }
 
+TEST_F(ElementTests, ChannelStateContainsDeviceBatteryState) {
+  ElementWithChannel element;
+  TDSC_ChannelState channelState = {};
+  channelState.ChannelNumber = element.getChannelNumber();
+
+  element.getChannel()->setBatteryPowered(true);
+  element.getChannel()->setBatteryState(Supla::BatteryState::Normal);
+  element.handleGetChannelState(&channelState);
+
+  EXPECT_NE(channelState.Fields & SUPLA_CHANNELSTATE_FIELD_BATTERY_STATE, 0);
+  EXPECT_EQ(channelState.Fields &
+                SUPLA_CHANNELSTATE_FIELD_DEVICE_BATTERY_STATE,
+            0);
+  EXPECT_EQ(channelState.BatteryState, SUPLA_BATTERY_STATE_OK);
+
+  channelState = {};
+  channelState.ChannelNumber = element.getChannelNumber();
+  element.getChannel()->setBatteryState(Supla::BatteryState::Low, true);
+  element.handleGetChannelState(&channelState);
+
+  EXPECT_NE(channelState.Fields & SUPLA_CHANNELSTATE_FIELD_BATTERYPOWERED, 0);
+  EXPECT_EQ(channelState.BatteryPowered, 1);
+  EXPECT_NE(channelState.Fields & SUPLA_CHANNELSTATE_FIELD_BATTERY_STATE, 0);
+  EXPECT_NE(channelState.Fields &
+                SUPLA_CHANNELSTATE_FIELD_DEVICE_BATTERY_STATE,
+            0);
+  EXPECT_EQ(channelState.BatteryState, SUPLA_BATTERY_STATE_LOW);
+
+  channelState = {};
+  channelState.ChannelNumber = element.getChannelNumber();
+  element.getChannel()->setBatteryState(Supla::BatteryState::NotSet, true);
+  element.handleGetChannelState(&channelState);
+
+  EXPECT_EQ(channelState.Fields & SUPLA_CHANNELSTATE_FIELD_BATTERY_STATE, 0);
+  EXPECT_EQ(channelState.Fields &
+                SUPLA_CHANNELSTATE_FIELD_DEVICE_BATTERY_STATE,
+            0);
+}
+
 TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
   ElementWithChannel el1;
   TimeInterfaceMock time;

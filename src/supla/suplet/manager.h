@@ -21,8 +21,7 @@ class Element;
 namespace Suplet {
 
 class CapabilityRegistry;
-struct DefinitionCalcfgSession;
-struct InstanceCalcfgSession;
+struct CalcfgSession;
 class ServerConfigHandler;
 enum class ServerConfigResult : uint8_t;
 
@@ -33,7 +32,7 @@ class Manager : public Supla::Device::ChannelConflictResolver {
 
   bool load();
   bool loadInstance(uint8_t instanceId, InstanceRecord *record);
-  bool save();
+  bool save(const ArtifactStorageHandle *stagedArtifact = nullptr);
   bool erase();
 
   InstanceTable *getInstanceTable();
@@ -55,8 +54,10 @@ class Manager : public Supla::Device::ChannelConflictResolver {
                                  const Definition &definition);
   bool canUpsertInstanceFromDefinition(InstanceRecord record,
                                        const Definition &definition) const;
-  bool upsertInstanceFromDefinition(InstanceRecord record,
-                                    const Definition &definition);
+  bool upsertInstanceFromDefinition(
+      InstanceRecord record,
+      const Definition &definition,
+      const ArtifactStorageHandle *stagedArtifact = nullptr);
   bool createElementsFromRegistry(const Registry &registry,
                                   Supla::Element **created,
                                   uint16_t createdSize,
@@ -66,18 +67,26 @@ class Manager : public Supla::Device::ChannelConflictResolver {
   void deleteRuntimeElements();
   bool initRuntimeElements(SuplaDeviceClass *device);
   uint16_t getRuntimeElementCount() const;
+
+  bool beginStagedArtifact(uint8_t instanceId,
+                           uint32_t artifactSize,
+                           ArtifactStorageHandle *handle);
+  bool writeStagedArtifactChunk(ArtifactStorageHandle *handle,
+                                const uint8_t *data,
+                                uint16_t size);
+  bool abortStagedArtifact(ArtifactStorageHandle *handle);
+  bool readArtifact(uint8_t instanceId,
+                    uint32_t offset,
+                    uint8_t *data,
+                    uint16_t size) const;
   ServerConfigResult applyCommandJson(const char *commandJson);
   ServerConfigResult validateCommandJson(const char *commandJson) const;
   int handleCalcfg(TSD_DeviceCalCfgRequest *request,
                    TDS_DeviceCalCfgResult *result);
-  InstanceCalcfgSession *getInstanceCalcfgSession();
-  const InstanceCalcfgSession *getInstanceCalcfgSession() const;
-  InstanceCalcfgSession *beginInstanceCalcfgSession();
-  void clearInstanceCalcfgSession();
-  DefinitionCalcfgSession *getDefinitionCalcfgSession();
-  const DefinitionCalcfgSession *getDefinitionCalcfgSession() const;
-  DefinitionCalcfgSession *beginDefinitionCalcfgSession();
-  void clearDefinitionCalcfgSession();
+  CalcfgSession *getCalcfgSession();
+  const CalcfgSession *getCalcfgSession() const;
+  CalcfgSession *beginCalcfgSession();
+  void clearCalcfgSession();
   void cleanupExpiredCalcfgSessions(uint32_t nowMs);
   bool removeInstance(uint8_t instanceId);
   uint8_t getFirstFreeSubDeviceId() const;
@@ -93,7 +102,7 @@ class Manager : public Supla::Device::ChannelConflictResolver {
                                 uint8_t channelReportSize,
                                 int channelNumber) const;
   bool getRequiredRuntimeElementCount(const Registry &registry,
-                                      uint16_t *count) const;
+                                      uint16_t *count);
 
   Supla::Suplet::Storage storage;
   InstanceTable table;
@@ -102,8 +111,7 @@ class Manager : public Supla::Device::ChannelConflictResolver {
   ServerConfigHandler *serverConfigHandler = nullptr;
   Supla::Element **runtimeElements = nullptr;
   uint16_t runtimeElementCount = 0;
-  InstanceCalcfgSession *instanceCalcfgSession = nullptr;
-  DefinitionCalcfgSession *definitionCalcfgSession = nullptr;
+  CalcfgSession *calcfgSession = nullptr;
 };
 
 }  // namespace Suplet

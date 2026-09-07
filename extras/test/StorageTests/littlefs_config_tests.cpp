@@ -12,6 +12,13 @@ namespace {
 
 constexpr char BlobKey[] = "blob";
 
+void writeFile(const char *path, const uint8_t *data, size_t size) {
+  File file = LittleFS.open(path, "w");
+  ASSERT_TRUE(static_cast<bool>(file));
+  ASSERT_EQ(file.write(data, size), size);
+  file.close();
+}
+
 class LittleFsConfigTests : public ::testing::Test {
  protected:
   void SetUp() override { LittleFS.reset(); }
@@ -102,4 +109,68 @@ TEST_F(LittleFsConfigTests, RemoveAllDeletesEveryFileBlob) {
 
   EXPECT_FALSE(LittleFS.exists("/supla/blob_1"));
   EXPECT_FALSE(LittleFS.exists("/supla/blob_2"));
+}
+
+TEST_F(LittleFsConfigTests, FallsBackToBackupAfterPartialPrimaryParse) {
+  constexpr size_t firstRecordSize = SUPLA_STORAGE_KEY_SIZE + 1 + 2 + 1;
+  constexpr size_t secondRecordHeaderAndOneByte =
+      SUPLA_STORAGE_KEY_SIZE + 1 + 2 + 1;
+
+  Supla::LittleFsConfig primarySource;
+  ASSERT_TRUE(primarySource.setUInt8("primary_only", 1));
+  ASSERT_TRUE(primarySource.setUInt32("shared", 111));
+  std::array<uint8_t, SUPLA_LITTLEFS_CONFIG_BUF_SIZE> primaryBuffer = {};
+  const size_t primarySize = primarySource.serializeToMemory(
+      primaryBuffer.data(), primaryBuffer.size());
+  const size_t corruptPrimarySize =
+      firstRecordSize + secondRecordHeaderAndOneByte;
+  ASSERT_GT(primarySize, corruptPrimarySize);
+
+  Supla::LittleFsConfig backupSource;
+  ASSERT_TRUE(backupSource.setUInt32("shared", 222));
+  ASSERT_TRUE(backupSource.setUInt8("backup_only", 2));
+  std::array<uint8_t, SUPLA_LITTLEFS_CONFIG_BUF_SIZE> backupBuffer = {};
+  const size_t backupSize =
+      backupSource.serializeToMemory(backupBuffer.data(), backupBuffer.size());
+
+  writeFile("/supla-dev.cfg", primaryBuffer.data(), corruptPrimarySize);
+  writeFile("/supla-dev.cfg.bak", backupBuffer.data(), backupSize);
+
+  Supla::LittleFsConfig config;
+  ASSERT_TRUE(config.init());
+
+  uint32_t shared = 0;
+  EXPECT_TRUE(config.getUInt32("shared", &shared));
+  EXPECT_EQ(shared, 222);
+
+  uint8_t backupOnly = 0;
+  EXPECT_TRUE(config.getUInt8("backup_only", &backupOnly));
+  EXPECT_EQ(backupOnly, 2);
+
+  uint8_t primaryOnly = 0;
+  EXPECT_FALSE(config.getUInt8("primary_only", &primaryOnly));
+}
+
+TEST_F(LittleFsConfigTests, ValidPrimaryConfigurationStillWins) {
+  Supla::LittleFsConfig primarySource;
+  ASSERT_TRUE(primarySource.setUInt32("shared", 111));
+  std::array<uint8_t, SUPLA_LITTLEFS_CONFIG_BUF_SIZE> primaryBuffer = {};
+  const size_t primarySize = primarySource.serializeToMemory(
+      primaryBuffer.data(), primaryBuffer.size());
+
+  Supla::LittleFsConfig backupSource;
+  ASSERT_TRUE(backupSource.setUInt32("shared", 222));
+  std::array<uint8_t, SUPLA_LITTLEFS_CONFIG_BUF_SIZE> backupBuffer = {};
+  const size_t backupSize =
+      backupSource.serializeToMemory(backupBuffer.data(), backupBuffer.size());
+
+  writeFile("/supla-dev.cfg", primaryBuffer.data(), primarySize);
+  writeFile("/supla-dev.cfg.bak", backupBuffer.data(), backupSize);
+
+  Supla::LittleFsConfig config;
+  ASSERT_TRUE(config.init());
+
+  uint32_t shared = 0;
+  EXPECT_TRUE(config.getUInt32("shared", &shared));
+  EXPECT_EQ(shared, 111);
 }

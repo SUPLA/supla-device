@@ -125,6 +125,7 @@ bool Registry::getCapability(uint8_t index, Capability *capability) const {
       capability->maxInstances = current->maxInstances;
       capability->supportsDownloadedDefinition =
           current->supportsDownloadedDefinition;
+      capability->maxArtifactSize = current->definition->maxArtifactSize;
       return true;
     }
     currentIndex++;
@@ -158,6 +159,7 @@ bool Registry::getCapability(uint32_t definitionId,
       capability->maxInstances = current->maxInstances;
       capability->supportsDownloadedDefinition =
           current->supportsDownloadedDefinition;
+      capability->maxArtifactSize = current->definition->maxArtifactSize;
       return true;
     }
   }

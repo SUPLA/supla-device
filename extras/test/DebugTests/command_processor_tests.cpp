@@ -66,20 +66,21 @@ class CalcfgChunkResponder {
           offsetof(TCalCfg_SupletDefinitionConfigChunk, Data) + output.Size;
       memcpy(result->Data, &output, result->DataSize);
     } else if (request->Command ==
-               SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_CONFIG) {
-      TCalCfg_SupletInstanceConfigRequest configRequest = {};
+               SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_DATA) {
+      TCalCfg_SupletInstanceDataRequest configRequest = {};
       memcpy(&configRequest, request->Data, sizeof(configRequest));
       if (configRequest.Offset != expectedOffset) {
         return SUPLA_CALCFG_RESULT_FALSE;
       }
-      TCalCfg_SupletInstanceConfigChunk output = {};
+      TCalCfg_SupletInstanceDataChunk output = {};
       output.InstanceId = instanceId;
+      output.Part = SUPLA_CALCFG_SUPLET_TRANSFER_PART_CONFIG;
       output.Offset = expectedOffset;
       output.TotalSize = chunk.totalSize;
       output.Size = chunk.data.size();
       memcpy(output.Data, chunk.data.data(), output.Size);
       result->DataSize =
-          offsetof(TCalCfg_SupletInstanceConfigChunk, Data) + output.Size;
+          offsetof(TCalCfg_SupletInstanceDataChunk, Data) + output.Size;
       memcpy(result->Data, &output, result->DataSize);
     } else {
       return SUPLA_CALCFG_RESULT_FALSE;
@@ -97,6 +98,27 @@ class CalcfgChunkResponder {
   std::vector<ConfigChunk> chunks;
   size_t currentChunk = 0;
   uint16_t expectedOffset = 0;
+};
+
+class InstanceBeginResponder {
+ public:
+  static int handle(void *context,
+                    TSD_DeviceCalCfgRequest *request,
+                    TDS_DeviceCalCfgResult *) {
+    return static_cast<InstanceBeginResponder *>(context)->handle(request);
+  }
+
+  int handle(TSD_DeviceCalCfgRequest *request) {
+    if (request == nullptr) {
+      return SUPLA_CALCFG_RESULT_FALSE;
+    }
+    if (request->Command == SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN) {
+      memcpy(&begin, request->Data, sizeof(begin));
+    }
+    return SUPLA_CALCFG_RESULT_DONE;
+  }
+
+  TCalCfg_SupletInstanceBegin begin = {};
 };
 
 TEST(CommandProcessorTests, GetsMultichunkDefinitionConfig) {
@@ -225,6 +247,22 @@ TEST(CommandProcessorTests, RejectsInstanceConfigWithChangingTotalSize) {
             writer.response.find(
                 "{\"ok\":false,\"error\":\"malformed_config_chunk\"}\n"));
   EXPECT_EQ(std::string::npos, writer.response.find("instance.config.data"));
+}
+
+TEST(CommandProcessorTests, UpsertInstanceCanKeepArtifact) {
+  InstanceBeginResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &InstanceBeginResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"calcfg\":\"upsertInstance\",\"instanceId\":7,"
+      "\"definitionId\":1234,\"definitionVersion\":2,"
+      "\"revision\":3,\"keepArtifact\":true,\"paramsJson\":\"{}\"}",
+      &writer));
+  EXPECT_EQ(responder.begin.Flags,
+            SUPLA_CALCFG_SUPLET_INSTANCE_FLAG_KEEP_ARTIFACT);
+  EXPECT_NE(std::string::npos, writer.response.find("\"ok\":true"));
 }
 
 }  // namespace

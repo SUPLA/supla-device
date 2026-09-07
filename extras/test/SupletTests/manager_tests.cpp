@@ -115,6 +115,27 @@ class SubDeviceChannelOwner {
   Supla::Channel channel;
 };
 
+class ZeroChannelRuntimeHandler : public Supla::Suplet::RuntimeHandler {
+ public:
+  uint8_t getRequiredElementCount(
+      const Supla::Suplet::Definition &,
+      const Supla::Suplet::InstanceRecord &) const override {
+    return 1;
+  }
+
+  bool createElements(const Supla::Suplet::Definition &,
+                      const Supla::Suplet::InstanceRecord &,
+                      Supla::Element **created,
+                      uint8_t createdSize,
+                      Supla::Suplet::ChannelMap *) override {
+    if (created == nullptr || createdSize != 1) {
+      return false;
+    }
+    created[0] = new Supla::Element;
+    return created[0] != nullptr;
+  }
+};
+
 class SupletManagerTests : public testing::Test {
  protected:
   void SetUp() override {
@@ -400,6 +421,32 @@ TEST_F(SupletManagerTests, OwnsRuntimeElementsAndDeletesThem) {
   EXPECT_EQ(Supla::Element::begin(), nullptr);
 
   Supla::Channel::resetToDefaults();
+}
+
+TEST_F(SupletManagerTests, LoadsOneRuntimeElementForZeroChannelSuplet) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  ZeroChannelRuntimeHandler runtimeHandler;
+  Supla::Suplet::Definition definition = {};
+  definition.definitionId = 502;
+  definition.definitionVersion = 1;
+  definition.category = Supla::Suplet::Category::Virtual;
+  definition.kind = Supla::Suplet::Kind::VirtualRelay;
+  definition.runtimeHandler = &runtimeHandler;
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&definition, 4));
+
+  Supla::Suplet::InstanceRecord record = {};
+  record.instanceId = 1;
+  record.definitionId = definition.definitionId;
+  record.definitionVersion = definition.definitionVersion;
+  record.subDeviceId = 1;
+  ASSERT_TRUE(manager.addInstance(record));
+
+  ASSERT_TRUE(manager.loadRuntimeElementsFromRegistry(registry));
+  EXPECT_EQ(manager.getRuntimeElementCount(), 1);
+  ASSERT_NE(Supla::Element::begin(), nullptr);
+  EXPECT_EQ(Supla::Element::begin()->getChannel(), nullptr);
 }
 
 TEST_F(SupletManagerTests, RuntimeCreationRollsBackWhenDefinitionIsMissing) {

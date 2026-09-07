@@ -138,6 +138,39 @@ class NativeWeeklyScheduleConfigHandler : public WeeklyScheduleConfigHandler,
   bool loadAttempted_[2] = {false, false};
 };
 
+class NativeWeeklyScheduleController
+    : public WeeklyScheduleController,
+      public NativeWeeklyScheduleConfigHandler {
+ public:
+  bool canActivate() const override;
+  bool isActive() const override;
+  bool switchToWeeklySchedule() override;
+  void switchToManualMode() override;
+  void restoreWeeklyScheduleMode(bool enabled) override;
+  bool processWeeklySchedule() override;
+  bool isWeeklyScheduleConfigured() const;
+
+ protected:
+  virtual void syncWeeklyScheduleMode(uint8_t mode) = 0;
+  virtual void scheduleWeeklyScheduleStateSave() = 0;
+  virtual bool applyWeeklyScheduleMode(uint8_t mode, bool programChanged);
+
+  void onNativeScheduleLoaded() override;
+  void onNativeScheduleLoadFailed(bool alt) override;
+  void onNativeScheduleApplied(bool alt,
+                               bool local,
+                               bool changed) override;
+  void onNativeScheduleSaved(bool alt, bool notify) override;
+  void onNativeSchedulePurged() override;
+  bool applyResolvedWeeklyScheduleProgram(
+      const TWeeklyScheduleProgram &program,
+      int programId,
+      bool programChanged) override;
+
+ private:
+  bool enabled_ = false;
+};
+
 }  // namespace Control
 }  // namespace Supla
 

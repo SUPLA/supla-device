@@ -38,12 +38,8 @@ RelayWeeklySchedule::RelayWeeklySchedule(Relay *owner) : owner_(owner) {
 RelayWeeklySchedule::~RelayWeeklySchedule() {
 }
 
-bool RelayWeeklySchedule::canActivate() const {
-  return isConfigured();
-}
-
 bool RelayWeeklySchedule::isConfigured() const {
-  return NativeWeeklyScheduleConfigHandler::isConfigured(false);
+  return isWeeklyScheduleConfigured();
 }
 
 Supla::Element *RelayWeeklySchedule::getScheduleOwner() const {
@@ -74,38 +70,24 @@ void RelayWeeklySchedule::fillDefaultSchedule(
 }
 
 bool RelayWeeklySchedule::isWeeklyScheduleEnabled() const {
-  return weeklyScheduleEnabled_;
+  return isActive();
 }
 
-bool RelayWeeklySchedule::isActive() const {
-  return isWeeklyScheduleEnabled();
-}
-
-void RelayWeeklySchedule::setWeeklyScheduleEnabled(bool enabled) {
-  if (weeklyScheduleEnabled_ == enabled) {
-    return;
-  }
-  weeklyScheduleEnabled_ = enabled;
-  if (owner_ != nullptr) {
-    owner_->getChannel()->setRelayWeeklyScheduleEnabled(enabled);
-    if (!enabled) {
-      owner_->getChannel()->setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
-    }
-  }
-  touchCache(enabled, millis());
-}
-
-void RelayWeeklySchedule::syncRelayMode(uint8_t programMode) {
+void RelayWeeklySchedule::syncWeeklyScheduleMode(uint8_t programMode) {
   if (owner_ == nullptr) {
     return;
   }
-  owner_->getChannel()->setRelayWeeklyScheduleEnabled(weeklyScheduleEnabled_);
+  owner_->getChannel()->setRelayWeeklyScheduleEnabled(isActive());
   owner_->getChannel()->setRelayMode(
-      weeklyScheduleEnabled_ ? programMode : SUPLA_RELAY_MODE_NOT_SET);
+      isActive() ? programMode : SUPLA_RELAY_MODE_NOT_SET);
+}
+
+void RelayWeeklySchedule::scheduleWeeklyScheduleStateSave() {
+  Supla::Storage::ScheduleSave(Relay::relayStorageSaveDelay, 2000);
 }
 
 bool RelayWeeklySchedule::isManualActionAllowed(bool turnOn) const {
-  if (!weeklyScheduleEnabled_) {
+  if (!isActive()) {
     return true;
   }
   auto currentProgramMode = getCurrentProgramMode();
@@ -150,123 +132,14 @@ bool RelayWeeklySchedule::isWeeklyScheduleValid(
   return true;
 }
 
-void RelayWeeklySchedule::onNativeScheduleLoaded() {
-  weeklyScheduleEnabled_ = false;
-  resetCurrentProgramId();
-  syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
-}
-
-void RelayWeeklySchedule::onNativeScheduleLoadFailed(bool alt) {
-  (void)(alt);
-  onNativeScheduleLoaded();
-  Supla::Storage::ScheduleSave(Relay::relayStorageSaveDelay, 2000);
-}
-
-void RelayWeeklySchedule::onNativeScheduleApplied(bool alt,
-                                                  bool local,
-                                                  bool changed) {
-  (void)(alt);
-  (void)(local);
-  if (changed) {
-    resetCurrentProgramId();
-    if (weeklyScheduleEnabled_) {
-      applyCurrentState();
-    }
-  }
-  touchCache(weeklyScheduleEnabled_, millis());
-}
-
-void RelayWeeklySchedule::onNativeScheduleSaved(bool alt, bool notify) {
-  (void)(alt);
-  (void)(notify);
-  touchCache(weeklyScheduleEnabled_, millis());
-}
-
-const TChannelConfig_WeeklySchedule *RelayWeeklySchedule::getSchedule(
-    bool loadIfMissing) const {
-  return NativeWeeklyScheduleConfigHandler::getSchedule(false, loadIfMissing);
-}
-
-TChannelConfig_WeeklySchedule *RelayWeeklySchedule::getSchedule(
-    bool loadIfMissing) {
-  return NativeWeeklyScheduleConfigHandler::getSchedule(false, loadIfMissing);
-}
-
-bool RelayWeeklySchedule::switchToWeeklySchedule() {
-  if (!isConfigured() || getSchedule(true) == nullptr) {
-    return false;
-  }
-  weeklyScheduleEnabled_ = true;
-  resetCurrentProgramId();
-  touchCache(true, millis());
-  syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
-  applyCurrentState();
-  return true;
-}
-
-void RelayWeeklySchedule::switchToManualMode() {
-  weeklyScheduleEnabled_ = false;
-  resetCurrentProgramId();
-  if (isConfigured()) {
-    touchCache(false, millis());
-  } else {
-    resetCache();
-  }
-  syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
-}
-
-void RelayWeeklySchedule::restoreWeeklyScheduleMode(bool enabled) {
-  weeklyScheduleEnabled_ = enabled && isConfigured();
-  resetCurrentProgramId();
-  if (weeklyScheduleEnabled_) {
-    touchCache(true, millis());
-  }
-  syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
-}
-
-void RelayWeeklySchedule::onNativeSchedulePurged() {
-  weeklyScheduleEnabled_ = false;
-  resetCurrentProgramId();
-  syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
-  Supla::Storage::ScheduleSave(Relay::relayStorageSaveDelay, 2000);
-}
-
 bool RelayWeeklySchedule::iterateAlways() {
-  if (!owner_ || !isConfigured()) {
-    return false;
-  }
-
-  if (!weeklyScheduleEnabled_) {
-    processCacheRelease();
-    return false;
-  }
-
-  touchCache(true, millis());
-
-  return applyCurrentState();
+  return processWeeklySchedule();
 }
 
-bool RelayWeeklySchedule::processWeeklySchedule() {
-  return iterateAlways();
-}
-
-bool RelayWeeklySchedule::applyCurrentState() {
-  if (!weeklyScheduleEnabled_) {
-    return false;
-  }
-  return processCurrentProgram(millis() <= 30000);
-}
-
-bool RelayWeeklySchedule::applyResolvedWeeklyScheduleProgram(
-    const TWeeklyScheduleProgram &program,
-    int currentProgramId,
+bool RelayWeeklySchedule::applyWeeklyScheduleMode(
+    uint8_t currentProgramMode,
     bool programChanged) {
-  uint8_t currentProgramMode = SUPLA_RELAY_MODE_NOT_SET;
-  if (currentProgramId > 0) {
-    currentProgramMode = program.Mode;
-  }
-
-  syncRelayMode(currentProgramMode);
+  syncWeeklyScheduleMode(currentProgramMode);
 
   if (currentProgramMode == SUPLA_RELAY_MODE_NOT_SET) {
     return true;
@@ -295,26 +168,6 @@ uint8_t RelayWeeklySchedule::getCurrentProgramMode() const {
   }
 
   return program.Mode;
-}
-
-void RelayWeeklySchedule::unloadScheduleIfPossible() {
-  if (owner_ == nullptr || weeklyScheduleEnabled_) {
-    return;
-  }
-
-  SUPLA_LOG_DEBUG("Relay[%d]: unloading weekly schedule cache",
-                  owner_->getChannelNumber());
-  unloadSchedule(false);
-}
-
-void RelayWeeklySchedule::processCacheRelease() {
-  if (owner_ == nullptr) {
-    return;
-  }
-
-  if (processCache(weeklyScheduleEnabled_, millis())) {
-    unloadScheduleIfPossible();
-  }
 }
 
 }  // namespace Control

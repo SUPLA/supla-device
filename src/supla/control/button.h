@@ -88,6 +88,7 @@ class Button : public SimpleButton, public ActionHandler {
   void setAllowHoldOnPowerOn(bool allow) { allowHoldOnPowerOn = allow; }
 
  protected:
+  void setActionTriggerModeLocked(bool locked);
   void evaluateMaxMulticlickValue();
   // disbles repeating "on hold" if repeat time is lower than threshold
   // threshold 0 disables always
@@ -108,6 +109,8 @@ class Button : public SimpleButton, public ActionHandler {
   bool configButton = false;
   int8_t buttonNumber = -1;
   bool disabled = false;
+  bool actionTriggerModeLocked = false;
+  bool suppressActionsUntilRelease = false;
   bool allowHoldOnPowerOn = false;
   bool waitingForRelease = false;
 

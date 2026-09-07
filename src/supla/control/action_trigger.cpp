@@ -13,18 +13,127 @@
 #include <supla/control/button.h>
 #include <supla/events.h>
 #include <supla/storage/config_tags.h>
+#include <supla/time.h>
+
+#include "weekly_schedule_common.h"
+#include "weekly_schedule_storage.h"
+
+namespace {
+
+// ActionTrigger state storage historically contains only a uint32_t with
+// active actions. Keep that layout unchanged and use its two highest bits for
+// the mutually exclusive weekly-schedule/locked state. If more state is
+// needed, this format should be redesigned to use a wider dedicated field.
+constexpr uint32_t kActionTriggerStateModeMask = 0xC0000000UL;
+constexpr uint32_t kActionTriggerStateWeeklySchedule = 0x40000000UL;
+constexpr uint32_t kActionTriggerStateLocked = 0x80000000UL;
+constexpr uint32_t kActionTriggerLegacyAllActions = 0xFFFFFFFFUL;
+
+}  // namespace
+
+namespace Supla {
+namespace Control {
+
+class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
+ public:
+  explicit ActionTriggerWeeklySchedule(ActionTrigger *owner) : owner_(owner) {
+  }
+
+ protected:
+  Supla::Element *getScheduleOwner() const override {
+    return owner_;
+  }
+
+  const char *getDeviceLabel() const override {
+    return "ActionTrigger";
+  }
+
+  const char *getScheduleStorageTag(bool alt) const override {
+    (void)(alt);
+    return Supla::ConfigTag::ActionTriggerWeeklyCfgTag;
+  }
+
+  bool validateSchedule(const TChannelConfig_WeeklySchedule *schedule,
+                        bool alt) const override {
+    (void)(alt);
+    if (schedule == nullptr || owner_ == nullptr) {
+      return false;
+    }
+    for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE; i++) {
+      if (!owner_->isWeeklyScheduleProgramModeSupported(
+              schedule->Program[i].Mode)) {
+        SUPLA_LOG_WARNING(
+            "ActionTrigger[%d]: invalid weekly schedule program %d",
+            owner_->getChannelNumber(),
+            i);
+        return false;
+      }
+    }
+    for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; i++) {
+      int programId = getProgramId(schedule, i);
+      if (programId < 0 ||
+          programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
+        SUPLA_LOG_WARNING(
+            "ActionTrigger[%d]: weekly schedule references invalid program %d",
+            owner_->getChannelNumber(),
+            programId);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void fillDefaultSchedule(TChannelConfig_WeeklySchedule *schedule,
+                           bool alt) override {
+    (void)(alt);
+    if (owner_ != nullptr) {
+      owner_->fillDefaultWeeklySchedule(schedule);
+    }
+  }
+
+  void scheduleWeeklyScheduleStateSave() override {
+    if (owner_ != nullptr) {
+      owner_->scheduleStateSave();
+    }
+  }
+
+  void syncWeeklyScheduleMode(uint8_t mode) override {
+    if (owner_ == nullptr) {
+      return;
+    }
+    owner_->channel.setWeeklyScheduleEnabled(isActive());
+    owner_->applyButtonMode(isActive() ? mode : SUPLA_BUTTON_MODE_NOT_SET);
+  }
+
+ private:
+  ActionTrigger *owner_ = nullptr;
+};
+
+}  // namespace Control
+}  // namespace Supla
 
 Supla::Control::ActionTrigger::ActionTrigger() {
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_ACTIONTRIGGER);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
 }
 
 Supla::Control::ActionTrigger::~ActionTrigger() {
 }
 
 void Supla::Control::ActionTrigger::attach(Supla::Control::Button *button) {
+  if (attachedButton != nullptr && attachedButton != button) {
+    attachedButton->setActionTriggerModeLocked(false);
+  }
   attachedButton = button;
+  if (attachedButton != nullptr) {
+    attachedButton->setActionTriggerModeLocked(
+        channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED);
+  }
 }
 
 void Supla::Control::ActionTrigger::attach(Supla::Control::Button &button) {
@@ -32,7 +141,7 @@ void Supla::Control::ActionTrigger::attach(Supla::Control::Button &button) {
 }
 
 void Supla::Control::ActionTrigger::handleAction(int, int action) {
-  if (!enabled) {
+  if (!enabled || channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED) {
     return;
   }
   uint32_t actionCap = getActionTriggerCap(action);
@@ -301,8 +410,20 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
 
 Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
     TSD_ChannelConfig *result, bool local) {
-  (void)(local);
-  if (result == nullptr || result->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
+  if (result == nullptr) {
+    return Supla::ApplyConfigResult::DataError;
+  }
+  if (result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
+    if (!weeklyScheduleAvailable) {
+      return Supla::ApplyConfigResult::NotSupported;
+    }
+    ensureNativeWeeklyScheduleController();
+    auto *configHandler = weeklyScheduleComponents.getConfigHandler();
+    return configHandler == nullptr
+               ? Supla::ApplyConfigResult::NotSupported
+               : configHandler->applyChannelConfig(result, local);
+  }
+  if (result->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return Supla::ApplyConfigResult::NotSupported;
   }
   if (result->ConfigSize == 0) {
@@ -321,10 +442,8 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
       activeActionsFromServer);
   Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
   rebuildForAttachedButton();
-  if (storageEnabled) {
-    // Schedule save in 2 s after state change
-    Supla::Storage::ScheduleSave(2000);
-  }
+  // Schedule save in 2 s after state change
+  scheduleStateSave(2000, 0);
   return Supla::ApplyConfigResult::Success;
 }
 
@@ -586,27 +705,53 @@ void Supla::Control::ActionTrigger::disableATCapability(uint32_t capToDisable) {
 }
 
 void Supla::Control::ActionTrigger::onSaveState() {
-  if (storageEnabled) {
-    Supla::Storage::WriteState(
-        reinterpret_cast<unsigned char *>(&activeActionsFromServer),
-                             sizeof(activeActionsFromServer));
+  if (!storageEnabled) {
+    return;
   }
+
+  ActionTriggerFlags flags = {};
+  auto *weeklySchedule = weeklyScheduleComponents.getController();
+  flags.flags.weeklySchedule =
+      weeklySchedule != nullptr && weeklySchedule->isActive();
+  flags.flags.locked = !flags.flags.weeklySchedule &&
+                       channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED;
+
+  uint32_t state = activeActionsFromServer;
+  // 0xFFFFFFFF is a legacy value meaning "all actions". Preserve it when
+  // there is no mode flag to store; otherwise the two reserved bits encode
+  // the current mode.
+  if (state != kActionTriggerLegacyAllActions || flags.rawValue != 0) {
+    state &= ~kActionTriggerStateModeMask;
+    if (flags.flags.weeklySchedule) {
+      state |= kActionTriggerStateWeeklySchedule;
+    } else if (flags.flags.locked) {
+      state |= kActionTriggerStateLocked;
+    }
+  }
+
+  Supla::Storage::WriteState(reinterpret_cast<unsigned char *>(&state),
+                             sizeof(state));
 }
+
 void Supla::Control::ActionTrigger::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
 
-  if (cfg == nullptr) {
-    return;
+  ensureNativeWeeklyScheduleController();
+  if (weeklyScheduleComponents.isAssigned()) {
+    weeklyScheduleComponents.loadConfig();
   }
 
   int32_t value = 0;  // default value
-  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  Supla::Config::generateKey(key,
-                             getChannel()->getChannelNumber(),
-                             Supla::ConfigTag::BtnActionTriggerCfgTagPrefix);
-  cfg->getInt32(key, &value);
-  loadConfigChangeFlag();
+  if (cfg != nullptr) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    Supla::Config::generateKey(
+        key,
+        getChannel()->getChannelNumber(),
+        Supla::ConfigTag::BtnActionTriggerCfgTagPrefix);
+    cfg->getInt32(key, &value);
+    loadConfigChangeFlag();
+  }
 
   switch (value) {
     case 0:
@@ -633,15 +778,56 @@ void Supla::Control::ActionTrigger::onLoadConfig(SuplaDeviceClass *sdc) {
 }
 
 void Supla::Control::ActionTrigger::onLoadState() {
-  if (storageEnabled) {
-    Supla::Storage::ReadState((unsigned char *)&activeActionsFromServer,
-        sizeof(activeActionsFromServer));
-    if (activeActionsFromServer) {
-      SUPLA_LOG_INFO(
-          "AT[%d]: restored activeActionsFromServer: 0x%X",
-          channel.getChannelNumber(),
-          activeActionsFromServer);
+  if (!storageEnabled) {
+    return;
+  }
+
+  uint32_t state = activeActionsFromServer;
+  const bool stateLoaded = Supla::Storage::ReadState(
+      reinterpret_cast<unsigned char *>(&state), sizeof(state));
+
+  ActionTriggerFlags flags = {};
+  if (!stateLoaded) {
+    return;
+  }
+
+  flags.rawValue = 0;
+  if (state == kActionTriggerLegacyAllActions) {
+    // Keep compatibility with the old all-actions sentinel, which predates
+    // the two mode bits.
+    activeActionsFromServer = state;
+  } else {
+    switch (state & kActionTriggerStateModeMask) {
+      case kActionTriggerStateWeeklySchedule:
+        flags.flags.weeklySchedule = 1;
+        break;
+      case kActionTriggerStateLocked:
+        flags.flags.locked = 1;
+        break;
+      default:
+        break;
     }
+    activeActionsFromServer = state & ~kActionTriggerStateModeMask;
+  }
+
+  if (activeActionsFromServer) {
+    SUPLA_LOG_INFO(
+        "AT[%d]: restored activeActionsFromServer: 0x%X",
+        channel.getChannelNumber(),
+        activeActionsFromServer);
+  }
+
+  auto *weeklySchedule = weeklyScheduleComponents.getController();
+  if (weeklySchedule != nullptr && isWeeklyScheduleSupported()) {
+    weeklySchedule->restoreWeeklyScheduleMode(flags.flags.weeklySchedule);
+    if (weeklySchedule->isExternallyManaged()) {
+      channel.setWeeklyScheduleEnabled(weeklySchedule->isActive());
+      applyButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
+    }
+  }
+  if (!flags.flags.weeklySchedule) {
+    applyButtonMode(flags.flags.locked ? SUPLA_BUTTON_MODE_LOCKED
+                                       : SUPLA_BUTTON_MODE_NOT_SET);
   }
 }
 
@@ -669,4 +855,167 @@ void Supla::Control::ActionTrigger::enable() {
 
 void Supla::Control::ActionTrigger::disable() {
   enabled = false;
+}
+
+bool Supla::Control::ActionTrigger::setWeeklyScheduleController(
+    WeeklyScheduleController *controller,
+    WeeklyScheduleConfigHandler *configHandler,
+    WeeklyScheduleProgramSource *programSource) {
+  if (!weeklyScheduleComponents.set(
+          controller, configHandler, programSource)) {
+    return false;
+  }
+  updateWeeklyScheduleCapabilities();
+  return true;
+}
+
+bool Supla::Control::ActionTrigger::ensureNativeWeeklyScheduleController() {
+  if (!weeklyScheduleAvailable || weeklyScheduleComponents.isAssigned()) {
+    return false;
+  }
+  auto *weeklySchedule = new ActionTriggerWeeklySchedule(this);
+  if (!setWeeklyScheduleController(
+          weeklySchedule, weeklySchedule, weeklySchedule)) {
+    delete weeklySchedule;
+    return false;
+  }
+  return true;
+}
+
+void Supla::Control::ActionTrigger::updateWeeklyScheduleCapabilities() {
+  channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
+  auto *controller = weeklyScheduleComponents.getController();
+  auto *configHandler = weeklyScheduleComponents.getConfigHandler();
+  bool configurable =
+      weeklyScheduleAvailable && configHandler != nullptr &&
+      configHandler->supportsConfigType(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  if (configurable) {
+    channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+    usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  } else {
+    channel.unsetFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+    usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  }
+  if (!weeklyScheduleAvailable && controller != nullptr) {
+    controller->switchToManualMode();
+  }
+}
+
+bool Supla::Control::ActionTrigger::isWeeklyScheduleSupported() const {
+  return weeklyScheduleAvailable;
+}
+
+Supla::Control::ActionTrigger &
+Supla::Control::ActionTrigger::setWeeklyScheduleAvailable(bool available) {
+  weeklyScheduleAvailable = available;
+  if (available) {
+    ensureNativeWeeklyScheduleController();
+  }
+  updateWeeklyScheduleCapabilities();
+  return *this;
+}
+
+void Supla::Control::ActionTrigger::fillDefaultWeeklySchedule(
+    TChannelConfig_WeeklySchedule *schedule) {
+  (void)(schedule);
+}
+
+bool Supla::Control::ActionTrigger::isWeeklyScheduleProgramModeSupported(
+    uint8_t mode) const {
+  return mode == SUPLA_BUTTON_MODE_NOT_SET ||
+         mode == SUPLA_BUTTON_MODE_LOCKED;
+}
+
+void Supla::Control::ActionTrigger::iterateAlways() {
+  auto *weeklySchedule = weeklyScheduleComponents.getController();
+  if (weeklySchedule != nullptr && isWeeklyScheduleSupported()) {
+    weeklySchedule->processWeeklySchedule();
+  }
+}
+
+int32_t Supla::Control::ActionTrigger::handleNewValueFromServer(
+    TSD_SuplaChannelNewValue *newValue) {
+  if (newValue == nullptr) {
+    return -1;
+  }
+  auto *properties =
+      reinterpret_cast<TActionTriggerProperties *>(newValue->value);
+  auto *weeklySchedule = weeklyScheduleComponents.getController();
+  switch (properties->ButtonMode) {
+    case SUPLA_BUTTON_MODE_LOCKED:
+    case SUPLA_BUTTON_MODE_NOT_SET: {
+      if (weeklySchedule != nullptr) {
+        weeklySchedule->switchToManualMode();
+      }
+      channel.setWeeklyScheduleEnabled(false);
+      applyButtonMode(properties->ButtonMode);
+      scheduleStateSave();
+      return 1;
+    }
+    case SUPLA_BUTTON_MODE_CMD_SWITCH_TO_MANUAL: {
+      if (weeklySchedule != nullptr) {
+        weeklySchedule->switchToManualMode();
+      }
+      channel.setWeeklyScheduleEnabled(false);
+      applyButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
+      scheduleStateSave();
+      return 1;
+    }
+    case SUPLA_BUTTON_MODE_CMD_WEEKLY_SCHEDULE: {
+      if (weeklySchedule != nullptr && isWeeklyScheduleSupported() &&
+          weeklySchedule->switchToWeeklySchedule()) {
+        if (weeklySchedule->isExternallyManaged()) {
+          channel.setWeeklyScheduleEnabled(weeklySchedule->isActive());
+          applyButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
+        }
+        scheduleStateSave();
+        return 1;
+      }
+      return 0;
+    }
+    default: {
+      return -1;
+    }
+  }
+}
+
+void Supla::Control::ActionTrigger::fillChannelConfig(
+    void *channelConfig, int *size, uint8_t configType) {
+  if (size == nullptr) {
+    return;
+  }
+  *size = 0;
+  if (channelConfig == nullptr ||
+      configType != SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
+    return;
+  }
+  ensureNativeWeeklyScheduleController();
+  updateWeeklyScheduleCapabilities();
+  auto *configHandler = weeklyScheduleComponents.getConfigHandler();
+  if (configHandler != nullptr && isWeeklyScheduleSupported()) {
+    configHandler->fillChannelConfig(channelConfig, size, configType);
+  }
+}
+
+void Supla::Control::ActionTrigger::purgeConfig() {
+  ElementWithChannelActions::purgeConfig();
+  auto *configHandler = weeklyScheduleComponents.getConfigHandler();
+  if (configHandler != nullptr) {
+    configHandler->purgeConfig();
+  }
+}
+
+void Supla::Control::ActionTrigger::applyButtonMode(uint8_t mode) {
+  channel.setButtonMode(mode);
+  if (attachedButton != nullptr) {
+    attachedButton->setActionTriggerModeLocked(
+        mode == SUPLA_BUTTON_MODE_LOCKED);
+  }
+}
+
+void Supla::Control::ActionTrigger::scheduleStateSave(uint32_t delayMsMax,
+                                                       uint32_t delayMsMin) {
+  if (storageEnabled) {
+    Supla::Storage::ScheduleSave(delayMsMax, delayMsMin);
+  }
 }

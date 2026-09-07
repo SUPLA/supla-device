@@ -9,6 +9,7 @@
 #include <supla/action_handler.h>
 #include <supla/actions.h>
 #include <supla/at_channel.h>
+#include <supla/control/weekly_schedule_component.h>
 #include <supla/element_with_channel_actions.h>
 
 namespace Supla {
@@ -26,9 +27,24 @@ enum ActionHandlingType : uint8_t {
 namespace Control {
 
 class Button;
+class ActionTriggerWeeklySchedule;
 
 class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
  public:
+  friend class ActionTriggerWeeklySchedule;
+
+  union ActionTriggerFlags {
+    struct {
+      uint8_t weeklySchedule : 1;
+      uint8_t locked : 1;
+      uint8_t reserved : 6;
+    } flags;
+    uint8_t rawValue = 0;
+  };
+
+  static_assert(sizeof(ActionTriggerFlags) == sizeof(uint8_t),
+                "Flags size must be 1 byte");
+
   ActionTrigger();
   virtual ~ActionTrigger();
 
@@ -55,6 +71,13 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onSaveState() override;
+  void iterateAlways() override;
+  int32_t handleNewValueFromServer(
+      TSD_SuplaChannelNewValue *newValue) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
+  void purgeConfig() override;
 
   void rebuildForAttachedButton();
   void disableATCapability(uint32_t capToDisable);
@@ -71,10 +94,25 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   void enable();
   void disable();
 
+  bool isWeeklyScheduleSupported() const;
+  ActionTrigger &setWeeklyScheduleAvailable(bool available = true);
+  bool setWeeklyScheduleController(
+      WeeklyScheduleController *controller,
+      WeeklyScheduleConfigHandler *configHandler = nullptr,
+      WeeklyScheduleProgramSource *programSource = nullptr);
+
  protected:
   ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
                                        bool local) override;
   bool shouldProcessChannelFunctionFromConfig() const override;
+  virtual void fillDefaultWeeklySchedule(
+      TChannelConfig_WeeklySchedule *schedule);
+  virtual bool isWeeklyScheduleProgramModeSupported(uint8_t mode) const;
+  bool ensureNativeWeeklyScheduleController();
+  void updateWeeklyScheduleCapabilities();
+  void scheduleStateSave(uint32_t delayMsMax = 5000,
+                         uint32_t delayMsMin = 2000);
+  void applyButtonMode(uint8_t mode);
   void addActionToButtonAndDisableIt(int event, int action);
   void parseActiveActionsFromServer();
 
@@ -94,6 +132,8 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   bool alwaysUseOnClick1 = false;
   bool enabled = true;
   bool localHandlerSwitchConfigured = false;
+  bool weeklyScheduleAvailable = true;
+  WeeklyScheduleComponents weeklyScheduleComponents;
 };
 
 }  // namespace Control

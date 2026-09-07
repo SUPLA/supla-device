@@ -46,16 +46,22 @@ void Button::onInit() {
 }
 
 void Button::onTimer() {
-  if (disabled) {
-    return;
-  }
-
-  uint32_t timeDelta = millis() - lastStateChangeMs;
-  bool stateChanged = false;
   int stateResult = state.update();
   if (!state.isReady()) {
     return;
   }
+  if (disabled || actionTriggerModeLocked) {
+    return;
+  }
+  if (suppressActionsUntilRelease) {
+    if (stateResult == TO_RELEASED ||
+        (stateResult == RELEASED && !state.isPressedOrPending())) {
+      suppressActionsUntilRelease = false;
+    }
+    return;
+  }
+  uint32_t timeDelta = millis() - lastStateChangeMs;
+  bool stateChanged = false;
   if (stateResult == TO_PRESSED) {
     SUPLA_LOG_DEBUG("Button[%d] pressed", getButtonNumber());
     stateChanged = true;
@@ -547,8 +553,23 @@ void Button::disableButton() {
 void Button::enableButton() {
   SUPLA_LOG_DEBUG("Button[%d]: enabling button", getButtonNumber());
   disabled = false;
+  suppressActionsUntilRelease = state.isPressedOrPending();
   clickCounter = 0;
   holdSend = 0;
+  lastStateChangeMs = millis();
+}
+
+void Button::setActionTriggerModeLocked(bool locked) {
+  if (actionTriggerModeLocked == locked) {
+    return;
+  }
+  actionTriggerModeLocked = locked;
+  if (!locked) {
+    suppressActionsUntilRelease = state.isPressedOrPending();
+  }
+  clickCounter = 0;
+  holdSend = 0;
+  waitingForRelease = false;
   lastStateChangeMs = millis();
 }
 

@@ -23,6 +23,10 @@ class ButtonTestDouble : public Supla::Control::Button {
  public:
   using Supla::Control::Button::Button;
 
+  void setActionTriggerModeLockedForTest(bool locked) {
+    setActionTriggerModeLocked(locked);
+  }
+
   uint16_t holdTimeMsForTest() const {
     return holdTimeMs;
   }
@@ -31,6 +35,85 @@ class ButtonTestDouble : public Supla::Control::Button {
     return multiclickTimeMs;
   }
 };
+
+TEST(ButtonTests, GestureStartedWhileLockedIsIgnoredUntilRelease) {
+  SimpleTime time;
+  DigitalInterfaceMock ioMock;
+  ActionHandlerMock mock;
+  int pinState = 0;
+
+  EXPECT_CALL(ioMock, pinMode(5, INPUT));
+  EXPECT_CALL(ioMock, digitalRead(5))
+      .WillRepeatedly([&pinState](int) { return pinState; });
+  EXPECT_CALL(mock, handleAction).Times(0);
+
+  ButtonTestDouble button(5, false, false);
+  button.onInit();
+  button.setHoldTime(200);
+  button.addAction(1, mock, Supla::ON_PRESS);
+  button.addAction(2, mock, Supla::ON_CHANGE);
+  button.addAction(3, mock, Supla::ON_RELEASE);
+  button.addAction(4, mock, Supla::ON_HOLD);
+
+  button.setActionTriggerModeLockedForTest(true);
+  pinState = 1;
+  time.advance(1000);
+  button.onTimer();  // new state candidate while locked
+  time.advance(30);
+  button.onTimer();  // transition is debounced, but action is suppressed
+
+  button.setActionTriggerModeLockedForTest(false);
+  time.advance(300);
+  button.onTimer();  // held button does not generate a delayed hold
+
+  pinState = 0;
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();  // release ending the locked gesture is also suppressed
+
+  testing::Mock::VerifyAndClearExpectations(&mock);
+  EXPECT_CALL(mock, handleAction(Supla::ON_PRESS, 1));
+  EXPECT_CALL(mock, handleAction(Supla::ON_CHANGE, 2));
+
+  pinState = 1;
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();  // a new gesture after release works normally
+}
+
+TEST(ButtonTests, UnlockBeforeDebounceDoesNotReleasePendingPress) {
+  SimpleTime time;
+  DigitalInterfaceMock ioMock;
+  ActionHandlerMock mock;
+  int pinState = 0;
+
+  EXPECT_CALL(ioMock, pinMode(5, INPUT));
+  EXPECT_CALL(ioMock, digitalRead(5))
+      .WillRepeatedly([&pinState](int) { return pinState; });
+  EXPECT_CALL(mock, handleAction).Times(0);
+
+  ButtonTestDouble button(5, false, false);
+  button.onInit();
+  button.addAction(1, mock, Supla::ON_PRESS);
+  button.addAction(2, mock, Supla::ON_CHANGE);
+  button.addAction(3, mock, Supla::ON_RELEASE);
+
+  button.setActionTriggerModeLockedForTest(true);
+  pinState = 1;
+  time.advance(1000);
+  button.onTimer();  // pending press starts while locked
+  button.setActionTriggerModeLockedForTest(false);
+  time.advance(30);
+  button.onTimer();  // debounce completes after unlock
+
+  pinState = 0;
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+}
 
 TEST(ButtonTests, SetMulticlickTimeClampsToPersistedConfigRange) {
   ButtonTestDouble button(-1);

@@ -412,5 +412,117 @@ void NativeWeeklyScheduleConfigHandler::resetCache() {
   cacheRuntime_.reset();
 }
 
+bool NativeWeeklyScheduleController::canActivate() const {
+  return isConfigured(false);
+}
+
+bool NativeWeeklyScheduleController::isActive() const {
+  return enabled_;
+}
+
+bool NativeWeeklyScheduleController::switchToWeeklySchedule() {
+  if (!isConfigured(false) || getSchedule(false, true) == nullptr) {
+    return false;
+  }
+  enabled_ = true;
+  resetCurrentProgramId();
+  touchCache(true, millis());
+  syncWeeklyScheduleMode(0);
+  processCurrentProgram(millis() <= 30000);
+  return true;
+}
+
+void NativeWeeklyScheduleController::switchToManualMode() {
+  enabled_ = false;
+  resetCurrentProgramId();
+  if (isConfigured(false)) {
+    touchCache(false, millis());
+  } else {
+    resetCache();
+  }
+  syncWeeklyScheduleMode(0);
+}
+
+void NativeWeeklyScheduleController::restoreWeeklyScheduleMode(bool enabled) {
+  enabled_ = enabled && isConfigured(false);
+  resetCurrentProgramId();
+  if (enabled_) {
+    touchCache(true, millis());
+  }
+  syncWeeklyScheduleMode(0);
+}
+
+bool NativeWeeklyScheduleController::processWeeklySchedule() {
+  if (!isConfigured(false)) {
+    return false;
+  }
+  if (!enabled_) {
+    if (processCache(false, millis())) {
+      unloadSchedule(false);
+    }
+    return false;
+  }
+  touchCache(true, millis());
+  return processCurrentProgram(millis() <= 30000);
+}
+
+bool NativeWeeklyScheduleController::isWeeklyScheduleConfigured() const {
+  return isConfigured(false);
+}
+
+bool NativeWeeklyScheduleController::applyWeeklyScheduleMode(
+    uint8_t mode, bool programChanged) {
+  (void)(programChanged);
+  syncWeeklyScheduleMode(mode);
+  return true;
+}
+
+void NativeWeeklyScheduleController::onNativeScheduleLoaded() {
+  enabled_ = false;
+  resetCurrentProgramId();
+  syncWeeklyScheduleMode(0);
+}
+
+void NativeWeeklyScheduleController::onNativeScheduleLoadFailed(bool alt) {
+  (void)(alt);
+  onNativeScheduleLoaded();
+  scheduleWeeklyScheduleStateSave();
+}
+
+void NativeWeeklyScheduleController::onNativeScheduleApplied(
+    bool alt, bool local, bool changed) {
+  (void)(alt);
+  (void)(local);
+  if (changed) {
+    resetCurrentProgramId();
+    if (enabled_) {
+      processCurrentProgram(millis() <= 30000);
+    }
+  }
+  touchCache(enabled_, millis());
+}
+
+void NativeWeeklyScheduleController::onNativeScheduleSaved(bool alt,
+                                                            bool notify) {
+  (void)(alt);
+  (void)(notify);
+  touchCache(enabled_, millis());
+}
+
+void NativeWeeklyScheduleController::onNativeSchedulePurged() {
+  enabled_ = false;
+  resetCurrentProgramId();
+  syncWeeklyScheduleMode(0);
+  scheduleWeeklyScheduleStateSave();
+}
+
+bool NativeWeeklyScheduleController::applyResolvedWeeklyScheduleProgram(
+    const TWeeklyScheduleProgram &program,
+    int programId,
+    bool programChanged) {
+  return applyWeeklyScheduleMode(
+      programId > 0 ? program.Mode : 0, programChanged);
+}
+
 }  // namespace Control
 }  // namespace Supla

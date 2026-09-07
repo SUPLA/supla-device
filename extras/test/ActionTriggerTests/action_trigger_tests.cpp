@@ -13,11 +13,13 @@
 #include <supla/channel_element.h>
 #include <supla/control/action_trigger.h>
 #include <supla/control/button.h>
+#include <supla/control/weekly_schedule_buffer.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/device/register_device.h>
 #include <storage_mock.h>
 #include <vector>
+#include "clock_stub.h"
 #include "supla/actions.h"
 #include "supla/events.h"
 
@@ -61,6 +63,15 @@ class ActionHandlerMock : public Supla::ActionHandler {
   MOCK_METHOD(void, handleAction, (int, int), (override));
 };
 
+class InspectableButton : public Supla::Control::Button {
+ public:
+  using Supla::Control::Button::Button;
+
+  bool isActionTriggerModeLocked() const {
+    return actionTriggerModeLocked;
+  }
+};
+
 class TimeInterfaceStub : public TimeInterface {
  public:
   uint32_t millis() override {
@@ -98,6 +109,26 @@ void applyActionTriggerServerConfig(Supla::Control::ActionTrigger *at,
   at->handleChannelConfig(&result);
 }
 
+TSD_ChannelConfig makeActionTriggerWeeklySchedule(uint8_t mode) {
+  TSD_ChannelConfig result = {};
+  result.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  result.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  auto *schedule =
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(result.Config);
+  schedule->Program[0].Mode = mode;
+  Supla::Control::WeeklyScheduleBuffer buffer;
+  for (int index = 0; index < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; index++) {
+    buffer.setWeeklySchedule(schedule, index, 1);
+  }
+  return result;
+}
+
+const TActionTriggerProperties *actionTriggerValue(
+    const Supla::Control::ActionTrigger &at) {
+  return reinterpret_cast<const TActionTriggerProperties *>(
+      Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
+}
+
 TEST_F(ActionTriggerTests, DefaultConfigIgnoresFunctionField) {
   Supla::Control::ActionTrigger at;
   TSD_ChannelConfig result = {};
@@ -132,6 +163,213 @@ TEST_F(ActionTriggerTests, EmptyDefaultConfigPreservesActiveActions) {
 
   EXPECT_EQ(at.handleChannelConfig(&result), SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_TRUE(at.isAnyActionEnabledOnServer());
+}
+
+TEST_F(ActionTriggerTests, WeeklyScheduleIsAvailableByDefaultAndLoadedLazily) {
+  Supla::Control::ActionTrigger at;
+
+  EXPECT_TRUE(at.getChannel()->getFlags() &
+              SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
+  EXPECT_TRUE(at.getChannel()->getFlags() &
+              SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+
+  TSD_ChannelConfig emptyConfig = {};
+  emptyConfig.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  EXPECT_EQ(at.handleWeeklySchedule(&emptyConfig, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  TChannelConfig_WeeklySchedule schedule;
+  memset(&schedule, 0xFF, sizeof(schedule));
+  int size = 0;
+  at.fillChannelConfig(
+      &schedule, &size, SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  EXPECT_EQ(size, sizeof(TChannelConfig_WeeklySchedule));
+  const TChannelConfig_WeeklySchedule defaultSchedule = {};
+  EXPECT_EQ(memcmp(&schedule, &defaultSchedule, sizeof(schedule)), 0);
+  EXPECT_FALSE(actionTriggerValue(at)->Flags &
+               SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
+}
+
+TEST_F(ActionTriggerTests, WeeklyScheduleCanBeDisabledWithoutDisablingLock) {
+  Supla::Control::ActionTrigger at;
+  at.setWeeklyScheduleAvailable(false);
+
+  EXPECT_FALSE(at.getChannel()->getFlags() &
+               SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+  EXPECT_TRUE(at.getChannel()->getFlags() &
+              SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
+  auto config = makeActionTriggerWeeklySchedule(SUPLA_BUTTON_MODE_LOCKED);
+  EXPECT_EQ(at.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
+
+  TSD_SuplaChannelNewValue command = {};
+  reinterpret_cast<TActionTriggerProperties *>(command.value)->ButtonMode =
+      SUPLA_BUTTON_MODE_LOCKED;
+  EXPECT_EQ(at.handleNewValueFromServer(&command), 1);
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_LOCKED);
+}
+
+TEST_F(ActionTriggerTests, WeeklyScheduleConfigDoesNotEnableSchedule) {
+  TimeInterfaceStub time;
+  Supla::Control::ActionTrigger at;
+  auto config = makeActionTriggerWeeklySchedule(SUPLA_BUTTON_MODE_LOCKED);
+
+  EXPECT_EQ(at.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_FALSE(actionTriggerValue(at)->Flags &
+               SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_NOT_SET);
+}
+
+TEST_F(ActionTriggerTests, WeeklyScheduleAndManualCommandsControlButtonMode) {
+  TimeInterfaceStub time;
+  ClockStub clock;
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  at.activateAction(SUPLA_ACTION_CAP_TOGGLE_x1);
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_TOGGLE_x1);
+  auto config = makeActionTriggerWeeklySchedule(SUPLA_BUTTON_MODE_LOCKED);
+  ASSERT_EQ(at.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  TSD_SuplaChannelNewValue command = {};
+  auto *properties =
+      reinterpret_cast<TActionTriggerProperties *>(command.value);
+  properties->ButtonMode = SUPLA_BUTTON_MODE_CMD_WEEKLY_SCHEDULE;
+  EXPECT_EQ(at.handleNewValueFromServer(&command), 1);
+  EXPECT_TRUE(actionTriggerValue(at)->Flags &
+              SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_LOCKED);
+  EXPECT_TRUE(button.isActionTriggerModeLocked());
+
+  at.handleAction(0, Supla::SEND_AT_TOGGLE_x1);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0);
+
+  properties->ButtonMode = SUPLA_BUTTON_MODE_NOT_SET;
+  EXPECT_EQ(at.handleNewValueFromServer(&command), 1);
+  EXPECT_FALSE(actionTriggerValue(at)->Flags &
+               SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_NOT_SET);
+  EXPECT_FALSE(button.isActionTriggerModeLocked());
+
+  at.handleAction(0, Supla::SEND_AT_TOGGLE_x1);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(),
+            SUPLA_ACTION_CAP_TOGGLE_x1);
+}
+
+TEST_F(ActionTriggerTests, ManualLockIsReportedAsChannelValue) {
+  SrpcMock srpc;
+  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(AnyNumber());
+  TimeInterfaceStub time;
+  Supla::Control::ActionTrigger at;
+  at.onRegistered(suplaSrpc);
+  at.iterateConnected();
+  testing::Mock::VerifyAndClearExpectations(&srpc);
+
+  TSD_SuplaChannelNewValue command = {};
+  reinterpret_cast<TActionTriggerProperties *>(command.value)->ButtonMode =
+      SUPLA_BUTTON_MODE_LOCKED;
+  ASSERT_EQ(at.handleNewValueFromServer(&command), 1);
+
+  TActionTriggerProperties expected = {};
+  expected.ButtonMode = SUPLA_BUTTON_MODE_LOCKED;
+  std::vector<char> expectedValue(SUPLA_CHANNELVALUE_SIZE, 0);
+  memcpy(expectedValue.data(), &expected, sizeof(expected));
+  EXPECT_CALL(srpc,
+              valueChanged(nullptr,
+                           at.getChannelNumber(),
+                           ElementsAreArray(expectedValue),
+                           0,
+                           0));
+  at.iterateConnected();
+}
+
+TEST_F(ActionTriggerTests, InvalidWeeklyScheduleModeIsRejected) {
+  TimeInterfaceStub time;
+  Supla::Control::ActionTrigger at;
+  auto config = makeActionTriggerWeeklySchedule(0xFF);
+
+  EXPECT_EQ(at.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_FALSE(actionTriggerValue(at)->Flags &
+               SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
+}
+
+TEST_F(ActionTriggerTests, WeeklyScheduleModeIsRestoredFromStateStorage) {
+  TimeInterfaceStub time;
+  ::testing::NiceMock<ConfigMock> cfg;
+  ON_CALL(cfg, getBlobSize(testing::StrEq("0_at_weekly")))
+      .WillByDefault(Return(sizeof(TChannelConfig_WeeklySchedule)));
+  StorageMock storage;
+  storage.defaultInitialization(4);
+  Supla::Control::ActionTrigger at;
+  at.enableStateStorage();
+  at.onLoadConfig(nullptr);
+
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(uint32_t), _))
+      .WillOnce([](uint32_t, unsigned char *data, uint32_t, bool) {
+        uint32_t state = static_cast<uint32_t>(1) << 30;
+        memcpy(data, &state, sizeof(state));
+        return sizeof(uint32_t);
+      });
+  at.onLoadState();
+
+  EXPECT_TRUE(actionTriggerValue(at)->Flags &
+              SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_NOT_SET);
+}
+
+TEST_F(ActionTriggerTests, WeeklyScheduleModeIsSavedInStateStorage) {
+  TimeInterfaceStub time;
+  ClockStub clock;
+  StorageMock storage;
+  storage.defaultInitialization(4);
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(uint32_t), _))
+      .WillRepeatedly([](uint32_t, unsigned char *data, uint32_t, bool) {
+        memset(data, 0, sizeof(uint32_t));
+        return sizeof(uint32_t);
+      });
+  Supla::Control::ActionTrigger at;
+  at.enableStateStorage();
+  auto config = makeActionTriggerWeeklySchedule(SUPLA_BUTTON_MODE_LOCKED);
+  ASSERT_EQ(at.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  EXPECT_CALL(storage, scheduleSave(5000, 2000));
+  TSD_SuplaChannelNewValue command = {};
+  reinterpret_cast<TActionTriggerProperties *>(command.value)->ButtonMode =
+      SUPLA_BUTTON_MODE_CMD_WEEKLY_SCHEDULE;
+  ASSERT_EQ(at.handleNewValueFromServer(&command), 1);
+
+  EXPECT_CALL(storage, writeStorage(_, _, sizeof(uint32_t)))
+      .WillOnce([](uint32_t, const unsigned char *data, uint32_t) {
+        uint32_t state = 0;
+        memcpy(&state, data, sizeof(state));
+        EXPECT_EQ(state & (static_cast<uint32_t>(3) << 30),
+                  static_cast<uint32_t>(1) << 30);
+        EXPECT_EQ(state & ~(static_cast<uint32_t>(3) << 30), 0u);
+        return sizeof(uint32_t);
+      });
+  at.onSaveState();
+}
+
+TEST_F(ActionTriggerTests, StateStorageDisabledDoesNotReadOrWriteMode) {
+  StorageMock storage;
+  storage.defaultInitialization(1);
+  Supla::Control::ActionTrigger at;
+
+  EXPECT_CALL(storage, readStorage(_, _, _, _)).Times(0);
+  EXPECT_CALL(storage, writeStorage(_, _, _)).Times(0);
+  EXPECT_CALL(storage, scheduleSave(_, _)).Times(0);
+
+  at.onLoadState();
+  at.onSaveState();
+
+  TSD_SuplaChannelNewValue command = {};
+  reinterpret_cast<TActionTriggerProperties *>(command.value)->ButtonMode =
+      SUPLA_BUTTON_MODE_LOCKED;
+  EXPECT_EQ(at.handleNewValueFromServer(&command), 1);
 }
 
 TEST_F(ActionTriggerTests, AttachToMonostableButton) {

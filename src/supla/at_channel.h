@@ -17,6 +17,10 @@ class AtChannel : public Channel {
   uint32_t popAction();
   void setRelatedChannel(uint8_t channelNumber);
   void setDisablesLocalOperation(uint32_t actions);
+  void setButtonMode(uint8_t mode);
+  uint8_t getButtonMode() const;
+  void setWeeklyScheduleEnabled(bool enabled);
+  bool isWeeklyScheduleEnabled() const;
   void enableValueUpdates();
 
  protected:

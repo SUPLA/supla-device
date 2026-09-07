@@ -31,41 +31,25 @@ namespace Control {
 
 class Relay;
 
-class RelayWeeklySchedule : public WeeklyScheduleController,
-                            public NativeWeeklyScheduleConfigHandler {
+class RelayWeeklySchedule : public NativeWeeklyScheduleController {
  public:
   explicit RelayWeeklySchedule(Relay *owner);
   ~RelayWeeklySchedule();
 
-  bool canActivate() const override;
   bool isConfigured() const;
   bool iterateAlways();
-  bool switchToWeeklySchedule() override;
-  void switchToManualMode() override;
-  void restoreWeeklyScheduleMode(bool enabled) override;
-  bool processWeeklySchedule() override;
 
   bool isWeeklyScheduleEnabled() const;
-  bool isActive() const override;
   bool isManualActionAllowed(bool turnOn) const override;
-  void processCacheRelease();
 
  private:
-  void syncRelayMode(uint8_t programMode);
-  void unloadScheduleIfPossible();
-  void setWeeklyScheduleEnabled(bool enabled);
-  const TChannelConfig_WeeklySchedule *getSchedule(bool loadIfMissing = true)
-      const;
-  TChannelConfig_WeeklySchedule *getSchedule(bool loadIfMissing = true);
+  void syncWeeklyScheduleMode(uint8_t programMode) override;
+  void scheduleWeeklyScheduleStateSave() override;
   bool isWeeklyScheduleValid(
       const TChannelConfig_WeeklySchedule *newSchedule) const;
   bool isProgramValid(const TWeeklyScheduleProgram &program) const;
-  bool applyResolvedWeeklyScheduleProgram(
-      const TWeeklyScheduleProgram &program,
-      int programId,
-      bool programChanged) override;
+  bool applyWeeklyScheduleMode(uint8_t mode, bool programChanged) override;
   uint8_t getCurrentProgramMode() const;
-  bool applyCurrentState();
 
   Supla::Element *getScheduleOwner() const override;
   const char *getDeviceLabel() const override;
@@ -74,16 +58,8 @@ class RelayWeeklySchedule : public WeeklyScheduleController,
                         bool alt) const override;
   void fillDefaultSchedule(TChannelConfig_WeeklySchedule *schedule,
                            bool alt) override;
-  void onNativeScheduleLoaded() override;
-  void onNativeScheduleLoadFailed(bool alt) override;
-  void onNativeScheduleApplied(bool alt,
-                               bool local,
-                               bool changed) override;
-  void onNativeScheduleSaved(bool alt, bool notify) override;
-  void onNativeSchedulePurged() override;
 
   Relay *owner_ = nullptr;
-  bool weeklyScheduleEnabled_ = false;
 };
 
 }  // namespace Control

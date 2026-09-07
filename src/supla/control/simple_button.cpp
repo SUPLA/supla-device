@@ -81,6 +81,12 @@ enum Supla::Control::StateResults ButtonState::getLastState()
   }
 }
 
+bool ButtonState::isPressedOrPending() const {
+  return prevState != -1 &&
+         (prevState == valueOnPress() ||
+          newStatusCandidate == valueOnPress());
+}
+
 bool ButtonState::isReady() const {
   if (inputPin.io && !inputPin.io->isReady()) {
     return false;

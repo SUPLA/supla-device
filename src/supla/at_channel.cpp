@@ -68,6 +68,33 @@ void AtChannel::setDisablesLocalOperation(uint32_t actions) {
   setActionTriggerProperties(properties);
 }
 
+void AtChannel::setButtonMode(uint8_t mode) {
+  TActionTriggerProperties properties = actionTriggerProperties;
+  properties.ButtonMode = mode;
+  setActionTriggerProperties(properties);
+}
+
+uint8_t AtChannel::getButtonMode() const {
+  return actionTriggerProperties.ButtonMode;
+}
+
+void AtChannel::setWeeklyScheduleEnabled(bool enabled) {
+  TActionTriggerProperties properties = actionTriggerProperties;
+  if (enabled) {
+    properties.Flags |= SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED;
+  } else {
+    const auto weeklyScheduleFlag =
+        SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED;
+    properties.Flags &= static_cast<uint8_t>(~weeklyScheduleFlag);
+  }
+  setActionTriggerProperties(properties);
+}
+
+bool AtChannel::isWeeklyScheduleEnabled() const {
+  return (actionTriggerProperties.Flags &
+          SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED) != 0;
+}
+
 void AtChannel::enableValueUpdates() {
   valueUpdatesEnabled = true;
   valueUpdatePending = false;

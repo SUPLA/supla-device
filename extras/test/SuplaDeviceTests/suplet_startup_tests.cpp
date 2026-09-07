@@ -265,7 +265,8 @@ int sendSupletInstanceDataCalcfg(SuplaDeviceClass *sd,
                                  uint16_t configSize,
                                  const uint8_t *artifact,
                                  uint32_t artifactSize,
-                                 TDS_DeviceCalCfgResult *result) {
+                                 TDS_DeviceCalCfgResult *result,
+                                 uint8_t flags = 0) {
   if (sd == nullptr || result == nullptr ||
       (configSize > 0 && config == nullptr) ||
       (artifactSize > 0 && artifact == nullptr)) {
@@ -282,6 +283,7 @@ int sendSupletInstanceDataCalcfg(SuplaDeviceClass *sd,
   begin.Revision = revision;
   begin.ConfigSize = configSize;
   begin.ArtifactSize = artifactSize;
+  begin.Flags = flags;
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));
   int calcfgResult = sd->handleCalcfgFromServer(&request, result);
@@ -1568,6 +1570,122 @@ TEST_F(SuplaDeviceSupletStartupTests,
             SUPLA_CALCFG_RESULT_FALSE);
   expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_INVALID_CONFIG);
   EXPECT_EQ(manager.getInstanceTable()->findByInstanceId(97), nullptr);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       CalcfgKeepsArtifactWhenOnlyConfigChanges) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+  auto definition = makeRelayDefinition(6013);
+  definition.maxArtifactSize = 300;
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&definition, 4));
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  const uint8_t initialConfig[] = {'{', '}'};
+  const uint8_t updatedConfig[] = {'{', ' ', '}'};
+  const uint8_t artifact[] = {1, 2, 3, 4, 5};
+  TDS_DeviceCalCfgResult result = {};
+  ASSERT_EQ(sendSupletInstanceDataCalcfg(&sd,
+                                         99,
+                                         definition.definitionId,
+                                         definition.definitionVersion,
+                                         1,
+                                         initialConfig,
+                                         sizeof(initialConfig),
+                                         artifact,
+                                         sizeof(artifact),
+                                         &result),
+            SUPLA_CALCFG_RESULT_DONE);
+
+  ASSERT_EQ(sendSupletInstanceDataCalcfg(
+                &sd,
+                99,
+                definition.definitionId,
+                definition.definitionVersion,
+                2,
+                updatedConfig,
+                sizeof(updatedConfig),
+                nullptr,
+                0,
+                &result,
+                SUPLA_CALCFG_SUPLET_INSTANCE_FLAG_KEEP_ARTIFACT),
+            SUPLA_CALCFG_RESULT_DONE);
+
+  const auto *record = manager.getInstanceTable()->findByInstanceId(99);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->revision, 2u);
+  EXPECT_EQ(record->configSize, sizeof(updatedConfig));
+  EXPECT_EQ(record->artifactSize, sizeof(artifact));
+  uint8_t output[sizeof(artifact)] = {};
+  ASSERT_TRUE(manager.readArtifact(99, 0, output, sizeof(output)));
+  EXPECT_EQ(memcmp(output, artifact, sizeof(output)), 0);
+
+  EXPECT_EQ(sendSupletInstanceDataCalcfg(
+                &sd,
+                99,
+                definition.definitionId,
+                definition.definitionVersion,
+                3,
+                updatedConfig,
+                sizeof(updatedConfig),
+                artifact,
+                sizeof(artifact),
+                &result,
+                SUPLA_CALCFG_SUPLET_INSTANCE_FLAG_KEEP_ARTIFACT),
+            SUPLA_CALCFG_RESULT_FALSE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST);
+
+  ASSERT_EQ(sendSupletInstanceDataCalcfg(
+                &sd,
+                99,
+                definition.definitionId,
+                definition.definitionVersion,
+                3,
+                nullptr,
+                0,
+                nullptr,
+                0,
+                &result,
+                SUPLA_CALCFG_SUPLET_INSTANCE_FLAG_KEEP_ARTIFACT),
+            SUPLA_CALCFG_RESULT_DONE);
+  record = manager.getInstanceTable()->findByInstanceId(99);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->revision, 3u);
+  EXPECT_EQ(record->artifactSize, sizeof(artifact));
+
+  EXPECT_EQ(sendSupletInstanceDataCalcfg(
+                &sd,
+                99,
+                definition.definitionId,
+                definition.definitionVersion,
+                2,
+                updatedConfig,
+                sizeof(updatedConfig),
+                nullptr,
+                0,
+                &result,
+                SUPLA_CALCFG_SUPLET_INSTANCE_FLAG_KEEP_ARTIFACT),
+            SUPLA_CALCFG_RESULT_FALSE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_VERSION_MISMATCH);
+
+  EXPECT_EQ(sendSupletInstanceDataCalcfg(
+                &sd,
+                100,
+                definition.definitionId,
+                definition.definitionVersion,
+                1,
+                initialConfig,
+                sizeof(initialConfig),
+                nullptr,
+                0,
+                &result,
+                SUPLA_CALCFG_SUPLET_INSTANCE_FLAG_KEEP_ARTIFACT),
+            SUPLA_CALCFG_RESULT_FALSE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST);
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,

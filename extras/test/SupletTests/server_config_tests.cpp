@@ -105,6 +105,28 @@ class InMemoryConfig : public Supla::Config {
   int commitCount = 0;
 };
 
+class DownloadedZeroChannelRuntimeHandler
+    : public Supla::Suplet::RuntimeHandler {
+ public:
+  uint8_t getRequiredElementCount(
+      const Supla::Suplet::Definition &,
+      const Supla::Suplet::InstanceRecord &) const override {
+    return 1;
+  }
+
+  bool createElements(const Supla::Suplet::Definition &,
+                      const Supla::Suplet::InstanceRecord &,
+                      Supla::Element **created,
+                      uint8_t createdSize,
+                      Supla::Suplet::ChannelMap *) override {
+    if (created == nullptr || createdSize != 1) {
+      return false;
+    }
+    created[0] = new Supla::Element;
+    return created[0] != nullptr;
+  }
+};
+
 void escapeJsonString(const char *input, char *output, size_t outputSize) {
   ASSERT_NE(input, nullptr);
   ASSERT_NE(output, nullptr);
@@ -287,6 +309,19 @@ const char downloadedAssignmentJson[] =
 "\"instanceId\":71,"
 "\"definitionId\":1701,"
 "\"definitionVersion\":1"
+"}";
+
+const char downloadedZeroChannelDefinitionJson[] =
+"{"
+"\"schemaVersion\":1,"
+"\"handlerVersion\":1,"
+"\"definitionId\":1702,"
+"\"definitionVersion\":1,"
+"\"maxInstances\":4,"
+"\"maxArtifactSize\":4,"
+"\"category\":\"virtual\","
+"\"kind\":\"virtualRelay\","
+"\"channels\":[]"
 "}";
 
 const char conflictingDownloadedDefinitionJson[] =
@@ -924,6 +959,103 @@ TEST(SupletServerConfigTests, SavesDownloadedDefinitionAndAppliesAssignment) {
   auto record = manager.getInstanceTable()->findByInstanceId(71);
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->definitionId, 1701u);
+}
+
+TEST(SupletServerConfigTests,
+     ResolvesRuntimeHandlerForDownloadedZeroChannelDefinition) {
+  Supla::Channel::resetToDefaults();
+  InMemoryConfig config;
+  Supla::Suplet::DefinitionCache cache(&config);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  Supla::Suplet::CapabilityRegistry capabilities;
+  DownloadedZeroChannelRuntimeHandler runtimeHandler;
+  Supla::Suplet::Capability capability = {};
+  capability.category = Supla::Suplet::Category::Virtual;
+  capability.kind = Supla::Suplet::Kind::VirtualRelay;
+  capability.minSchemaVersion = 1;
+  capability.maxSchemaVersion = 1;
+  capability.handlerVersion = 1;
+  capability.maxInstances = 4;
+  capability.supportsDownloadedDefinition = 1;
+  capability.maxArtifactSize = 4;
+  capability.runtimeHandler = &runtimeHandler;
+  ASSERT_TRUE(capabilities.add(capability));
+  manager.setCapabilityRegistry(&capabilities);
+  manager.setRegistry(&registry);
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  manager.setServerConfigHandler(&handler);
+
+  ASSERT_EQ(handler.saveDownloadedDefinition(
+                1702, 1, downloadedZeroChannelDefinitionJson),
+            Supla::Suplet::ServerConfigResult::Applied);
+  Supla::Suplet::JsonDefinition loaded;
+  ASSERT_TRUE(handler.loadDownloadedDefinition(1702, 1, &loaded));
+  EXPECT_EQ(loaded.getDefinition()->runtimeHandler, &runtimeHandler);
+  ASSERT_EQ(handler.applyAssignmentJson(
+                "{\"instanceId\":75,\"definitionId\":1702,"
+                "\"definitionVersion\":1}",
+                1702,
+                1),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  ASSERT_TRUE(manager.loadRuntimeElements());
+  EXPECT_EQ(manager.getRuntimeElementCount(), 1);
+  manager.deleteRuntimeElements();
+  while (Supla::Element::begin() != nullptr) {
+    delete Supla::Element::begin();
+  }
+  Supla::Channel::resetToDefaults();
+}
+
+TEST(SupletServerConfigTests,
+     RejectsDownloadedDefinitionOutsideRuntimeCapability) {
+  InMemoryConfig config;
+  Supla::Suplet::DefinitionCache cache(&config);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  Supla::Suplet::CapabilityRegistry capabilities;
+  Supla::Suplet::Capability capability = {};
+  capability.category = Supla::Suplet::Category::Virtual;
+  capability.kind = Supla::Suplet::Kind::VirtualRelay;
+  capability.minSchemaVersion = 1;
+  capability.maxSchemaVersion = 1;
+  capability.handlerVersion = 1;
+  capability.maxInstances = 4;
+  capability.supportsDownloadedDefinition = 1;
+  capability.maxArtifactSize = 4;
+  ASSERT_TRUE(capabilities.add(capability));
+  manager.setCapabilityRegistry(&capabilities);
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+
+  const char tooLargeArtifact[] =
+      "{\"schemaVersion\":1,\"handlerVersion\":1,"
+      "\"definitionId\":1703,\"definitionVersion\":1,"
+      "\"maxInstances\":4,\"maxArtifactSize\":8,"
+      "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
+      "\"channels\":[]}";
+  EXPECT_EQ(handler.saveDownloadedDefinition(1703, 1, tooLargeArtifact),
+            Supla::Suplet::ServerConfigResult::InvalidDefinition);
+
+  const char unsupportedSchema[] =
+      "{\"schemaVersion\":2,\"handlerVersion\":1,"
+      "\"definitionId\":1704,\"definitionVersion\":1,"
+      "\"maxInstances\":4,\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\",\"channels\":[]}";
+  EXPECT_EQ(handler.saveDownloadedDefinition(1704, 1, unsupportedSchema),
+            Supla::Suplet::ServerConfigResult::InvalidDefinition);
+
+  const char noMatchingHandler[] =
+      "{\"schemaVersion\":1,\"handlerVersion\":2,"
+      "\"definitionId\":1705,\"definitionVersion\":1,"
+      "\"maxInstances\":4,\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\",\"channels\":[]}";
+  EXPECT_EQ(handler.saveDownloadedDefinition(1705, 1, noMatchingHandler),
+            Supla::Suplet::ServerConfigResult::InvalidDefinition);
 }
 
 TEST(SupletServerConfigTests, ReplacesUnusedConflictingDownloadedDefinition) {

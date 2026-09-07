@@ -100,6 +100,27 @@ class CalcfgChunkResponder {
   uint16_t expectedOffset = 0;
 };
 
+class InstanceBeginResponder {
+ public:
+  static int handle(void *context,
+                    TSD_DeviceCalCfgRequest *request,
+                    TDS_DeviceCalCfgResult *) {
+    return static_cast<InstanceBeginResponder *>(context)->handle(request);
+  }
+
+  int handle(TSD_DeviceCalCfgRequest *request) {
+    if (request == nullptr) {
+      return SUPLA_CALCFG_RESULT_FALSE;
+    }
+    if (request->Command == SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN) {
+      memcpy(&begin, request->Data, sizeof(begin));
+    }
+    return SUPLA_CALCFG_RESULT_DONE;
+  }
+
+  TCalCfg_SupletInstanceBegin begin = {};
+};
+
 TEST(CommandProcessorTests, GetsMultichunkDefinitionConfig) {
   CalcfgChunkResponder responder(
       {{22, "abcdefghij"}, {22, "klmnopqrst"}, {22, "uv"}});
@@ -226,6 +247,22 @@ TEST(CommandProcessorTests, RejectsInstanceConfigWithChangingTotalSize) {
             writer.response.find(
                 "{\"ok\":false,\"error\":\"malformed_config_chunk\"}\n"));
   EXPECT_EQ(std::string::npos, writer.response.find("instance.config.data"));
+}
+
+TEST(CommandProcessorTests, UpsertInstanceCanKeepArtifact) {
+  InstanceBeginResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &InstanceBeginResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"calcfg\":\"upsertInstance\",\"instanceId\":7,"
+      "\"definitionId\":1234,\"definitionVersion\":2,"
+      "\"revision\":3,\"keepArtifact\":true,\"paramsJson\":\"{}\"}",
+      &writer));
+  EXPECT_EQ(responder.begin.Flags,
+            SUPLA_CALCFG_SUPLET_INSTANCE_FLAG_KEEP_ARTIFACT);
+  EXPECT_NE(std::string::npos, writer.response.find("\"ok\":true"));
 }
 
 }  // namespace

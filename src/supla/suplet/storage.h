@@ -141,6 +141,10 @@ class Storage : public ArtifactReader {
                    uint8_t variant,
                    InstanceRecord *record,
                    bool loadConfig) const;
+  bool loadVariantMetadata(uint8_t instanceId,
+                           uint8_t variant,
+                           InstanceRecord *record,
+                           bool loadConfig) const;
   bool loadActiveVariant(uint8_t instanceId,
                          uint8_t *activeVariant,
                          InstanceRecord *record,
@@ -155,6 +159,12 @@ class Storage : public ArtifactReader {
                         uint32_t artifactSize,
                         uint32_t expectedCrc32) const;
   bool getActiveVariant(uint8_t instanceId, uint8_t *variant) const;
+  bool readArtifactFromVariant(uint8_t instanceId,
+                               uint8_t variant,
+                               const InstanceRecord &record,
+                               uint32_t offset,
+                               uint8_t *data,
+                               uint16_t size) const;
   bool eraseArtifactChunks(uint8_t instanceId, uint8_t variant);
   bool eraseVariant(uint8_t instanceId, uint8_t variant);
   bool eraseInstance(uint8_t instanceId);

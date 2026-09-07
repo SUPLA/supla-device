@@ -59,6 +59,10 @@ class InMemoryConfig : public Supla::Config {
   }
 
   bool getBlob(const char *key, char *value, size_t blobSize) override {
+    if (key != nullptr && strstr(key, "_a") != nullptr) {
+      artifactGetBlobCalls++;
+      artifactGetBlobBytes += blobSize;
+    }
     if (key == nullptr || value == nullptr || blobs.count(key) == 0 ||
         blobs[key].size() != blobSize || unreadableBlobs.count(key) > 0) {
       return false;
@@ -133,6 +137,8 @@ class InMemoryConfig : public Supla::Config {
   std::map<std::string, std::string> strings;
   std::set<std::string> unreadableBlobs;
   int commitCount = 0;
+  uint32_t artifactGetBlobCalls = 0;
+  uint32_t artifactGetBlobBytes = 0;
 };
 
 class KeyValueConfig : public Supla::KeyValue {
@@ -500,6 +506,128 @@ TEST(SupletStorageTests, StagedArtifactSwitchesAtomicallyWithRevision) {
   ASSERT_TRUE(loaded.artifactReader->readArtifact(
       loaded.instanceId, 0, output.data(), output.size()));
   EXPECT_EQ(output, artifactB);
+}
+
+TEST(SupletStorageTests, ReadArtifactLoadsOnlyRequestedChunks) {
+  InMemoryConfig config;
+  Supla::Suplet::Storage storage(&config);
+  Supla::Suplet::InstanceTable table;
+  const size_t artifactSize = 5000;
+  std::vector<uint8_t> artifact(artifactSize);
+  for (size_t i = 0; i < artifact.size(); i++) {
+    artifact[i] = static_cast<uint8_t>(i);
+  }
+
+  Supla::Suplet::ArtifactStorageHandle staged;
+  ASSERT_TRUE(storage.beginStagedArtifact(1, artifact.size(), &staged));
+  size_t offset = 0;
+  while (offset < artifact.size()) {
+    const size_t remaining = artifact.size() - offset;
+    const uint16_t chunkSize = remaining >
+                                       SUPLA_SUPLET_ARTIFACT_STORAGE_CHUNK_SIZE
+                                   ? SUPLA_SUPLET_ARTIFACT_STORAGE_CHUNK_SIZE
+                                   : static_cast<uint16_t>(remaining);
+    ASSERT_TRUE(storage.writeStagedArtifactChunk(
+        &staged, artifact.data() + offset, chunkSize));
+    offset += chunkSize;
+  }
+
+  auto record = makeRecord(1, 10);
+  record.artifactSize = artifact.size();
+  record.artifactCrc32 =
+      Supla::Suplet::Storage::stagedArtifactCrc32(staged);
+  ASSERT_TRUE(table.add(record));
+  ASSERT_TRUE(storage.save(table, &staged));
+
+  config.artifactGetBlobCalls = 0;
+  config.artifactGetBlobBytes = 0;
+  std::vector<uint8_t> output(100);
+  ASSERT_TRUE(storage.readArtifact(1, 2000, output.data(), output.size()));
+  EXPECT_EQ(memcmp(output.data(), artifact.data() + 2000, output.size()), 0);
+  EXPECT_EQ(config.artifactGetBlobCalls, 2u);
+  EXPECT_EQ(config.artifactGetBlobBytes,
+            2u * SUPLA_SUPLET_ARTIFACT_STORAGE_CHUNK_SIZE);
+  EXPECT_FALSE(storage.readArtifact(
+      1, artifact.size() + 1, output.data(), output.size()));
+}
+
+TEST(SupletStorageTests, FullLoadRejectsCorruptedArtifact) {
+  InMemoryConfig config;
+  Supla::Suplet::Storage storage(&config);
+  Supla::Suplet::InstanceTable table;
+  const uint8_t artifact[] = {1, 2, 3, 4};
+  Supla::Suplet::ArtifactStorageHandle staged;
+  ASSERT_TRUE(storage.beginStagedArtifact(1, sizeof(artifact), &staged));
+  ASSERT_TRUE(
+      storage.writeStagedArtifactChunk(&staged, artifact, sizeof(artifact)));
+
+  auto record = makeRecord(1, 10);
+  record.artifactSize = sizeof(artifact);
+  record.artifactCrc32 =
+      Supla::Suplet::Storage::stagedArtifactCrc32(staged);
+  ASSERT_TRUE(table.add(record));
+  ASSERT_TRUE(storage.save(table, &staged));
+  ASSERT_TRUE(hasBlob(config, "1_splt_1_a0"));
+  config.blobs["1_splt_1_a0"][0] ^= 0xFF;
+
+  Supla::Suplet::InstanceRecord loaded;
+  EXPECT_FALSE(storage.loadInstance(1, &loaded));
+}
+
+TEST(SupletStorageTests, ArtifactReadRejectsCorruptedFallbackVariant) {
+  InMemoryConfig config;
+  Supla::Suplet::Storage storage(&config);
+  Supla::Suplet::InstanceTable table;
+  const size_t artifactSize =
+      SUPLA_SUPLET_ARTIFACT_STORAGE_CHUNK_SIZE + 17;
+  std::vector<uint8_t> artifactA(artifactSize, 0x2A);
+  Supla::Suplet::ArtifactStorageHandle stagedA;
+  ASSERT_TRUE(storage.beginStagedArtifact(1, artifactA.size(), &stagedA));
+  ASSERT_TRUE(storage.writeStagedArtifactChunk(
+      &stagedA,
+      artifactA.data(),
+      SUPLA_SUPLET_ARTIFACT_STORAGE_CHUNK_SIZE));
+  ASSERT_TRUE(storage.writeStagedArtifactChunk(
+      &stagedA,
+      artifactA.data() + SUPLA_SUPLET_ARTIFACT_STORAGE_CHUNK_SIZE,
+      17));
+
+  auto record = makeRecord(1, 10);
+  record.artifactSize = artifactA.size();
+  record.artifactCrc32 =
+      Supla::Suplet::Storage::stagedArtifactCrc32(stagedA);
+  ASSERT_TRUE(table.add(record));
+  ASSERT_TRUE(storage.save(table, &stagedA));
+  auto fallbackBlobs = config.blobs;
+
+  std::vector<uint8_t> artifactB(artifactSize, 0x5C);
+  Supla::Suplet::ArtifactStorageHandle stagedB;
+  ASSERT_TRUE(storage.beginStagedArtifact(1, artifactB.size(), &stagedB));
+  ASSERT_TRUE(storage.writeStagedArtifactChunk(
+      &stagedB,
+      artifactB.data(),
+      SUPLA_SUPLET_ARTIFACT_STORAGE_CHUNK_SIZE));
+  ASSERT_TRUE(storage.writeStagedArtifactChunk(
+      &stagedB,
+      artifactB.data() + SUPLA_SUPLET_ARTIFACT_STORAGE_CHUNK_SIZE,
+      17));
+
+  table.clear();
+  record.revision++;
+  record.artifactCrc32 =
+      Supla::Suplet::Storage::stagedArtifactCrc32(stagedB);
+  ASSERT_TRUE(table.add(record));
+  ASSERT_TRUE(storage.save(table, &stagedB));
+  ASSERT_EQ(config.uint8Values["1_splt_act"], 2);
+
+  for (const auto &blob : fallbackBlobs) {
+    config.blobs[blob.first] = blob.second;
+  }
+  config.blobs["1_splt_1_a1"][0] ^= 0xFF;
+  config.unreadableBlobs.insert("1_splt_2");
+
+  uint8_t output[16] = {};
+  EXPECT_FALSE(storage.readArtifact(1, 0, output, sizeof(output)));
 }
 
 TEST(SupletStorageTests, AbortedStagedArtifactKeepsActiveArtifact) {

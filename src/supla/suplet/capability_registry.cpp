@@ -19,6 +19,7 @@ bool CapabilityRegistry::add(const Capability &capability) {
       capability.kind == Kind::Unknown || capability.minSchemaVersion == 0 ||
       capability.maxSchemaVersion == 0 || capability.handlerVersion == 0 ||
       capability.maxInstances == 0 ||
+      capability.maxArtifactSize > SUPLA_SUPLET_MAX_ARTIFACT_SIZE ||
       capability.minSchemaVersion > capability.maxSchemaVersion ||
       contains(
           capability.category, capability.kind, capability.handlerVersion)) {
@@ -81,6 +82,24 @@ bool CapabilityRegistry::getCapability(uint8_t index,
     currentIndex++;
   }
 
+  return false;
+}
+
+bool CapabilityRegistry::find(Category category,
+                              Kind kind,
+                              uint8_t handlerVersion,
+                              Capability *capability) const {
+  if (capability == nullptr) {
+    return false;
+  }
+  for (auto current = first; current != nullptr; current = current->next) {
+    if (current->capability.category == category &&
+        current->capability.kind == kind &&
+        current->capability.handlerVersion == handlerVersion) {
+      *capability = current->capability;
+      return true;
+    }
+  }
   return false;
 }
 

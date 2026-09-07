@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <supla/suplet/assignment_applier.h>
+#include <supla/suplet/capability_registry.h>
 #include <supla/suplet/definition_cache.h>
 #include <supla/suplet/json_definition.h>
 
@@ -48,7 +49,8 @@ class DownloadedDefinitionStore {
             uint32_t definitionId,
             uint16_t definitionVersion,
             JsonDefinition *definition,
-            CachedDefinitionInfo *info = nullptr) const;
+            CachedDefinitionInfo *info = nullptr,
+            const CapabilityRegistry *capabilityRegistry = nullptr) const;
   uint8_t getCount(const DefinitionCache &cache) const;
 };
 
@@ -103,6 +105,7 @@ class ServerConfigHandler {
       const char *configJson,
       uint16_t configSize,
       uint32_t artifactSize,
+      bool keepArtifact,
       const ArtifactStorageHandle *stagedArtifact,
       uint8_t *appliedInstanceId = nullptr);
   ServerConfigResult applyInstanceUpgrade(uint8_t instanceId,

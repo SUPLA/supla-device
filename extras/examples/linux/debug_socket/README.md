@@ -99,6 +99,9 @@ ordinary updates and definition-version changes; use a newer revision:
 printf '%s\n' '{"calcfg":"upsertInstance","instanceId":1,"definitionId":2010,"definitionVersion":2,"revision":2,"paramsJson":"{\"relay.count\":2,\"startup.delay\":5,\"mode\":\"max\",\"host\":\"192.168.1.50\",\"display.name\":\"Relay group v2\"}"}' | nc -U /tmp/sd4linux-debug.sock
 ```
 
+For a config-only update that keeps the existing artifact, add
+`"keepArtifact":true`. Omitting it with no artifact data removes the artifact.
+
 Inspect the upgraded instance:
 
 ```sh

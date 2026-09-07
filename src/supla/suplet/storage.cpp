@@ -480,6 +480,19 @@ bool Storage::loadVariant(uint8_t instanceId,
                           uint8_t variant,
                           InstanceRecord *record,
                           bool loadConfig) const {
+  if (!loadVariantMetadata(instanceId, variant, record, loadConfig)) {
+    return false;
+  }
+  return validateArtifact(instanceId,
+                          variant,
+                          record->artifactSize,
+                          record->artifactCrc32);
+}
+
+bool Storage::loadVariantMetadata(uint8_t instanceId,
+                                  uint8_t variant,
+                                  InstanceRecord *record,
+                                  bool loadConfig) const {
   if (config == nullptr || record == nullptr ||
       (variant != kVariantA && variant != kVariantB)) {
     return false;
@@ -516,11 +529,7 @@ bool Storage::loadVariant(uint8_t instanceId,
       header.definitionVersion == 0 ||
       header.channelCount > SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE ||
       header.configSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
-      header.artifactSize > SUPLA_SUPLET_MAX_ARTIFACT_SIZE ||
-      !validateArtifact(instanceId,
-                        variant,
-                        header.artifactSize,
-                        header.artifactCrc32)) {
+      header.artifactSize > SUPLA_SUPLET_MAX_ARTIFACT_SIZE) {
     return false;
   }
 
@@ -653,6 +662,9 @@ bool Storage::saveVariant(
     return false;
   }
 
+  // The current A/B layout duplicates the active artifact so config-only
+  // updates can switch the complete instance atomically. TODO: move
+  // artifacts to independent generations/storage when that backend exists.
   if (stagedArtifact != nullptr) {
     if (!stagedArtifact->valid ||
         stagedArtifact->instanceId != record.instanceId ||
@@ -850,12 +862,35 @@ bool Storage::readArtifact(uint8_t instanceId,
   if (!getActiveVariant(instanceId, &variant)) {
     return false;
   }
-  if (!loadVariant(instanceId, variant, &record, false)) {
-    variant = otherVariant(variant);
-    if (!loadVariant(instanceId, variant, &record, false)) {
+  if (loadVariantMetadata(instanceId, variant, &record, false)) {
+    if (offset > record.artifactSize ||
+        size > record.artifactSize - offset) {
       return false;
     }
+    if (readArtifactFromVariant(instanceId,
+                                variant,
+                                record,
+                                offset,
+                                data,
+                                size)) {
+      return true;
+    }
   }
+  variant = otherVariant(variant);
+  if (!loadVariant(instanceId, variant, &record, false) ||
+      !readArtifactFromVariant(
+          instanceId, variant, record, offset, data, size)) {
+    return false;
+  }
+  return true;
+}
+
+bool Storage::readArtifactFromVariant(uint8_t instanceId,
+                                      uint8_t variant,
+                                      const InstanceRecord &record,
+                                      uint32_t offset,
+                                      uint8_t *data,
+                                      uint16_t size) const {
   if (offset > record.artifactSize || size > record.artifactSize - offset) {
     return false;
   }

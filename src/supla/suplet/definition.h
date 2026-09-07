@@ -86,6 +86,7 @@ struct Capability {
   uint8_t maxInstances = 1;
   uint8_t supportsDownloadedDefinition = 0;
   uint32_t maxArtifactSize = 0;
+  RuntimeHandler *runtimeHandler = nullptr;
 };
 
 struct ChannelDefinition {

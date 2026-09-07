@@ -28,6 +28,12 @@ enum class CalcfgTransferType : uint8_t {
   Instance = 2,
 };
 
+enum class ArtifactUpdateMode : uint8_t {
+  Replace = 0,
+  Remove = 1,
+  Keep = 2,
+};
+
 struct CalcfgSession {
   bool active = false;
   CalcfgTransferType type = CalcfgTransferType::None;
@@ -45,6 +51,7 @@ struct CalcfgSession {
   uint16_t configReceivedSize = 0;
   uint32_t artifactSize = 0;
   uint32_t artifactReceivedSize = 0;
+  ArtifactUpdateMode artifactUpdateMode = ArtifactUpdateMode::Remove;
   ArtifactStorageHandle artifactStorageHandle = {};
   uint8_t config[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
 

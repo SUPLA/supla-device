@@ -355,6 +355,7 @@ bool setupLinuxSupletRuntime(Supla::Config *config) {
     return false;
   }
 
+  manager.setCapabilityRegistry(&capabilityRegistry);
   serverConfigHandler.loadDownloadedDefinitions();
 
   SuplaDevice.setSupletRuntime(&manager, &registry);

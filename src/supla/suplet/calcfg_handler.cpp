@@ -579,17 +579,36 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       session->revision = input.Revision;
       session->configSize = input.ConfigSize;
       session->artifactSize = input.ArtifactSize;
+      const bool keepArtifact =
+          (input.Flags & SUPLA_CALCFG_SUPLET_INSTANCE_FLAG_KEEP_ARTIFACT) != 0;
+      const bool invalidFlags =
+          (input.Flags & ~SUPLA_CALCFG_SUPLET_INSTANCE_FLAG_KEEP_ARTIFACT) != 0;
       if (input.InstanceId == 0 || input.DefinitionId == 0 ||
           input.DefinitionVersion == 0 || input.Revision == 0 ||
           input.ConfigSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
           input.ArtifactSize > SUPLA_SUPLET_MAX_ARTIFACT_SIZE ||
-          !beginStagedArtifact(input.InstanceId,
-                               input.ArtifactSize,
-                               &session->artifactStorageHandle)) {
+          invalidFlags || (keepArtifact && input.ArtifactSize != 0) ||
+          (keepArtifact &&
+           table->findByInstanceId(input.InstanceId) == nullptr)) {
         return failTransfer(this,
                             result,
                             SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
                             SUPLA_CALCFG_SUPLET_PHASE_VALIDATE);
+      }
+      if (keepArtifact) {
+        session->artifactUpdateMode = ArtifactUpdateMode::Keep;
+      } else if (input.ArtifactSize > 0) {
+        session->artifactUpdateMode = ArtifactUpdateMode::Replace;
+        if (!beginStagedArtifact(input.InstanceId,
+                                 input.ArtifactSize,
+                                 &session->artifactStorageHandle)) {
+          return failTransfer(this,
+                              result,
+                              SUPLA_CALCFG_SUPLET_RESULT_STORAGE_ERROR,
+                              SUPLA_CALCFG_SUPLET_PHASE_VALIDATE);
+        }
+      } else {
+        session->artifactUpdateMode = ArtifactUpdateMode::Remove;
       }
       session->active = true;
       session->lastActivityMs = nowMs;
@@ -651,6 +670,7 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
         accepted = true;
       } else if (session->type == CalcfgTransferType::Instance &&
                  input.Part == SUPLA_CALCFG_SUPLET_TRANSFER_PART_ARTIFACT &&
+                 session->artifactUpdateMode == ArtifactUpdateMode::Replace &&
                  input.Offset == session->artifactReceivedSize &&
                  input.Offset + input.Size <= session->artifactSize) {
         accepted = appendStorageData(this,
@@ -719,7 +739,8 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
 
       if (session->type != CalcfgTransferType::Instance ||
           session->configReceivedSize != session->configSize ||
-          session->artifactReceivedSize != session->artifactSize ||
+          (session->artifactUpdateMode == ArtifactUpdateMode::Replace &&
+           session->artifactReceivedSize != session->artifactSize) ||
           flushStorageChunk(this, handler, session) !=
               ServerConfigResult::Applied) {
         return failTransfer(this,
@@ -737,7 +758,10 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
           reinterpret_cast<const char *>(session->config),
           session->configSize,
           session->artifactSize,
-          &session->artifactStorageHandle,
+          session->artifactUpdateMode == ArtifactUpdateMode::Keep,
+          session->artifactUpdateMode == ArtifactUpdateMode::Replace
+              ? &session->artifactStorageHandle
+              : nullptr,
           &appliedInstanceId);
       fillSupletResult(result,
                        supletDetailFromServerResult(serverResult),

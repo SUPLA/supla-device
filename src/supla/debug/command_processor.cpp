@@ -186,6 +186,21 @@ class JsonReader {
     return true;
   }
 
+  bool readBool(bool *value) {
+    if (value == nullptr) {
+      return false;
+    }
+    if (consumeLiteral("true")) {
+      *value = true;
+      return true;
+    }
+    if (consumeLiteral("false")) {
+      *value = false;
+      return true;
+    }
+    return false;
+  }
+
   bool skipValue() {
     skipWhitespace();
     if (pos == nullptr) {
@@ -276,6 +291,7 @@ struct CommandProcessor::Command {
   uint32_t definitionId = 0;
   uint32_t definitionVersion = 0;
   uint32_t revision = 0;
+  bool keepArtifact = false;
   char *definitionJson = nullptr;
   char *paramsJson = nullptr;
 };
@@ -346,6 +362,10 @@ bool CommandProcessor::parseCommand(const char *json, Command *command) {
       }
     } else if (equalText(key, "revision")) {
       if (!reader.readUInt32(&command->revision)) {
+        return false;
+      }
+    } else if (equalText(key, "keepArtifact")) {
+      if (!reader.readBool(&command->keepArtifact)) {
         return false;
       }
     } else if (equalText(key, "definitionJson")) {
@@ -563,6 +583,9 @@ void CommandProcessor::processCommand(const Command &command,
     begin.DefinitionVersion = command.definitionVersion;
     begin.Revision = command.revision;
     begin.ConfigSize = static_cast<uint16_t>(paramsSize);
+    begin.Flags = command.keepArtifact
+                      ? SUPLA_CALCFG_SUPLET_INSTANCE_FLAG_KEEP_ARTIFACT
+                      : 0;
     if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN,
                         &begin,
                         sizeof(begin),

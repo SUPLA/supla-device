@@ -63,6 +63,7 @@ class JsonDefinition {
 class JsonDefinitionParser {
  public:
   static bool parse(const char *json, JsonDefinition *output);
+  static bool parseUnvalidated(const char *json, JsonDefinition *output);
   static bool parseCategory(const char *value, Category *category);
   static bool parseKind(const char *value, Kind *kind);
   static bool parseChannelKind(const char *value, ChannelKind *kind);

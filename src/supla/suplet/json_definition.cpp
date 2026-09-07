@@ -675,7 +675,8 @@ char *JsonDefinition::getParameterEnumValuesBuffer(uint8_t index) {
   return parameterEnumValues[index];
 }
 
-bool JsonDefinitionParser::parse(const char *json, JsonDefinition *output) {
+bool JsonDefinitionParser::parseUnvalidated(const char *json,
+                                            JsonDefinition *output) {
   if (json == nullptr || output == nullptr) {
     return false;
   }
@@ -769,7 +770,12 @@ bool JsonDefinitionParser::parse(const char *json, JsonDefinition *output) {
   if (!reader.atEnd()) {
     return false;
   }
-  return Runtime::validateDefinition(*definition);
+  return true;
+}
+
+bool JsonDefinitionParser::parse(const char *json, JsonDefinition *output) {
+  return parseUnvalidated(json, output) &&
+         Runtime::validateDefinition(*output->getDefinition());
 }
 
 bool JsonDefinitionParser::parseCategory(const char *value,

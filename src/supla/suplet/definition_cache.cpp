@@ -53,15 +53,18 @@ uint16_t chunkPayloadSize(uint16_t jsonSize, uint16_t chunkIndex) {
   return remaining > kChunkSize ? kChunkSize : static_cast<uint16_t>(remaining);
 }
 
-uint32_t calculateCrc32(const uint8_t *data, size_t size) {
-  uint32_t crc = 0xFFFFFFFFUL;
+uint32_t updateCrc32(uint32_t crc, const uint8_t *data, size_t size) {
   for (size_t i = 0; i < size; i++) {
     crc ^= data[i];
     for (uint8_t bit = 0; bit < 8; bit++) {
       crc = (crc >> 1) ^ (0xEDB88320UL & (0U - (crc & 1U)));
     }
   }
-  return crc ^ 0xFFFFFFFFUL;
+  return crc;
+}
+
+uint32_t calculateCrc32(const uint8_t *data, size_t size) {
+  return updateCrc32(0xFFFFFFFFUL, data, size) ^ 0xFFFFFFFFUL;
 }
 
 }  // namespace
@@ -176,6 +179,62 @@ bool DefinitionCache::erase(uint32_t definitionId, uint16_t definitionVersion) {
 bool DefinitionCache::contains(uint32_t definitionId,
                                uint16_t definitionVersion) const {
   return findSlot(definitionId, definitionVersion, true) >= 0;
+}
+
+bool DefinitionCache::contentEquals(uint32_t definitionId,
+                                    uint16_t definitionVersion,
+                                    const uint8_t *data,
+                                    size_t size) const {
+  if (config == nullptr || definitionId == 0 || definitionVersion == 0 ||
+      data == nullptr || size == 0 ||
+      size > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || size > UINT16_MAX) {
+    return false;
+  }
+
+  const int slot = findSlot(definitionId, definitionVersion, true);
+  CachedDefinitionInfo info = {};
+  uint8_t activeVariant = kDeletedVariant;
+  uint16_t chunkCount = 0;
+  uint16_t chunkSize = 0;
+  if (slot < 0 ||
+      !readActiveHeader(static_cast<uint8_t>(slot),
+                        &info,
+                        &activeVariant,
+                        &chunkCount,
+                        &chunkSize) ||
+      info.definitionId != definitionId ||
+      info.definitionVersion != definitionVersion || info.jsonSize != size) {
+    return false;
+  }
+
+  uint8_t *chunk = new uint8_t[kChunkSize];
+  if (chunk == nullptr) {
+    return false;
+  }
+
+  uint32_t crc32 = 0xFFFFFFFFUL;
+  bool equal = true;
+  bool valid = true;
+  for (uint16_t i = 0; valid && i < chunkCount; i++) {
+    const uint16_t expectedSize = chunkPayloadSize(info.jsonSize, i);
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    valid = expectedSize > 0 &&
+            makeChunkKey(static_cast<uint8_t>(slot),
+                         activeVariant,
+                         i,
+                         key,
+                         sizeof(key)) &&
+            config->getBlobSize(key) == expectedSize &&
+            config->getBlob(
+                key, reinterpret_cast<char *>(chunk), expectedSize);
+    if (valid) {
+      const size_t offset = static_cast<size_t>(i) * chunkSize;
+      equal = equal && memcmp(chunk, data + offset, expectedSize) == 0;
+      crc32 = updateCrc32(crc32, chunk, expectedSize);
+    }
+  }
+  delete[] chunk;
+  return valid && equal && (crc32 ^ 0xFFFFFFFFUL) == info.crc32;
 }
 
 bool DefinitionCache::getInfo(uint8_t index, CachedDefinitionInfo *info) const {

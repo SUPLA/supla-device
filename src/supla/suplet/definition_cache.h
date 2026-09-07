@@ -39,6 +39,10 @@ class DefinitionCache {
             size_t jsonSize,
             CachedDefinitionInfo *info = nullptr) const;
   bool contains(uint32_t definitionId, uint16_t definitionVersion) const;
+  bool contentEquals(uint32_t definitionId,
+                     uint16_t definitionVersion,
+                     const uint8_t *data,
+                     size_t size) const;
   bool erase(uint32_t definitionId, uint16_t definitionVersion);
   bool getInfo(uint8_t index, CachedDefinitionInfo *info) const;
   bool getInfoAndRepair(uint8_t index, CachedDefinitionInfo *info) const;

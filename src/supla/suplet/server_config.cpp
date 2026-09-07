@@ -964,17 +964,6 @@ namespace Suplet {
 
 namespace {
 
-uint32_t calculateCrc32(const uint8_t *data, size_t size) {
-  uint32_t crc = 0xFFFFFFFFUL;
-  for (size_t i = 0; i < size; i++) {
-    crc ^= data[i];
-    for (uint8_t bit = 0; bit < 8; bit++) {
-      crc = (crc >> 1) ^ (0xEDB88320UL & (0U - (crc & 1U)));
-    }
-  }
-  return crc ^ 0xFFFFFFFFUL;
-}
-
 const CapabilityRegistry *getCapabilityRegistry(const Manager *manager) {
   return manager == nullptr ? nullptr : manager->getCapabilityRegistry();
 }
@@ -1164,25 +1153,18 @@ ServerConfigResult ServerConfigHandler::saveDownloadedDefinition(
   CachedDefinitionInfo info = {};
   if (findCachedDefinitionAndRepair(
           definitionCache, definitionId, definitionVersion, &info)) {
-    const uint32_t crc32 = calculateCrc32(
-        reinterpret_cast<const unsigned char *>(definitionJson),
-        strlen(definitionJson));
-    if (info.crc32 != crc32) {
-      if (manager == nullptr || manager->getInstanceTable() == nullptr) {
-        return ServerConfigResult::DefinitionCannotBeChanged;
-      }
-      if (isDefinitionUsed(manager, definitionId, definitionVersion)) {
-        return ServerConfigResult::DefinitionCannotBeChanged;
-      }
-      if (!definitionCache->save(
-              definitionId, definitionVersion, definitionJson)) {
-        return ServerConfigResult::StorageError;
-      }
-      runtimeRefreshRequired = true;
+    const size_t jsonSize = strlen(definitionJson);
+    if (definitionCache->contentEquals(
+            definitionId,
+            definitionVersion,
+            reinterpret_cast<const uint8_t *>(definitionJson),
+            jsonSize)) {
       return ServerConfigResult::Applied;
     }
-    runtimeRefreshRequired = true;
-    return ServerConfigResult::Applied;
+    if (manager == nullptr || manager->getInstanceTable() == nullptr ||
+        isDefinitionUsed(manager, definitionId, definitionVersion)) {
+      return ServerConfigResult::DefinitionCannotBeChanged;
+    }
   }
 
   if (!definitionCache->save(
@@ -1280,20 +1262,26 @@ ServerConfigResult ServerConfigHandler::commitStagedDownloadedDefinition(
     delete[] definitionJson;
     return ServerConfigResult::InvalidDefinition;
   }
-  const uint32_t stagedCrc32 = calculateCrc32(
-      reinterpret_cast<const unsigned char *>(definitionJson), jsonSize);
-  delete[] definitionJson;
-
   CachedDefinitionInfo info = {};
   if (findCachedDefinitionAndRepair(
           definitionCache, definitionId, definitionVersion, &info)) {
-    if (info.crc32 != stagedCrc32) {
-      if (manager == nullptr || manager->getInstanceTable() == nullptr ||
-          isDefinitionUsed(manager, definitionId, definitionVersion)) {
-        return ServerConfigResult::DefinitionCannotBeChanged;
-      }
+    if (definitionCache->contentEquals(
+            definitionId,
+            definitionVersion,
+            reinterpret_cast<const uint8_t *>(definitionJson),
+            jsonSize)) {
+      delete[] definitionJson;
+      return definitionCache->abortStaged(handle)
+                 ? ServerConfigResult::Applied
+                 : ServerConfigResult::StorageError;
+    }
+    if (manager == nullptr || manager->getInstanceTable() == nullptr ||
+        isDefinitionUsed(manager, definitionId, definitionVersion)) {
+      delete[] definitionJson;
+      return ServerConfigResult::DefinitionCannotBeChanged;
     }
   }
+  delete[] definitionJson;
 
   if (!definitionCache->commitStaged(
           handle, definitionId, definitionVersion, jsonSize)) {

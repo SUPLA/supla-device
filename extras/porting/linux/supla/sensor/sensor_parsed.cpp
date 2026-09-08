@@ -16,6 +16,32 @@
 
 using Supla::Sensor::SensorParsedBase;
 
+namespace {
+
+Supla::BatteryState parseBatteryState(
+    const std::variant<int, bool, std::string> &value) {
+  if (std::holds_alternative<int>(value)) {
+    const int state = std::get<int>(value);
+    if (state == SUPLA_BATTERY_STATE_OK) {
+      return Supla::BatteryState::Normal;
+    }
+    if (state == SUPLA_BATTERY_STATE_LOW) {
+      return Supla::BatteryState::Low;
+    }
+  } else if (std::holds_alternative<std::string>(value)) {
+    const auto &state = std::get<std::string>(value);
+    if (state == "normal") {
+      return Supla::BatteryState::Normal;
+    }
+    if (state == "low") {
+      return Supla::BatteryState::Low;
+    }
+  }
+  return Supla::BatteryState::NotSet;
+}
+
+}  // namespace
+
 std::map<std::string, Supla::Control::ActionTriggerParsed *>
     SensorParsedBase::atMap;
 
@@ -42,6 +68,11 @@ void SensorParsedBase::setMapping(const std::string &parameter,
 
 void SensorParsedBase::setForceBatteryPowered(bool forceBatteryPowered) {
   this->forceBatteryPowered = forceBatteryPowered;
+}
+
+void SensorParsedBase::setBatteryStateAppliesToWholeDevice(
+    bool applyToWholeDevice) {
+  batteryStateAppliesToWholeDevice = applyToWholeDevice;
 }
 
 void SensorParsedBase::setMultiplier(const std::string &parameter,
@@ -358,6 +389,19 @@ void SensorParsedBase::updateBatteryInfoFlags() {
       channel->setBatteryPowered(batteryPowered);
       if (auto secondaryChannel = getSecondaryChannel()) {
         secondaryChannel->setBatteryPowered(batteryPowered);
+      }
+    }
+    if (isParameterConfigured(BatteryState)) {
+      Supla::BatteryState batteryState = Supla::BatteryState::NotSet;
+      const auto stateValue = getStateParameterValue(BatteryState);
+      if (parser->isValid()) {
+        batteryState = parseBatteryState(stateValue);
+      }
+      channel->setBatteryState(
+          batteryState, batteryStateAppliesToWholeDevice);
+      if (auto secondaryChannel = getSecondaryChannel()) {
+        secondaryChannel->setBatteryState(
+            batteryState, batteryStateAppliesToWholeDevice);
       }
     }
   }

@@ -202,6 +202,35 @@ TEST(SupletDefinitionCacheTests, StoresPayloadInTwoKilobyteChunks) {
   EXPECT_STREQ(output.c_str(), json.c_str());
 }
 
+TEST(SupletDefinitionCacheTests, ComparesActiveContentByChunks) {
+  InMemoryConfig config;
+  Supla::Suplet::DefinitionCache cache(&config);
+  std::string json = "{\"definitionId\":23,\"definitionVersion\":1,\"data\":\"";
+  json += std::string(SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE + 17, 'x');
+  json += "\"}";
+  ASSERT_TRUE(cache.save(23, 1, json.c_str()));
+
+  EXPECT_TRUE(cache.contentEquals(
+      23,
+      1,
+      reinterpret_cast<const uint8_t *>(json.data()),
+      json.size()));
+  json[SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE + 1] = 'y';
+  EXPECT_FALSE(cache.contentEquals(
+      23,
+      1,
+      reinterpret_cast<const uint8_t *>(json.data()),
+      json.size()));
+
+  ASSERT_GT(config.blobs["spld0_1c1"].size(), 1u);
+  config.blobs["spld0_1c1"][1] = 'y';
+  EXPECT_FALSE(cache.contentEquals(
+      23,
+      1,
+      reinterpret_cast<const uint8_t *>(json.data()),
+      json.size()));
+}
+
 TEST(SupletDefinitionCacheTests, UsesSlotsAboveThree) {
   InMemoryConfig config;
   Supla::Suplet::DefinitionCache cache(&config);

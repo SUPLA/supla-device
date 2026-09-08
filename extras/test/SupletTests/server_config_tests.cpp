@@ -146,6 +146,17 @@ void escapeJsonString(const char *input, char *output, size_t outputSize) {
   output[index] = '\0';
 }
 
+uint32_t calculateTestCrc32(const char *data) {
+  uint32_t crc = 0xFFFFFFFFUL;
+  for (const char *ptr = data; *ptr != '\0'; ptr++) {
+    crc ^= static_cast<uint8_t>(*ptr);
+    for (uint8_t bit = 0; bit < 8; bit++) {
+      crc = (crc >> 1) ^ (0xEDB88320UL & (0U - (crc & 1U)));
+    }
+  }
+  return crc ^ 0xFFFFFFFFUL;
+}
+
 Supla::Suplet::ChannelDefinition relayChannels[] = {
     {1,
      Supla::Suplet::ChannelKind::VirtualRelay,
@@ -341,6 +352,24 @@ const char conflictingDownloadedDefinitionJson[] =
 "\"caption\":\"Changed\""
 "}]"
 "}";
+
+const char collidingDownloadedDefinitionA[] =
+"{\"schemaVersion\":1,\"handlerVersion\":1,\"definitionId\":1706,"
+"\"definitionVersion\":1,\"maxInstances\":2,\"category\":\"virtual\","
+"\"kind\":\"virtualRelay\",\"name\":\"uvwJ6UqzzqaU\",\"channels\":[{"
+"\"channelId\":1,\"kind\":\"virtualRelay\","
+"\"function\":\"powerSwitch\"}]}";
+
+const char collidingDownloadedDefinitionB[] =
+"{\"schemaVersion\":1,\"handlerVersion\":1,\"definitionId\":1706,"
+"\"definitionVersion\":1,\"maxInstances\":2,\"category\":\"virtual\","
+"\"kind\":\"virtualRelay\",\"name\":\"uzK0KBdUO2CN\",\"channels\":[{"
+"\"channelId\":1,\"kind\":\"virtualRelay\","
+"\"function\":\"powerSwitch\"}]}";
+
+const char collidingDownloadedAssignmentJson[] =
+"{\"instanceId\":76,\"definitionId\":1706,"
+"\"definitionVersion\":1}";
 
 void forceDownloadedDefinitionActiveVariantToMissingB(InMemoryConfig *config) {
   ASSERT_NE(config, nullptr);
@@ -1106,6 +1135,142 @@ TEST(SupletServerConfigTests,
   char storedJson[1024] = {};
   ASSERT_TRUE(cache.load(1701, 1, storedJson, sizeof(storedJson)));
   EXPECT_STREQ(storedJson, downloadedDefinitionJson);
+}
+
+TEST(SupletServerConfigTests,
+     RejectsCrc32CollisionForUsedDownloadedDefinition) {
+  ASSERT_STRNE(collidingDownloadedDefinitionA, collidingDownloadedDefinitionB);
+  ASSERT_EQ(strlen(collidingDownloadedDefinitionA),
+            strlen(collidingDownloadedDefinitionB));
+  ASSERT_EQ(calculateTestCrc32(collidingDownloadedDefinitionA),
+            calculateTestCrc32(collidingDownloadedDefinitionB));
+
+  InMemoryConfig config;
+  Supla::Suplet::DefinitionCache cache(&config);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  ASSERT_EQ(handler.saveDownloadedDefinition(
+                1706, 1, collidingDownloadedDefinitionA),
+            Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_EQ(handler.applyAssignmentJson(
+                collidingDownloadedAssignmentJson, 1706, 1),
+            Supla::Suplet::ServerConfigResult::Applied);
+  handler.clearRuntimeRefreshRequired();
+
+  EXPECT_EQ(handler.saveDownloadedDefinition(
+                1706, 1, collidingDownloadedDefinitionB),
+            Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged);
+  EXPECT_FALSE(handler.isRuntimeRefreshRequired());
+
+  char storedJson[512] = {};
+  ASSERT_TRUE(cache.load(1706, 1, storedJson, sizeof(storedJson)));
+  EXPECT_STREQ(storedJson, collidingDownloadedDefinitionA);
+}
+
+TEST(SupletServerConfigTests,
+     RejectsStagedCrc32CollisionForUsedDownloadedDefinition) {
+  ASSERT_EQ(calculateTestCrc32(collidingDownloadedDefinitionA),
+            calculateTestCrc32(collidingDownloadedDefinitionB));
+
+  InMemoryConfig config;
+  Supla::Suplet::DefinitionCache cache(&config);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  ASSERT_EQ(handler.saveDownloadedDefinition(
+                1706, 1, collidingDownloadedDefinitionA),
+            Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_EQ(handler.applyAssignmentJson(
+                collidingDownloadedAssignmentJson, 1706, 1),
+            Supla::Suplet::ServerConfigResult::Applied);
+  handler.clearRuntimeRefreshRequired();
+
+  Supla::Suplet::DefinitionCacheHandle handle = {};
+  ASSERT_EQ(handler.beginStagedDownloadedDefinition(
+                1706,
+                1,
+                strlen(collidingDownloadedDefinitionB),
+                &handle),
+            Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_EQ(handler.writeStagedDownloadedDefinitionChunk(
+                handle,
+                0,
+                reinterpret_cast<const uint8_t *>(
+                    collidingDownloadedDefinitionB),
+                strlen(collidingDownloadedDefinitionB)),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  EXPECT_EQ(handler.commitStagedDownloadedDefinition(
+                handle,
+                1706,
+                1,
+                strlen(collidingDownloadedDefinitionB)),
+            Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged);
+  EXPECT_FALSE(handler.isRuntimeRefreshRequired());
+
+  char storedJson[512] = {};
+  ASSERT_TRUE(cache.load(1706, 1, storedJson, sizeof(storedJson)));
+  EXPECT_STREQ(storedJson, collidingDownloadedDefinitionA);
+  handler.abortStagedDownloadedDefinition(handle);
+}
+
+TEST(SupletServerConfigTests,
+     IdenticalDownloadedDefinitionSaveAndCommitAreNoOps) {
+  InMemoryConfig config;
+  Supla::Suplet::DefinitionCache cache(&config);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  ASSERT_EQ(handler.saveDownloadedDefinition(
+                1706, 1, collidingDownloadedDefinitionA),
+            Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_EQ(handler.applyAssignmentJson(
+                collidingDownloadedAssignmentJson, 1706, 1),
+            Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_EQ(config.uint8Values["spld0_act"], 1);
+  handler.clearRuntimeRefreshRequired();
+  const int commitCountAfterFirstSave = config.commitCount;
+
+  EXPECT_EQ(handler.saveDownloadedDefinition(
+                1706, 1, collidingDownloadedDefinitionA),
+            Supla::Suplet::ServerConfigResult::Applied);
+  EXPECT_FALSE(handler.isRuntimeRefreshRequired());
+  EXPECT_EQ(config.uint8Values["spld0_act"], 1);
+  EXPECT_EQ(config.commitCount, commitCountAfterFirstSave);
+
+  Supla::Suplet::DefinitionCacheHandle handle = {};
+  ASSERT_EQ(handler.beginStagedDownloadedDefinition(
+                1706,
+                1,
+                strlen(collidingDownloadedDefinitionA),
+                &handle),
+            Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_EQ(handler.writeStagedDownloadedDefinitionChunk(
+                handle,
+                0,
+                reinterpret_cast<const uint8_t *>(
+                    collidingDownloadedDefinitionA),
+                strlen(collidingDownloadedDefinitionA)),
+            Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_GT(config.blobs.count("spld0_2c0"), 0);
+
+  EXPECT_EQ(handler.commitStagedDownloadedDefinition(
+                handle,
+                1706,
+                1,
+                strlen(collidingDownloadedDefinitionA)),
+            Supla::Suplet::ServerConfigResult::Applied);
+  EXPECT_FALSE(handler.isRuntimeRefreshRequired());
+  EXPECT_EQ(config.uint8Values["spld0_act"], 1);
+  EXPECT_EQ(config.blobs.count("spld0_2"), 0);
+  EXPECT_EQ(config.blobs.count("spld0_2c0"), 0);
 }
 
 TEST(SupletServerConfigTests,

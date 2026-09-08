@@ -23,6 +23,9 @@ class ActionTriggerParsed;
 namespace Sensor {
 const char BatteryLevel[] = "battery_level";
 const char BatteryPowered[] = "battery_powered";
+const char BatteryState[] = "battery_state";
+const char BatteryStateAppliesToWholeDevice[] =
+"battery_state_applies_to_whole_device";
 const char ForceBatteryPowered[] = "force_battery_powered";
 const char MultiplierBatteryLevel[] = "multiplier_battery_level";
 
@@ -35,6 +38,8 @@ class SensorParsedBase {
   void setMapping(const std::string &parameter, const int index);
 
   void setForceBatteryPowered(bool forceBatteryPowered);
+
+  void setBatteryStateAppliesToWholeDevice(bool applyToWholeDevice);
 
   void setMultiplier(const std::string &parameter, double multiplier);
 
@@ -78,6 +83,7 @@ class SensorParsedBase {
   std::map<std::string, std::string> parameterToKey;
   std::map<std::string, double> parameterMultiplier;
   bool forceBatteryPowered = false;
+  bool batteryStateAppliesToWholeDevice = false;
   std::vector<std::variant<int, bool, std::string>> stateOnValues;
   bool useOfflineOnInvalidState = false;
 

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <supla-common/proto.h>
 #include <supla-common/proto_suplet.h>
+#include <supla/control/weekly_schedule_common.h>
 #include <supla/debug/command_processor.h>
 
 #include <string>
@@ -120,6 +121,272 @@ class InstanceBeginResponder {
 
   TCalCfg_SupletInstanceBegin begin = {};
 };
+
+class ChannelValueResponder {
+ public:
+  static int32_t handle(void *context, TSD_SuplaChannelNewValue *newValue) {
+    auto *responder = static_cast<ChannelValueResponder *>(context);
+    responder->value = *newValue;
+    responder->called = true;
+    return responder->result;
+  }
+
+  TSD_SuplaChannelNewValue value = {};
+  int32_t result = 1;
+  bool called = false;
+};
+
+class ChannelConfigResponder {
+ public:
+  static uint8_t handle(void *context,
+                        TSD_ChannelConfig *config,
+                        bool local) {
+    auto *responder = static_cast<ChannelConfigResponder *>(context);
+    responder->config = *config;
+    responder->local = local;
+    responder->called = true;
+    return responder->result;
+  }
+
+  TSD_ChannelConfig config = {};
+  uint8_t result = SUPLA_CONFIG_RESULT_TRUE;
+  bool local = false;
+  bool called = false;
+};
+
+int programAt(const TChannelConfig_WeeklySchedule *schedule,
+              Supla::DayOfWeek day,
+              int hour,
+              int minute) {
+  int index = Supla::Control::calculateWeeklyScheduleIndex(
+      day, hour, minute / 15);
+  return Supla::Control::getWeeklyScheduleProgramId(schedule, index);
+}
+
+TEST(CommandProcessorTests, InjectsRawChannelValue) {
+  ChannelValueResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelValueResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"channelValue\",\"channelNumber\":17,"
+      "\"senderId\":1234,\"durationMs\":5678,"
+      "\"valueHex\":\"0123456789aBcDeF\"}",
+      &writer));
+
+  EXPECT_TRUE(responder.called);
+  EXPECT_EQ(responder.value.ChannelNumber, 17);
+  EXPECT_EQ(responder.value.SenderID, 1234);
+  EXPECT_EQ(responder.value.DurationMS, 5678U);
+  const unsigned char expected[] = {
+      0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+  EXPECT_EQ(memcmp(responder.value.value, expected, sizeof(expected)), 0);
+  EXPECT_EQ(writer.response,
+            "{\"op\":\"channelValue.result\",\"channelNumber\":17,"
+            "\"result\":1,\"ok\":true}\n");
+}
+
+TEST(CommandProcessorTests, BuildsRelayModeChannelValue) {
+  ChannelValueResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelValueResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"channelValue\",\"channelNumber\":3,"
+      "\"relayMode\":6}",
+      &writer));
+
+  TRelayChannel_Value relayValue = {};
+  memcpy(&relayValue, responder.value.value, sizeof(relayValue));
+  EXPECT_EQ(relayValue.RelayMode, SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE);
+}
+
+TEST(CommandProcessorTests, BuildsRelayOnOnceChannelValueWithOnState) {
+  ChannelValueResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelValueResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"channelValue\",\"channelNumber\":3,"
+      "\"relayMode\":1}",
+      &writer));
+
+  TRelayChannel_Value relayValue = {};
+  memcpy(&relayValue, responder.value.value, sizeof(relayValue));
+  EXPECT_EQ(relayValue.hi, 1);
+  EXPECT_EQ(relayValue.RelayMode, SUPLA_RELAY_MODE_ON_ONCE);
+}
+
+TEST(CommandProcessorTests, BuildsRelayForcedOffChannelValueWithOffState) {
+  ChannelValueResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelValueResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"channelValue\",\"channelNumber\":3,"
+      "\"relayMode\":4}",
+      &writer));
+
+  TRelayChannel_Value relayValue = {};
+  memcpy(&relayValue, responder.value.value, sizeof(relayValue));
+  EXPECT_EQ(relayValue.hi, 0);
+  EXPECT_EQ(relayValue.RelayMode, SUPLA_RELAY_MODE_FORCED_OFF);
+}
+
+TEST(CommandProcessorTests, BuildsActionTriggerModeChannelValue) {
+  ChannelValueResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelValueResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"channelValue\",\"channelNumber\":4,"
+      "\"buttonMode\":4}",
+      &writer));
+
+  TActionTriggerProperties properties = {};
+  memcpy(&properties, responder.value.value, sizeof(properties));
+  EXPECT_EQ(properties.ButtonMode, SUPLA_BUTTON_MODE_CMD_WEEKLY_SCHEDULE);
+}
+
+TEST(CommandProcessorTests, RejectsAmbiguousChannelValuePayload) {
+  ChannelValueResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelValueResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"channelValue\",\"channelNumber\":4,"
+      "\"relayMode\":6,\"buttonMode\":4}",
+      &writer));
+
+  EXPECT_FALSE(responder.called);
+  EXPECT_EQ(writer.response,
+            "{\"ok\":false,\"error\":\"invalid_arguments\"}\n");
+}
+
+TEST(CommandProcessorTests, RejectsMalformedRawChannelValue) {
+  ChannelValueResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelValueResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"channelValue\",\"channelNumber\":4,"
+      "\"valueHex\":\"0123456789abcdeg\"}",
+      &writer));
+
+  EXPECT_FALSE(responder.called);
+  EXPECT_EQ(writer.response,
+            "{\"ok\":false,\"error\":\"invalid_value_hex\"}\n");
+}
+
+TEST(CommandProcessorTests, InjectsRelayWeeklySchedule) {
+  ChannelConfigResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelConfigResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"weeklySchedule\",\"channelNumber\":3,"
+      "\"programs\":[{\"mode\":\"forced_on\"},"
+      "{\"mode\":\"forced_off\",\"value1\":-123,\"value2\":456},"
+      "{\"mode\":\"automatic\"}],"
+      "\"entries\":[{\"days\":[\"mon\",\"tue\",\"wed\",\"thu\","
+      "\"fri\"],\"from\":\"08:00\",\"to\":\"19:00\",\"program\":2},"
+      "{\"days\":[\"mon\",\"tue\",\"wed\",\"thu\",\"fri\"],"
+      "\"from\":\"19:00\",\"to\":\"21:00\",\"program\":1},"
+      "{\"days\":[\"fri\"],\"from\":\"21:00\",\"to\":\"08:00\","
+      "\"program\":3}]}",
+      &writer));
+
+  ASSERT_TRUE(responder.called);
+  EXPECT_TRUE(responder.local);
+  EXPECT_EQ(responder.config.ChannelNumber, 3);
+  EXPECT_EQ(responder.config.ConfigType, SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  EXPECT_EQ(responder.config.ConfigSize,
+            sizeof(TChannelConfig_WeeklySchedule));
+  TChannelConfig_WeeklySchedule schedule = {};
+  memcpy(&schedule, responder.config.Config, sizeof(schedule));
+  EXPECT_EQ(schedule.Program[0].Mode, SUPLA_RELAY_MODE_FORCED_ON);
+  EXPECT_EQ(schedule.Program[1].Mode, SUPLA_RELAY_MODE_FORCED_OFF);
+  EXPECT_EQ(schedule.Program[1].Value1, -123);
+  EXPECT_EQ(schedule.Program[1].Value2, 456);
+  EXPECT_EQ(schedule.Program[2].Mode, SUPLA_RELAY_MODE_AUTOMATIC);
+  EXPECT_EQ(programAt(&schedule, Supla::DayOfWeek_Monday, 7, 45), 0);
+  EXPECT_EQ(programAt(&schedule, Supla::DayOfWeek_Monday, 8, 0), 2);
+  EXPECT_EQ(programAt(&schedule, Supla::DayOfWeek_Monday, 19, 0), 1);
+  EXPECT_EQ(programAt(&schedule, Supla::DayOfWeek_Monday, 21, 0), 0);
+  EXPECT_EQ(programAt(&schedule, Supla::DayOfWeek_Friday, 21, 0), 3);
+  EXPECT_EQ(programAt(&schedule, Supla::DayOfWeek_Saturday, 7, 45), 3);
+  EXPECT_EQ(programAt(&schedule, Supla::DayOfWeek_Saturday, 8, 0), 0);
+  EXPECT_EQ(writer.response,
+            "{\"op\":\"weeklySchedule.result\",\"channelNumber\":3,"
+            "\"result\":1,\"ok\":true}\n");
+}
+
+TEST(CommandProcessorTests, InjectsActionTriggerWeeklySchedule) {
+  ChannelConfigResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelConfigResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"weeklySchedule\",\"channelNumber\":4,"
+      "\"programs\":[{\"mode\":\"locked\"},{\"mode\":\"unlocked\"}],"
+      "\"entries\":[{\"days\":[\"sun\"],\"from\":\"00:00\","
+      "\"to\":\"24:00\",\"program\":1}]}",
+      &writer));
+
+  ASSERT_TRUE(responder.called);
+  TChannelConfig_WeeklySchedule schedule = {};
+  memcpy(&schedule, responder.config.Config, sizeof(schedule));
+  EXPECT_EQ(schedule.Program[0].Mode, SUPLA_BUTTON_MODE_LOCKED);
+  EXPECT_EQ(schedule.Program[1].Mode, SUPLA_BUTTON_MODE_NOT_SET);
+  EXPECT_EQ(programAt(&schedule, Supla::DayOfWeek_Sunday, 0, 0), 1);
+  EXPECT_EQ(programAt(&schedule, Supla::DayOfWeek_Sunday, 23, 45), 1);
+  EXPECT_EQ(programAt(&schedule, Supla::DayOfWeek_Monday, 0, 0), 0);
+}
+
+TEST(CommandProcessorTests, RejectsUndefinedWeeklyScheduleProgram) {
+  ChannelConfigResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelConfigResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"weeklySchedule\",\"channelNumber\":4,"
+      "\"programs\":[{\"mode\":\"locked\"}],"
+      "\"entries\":[{\"days\":[\"mon\"],\"from\":\"08:00\","
+      "\"to\":\"09:00\",\"program\":2}]}",
+      &writer));
+
+  EXPECT_FALSE(responder.called);
+  EXPECT_EQ(writer.response,
+            "{\"ok\":false,\"error\":\"invalid_arguments\"}\n");
+}
+
+TEST(CommandProcessorTests, ReportsWeeklyScheduleHandlerFailure) {
+  ChannelConfigResponder responder;
+  responder.result = SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelConfigResponder::handle, &responder);
+  CapturingWriter writer;
+
+  EXPECT_TRUE(processor.processLine(
+      "{\"op\":\"weeklySchedule\",\"channelNumber\":8,"
+      "\"programs\":[],\"entries\":[]}",
+      &writer));
+
+  EXPECT_TRUE(responder.called);
+  EXPECT_EQ(writer.response,
+            "{\"op\":\"weeklySchedule.result\",\"channelNumber\":8,"
+            "\"result\":3,\"ok\":false}\n");
+}
 
 TEST(CommandProcessorTests, GetsMultichunkDefinitionConfig) {
   CalcfgChunkResponder responder(

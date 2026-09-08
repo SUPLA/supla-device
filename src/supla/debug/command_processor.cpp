@@ -11,6 +11,8 @@
 #include <string.h>
 #include <supla-common/proto.h>
 #include <supla-common/proto_suplet.h>
+#include <supla/channels/channel.h>
+#include <supla/element.h>
 #include <supla/suplet/config.h>
 
 #if SUPLA_SUPLET_ENABLED
@@ -139,6 +141,38 @@ class JsonReader {
     }
     *value = result;
     return true;
+  }
+
+  bool readInt32(int32_t *value) {
+    if (value == nullptr) {
+      return false;
+    }
+    skipWhitespace();
+    if (pos == nullptr) {
+      return false;
+    }
+    bool negative = *pos == '-';
+    if (negative) {
+      pos++;
+    }
+    uint32_t magnitude = 0;
+    if (!readUInt32(&magnitude) ||
+        (!negative && magnitude > INT32_MAX) ||
+        (negative && magnitude > static_cast<uint32_t>(INT32_MAX) + 1)) {
+      return false;
+    }
+    if (negative && magnitude == static_cast<uint32_t>(INT32_MAX) + 1) {
+      *value = INT32_MIN;
+    } else {
+      *value = negative ? -static_cast<int32_t>(magnitude)
+                        : static_cast<int32_t>(magnitude);
+    }
+    return true;
+  }
+
+  char peek() {
+    skipWhitespace();
+    return pos == nullptr ? '\0' : *pos;
   }
 
   bool skipNumber() {
@@ -275,6 +309,327 @@ char *allocString(size_t size) {
   return result;
 }
 
+int hexDigitValue(char digit) {
+  if (digit >= '0' && digit <= '9') {
+    return digit - '0';
+  }
+  if (digit >= 'a' && digit <= 'f') {
+    return digit - 'a' + 10;
+  }
+  if (digit >= 'A' && digit <= 'F') {
+    return digit - 'A' + 10;
+  }
+  return -1;
+}
+
+bool decodeChannelValue(const char *hex, char *value) {
+  if (hex == nullptr || value == nullptr ||
+      strlen(hex) != 2 * SUPLA_CHANNELVALUE_SIZE) {
+    return false;
+  }
+  for (size_t i = 0; i < SUPLA_CHANNELVALUE_SIZE; i++) {
+    int high = hexDigitValue(hex[2 * i]);
+    int low = hexDigitValue(hex[2 * i + 1]);
+    if (high < 0 || low < 0) {
+      return false;
+    }
+    value[i] = static_cast<char>((high << 4) | low);
+  }
+  return true;
+}
+
+bool readWeeklyScheduleMode(JsonReader *reader, uint8_t *mode) {
+  if (reader == nullptr || mode == nullptr) {
+    return false;
+  }
+  if (reader->peek() != '"') {
+    uint32_t numericMode = 0;
+    if (!reader->readUInt32(&numericMode) || numericMode > UINT8_MAX) {
+      return false;
+    }
+    *mode = static_cast<uint8_t>(numericMode);
+    return true;
+  }
+
+  char name[24] = {};
+  if (!reader->readString(name, sizeof(name))) {
+    return false;
+  }
+  struct NamedMode {
+    const char *name;
+    uint8_t mode;
+  };
+  static constexpr NamedMode modes[] = {
+      {"not_set", SUPLA_RELAY_MODE_NOT_SET},
+      {"unlocked", SUPLA_BUTTON_MODE_NOT_SET},
+      {"locked", SUPLA_BUTTON_MODE_LOCKED},
+      {"on_once", SUPLA_RELAY_MODE_ON_ONCE},
+      {"off_once", SUPLA_RELAY_MODE_OFF_ONCE},
+      {"forced_on", SUPLA_RELAY_MODE_FORCED_ON},
+      {"forced_off", SUPLA_RELAY_MODE_FORCED_OFF},
+      {"automatic", SUPLA_RELAY_MODE_AUTOMATIC},
+  };
+  for (const auto &item : modes) {
+    if (equalText(name, item.name)) {
+      *mode = item.mode;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool parseWeeklyScheduleProgram(JsonReader *reader,
+                                TWeeklyScheduleProgram *program) {
+  if (reader == nullptr || program == nullptr || !reader->consume('{')) {
+    return false;
+  }
+  bool hasMode = false;
+  while (true) {
+    char key[24] = {};
+    if (!reader->readString(key, sizeof(key)) || !reader->consume(':')) {
+      return false;
+    }
+    if (equalText(key, "mode")) {
+      if (hasMode || !readWeeklyScheduleMode(reader, &program->Mode)) {
+        return false;
+      }
+      hasMode = true;
+    } else if (equalText(key, "value1") || equalText(key, "value2")) {
+      int32_t value = 0;
+      if (!reader->readInt32(&value) || value < INT16_MIN ||
+          value > INT16_MAX) {
+        return false;
+      }
+      if (equalText(key, "value1")) {
+        program->Value1 = static_cast<int16_t>(value);
+      } else {
+        program->Value2 = static_cast<int16_t>(value);
+      }
+    } else if (!reader->skipValue()) {
+      return false;
+    }
+
+    if (reader->consume('}')) {
+      return hasMode;
+    }
+    if (!reader->consume(',')) {
+      return false;
+    }
+  }
+}
+
+bool parseWeeklySchedulePrograms(JsonReader *reader,
+                                 TChannelConfig_WeeklySchedule *schedule,
+                                 uint8_t *programCount) {
+  if (reader == nullptr || schedule == nullptr || programCount == nullptr ||
+      !reader->consume('[')) {
+    return false;
+  }
+  *programCount = 0;
+  if (reader->consume(']')) {
+    return true;
+  }
+  while (*programCount < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
+    if (!parseWeeklyScheduleProgram(reader,
+                                    &schedule->Program[*programCount])) {
+      return false;
+    }
+    (*programCount)++;
+    if (reader->consume(']')) {
+      return true;
+    }
+    if (!reader->consume(',')) {
+      return false;
+    }
+  }
+  return false;
+}
+
+int weeklyScheduleDay(const char *name) {
+  static constexpr const char *days[] = {
+      "sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+  for (int day = 0; day < 7; day++) {
+    if (equalText(name, days[day])) {
+      return day;
+    }
+  }
+  return -1;
+}
+
+bool parseWeeklyScheduleDays(JsonReader *reader, uint8_t *dayMask) {
+  if (reader == nullptr || dayMask == nullptr || !reader->consume('[')) {
+    return false;
+  }
+  *dayMask = 0;
+  while (true) {
+    char name[8] = {};
+    if (!reader->readString(name, sizeof(name))) {
+      return false;
+    }
+    int day = weeklyScheduleDay(name);
+    if (day < 0) {
+      return false;
+    }
+    *dayMask |= static_cast<uint8_t>(1 << day);
+    if (reader->consume(']')) {
+      return *dayMask != 0;
+    }
+    if (!reader->consume(',')) {
+      return false;
+    }
+  }
+}
+
+bool parseWeeklyScheduleTime(const char *text, bool allowEndOfDay,
+                             uint8_t *quarter) {
+  if (text == nullptr || quarter == nullptr || strlen(text) != 5 ||
+      text[2] != ':' || text[0] < '0' || text[0] > '9' ||
+      text[1] < '0' || text[1] > '9' || text[3] < '0' || text[3] > '9' ||
+      text[4] < '0' || text[4] > '9') {
+    return false;
+  }
+  int hour = (text[0] - '0') * 10 + text[1] - '0';
+  int minute = (text[3] - '0') * 10 + text[4] - '0';
+  if (minute >= 60 || minute % 15 != 0 || hour > 24 ||
+      (hour == 24 && (minute != 0 || !allowEndOfDay))) {
+    return false;
+  }
+  *quarter = static_cast<uint8_t>(hour * 4 + minute / 15);
+  return true;
+}
+
+void setWeeklyScheduleQuarter(TChannelConfig_WeeklySchedule *schedule,
+                              int day, int quarter, uint8_t programId) {
+  int index = day * 96 + quarter;
+  if (index % 2 == 0) {
+    schedule->Quarters[index / 2] =
+        (schedule->Quarters[index / 2] & 0xF0) | programId;
+  } else {
+    schedule->Quarters[index / 2] =
+        (schedule->Quarters[index / 2] & 0x0F) | (programId << 4);
+  }
+}
+
+bool applyWeeklyScheduleEntry(TChannelConfig_WeeklySchedule *schedule,
+                              uint8_t dayMask, uint8_t from, uint8_t to,
+                              uint8_t programId) {
+  if (schedule == nullptr || dayMask == 0 || from >= 96 || to > 96 ||
+      from == to || programId == 0 ||
+      programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
+    return false;
+  }
+  for (int day = 0; day < 7; day++) {
+    if ((dayMask & (1 << day)) == 0) {
+      continue;
+    }
+    if (from < to) {
+      for (int quarter = from; quarter < to; quarter++) {
+        setWeeklyScheduleQuarter(schedule, day, quarter, programId);
+      }
+    } else {
+      for (int quarter = from; quarter < 96; quarter++) {
+        setWeeklyScheduleQuarter(schedule, day, quarter, programId);
+      }
+      int nextDay = (day + 1) % 7;
+      for (int quarter = 0; quarter < to; quarter++) {
+        setWeeklyScheduleQuarter(schedule, nextDay, quarter, programId);
+      }
+    }
+  }
+  return true;
+}
+
+bool parseWeeklyScheduleEntry(JsonReader *reader,
+                              TChannelConfig_WeeklySchedule *schedule,
+                              uint8_t *maxProgramId) {
+  if (reader == nullptr || schedule == nullptr || maxProgramId == nullptr ||
+      !reader->consume('{')) {
+    return false;
+  }
+  uint8_t dayMask = 0;
+  uint8_t from = 0;
+  uint8_t to = 0;
+  uint8_t programId = 0;
+  bool hasDays = false;
+  bool hasFrom = false;
+  bool hasTo = false;
+  bool hasProgram = false;
+  while (true) {
+    char key[24] = {};
+    if (!reader->readString(key, sizeof(key)) || !reader->consume(':')) {
+      return false;
+    }
+    if (equalText(key, "days")) {
+      if (hasDays || !parseWeeklyScheduleDays(reader, &dayMask)) {
+        return false;
+      }
+      hasDays = true;
+    } else if (equalText(key, "from") || equalText(key, "to")) {
+      char time[6] = {};
+      bool isTo = equalText(key, "to");
+      if ((isTo ? hasTo : hasFrom) ||
+          !reader->readString(time, sizeof(time)) ||
+          !parseWeeklyScheduleTime(time, isTo, isTo ? &to : &from)) {
+        return false;
+      }
+      if (isTo) {
+        hasTo = true;
+      } else {
+        hasFrom = true;
+      }
+    } else if (equalText(key, "program")) {
+      uint32_t value = 0;
+      if (hasProgram || !reader->readUInt32(&value) || value == 0 ||
+          value > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
+        return false;
+      }
+      programId = static_cast<uint8_t>(value);
+      hasProgram = true;
+    } else if (!reader->skipValue()) {
+      return false;
+    }
+
+    if (reader->consume('}')) {
+      if (!hasDays || !hasFrom || !hasTo || !hasProgram ||
+          !applyWeeklyScheduleEntry(
+              schedule, dayMask, from, to, programId)) {
+        return false;
+      }
+      if (programId > *maxProgramId) {
+        *maxProgramId = programId;
+      }
+      return true;
+    }
+    if (!reader->consume(',')) {
+      return false;
+    }
+  }
+}
+
+bool parseWeeklyScheduleEntries(JsonReader *reader,
+                                TChannelConfig_WeeklySchedule *schedule,
+                                uint8_t *maxProgramId) {
+  if (reader == nullptr || schedule == nullptr || maxProgramId == nullptr ||
+      !reader->consume('[')) {
+    return false;
+  }
+  *maxProgramId = 0;
+  if (reader->consume(']')) {
+    return true;
+  }
+  while (true) {
+    if (!parseWeeklyScheduleEntry(reader, schedule, maxProgramId)) {
+      return false;
+    }
+    if (reader->consume(']')) {
+      return true;
+    }
+    if (!reader->consume(',')) {
+      return false;
+    }
+  }
+}
+
 }  // namespace
 
 namespace Supla {
@@ -291,7 +646,18 @@ struct CommandProcessor::Command {
   uint32_t definitionId = 0;
   uint32_t definitionVersion = 0;
   uint32_t revision = 0;
+  uint32_t channelNumber = UINT32_MAX;
+  uint32_t senderId = 0;
+  uint32_t durationMs = 0;
+  uint32_t relayMode = UINT32_MAX;
+  uint32_t buttonMode = UINT32_MAX;
   bool keepArtifact = false;
+  bool hasWeeklySchedulePrograms = false;
+  bool hasWeeklyScheduleEntries = false;
+  uint8_t weeklyScheduleProgramCount = 0;
+  uint8_t weeklyScheduleMaxProgramId = 0;
+  char valueHex[2 * SUPLA_CHANNELVALUE_SIZE + 1] = {};
+  TChannelConfig_WeeklySchedule weeklySchedule = {};
   char *definitionJson = nullptr;
   char *paramsJson = nullptr;
 };
@@ -306,6 +672,28 @@ CommandProcessor::CommandProcessor(SuplaDeviceClass *device,
     : device(device),
       testCalcfgHandler(testCalcfgHandler),
       testCalcfgContext(testCalcfgContext) {
+}
+#endif
+
+#if SUPLA_TEST
+CommandProcessor::CommandProcessor(
+    SuplaDeviceClass *device,
+    TestChannelConfigHandler testChannelConfigHandler,
+    void *testChannelConfigContext)
+    : device(device),
+      testChannelConfigHandler(testChannelConfigHandler),
+      testChannelConfigContext(testChannelConfigContext) {
+}
+#endif
+
+#if SUPLA_TEST
+CommandProcessor::CommandProcessor(
+    SuplaDeviceClass *device,
+    TestChannelValueHandler testChannelValueHandler,
+    void *testChannelValueContext)
+    : device(device),
+      testChannelValueHandler(testChannelValueHandler),
+      testChannelValueContext(testChannelValueContext) {
 }
 #endif
 
@@ -364,6 +752,49 @@ bool CommandProcessor::parseCommand(const char *json, Command *command) {
       if (!reader.readUInt32(&command->revision)) {
         return false;
       }
+    } else if (equalText(key, "channelNumber")) {
+      if (!reader.readUInt32(&command->channelNumber)) {
+        return false;
+      }
+    } else if (equalText(key, "senderId")) {
+      if (!reader.readUInt32(&command->senderId)) {
+        return false;
+      }
+    } else if (equalText(key, "durationMs")) {
+      if (!reader.readUInt32(&command->durationMs)) {
+        return false;
+      }
+    } else if (equalText(key, "relayMode")) {
+      if (!reader.readUInt32(&command->relayMode)) {
+        return false;
+      }
+    } else if (equalText(key, "buttonMode")) {
+      if (!reader.readUInt32(&command->buttonMode)) {
+        return false;
+      }
+    } else if (equalText(key, "valueHex")) {
+      if (command->valueHex[0] != '\0' ||
+          !reader.readString(command->valueHex, sizeof(command->valueHex))) {
+        return false;
+      }
+    } else if (equalText(key, "programs")) {
+      if (command->hasWeeklySchedulePrograms ||
+          !parseWeeklySchedulePrograms(
+              &reader,
+              &command->weeklySchedule,
+              &command->weeklyScheduleProgramCount)) {
+        return false;
+      }
+      command->hasWeeklySchedulePrograms = true;
+    } else if (equalText(key, "entries")) {
+      if (command->hasWeeklyScheduleEntries ||
+          !parseWeeklyScheduleEntries(
+              &reader,
+              &command->weeklySchedule,
+              &command->weeklyScheduleMaxProgramId)) {
+        return false;
+      }
+      command->hasWeeklyScheduleEntries = true;
     } else if (equalText(key, "keepArtifact")) {
       if (!reader.readBool(&command->keepArtifact)) {
         return false;
@@ -407,6 +838,119 @@ bool CommandProcessor::parseCommand(const char *json, Command *command) {
 
 void CommandProcessor::processCommand(const Command &command,
                                       ResponseWriter *writer) {
+  if (equalText(command.operation, "weeklySchedule")) {
+    if (command.channelNumber > UINT8_MAX ||
+        !command.hasWeeklySchedulePrograms ||
+        !command.hasWeeklyScheduleEntries ||
+        command.weeklyScheduleMaxProgramId >
+            command.weeklyScheduleProgramCount) {
+      sendError(writer, "invalid_arguments");
+      return;
+    }
+
+    TSD_ChannelConfig config = {};
+    config.ChannelNumber = static_cast<uint8_t>(command.channelNumber);
+    config.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+    config.ConfigSize = sizeof(command.weeklySchedule);
+    memcpy(config.Config,
+           &command.weeklySchedule,
+           sizeof(command.weeklySchedule));
+
+    uint8_t result = SUPLA_CONFIG_RESULT_FALSE;
+#if SUPLA_TEST
+    if (testChannelConfigHandler != nullptr) {
+      result = testChannelConfigHandler(
+          testChannelConfigContext, &config, true);
+    } else {
+#endif
+      auto *element =
+          Supla::Element::getElementByChannelNumber(command.channelNumber);
+      if (element == nullptr || element->getChannel() == nullptr) {
+        sendError(writer, "channel_not_found");
+        return;
+      }
+      config.Func = element->getChannel()->getDefaultFunction();
+      result = element->handleChannelConfig(&config, true);
+#if SUPLA_TEST
+    }
+#endif
+
+    char response[128] = {};
+    snprintf(response,
+             sizeof(response),
+             "{\"op\":\"weeklySchedule.result\",\"channelNumber\":%u,"
+             "\"result\":%u,\"ok\":%s}\n",
+             static_cast<unsigned>(config.ChannelNumber),
+             static_cast<unsigned>(result),
+             result == SUPLA_CONFIG_RESULT_TRUE ? "true" : "false");
+    sendText(writer, response);
+    return;
+  }
+
+  if (equalText(command.operation, "channelValue")) {
+    int payloadCount = (command.valueHex[0] != '\0' ? 1 : 0) +
+        (command.relayMode != UINT32_MAX ? 1 : 0) +
+        (command.buttonMode != UINT32_MAX ? 1 : 0);
+    if (command.channelNumber > UINT8_MAX || payloadCount != 1 ||
+        (command.relayMode != UINT32_MAX && command.relayMode > UINT8_MAX) ||
+        (command.buttonMode != UINT32_MAX && command.buttonMode > UINT8_MAX)) {
+      sendError(writer, "invalid_arguments");
+      return;
+    }
+
+    TSD_SuplaChannelNewValue newValue = {};
+    newValue.SenderID = static_cast<_supla_int_t>(command.senderId);
+    newValue.ChannelNumber = static_cast<unsigned char>(command.channelNumber);
+    newValue.DurationMS = command.durationMs;
+    if (command.valueHex[0] != '\0') {
+      if (!decodeChannelValue(command.valueHex, newValue.value)) {
+        sendError(writer, "invalid_value_hex");
+        return;
+      }
+    } else if (command.relayMode != UINT32_MAX) {
+      TRelayChannel_Value relayValue = {};
+      relayValue.RelayMode = static_cast<unsigned char>(command.relayMode);
+      relayValue.hi =
+          command.relayMode == SUPLA_RELAY_MODE_ON_ONCE ||
+                  command.relayMode == SUPLA_RELAY_MODE_FORCED_ON
+              ? 1
+              : 0;
+      memcpy(newValue.value, &relayValue, sizeof(relayValue));
+    } else {
+      TActionTriggerProperties properties = {};
+      properties.ButtonMode = static_cast<unsigned char>(command.buttonMode);
+      memcpy(newValue.value, &properties, sizeof(properties));
+    }
+
+    int32_t result = 0;
+#if SUPLA_TEST
+    if (testChannelValueHandler != nullptr) {
+      result = testChannelValueHandler(testChannelValueContext, &newValue);
+    } else {
+#endif
+      auto *element =
+          Supla::Element::getElementByChannelNumber(command.channelNumber);
+      if (element == nullptr) {
+        sendError(writer, "channel_not_found");
+        return;
+      }
+      result = element->handleNewValueFromServer(&newValue);
+#if SUPLA_TEST
+    }
+#endif
+
+    char response[128] = {};
+    snprintf(response,
+             sizeof(response),
+             "{\"op\":\"channelValue.result\",\"channelNumber\":%u,"
+             "\"result\":%d,\"ok\":%s}\n",
+             static_cast<unsigned>(newValue.ChannelNumber),
+             static_cast<int>(result),
+             result == 1 ? "true" : "false");
+    sendText(writer, response);
+    return;
+  }
+
 #if SUPLA_SUPLET_ENABLED
   auto sendLocalCalcfg =
       [&](uint32_t commandId, const void *data, uint32_t dataSize,

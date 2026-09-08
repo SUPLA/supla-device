@@ -20,8 +20,10 @@
 #include <vector>
 
 #include "linux_yaml_config.h"
+#include "supla/control/action_trigger_parsed.h"
 #include "supla/control/custom_hvac.h"
 #include "supla/control/rgbcct_parsed.h"
+#include "supla/control/virtual_relay.h"
 
 extern "C" const char *supla_test_get_last_log();
 extern "C" void supla_test_clear_last_log();
@@ -133,8 +135,10 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   TestLinuxYamlConfig() : Supla::LinuxYamlConfig("") {
   }
 
+  using Supla::LinuxYamlConfig::addActionTriggerParsed;
   using Supla::LinuxYamlConfig::addRgbCctParsed;
   using Supla::LinuxYamlConfig::addCustomHvac;
+  using Supla::LinuxYamlConfig::addVirtualRelay;
   using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
 };
@@ -282,6 +286,58 @@ TEST(Sd4linuxYamlConfigTests, AllowsRgbCctWithoutStateAndRejectsMissingParser) {
   EXPECT_FALSE(config.addRgbCctParsed(YAML::Load("state: status"),
                                       0,
                                       nullptr));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     RelayDefaultFunctionEnablesWeeklyScheduleCapability) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addVirtualRelay(
+      YAML::Load("default_function: light_switch"), 0));
+  auto relay = dynamic_cast<Supla::Control::VirtualRelay*>(
+      Supla::Element::last());
+  ASSERT_NE(relay, nullptr);
+  EXPECT_EQ(relay->getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_LIGHTSWITCH);
+  EXPECT_TRUE(relay->getChannel()->isWeeklyScheduleAvailable());
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     ParsedChannelsAcceptDefaultFunctionNumberAsCommonParameter) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addRgbCctParsed(
+      YAML::Load("default_function_number: 180"), 0, nullptr));
+  auto rgb = getCreatedRgb(previousElement);
+  ASSERT_NE(rgb, nullptr);
+  EXPECT_EQ(rgb->getChannel()->getDefaultFunction(), 180);
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     ActionTriggerAcceptsCommonDefaultFunctionNumber) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addActionTriggerParsed(
+      YAML::Load("name: at\ndefault_function_number: 700"), 0));
+  auto at = dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+      Supla::Element::last());
+  ASSERT_NE(at, nullptr);
+  EXPECT_EQ(at->getChannel()->getDefaultFunction(), 700);
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsUnknownRelayDefaultFunction) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.addVirtualRelay(
+      YAML::Load("default_function: coffee_machine"), 0));
   deleteCreatedElement(previousElement);
 }
 

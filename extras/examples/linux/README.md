@@ -724,8 +724,10 @@ More examples can be found in subfolders of `extras/examples/linux`.
 
 ### Common parameters
 
-All channels accept following parameter:
+All channels accept the following parameters:
 `initial_caption` - allows to define initial caption for channel.
+`default_function_number` - numeric `SUPLA_CHANNELFNC_*` value used as the
+initial channel function.
 
 ### VirtualRelay
 
@@ -735,7 +737,7 @@ and off from Supla App, etc.
 It is virtual, because it doesn't control anything - it just keeps state that
 was set on it.
 
-There are two optional parameters:
+There are three optional parameters:
 `name` - name of channel in YAML file - it doesn't have any functional meaning
 so far.
 `initial_state` - allows to define what state should be set on relay when
@@ -743,6 +745,16 @@ supla-device application is started. Following values are allowed:
 on, off, restore.
 "off" is default value.
 "restore" will use state storage file to keep and restore relay state.
+`default_function` - initial relay function. Accepted values are
+`gateway_lock`, `gate`, `garage_door`, `door_lock`, `power_switch`,
+`light_switch`, and `staircase_timer`. `default_function_number` can be used
+instead when a numeric function identifier is more convenient.
+
+For example, a virtual light switch exposes native weekly schedule support:
+
+    channels:
+      - type: VirtualRelay
+        default_function: light_switch
 
 ### CmdRelay
 

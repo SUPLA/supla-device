@@ -1309,6 +1309,87 @@ TEST_F(RelayFixture, weeklyScheduleForcedOffBlocksManualOn) {
   EXPECT_FALSE(relay.isOn());
 }
 
+TEST_F(RelayFixture, weeklyScheduleForcedOffCancelsTimerTurnOn) {
+  ClockStub clock;
+  EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
+
+  Supla::Control::Relay relay(1);
+  EXPECT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_LIGHTSWITCH));
+  relay.onLoadConfig(nullptr);
+
+  int relayPinValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(1)).Times(::testing::AnyNumber());
+  EXPECT_CALL(ioMock, digitalWrite(1, _)).Times(::testing::AnyNumber());
+  ON_CALL(ioMock, digitalRead(1))
+      .WillByDefault(::testing::ReturnPointee(&relayPinValue));
+  ON_CALL(ioMock, digitalWrite(1, _))
+      .WillByDefault(::testing::SaveArg<1>(&relayPinValue));
+  relay.onInit();
+
+  auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
+                                                SUPLA_RELAY_MODE_FORCED_OFF);
+  ASSERT_EQ(relay.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  enableWeeklySchedule(&relay);
+  time.advance(1000);
+  relay.iterateAlways();
+  ASSERT_FALSE(relay.isOn());
+
+  TSD_SuplaChannelNewValue newValue = {};
+  newValue.DurationMS = 1000;
+  ASSERT_EQ(relay.handleNewValueFromServer(&newValue), 1);
+  ASSERT_FALSE(relay.isOn());
+
+  time.advance(1001);
+  relay.iterateAlways();
+  EXPECT_FALSE(relay.isOn());
+
+  time.advance(1001);
+  relay.iterateAlways();
+  EXPECT_FALSE(relay.isOn());
+}
+
+TEST_F(RelayFixture, weeklyScheduleForcedOnCancelsTimerTurnOff) {
+  ClockStub clock;
+  EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
+
+  Supla::Control::Relay relay(1);
+  EXPECT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_LIGHTSWITCH));
+  relay.onLoadConfig(nullptr);
+
+  int relayPinValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(1)).Times(::testing::AnyNumber());
+  EXPECT_CALL(ioMock, digitalWrite(1, _)).Times(::testing::AnyNumber());
+  ON_CALL(ioMock, digitalRead(1))
+      .WillByDefault(::testing::ReturnPointee(&relayPinValue));
+  ON_CALL(ioMock, digitalWrite(1, _))
+      .WillByDefault(::testing::SaveArg<1>(&relayPinValue));
+  relay.onInit();
+
+  auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
+                                                SUPLA_RELAY_MODE_FORCED_ON);
+  ASSERT_EQ(relay.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  enableWeeklySchedule(&relay);
+  time.advance(1000);
+  relay.iterateAlways();
+  ASSERT_TRUE(relay.isOn());
+
+  TSD_SuplaChannelNewValue newValue = {};
+  newValue.value[0] = 1;
+  newValue.DurationMS = 1000;
+  ASSERT_EQ(relay.handleNewValueFromServer(&newValue), 1);
+  ASSERT_TRUE(relay.isOn());
+
+  time.advance(1001);
+  relay.iterateAlways();
+  EXPECT_TRUE(relay.isOn());
+
+  time.advance(1001);
+  relay.iterateAlways();
+  EXPECT_TRUE(relay.isOn());
+}
+
 TEST_F(RelayFixture, weeklyScheduleNotSetDoesNotChangeState) {
   ClockStub clock;
   EXPECT_CALL(ioMock, digitalWrite(1, 0)).Times(2);

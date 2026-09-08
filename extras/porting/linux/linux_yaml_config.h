@@ -66,6 +66,10 @@ channels:
 
 namespace Supla {
 
+namespace Control {
+class Relay;
+}
+
 class LinuxYamlConfig : public KeyValue {
  public:
   explicit LinuxYamlConfig(const std::string& file);
@@ -176,6 +180,10 @@ class LinuxYamlConfig : public KeyValue {
                      Payload::Payload* payload);
   bool addCommonParameters(const YAML::Node& ch,
                            Supla::Element* element);
+  bool addDefaultFunctionNumber(const YAML::Node& ch,
+                                Supla::Element* element);
+  bool addRelayDefaultFunction(const YAML::Node& ch,
+                               Supla::Control::Relay* relay);
   bool addThermometerParsed(const YAML::Node& ch,
                             int channelNumber,
                             Supla::Parser::Parser* parser);

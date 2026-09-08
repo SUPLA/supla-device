@@ -473,7 +473,15 @@ void Relay::iterateAlways() {
   }
 
   if (durationMs && millis() - durationTimestamp > durationMs) {
-    toggle();
+    bool targetOn = !isOn();
+    if (isManualActionAllowedByWeeklySchedule(targetOn)) {
+      toggle();
+    } else {
+      SUPLA_LOG_DEBUG(
+          "Relay[%d] cancelling timer transition due to weekly schedule",
+          channel.getChannelNumber());
+      applyDuration(0, !targetOn);
+    }
   }
   emitCountdownTimerActionIfNeeded();
 

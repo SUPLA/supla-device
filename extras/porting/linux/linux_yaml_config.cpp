@@ -946,6 +946,9 @@ bool Supla::LinuxYamlConfig::addVirtualRelay(const YAML::Node& ch,
       vr->setDefaultStateRestore();
     }
   }
+  if (!addRelayDefaultFunction(ch, vr)) {
+    return false;
+  }
   return addCommonParameters(ch, vr);
 }
 
@@ -989,6 +992,9 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
     return false;
   }
 
+  if (!addRelayDefaultFunction(ch, cr)) {
+    return false;
+  }
   return addCommonParametersParsed(ch, cr, parser);
 }
 
@@ -1122,6 +1128,9 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
     return false;
   }
 
+  if (!addRelayDefaultFunction(ch, cr)) {
+    return false;
+  }
   return addCommonParametersParsed(ch, cr, parser);
 }
 
@@ -1724,12 +1733,6 @@ bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
       return false;
     }
   }
-  if (auto defaultFunctionNumberParameter =
-          getAndMarkChannelParameter(ch, Supla::DefaultFunctionNumber)) {
-    int32_t functionNumber = defaultFunctionNumberParameter.as<int32_t>();
-    ic->getChannel()->setDefaultFunction(functionNumber);
-  }
-
   return addCommonParametersParsed(ch, ic, parser);
 }
 
@@ -2696,13 +2699,14 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
   SUPLA_LOG_INFO("Channel[%d] config: adding ActionTriggerParsed",
                  channelNumber);
   if (auto nameParameter = getAndMarkChannelParameter(ch, "name")) {
-    new Supla::Control::ActionTriggerParsed(nameParameter.as<std::string>());
+    auto name = nameParameter.as<std::string>();
+    auto at = new Supla::Control::ActionTriggerParsed(name);
+    return addCommonParameters(ch, at);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: mandatory \"name\" parameter missing",
                     channelNumber);
     return false;
   }
-  return true;
 }
 
 bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
@@ -2783,12 +2787,6 @@ bool Supla::LinuxYamlConfig::addCustomChannel(const YAML::Node& ch,
 
   if (auto valueParameter = getAndMarkChannelParameter(ch, Supla::Value)) {
     custom->setValue(valueParameter.as<std::string>());
-  }
-
-  if (auto defaultFunctionNumberParameter =
-          getAndMarkChannelParameter(ch, Supla::DefaultFunctionNumber)) {
-    int32_t functionNumber = defaultFunctionNumberParameter.as<int32_t>();
-    custom->getChannel()->setDefaultFunction(functionNumber);
   }
 
   return addCommonParametersParsed(ch, custom, parser);
@@ -2902,7 +2900,8 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
   if (batteryAdded) {
     sensor->updateBatteryInfoFlags();
   }
-  return true;
+  return addDefaultFunctionNumber(
+      ch, dynamic_cast<Supla::Element*>(sensor));
 }
 
 bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
@@ -2931,7 +2930,57 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
       ch->setDefaultIcon(iconId);
     }
   }
+  return addDefaultFunctionNumber(ch, element);
+}
+
+bool Supla::LinuxYamlConfig::addDefaultFunctionNumber(
+    const YAML::Node& ch, Supla::Element* element) {
+  if (auto parameter =
+          getAndMarkChannelParameter(ch, Supla::DefaultFunctionNumber)) {
+    if (element == nullptr || element->getChannel() == nullptr) {
+      SUPLA_LOG_ERROR(
+          "Channel config: default_function_number requires a channel");
+      return false;
+    }
+    int32_t functionNumber = parameter.as<int32_t>();
+    element->setRuntimeFunction(functionNumber);
+  }
   return true;
+}
+
+bool Supla::LinuxYamlConfig::addRelayDefaultFunction(
+    const YAML::Node& ch, Supla::Control::Relay* relay) {
+  auto parameter = getAndMarkChannelParameter(ch, Supla::DefaultFunction);
+  if (!parameter) {
+    return true;
+  }
+
+  struct RelayFunction {
+    const char* name;
+    uint32_t function;
+  };
+  static constexpr RelayFunction relayFunctions[] = {
+      {"gateway_lock", SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK},
+      {"gate", SUPLA_CHANNELFNC_CONTROLLINGTHEGATE},
+      {"garage_door", SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR},
+      {"door_lock", SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK},
+      {"power_switch", SUPLA_CHANNELFNC_POWERSWITCH},
+      {"light_switch", SUPLA_CHANNELFNC_LIGHTSWITCH},
+      {"staircase_timer", SUPLA_CHANNELFNC_STAIRCASETIMER},
+  };
+
+  std::string function = parameter.as<std::string>();
+  for (const auto& item : relayFunctions) {
+    if (function == item.name) {
+      relay->setRuntimeFunction(item.function);
+      return true;
+    }
+  }
+
+  SUPLA_LOG_ERROR("Channel[%d] config: unknown relay default function \"%s\"",
+                  relay->getChannelNumber(),
+                  function.c_str());
+  return false;
 }
 
 std::variant<int, bool, std::string> Supla::LinuxYamlConfig::parseStateValue(

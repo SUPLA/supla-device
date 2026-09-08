@@ -32,9 +32,19 @@ class CommandProcessor {
   using TestCalcfgHandler = int (*)(void *context,
                                     TSD_DeviceCalCfgRequest *request,
                                     TDS_DeviceCalCfgResult *result);
+  using TestChannelValueHandler = int32_t (*)(
+      void *context, TSD_SuplaChannelNewValue *newValue);
+  using TestChannelConfigHandler = uint8_t (*)(
+      void *context, TSD_ChannelConfig *config, bool local);
   CommandProcessor(SuplaDeviceClass *device,
                    TestCalcfgHandler testCalcfgHandler,
                    void *testCalcfgContext);
+  CommandProcessor(SuplaDeviceClass *device,
+                   TestChannelValueHandler testChannelValueHandler,
+                   void *testChannelValueContext);
+  CommandProcessor(SuplaDeviceClass *device,
+                   TestChannelConfigHandler testChannelConfigHandler,
+                   void *testChannelConfigContext);
 #endif
 
   bool processLine(const char *line, ResponseWriter *writer);
@@ -58,6 +68,10 @@ class CommandProcessor {
 #if SUPLA_TEST
   TestCalcfgHandler testCalcfgHandler = nullptr;
   void *testCalcfgContext = nullptr;
+  TestChannelValueHandler testChannelValueHandler = nullptr;
+  void *testChannelValueContext = nullptr;
+  TestChannelConfigHandler testChannelConfigHandler = nullptr;
+  void *testChannelConfigContext = nullptr;
 #endif
 };
 

@@ -28,6 +28,11 @@
 #define RELAY_FLAGS_OVERCURRENT      (1 << 3)
 #define RELAY_FLAGS_AUTOMATIC_MODE   (1 << 5)
 
+#define RELAY_STORED_MODE_NOT_SET    0
+#define RELAY_STORED_MODE_AUTOMATIC  1
+#define RELAY_STORED_MODE_FORCED_OFF 2
+#define RELAY_STORED_MODE_FORCED_ON  3
+
 namespace Supla {
 namespace Io {
 struct IoPin;
@@ -48,8 +53,9 @@ class Relay : public ChannelElement, public ActionHandler {
       uint8_t impulseFunction : 1;
       uint8_t overcurrent : 1;
       uint8_t weeklySchedule : 1;
-      uint8_t automaticMode : 1;
-      uint8_t reserved : 2;
+      // AUTOMATIC remains encoded as bit 5 for OTA compatibility.
+      uint8_t operatingMode : 2;
+      uint8_t reserved : 1;
     } flags;
     uint8_t rawValue = 0;
   };
@@ -273,7 +279,9 @@ class Relay : public ChannelElement, public ActionHandler {
   void updateTimerValue();
   void emitCountdownTimerActionIfNeeded();
   void updateRelayHvacAggregator();
-  bool isManualActionAllowedByWeeklySchedule(bool turnOn) const;
+  bool isManualActionAllowed(bool turnOn) const;
+  bool isManualForcedModeSupported() const;
+  bool setManualForcedMode(uint8_t mode);
   void applyWeeklyScheduleProgram(uint8_t programMode, bool programChanged);
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;

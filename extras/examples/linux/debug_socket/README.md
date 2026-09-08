@@ -51,7 +51,7 @@ Switch Relay channel 0 to weekly schedule mode:
 printf '%s\n' '{"op":"channelValue","channelNumber":0,"relayMode":6}' | nc -U /tmp/sd4linux-debug.sock
 ```
 
-Switch it back to manual mode, or send an ordinary forced/automatic command:
+Switch it back to manual mode, or select a persistent forced/automatic mode:
 
 ```sh
 printf '%s\n' '{"op":"channelValue","channelNumber":0,"relayMode":7}' | nc -U /tmp/sd4linux-debug.sock
@@ -63,9 +63,10 @@ printf '%s\n' '{"op":"channelValue","channelNumber":0,"relayMode":5}' | nc -U /t
 Relay modes are: `0` not set, `1` on once, `2` off once, `3` forced on, `4`
 forced off, `5` automatic, `6` switch to weekly schedule, and `7` switch to
 manual. For a synthesized server value, modes `1` and `3` carry the ON state,
-while modes `2` and `4` carry the OFF state. Such commands remain subject to an
-active weekly schedule; switch to manual first if the current forced program
-blocks the requested transition.
+while modes `2` and `4` carry the OFF state. Selecting forced on/off exits an
+active weekly schedule and blocks ordinary relay commands and actions that
+try to control the relay. Select either forced mode, automatic, weekly
+schedule, or manual mode to leave or replace the current forced state.
 
 Switch Action Trigger channel 1 to weekly schedule, manual, locked, or unlocked:
 

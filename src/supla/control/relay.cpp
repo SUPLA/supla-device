@@ -987,13 +987,15 @@ void Relay::onLoadState() {
       case RELAY_STORED_MODE_FORCED_OFF:
       case RELAY_STORED_MODE_FORCED_ON:
         if (isManualForcedModeSupported()) {
-          bool forcedOn = relayFlags.flags.operatingMode ==
+          bool forcedOnRequested = relayFlags.flags.operatingMode ==
               RELAY_STORED_MODE_FORCED_ON;
           channel.setRelayWeeklyScheduleEnabled(false);
-          channel.setRelayMode(forcedOn ? SUPLA_RELAY_MODE_FORCED_ON
-                                        : SUPLA_RELAY_MODE_FORCED_OFF);
-          stateOnInit = forcedOn ? STATE_ON_INIT_RESTORED_ON
-                                 : STATE_ON_INIT_RESTORED_OFF;
+          channel.setRelayMode(forcedOnRequested
+                                   ? SUPLA_RELAY_MODE_FORCED_ON
+                                   : SUPLA_RELAY_MODE_FORCED_OFF);
+          stateOnInit = forcedOnRequested && !relayFlags.flags.overcurrent
+              ? STATE_ON_INIT_RESTORED_ON
+              : STATE_ON_INIT_RESTORED_OFF;
           durationMs = 0;
           durationTimestamp = 0;
         }
@@ -1393,9 +1395,7 @@ bool Relay::isManualForcedModeSupported() const {
 bool Relay::setManualForcedMode(uint8_t mode) {
   if ((mode != SUPLA_RELAY_MODE_FORCED_ON &&
        mode != SUPLA_RELAY_MODE_FORCED_OFF) ||
-      !isManualForcedModeSupported() ||
-      (mode == SUPLA_RELAY_MODE_FORCED_ON &&
-       channel.isRelayOvercurrentCutOff())) {
+      !isManualForcedModeSupported()) {
     return false;
   }
 
@@ -1403,6 +1403,12 @@ bool Relay::setManualForcedMode(uint8_t mode) {
   channel.setRelayMode(mode);
   durationMs = 0;
   durationTimestamp = 0;
+  if (mode == SUPLA_RELAY_MODE_FORCED_ON) {
+    // A new explicit manual FORCED_ON command acknowledges the overcurrent
+    // cutoff. Weekly schedule programs never reach this path and therefore
+    // cannot clear the cutoff automatically.
+    channel.setRelayOvercurrentCutOff(false);
+  }
   applyWeeklyScheduleProgram(mode, true);
   return true;
 }

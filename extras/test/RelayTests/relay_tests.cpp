@@ -823,8 +823,6 @@ TEST_F(RelayFixture, weeklyScheduleCommandExitsManualForcedMode) {
       sendRelayMode(&relay, SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE), 1);
   EXPECT_TRUE(relayValue(relay)->flags &
               SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
-  EXPECT_TRUE(relayValue(relay)->flags &
-              SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
   EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_NOT_SET);
 
   time.advance(1000);
@@ -925,6 +923,45 @@ TEST_F(RelayFixture, manualForcedOffModeIsRestored) {
   EXPECT_FALSE(relay.isOn());
 }
 
+TEST_F(RelayFixture, overcurrentKeepsRestoredManualForcedOnPhysicallyOff) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  storage.defaultInitialization(5);
+  Supla::Control::Relay relay(1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.onLoadConfig(nullptr);
+
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(uint32_t), _))
+      .WillOnce([](uint32_t, unsigned char *data, int32_t, bool) {
+        memset(data, 0, sizeof(uint32_t));
+        return sizeof(uint32_t);
+      });
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(uint8_t), _))
+      .WillOnce([](uint32_t, unsigned char *data, int32_t, bool) {
+        Supla::Control::Relay::RelayFlags flags;
+        flags.flags.overcurrent = 1;
+        flags.flags.operatingMode = RELAY_STORED_MODE_FORCED_ON;
+        *data = flags.rawValue;
+        return sizeof(uint8_t);
+      });
+  relay.onLoadState();
+
+  EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_FORCED_ON);
+  EXPECT_TRUE(relay.getChannel()->isRelayOvercurrentCutOff());
+  int relayPinValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(1)).Times(::testing::AnyNumber());
+  EXPECT_CALL(ioMock, digitalWrite(1, _)).Times(::testing::AnyNumber());
+  ON_CALL(ioMock, digitalRead(1))
+      .WillByDefault(::testing::ReturnPointee(&relayPinValue));
+  ON_CALL(ioMock, digitalWrite(1, _))
+      .WillByDefault(::testing::SaveArg<1>(&relayPinValue));
+  EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
+  relay.onInit();
+
+  EXPECT_FALSE(relay.isOn());
+  EXPECT_TRUE(relay.getChannel()->isRelayOvercurrentCutOff());
+  EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_FORCED_ON);
+}
+
 TEST_F(RelayFixture, manualForcedModeIsRejectedForImpulseFunction) {
   Supla::Control::Relay relay(1);
   relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
@@ -937,16 +974,28 @@ TEST_F(RelayFixture, manualForcedModeIsRejectedForImpulseFunction) {
   EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_NOT_SET);
 }
 
-TEST_F(RelayFixture, overcurrentCutoffRejectsManualForcedOn) {
+TEST_F(RelayFixture, explicitManualForcedOnClearsOvercurrentCutoff) {
+  EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
+  int relayPinValue = 0;
+  ON_CALL(ioMock, digitalRead(1))
+      .WillByDefault(::testing::ReturnPointee(&relayPinValue));
+  ON_CALL(ioMock, digitalWrite(1, _))
+      .WillByDefault(::testing::SaveArg<1>(&relayPinValue));
+
   Supla::Control::Relay relay(1);
   relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
   relay.onLoadConfig(nullptr);
+  relay.onInit();
   relay.getChannel()->setRelayOvercurrentCutOff(true);
 
-  EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_FORCED_ON), 0);
-  EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_NOT_SET);
+  EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_FORCED_ON), 1);
+  EXPECT_FALSE(relay.getChannel()->isRelayOvercurrentCutOff());
+  EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_FORCED_ON);
+  EXPECT_TRUE(relay.isOn());
+
   EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_FORCED_OFF), 1);
   EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_FORCED_OFF);
+  EXPECT_FALSE(relay.isOn());
 }
 
 TEST_F(RelayFixture, weeklyScheduleControllerCannotChangeAfterConfigLoad) {
@@ -1567,6 +1616,30 @@ TEST_F(RelayFixture, weeklyScheduleForcedOffBlocksManualOn) {
   EXPECT_FALSE(relay.isOn());
 
   relay.handleAction(0, Supla::TURN_ON);
+  EXPECT_FALSE(relay.isOn());
+}
+
+TEST_F(RelayFixture, weeklyForcedOnDoesNotClearOvercurrentCutoff) {
+  ClockStub clock;
+  EXPECT_CALL(ioMock, digitalWrite(1, 0)).Times(2);
+  EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
+
+  Supla::Control::Relay relay(1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.onLoadConfig(nullptr);
+  relay.onInit();
+  relay.getChannel()->setRelayOvercurrentCutOff(true);
+
+  auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
+                                                SUPLA_RELAY_MODE_FORCED_ON);
+  ASSERT_EQ(relay.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  enableWeeklySchedule(&relay);
+  time.advance(1000);
+  relay.iterateAlways();
+
+  EXPECT_TRUE(relay.getChannel()->isRelayOvercurrentCutOff());
+  EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_FORCED_ON);
   EXPECT_FALSE(relay.isOn());
 }
 

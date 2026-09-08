@@ -2867,6 +2867,28 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
       sensor->setMapping(Supla::Sensor::BatteryPowered, key);
     }
   }
+  if (ch[Supla::Sensor::BatteryState]) {
+    if (parser == nullptr) {
+      SUPLA_LOG_ERROR(
+          "Channel config: missing \"parser\" parameter for battery_state");
+      return false;
+    }
+    batteryAdded = true;
+    auto batteryStateParameter =
+        getAndMarkChannelParameter(ch, Supla::Sensor::BatteryState);
+    if (parser->isBasedOnIndex()) {
+      int index = batteryStateParameter.as<int>();
+      sensor->setMapping(Supla::Sensor::BatteryState, index);
+    } else {
+      std::string key = batteryStateParameter.as<std::string>();
+      sensor->setMapping(Supla::Sensor::BatteryState, key);
+    }
+  }
+  if (auto applyToWholeDeviceParameter = getAndMarkChannelParameter(
+          ch, Supla::Sensor::BatteryStateAppliesToWholeDevice)) {
+    sensor->setBatteryStateAppliesToWholeDevice(
+        applyToWholeDeviceParameter.as<bool>());
+  }
   if (auto forceBatteryPoweredParameter =
           getAndMarkChannelParameter(ch, Supla::Sensor::ForceBatteryPowered)) {
     auto forceBatteryPowered = forceBatteryPoweredParameter.as<bool>();

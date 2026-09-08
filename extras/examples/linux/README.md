@@ -1347,14 +1347,39 @@ Optional parameter: `multiplier` - defines multiplier for fetched value
 (you can put any floating point number).
 
 
-## Battery level information for Parsed channels
+## Battery information for Parsed channels
 
-Each Parsed channel may have additional `battery_level` and `multiplier_battery_level` field.
-Battery level information is added to channel state response (the (i) button in mobile apps).
-Battery level has to be in 0 to 100 range, otherwise device wont' be reported as battery
-powered. Multiplier parameter allows to do some simple conversion. I.e. if battery level
-in source is in 0 to 1 range, then you can provide multiplier with value 100 to convert it to
-0 to 100 range.
+Each Parsed channel may have additional `battery_level` and
+`multiplier_battery_level` fields. Battery level information is added to the
+channel state response (the (i) button in mobile apps). Battery level has to be
+in the 0 to 100 range. The multiplier allows simple conversion. For example,
+if the battery level in the source is in the 0 to 1 range, use a multiplier of
+100 to convert it to the 0 to 100 range.
+
+The optional `battery_state` field defines the parser key or index containing
+the battery state. Accepted source values are `normal`, `low`, `0` (normal),
+and `1` (low). Invalid or unavailable values disable battery-state reporting.
+
+Set `battery_state_applies_to_whole_device: true` when the reported state
+describes the battery powering the whole device instead of only this channel:
+
+```yaml
+- type: ThermometerParsed
+  temperature: temperature
+  battery_state: battery
+  battery_state_applies_to_whole_device: true
+  parser:
+    type: JSON
+  source:
+    type: File
+    file: sensor.json
+```
+
+Example `sensor.json`:
+
+```json
+{"temperature": 21.5, "battery": "low"}
+```
 
 # Running supla-device as a service
 

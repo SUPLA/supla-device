@@ -89,6 +89,7 @@ class FakeYamlParser : public Supla::Parser::Parser {
   }
 
   std::variant<int, bool, std::string> state = 0;
+  bool stateValid = true;
 
   double getValue(const std::string&) override {
     return 0;
@@ -96,6 +97,7 @@ class FakeYamlParser : public Supla::Parser::Parser {
 
   std::variant<int, bool, std::string> getStateValue(
       const std::string&) override {
+    valid = stateValid;
     return state;
   }
 
@@ -350,6 +352,12 @@ TEST(Sd4linuxYamlConfigTests,
                                       0,
                                       nullptr));
   deleteCreatedElement(previousElement);
+
+  previousElement = Supla::Element::last();
+  EXPECT_FALSE(config.addRgbCctParsed(YAML::Load("battery_state: state"),
+                                      0,
+                                      nullptr));
+  deleteCreatedElement(previousElement);
 }
 
 TEST(Sd4linuxYamlConfigTests,
@@ -398,6 +406,68 @@ TEST(Sd4linuxYamlConfigTests, ParserBackedRgbCctCanForceBatteryPowered) {
   auto rgb = getCreatedRgb(previousElement);
   ASSERT_NE(rgb, nullptr);
   EXPECT_TRUE(rgb->getChannel()->isBatteryPowered());
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, MapsBatteryStateAndWholeDeviceFlag) {
+  SimpleTime time;
+  TestLinuxYamlConfig config;
+  FakeYamlSource source;
+  FakeYamlParser parser(&source);
+  auto previousElement = Supla::Element::last();
+
+  auto channel = YAML::Load(
+      "battery_state: battery\n"
+      "battery_state_applies_to_whole_device: true\n");
+  ASSERT_TRUE(config.addRgbCctParsed(channel, 0, &parser));
+  auto rgb = getCreatedRgb(previousElement);
+  ASSERT_NE(rgb, nullptr);
+  EXPECT_TRUE(rgb->isParameterConfigured("battery_state"));
+
+  parser.state = std::string("low");
+  ASSERT_TRUE(rgb->refreshParserSource());
+  EXPECT_EQ(rgb->getChannel()->getBatteryState(), Supla::BatteryState::Low);
+  EXPECT_TRUE(rgb->getChannel()->isBatteryStateAppliedToWholeDevice());
+
+  TDSC_ChannelState channelState = {};
+  channelState.ChannelNumber = rgb->getChannelNumber();
+  rgb->handleGetChannelState(&channelState);
+  EXPECT_NE(channelState.Fields & SUPLA_CHANNELSTATE_FIELD_BATTERY_STATE, 0);
+  EXPECT_NE(channelState.Fields &
+                SUPLA_CHANNELSTATE_FIELD_DEVICE_BATTERY_STATE,
+            0);
+  EXPECT_EQ(channelState.BatteryState, SUPLA_BATTERY_STATE_LOW);
+
+  parser.state = std::string("normal");
+  rgb->updateBatteryInfoFlags();
+  EXPECT_EQ(rgb->getChannel()->getBatteryState(), Supla::BatteryState::Normal);
+
+  parser.state = 1;
+  rgb->updateBatteryInfoFlags();
+  EXPECT_EQ(rgb->getChannel()->getBatteryState(), Supla::BatteryState::Low);
+
+  parser.state = 0;
+  rgb->updateBatteryInfoFlags();
+  EXPECT_EQ(rgb->getChannel()->getBatteryState(), Supla::BatteryState::Normal);
+
+  parser.state = std::string("unknown");
+  rgb->updateBatteryInfoFlags();
+  EXPECT_EQ(rgb->getChannel()->getBatteryState(), Supla::BatteryState::NotSet);
+  EXPECT_FALSE(rgb->getChannel()->isBatteryStateAppliedToWholeDevice());
+
+  parser.state = std::string("low");
+  parser.stateValid = false;
+  rgb->updateBatteryInfoFlags();
+  EXPECT_EQ(rgb->getChannel()->getBatteryState(), Supla::BatteryState::NotSet);
+
+  channelState = {};
+  channelState.ChannelNumber = rgb->getChannelNumber();
+  rgb->handleGetChannelState(&channelState);
+  EXPECT_EQ(channelState.Fields & SUPLA_CHANNELSTATE_FIELD_BATTERY_STATE, 0);
+  EXPECT_EQ(channelState.Fields &
+                SUPLA_CHANNELSTATE_FIELD_DEVICE_BATTERY_STATE,
+            0);
+
   deleteCreatedElement(previousElement);
 }
 

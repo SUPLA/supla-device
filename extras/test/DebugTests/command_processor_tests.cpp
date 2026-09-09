@@ -329,6 +329,37 @@ TEST(CommandProcessorTests, InjectsRelayWeeklySchedule) {
             "\"result\":1,\"ok\":true}\n");
 }
 
+TEST(CommandProcessorTests,
+     WeeklyDurationAcceptsUnsignedRangeAndRejectsAliases) {
+  ChannelConfigResponder responder;
+  Supla::Debug::CommandProcessor processor(
+      nullptr, &ChannelConfigResponder::handle, &responder);
+  CapturingWriter writer;
+  ASSERT_TRUE(processor.processLine(
+      "{\"op\":\"weeklySchedule\",\"channelNumber\":0,"
+      "\"programs\":[{\"mode\":\"on_once\",\"relayModeDurationS\":65535,"
+      "\"relayOppositeModeDurationS\":32768}],\"entries\":[]}",
+      &writer));
+  ASSERT_TRUE(responder.called);
+  TChannelConfig_WeeklySchedule schedule = {};
+  memcpy(&schedule, responder.config.Config, sizeof(schedule));
+  EXPECT_EQ(schedule.Program[0].RelayModeDurationS, 65535);
+  EXPECT_EQ(schedule.Program[0].RelayOppositeModeDurationS, 32768);
+  for (const auto *fields :
+       {"\"relayModeDurationS\":-1", "\"relayModeDurationS\":65536",
+        "\"relayOppositeModeDurationS\":-1",
+        "\"relayModeDurationS\":1,\"value1\":1",
+        "\"value2\":1,\"relayOppositeModeDurationS\":1",
+        "\"value1\":1,\"value1\":1"}) {
+    responder.called = false;
+    const std::string command =
+        std::string("{\"op\":\"weeklySchedule\",\"channelNumber\":0,") +
+        "\"programs\":[{\"mode\":\"on_once\"," + fields + "}],\"entries\":[]}";
+    processor.processLine(command.c_str(), &writer);
+    EXPECT_FALSE(responder.called) << fields;
+  }
+}
+
 TEST(CommandProcessorTests, InjectsActionTriggerWeeklySchedule) {
   ChannelConfigResponder responder;
   Supla::Debug::CommandProcessor processor(

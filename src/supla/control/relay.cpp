@@ -672,6 +672,7 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
       storedTurnOnDurationMs = 0;
     }
 
+    notifyWeeklyScheduleManualAction();
     turnOn(isCyclicMode() ? storedTurnOnDurationMs : newValue->DurationMS);
     storedTurnOnDurationMs = copyDurationMs;
     result = 1;
@@ -682,6 +683,7 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
           channel.getChannelNumber());
       return 0;
     }
+    notifyWeeklyScheduleManualAction();
     if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
       turnOff(0);  // newValue->DurationMS may contain "turn on duration" which
                    // result in unexpected "turn on after duration ms received
@@ -812,6 +814,7 @@ void Relay::handleAction(int event, int action) {
         return;
       }
       uint32_t copyDurationMs = storedTurnOnDurationMs;
+      notifyWeeklyScheduleManualAction();
       storedTurnOnDurationMs = 0;
       SUPLA_LOG_DEBUG("Relay[%d] override stored durationMs",
                       channel.getChannelNumber());
@@ -825,6 +828,7 @@ void Relay::handleAction(int event, int action) {
                         channel.getChannelNumber());
         return;
       }
+      notifyWeeklyScheduleManualAction();
       turnOn();
       break;
     }
@@ -834,6 +838,7 @@ void Relay::handleAction(int event, int action) {
                         channel.getChannelNumber());
         return;
       }
+      notifyWeeklyScheduleManualAction();
       turnOff();
       break;
     }
@@ -852,6 +857,7 @@ void Relay::handleAction(int event, int action) {
                         channel.getChannelNumber());
         return;
       }
+      notifyWeeklyScheduleManualAction();
       if (isRestartTimerOnToggle() &&
           (isStaircaseFunction() || isImpulseFunction())) {
         turnOn();
@@ -1344,10 +1350,17 @@ void Relay::setTurnOffWhenEmptyAggregator(bool turnOff) {
 }
 
 bool Relay::isWeeklyScheduleSupported() const {
+  if (!canUseWeeklySchedule()) {
+    return false;
+  }
   auto func = channel.getDefaultFunction();
   return func == SUPLA_CHANNELFNC_LIGHTSWITCH ||
          func == SUPLA_CHANNELFNC_POWERSWITCH ||
          isStaircaseFunction(func) || isImpulseFunction(func);
+}
+
+bool Relay::canUseWeeklySchedule() const {
+  return true;
 }
 
 Relay &Relay::setAutomaticModeSupported(bool supported) {
@@ -1451,6 +1464,31 @@ bool Relay::isWeeklyScheduleProgramModeSupported(uint8_t mode) const {
       return false;
     }
   }
+}
+
+void Relay::notifyWeeklyScheduleManualAction() {
+  auto *controller = weeklyScheduleComponents.getController();
+  if (controller != nullptr && controller->isActive()) {
+    controller->onManualAction();
+  }
+}
+
+bool Relay::applyWeeklyScheduleState(bool on) {
+  // The weekly controller owns the phase deadline. Preserve manual timer
+  // configuration while preventing applyDuration from arming another timer.
+  const auto storedDuration = storedTurnOnDurationMs;
+  storedTurnOnDurationMs = 0;
+  durationMs = 0;
+  durationTimestamp = 0;
+  if (on && !channel.isRelayOvercurrentCutOff()) {
+    if (!isOn()) {
+      turnOn();
+    }
+  } else if (!on && isOn()) {
+    turnOff();
+  }
+  storedTurnOnDurationMs = storedDuration;
+  return true;
 }
 
 void Relay::applyWeeklyScheduleProgram(uint8_t programMode,

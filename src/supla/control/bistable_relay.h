@@ -105,11 +105,14 @@ class BistableRelay : public Relay {
   void turnOn(_supla_int_t duration = 0) override;
   void turnOff(_supla_int_t duration = 0) override;
   void toggle(_supla_int_t duration = 0) override;
+  void handleAction(int event, int action) override;
 
   bool isOn() override;
   bool isStatusUnknown();
 
  protected:
+  bool canUseWeeklySchedule() const override;
+  bool applyWeeklyScheduleState(bool on) override;
   void internalToggle();
 
   uint32_t disarmTimeMs = 0;

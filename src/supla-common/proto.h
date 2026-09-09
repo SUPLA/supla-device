@@ -3240,10 +3240,16 @@ typedef struct {
   union {
     _supla_int16_t SetpointTemperatureHeat;  // * 0.01 - used for heating
     _supla_int16_t Value1;
+    // Relay: duration of the state selected by ON_ONCE/OFF_ONCE, in seconds.
+    // Zero in both duration fields preserves the untimed program behavior.
+    unsigned _supla_int16_t RelayModeDurationS;
   };
   union {
     _supla_int16_t SetpointTemperatureCool;  // * 0.01 - used for cooling
     _supla_int16_t Value2;
+    // Relay: opposite-state duration, in seconds. Nonzero enables repetition
+    // and requires RelayModeDurationS > 0. Other modes require both times zero.
+    unsigned _supla_int16_t RelayOppositeModeDurationS;
   };
 } TWeeklyScheduleProgram;
 

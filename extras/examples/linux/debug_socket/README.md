@@ -133,6 +133,41 @@ Schedule rules:
   selected mode; in particular, `automatic` requires
   `setAutomaticModeSupported()`. Numeric protocol mode values are also accepted.
 - Optional signed 16-bit `value1` and `value2` fields can be added to a program.
+  These remain raw protocol aliases; do not combine an alias with its named
+  duration field in the same program.
+- Relay `on_once` and `off_once` accept `relayModeDurationS` and
+  `relayOppositeModeDurationS` (integer seconds, 0..65535). The first duration
+  applies to the state selected by `mode`, the second to the opposite state.
+  Both zero preserve the untimed behavior. A positive first duration with a zero
+  second duration switches to the opposite state once at the deadline. Two
+  positive durations repeat both phases. A second duration alone is invalid.
+- Cycles are supported only for power/light switches. Staircase and impulse
+  functions support the single duration, which temporarily replaces their normal
+  timer. Other program modes require both durations zero.
+- The phase follows local wall time from the start of the contiguous interval
+  using that program ID, including across midnight and the week boundary. A
+  uniform whole-week program starts at Sunday midnight. Activation/reboot resumes
+  the current phase; no clock means no weekly output changes, even after the
+  startup timeout. Clock corrections immediately select the corresponding phase.
+- Accepted manual ON/OFF suspends the timed program until its next occurrence;
+  weekly stays enabled. Explicit weekly activation or a changed configuration
+  resumes execution. A no-op interval leaves the output unchanged. Weekly phases
+  are not reported as countdown timers and never clear an overcurrent cutoff.
+
+Example program objects (insert into the `programs` array):
+
+```json
+{"mode":"on_once","relayModeDurationS":120}
+```
+
+ON for two minutes from the beginning of the interval, then OFF.
+
+```json
+{"mode":"on_once","relayModeDurationS":60,"relayOppositeModeDurationS":240}
+```
+
+ON for one minute, OFF for four minutes, repeated until the interval ends.
+Use `off_once` to start with the OFF phase instead.
 
 Both `programs` and `entries` are required. Empty arrays save a no-op schedule
 without enabling weekly schedule mode.

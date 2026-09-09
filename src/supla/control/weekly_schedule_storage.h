@@ -120,6 +120,9 @@ class NativeWeeklyScheduleConfigHandler : public WeeklyScheduleConfigHandler,
                       bool alt,
                       TWeeklyScheduleProgram *program,
                       int *programId) override;
+  bool resolveProgramTiming(const WeeklyScheduleTimeSnapshot &time,
+                            bool alt, int programId, int32_t *occurrence,
+                            uint32_t *elapsedSeconds) override;
 
   void touchCache(bool active, uint32_t nowMs);
   bool processCache(bool active, uint32_t nowMs);

@@ -151,6 +151,13 @@ int32_t BistableRelay::handleNewValueFromServer(
   }
 }
 
+void BistableRelay::handleAction(int event, int action) {
+  if (busy) {
+    return;
+  }
+  Relay::handleAction(event, action);
+}
+
 void BistableRelay::turnOn(_supla_int_t duration) {
   if (busy) {
     return;
@@ -186,8 +193,19 @@ bool BistableRelay::isOn() {
   return statusInputPin.readActive(channel.getChannelNumber());
 }
 
-bool BistableRelay::isStatusUnknown() {
-  return statusInputPin.getPin() < 0;
+bool BistableRelay::isStatusUnknown() { return statusInputPin.getPin() < 0; }
+
+bool BistableRelay::canUseWeeklySchedule() const {
+  // Absolute weekly states cannot be applied safely when the physical state
+  // of a toggle-only relay is unknown.
+  return statusInputPin.getPin() >= 0;
+}
+
+bool BistableRelay::applyWeeklyScheduleState(bool on) {
+  if (busy) {
+    return false;
+  }
+  return Relay::applyWeeklyScheduleState(on);
 }
 
 void BistableRelay::internalToggle() {

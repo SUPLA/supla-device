@@ -384,8 +384,10 @@ bool parseWeeklyScheduleProgram(JsonReader *reader,
     return false;
   }
   bool hasMode = false;
+  bool hasFirst = false;
+  bool hasSecond = false;
   while (true) {
-    char key[24] = {};
+    char key[32] = {};
     if (!reader->readString(key, sizeof(key)) || !reader->consume(':')) {
       return false;
     }
@@ -394,16 +396,25 @@ bool parseWeeklyScheduleProgram(JsonReader *reader,
         return false;
       }
       hasMode = true;
-    } else if (equalText(key, "value1") || equalText(key, "value2")) {
+    } else if (equalText(key, "value1") || equalText(key, "value2") ||
+               equalText(key, "relayModeDurationS") ||
+               equalText(key, "relayOppositeModeDurationS")) {
+      const bool named = equalText(key, "relayModeDurationS") ||
+                         equalText(key, "relayOppositeModeDurationS");
+      const bool first = equalText(key, "value1") ||
+                         equalText(key, "relayModeDurationS");
       int32_t value = 0;
-      if (!reader->readInt32(&value) || value < INT16_MIN ||
-          value > INT16_MAX) {
+      if ((first ? hasFirst : hasSecond) ||
+          !reader->readInt32(&value) || value < (named ? 0 : INT16_MIN) ||
+          value > (named ? UINT16_MAX : INT16_MAX)) {
         return false;
       }
-      if (equalText(key, "value1")) {
-        program->Value1 = static_cast<int16_t>(value);
+      if (first) {
+        hasFirst = true;
+        program->RelayModeDurationS = static_cast<uint16_t>(value);
       } else {
-        program->Value2 = static_cast<int16_t>(value);
+        hasSecond = true;
+        program->RelayOppositeModeDurationS = static_cast<uint16_t>(value);
       }
     } else if (!reader->skipValue()) {
       return false;

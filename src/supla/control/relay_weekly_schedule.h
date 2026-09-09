@@ -40,10 +40,18 @@ class RelayWeeklySchedule : public NativeWeeklyScheduleController {
   bool iterateAlways();
 
   bool canActivate() const override;
+  bool switchToWeeklySchedule() override;
+  void restoreWeeklyScheduleMode(bool enabled) override;
   bool isWeeklyScheduleEnabled() const;
   bool isManualActionAllowed(bool turnOn) const override;
+  void onManualAction() override;
 
  private:
+  bool requiresReadyClock() const override { return true; }
+  void onWeeklyScheduleClockState(WeeklyScheduleClockState state) override;
+  bool applyProgramAt(const WeeklyScheduleTimeSnapshot &time,
+                      const TWeeklyScheduleProgram &program,
+                      int programId, bool programChanged) override;
   void syncWeeklyScheduleMode(uint8_t programMode) override;
   void scheduleWeeklyScheduleStateSave() override;
   bool isWeeklyScheduleValid(
@@ -59,8 +67,17 @@ class RelayWeeklySchedule : public NativeWeeklyScheduleController {
                         bool alt) const override;
   void fillDefaultSchedule(TChannelConfig_WeeklySchedule *schedule,
                            bool alt) override;
+  void onNativeScheduleApplied(bool alt, bool local, bool changed) override;
+  void resetRuntimeOverride();
 
   Relay *owner_ = nullptr;
+  int32_t occurrence_ = -1;
+  int32_t lastTimingQuarter_ = -1;
+  uint32_t phase_ = UINT32_MAX;
+  bool timed_ = false;
+  bool suppressed_ = false;
+  bool programResolved_ = false;
+  bool pendingManualAction_ = false;
 };
 
 }  // namespace Control

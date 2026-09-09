@@ -60,6 +60,15 @@ class BistableRelayFixture : public testing::Test {
   }
 };
 
+class TestableBistableRelay : public Supla::Control::BistableRelay {
+ public:
+  using Supla::Control::BistableRelay::BistableRelay;
+
+  bool applyScheduleState(bool on) {
+    return applyWeeklyScheduleState(on);
+  }
+};
+
 TEST_F(BistableRelayFixture, IoPinConstructorUsesSeparateOutputAndStatusIo) {
   SuplaIoMock outputIo;
   SuplaIoMock statusIo;
@@ -102,6 +111,39 @@ TEST_F(BistableRelayFixture, UnsetIoPinsDoNothing) {
   Supla::Control::BistableRelay relay(outputPin, statusPin);
   relay.onInit();
   EXPECT_TRUE(relay.isStatusUnknown());
+}
+
+TEST_F(BistableRelayFixture, WeeklyScheduleRequiresStatusInput) {
+  Supla::Control::BistableRelay withoutStatus(1);
+  ASSERT_TRUE(withoutStatus.setAndSaveFunction(SUPLA_CHANNELFNC_LIGHTSWITCH));
+  withoutStatus.onLoadConfig(nullptr);
+  EXPECT_FALSE(withoutStatus.isWeeklyScheduleSupported());
+  EXPECT_FALSE(withoutStatus.getChannel()->isWeeklyScheduleAvailable());
+
+  Supla::Control::BistableRelay withStatus(2, 3);
+  ASSERT_TRUE(withStatus.setAndSaveFunction(SUPLA_CHANNELFNC_LIGHTSWITCH));
+  withStatus.onLoadConfig(nullptr);
+  EXPECT_TRUE(withStatus.isWeeklyScheduleSupported());
+  EXPECT_TRUE(withStatus.getChannel()->isWeeklyScheduleAvailable());
+}
+
+TEST_F(BistableRelayFixture, WeeklyScheduleStateWaitsForPendingPulse) {
+  int status = LOW;
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(::testing::AnyNumber());
+  EXPECT_CALL(ioMock, digitalRead(2)).Times(::testing::AnyNumber());
+  EXPECT_CALL(ioMock, digitalWrite(1, _)).Times(::testing::AnyNumber());
+  ON_CALL(ioMock, digitalRead(2))
+      .WillByDefault(::testing::ReturnPointee(&status));
+  TestableBistableRelay relay(1, 2);
+  relay.onInit();
+
+  relay.turnOn();
+  EXPECT_FALSE(relay.applyScheduleState(false));
+
+  status = HIGH;
+  time.advance(201);
+  relay.iterateAlways();
+  EXPECT_TRUE(relay.applyScheduleState(false));
 }
 
 TEST_F(BistableRelayFixture, basicTests) {

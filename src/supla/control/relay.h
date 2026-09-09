@@ -267,6 +267,7 @@ class Relay : public ChannelElement, public ActionHandler {
   virtual void setNewChannelValue(bool value);
   virtual void fillDefaultWeeklySchedule(
       TChannelConfig_WeeklySchedule *schedule);
+  virtual bool canUseWeeklySchedule() const;
   virtual bool isWeeklyScheduleProgramModeSupported(uint8_t mode) const;
   virtual void iterateAutomaticMode();
 
@@ -283,6 +284,8 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isManualForcedModeSupported() const;
   bool setManualForcedMode(uint8_t mode);
   void applyWeeklyScheduleProgram(uint8_t programMode, bool programChanged);
+  virtual bool applyWeeklyScheduleState(bool on);
+  void notifyWeeklyScheduleManualAction();
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;

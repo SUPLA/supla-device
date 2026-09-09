@@ -403,6 +403,39 @@ void NativeWeeklyScheduleConfigHandler::touchCache(bool active,
   cacheRuntime_.touch(active, nowMs);
 }
 
+bool NativeWeeklyScheduleConfigHandler::resolveProgramTiming(
+    const WeeklyScheduleTimeSnapshot &time, bool alt, int programId,
+    int32_t *occurrence, uint32_t *elapsedSeconds) {
+  if (time.state != WeeklyScheduleClockState::Ready || programId <= 0 ||
+      occurrence == nullptr || elapsedSeconds == nullptr) {
+    return false;
+  }
+  const auto *schedule = getSchedule(alt, false);
+  if (schedule == nullptr) {
+    return false;
+  }
+  const int index = calculateIndex(time.dayOfWeek, time.hour, time.quarter);
+  if (index < 0 || getProgramId(schedule, index) != programId) {
+    return false;
+  }
+  int preceding = 0;
+  while (
+      preceding < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE - 1 &&
+      getProgramId(schedule,
+                   (index - preceding - 1 + SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) %
+                       SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) == programId) {
+    preceding++;
+  }
+  // A uniform week has no transition; anchor it at Sunday midnight.
+  if (preceding == SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE - 1) {
+    preceding = index;
+  }
+  *elapsedSeconds =
+      static_cast<uint32_t>(preceding) * 900 + time.secondOfQuarter;
+  *occurrence = time.dayNumber * 96 + time.hour * 4 + time.quarter - preceding;
+  return true;
+}
+
 bool NativeWeeklyScheduleConfigHandler::processCache(bool active,
                                                      uint32_t nowMs) {
   return cacheRuntime_.process(active, nowMs);

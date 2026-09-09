@@ -26,6 +26,9 @@ struct WeeklyScheduleTimeSnapshot {
   enum DayOfWeek dayOfWeek = DayOfWeek_Sunday;
   uint8_t hour = 0;
   uint8_t quarter = 0;
+  uint16_t secondOfQuarter = 0;
+  // Local civil day number, used to distinguish recurring weekly occurrences.
+  int32_t dayNumber = 0;
 };
 
 class WeeklyScheduleProgramSource {
@@ -35,6 +38,18 @@ class WeeklyScheduleProgramSource {
                               bool alt,
                               TWeeklyScheduleProgram *program,
                               int *programId) = 0;
+  virtual bool resolveProgramTiming(const WeeklyScheduleTimeSnapshot &time,
+                                    bool alt,
+                                    int programId,
+                                    int32_t *occurrence,
+                                    uint32_t *elapsedSeconds) {
+    (void)(time);
+    (void)(alt);
+    (void)(programId);
+    (void)(occurrence);
+    (void)(elapsedSeconds);
+    return false;
+  }
 };
 
 class WeeklyScheduleController {
@@ -53,6 +68,7 @@ class WeeklyScheduleController {
   virtual bool isExternallyManaged() const {
     return false;
   }
+  virtual void onManualAction() {}
 
  protected:
   WeeklyScheduleClockState getClockState() const;
@@ -71,6 +87,15 @@ class WeeklyScheduleController {
   virtual bool shouldUseAltWeeklySchedule() const {
     return false;
   }
+  virtual bool requiresReadyClock() const { return false; }
+  bool resolveProgramTiming(const WeeklyScheduleTimeSnapshot &time,
+                            int programId,
+                            int32_t *occurrence,
+                            uint32_t *elapsedSeconds);
+  virtual bool applyProgramAt(const WeeklyScheduleTimeSnapshot &time,
+                              const TWeeklyScheduleProgram &program,
+                              int programId,
+                              bool programChanged);
   bool resolveWeeklyScheduleProgram(
       const WeeklyScheduleTimeSnapshot &time,
       TWeeklyScheduleProgram *program,

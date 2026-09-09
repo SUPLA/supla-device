@@ -44,6 +44,11 @@ WeeklyScheduleController::getWeeklyScheduleTimeSnapshot(
     time.dayOfWeek = static_cast<enum DayOfWeek>(timeInfo.tm_wday);
     time.hour = timeInfo.tm_hour;
     time.quarter = timeInfo.tm_min / 15;
+    time.secondOfQuarter = (timeInfo.tm_min % 15) * 60 + timeInfo.tm_sec;
+    // Count Gregorian days before this year, then add the local day of year.
+    const int32_t year = timeInfo.tm_year + 1899;
+    time.dayNumber = 365 * year + year / 4 - year / 100 + year / 400 +
+                     timeInfo.tm_yday;
   }
   return time;
 }
@@ -51,7 +56,8 @@ WeeklyScheduleController::getWeeklyScheduleTimeSnapshot(
 bool WeeklyScheduleController::processCurrentProgram(bool startupDelay) {
   auto time = getWeeklyScheduleTimeSnapshot(startupDelay);
   onWeeklyScheduleClockState(time.state);
-  if (time.state == WeeklyScheduleClockState::Waiting) {
+  if (time.state == WeeklyScheduleClockState::Waiting ||
+      (requiresReadyClock() && time.state != WeeklyScheduleClockState::Ready)) {
     return false;
   }
 
@@ -62,19 +68,34 @@ bool WeeklyScheduleController::processCurrentProgram(bool startupDelay) {
   }
 
   bool programChanged = updateCurrentProgramId(programId);
-  return applyResolvedWeeklyScheduleProgram(
+  return applyProgramAt(time,
       program, programId, programChanged);
 }
 
-bool WeeklyScheduleController::resolveWeeklyScheduleProgram(
+bool WeeklyScheduleController::applyProgramAt(
     const WeeklyScheduleTimeSnapshot &time,
-    TWeeklyScheduleProgram *program,
+    const TWeeklyScheduleProgram &program, int programId, bool programChanged) {
+  (void)(time);
+  return applyResolvedWeeklyScheduleProgram(program, programId, programChanged);
+}
+
+bool WeeklyScheduleController::resolveProgramTiming(
+    const WeeklyScheduleTimeSnapshot &time, int programId, int32_t *occurrence,
+    uint32_t *elapsedSeconds) {
+  return programSource_ != nullptr &&
+         programSource_->resolveProgramTiming(
+             time, shouldUseAltWeeklySchedule(), programId, occurrence,
+             elapsedSeconds);
+}
+
+bool WeeklyScheduleController::resolveWeeklyScheduleProgram(
+    const WeeklyScheduleTimeSnapshot &time, TWeeklyScheduleProgram *program,
     int *programId) {
   if (programSource_ == nullptr) {
     return false;
   }
-  return programSource_->resolveProgram(
-      time, shouldUseAltWeeklySchedule(), program, programId);
+  return programSource_->resolveProgram(time, shouldUseAltWeeklySchedule(),
+                                        program, programId);
 }
 
 bool WeeklyScheduleController::applyResolvedWeeklyScheduleProgram(

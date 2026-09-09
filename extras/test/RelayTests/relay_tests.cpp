@@ -540,6 +540,51 @@ TEST_F(RelayFixture, weeklyDurationSpansWeekAndStopsAtNoOp) {
   EXPECT_FALSE(relay.isOn());
 }
 
+TEST_F(RelayFixture,
+       weeklyDurationUniformCycleReanchorsOnlyForFreshController) {
+  AdjustableWeeklyClock clock;
+  clock.shift(-1);  // Saturday 23:59:59.
+  int continuousPin = 0;
+  int freshPin = 0;
+  ON_CALL(ioMock, digitalRead(1))
+      .WillByDefault(::testing::ReturnPointee(&continuousPin));
+  ON_CALL(ioMock, digitalWrite(1, _))
+      .WillByDefault(::testing::SaveArg<1>(&continuousPin));
+  ON_CALL(ioMock, digitalRead(2))
+      .WillByDefault(::testing::ReturnPointee(&freshPin));
+  ON_CALL(ioMock, digitalWrite(2, _))
+      .WillByDefault(::testing::SaveArg<1>(&freshPin));
+  TimedWeeklyRelay continuousRelay(1);
+  continuousRelay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  continuousRelay.onLoadConfig(nullptr);
+  continuousRelay.onInit();
+  auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
+                                                SUPLA_RELAY_MODE_ON_ONCE);
+  auto *schedule =
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
+  schedule->Program[0].RelayModeDurationS = 2;
+  schedule->Program[0].RelayOppositeModeDurationS = 9;
+  ASSERT_EQ(continuousRelay.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  enableWeeklySchedule(&continuousRelay);
+  ASSERT_FALSE(continuousRelay.isOn());
+
+  clock.shift(1);  // Sunday 00:00:00; the running cycle remains continuous.
+  continuousRelay.iterateAlways();
+  EXPECT_FALSE(continuousRelay.isOn());
+
+  // A fresh controller resolves the uniform schedule from this Sunday's
+  // midnight, matching the behavior after a restart and config reload.
+  TimedWeeklyRelay freshRelay(2);
+  freshRelay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  freshRelay.onLoadConfig(nullptr);
+  freshRelay.onInit();
+  ASSERT_EQ(freshRelay.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  enableWeeklySchedule(&freshRelay);
+  EXPECT_TRUE(freshRelay.isOn());
+}
+
 TEST_F(RelayFixture, weeklyCyclePreservesManualTimerAndIdenticalConfig) {
   AdjustableWeeklyClock clock;
   int pin = 0;

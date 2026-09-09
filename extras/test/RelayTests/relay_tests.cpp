@@ -73,6 +73,19 @@ class TimedWeeklyRelay : public Supla::Control::Relay {
   uint32_t storedDuration() const { return storedTurnOnDurationMs; }
 };
 
+class RestrictedWeeklyModesRelay : public Supla::Control::Relay {
+ public:
+  RestrictedWeeklyModesRelay(int pin, uint8_t modes)
+      : Supla::Control::Relay(pin), modes_(modes) {}
+
+  bool isWeeklyScheduleProgramModeSupported(uint8_t mode) const override {
+    return mode < 8 && (modes_ & (1 << mode));
+  }
+
+ private:
+  uint8_t modes_ = 0;
+};
+
 class DeferredWeeklyRelay : public TimedWeeklyRelay {
  public:
   using TimedWeeklyRelay::TimedWeeklyRelay;
@@ -229,7 +242,7 @@ class RelayFixture : public testing::Test {
     auto *relayValue =
         reinterpret_cast<TRelayChannel_Value *>(newValue.value);
     relayValue->RelayMode = mode;
-    relayValue->hi = mode == SUPLA_RELAY_MODE_ON_ONCE ||
+    relayValue->hi = mode == SUPLA_RELAY_MODE_START_ON ||
             mode == SUPLA_RELAY_MODE_FORCED_ON
         ? 1
         : 0;
@@ -257,7 +270,7 @@ TEST_F(RelayFixture, weeklyScheduleKeepsUnsavedInactiveConfig) {
   relay.onLoadConfig(nullptr);
   relay.onInit();
   auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                               SUPLA_RELAY_MODE_ON_ONCE);
+                                               SUPLA_RELAY_MODE_START_ON);
   ASSERT_EQ(relay.handleChannelConfig(&config, false),
             SUPLA_CONFIG_RESULT_TRUE);
   time.advance(16000);
@@ -284,8 +297,8 @@ TEST_F(RelayFixture, weeklyDurationManualActionAtProgramBoundary) {
       relay.onLoadConfig(nullptr);
       relay.onInit();
       auto config = makeTransitionWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-          timedFirst ? SUPLA_RELAY_MODE_ON_ONCE : SUPLA_RELAY_MODE_NOT_SET,
-          SUPLA_RELAY_MODE_ON_ONCE);
+          timedFirst ? SUPLA_RELAY_MODE_START_ON : SUPLA_RELAY_MODE_NOT_SET,
+          SUPLA_RELAY_MODE_START_ON);
       auto *schedule =
           reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
       schedule->Program[0].RelayModeDurationS = timedFirst ? 600 : 0;
@@ -319,8 +332,8 @@ TEST_F(RelayFixture, weeklyDurationResolvesClockAndManualOverride) {
   relay.onLoadConfig(nullptr);
   relay.onInit();
   auto config = makeTransitionWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                             SUPLA_RELAY_MODE_ON_ONCE,
-                                             SUPLA_RELAY_MODE_OFF_ONCE);
+                                             SUPLA_RELAY_MODE_START_ON,
+                                             SUPLA_RELAY_MODE_START_OFF);
   auto *schedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
   schedule->Program[0].RelayModeDurationS = 10;
@@ -366,8 +379,8 @@ TEST_F(RelayFixture, weeklyDurationKeepsManualActionBeforeClockIsReady) {
   relay.onLoadConfig(nullptr);
   relay.onInit();
   auto config = makeTransitionWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                             SUPLA_RELAY_MODE_ON_ONCE,
-                                             SUPLA_RELAY_MODE_ON_ONCE);
+                                             SUPLA_RELAY_MODE_START_ON,
+                                             SUPLA_RELAY_MODE_START_ON);
   auto *schedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
   schedule->Program[0].RelayModeDurationS = 600;
@@ -399,7 +412,7 @@ TEST_F(RelayFixture, weeklyDurationRetriesDeferredPhaseOutput) {
   relay.onLoadConfig(nullptr);
   relay.onInit();
   auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                                SUPLA_RELAY_MODE_ON_ONCE);
+                                                SUPLA_RELAY_MODE_START_ON);
   auto *schedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
   schedule->Program[0].RelayModeDurationS = 600;
@@ -429,7 +442,7 @@ TEST_F(RelayFixture, weeklyDurationCachesOccurrenceTiming) {
   relay.onLoadConfig(nullptr);
   relay.onInit();
   auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                                SUPLA_RELAY_MODE_ON_ONCE);
+                                                SUPLA_RELAY_MODE_START_ON);
   auto *schedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
   schedule->Program[0].RelayModeDurationS = 2;
@@ -471,7 +484,7 @@ TEST_F(RelayFixture,
     relay.onInit();
     const auto stored = relay.storedDuration();
     auto config =
-        makeSingleProgramWeeklySchedule(function, SUPLA_RELAY_MODE_ON_ONCE);
+        makeSingleProgramWeeklySchedule(function, SUPLA_RELAY_MODE_START_ON);
     auto *schedule =
         reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
     schedule->Program[0].RelayModeDurationS = 30;
@@ -498,7 +511,7 @@ TEST_F(RelayFixture, weeklyDurationValidationAndAbi) {
   relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
   relay.onLoadConfig(nullptr);
   auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                                SUPLA_RELAY_MODE_ON_ONCE);
+                                                SUPLA_RELAY_MODE_START_ON);
   auto *schedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
   auto &program = schedule->Program[0];
@@ -513,7 +526,7 @@ TEST_F(RelayFixture, weeklyDurationValidationAndAbi) {
   program.Mode = SUPLA_RELAY_MODE_FORCED_ON;
   EXPECT_NE(relay.handleChannelConfig(&config, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  program.Mode = SUPLA_RELAY_MODE_ON_ONCE;
+  program.Mode = SUPLA_RELAY_MODE_START_ON;
   relay.setDefaultFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
   config.Func = SUPLA_CHANNELFNC_STAIRCASETIMER;
   EXPECT_NE(relay.handleChannelConfig(&config, false),
@@ -532,7 +545,7 @@ TEST_F(RelayFixture, weeklyDurationWaitsForClockAndHonorsOvercurrent) {
   relay.onLoadConfig(nullptr);
   relay.onInit();
   auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                                SUPLA_RELAY_MODE_ON_ONCE);
+                                                SUPLA_RELAY_MODE_START_ON);
   auto *schedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
   schedule->Program[0].RelayModeDurationS = 10;
@@ -571,7 +584,7 @@ TEST_F(RelayFixture, weeklyDurationSpansWeekAndStopsAtNoOp) {
   relay.onLoadConfig(nullptr);
   relay.onInit();
   auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                                SUPLA_RELAY_MODE_OFF_ONCE);
+                                                SUPLA_RELAY_MODE_START_OFF);
   auto *schedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
   memset(schedule->Quarters, 0, sizeof(schedule->Quarters));
@@ -617,7 +630,7 @@ TEST_F(RelayFixture,
   continuousRelay.onLoadConfig(nullptr);
   continuousRelay.onInit();
   auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                                SUPLA_RELAY_MODE_ON_ONCE);
+                                                SUPLA_RELAY_MODE_START_ON);
   auto *schedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
   schedule->Program[0].RelayModeDurationS = 2;
@@ -654,7 +667,7 @@ TEST_F(RelayFixture, weeklyCyclePreservesManualTimerAndIdenticalConfig) {
   relay.onLoadConfig(nullptr);
   relay.onInit();
   auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                                SUPLA_RELAY_MODE_OFF_ONCE);
+                                                SUPLA_RELAY_MODE_START_OFF);
   auto *schedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
   schedule->Program[0].RelayModeDurationS = 10;
@@ -879,10 +892,11 @@ TEST_F(RelayFixture, basicTests) {
                 SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
 }
 
-TEST_F(RelayFixture, weeklyScheduleAvailabilityFollowsRelayFunction) {
+TEST_F(RelayFixture, weeklyScheduleCapabilityIsIndependentOfFunction) {
   Supla::Control::Relay relay(1);
 
-  EXPECT_FALSE(relay.getChannel()->isWeeklyScheduleAvailable());
+  relay.onLoadConfig(nullptr);
+  EXPECT_TRUE(relay.getChannel()->isWeeklyScheduleAvailable());
 
   const uint32_t supportedFunctions[] = {
       SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK,
@@ -912,8 +926,12 @@ TEST_F(RelayFixture, weeklyScheduleAvailabilityFollowsRelayFunction) {
   };
   for (auto function : unsupportedFunctions) {
     EXPECT_TRUE(relay.setAndSaveFunction(function));
-    EXPECT_FALSE(relay.getChannel()->isWeeklyScheduleAvailable());
+    EXPECT_TRUE(relay.getChannel()->isWeeklyScheduleAvailable());
   }
+  const auto flags = relay.getChannel()->getFlags();
+  EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_NOT_SET_SUPPORTED, 0);
+  EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED, 0);
+  EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED, 0);
 }
 
 TEST_F(RelayFixture, nativeWeeklyScheduleControllerIsAllocatedLazily) {
@@ -940,7 +958,142 @@ TEST_F(RelayFixture, weeklyScheduleConfigIsRejectedForUnsupportedFunction) {
             SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
 }
 
-TEST_F(RelayFixture, impulseWeeklyScheduleFunctionsSupportOnlyOnceModes) {
+TEST_F(RelayFixture, weeklyNoOpCapabilityMatchesProgramValidation) {
+  Supla::Control::Relay regular(1);
+  regular.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  regular.onLoadConfig(nullptr);
+  EXPECT_NE(regular.getChannel()->getFlags() &
+                SUPLA_CHANNEL_FLAG_RELAY_MODE_NOT_SET_SUPPORTED, 0);
+  RestrictedWeeklyModesRelay restricted(
+      2, (1 << SUPLA_RELAY_MODE_FORCED_ON) |
+             (1 << SUPLA_RELAY_MODE_FORCED_OFF));
+  restricted.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  restricted.onLoadConfig(nullptr);
+  const auto flags = restricted.getChannel()->getFlags();
+  EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_NOT_SET_SUPPORTED, 0);
+  EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED, 0);
+  EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED, 0);
+
+  TChannelConfig_WeeklySchedule defaultSchedule = {};
+  int defaultSize = 0;
+  restricted.fillChannelConfig(&defaultSchedule, &defaultSize,
+                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  EXPECT_EQ(defaultSize, sizeof(defaultSchedule));
+  EXPECT_EQ(defaultSchedule.Program[0].Mode,
+            SUPLA_RELAY_MODE_FORCED_OFF);
+  for (auto quarters : defaultSchedule.Quarters) {
+    EXPECT_EQ(quarters, 0x11);
+  }
+  TSD_ChannelConfig defaultConfig = {};
+  defaultConfig.ChannelNumber = restricted.getChannelNumber();
+  defaultConfig.Func = SUPLA_CHANNELFNC_LIGHTSWITCH;
+  defaultConfig.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  defaultConfig.ConfigSize = sizeof(defaultSchedule);
+  memcpy(defaultConfig.Config, &defaultSchedule, sizeof(defaultSchedule));
+  EXPECT_EQ(restricted.handleChannelConfig(&defaultConfig, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  auto config = makeSingleProgramWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
+                                                SUPLA_RELAY_MODE_FORCED_ON);
+  config.ChannelNumber = restricted.getChannelNumber();
+  EXPECT_EQ(restricted.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  auto *schedule =
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
+  schedule->Quarters[0] = 0;  // Implicit no-op (program zero).
+  EXPECT_EQ(restricted.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  schedule->Quarters[0] = 0x11;
+  schedule->Program[0].Mode = SUPLA_RELAY_MODE_NOT_SET;
+  EXPECT_EQ(restricted.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+}
+
+TEST_F(RelayFixture, weeklyModeGroupsSelectSafeDefaults) {
+  struct TestCase {
+    uint8_t modes;
+    uint64_t expectedFlag;
+    uint8_t expectedDefault;
+    bool automatic;
+  };
+  const TestCase testCases[] = {
+      {static_cast<uint8_t>((1 << SUPLA_RELAY_MODE_START_ON) |
+                            (1 << SUPLA_RELAY_MODE_START_OFF)),
+       SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED,
+       SUPLA_RELAY_MODE_START_OFF,
+       false},
+      {0,
+       SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED,
+       SUPLA_RELAY_MODE_AUTOMATIC,
+       true},
+  };
+  int pin = 10;
+  for (const auto &testCase : testCases) {
+    RestrictedWeeklyModesRelay relay(pin++, testCase.modes);
+    relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+    if (testCase.automatic) {
+      relay.setAutomaticModeSupported();
+    }
+    relay.onLoadConfig(nullptr);
+    const auto flags = relay.getChannel()->getFlags();
+    EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE, 0);
+    EXPECT_NE(flags & testCase.expectedFlag, 0);
+    EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_NOT_SET_SUPPORTED, 0);
+
+    TChannelConfig_WeeklySchedule schedule = {};
+    int size = 0;
+    relay.fillChannelConfig(&schedule, &size,
+                            SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+    EXPECT_EQ(size, sizeof(schedule));
+    EXPECT_EQ(schedule.Program[0].Mode, testCase.expectedDefault);
+    for (auto quarters : schedule.Quarters) {
+      EXPECT_EQ(quarters, 0x11);
+    }
+  }
+}
+
+TEST_F(RelayFixture, weeklyAutomaticUsesRelayCapabilityOnly) {
+  RestrictedWeeklyModesRelay relay(
+      19, 1 << SUPLA_RELAY_MODE_AUTOMATIC);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.onLoadConfig(nullptr);
+  const auto flags = relay.getChannel()->getFlags();
+  EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE, 0);
+  EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED, 0);
+
+  auto config = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_AUTOMATIC);
+  config.ChannelNumber = relay.getChannelNumber();
+  EXPECT_EQ(relay.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
+}
+
+TEST_F(RelayFixture, weeklyModeGroupsRejectUnpairedModes) {
+  const uint8_t modes[] = {
+      SUPLA_RELAY_MODE_START_ON,
+      SUPLA_RELAY_MODE_START_OFF,
+      SUPLA_RELAY_MODE_FORCED_ON,
+      SUPLA_RELAY_MODE_FORCED_OFF,
+  };
+  int pin = 20;
+  for (auto mode : modes) {
+    RestrictedWeeklyModesRelay relay(pin++, 1 << mode);
+    relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+    relay.onLoadConfig(nullptr);
+    const auto flags = relay.getChannel()->getFlags();
+    EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE, 0);
+    EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED, 0);
+    EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED, 0);
+
+    auto config = makeSingleProgramWeeklySchedule(
+        SUPLA_CHANNELFNC_LIGHTSWITCH, mode);
+    config.ChannelNumber = relay.getChannelNumber();
+    EXPECT_EQ(relay.handleChannelConfig(&config, false),
+              SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
+  }
+}
+
+TEST_F(RelayFixture, impulseWeeklyScheduleFunctionsSupportOnlyStartModes) {
   Supla::Control::Relay relay(1);
 
   const uint32_t impulseFunctions[] = {
@@ -953,12 +1106,12 @@ TEST_F(RelayFixture, impulseWeeklyScheduleFunctionsSupportOnlyOnceModes) {
     ASSERT_TRUE(relay.setAndSaveFunction(function));
     const auto flags = relay.getChannel()->getFlags();
     EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE, 0);
-    EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_ONCE_SUPPORTED, 0);
-    EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED, 0);
+    EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED, 0);
+    EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED, 0);
 
-    auto onceConfig = makeSingleProgramWeeklySchedule(
-        function, SUPLA_RELAY_MODE_ON_ONCE);
-    EXPECT_EQ(relay.handleChannelConfig(&onceConfig, false),
+    auto startConfig = makeSingleProgramWeeklySchedule(
+        function, SUPLA_RELAY_MODE_START_ON);
+    EXPECT_EQ(relay.handleChannelConfig(&startConfig, false),
               SUPLA_CONFIG_RESULT_TRUE);
 
     auto forcedConfig = makeSingleProgramWeeklySchedule(
@@ -1021,6 +1174,14 @@ TEST_F(RelayFixture,
   EXPECT_FALSE(relayValue(relay)->flags &
                SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
   EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_NOT_SET);
+
+  enableWeeklySchedule(&relay);
+  ASSERT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_PUMPSWITCH));
+  EXPECT_NE(relay.getChannel()->getFlags() &
+                SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED,
+            0);
+  EXPECT_FALSE(relayValue(relay)->flags &
+               SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
 }
 
 TEST_F(RelayFixture,
@@ -1130,7 +1291,7 @@ TEST_F(RelayFixture, automaticModeCapabilityDoesNotDependOnWeeklySchedule) {
 
   relay.onLoadConfig(nullptr);
 
-  EXPECT_FALSE(relay.getChannel()->isWeeklyScheduleAvailable());
+  EXPECT_TRUE(relay.getChannel()->isWeeklyScheduleAvailable());
   EXPECT_NE(relay.getChannel()->getFlags() &
                 SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED,
             0);
@@ -1225,10 +1386,10 @@ TEST_F(RelayFixture, manualForcedModeBlocksOrdinaryCommandsAndActions) {
   TSD_SuplaChannelNewValue turnOn = {};
   turnOn.value[0] = 1;
   EXPECT_EQ(relay.handleNewValueFromServer(&turnOn), 0);
-  EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_ON_ONCE), 0);
+  EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_START_ON), 0);
   TSD_SuplaChannelNewValue turnOff = {};
   EXPECT_EQ(relay.handleNewValueFromServer(&turnOff), 0);
-  EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_OFF_ONCE), 0);
+  EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_START_OFF), 0);
   relay.handleAction(0, Supla::TURN_ON);
   relay.handleAction(0, Supla::TURN_OFF);
   relay.handleAction(0, Supla::TOGGLE);
@@ -1239,9 +1400,9 @@ TEST_F(RelayFixture, manualForcedModeBlocksOrdinaryCommandsAndActions) {
   EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_FORCED_OFF);
 
   EXPECT_EQ(relay.handleNewValueFromServer(&turnOn), 0);
-  EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_ON_ONCE), 0);
+  EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_START_ON), 0);
   EXPECT_EQ(relay.handleNewValueFromServer(&turnOff), 0);
-  EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_OFF_ONCE), 0);
+  EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_START_OFF), 0);
   relay.handleAction(0, Supla::TURN_ON);
   relay.handleAction(0, Supla::TURN_OFF);
   relay.handleAction(0, Supla::TOGGLE);
@@ -1302,7 +1463,7 @@ TEST_F(RelayFixture, weeklyScheduleCommandExitsManualForcedMode) {
   relay.onLoadConfig(nullptr);
 
   auto config = makeSingleProgramWeeklySchedule(
-      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_ON_ONCE);
+      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_START_ON);
   ASSERT_EQ(relay.handleChannelConfig(&config, false),
             SUPLA_CONFIG_RESULT_TRUE);
   ASSERT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_FORCED_OFF), 1);
@@ -1315,7 +1476,7 @@ TEST_F(RelayFixture, weeklyScheduleCommandExitsManualForcedMode) {
 
   time.advance(1000);
   relay.iterateAlways();
-  EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_ON_ONCE);
+  EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_START_ON);
 }
 
 TEST_F(RelayFixture, manualForcedModeIsStoredAndRestored) {
@@ -1450,12 +1611,13 @@ TEST_F(RelayFixture, overcurrentKeepsRestoredManualForcedOnPhysicallyOff) {
   EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_FORCED_ON);
 }
 
-TEST_F(RelayFixture, manualForcedModeIsRejectedForImpulseFunction) {
+TEST_F(RelayFixture,
+       manualForcedModeIsAdvertisedButRejectedForImpulseFunction) {
   Supla::Control::Relay relay(1);
   relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
   relay.onLoadConfig(nullptr);
 
-  EXPECT_EQ(relay.getChannel()->getFlags() &
+  EXPECT_NE(relay.getChannel()->getFlags() &
                 SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED,
             0);
   EXPECT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_FORCED_ON), 0);
@@ -1565,7 +1727,7 @@ TEST_F(RelayFixture, noOpWeeklyScheduleIsStoredWithoutEnablingSchedule) {
   relay.onLoadConfig(nullptr);
 
   auto configured = makeSingleProgramWeeklySchedule(
-      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_OFF_ONCE);
+      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_START_OFF);
   EXPECT_EQ(relay.handleChannelConfig(&configured, true),
             SUPLA_CONFIG_RESULT_TRUE);
   auto *value = relayValue(relay);
@@ -1843,7 +2005,7 @@ TEST_F(RelayFixture, restoredWeeklyScheduleWaitsForClockAfterTimeout) {
   EXPECT_EQ(value->RelayMode, SUPLA_RELAY_MODE_FORCED_ON);
 }
 
-TEST_F(RelayFixture, weeklyScheduleOnOnceTriggersOnlyOnTransition) {
+TEST_F(RelayFixture, weeklyScheduleStartOnTriggersOnlyOnTransition) {
   ClockStub clock;
   EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
 
@@ -1862,8 +2024,8 @@ TEST_F(RelayFixture, weeklyScheduleOnOnceTriggersOnlyOnTransition) {
   relay.onInit();
 
   auto config = makeTransitionWeeklySchedule(SUPLA_CHANNELFNC_LIGHTSWITCH,
-                                             SUPLA_RELAY_MODE_OFF_ONCE,
-                                             SUPLA_RELAY_MODE_ON_ONCE);
+                                             SUPLA_RELAY_MODE_START_OFF,
+                                             SUPLA_RELAY_MODE_START_ON);
   EXPECT_EQ(relay.handleChannelConfig(&config, false),
             SUPLA_CONFIG_RESULT_TRUE);
   auto value = relayValue(relay);
@@ -1895,7 +2057,7 @@ TEST_F(RelayFixture, weeklyScheduleOnOnceTriggersOnlyOnTransition) {
   EXPECT_TRUE(relay.isOn());
 }
 
-TEST_F(RelayFixture, weeklyScheduleOnOnceDoesNotRetriggerImpulse) {
+TEST_F(RelayFixture, weeklyScheduleStartOnDoesNotRetriggerImpulse) {
   ClockStub clock;
   EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
 
@@ -1914,7 +2076,7 @@ TEST_F(RelayFixture, weeklyScheduleOnOnceDoesNotRetriggerImpulse) {
   relay.onInit();
 
   auto config = makeSingleProgramWeeklySchedule(
-      SUPLA_CHANNELFNC_CONTROLLINGTHEGATE, SUPLA_RELAY_MODE_ON_ONCE);
+      SUPLA_CHANNELFNC_CONTROLLINGTHEGATE, SUPLA_RELAY_MODE_START_ON);
   ASSERT_EQ(relay.handleChannelConfig(&config, false),
             SUPLA_CONFIG_RESULT_TRUE);
   enableWeeklySchedule(&relay);

@@ -268,7 +268,13 @@ class Relay : public ChannelElement, public ActionHandler {
   virtual void fillDefaultWeeklySchedule(
       TChannelConfig_WeeklySchedule *schedule);
   virtual bool canUseWeeklySchedule() const;
+  // Registration capability. Overrides must not depend on the function
+  // currently selected on the server.
   virtual bool isWeeklyScheduleProgramModeSupported(uint8_t mode) const;
+  bool isWeeklyScheduleProgramModeAvailable(uint8_t mode) const;
+  // Runtime applicability after the server-selected function is known.
+  bool isWeeklyScheduleProgramModeApplicable(uint8_t mode) const;
+  bool hasAnyWeeklyScheduleProgramModeAvailable() const;
   virtual void iterateAutomaticMode();
 
   void saveConfig() const;

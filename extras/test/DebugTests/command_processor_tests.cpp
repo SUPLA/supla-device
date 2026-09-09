@@ -203,7 +203,7 @@ TEST(CommandProcessorTests, BuildsRelayModeChannelValue) {
   EXPECT_EQ(relayValue.RelayMode, SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE);
 }
 
-TEST(CommandProcessorTests, BuildsRelayOnOnceChannelValueWithOnState) {
+TEST(CommandProcessorTests, BuildsRelayStartOnChannelValueWithOnState) {
   ChannelValueResponder responder;
   Supla::Debug::CommandProcessor processor(
       nullptr, &ChannelValueResponder::handle, &responder);
@@ -217,7 +217,7 @@ TEST(CommandProcessorTests, BuildsRelayOnOnceChannelValueWithOnState) {
   TRelayChannel_Value relayValue = {};
   memcpy(&relayValue, responder.value.value, sizeof(relayValue));
   EXPECT_EQ(relayValue.hi, 1);
-  EXPECT_EQ(relayValue.RelayMode, SUPLA_RELAY_MODE_ON_ONCE);
+  EXPECT_EQ(relayValue.RelayMode, SUPLA_RELAY_MODE_START_ON);
 }
 
 TEST(CommandProcessorTests, BuildsRelayForcedOffChannelValueWithOffState) {
@@ -337,7 +337,7 @@ TEST(CommandProcessorTests,
   CapturingWriter writer;
   ASSERT_TRUE(processor.processLine(
       "{\"op\":\"weeklySchedule\",\"channelNumber\":0,"
-      "\"programs\":[{\"mode\":\"on_once\",\"relayModeDurationS\":65535,"
+      "\"programs\":[{\"mode\":\"start_on\",\"relayModeDurationS\":65535,"
       "\"relayOppositeModeDurationS\":32768}],\"entries\":[]}",
       &writer));
   ASSERT_TRUE(responder.called);
@@ -354,7 +354,7 @@ TEST(CommandProcessorTests,
     responder.called = false;
     const std::string command =
         std::string("{\"op\":\"weeklySchedule\",\"channelNumber\":0,") +
-        "\"programs\":[{\"mode\":\"on_once\"," + fields + "}],\"entries\":[]}";
+        "\"programs\":[{\"mode\":\"start_on\"," + fields + "}],\"entries\":[]}";
     processor.processLine(command.c_str(), &writer);
     EXPECT_FALSE(responder.called) << fields;
   }

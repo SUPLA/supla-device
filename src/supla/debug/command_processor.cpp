@@ -363,8 +363,8 @@ bool readWeeklyScheduleMode(JsonReader *reader, uint8_t *mode) {
       {"not_set", SUPLA_RELAY_MODE_NOT_SET},
       {"unlocked", SUPLA_BUTTON_MODE_NOT_SET},
       {"locked", SUPLA_BUTTON_MODE_LOCKED},
-      {"on_once", SUPLA_RELAY_MODE_ON_ONCE},
-      {"off_once", SUPLA_RELAY_MODE_OFF_ONCE},
+      {"start_on", SUPLA_RELAY_MODE_START_ON},
+      {"start_off", SUPLA_RELAY_MODE_START_OFF},
       {"forced_on", SUPLA_RELAY_MODE_FORCED_ON},
       {"forced_off", SUPLA_RELAY_MODE_FORCED_OFF},
       {"automatic", SUPLA_RELAY_MODE_AUTOMATIC},
@@ -922,7 +922,7 @@ void CommandProcessor::processCommand(const Command &command,
       TRelayChannel_Value relayValue = {};
       relayValue.RelayMode = static_cast<unsigned char>(command.relayMode);
       relayValue.hi =
-          command.relayMode == SUPLA_RELAY_MODE_ON_ONCE ||
+          command.relayMode == SUPLA_RELAY_MODE_START_ON ||
                   command.relayMode == SUPLA_RELAY_MODE_FORCED_ON
               ? 1
               : 0;

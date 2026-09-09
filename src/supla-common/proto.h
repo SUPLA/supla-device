@@ -685,11 +685,13 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNEL_FLAG_CALCFG_RESTART_SUBDEVICE 0x40000000    // ver. >= 25
 #define SUPLA_CHANNEL_FLAG_BATTERY_COVER_AVAILABLE 0x80000000     // ver. >= 25
 #define SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED 0x100000000      // ver. >= 28
-#define SUPLA_CHANNEL_FLAG_RELAY_MODE_ONCE_SUPPORTED 0x200000000  // ver. >= 28
+#define SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED 0x200000000  // ver. >= 28
 #define SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED \
   0x400000000  // ver. >= 28
 #define SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED \
   0x800000000  // ver. >= 28
+#define SUPLA_CHANNEL_FLAG_RELAY_MODE_NOT_SET_SUPPORTED \
+  0x1000000000  // ver. >= 28; weekly schedule no-op program
 #pragma pack(push, 1)
 
 typedef struct {
@@ -2426,8 +2428,9 @@ typedef struct {
 
 // Relay modes and commands
 #define SUPLA_RELAY_MODE_NOT_SET 0
-#define SUPLA_RELAY_MODE_ON_ONCE 1
-#define SUPLA_RELAY_MODE_OFF_ONCE 2
+// Initial state on entering a program block (not a continuously forced state).
+#define SUPLA_RELAY_MODE_START_ON 1
+#define SUPLA_RELAY_MODE_START_OFF 2
 #define SUPLA_RELAY_MODE_FORCED_ON 3
 #define SUPLA_RELAY_MODE_FORCED_OFF 4
 #define SUPLA_RELAY_MODE_AUTOMATIC 5
@@ -3240,7 +3243,7 @@ typedef struct {
   union {
     _supla_int16_t SetpointTemperatureHeat;  // * 0.01 - used for heating
     _supla_int16_t Value1;
-    // Relay: duration of the state selected by ON_ONCE/OFF_ONCE, in seconds.
+    // Relay: duration of the state selected by START_ON/START_OFF, in seconds.
     // Zero in both duration fields preserves the untimed program behavior.
     unsigned _supla_int16_t RelayModeDurationS;
   };

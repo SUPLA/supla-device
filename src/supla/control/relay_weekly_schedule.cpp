@@ -121,7 +121,7 @@ bool RelayWeeklySchedule::isManualActionAllowed(bool turnOn) const {
 bool RelayWeeklySchedule::isProgramValid(
     const TWeeklyScheduleProgram &program) const {
   if (owner_ == nullptr ||
-      !owner_->isWeeklyScheduleProgramModeSupported(program.Mode)) {
+      !owner_->isWeeklyScheduleProgramModeApplicable(program.Mode)) {
     return false;
   }
   if (program.RelayModeDurationS == 0 &&
@@ -129,8 +129,8 @@ bool RelayWeeklySchedule::isProgramValid(
     return true;
   }
   if (program.RelayModeDurationS == 0 ||
-      (program.Mode != SUPLA_RELAY_MODE_ON_ONCE &&
-       program.Mode != SUPLA_RELAY_MODE_OFF_ONCE)) {
+      (program.Mode != SUPLA_RELAY_MODE_START_ON &&
+       program.Mode != SUPLA_RELAY_MODE_START_OFF)) {
     return false;
   }
   return program.RelayOppositeModeDurationS == 0 ||
@@ -237,7 +237,7 @@ bool RelayWeeklySchedule::processProgramAt(
   const uint32_t phase = second == 0 ? (elapsed >= first ? 1 : 0)
       : (elapsed / period) * 2 + (elapsed % period >= first ? 1 : 0);
   if (phase != phase_) {
-    const bool on = (program.Mode == SUPLA_RELAY_MODE_ON_ONCE) !=
+    const bool on = (program.Mode == SUPLA_RELAY_MODE_START_ON) !=
                     ((phase & 1) != 0);
     if (!owner_->applyWeeklyScheduleState(on)) {
       return false;
@@ -254,6 +254,13 @@ bool RelayWeeklySchedule::isWeeklyScheduleValid(
   }
 
   for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE; i++) {
+    const auto &program = newSchedule->Program[i];
+    // Empty unused definitions are valid even for a forced-only relay.
+    if (program.Mode == SUPLA_RELAY_MODE_NOT_SET &&
+        program.RelayModeDurationS == 0 &&
+        program.RelayOppositeModeDurationS == 0) {
+      continue;
+    }
     if (!isProgramValid(newSchedule->Program[i])) {
       SUPLA_LOG_WARNING("Relay[%d]: invalid weekly schedule program %d",
                         owner_->getChannelNumber(),
@@ -269,6 +276,12 @@ bool RelayWeeklySchedule::isWeeklyScheduleValid(
           "Relay[%d]: weekly schedule references invalid program %d",
           owner_->getChannelNumber(),
           programId);
+      return false;
+    }
+    const uint8_t mode = programId == 0
+                             ? SUPLA_RELAY_MODE_NOT_SET
+                             : newSchedule->Program[programId - 1].Mode;
+    if (!owner_->isWeeklyScheduleProgramModeApplicable(mode)) {
       return false;
     }
   }
@@ -293,7 +306,7 @@ bool RelayWeeklySchedule::applyWeeklyScheduleMode(
     uint8_t currentProgramMode,
     bool programChanged) {
   if (owner_ == nullptr ||
-      !owner_->isWeeklyScheduleProgramModeSupported(currentProgramMode)) {
+      !owner_->isWeeklyScheduleProgramModeApplicable(currentProgramMode)) {
     switchToManualMode();
     scheduleWeeklyScheduleStateSave();
     return false;

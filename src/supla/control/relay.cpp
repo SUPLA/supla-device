@@ -49,9 +49,27 @@ void Relay::setRelayStorageSaveDelay(uint32_t delayMs) {
 
 void Relay::fillDefaultWeeklySchedule(
     TChannelConfig_WeeklySchedule *schedule) {
-  // The native Relay default is a valid no-op schedule. Derived relay classes
-  // may fill programs and quarters for a device-specific default.
-  (void)(schedule);
+  if (schedule == nullptr ||
+      isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_NOT_SET)) {
+    // The native Relay default is an all-week no-op schedule.
+    return;
+  }
+  uint8_t defaultMode = SUPLA_RELAY_MODE_NOT_SET;
+  if (isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_FORCED_OFF)) {
+    defaultMode = SUPLA_RELAY_MODE_FORCED_OFF;
+  } else if (isWeeklyScheduleProgramModeAvailable(
+                 SUPLA_RELAY_MODE_START_OFF)) {
+    defaultMode = SUPLA_RELAY_MODE_START_OFF;
+  } else if (isWeeklyScheduleProgramModeAvailable(
+                 SUPLA_RELAY_MODE_AUTOMATIC)) {
+    defaultMode = SUPLA_RELAY_MODE_AUTOMATIC;
+  }
+  if (defaultMode != SUPLA_RELAY_MODE_NOT_SET) {
+    // A Relay without no-op support needs a valid safe default. Program IDs
+    // are packed into nibbles, so 0x11 selects program 1 for both quarters.
+    schedule->Program[0].Mode = defaultMode;
+    memset(schedule->Quarters, 0x11, sizeof(schedule->Quarters));
+  }
 }
 
 Relay::Relay(Supla::Io::IoPin outputPin, _supla_int_t functions)
@@ -182,50 +200,69 @@ bool Relay::ensureNativeWeeklyScheduleController() {
 }
 
 void Relay::updateWeeklyScheduleCapabilities() {
-  ensureNativeWeeklyScheduleController();
+  // Registration capabilities describe the Relay implementation, not the
+  // function currently selected on the server. Keep controller allocation
+  // lazy until the selected function can actually use native weekly schedule.
+  if (isWeeklyScheduleSupported()) {
+    ensureNativeWeeklyScheduleController();
+  }
   auto *controller = weeklyScheduleComponents.getController();
   auto *configHandler = weeklyScheduleComponents.getConfigHandler();
+  const bool nativeWeeklySchedule =
+      canUseWeeklySchedule() && !weeklyScheduleComponents.isAssigned();
   const bool configurableWeeklySchedule =
-      configHandler && configHandler->supportsConfigType(
-                           SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+      (nativeWeeklySchedule ||
+       (configHandler && configHandler->supportsConfigType(
+                             SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))) &&
+      hasAnyWeeklyScheduleProgramModeAvailable();
   const bool externalWeeklySchedule =
       controller && controller->isExternallyManaged();
-  if (isWeeklyScheduleSupported() && configurableWeeklySchedule) {
+  if (configurableWeeklySchedule &&
+      isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_NOT_SET)) {
+    channel.setFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_NOT_SET_SUPPORTED);
+  } else {
+    channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_NOT_SET_SUPPORTED);
+  }
+  if (configurableWeeklySchedule) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
-    if (isWeeklyScheduleProgramModeSupported(SUPLA_RELAY_MODE_ON_ONCE) &&
-        isWeeklyScheduleProgramModeSupported(SUPLA_RELAY_MODE_OFF_ONCE)) {
-      channel.setFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_ONCE_SUPPORTED);
+    if (isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_START_ON)) {
+      channel.setFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED);
     } else {
-      channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_ONCE_SUPPORTED);
+      channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED);
     }
     usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
-  } else if (isWeeklyScheduleSupported() && externalWeeklySchedule) {
+  } else if (externalWeeklySchedule) {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
-    channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_ONCE_SUPPORTED);
+    channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED);
     usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   } else {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
-    channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_ONCE_SUPPORTED);
+    channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED);
     usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
-    if (controller != nullptr) {
+    if (controller != nullptr && !isWeeklyScheduleSupported()) {
       controller->switchToManualMode();
     } else {
       channel.setRelayWeeklyScheduleEnabled(false);
     }
   }
-  if (isManualForcedModeSupported()) {
+  if (isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_FORCED_ON)) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED);
   } else {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED);
   }
   updateAutomaticModeCapability();
+  if (!isWeeklyScheduleSupported()) {
+    if (controller != nullptr && controller->isActive()) {
+      controller->switchToManualMode();
+    }
+    channel.setRelayWeeklyScheduleEnabled(false);
+  }
 }
 
 void Relay::updateAutomaticModeCapability() {
   auto *controller = weeklyScheduleComponents.getController();
   if (isAutomaticModeSupported() ||
-      (isWeeklyScheduleSupported() && controller != nullptr &&
-       controller->isExternallyManaged())) {
+      (controller != nullptr && controller->isExternallyManaged())) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED);
   } else {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED);
@@ -252,9 +289,10 @@ Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
   updateRelayHvacAggregator();
 
   auto *configHandler = weeklyScheduleComponents.getConfigHandler();
-  if (configHandler != nullptr &&
-      result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE &&
-      isWeeklyScheduleSupported()) {
+  if (result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
+    if (!isWeeklyScheduleSupported() || configHandler == nullptr) {
+      return Supla::ApplyConfigResult::NotSupported;
+    }
     return configHandler->applyChannelConfig(result, local);
   }
 
@@ -1402,7 +1440,7 @@ void Relay::iterateAutomaticMode() {
 }
 
 bool Relay::isManualForcedModeSupported() const {
-  return isWeeklyScheduleSupported() && !isImpulseFunction();
+  return isWeeklyScheduleProgramModeApplicable(SUPLA_RELAY_MODE_FORCED_ON);
 }
 
 bool Relay::setManualForcedMode(uint8_t mode) {
@@ -1440,22 +1478,19 @@ bool Relay::isManualActionAllowed(bool turnOn) const {
 }
 
 bool Relay::isWeeklyScheduleProgramModeSupported(uint8_t mode) const {
-  if (!isWeeklyScheduleSupported()) {
+  if (!canUseWeeklySchedule()) {
     return false;
   }
 
   switch (mode) {
     case SUPLA_RELAY_MODE_NOT_SET:
-    case SUPLA_RELAY_MODE_OFF_ONCE:
-    case SUPLA_RELAY_MODE_ON_ONCE: {
+    case SUPLA_RELAY_MODE_START_OFF:
+    case SUPLA_RELAY_MODE_START_ON: {
       return true;
     }
     case SUPLA_RELAY_MODE_FORCED_ON:
     case SUPLA_RELAY_MODE_FORCED_OFF: {
-      // Forced modes are advertised as a pair. FORCED_ON would repeatedly
-      // retrigger an impulse function after its duration expires, so impulse
-      // functions support neither forced mode.
-      return !isImpulseFunction();
+      return true;
     }
     case SUPLA_RELAY_MODE_AUTOMATIC: {
       return isAutomaticModeSupported();
@@ -1464,6 +1499,51 @@ bool Relay::isWeeklyScheduleProgramModeSupported(uint8_t mode) const {
       return false;
     }
   }
+}
+
+bool Relay::isWeeklyScheduleProgramModeAvailable(uint8_t mode) const {
+  if (!canUseWeeklySchedule()) {
+    return false;
+  }
+  switch (mode) {
+    case SUPLA_RELAY_MODE_AUTOMATIC: {
+      // Automatic is a Relay operating mode available both inside and outside
+      // weekly schedule. Keep setAutomaticModeSupported() as its single source
+      // of capability.
+      return isAutomaticModeSupported();
+    }
+    case SUPLA_RELAY_MODE_START_ON:
+    case SUPLA_RELAY_MODE_START_OFF: {
+      return isWeeklyScheduleProgramModeSupported(SUPLA_RELAY_MODE_START_ON) &&
+             isWeeklyScheduleProgramModeSupported(SUPLA_RELAY_MODE_START_OFF);
+    }
+    case SUPLA_RELAY_MODE_FORCED_ON:
+    case SUPLA_RELAY_MODE_FORCED_OFF: {
+      return isWeeklyScheduleProgramModeSupported(SUPLA_RELAY_MODE_FORCED_ON) &&
+             isWeeklyScheduleProgramModeSupported(
+                 SUPLA_RELAY_MODE_FORCED_OFF);
+    }
+    default: {
+      return isWeeklyScheduleProgramModeSupported(mode);
+    }
+  }
+}
+
+bool Relay::isWeeklyScheduleProgramModeApplicable(uint8_t mode) const {
+  if (!isWeeklyScheduleSupported() ||
+      (isImpulseFunction() &&
+       (mode == SUPLA_RELAY_MODE_FORCED_ON ||
+        mode == SUPLA_RELAY_MODE_FORCED_OFF))) {
+    return false;
+  }
+  return isWeeklyScheduleProgramModeAvailable(mode);
+}
+
+bool Relay::hasAnyWeeklyScheduleProgramModeAvailable() const {
+  return isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_NOT_SET) ||
+         isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_START_ON) ||
+         isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_FORCED_ON) ||
+         isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_AUTOMATIC);
 }
 
 void Relay::notifyWeeklyScheduleManualAction() {
@@ -1494,14 +1574,14 @@ bool Relay::applyWeeklyScheduleState(bool on) {
 void Relay::applyWeeklyScheduleProgram(uint8_t programMode,
                                        bool programChanged) {
   switch (programMode) {
-    case SUPLA_RELAY_MODE_ON_ONCE: {
+    case SUPLA_RELAY_MODE_START_ON: {
       if (programChanged && !isOn() &&
           !getChannel()->isRelayOvercurrentCutOff()) {
         turnOn();
       }
       return;
     }
-    case SUPLA_RELAY_MODE_OFF_ONCE: {
+    case SUPLA_RELAY_MODE_START_OFF: {
       if (programChanged && isOn()) {
         turnOff();
       }

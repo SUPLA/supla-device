@@ -402,7 +402,7 @@ TEST(WeeklyScheduleInfrastructureTests,
   config.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
   auto *schedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
-  schedule->Program[0].Mode = SUPLA_RELAY_MODE_ON_ONCE;
+  schedule->Program[0].Mode = SUPLA_RELAY_MODE_START_ON;
   handler.applyChannelConfig(&config, false);
   ASSERT_TRUE(handler.hasCachedSchedule());
   handler.releaseInactiveSchedule(16000);
@@ -412,7 +412,7 @@ TEST(WeeklyScheduleInfrastructureTests,
   handler.fillChannelConfig(&restored, &size,
                             SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   EXPECT_EQ(size, sizeof(restored));
-  EXPECT_EQ(restored.Program[0].Mode, SUPLA_RELAY_MODE_ON_ONCE);
+  EXPECT_EQ(restored.Program[0].Mode, SUPLA_RELAY_MODE_START_ON);
 }
 
 TEST(WeeklyScheduleInfrastructureTests,

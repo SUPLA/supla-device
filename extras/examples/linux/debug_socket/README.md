@@ -60,7 +60,7 @@ printf '%s\n' '{"op":"channelValue","channelNumber":0,"relayMode":4}' | nc -U /t
 printf '%s\n' '{"op":"channelValue","channelNumber":0,"relayMode":5}' | nc -U /tmp/sd4linux-debug.sock
 ```
 
-Relay modes are: `0` not set, `1` on once, `2` off once, `3` forced on, `4`
+Relay modes are: `0` not set, `1` start on, `2` start off, `3` forced on, `4`
 forced off, `5` automatic, `6` switch to weekly schedule, and `7` switch to
 manual. For a synthesized server value, modes `1` and `3` carry the ON state,
 while modes `2` and `4` carry the OFF state. Selecting forced on/off exits an
@@ -128,14 +128,20 @@ Schedule rules:
 - Later entries overwrite earlier entries where they overlap.
 - Program numbers start at `1` and refer to the `programs` array. Up to four
   programs can be defined.
-- Relay program modes are `not_set`, `on_once`, `off_once`, `forced_on`,
+- Relay program modes are `not_set`, `start_on`, `start_off`, `forced_on`,
   `forced_off`, and `automatic`. The target Relay must advertise support for a
   selected mode; in particular, `automatic` requires
   `setAutomaticModeSupported()`. Numeric protocol mode values are also accepted.
+  `start_on` / `start_off` select the initial state when entering a program
+  block; they do not force that state continuously.
+  `not_set` requires `SUPLA_CHANNEL_FLAG_RELAY_MODE_NOT_SET_SUPPORTED`.
+  A custom Relay can restrict programs by overriding
+  `isWeeklyScheduleProgramModeSupported()`; if no-op is unsupported, it should
+  also provide a supported default via `fillDefaultWeeklySchedule()`.
 - Optional signed 16-bit `value1` and `value2` fields can be added to a program.
   These remain raw protocol aliases; do not combine an alias with its named
   duration field in the same program.
-- Relay `on_once` and `off_once` accept `relayModeDurationS` and
+- Relay `start_on` and `start_off` accept `relayModeDurationS` and
   `relayOppositeModeDurationS` (integer seconds, 0..65535). The first duration
   applies to the state selected by `mode`, the second to the opposite state.
   Both zero preserve the untimed behavior. A positive first duration with a zero
@@ -157,17 +163,17 @@ Schedule rules:
 Example program objects (insert into the `programs` array):
 
 ```json
-{"mode":"on_once","relayModeDurationS":120}
+{"mode":"start_on","relayModeDurationS":120}
 ```
 
 ON for two minutes from the beginning of the interval, then OFF.
 
 ```json
-{"mode":"on_once","relayModeDurationS":60,"relayOppositeModeDurationS":240}
+{"mode":"start_on","relayModeDurationS":60,"relayOppositeModeDurationS":240}
 ```
 
 ON for one minute, OFF for four minutes, repeated until the interval ends.
-Use `off_once` to start with the OFF phase instead.
+Use `start_off` to start with the OFF phase instead.
 
 Both `programs` and `entries` are required. Empty arrays save a no-op schedule
 without enabling weekly schedule mode.

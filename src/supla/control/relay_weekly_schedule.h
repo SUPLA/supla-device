@@ -69,6 +69,9 @@ class RelayWeeklySchedule : public NativeWeeklyScheduleController {
                            bool alt) override;
   void onNativeScheduleApplied(bool alt, bool local, bool changed) override;
   void resetRuntimeOverride();
+  bool processProgramAt(const WeeklyScheduleTimeSnapshot &time,
+                        const TWeeklyScheduleProgram &program,
+                        int programId, bool programChanged, bool manualAction);
 
   Relay *owner_ = nullptr;
   int32_t occurrence_ = -1;
@@ -76,7 +79,6 @@ class RelayWeeklySchedule : public NativeWeeklyScheduleController {
   uint32_t phase_ = UINT32_MAX;
   bool timed_ = false;
   bool suppressed_ = false;
-  bool programResolved_ = false;
   bool pendingManualAction_ = false;
 };
 

@@ -132,12 +132,8 @@ void HvacWeeklySchedule::unloadSchedulesIfPossible() {
 
   SUPLA_LOG_DEBUG("HVAC[%d]: unloading weekly schedule cache",
                   owner_->getChannelNumber());
-  if (isPersisted(false)) {
-    unloadSchedule(false);
-  }
-  if (isPersisted(true)) {
-    unloadSchedule(true);
-  }
+  unloadSchedule(false);
+  unloadSchedule(true);
 }
 
 void HvacWeeklySchedule::processCacheRelease() {

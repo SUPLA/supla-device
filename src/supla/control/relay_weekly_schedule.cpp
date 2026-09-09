@@ -141,7 +141,6 @@ void RelayWeeklySchedule::resetRuntimeOverride() {
   phase_ = UINT32_MAX;
   timed_ = false;
   suppressed_ = false;
-  programResolved_ = false;
   pendingManualAction_ = false;
 }
 
@@ -149,11 +148,18 @@ void RelayWeeklySchedule::onManualAction() {
   if (!isActive()) {
     return;
   }
-  if (!programResolved_) {
+  const auto time = getWeeklyScheduleTimeSnapshot(false);
+  TWeeklyScheduleProgram program = {};
+  int programId = -1;
+  if (time.state != WeeklyScheduleClockState::Ready ||
+      !resolveWeeklyScheduleProgram(time, &program, &programId)) {
     pendingManualAction_ = true;
-  } else if (timed_) {
-    suppressed_ = true;
+    return;
   }
+  // Resolve the occurrence at command time without driving the output. The
+  // next iteration may already belong to another program.
+  processProgramAt(time, program, programId,
+                   updateCurrentProgramId(programId), true);
 }
 
 void RelayWeeklySchedule::onWeeklyScheduleClockState(
@@ -161,13 +167,19 @@ void RelayWeeklySchedule::onWeeklyScheduleClockState(
   if (state != WeeklyScheduleClockState::Ready) {
     syncWeeklyScheduleMode(SUPLA_RELAY_MODE_NOT_SET);
     phase_ = UINT32_MAX;
-    programResolved_ = false;
   }
 }
 
 bool RelayWeeklySchedule::applyProgramAt(
     const WeeklyScheduleTimeSnapshot &time,
     const TWeeklyScheduleProgram &program, int programId, bool programChanged) {
+  return processProgramAt(time, program, programId, programChanged, false);
+}
+
+bool RelayWeeklySchedule::processProgramAt(
+    const WeeklyScheduleTimeSnapshot &time,
+    const TWeeklyScheduleProgram &program, int programId, bool programChanged,
+    bool manualAction) {
   if (programId > 0 && !isProgramValid(program)) {
     switchToManualMode();
     scheduleWeeklyScheduleStateSave();
@@ -190,6 +202,9 @@ bool RelayWeeklySchedule::applyProgramAt(
         time, programId, &occurrence, &elapsed);
   }
   const bool changed = programChanged || (timed_ && occurrence != occurrence_);
+  if (manualAction) {
+    pendingManualAction_ = true;
+  }
   if (changed) {
     occurrence_ = occurrence;
     phase_ = UINT32_MAX;
@@ -198,16 +213,19 @@ bool RelayWeeklySchedule::applyProgramAt(
     suppressed_ = true;
   }
   if (!timed_ || hasTiming) {
-    programResolved_ = true;
     pendingManualAction_ = false;
   }
   if (!timed_) {
     occurrence_ = -1;
     lastTimingQuarter_ = -1;
-    return applyWeeklyScheduleMode(programId > 0 ? program.Mode : 0, changed);
+    return !manualAction &&
+        applyWeeklyScheduleMode(programId > 0 ? program.Mode : 0, changed);
   }
   if (hasTiming) {
     lastTimingQuarter_ = absoluteQuarter;
+  }
+  if (manualAction) {
+    return false;
   }
   syncWeeklyScheduleMode(program.Mode);
   if (!hasTiming || suppressed_ || !owner_->isFullyInitialized()) {

@@ -325,6 +325,10 @@ void NativeWeeklyScheduleConfigHandler::clearSchedules() {
 }
 
 void NativeWeeklyScheduleConfigHandler::unloadSchedule(bool alt) {
+  // Never discard the only copy after a failed or unavailable storage write.
+  if (!isPersisted(alt)) {
+    return;
+  }
   buffer_.clear(alt);
   loadAttempted_[alt ? 1 : 0] = false;
 }

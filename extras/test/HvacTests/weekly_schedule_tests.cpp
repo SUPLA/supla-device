@@ -389,6 +389,33 @@ TEST(WeeklyScheduleInfrastructureTests, InvalidStoredScheduleIsDiscarded) {
 }
 
 TEST(WeeklyScheduleInfrastructureTests,
+     FailedWriteKeepsInactiveScheduleInMemory) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  SimpleTime time;
+  Supla::ChannelElement storageOwner(0);
+  NativeWeeklyScheduleHandlerForTests handler(&storageOwner, true);
+  EXPECT_CALL(cfg, setBlob(StrEq("0_weekly"), _,
+                           sizeof(TChannelConfig_WeeklySchedule)))
+      .WillOnce(Return(false));
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  config.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  auto *schedule =
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
+  schedule->Program[0].Mode = SUPLA_RELAY_MODE_ON_ONCE;
+  handler.applyChannelConfig(&config, false);
+  ASSERT_TRUE(handler.hasCachedSchedule());
+  handler.releaseInactiveSchedule(16000);
+  EXPECT_TRUE(handler.hasCachedSchedule());
+  TChannelConfig_WeeklySchedule restored = {};
+  int size = 0;
+  handler.fillChannelConfig(&restored, &size,
+                            SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  EXPECT_EQ(size, sizeof(restored));
+  EXPECT_EQ(restored.Program[0].Mode, SUPLA_RELAY_MODE_ON_ONCE);
+}
+
+TEST(WeeklyScheduleInfrastructureTests,
      LoadedStoredScheduleIsReleasedWhenInactive) {
   ConfigMock cfg;
   SimpleTime time;

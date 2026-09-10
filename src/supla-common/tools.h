@@ -7,6 +7,7 @@
 #define suplatools_H_
 
 #include <stdlib.h>
+#include <time.h>
 
 #include "proto.h"
 
@@ -42,6 +43,7 @@ void st_authkey2hex(char AuthKeyHEX[SUPLA_AUTHKEY_HEXSIZE],
 
 char *st_str2hex(char *buffer, const char *str, size_t maxlen);
 char *st_bin2hex(char *buffer, const char *src, size_t len);
+int st_hex2bin(char *buffer, const char *src, size_t len);
 
 char st_read_randkey_from_file(char *file, char *KEY, int size, char create);
 char st_read_guid_from_file(char *file, char *GUID, char create);
@@ -49,6 +51,7 @@ char st_read_authkey_from_file(char *file, char *AuthKey, char create);
 
 time_t st_get_utc_time(void);
 
+char *st_timestamp_to_zulu_time(char buffer[64], time_t timestamp);
 char *st_get_zulu_time(char buffer[64]);
 char *st_get_datetime_str(char buffer[64]);
 
@@ -56,7 +59,7 @@ _color_hsv_t st_rgb2hsv(int rgb);
 int st_hsv2rgb(_color_hsv_t in);
 int st_hue2rgb(double hue);
 
-void st_random_alpha_string(char *buffer, int buffer_size);
+char st_random_alpha_string(char *buffer, size_t buffer_size);
 void st_uuid_v4(char buffer[37]);
 
 #ifdef __BCRYPT

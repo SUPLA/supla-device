@@ -53,6 +53,7 @@ target_include_directories(suplalinuxlib PUBLIC
   "${SUPLA_DEVICE_PATH}/extras/porting/linux"
 )
 
+target_link_libraries(supladevicelib PRIVATE OpenSSL::Crypto)
 target_link_libraries(suplalinuxlib PUBLIC supladevicelib)
 target_link_libraries(supla-device-linux PRIVATE supladevicelib suplalinuxlib)
 

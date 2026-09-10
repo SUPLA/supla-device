@@ -118,16 +118,14 @@ bool Supla::LinuxYamlConfig::addCommonChannelParameters(
 void Supla::LinuxYamlConfig::logError(const std::string& filename,
                                       const YAML::Exception& ex) const {
   if (ex.mark.line >= 0 && ex.mark.column >= 0) {
-    SUPLA_LOG_ERROR(
-        "Config file YAML error in '%s' at line %d, column %d: %s",
-        filename.c_str(),
-        ex.mark.line + 1,
-        ex.mark.column + 1,
-        ex.what());
-  } else {
-    SUPLA_LOG_ERROR("Config file YAML error in '%s': %s",
+    SUPLA_LOG_ERROR("Config file YAML error in '%s' at line %d, column %d: %s",
                     filename.c_str(),
+                    ex.mark.line + 1,
+                    ex.mark.column + 1,
                     ex.what());
+  } else {
+    SUPLA_LOG_ERROR(
+        "Config file YAML error in '%s': %s", filename.c_str(), ex.what());
   }
 }
 
@@ -916,14 +914,6 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
                       type.c_str());
       return false;
     }
-
-    if (ch.size() >
-        usedChannelParameters.size() + untrackedChannelParameterCount) {
-      SUPLA_LOG_WARNING("Channel[%d] config: too many parameters",
-                        channelNumber);
-    }
-    return true;
-
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"type\" parameter",
                     channelIndex);
@@ -1766,20 +1756,20 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
 
       for (auto param : phaseParameters) {
         std::string paramName;
-        for (std::string_view name : {"voltage",
-                                      "current",
-                                      "fwd_act_energy",
-                                      "rvr_act_energy",
-                                      "fwd_react_energy",
-                                      "rvr_react_energy",
-                                      "power_active",
-                                      "rvr_power_active",
-                                      "power_reactive",
-                                      "power_apparent",
-                                      "phase_angle",
-                                      "power_factor"}) {
+        for (const char* name : {"voltage",
+                                 "current",
+                                 "fwd_act_energy",
+                                 "rvr_act_energy",
+                                 "fwd_react_energy",
+                                 "rvr_react_energy",
+                                 "power_active",
+                                 "rvr_power_active",
+                                 "power_reactive",
+                                 "power_apparent",
+                                 "phase_angle",
+                                 "power_factor"}) {
           if (param[name]) {
-            paramName = std::string{name} + "_" +   // NOLINT(whitespace/braces)
+            paramName = std::string{name} + "_" +  // NOLINT(whitespace/braces)
                         std::to_string(phaseId);
             if (parser->isBasedOnIndex()) {
               int index = param[name].as<int>();

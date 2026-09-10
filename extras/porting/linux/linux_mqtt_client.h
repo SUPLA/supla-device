@@ -59,9 +59,6 @@ class LinuxMqttClient {
   std::string password;
   std::string clientName;
 
-  std::array<uint8_t, 8192> sendbuf;
-  std::array<uint8_t, 2048> recvbuf;
-
   static std::shared_ptr<Supla::LinuxMqttClient> instance;
 };
 

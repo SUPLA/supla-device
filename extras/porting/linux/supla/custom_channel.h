@@ -21,7 +21,6 @@ class CustomChannel
   void setValue(std::string);
 
  private:
-  uint8_t valueBuf[SUPLA_CHANNELVALUE_SIZE] = {};
   Supla::Channel channel;
 };
 

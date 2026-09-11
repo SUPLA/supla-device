@@ -20,7 +20,10 @@ class SSD1306 {
 
   explicit SSD1306(Supla::I2CDriver *driver,
                    uint8_t address = 0x3C,
-                   uint32_t frequency = 400000);
+                   uint32_t frequency = 400000,
+                   uint8_t height = HEIGHT);
+
+  int getHeight() const;
 
   bool initialize();
   bool isInitialized() const;
@@ -40,8 +43,6 @@ class SSD1306 {
   void flush();
 
  protected:
-  static constexpr int DISPLAY_PAGES = HEIGHT / 8;
-
   bool flushRegion(int firstPage,
                    int pageCount,
                    int firstColumn,
@@ -57,6 +58,7 @@ class SSD1306 {
 
   uint8_t address = 0;
   uint32_t frequency = 0;
+  uint8_t displayHeight = HEIGHT;
   bool initialized = false;
   bool screenOn = false;
   Supla::I2CDriver *driver = nullptr;

@@ -557,64 +557,8 @@ int st_hue2rgb(double hue) {
   return st_hsv2rgb(hsv);
 }
 
-static char st_get_random_bytes(unsigned char *buffer, size_t size) {
-#ifdef __ANDROID__
-
-  arc4random_buf(buffer, size);
-  return true;
-
-#else
-
-  size_t pos = 0;
-
-  while (pos < size) {
-    ssize_t result = getrandom(buffer + pos, size - pos, 0);
-
-    if (result < 0) {
-      if (errno == EINTR) {
-        continue;
-      }
-
-      return 0;
-    }
-
-    pos += result;
-  }
-
-  return 1;
-
-#endif
-}
-
-char st_random_alpha_string(char *buffer, size_t buffer_size) {
-  static const char charset[] =
-      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-  if (buffer == NULL || buffer_size == 0) {
-    return 0;
-  }
-
-  size_t pos = 0;
-
-  while (pos < buffer_size - 1) {
-    unsigned char random_buf[128];
-
-    if (!st_get_random_bytes(random_buf, sizeof(random_buf))) {
-      return 0;
-    }
-
-    for (size_t i = 0; i < sizeof(random_buf) && pos < buffer_size - 1; i++) {
-      // 248 = largest multiple of 62 less than 256.
-      // Rejecting 248..255 removes the modulo bias.
-      if (random_buf[i] < 248) {
-        buffer[pos++] = charset[random_buf[i] % 62];
-      }
-    }
-  }
-
-  buffer[pos] = '\0';
-
-  return 1;
+char st_random_alpha_string(char *, size_t ) {
+  return 0;
 }
 
 void st_uuid_v4(char buffer[37]) {

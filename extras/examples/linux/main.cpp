@@ -3,7 +3,7 @@
 
 #include <SuplaDevice.h>
 #include <linux_network.h>
-#include <supla-common/tools.h>
+#include <linux_process.h>
 #include <supla/control/dimmer_leds.h>
 #include <supla/control/rgb_leds.h>
 #include <supla/control/rgbw_leds.h>

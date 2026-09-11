@@ -557,7 +557,9 @@ int st_hue2rgb(double hue) {
   return st_hsv2rgb(hsv);
 }
 
-char st_random_alpha_string(char *, size_t ) {
+char st_random_alpha_string(char *buffer, size_t buffer_size) {
+  (void)(buffer);
+  (void)(buffer_size);
   return 0;
 }
 

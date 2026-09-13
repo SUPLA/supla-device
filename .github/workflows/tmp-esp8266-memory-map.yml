@@ -1,4 +1,4 @@
-name: Temporary ESP8266 normalized memory experiments
+name: Temporary ESP8266 fixed-stack memory experiments
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  normalized-memory-experiments:
+  fixed-stack-experiments:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
           git clone --depth 1 https://github.com/kevinlutzer/Arduino-PM1006K || true
           git clone --depth 1 https://github.com/arduino-libraries/Arduino_JSON || true
 
-      - name: Prepare one fixed source path
+      - name: Prepare fixed source path
         shell: bash
         run: |
           set -euxo pipefail
@@ -43,102 +43,97 @@ jobs:
           rm -rf "$HOME/Arduino/libraries/SuplaDevice"
           ln -s /tmp/sd-work "$HOME/Arduino/libraries/SuplaDevice"
 
-      - name: Build normalized variants
+      - name: Build fixed-stack variants
         shell: bash
         run: |
           set -euxo pipefail
-          rm -rf out-normalized
-          mkdir -p out-normalized
+          rm -rf out-fixed-stack
+          mkdir -p out-fixed-stack
           TOOLROOT="$HOME/.arduino15/packages/esp8266/tools/xtensa-lx106-elf-gcc"
           NM="$(find "$TOOLROOT" -type f -name xtensa-lx106-elf-nm | head -n1)"
           SIZE="$(find "$TOOLROOT" -type f -name xtensa-lx106-elf-size | head -n1)"
 
-          reset_v268() {
+          force_noextra4k() {
+            python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/sd-work/examples/esp/Simple/Simple.ino')
+          s=p.read_text()
+          if '#include <coredecls.h>' not in s:
+              s=s.replace('#include <SuplaDevice.h>', '#include <SuplaDevice.h>\n#ifdef ESP8266\n#include <coredecls.h>\n#endif', 1)
+          if 'disable_extra4k_at_link_time();' not in s:
+              s=s.replace('void setup() {', 'void setup() {\n#ifdef ESP8266\n  disable_extra4k_at_link_time();\n#endif', 1)
+          p.write_text(s)
+          PY
+          }
+
+          checkout_tag() {
+            tag="$1"
             cd /tmp/sd-work
-            git reset --hard v26.8
+            git reset --hard "$tag"
             git clean -fd
+            force_noextra4k
           }
 
           build_one() {
             name="$1"
-            out="$GITHUB_WORKSPACE/out-normalized/$name"
-            rm -rf "$out"
-            mkdir -p "$out/build"
+            out="$GITHUB_WORKSPACE/out-fixed-stack/$name"
+            rm -rf "$out"; mkdir -p "$out/build"
             arduino-cli compile --fqbn esp8266:esp8266:generic --build-path "$out/build" --warnings all /tmp/sd-work/examples/esp/Simple 2>&1 | tee "$out/compile.log"
             elf="$(find "$out/build" -type f -name '*.elf' | head -n1)"
             map="$(find "$out/build" -type f -name '*.map' | head -n1)"
-            cp "$elf" "$out/Simple.elf"
-            cp "$map" "$out/Simple.map"
+            cp "$elf" "$out/Simple.elf"; cp "$map" "$out/Simple.map"
             "$SIZE" -A "$elf" > "$out/size-sections.txt"
             "$NM" -S --size-sort -C "$elf" > "$out/nm-size-sort.txt"
             grep -E 'Variables and constants|Instruction RAM|Code in flash' "$out/compile.log" > "$out/arduino-memory.txt" || true
-            grep -E 'core_esp8266_app_entry_noextra4k|g_cont|ESP8266WiFiSTA-WPS' "$map" > "$out/extra4k-map.txt" || true
+            grep -E 'g_cont|core_esp8266_app_entry_noextra4k' "$map" > "$out/stack-map.txt" || true
           }
 
-          reset_v268
-          build_one baseline-a
+          # v26.4 and v26.8 with identical forced no-extra-4k stack mode.
+          checkout_tag v26.4
+          build_one v26.4-noextra4k
 
-          # Same sources, second build: check reproducibility with fixed source path.
-          reset_v268
-          build_one baseline-b
+          checkout_tag v26.8
+          build_one v26.8-noextra4k
 
-          # Disable SRPC packet hooks only.
-          reset_v268
+          # Same v26.8 + packet hooks disabled, while still forcing no-extra-4k.
+          checkout_tag v26.8
           python3 - <<'PY'
           from pathlib import Path
           p=Path('/tmp/sd-work/src/supla-common/srpc.h')
-          s=p.read_text()
-          marker='#define SRPC_WITH_PACKET_LOG_HOOKS\n#endif\n'
+          s=p.read_text(); marker='#define SRPC_WITH_PACKET_LOG_HOOKS\n#endif\n'
           repl=marker+'\n#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)\n#undef SRPC_WITH_PACKET_LOG_HOOKS\n#endif\n'
-          if marker not in s: raise SystemExit('marker missing')
+          if marker not in s: raise SystemExit('SRPC marker missing')
           p.write_text(s.replace(marker,repl,1))
           PY
-          build_one nosrpc
+          build_one v26.8-noextra4k-nosrpc
 
-          # Restore only v26.4 global HTML/JS/CSS source file.
-          reset_v268
+          # Same v26.8 + v26.4 HTML generator assets, same stack mode.
+          checkout_tag v26.8
           git -C /tmp/sd-work show v26.4:src/supla/network/html_generator.cpp > /tmp/sd-work/src/supla/network/html_generator.cpp
-          build_one oldhtml
+          build_one v26.8-noextra4k-oldhtml
 
-          # Explicitly force ESP8266 no-extra-4k mode on otherwise unchanged v26.8.
-          reset_v268
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('/tmp/sd-work/examples/esp/Simple/Simple.ino')
-          s=p.read_text()
-          s=s.replace('#include <SuplaDevice.h>', '#include <SuplaDevice.h>\n#ifdef ESP8266\n#include <coredecls.h>\n#endif', 1)
-          needle='void setup() {'
-          repl='void setup() {\n#ifdef ESP8266\n  disable_extra4k_at_link_time();\n#endif'
-          if needle not in s: raise SystemExit('setup missing')
-          p.write_text(s.replace(needle,repl,1))
-          PY
-          build_one noextra4k
-
-      - name: Generate normalized report
+      - name: Generate fixed-stack report
         shell: bash
         run: |
           python3 - <<'PY'
           import re
           from pathlib import Path
-          root=Path('out-normalized')
-          names=['baseline-a','baseline-b','nosrpc','oldhtml','noextra4k']
+          root=Path('out-fixed-stack')
+          names=['v26.4-noextra4k','v26.8-noextra4k','v26.8-noextra4k-nosrpc','v26.8-noextra4k-oldhtml']
           def sec(n):
             d={}
             for line in (root/n/'size-sections.txt').read_text(errors='replace').splitlines():
               m=re.match(r'^([.A-Za-z0-9_]+)\s+(\d+)\s+',line.strip())
               if m:d[m.group(1)]=int(m.group(2))
             return d
-          data={n:sec(n) for n in names}
-          b=data['baseline-a']
+          data={n:sec(n) for n in names}; b=data['v26.8-noextra4k']
           bram=sum(b.get(x,0) for x in ['.data','.rodata','.bss'])
-          with (root/'normalized-report.txt').open('w') as f:
-            f.write('ESP8266 core 3.1.2; fixed source path /tmp/sd-work\n')
-            f.write('variant\t.data\t.rodata\t.bss\tflash\tRAM\tdRAM\tdFlash\tnoextra4k\n')
+          with (root/'fixed-stack-report.txt').open('w') as f:
+            f.write('ESP8266 core 3.1.2; fixed source path; no-extra-4k forced for every variant\n')
+            f.write('variant\t.data\t.rodata\t.bss\tflash\tRAM\tdRAM_vs_v26.8\tdFlash_vs_v26.8\n')
             for n in names:
-              s=data[n]
-              ram=sum(s.get(x,0) for x in ['.data','.rodata','.bss'])
-              noextra='yes' if 'g_cont' in (root/n/'extra4k-map.txt').read_text(errors='replace') else 'no'
-              f.write(f"{n}\t{s.get('.data',0)}\t{s.get('.rodata',0)}\t{s.get('.bss',0)}\t{s.get('.irom0.text',0)}\t{ram}\t{ram-bram:+d}\t{s.get('.irom0.text',0)-b.get('.irom0.text',0):+d}\t{noextra}\n")
+              s=data[n]; ram=sum(s.get(x,0) for x in ['.data','.rodata','.bss'])
+              f.write(f"{n}\t{s.get('.data',0)}\t{s.get('.rodata',0)}\t{s.get('.bss',0)}\t{s.get('.irom0.text',0)}\t{ram}\t{ram-bram:+d}\t{s.get('.irom0.text',0)-b.get('.irom0.text',0):+d}\n")
             f.write('\nArduino summaries:\n')
             for n in names:
               f.write(n+': '+' | '.join((root/n/'arduino-memory.txt').read_text(errors='replace').splitlines())+'\n')
@@ -152,37 +147,31 @@ jobs:
               except:continue
               d[(p[2],p[3])]=d.get((p[2],p[3]),0)+z
             return d
-          base=nm('baseline-a')
-          for n in ['nosrpc','oldhtml','noextra4k']:
+          base=nm('v26.8-noextra4k')
+          for n in ['v26.8-noextra4k-nosrpc','v26.8-noextra4k-oldhtml']:
             x=nm(n); rows=[]
             for k in set(base)|set(x):
               delta=x.get(k,0)-base.get(k,0)
-              if delta: rows.append((delta,base.get(k,0),x.get(k,0),k[0],k[1]))
+              if delta:rows.append((delta,base.get(k,0),x.get(k,0),k[0],k[1]))
             rows.sort(key=lambda r:abs(r[0]),reverse=True)
             with (root/f'{n}-delta.txt').open('w') as f:
               f.write('delta\tbaseline\tvariant\ttype\tsymbol\n')
               for r in rows[:200]:f.write('%d\t%d\t%d\t%s\t%s\n'%r)
           PY
-          cat out-normalized/normalized-report.txt
+          cat out-fixed-stack/fixed-stack-report.txt
 
       - uses: actions/upload-artifact@v4
         with:
-          name: esp8266-normalized-memory-core-3.1.2
-          path: out-normalized/
+          name: esp8266-fixed-stack-memory-core-3.1.2
+          path: out-fixed-stack/
 
-      - name: Commit normalized reports
+      - name: Commit reports
         shell: bash
         run: |
           set -euxo pipefail
-          rm -rf ci-memory-normalized
-          mkdir -p ci-memory-normalized
-          cp out-normalized/normalized-report.txt ci-memory-normalized/
-          cp out-normalized/*-delta.txt ci-memory-normalized/
-          for d in out-normalized/baseline-a out-normalized/baseline-b out-normalized/nosrpc out-normalized/oldhtml out-normalized/noextra4k; do
-            n="$(basename "$d")"; mkdir -p "ci-memory-normalized/$n"; cp "$d/arduino-memory.txt" "$d/extra4k-map.txt" "ci-memory-normalized/$n/";
-          done
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add ci-memory-normalized
-          git commit -m 'tmp: add normalized ESP8266 memory results' || true
+          rm -rf ci-memory-fixed-stack; mkdir -p ci-memory-fixed-stack
+          cp out-fixed-stack/fixed-stack-report.txt out-fixed-stack/*-delta.txt ci-memory-fixed-stack/
+          git config user.name github-actions; git config user.email github-actions@github.com
+          git add ci-memory-fixed-stack
+          git commit -m 'tmp: add fixed-stack ESP8266 memory results' || true
           git push origin HEAD:tmp/esp8266-memory-map-20260913

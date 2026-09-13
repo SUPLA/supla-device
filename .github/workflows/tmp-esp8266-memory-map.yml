@@ -21,7 +21,7 @@ jobs:
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v2
 
-      - name: Install latest stable ESP8266 core
+      - name: Install ESP8266 core and project libraries
         shell: bash
         run: |
           set -euxo pipefail
@@ -29,14 +29,26 @@ jobs:
           arduino-cli config add board_manager.additional_urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
           arduino-cli core update-index
           arduino-cli core install esp8266:esp8266@3.1.2
+          arduino-cli lib install DallasTemperature
+          arduino-cli lib install OneWire
+          arduino-cli lib install "DHT Sensor Library"
+          arduino-cli lib install "Adafruit AHTX0"
+          arduino-cli lib install HX711_ADC
+          arduino-cli lib install PZEM004Tv30
+          mkdir -p "$HOME/Arduino/libraries"
+          cd "$HOME/Arduino/libraries"
+          git clone --depth 1 https://github.com/olehs/PZEM004T || true
+          git clone --depth 1 https://github.com/kevinlutzer/Arduino-PM1006K || true
+          git clone --depth 1 https://github.com/arduino-libraries/Arduino_JSON || true
           arduino-cli version
           arduino-cli core list
 
-      - name: Prepare v26.4 and v26.8 worktrees
+      - name: Prepare worktrees
         shell: bash
         run: |
           set -euxo pipefail
           git fetch --tags --force
+          rm -rf /tmp/supla-device-v26.4 /tmp/supla-device-v26.8
           git worktree add /tmp/supla-device-v26.4 v26.4
           git worktree add /tmp/supla-device-v26.8 v26.8
 
@@ -45,112 +57,77 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p "$GITHUB_WORKSPACE/out" "$HOME/Arduino/libraries"
-
           TOOLROOT="$HOME/.arduino15/packages/esp8266/tools/xtensa-lx106-elf-gcc"
           NM="$(find "$TOOLROOT" -type f -name xtensa-lx106-elf-nm | head -n1)"
           SIZE="$(find "$TOOLROOT" -type f -name xtensa-lx106-elf-size | head -n1)"
           OBJDUMP="$(find "$TOOLROOT" -type f -name xtensa-lx106-elf-objdump | head -n1)"
-          "$NM" --version | head -n1
 
           build_one() {
             tag="$1"
             src="/tmp/supla-device-$tag"
             out="$GITHUB_WORKSPACE/out/$tag"
             build="$out/build"
+            rm -rf "$out"
             mkdir -p "$out"
             rm -rf "$HOME/Arduino/libraries/SuplaDevice"
             ln -s "$src" "$HOME/Arduino/libraries/SuplaDevice"
-
-            arduino-cli compile \
-              --fqbn esp8266:esp8266:generic \
-              --build-path "$build" \
-              --export-binaries \
-              --warnings all \
-              "$src/examples/esp/Simple" 2>&1 | tee "$out/compile.log"
-
+            arduino-cli compile --fqbn esp8266:esp8266:generic --build-path "$build" --export-binaries --warnings all "$src/examples/esp/Simple" 2>&1 | tee "$out/compile.log"
             elf="$(find "$build" -type f -name '*.elf' | head -n1)"
             map="$(find "$build" -type f -name '*.map' | head -n1)"
-            test -n "$elf"
-            test -n "$map"
-
             cp "$elf" "$out/Simple-$tag.elf"
             cp "$map" "$out/Simple-$tag.map"
             "$SIZE" -A "$elf" > "$out/size-sections.txt"
             "$OBJDUMP" -h "$elf" > "$out/objdump-sections.txt"
             "$NM" -S --size-sort -C "$elf" > "$out/nm-size-sort.txt"
-            "$NM" -S -C "$elf" | sort -k2,2nr > "$out/nm.txt"
-
+            "$NM" -S -C "$elf" > "$out/nm.txt"
             {
               echo "=== $tag ==="
               echo "FQBN: esp8266:esp8266:generic"
               echo "ESP8266 core: 3.1.2"
-              echo
               grep -E 'Variables and constants|Instruction RAM|Code in flash|Sketch uses|Global variables use' "$out/compile.log" || true
               echo
               cat "$out/size-sections.txt"
             } > "$out/summary.txt"
-
-            grep -nEi 'supla_srpc|supla-common/.*/?srpc|srpc\.c|srpc\.cpp' "$map" > "$out/map-srpc-lines.txt" || true
           }
-
           build_one v26.4
           build_one v26.8
 
-      - name: Generate symbol delta report
+      - name: Generate reports
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           from collections import defaultdict
-
-          root = Path('out')
-
-          def parse_nm(path):
-              data = defaultdict(int)
+          root=Path('out')
+          def parse(path):
+              d=defaultdict(int)
               for line in path.read_text(errors='replace').splitlines():
-                  parts = line.split(None, 3)
-                  if len(parts) < 4:
-                      continue
-                  try:
-                      size = int(parts[1], 16)
-                  except ValueError:
-                      continue
-                  typ, name = parts[2], parts[3]
-                  data[(typ, name)] += size
-              return data
-
-          old = parse_nm(root/'v26.4'/'nm-size-sort.txt')
-          new = parse_nm(root/'v26.8'/'nm-size-sort.txt')
-          keys = set(old) | set(new)
-          rows = []
-          for key in keys:
-              a, b = old.get(key, 0), new.get(key, 0)
-              d = b - a
-              if d:
-                  rows.append((d, a, b, key[0], key[1]))
+                  p=line.split(None,3)
+                  if len(p)<4: continue
+                  try: size=int(p[1],16)
+                  except ValueError: continue
+                  d[(p[2],p[3])] += size
+              return d
+          a=parse(root/'v26.4'/'nm-size-sort.txt'); b=parse(root/'v26.8'/'nm-size-sort.txt')
+          rows=[]
+          for k in set(a)|set(b):
+              delta=b.get(k,0)-a.get(k,0)
+              if delta: rows.append((delta,a.get(k,0),b.get(k,0),k[0],k[1]))
           rows.sort(reverse=True)
-
-          with (root/'symbol-delta.txt').open('w') as f:
-              f.write('delta\tv26.4\tv26.8\ttype\tsymbol\n')
-              for d, a, b, typ, name in rows:
-                  f.write(f'{d}\t{a}\t{b}\t{typ}\t{name}\n')
-
-          ram_types = set('BbCcDdGgRrSsVv')
-          with (root/'symbol-delta-ram.txt').open('w') as f:
-              f.write('delta\tv26.4\tv26.8\ttype\tsymbol\n')
-              for d, a, b, typ, name in rows:
-                  if typ in ram_types:
-                      f.write(f'{d}\t{a}\t{b}\t{typ}\t{name}\n')
+          for fn, filt in [('symbol-delta.txt',lambda t:True),('symbol-delta-ram.txt',lambda t:t in set('BbDdRrSsVv'))]:
+              with (root/fn).open('w') as f:
+                  f.write('delta\tv26.4\tv26.8\ttype\tsymbol\n')
+                  for row in rows:
+                      if filt(row[3]): f.write('%d\t%d\t%d\t%s\t%s\n'%row)
           PY
 
-      - name: Upload full ELF and map artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: esp8266-memory-map-core-3.1.2
           path: out/
-          if-no-files-found: error
 
-      - name: Commit compact reports to temporary branch
+      - name: Commit compact reports
         shell: bash
         run: |
           set -euxo pipefail
@@ -158,12 +135,11 @@ jobs:
           mkdir -p ci-memory-report/v26.4 ci-memory-report/v26.8
           cp out/v26.4/summary.txt ci-memory-report/v26.4/
           cp out/v26.8/summary.txt ci-memory-report/v26.8/
-          cp out/v26.4/map-srpc-lines.txt ci-memory-report/v26.4/
-          cp out/v26.8/map-srpc-lines.txt ci-memory-report/v26.8/
-          cp out/symbol-delta.txt ci-memory-report/
-          cp out/symbol-delta-ram.txt ci-memory-report/
+          cp out/symbol-delta.txt out/symbol-delta-ram.txt ci-memory-report/
+          grep -Ei 'supla_srpc|srpc' out/v26.4/Simple-v26.4.map > ci-memory-report/v26.4/map-srpc-lines.txt || true
+          grep -Ei 'supla_srpc|srpc' out/v26.8/Simple-v26.8.map > ci-memory-report/v26.8/map-srpc-lines.txt || true
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add ci-memory-report
-          git commit -m 'tmp: add ESP8266 v26.4-v26.8 memory reports'
+          git commit -m 'tmp: add ESP8266 memory reports' || true
           git push origin HEAD:tmp/esp8266-memory-map-20260913

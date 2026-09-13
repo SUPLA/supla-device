@@ -1,0 +1,3 @@
+delta	baseline	variant	type	symbol
+4	121	125	T	setup
+2	0	2	T	disable_extra4k_at_link_time

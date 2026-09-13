@@ -1,0 +1,34 @@
+delta	baseline	variant	type	symbol
+-4136	4136	0	b	g_cont
+-2504	3935	1431	r	javascript
+-368	4371	4003	r	styles
+-104	104	0	W	BearSSL::WiFiClientSecure::WiFiClientSecure(BearSSL::WiFiClientSecure const&)
+-43	241	198	r	headerBegin
+40	0	40	W	app_entry_redefinable
+35	0	35	W	__disableWiFiAtBootTime
+27	43	70	W	BearSSL::WiFiClientSecure::clone() const
+-27	27	0	T	app_entry_redefinable
+-26	323	297	T	Supla::HtmlGenerator::sendLogsPage(Supla::WebSender*, bool)
+-24	69	45	T	Supla::HtmlGenerator::sendSessionLinks(Supla::WebSender*)
+-20	298	278	T	ESP8266WiFiSTAClass::config(IPAddress, IPAddress, IPAddress, IPAddress, IPAddress)
+-20	524	504	T	ESP8266WiFiSTAClass::begin(char const*, char const*, int, unsigned char const*, bool)
+-17	386	369	T	Supla::HtmlGenerator::sendLoginPage(Supla::WebSender*, bool)
+-16	286	270	T	ESP8266WiFiGenericClass::mode(WiFiMode)
+-16	524	508	T	ESP8266WiFiAPClass::softAP(char const*, char const*, int, int, int, int)
+-16	637	621	T	Supla::HtmlGenerator::sendSetupPage(Supla::WebSender*, bool, Supla::SetupRequestResult)
+-12	175	163	T	ESP8266WiFiAPClass::softAPConfig(IPAddress, IPAddress, IPAddress)
+-12	217	205	T	ESP8266WiFiScanClass::scanNetworks(bool, bool, unsigned char, unsigned char*)
+-12	179	167	T	Supla::HtmlGenerator::sendBetaForm(Supla::WebSender*)
+-12	165	153	T	ESP8266WiFiSTAClass::disconnect(bool, bool)
+-8	8	0	T	ESP8266WiFiGenericClass::persistent(bool)
+-8	8	0	T	__disableWiFiAtBootTime
+-8	279	271	T	Supla::HtmlGenerator::sendForm(Supla::WebSender*)
+-8	191	183	T	ESP8266WiFiGenericClass::_eventCallback(void*)
+-4	43	39	T	ESP8266WiFiSTAClass::localIP()
+-4	19	15	T	ESP8266WiFiGenericClass::getMode()
+-4	45	41	T	ESP8266WiFiSTAClass::reconnect()
+-4	43	39	T	ESP8266WiFiSTAClass::subnetMask()
+-4	34	30	T	ESP8266WiFiSTAClass::status()
+-4	43	39	T	ESP8266WiFiSTAClass::gatewayIP()
+-2	17	15	T	Supla::HtmlGenerator::sendJavascript(Supla::WebSender*)
+1	17	18	T	Supla::HtmlGenerator::sendStyle(Supla::WebSender*)

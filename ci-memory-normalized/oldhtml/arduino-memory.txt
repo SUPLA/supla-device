@@ -1,0 +1,3 @@
+. Variables and constants in RAM (global, static), used 51188 / 80192 bytes (63%)
+. Instruction RAM (IRAM_ATTR, ICACHE_RAM_ATTR), used 60871 / 65536 bytes (92%)
+. Code in flash (default, ICACHE_FLASH_ATTR), used 572488 / 1048576 bytes (54%)

@@ -1,0 +1,32 @@
+saved	v26.8	variant	type	symbol
+3738	3738	0	T	Supla::Protocol::SuplaSrpc::logSrpcPacket(bool, int, unsigned char const*, unsigned int)
+914	914	0	t	(anonymous namespace)::safeCallName(int)
+462	462	0	t	(anonymous namespace)::logDeviceCalCfgRequest(int, TSD_DeviceCalCfgRequest const*, char const*, char const*, unsigned int)::__pstr__
+438	438	0	t	(anonymous namespace)::logChannelConfigOcrPayload(int, TSD_ChannelConfig const*, char const*, char const*)
+356	356	0	t	(anonymous namespace)::logChannelConfigOcrPayload(int, TSD_ChannelConfig const*, char const*, char const*)::__pstr__
+335	335	0	t	(anonymous namespace)::logRegisterDeviceHeader(int, unsigned char const*, unsigned int, char const*, char const*)
+334	334	0	t	(anonymous namespace)::logRawHexDump(char const*, int, char const*, unsigned char const*, unsigned int, bool)
+263	263	0	t	(anonymous namespace)::logSetChannelConfigRequest(int, TSD_ChannelConfig const*, char const*, char const*, unsigned int)::__pstr__
+243	243	0	t	(anonymous namespace)::escapeLogString(char const*, unsigned int, char*, unsigned int)
+224	224	0	t	Supla::Protocol::SuplaSrpc::logSrpcPacket(bool, int, unsigned char const*, unsigned int)::__pstr__
+212	212	0	t	(anonymous namespace)::logRegisterDeviceHeader(int, unsigned char const*, unsigned int, char const*, char const*)::__pstr__
+181	181	0	t	(anonymous namespace)::logRegisterDeviceChannelChunk(int, TDS_SuplaDeviceChannel_E const*, char const*, char const*, unsigned int)::__pstr__
+165	165	0	t	(anonymous namespace)::logRegisterDeviceChannelChunk(int, TDS_SuplaDeviceChannel_D const*, char const*, char const*, unsigned int)::__pstr__
+116	116	0	t	(anonymous namespace)::logSubdeviceDetails(int, TDS_SubdeviceDetails const*, char const*, char const*, unsigned int)::__pstr__
+101	101	0	t	(anonymous namespace)::logSetChannelCaptionResult(int, TSCD_SetCaptionResult const*, char const*, char const*, unsigned int)::__pstr__
+101	101	0	t	(anonymous namespace)::logDeviceChannelValueChanged(int, TDS_SuplaDeviceChannelValue_C const*, char const*, char const*, unsigned int)::__pstr__
+86	86	0	t	(anonymous namespace)::logSetChannelCaption(int, TDCS_SetCaption const*, char const*, char const*, unsigned int)::__pstr__
+81	81	0	t	_ZN12_GLOBAL__N_114appendLogTokenEPcjPjPKc$part$0$constprop$0
+76	76	0	t	(anonymous namespace)::logRawHexDump(char const*, int, char const*, unsigned char const*, unsigned int, bool)::__pstr__
+40	293	253	T	srpc_ds_async_registerdevice_in_chunks
+40	40	0	W	app_entry_redefinable
+36	285	249	T	srpc_ds_async_registerdevice_in_chunks_g
+35	35	0	W	__disableWiFiAtBootTime
+34	215	181	T	srpc_async__call
+32	32	0	T	Supla::Protocol::SuplaSrpc::isSensitiveCallId(int)
+27	70	43	W	BearSSL::WiFiClientSecure::clone() const
+26	26	0	T	Supla::Protocol::SuplaSrpc::onPacketSent(void*, unsigned int, void*, unsigned int, void*)
+24	24	0	r	CSWTCH$370
+20	20	0	r	CSWTCH$378
+20	20	0	T	Supla::Protocol::SuplaSrpc::onPacketReceived(void*, unsigned int, void*, unsigned int, void*)
+12	133	121	T	Supla::Protocol::SuplaSrpc::initializeSrpc()

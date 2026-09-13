@@ -1,0 +1,4 @@
+M  extras/test/Html/html_tag_builder_tests.cpp
+M  src/supla/network/html/wifi_parameters.cpp
+UU src/supla/network/html_generator.cpp
+src/supla/network/html_generator.cpp

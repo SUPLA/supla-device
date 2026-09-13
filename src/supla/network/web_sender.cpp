@@ -135,6 +135,27 @@ void HtmlTag::release() {
 
 WebSender::~WebSender() {}
 
+void WebSender::sendStatic(const char* data, size_t size) {
+  if (data == nullptr || size == 0) {
+    return;
+  }
+
+#if defined(ARDUINO_ARCH_ESP8266)
+  char buffer[128];
+  size_t offset = 0;
+  while (offset < size) {
+    const size_t chunk = size - offset < sizeof(buffer)
+                             ? size - offset
+                             : sizeof(buffer);
+    memcpy_P(buffer, data + offset, chunk);
+    send(buffer, static_cast<int>(chunk));
+    offset += chunk;
+  }
+#else
+  send(data, static_cast<int>(size));
+#endif
+}
+
 void WebSender::labelFor(const char* id, const char* text) {
   auto label = tag("label");
   label.attr("for", id ? id : "");

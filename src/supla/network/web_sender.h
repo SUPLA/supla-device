@@ -8,6 +8,13 @@
 #include <stdint.h>
 #include <supla/network/html_generator.h>
 
+#if defined(ARDUINO_ARCH_ESP8266)
+#include <pgmspace.h>
+#define SUPLA_WEB_PROGMEM PROGMEM
+#else
+#define SUPLA_WEB_PROGMEM
+#endif
+
 namespace Supla {
 
 class WebSender;
@@ -179,6 +186,15 @@ class WebSender {
    */
   virtual ~WebSender();
   virtual void send(const char*, int size = -1) = 0;
+
+  /**
+   * @brief Emit a static HTML asset stored in program memory.
+   *
+   * ESP8266 Arduino requires explicit reads from PROGMEM. Other supported
+   * targets can send ordinary const data directly.
+   */
+  void sendStatic(const char* data, size_t size);
+
   virtual void sendSafe(const char*, int size = -1);
   virtual void send(int number);
   virtual void send(int number, int precision);

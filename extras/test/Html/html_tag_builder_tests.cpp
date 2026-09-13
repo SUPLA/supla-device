@@ -149,6 +149,18 @@ TEST_F(HtmlTagBuilderTests, BuildsNestedHtmlAndEscapes) {
             "</div>");
 }
 
+TEST_F(HtmlTagBuilderTests, SendStaticMatchesRegularSendOutput) {
+  SenderMock sender;
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  const char asset[] = "<style>body{color:red}</style>";
+  sender.sendStatic(asset, sizeof(asset) - 1);
+
+  EXPECT_EQ(sendHtml, asset);
+}
+
 TEST_F(HtmlTagBuilderTests, SendSafeTreatsNullAsEmptyString) {
   SenderMock sender;
 

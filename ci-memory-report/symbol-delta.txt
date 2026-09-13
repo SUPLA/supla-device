@@ -1,0 +1,535 @@
+delta	v26.4	v26.8	type	symbol
+3738	0	3738	T	Supla::Protocol::SuplaSrpc::logSrpcPacket(bool, int, unsigned char const*, unsigned int)
+2504	1431	3935	r	javascript
+914	0	914	t	(anonymous namespace)::safeCallName(int)
+858	0	858	T	Supla::Html::NetworkAddressParameters::send(Supla::WebSender*)
+716	0	716	b	Supla::(anonymous namespace)::instance
+692	5028	5720	T	Supla::Html::ProtocolParameters::send(Supla::WebSender*)
+630	560	1190	T	Supla::Html::WifiParameters::send(Supla::WebSender*)
+510	0	510	r	Supla::Html::(anonymous namespace)::kScript
+509	0	509	T	Supla::Device::RemoteDeviceConfig::processThermalProtectionConfig(unsigned long long, TDeviceConfig_ThermalProtection*)
+483	0	483	T	Supla::Device::RemoteDeviceConfig::processInputActivationConfig(unsigned long long, TDeviceConfig_InputActivation*)
+462	0	462	t	(anonymous namespace)::logDeviceCalCfgRequest(int, TSD_DeviceCalCfgRequest const*, char const*, char const*, unsigned int)::__pstr__
+438	0	438	t	(anonymous namespace)::logChannelConfigOcrPayload(int, TSD_ChannelConfig const*, char const*, char const*)
+402	1544	1946	t	_ZN5Supla8Protocol9SuplaSrpc7iterateEj$part$0
+371	0	371	t	Supla::Device::RemoteDeviceConfig::processInputActivationConfig(unsigned long long, TDeviceConfig_InputActivation*)::__pstr__
+368	4003	4371	r	styles
+368	929	1297	T	Supla::Device::RemoteDeviceConfig::fillSetDeviceConfig(TSDS_SetDeviceConfig*) const
+368	0	368	T	Supla::Html::NetworkAddressParameters::handleResponse(char const*, char const*)
+357	0	357	W	Supla::isValidStaticNetifConfig(Supla::NetifConfigBlob const&)
+356	0	356	t	(anonymous namespace)::logChannelConfigOcrPayload(int, TSD_ChannelConfig const*, char const*, char const*)::__pstr__
+346	1469	1815	T	Supla::Device::RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig*)
+346	1038	1384	T	SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest*, TDS_DeviceCalCfgResult*)
+346	295	641	W	Supla::ESPWifi::setup()
+341	495	836	T	Supla::StateWearLevelingSector::tryLoadPreamblesFrom(unsigned int)
+335	0	335	t	(anonymous namespace)::logRegisterDeviceHeader(int, unsigned char const*, unsigned int, char const*, char const*)
+334	0	334	t	(anonymous namespace)::logRawHexDump(char const*, int, char const*, unsigned char const*, unsigned int, bool)
+331	0	331	T	Supla::Config::loadNetifConfig(char const*, Supla::NetifConfigBlob*)
+322	0	322	t	Supla::Html::ProtocolParameters::send(Supla::WebSender*)::{lambda()#1}::operator()() const
+315	426	741	t	Supla::StateWearLevelingSector::tryLoadPreamblesFrom(unsigned int)::__pstr__
+300	0	300	T	Supla::Html::NetworkAddressParameters::renderField(Supla::WebSender*, char const*, char const*, char const*, char const*, char const*, char const*, bool)
+295	0	295	T	Supla::StateWearLevelingByte::isStateEntryAddressValid(Supla::StateEntryAddress const&) const
+282	0	282	T	Supla::Protocol::SuplaSrpc::sendPendingCalCfgResultForCommand(short, int, int, int, int, void*)
+278	0	278	T	ESP8266WiFiSTAClass::config(IPAddress, IPAddress, IPAddress, IPAddress, IPAddress)
+275	0	275	W	Supla::ESPWifi::startConfigModeScan()
+263	0	263	t	(anonymous namespace)::logSetChannelConfigRequest(int, TSD_ChannelConfig const*, char const*, char const*, unsigned int)::__pstr__
+252	1102	1354	T	SuplaDeviceClass::begin(unsigned char)
+243	0	243	t	(anonymous namespace)::escapeLogString(char const*, unsigned int, char*, unsigned int)
+240	543	783	T	Supla::WebServer::parsePost(char const*, int, bool)
+238	0	238	W	Supla::ESPWifi::iterate()
+233	0	233	W	Supla::parseIpv4Address(char const*, unsigned int*)
+224	0	224	t	Supla::Protocol::SuplaSrpc::logSrpcPacket(bool, int, unsigned char const*, unsigned int)::__pstr__
+221	0	221	W	Supla::parseNetmaskOrPrefix(char const*, unsigned int*)
+218	0	218	T	Supla::LittleFsConfig::getMqttCA(char*, int)
+212	0	212	t	_ZN5Supla4Html12_GLOBAL__N_121formatWifiScanMessageEPcjPKcb$part$0
+212	0	212	t	(anonymous namespace)::logRegisterDeviceHeader(int, unsigned char const*, unsigned int, char const*, char const*)::__pstr__
+210	670	880	t	Supla::Protocol::SuplaSrpc::iterate(unsigned int)::__pstr__
+208	868	1076	t	Supla::Device::RemoteDeviceConfig::fillSetDeviceConfig(TSDS_SetDeviceConfig*) const::__pstr__
+205	1143	1348	t	Supla::Device::RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig*)::__pstr__
+205	0	205	T	ESP8266WiFiScanClass::scanNetworks(bool, bool, unsigned char, unsigned char*)
+203	482	685	T	Supla::StateWearLevelingByte::initFromStorage()
+202	0	202	t	Supla::Device::RemoteDeviceConfig::processThermalProtectionConfig(unsigned long long, TDeviceConfig_ThermalProtection*)::__pstr__
+195	0	195	T	ESP8266WiFiScanClass::_scanDone(void*, int)
+192	901	1093	T	Supla::Device::FactoryTest::onInit()
+192	365	557	T	Supla::EspWebServer::handlePost(bool)
+191	1675	1866	T	Supla::messageReceived(void*, unsigned int, unsigned int, void*, unsigned char)
+191	0	191	T	Supla::HtmlOutputBuffer::send(void*, bool (*)(void*, char const*, int), char const*, int)
+190	0	190	T	Supla::Html::WifiParameters::logWifiScanResult()
+189	0	189	T	Supla::Config::saveNetifConfig(char const*, Supla::NetifConfigBlob const&)
+184	0	184	t	Supla::Html::(anonymous namespace)::sendJsString(Supla::WebSender*, char const*)
+182	0	182	t	(anonymous namespace)::getDeviceConfigFieldSize(unsigned long long)
+181	0	181	t	(anonymous namespace)::logRegisterDeviceChannelChunk(int, TDS_SuplaDeviceChannel_E const*, char const*, char const*, unsigned int)::__pstr__
+177	0	177	T	Supla::WebSender::textInput(char const*, char const*, char const*, int, char const*, char const*, char const*)
+165	0	165	t	(anonymous namespace)::logRegisterDeviceChannelChunk(int, TDS_SuplaDeviceChannel_D const*, char const*, char const*, unsigned int)::__pstr__
+165	0	165	T	Supla::Device::RemoteDeviceConfig::fillThermalProtectionConfig(TDeviceConfig_ThermalProtection*) const
+158	0	158	T	Supla::EspSender::flushChunk(void*, char const*, int)
+156	0	156	t	Supla::Protocol::SuplaSrpc::sendPendingCalCfgResultForCommand(short, int, int, int, int, void*)::__pstr__
+156	0	156	T	Supla::WifiScanResultCache::sortByRssi()
+148	0	148	T	Supla::WifiScanResultCache::addOrUpdate(char const*, int, int)
+147	0	147	T	Supla::Protocol::CalCfgResultPending::set(short, int, int, unsigned int)
+143	0	143	t	Supla::Html::(anonymous namespace)::sendWifiScanHint(Supla::WebSender*, char const*)
+143	0	143	T	Supla::LittleFsConfig::setMqttCA(char const*)
+142	0	142	T	LwipIntf::ipAddressReorder(IPAddress const&, IPAddress const&, IPAddress const&, IPAddress const&, IPAddress&, IPAddress&, IPAddress&)
+138	128	266	T	Supla::StateWearLevelingSector::prepareLoadState()
+138	0	138	T	Supla::Wifi::requestConfigModeScanIfDue()
+136	0	136	T	Supla::Device::RemoteDeviceConfig::fillInputActivationConfig(TDeviceConfig_InputActivation*) const
+127	0	127	T	Supla::StateWearLevelingSector::isSlotValid(unsigned int, unsigned char*)
+124	0	124	T	Supla::Element::Element(Supla::ElementMode)
+122	0	122	T	Supla::Html::NetworkAddressParameters::ensureLoaded()
+120	69	189	T	stringToUInt(char const*, int)
+119	0	119	V	Supla::ESPWifi::startConfigModeScan()::__pstr__
+117	0	117	T	Supla::Config::isMqttBrokerVerificationEnabled()
+116	160	276	T	Supla::WebServer::WebServer(Supla::HtmlGenerator*)
+116	0	116	t	(anonymous namespace)::logSubdeviceDetails(int, TDS_SubdeviceDetails const*, char const*, char const*, unsigned int)::__pstr__
+115	0	115	T	Supla::Protocol::SuplaSrpc::handlePendingCalCfgTimeouts(unsigned int)
+115	0	115	T	Supla::LittleFsConfig::eraseKey(char const*)
+112	33	145	t	Supla::StateWearLevelingSector::prepareLoadState()::__pstr__
+112	0	112	T	Supla::LittleFsConfig::getMqttCASize()
+112	0	112	T	Supla::Channel::setDefault(unsigned int)
+110	346	456	t	Supla::LittleFsConfig::init()::__pstr__
+109	0	109	r	Supla::Html::(anonymous namespace)::kNetmaskPattern
+108	215	323	T	Supla::LittleFsConfig::setBlob(char const*, char const*, unsigned int)
+107	46	153	T	Supla::dataWrite(void*, int, void*)
+107	0	107	t	Supla::Html::(anonymous namespace)::wifiScanHintClass(char const*)
+106	2	108	W	Supla::ESPWifi::disable()
+106	0	106	T	Supla::Html::NetworkAddressParameters::onProcessingEnd()
+101	0	101	t	(anonymous namespace)::logSetChannelCaptionResult(int, TSCD_SetCaptionResult const*, char const*, char const*, unsigned int)::__pstr__
+101	0	101	t	(anonymous namespace)::logDeviceChannelValueChanged(int, TDS_SuplaDeviceChannelValue_C const*, char const*, char const*, unsigned int)::__pstr__
+101	0	101	T	Supla::WifiScanResultCache::lookup(char const*, Supla::WifiScanResult*, unsigned int, unsigned int) const
+99	0	99	T	hexByteToInt(char const*, unsigned char*)
+96	68	164	T	Supla::KeyValueElement::KeyValueElement(char const*)
+96	0	96	t	Supla::Config::loadNetifConfig(char const*, Supla::NetifConfigBlob*)::__pstr__
+96	0	96	T	Supla::WebSender::sendCsrfField()
+95	0	95	t	Supla::dataWrite(void*, int, void*)::__pstr__
+95	0	95	T	Supla::redactLogValue(char const*, char const*, char*, unsigned int)
+94	51	145	T	Supla::EspSender::~EspSender()
+92	335	427	T	SuplaDeviceClass::iterateSwUpdate()
+92	0	92	T	Supla::Element::getChannelByChannelNumber(int)
+91	0	91	T	Supla::WifiScanResultCache::find(char const*) const
+90	0	90	T	Supla::Html::NetworkAddressParameters::matchKey(char const*, char const*) const
+87	0	87	T	Supla::StateWearLevelingSector::getPhysicalSlotCount() const
+87	0	87	T	Supla::StateWearLevelingSector::getMaxBitmapSlotCount() const
+86	0	86	t	(anonymous namespace)::logSetChannelCaption(int, TDCS_SetCaption const*, char const*, char const*, unsigned int)::__pstr__
+85	87	172	T	Supla::StateWearLevelingByte::checkIfIsEnoughSpaceForState()
+84	395	479	T	Supla::Device::RemoteDeviceConfig::processHomeScreenContentConfig(unsigned long long, TDeviceConfig_HomeScreenContent*)
+84	0	84	t	Supla::LittleFsConfig::getMqttCA(char*, int)::__pstr__
+83	0	83	T	Supla::Element::setDefaultFunction(unsigned int)
+82	0	82	t	Supla::Channel::setDefault(unsigned int)::__pstr__
+82	0	82	V	Supla::ESPWifi::iterate()::__pstr__
+81	0	81	t	_ZN12_GLOBAL__N_114appendLogTokenEPcjPjPKc$part$0$constprop$0
+80	125	205	t	Supla::StateWearLevelingByte::initFromStorage()::__pstr__
+80	0	80	r	Supla::Html::(anonymous namespace)::kIpv4Pattern
+79	416	495	T	Supla::Modbus::Config::validateAndFix(Supla::Modbus::ConfigProperties const&)
+78	399	477	T	Supla::StateStorageInterface::loadPreambles(unsigned int, unsigned short)
+78	0	78	t	Supla::Html::(anonymous namespace)::hasFreshWifiScanResults()
+77	0	77	T	Supla::StateWearLevelingSector::getPreviousSlotAddress(unsigned int) const
+76	352	428	T	SuplaDeviceClass::initSwUpdateInstance(Supla::SwUpdateMode, int)
+76	0	76	t	(anonymous namespace)::logRawHexDump(char const*, int, char const*, unsigned char const*, unsigned int, bool)::__pstr__
+75	261	336	T	Supla::LittleFsConfig::getBlob(char const*, char*, unsigned int)
+74	0	74	t	Supla::Html::NetworkAddressParameters::onProcessingEnd()::__pstr__
+72	215	287	T	Supla::Device::RemoteDeviceConfig::fillHomeScreenContentConfig(TDeviceConfig_HomeScreenContent*) const
+72	0	72	T	Supla::Html::NetworkAddressParameters::NetworkAddressParameters(char const*, char const*)
+71	0	71	t	(anonymous namespace)::matchesSensitiveField(char const*)
+70	2885	2955	T	srpc_getdata
+69	169	238	T	Supla::Html::WifiParameters::handleResponse(char const*, char const*)
+69	38	107	t	Supla::WebServer::parsePost(char const*, int, bool)::__pstr__
+68	618	686	T	Supla::Html::ProtocolParameters::handleResponse(char const*, char const*)
+64	160	224	T	Supla::Network::Network()
+63	587	650	T	Supla::Protocol::SuplaSrpc::onRegisterResult(TSD_SuplaRegisterDeviceResult*)
+63	333	396	T	Supla::LittleFsConfig::init()
+63	182	245	T	Supla::Device::FactoryTest::handleAction(int, int)
+63	64	127	t	Supla::Protocol::SuplaSrpc::handleDeviceConfig(TSDS_SetDeviceConfig*)::__pstr__
+63	0	63	t	Supla::StateWearLevelingSector::isSlotValid(unsigned int, unsigned char*)::__pstr__
+61	454	515	T	Supla::Config::isMinimalConfigReady(bool)
+61	245	306	T	Supla::Protocol::SuplaSrpc::handleDeviceConfig(TSDS_SetDeviceConfig*)
+61	0	61	t	Supla::WebServer::setWebServerMode(Supla::WebServer::WebServerMode)::__pstr__
+60	336	396	B	suplaServer
+60	72	132	T	Supla::EspSender::EspSender(esp8266webserver::ESP8266WebServerTemplate<WiFiServer>*)
+60	0	60	T	Supla::Protocol::SuplaSrpc::scheduleReconnect(unsigned int)
+59	0	59	T	ESP8266WiFiScanClass::SSID(unsigned char)
+58	0	58	T	Supla::HtmlOutputBuffer::flushPending(void*, bool (*)(void*, char const*, int))
+57	0	57	T	Supla::WebServer::getCsrfToken()
+56	77	133	T	Supla::Protocol::SuplaSrpc::initializeSrpc()
+56	72	128	T	Supla::Html::WifiParameters::WifiParameters()
+56	30	86	t	Supla::Protocol::SuplaSrpc::initializeSrpc()::__pstr__
+56	0	56	t	hexCharToNibble(char, unsigned char*)
+56	0	56	T	Supla::WifiScanResultCache::findWeakest() const
+56	0	56	T	Supla::WebServer::cleanupParser()
+55	451	506	T	Supla::Device::RemoteDeviceConfig::processModbusConfig(unsigned long long, TDeviceConfig_Modbus*)
+55	0	55	t	stringToUInt(char const*, int)::__pstr__
+55	0	55	t	_ZN5Supla17formatIpv4AddressEjPcj$isra$0
+55	0	55	T	Supla::WifiScanResultCache::getResult(unsigned char, Supla::WifiScanResult*) const
+54	754	808	T	SuplaDeviceClass::loadDeviceConfig()
+54	285	339	T	Supla::Protocol::SuplaSrpc::onRegisterResultB(TSD_SuplaRegisterDeviceResult_B*)
+54	0	54	t	Supla::LittleFsConfig::setMqttCA(char const*)::__pstr__
+53	0	53	T	Supla::WebServer::isCsrfTokenValid(char const*)
+52	109	161	T	Supla::StateWearLevelingSector::finalizeSizeCheck()
+52	0	52	W	Supla::isValidIpv4Address(unsigned int)
+50	383	433	T	Supla::StateWearLevelingSector::finalizeSaveState()
+49	0	49	T	Supla::InputNoiseGuard::IgnoreForMs(unsigned int)
+49	0	49	T	Supla::Element::handleChannelConfigFinished(int)
+48	200	248	T	Supla::LittleFsConfig::commit()
+48	0	48	r	(anonymous namespace)::matchesSensitiveField(char const*)::sensitiveFields
+47	180	227	W	Supla::ESPWifi::printConnectionDetails()
+47	0	47	t	Supla::Config::saveNetifConfig(char const*, Supla::NetifConfigBlob const&)::__pstr__
+46	0	46	T	ESP8266WiFiScanClass::scanDelete()
+45	703	748	T	Supla::Control::Button::onLoadConfig(SuplaDeviceClass*)
+45	296	341	T	SuplaDeviceClass::checkIfLeaveCfgModeOrRestartIsNeeded()
+45	0	45	t	Supla::Protocol::SuplaSrpc::handlePendingCalCfgTimeouts(unsigned int)::__pstr__
+44	441	485	T	Supla::Protocol::SuplaSrpc::onLoadConfig()
+44	289	333	T	Supla::Device::RemoteDeviceConfig::processDisableUserInterfaceConfig(unsigned long long, TDeviceConfig_DisableUserInterface*)
+44	287	331	T	SuplaDeviceClass::setupDeviceMode()
+44	24	68	T	Supla::StateWearLevelingByte::getNextSlotAddress(unsigned int) const
+44	0	44	t	Supla::LittleFsConfig::getMqttCASize()::__pstr__
+43	548	591	t	Supla::Protocol::SuplaSrpc::onRegisterResult(TSD_SuplaRegisterDeviceResult*)::__pstr__
+43	198	241	r	headerBegin
+41	118	159	V	Supla::ESPWifi::setup()::__pstr__
+41	0	41	T	Supla::InputNoiseGuard::IsActive()
+41	0	41	T	Supla::HtmlOutputBuffer::flush(void*, bool (*)(void*, char const*, int))
+40	368	408	V	vtable for Supla::LittleFsConfig
+40	368	408	V	vtable for Supla::KeyValue
+40	368	408	V	vtable for Supla::Config
+40	253	293	T	srpc_ds_async_registerdevice_in_chunks
+39	1103	1142	t	SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest*, TDS_DeviceCalCfgResult*)::__pstr__
+39	26	65	T	Supla::Protocol::SuplaSrpc::onSetActivityTimeoutResult(TSDC_SuplaSetActivityTimeoutResult*)
+38	142	180	T	Supla::EspWebServer::~EspWebServer()
+38	0	38	T	Supla::WifiScanResultCache::finishUpdate(unsigned int)
+37	0	37	T	SuplaDeviceClass::restoreLocalActionsAfterConfigMode()
+37	0	37	T	Supla::WebServer::setWebServerMode(Supla::WebServer::WebServerMode)
+37	0	37	T	Supla::Protocol::CalCfgResultPending::clearAll()
+37	0	37	T	ESP8266WiFiScanClass::RSSI(unsigned char)
+36	249	285	T	srpc_ds_async_registerdevice_in_chunks_g
+35	200	235	T	Supla::Device::RemoteDeviceConfig::processFirmwareUpdateConfig(unsigned long long, TDeviceConfig_FirmwareUpdate*)
+35	66	101	T	SuplaDeviceClass::disableLocalActionsIfNeeded()
+35	0	35	t	Supla::(anonymous namespace)::toNetworkOrder(unsigned int)
+35	0	35	W	Supla::toArduinoIpAddress(unsigned int)
+35	0	35	T	Supla::Element::getSecondaryChannelNumber() const
+34	262	296	T	SuplaDeviceClass::~SuplaDeviceClass()
+34	181	215	T	srpc_async__call
+34	61	95	T	Supla::StateWearLevelingByte::finalizeSizeCheck()
+34	0	34	t	Supla::EspSender::flushChunk(void*, char const*, int)::__pstr__
+33	0	33	t	(anonymous namespace)::createNetworkClient()
+32	180	212	B	wifi
+32	166	198	T	SuplaDeviceClass::resetToFactorySettings()
+32	0	32	T	Supla::Protocol::SuplaSrpc::isSensitiveCallId(int)
+32	0	32	T	ESP8266WiFiScanClass::_getScanInfoByIndex(int)
+31	0	31	V	Supla::ESPWifi::disable()::__pstr__
+31	0	31	T	ESP8266WiFiScanClass::channel(unsigned char)
+30	61	91	T	Supla::Control::Button::setButtonType(Supla::Control::Button::ButtonType)
+30	0	30	t	(anonymous namespace)::isValidInputActivationMode(unsigned char, unsigned char)
+30	0	30	T	ESP8266WiFiScanClass::scanComplete()
+29	136	165	T	Supla::LittleFsConfig::getBlobSize(char const*)
+29	117	146	T	postBetaHandler()
+29	0	29	t	_ZNK5Supla4Html24NetworkAddressParameters8buildKeyEPcjPKc$part$0$isra$0
+28	186	214	T	Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass*, int)
+28	176	204	V	vtable for Supla::EspWebServer
+28	141	169	T	Supla::Device::RemoteDeviceConfig::HomeScreenContentBitToEnum(unsigned long long)
+28	101	129	T	Supla::Device::SecurityLogger::log(unsigned int, char const*)
+28	11	39	W	std::_Function_handler<void (WiFiEventStationModeDisconnected const&), Supla::ESPWifi::setup()::{lambda(WiFiEventStationModeDisconnected const&)#2}>::_M_invoke(std::_Any_data const&, WiFiEventStationModeDisconnected const&)
+28	11	39	T	Supla::Element::handleSetChannelConfigResult(TSDS_SetChannelConfigResult*)
+28	11	39	T	Supla::Element::handleChannelConfigFinished()
+28	0	28	T	Supla::Config::getMqttCASize()
+27	336	363	T	Supla::EspWebServer::start()
+27	253	280	T	Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(unsigned char, unsigned int, unsigned char*, int, bool)
+27	38	65	t	Supla::EspWebServer::handlePost(bool)::__pstr__
+27	31	58	T	Supla::Network::fillStateData(TDSC_ChannelState*)
+27	0	27	T	Supla::Wifi::iterate()
+26	394	420	T	Supla::EspWebServer::EspWebServer(Supla::HtmlGenerator*)
+26	297	323	T	Supla::HtmlGenerator::sendLogsPage(Supla::WebSender*, bool)
+26	219	245	T	Supla::Device::RemoteDeviceConfig::fillDisableUserInterfaceConfig(TDeviceConfig_DisableUserInterface*) const
+26	0	26	T	Supla::Protocol::SuplaSrpc::onPacketSent(void*, unsigned int, void*, unsigned int, void*)
+26	0	26	T	Supla::InputNoiseGuard::NotifyWifiTransition()
+26	0	26	T	Supla::HtmlOutputBuffer::HtmlOutputBuffer(char*, int)
+25	210	235	T	Supla::LittleFsConfig::getCustomCA(char*, int)
+25	103	128	T	Supla::LittleFsConfig::getCustomCASize()
+25	100	125	T	Supla::KeyValueElement::setBlob(char const*, unsigned int)
+25	68	93	T	Supla::Control::Button::setMulticlickTime(unsigned int, bool)
+25	0	25	T	Supla::WifiScanResultCache::clear()
+25	0	25	T	Supla::Config::removeNetifConfig(char const*)
+24	294	318	T	Supla::Storage::LoadStateStorage()
+24	209	233	T	Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(unsigned char, unsigned int, unsigned char, int)
+24	45	69	T	Supla::HtmlGenerator::sendSessionLinks(Supla::WebSender*)
+24	0	24	r	CSWTCH$449
+24	0	24	r	CSWTCH$370
+23	1047	1070	t	Supla::Device::FactoryTest::onInit()::__pstr__
+23	193	216	T	Supla::Eeprom::readStorage(unsigned int, unsigned char*, unsigned int, bool)
+23	0	23	t	(anonymous namespace)::isValidInputActivationProperties(Supla::Device::InputActivationProperties const&)
+22	127	149	T	supla_logf(int, __FlashStringHelper const*, ...)
+22	0	22	T	Supla::WifiScanResultCache::beginUpdate()
+21	362	383	t	_ZN5Supla14LittleFsConfig9removeAllEv$part$0
+21	125	146	T	postHandler()
+21	60	81	T	Supla::Control::Button::setHoldTime(unsigned int)
+20	971	991	T	Supla::Control::Button::onTimer()
+20	520	540	W	Supla::ArduinoEspClient::connectImp(char const*, unsigned short)
+20	451	471	T	SuplaDeviceClass::iterate()
+20	183	203	T	Supla::WebSender::send(int, int)
+20	176	196	T	Supla::Storage::init()
+20	171	191	T	Supla::Device::RemoteDeviceConfig::processHomeScreenDelayConfig(unsigned long long, TDeviceConfig_HomeScreenOffDelay*)
+20	141	161	T	Supla::WebSender::sendTimestamp(unsigned int)
+20	101	121	T	Supla::SimpleState::writeSectionPreamble()
+20	78	98	T	Supla::Device::FactoryTest::waitForConfigButtonPress()
+20	0	20	r	CSWTCH$378
+20	0	20	T	Supla::Protocol::SuplaSrpc::onPacketReceived(void*, unsigned int, void*, unsigned int, void*)
+20	0	20	T	Supla::ActionHandlerClient::disableForConfigMode()
+19	235	254	T	Supla::Device::FactoryTest::iterateAlways()
+19	82	101	T	Supla::WebSender::sendNameAndId(char const*)
+18	118	136	T	Supla::WebSender::sendSelectItem(int, char const*, bool, bool)
+18	92	110	T	Supla::Device::RemoteDeviceConfig::fillHomeScreenDelayConfig(TDeviceConfig_HomeScreenOffDelay*) const
+18	50	68	T	Supla::Protocol::SuplaSrpc::deinitializeSrpc()
+18	0	18	r	Supla::Html::(anonymous namespace)::WifiSsidChanged
+18	0	18	r	Supla::ConfigTag::WifiNetifCfgTag
+18	0	18	T	Supla::ActionHandlerClient::restoreAfterConfigMode()
+17	369	386	T	Supla::HtmlGenerator::sendLoginPage(Supla::WebSender*, bool)
+17	155	172	T	Supla::Clock::setSystemTime(long long)
+17	144	161	T	SuplaDeviceClass::softRestart()
+17	136	153	T	Supla::Device::RemoteDeviceConfig::fillScreenBrightnessConfig(TDeviceConfig_ScreenBrightness*) const
+17	90	107	T	Supla::WebSender::sendLabelFor(char const*, char const*)
+17	67	84	T	Supla::LittleFsConfig::initLittleFs()
+17	56	73	T	Supla::Network::setHostname(char const*, int)
+17	52	69	T	Supla::Html::WifiParameters::onProcessingEnd()
+17	0	17	T	supla_log_is_enabled
+16	621	637	T	Supla::HtmlGenerator::sendSetupPage(Supla::WebSender*, bool, Supla::SetupRequestResult)
+16	268	284	V	vtable for Supla::Control::Button
+16	237	253	T	Supla::Device::RemoteDeviceConfig::processScreenBrightnessConfig(unsigned long long, TDeviceConfig_ScreenBrightness*)
+16	208	224	V	vtable for Supla::Control::SimpleButton
+16	188	204	V	vtable for Supla::Device::FactoryTest
+16	184	200	V	vtable for Supla::Clock
+16	174	190	T	Supla::Wifi::Wifi(char const*, char const*, unsigned char*)
+16	140	156	V	vtable for Supla::Device::StatusLed
+16	140	156	V	vtable for Supla::Control::BlinkingLed
+16	136	152	V	vtable for Supla::Element
+16	136	152	T	Supla::Wifi::onLoadConfig()
+16	92	108	T	Supla::Client::connect(char const*, unsigned short)
+16	77	93	T	Supla::StateWearLevelingByte::readState(unsigned char*, int)
+16	0	16	r	CSWTCH$516
+16	0	16	r	CSWTCH$125
+16	0	16	B	ESP8266WiFiScanClass::_onComplete
+15	901	916	t	Supla::messageReceived(void*, unsigned int, unsigned int, void*, unsigned char)::__pstr__
+15	0	15	r	Supla::Html::(anonymous namespace)::WifiSsidListId
+15	0	15	r	Supla::Html::(anonymous namespace)::WifiSsidHintId
+14	219	233	T	SuplaDeviceClass::iterateNetworkSetup()
+14	118	132	T	Supla::StateWearLevelingSector::prepareSaveState()
+14	118	132	T	Supla::Control::SimpleButton::SimpleButton(int, bool, bool)
+14	0	14	T	Supla::StateWearLevelingByte::getFirstSlotAddress() const
+14	0	14	T	Supla::Protocol::SuplaSrpc::getConnectionError() const
+14	0	14	T	Supla::Network::hasStaticIpConfig() const
+14	0	14	T	Supla::Config::setMqttBrokerVerificationEnabled(bool)
+14	0	14	T	Supla::Config::getMqttCA(char*, int)
+13	151	164	T	Supla::Clock::printCurrentTime(char const*)
+13	132	145	T	Supla::Device::RemoteDeviceConfig::RegisterConfigField(unsigned long long)
+13	129	142	T	Supla::SimpleState::initFromStorage()
+13	111	124	T	Supla::Protocol::SuplaSrpc::handleSetDeviceConfigResult(TSDS_SetDeviceConfigResult*)
+13	24	37	t	Supla::Protocol::SuplaSrpc::initClient()::__pstr__
+13	0	13	r	Supla::MqttCAFileName
+12	226	238	T	Supla::StateWearLevelingByte::finalizeSaveState()
+12	167	179	T	Supla::HtmlGenerator::sendBetaForm(Supla::WebSender*)
+12	165	177	T	Supla::SimpleState::writeState(unsigned char const*, int)
+12	135	147	T	Supla::Device::RemoteDeviceConfig::processHomeScreenDelayTypeConfig(unsigned long long, TDeviceConfig_HomeScreenOffDelayType*)
+12	89	101	T	Supla::Config::isChannelConfigChangeFlagSet(int, int)
+12	84	96	T	Supla::Storage::IsStateStorageValid()
+12	36	48	V	vtable for Supla::WebServer
+12	0	12	r	Supla::ConfigTag::ThermalProtectionCfgTag
+12	0	12	r	CSWTCH$22
+12	0	12	T	Supla::WebServer::addLastStateLog(char const*) const
+12	0	12	T	Supla::Config::setMqttCA(char const*)
+11	146	157	T	Supla::Protocol::SuplaSrpc::sendChannelStateResult(int, unsigned char)
+11	0	11	T	Supla::Client::isCertificateValidationEnabled() const
+10	139	149	T	Supla::SecurityLogEntry::print() const
+10	111	121	T	Supla::Element::~Element()
+10	103	113	T	Supla::Storage::Init()
+10	103	113	T	Supla::Control::ButtonState::init(int)
+10	93	103	T	Supla::Io::digitalWrite(int, unsigned char, unsigned char, Supla::Io::Base*)
+10	81	91	T	Supla::SimpleState::readState(unsigned char*, int)
+10	65	75	T	Supla::Protocol::SuplaSrpc::disconnect()
+10	0	10	r	Supla::ConfigTag::InputActivationCfgTag
+10	0	10	T	Supla::Element::getRemainingCountdownTimerSec(unsigned int*) const
+9	81	90	T	Supla::Device::RemoteDeviceConfig::fillStatusLedConfig(TDeviceConfig_StatusLed*) const
+9	81	90	T	Supla::Device::RemoteDeviceConfig::fillPowerStatusLedConfig(TDeviceConfig_PowerStatusLed*) const
+9	77	86	T	Supla::Config::clearChannelConfigChangeFlag(int, int)
+9	73	82	T	Supla::Device::RemoteDeviceConfig::fillAutomaticTimeSyncConfig(TDeviceConfig_AutomaticTimeSync*) const
+9	71	80	T	Supla::Config::setChannelConfigChangeFlag(int, int)
+9	63	72	T	Supla::Control::Button::enableButton()
+9	47	56	T	Supla::Control::Button::disableButton()
+9	30	39	T	SuplaDeviceClass::setStatusLed(Supla::Device::StatusLed*)
+9	0	9	t	_GLOBAL__sub_I__ZN20ESP8266WiFiScanClass10_scanAsyncE
+9	0	9	t	_GLOBAL__sub_D__ZN20ESP8266WiFiScanClass10_scanAsyncE
+8	276	284	T	SuplaDeviceClass::SuplaDeviceClass()
+8	271	279	T	Supla::HtmlGenerator::sendForm(Supla::WebSender*)
+8	156	164	T	Supla::Device::FactoryTest::FactoryTest(SuplaDeviceClass*, unsigned int)
+8	153	161	T	Supla::Device::RemoteDeviceConfig::processButtonVolumeConfig(unsigned long long, TDeviceConfig_ButtonVolume*)
+8	129	137	T	Supla::Device::RemoteDeviceConfig::processStatusLedConfig(unsigned long long, TDeviceConfig_StatusLed*)
+8	129	137	T	Supla::Device::RemoteDeviceConfig::processPowerStatusLedConfig(unsigned long long, TDeviceConfig_PowerStatusLed*)
+8	128	136	V	vtable for Supla::Protocol::SuplaSrpc
+8	128	136	V	vtable for Supla::Protocol::ProtocolLayer
+8	127	135	T	Supla::Control::Button::configureAsConfigButton(SuplaDeviceClass*)
+8	125	133	T	Supla::LittleFsConfig::setCustomCA(char const*)
+8	117	125	T	getFavicon()
+8	117	125	T	Supla::Device::RemoteDeviceConfig::processAutomaticTimeSyncConfig(unsigned long long, TDeviceConfig_AutomaticTimeSync*)
+8	101	109	T	supla_log
+8	94	102	T	Supla::Network::onLoadConfig()
+8	92	100	V	vtable for Supla::Wifi
+8	92	100	V	vtable for Supla::ESPWifi
+8	91	99	T	Supla::Uptime::iterate(unsigned int)
+8	86	94	T	Supla::ActionHandlerClient::ActionHandlerClient()
+8	82	90	T	getHandler()
+8	82	90	T	getBetaHandler()
+8	75	83	T	SuplaDeviceClass::setInitialMode(Supla::InitialMode)
+8	75	83	T	Supla::Device::RemoteDeviceConfig::fillButtonVolumeConfig(TDeviceConfig_ButtonVolume*) const
+8	70	78	T	SuplaDeviceClass::scheduleSoftRestart(int)
+8	48	56	V	vtable for Supla::Client
+8	48	56	V	vtable for Supla::ArduinoEspClient
+8	14	22	T	Supla::dataRead(void*, int, void*)
+8	0	8	r	C$5$0
+8	0	8	r	C$32$1
+8	0	8	T	Supla::WifiScanResultCache::hasScan() const
+8	0	8	T	Supla::WifiScanResultCache::getCount() const
+7	214	221	T	Supla::KeyValueElement::serialize(unsigned char*, unsigned int)
+7	176	183	T	SuplaDeviceClass::status(int, __FlashStringHelper const*, bool)
+7	69	76	T	Supla::Device::RemoteDeviceConfig::fillHomeScreenDelayTypeConfig(TDeviceConfig_HomeScreenOffDelayType*) const
+7	51	58	T	Supla::Network::setOfflineMode()
+7	51	58	T	Supla::Network::setNormalMode()
+7	51	58	T	Supla::Network::setConfigMode()
+7	50	57	T	Supla::LittleFsConfig::removeAll()
+7	48	55	T	SuplaDeviceClass::setLeaveCfgModeAfterInactivityMin(int)
+7	47	54	T	Supla::Network::Setup()
+7	41	48	T	Supla::KeyValueElement::getBlob(char*, unsigned int)
+6	324	330	t	SuplaDeviceClass::loadDeviceConfig()::__pstr__
+6	238	244	T	Supla::Device::LastStateLogger::log(char const*, int)
+6	123	129	T	Supla::Protocol::SuplaSrpc::onInit()
+6	107	113	T	Supla::Clock::onLoadConfig(SuplaDeviceClass*)
+6	77	83	T	SuplaDeviceClass::restartCfgModeTimeout(bool)
+6	71	77	T	Supla::StateStorageInterface::eraseSector(unsigned int, int)
+6	53	59	T	Supla::Element::getElementByChannelNumber(int)
+6	27	33	T	SuplaDeviceClass::enterNormalMode()
+6	25	31	T	Supla::Element::handleWeeklySchedule(TSD_ChannelConfig*, bool, bool)
+6	25	31	T	Supla::Element::handleChannelConfig(TSD_ChannelConfig*, bool)
+6	25	31	T	Supla::Crypto::pbkdf2Sha256(char const*, unsigned char const*, unsigned int, unsigned int, unsigned char*, unsigned int)
+6	0	6	T	Supla::Element::setRuntimeFunction(unsigned int)
+6	0	6	T	Supla::Element::setFunction(unsigned int)
+6	0	6	T	Supla::Channel::setDefaultFunction(unsigned int)
+5	89	94	T	Supla::Eeprom::writeStorage(unsigned int, unsigned char const*, unsigned int)
+5	85	90	T	Supla::KeyValue::serializeToMemory(unsigned char*, unsigned int)
+5	78	83	T	Supla::StateWearLevelingSector::loadPreambles(unsigned int, unsigned short)
+5	56	61	T	Supla::WebServer::resetParser()
+5	52	57	T	Supla::EspWebServer::stop()
+5	46	51	T	Supla::Eeprom::commit()
+5	7	12	T	Supla::ActionHandlerClient::enable()
+5	0	5	W	Supla::ESPWifi::isConfigModeScanInProgress() const
+5	0	5	T	Supla::WifiScanResultCache::getTimestampMs() const
+5	0	5	T	Supla::WifiScanResultCache::Instance()
+5	0	5	T	Supla::Network::getNetifConfig() const
+5	0	5	T	Supla::HtmlOutputBuffer::error() const
+5	0	5	T	Supla::Channel::getDefaultFunction() const
+5	0	5	B	Supla::Device::RemoteDeviceConfig::thermalProtectionProperties
+4	2072	2076	W	esp8266webserver::ESP8266WebServerTemplate<WiFiServer>::_parseForm(WiFiClient&, String const&, unsigned int)
+4	162	166	T	Supla::Control::BlinkingLed::BlinkingLed(Supla::Io::IoPin)
+4	135	139	T	Supla::Protocol::SuplaSrpc::setInitialCaption(unsigned char, char const*)
+4	132	136	B	SuplaDevice
+4	124	128	T	Supla::Network::printData(char const*, void const*, int)
+4	111	115	T	Supla::StateWearLevelingSector::readState(unsigned char*, int)
+4	86	90	T	SuplaDeviceClass::leaveConfigModeWithoutRestart()
+4	86	90	T	Supla::Protocol::SuplaSrpc::sendActionTrigger(unsigned char, unsigned int)
+4	75	79	T	Supla::Protocol::SuplaSrpc::onVersionError(TSDC_SuplaVersionError*)
+4	65	69	T	Supla::Protocol::SuplaSrpc::getChannelConfig(unsigned char, unsigned char)
+4	60	64	V	vtable for Supla::EspSender
+4	56	60	B	statusLed
+4	49	53	T	Supla::SimpleState::finalizeSizeCheck()
+4	29	33	T	Supla::KeyValue::getStringSize(char const*)
+4	29	33	T	Supla::KeyValue::getBlobSize(char const*)
+4	10	14	T	Supla::ActionHandlerClient::disable()
+4	0	4	d	__supla_log_level
+4	0	4	d	(anonymous namespace)::wifiTransitionGuardMs
+4	0	4	b	(anonymous namespace)::wifiStaDisconnectSeriesStartMs
+4	0	4	b	(anonymous namespace)::ignoreUntilMs
+4	0	4	T	Supla::isLittleEndian()
+4	0	4	T	Supla::Wifi::isConfigModeScanInProgress() const
+4	0	4	T	Supla::WebServer::verifyEmbeddedHttpsCertificates()
+4	0	4	T	Supla::WebServer::resolveWebServerMode() const
+4	0	4	T	Supla::WebServer::getWebServerMode() const
+4	0	4	T	Supla::Protocol::ProtocolLayer::isMqtt() const
+4	0	4	T	Supla::Protocol::ProtocolLayer::getConnectionError() const
+4	0	4	T	Supla::Element::getCalcfgPendingTimeoutMs(TSD_DeviceCalCfgRequest*) const
+4	0	4	T	Supla::Config::isDeviceDataPartitionDeclared()
+4	0	4	T	Supla::Config::isDeviceDataPartitionAvailable()
+4	0	4	T	Supla::Client::getConnectionError() const
+4	0	4	B	Supla::Device::FactoryTest::insecureOptions
+4	0	4	B	ESP8266WiFiScanClass::_scanResult
+4	0	4	B	ESP8266WiFiScanClass::_scanCount
+3	107	110	T	SuplaDeviceClass::enterConfigMode()
+3	98	101	t	_GLOBAL__sub_I_eeprom
+3	78	81	T	Supla::Protocol::SuplaSrpc::setChannelConfig(unsigned char, int, void*, int, unsigned char)
+3	64	67	T	Supla::Config::isMqttTlsEnabled()
+2	77	79	T	Supla::Protocol::SuplaSrpc::sendSubdeviceDetails(TDS_SubdeviceDetails*)
+2	77	79	T	Supla::Protocol::SuplaSrpc::sendRegisterNotification(TDS_RegisterPushNotification*)
+2	75	77	T	Supla::Protocol::SuplaSrpc::sendChannelValueChanged(unsigned char, signed char*, unsigned char, unsigned int)
+2	60	62	T	Supla::Protocol::SuplaSrpc::sendNotification(int, char const*, char const*, int)
+2	45	47	T	Supla::Protocol::SuplaSrpc::getUserLocaltime()
+2	43	45	T	Supla::Config::getAutoUpdatePolicy()
+2	39	41	T	Supla::Config::getMqttQos()
+2	26	28	W	std::_Function_base::~_Function_base()
+2	22	24	t	Supla::SecurityLogEntry::print() const::__pstr__
+2	15	17	T	Supla::HtmlGenerator::sendJavascript(Supla::WebSender*)
+2	0	2	T	supla_debug_log_write
+2	0	2	T	Supla::Wifi::startConfigModeScan()
+2	0	2	B	Supla::Device::RemoteDeviceConfig::inputActivationProperties
+1	79	80	T	Supla::Config::isDeviceConfigChangeFlagSet()
+1	60	61	T	Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(unsigned char, TSuplaChannelExtendedValue*)
+1	56	57	T	Supla::LocalAction::NullifyActionsHandledBy(Supla::ActionHandler const*)
+1	51	52	T	Supla::Html::WifiParameters::~WifiParameters()
+1	42	43	T	Supla::Element::IsAnyUpdatePending()
+1	41	42	T	Supla::Control::SimpleButton::onInit()
+1	4	5	T	Supla::Protocol::SuplaSrpc::getSuplaCACert() const
+1	0	1	b	(anonymous namespace)::wifiStaDisconnectSeriesActive
+1	0	1	B	ESP8266WiFiScanClass::_scanStarted
+1	0	1	B	ESP8266WiFiScanClass::_scanComplete
+1	0	1	B	ESP8266WiFiScanClass::_scanAsync
+-1	315	314	T	Supla::Element::handleGetChannelState(TDSC_ChannelState*)
+-1	101	100	T	Supla::SaltPassword::isPasswordStrong(char const*) const
+-1	77	76	T	Supla::Config::getMqttServerPort()
+-1	69	68	W	S2Stream::peekConsume(unsigned int)
+-1	66	65	T	Supla::Protocol::SuplaSrpc::setDeviceConfig(TSDS_SetDeviceConfig*)
+-1	63	62	T	Supla::Client::write(void const*, unsigned int)
+-1	60	59	T	Supla::Device::StatusLed::onDeviceConfigChange(unsigned long long)
+-1	26	25	T	Supla::Config::setSuplaServerPort(int)
+-1	26	25	T	Supla::Config::setMqttServerPort(int)
+-1	18	17	T	Supla::HtmlGenerator::sendStyle(Supla::WebSender*)
+-2	122	120	T	urlDecodeInplace(char*, int)
+-2	49	47	T	Supla::Config::getSuplaServerPort()
+-4	420	416	W	esp8266webserver::ESP8266WebServerTemplate<WiFiServer>::handleClient()
+-4	340	336	W	esp8266webserver::ESP8266WebServerTemplate<WiFiServer>::_handleRequest()
+-4	244	240	t	_ZN5Supla8Protocol9SuplaSrpc16sendNotificationEiPKcS3_i$part$0
+-4	4	0	b	reboot
+-4	4	0	T	Supla::WebServer::verifyCertificatesFormat()
+-6	191	185	T	Supla::Protocol::SuplaSrpc::~SuplaSrpc()
+-6	114	108	T	Supla::Protocol::ProtocolLayer::ProtocolLayer(SuplaDeviceClass*)
+-8	8	0	r	C$20$1
+-8	8	0	r	C$2$0
+-10	108	98	t	Supla::LittleFsConfig::getBlob(char const*, char*, unsigned int)::__pstr__
+-12	135	123	T	Supla::Protocol::SuplaSrpc::initClient()
+-12	12	0	r	CSWTCH$20
+-13	13	0	T	SuplaDeviceClass::getSuplaCACert() const
+-16	16	0	r	CSWTCH$366
+-16	16	0	r	CSWTCH$113
+-18	67	49	T	Supla::Protocol::SuplaSrpc::iterate(unsigned int)
+-19	1691	1672	T	srpc_call_min_version_required
+-24	118	94	T	SuplaDeviceClass::iterateAlwaysElements(unsigned int)
+-24	24	0	r	CSWTCH$224
+-27	282	255	T	sproto_pop_in_sdp
+-29	57	28	T	Supla::Network::PopSetupNeeded()
+-30	37	7	W	Supla::ESPWifi::uninit()
+-34	34	0	t	Supla::EspSender::send(char const*, int)::__pstr__
+-52	222	170	T	Supla::StateWearLevelingSector::StateWearLevelingSector(Supla::Storage*, unsigned int, unsigned int)
+-69	69	0	t	Supla::WebSender::sendSelectItem(int, char const*, bool, bool)::__pstr__
+-69	69	0	t	Supla::WebSender::sendLabelFor(char const*, char const*)::__pstr__
+-74	74	0	T	Supla::Protocol::CalCfgResultPending::~CalCfgResultPending()
+-98	98	0	T	Supla::Element::Element()
+-99	338	239	T	Supla::Channel::fillDeviceChannelStruct(TDS_SuplaDeviceChannel_D*)
+-100	100	0	t	Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(short, int, int, int, void*)::__pstr__
+-101	101	0	T	hexStringToInt(char const*, int)
+-111	111	0	T	Supla::Protocol::CalCfgResultPending::set(short, int, int)
+-127	150	23	T	Supla::EspSender::send(char const*, int)
+-127	127	0	T	Supla::WebSender::textInput(char const*, char const*, char const*, int)
+-129	373	244	T	Supla::Channel::fillDeviceChannelStruct(TDS_SuplaDeviceChannel_E*)
+-149	149	0	t	Supla::Channel::fillDeviceChannelStruct(TDS_SuplaDeviceChannel_D*)::__pstr__
+-163	163	0	t	Supla::Channel::fillDeviceChannelStruct(TDS_SuplaDeviceChannel_E*)::__pstr__
+-183	210	27	T	Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(short, int, int, int, void*)

@@ -1,0 +1,72 @@
+delta	v26.4	v26.8	type	symbol
+2504	1431	3935	r	javascript
+716	0	716	b	Supla::(anonymous namespace)::instance
+510	0	510	r	Supla::Html::(anonymous namespace)::kScript
+368	4003	4371	r	styles
+119	0	119	V	Supla::ESPWifi::startConfigModeScan()::__pstr__
+109	0	109	r	Supla::Html::(anonymous namespace)::kNetmaskPattern
+82	0	82	V	Supla::ESPWifi::iterate()::__pstr__
+80	0	80	r	Supla::Html::(anonymous namespace)::kIpv4Pattern
+60	336	396	B	suplaServer
+48	0	48	r	(anonymous namespace)::matchesSensitiveField(char const*)::sensitiveFields
+43	198	241	r	headerBegin
+41	118	159	V	Supla::ESPWifi::setup()::__pstr__
+40	368	408	V	vtable for Supla::LittleFsConfig
+40	368	408	V	vtable for Supla::KeyValue
+40	368	408	V	vtable for Supla::Config
+32	180	212	B	wifi
+31	0	31	V	Supla::ESPWifi::disable()::__pstr__
+28	176	204	V	vtable for Supla::EspWebServer
+24	0	24	r	CSWTCH$449
+24	0	24	r	CSWTCH$370
+20	0	20	r	CSWTCH$378
+18	0	18	r	Supla::Html::(anonymous namespace)::WifiSsidChanged
+18	0	18	r	Supla::ConfigTag::WifiNetifCfgTag
+16	268	284	V	vtable for Supla::Control::Button
+16	208	224	V	vtable for Supla::Control::SimpleButton
+16	188	204	V	vtable for Supla::Device::FactoryTest
+16	184	200	V	vtable for Supla::Clock
+16	140	156	V	vtable for Supla::Device::StatusLed
+16	140	156	V	vtable for Supla::Control::BlinkingLed
+16	136	152	V	vtable for Supla::Element
+16	0	16	r	CSWTCH$516
+16	0	16	r	CSWTCH$125
+16	0	16	B	ESP8266WiFiScanClass::_onComplete
+15	0	15	r	Supla::Html::(anonymous namespace)::WifiSsidListId
+15	0	15	r	Supla::Html::(anonymous namespace)::WifiSsidHintId
+13	0	13	r	Supla::MqttCAFileName
+12	36	48	V	vtable for Supla::WebServer
+12	0	12	r	Supla::ConfigTag::ThermalProtectionCfgTag
+12	0	12	r	CSWTCH$22
+10	0	10	r	Supla::ConfigTag::InputActivationCfgTag
+8	128	136	V	vtable for Supla::Protocol::SuplaSrpc
+8	128	136	V	vtable for Supla::Protocol::ProtocolLayer
+8	92	100	V	vtable for Supla::Wifi
+8	92	100	V	vtable for Supla::ESPWifi
+8	48	56	V	vtable for Supla::Client
+8	48	56	V	vtable for Supla::ArduinoEspClient
+8	0	8	r	C$5$0
+8	0	8	r	C$32$1
+5	0	5	B	Supla::Device::RemoteDeviceConfig::thermalProtectionProperties
+4	132	136	B	SuplaDevice
+4	60	64	V	vtable for Supla::EspSender
+4	56	60	B	statusLed
+4	0	4	d	__supla_log_level
+4	0	4	d	(anonymous namespace)::wifiTransitionGuardMs
+4	0	4	b	(anonymous namespace)::wifiStaDisconnectSeriesStartMs
+4	0	4	b	(anonymous namespace)::ignoreUntilMs
+4	0	4	B	Supla::Device::FactoryTest::insecureOptions
+4	0	4	B	ESP8266WiFiScanClass::_scanResult
+4	0	4	B	ESP8266WiFiScanClass::_scanCount
+2	0	2	B	Supla::Device::RemoteDeviceConfig::inputActivationProperties
+1	0	1	b	(anonymous namespace)::wifiStaDisconnectSeriesActive
+1	0	1	B	ESP8266WiFiScanClass::_scanStarted
+1	0	1	B	ESP8266WiFiScanClass::_scanComplete
+1	0	1	B	ESP8266WiFiScanClass::_scanAsync
+-4	4	0	b	reboot
+-8	8	0	r	C$20$1
+-8	8	0	r	C$2$0
+-12	12	0	r	CSWTCH$20
+-16	16	0	r	CSWTCH$366
+-16	16	0	r	CSWTCH$113
+-24	24	0	r	CSWTCH$224

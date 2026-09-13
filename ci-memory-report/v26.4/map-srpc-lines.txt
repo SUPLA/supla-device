@@ -1,0 +1,1101 @@
+                              /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o (strchr)
+ .literal._ZN16SuplaDeviceClass23createSrpcLayerIfNeededEv
+ .literal._ZN16SuplaDeviceClass12getSrpcLayerEv
+ .irom0.text.srpc.c.544.90.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.549.91.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.553.92.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.562.93.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.575.95.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.580.96.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.584.97.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.593.98.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.608.100.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.613.101.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.617.102.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.626.103.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.641.105.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.646.106.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.650.107.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.659.108.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.674.110.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.679.111.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.683.112.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.692.113.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.707.115.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.712.116.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.717.117.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.726.118.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.742.120.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.747.121.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.752.122.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.761.123.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.778.125.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.783.126.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.787.127.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.796.128.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.111.74.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.115.75.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.162.79.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.142.76.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.146.77.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.293.85.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.301.86.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.284.84.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.309.87.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.416.88.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.817.130.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1693.131.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1927.136.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1942.137.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1703.132.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1864.133.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2001.142.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2179.161.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2236.162.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.3628.194.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.3636.195.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.150.78.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.181.80.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.204.81.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.233.82.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.251.83.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.484.89.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.567.94.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.598.99.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.631.104.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.664.109.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.697.114.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.731.119.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.766.124.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.801.129.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1875.134.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1968.140.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1921.135.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2629.193.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2584.189.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2573.188.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2563.187.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2552.186.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2542.185.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2532.184.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2520.183.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2510.182.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2498.181.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2614.192.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2604.191.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2594.190.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2486.180.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2476.179.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2458.178.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2453.177.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2441.176.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2429.175.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2365.170.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2108.155.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2352.169.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2346.168.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2340.167.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2411.174.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2395.173.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2383.172.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2373.171.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2326.166.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2319.165.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2306.164.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2293.163.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2166.160.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2153.159.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2140.158.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2127.157.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2114.156.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2069.150.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2063.149.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2050.148.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2046.147.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2040.146.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2034.145.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2026.144.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2019.143.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1978.141.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1955.139.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1951.138.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2075.151.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2085.152.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2091.153.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2101.154.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .literal.srpc_evtool_extended2emextended_latest
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.3672.196.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.3686.197.literal
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .text          0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .data          0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .bss           0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.544.90
+                0x0000000000000000       0x12 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.549.91
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.553.92
+                0x0000000000000000       0x3c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.562.93
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.575.95
+                0x0000000000000000       0x10 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.580.96
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.584.97
+                0x0000000000000000       0x3c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.593.98
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.608.100
+                0x0000000000000000        0xc /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.613.101
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.617.102
+                0x0000000000000000       0x3c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.626.103
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.641.105
+                0x0000000000000000       0x11 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.646.106
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.650.107
+                0x0000000000000000       0x3c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.659.108
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.674.110
+                0x0000000000000000       0x11 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.679.111
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.683.112
+                0x0000000000000000       0x3c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.692.113
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.707.115
+                0x0000000000000000        0xc /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.712.116
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.717.117
+                0x0000000000000000       0x3c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.726.118
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.742.120
+                0x0000000000000000        0xc /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.747.121
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.752.122
+                0x0000000000000000       0x3c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.761.123
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.778.125
+                0x0000000000000000        0xc /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.783.126
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.787.127
+                0x0000000000000000       0x3c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.796.128
+                0x0000000000000000       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.142.76
+                0x0000000000000000        0xd /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.146.77
+                0x0000000000000000        0xd /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.293.85
+                0x0000000000000000       0x3d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.301.86
+                0x0000000000000000       0x3d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.284.84
+                0x0000000000000000        0x4 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.309.87
+                0x0000000000000000      0x123 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2001.142
+                0x0000000000000000        0x4 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.3628.194
+                0x0000000000000000       0xe1 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.3636.195
+                0x0000000000000000      0x107 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.150.78
+                0x0000000000000000       0x34 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.181.80
+                0x0000000000000000       0x61 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.204.81
+                0x0000000000000000       0xc9 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.233.82
+                0x0000000000000000        0x4 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.484.89
+                0x0000000000000000      0x188 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.567.94
+                0x0000000000000000       0x47 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.598.99
+                0x0000000000000000       0x48 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.631.104
+                0x0000000000000000       0x47 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.664.109
+                0x0000000000000000       0x47 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.697.114
+                0x0000000000000000       0x48 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.731.119
+                0x0000000000000000       0x47 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.766.124
+                0x0000000000000000       0x48 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.801.129
+                0x0000000000000000       0x47 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1968.140
+                0x0000000000000000       0x2c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2584.189
+                0x0000000000000000       0x18 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2552.186
+                0x0000000000000000       0x32 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2542.185
+                0x0000000000000000       0x18 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2532.184
+                0x0000000000000000       0x18 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2498.181
+                0x0000000000000000       0x30 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2486.180
+                0x0000000000000000       0x30 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2458.178
+                0x0000000000000000       0x28 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2453.177
+                0x0000000000000000       0x11 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2429.175
+                0x0000000000000000       0x40 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2365.170
+                0x0000000000000000       0x1c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2108.155
+                0x0000000000000000       0x11 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2346.168
+                0x0000000000000000       0x11 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2340.167
+                0x0000000000000000       0x11 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2383.172
+                0x0000000000000000       0x49 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2373.171
+                0x0000000000000000       0x3a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2326.166
+                0x0000000000000000       0x30 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2319.165
+                0x0000000000000000       0x10 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2306.164
+                0x0000000000000000       0x29 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2293.163
+                0x0000000000000000       0x2c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2166.160
+                0x0000000000000000       0x2c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2153.159
+                0x0000000000000000       0x2c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2140.158
+                0x0000000000000000       0x2c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2127.157
+                0x0000000000000000       0x2c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2114.156
+                0x0000000000000000       0x29 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2063.149
+                0x0000000000000000       0x11 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2050.148
+                0x0000000000000000       0x3e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2040.146
+                0x0000000000000000       0x11 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2034.145
+                0x0000000000000000       0x11 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2026.144
+                0x0000000000000000       0x11 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1955.139
+                0x0000000000000000       0x3d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.1951.138
+                0x0000000000000000       0x10 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2091.153
+                0x0000000000000000       0x3a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.2101.154
+                0x0000000000000000        0xd /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .text.srpc_evtool_extended2emextended_latest
+                0x0000000000000000       0x22 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.3672.196
+                0x0000000000000000       0xa1 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .irom0.text.srpc.c.3686.197
+                0x0000000000000000       0x8e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .xt.lit        0x0000000000000000      0x2d0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .xt.prop       0x0000000000000000     0x28a4 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .literal._ZN5Supla7Control13ActionTrigger12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .text._ZN5Supla7Control13ActionTrigger12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .literal._ZN5Supla7Control8HvacBase12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .text._ZN5Supla7Control8HvacBase12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .literal._ZN5Supla7Control5Relay12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .text._ZN5Supla7Control5Relay12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .literal._ZN5Supla12Notification12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .literal._ZN5Supla12Notification7setSrpcEPNS_8Protocol9SuplaSrpcE
+ .text._ZN5Supla12Notification12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .text._ZN5Supla12Notification7setSrpcEPNS_8Protocol9SuplaSrpcE
+ .literal._ZN5Supla7Element12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .literal._ZN5Supla25ElementWithChannelActions12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .text._ZN5Supla25ElementWithChannelActions12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .group         0x0000000000000000       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc25isNetworkRestartRequestedEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc21getConnectionFailTimeEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc9isEnabledEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc20isRegisteredAndReadyEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc17sendActionTriggerEhj
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc16getUserLocaltimeEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc23sendChannelValueChangedEhPahj
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc31sendExtendedChannelValueChangedEhP26TSuplaChannelExtendedValue
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc16getChannelConfigEhh
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc15setDeviceConfigEP20TSDS_SetDeviceConfig
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc20sendSubdeviceDetailsEP20TDS_SubdeviceDetails
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc24sendRegisterNotificationEP28TDS_RegisterPushNotification
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc6onInitEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc12onLoadConfigEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc22sendRemainingTimeValueEhjhi
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc12verifyConfigEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc22sendChannelStateResultEih
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc15isUpdatePendingEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc22sendRemainingTimeValueEhjPhib
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc17setInitialCaptionEhPKc
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc16sendNotificationEiPKcS3_i$part$0
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc16sendNotificationEiPKcS3_i
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc16setChannelConfigEhiPvih$part$0
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc16setChannelConfigEhiPvih
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpcC2EP16SuplaDeviceClassi
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc10initClientEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc16setNetworkClientEPNS_6ClientE
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc14onVersionErrorEP22TSDC_SuplaVersionError
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc16onRegisterResultEP29TSD_SuplaRegisterDeviceResult
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc17onRegisterResultBEP31TSD_SuplaRegisterDeviceResult_B
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc26onSetActivityTimeoutResultEP34TSDC_SuplaSetActivityTimeoutResult
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc18setActivityTimeoutEj
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc4pingEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc19addLastStateAdErrorEPc
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc22updateLastResponseTimeEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc18updateLastSentTimeEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc13setServerPortEi
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc10setVersionEi
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc14setSuplaCACertEPKc
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc22setSupla3rdPartyCACertEPKc
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZNK5Supla8Protocol9SuplaSrpc14getSuplaCACertEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZNK5Supla8Protocol9SuplaSrpc22getSupla3rdPartyCACertEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc24onGetUserLocaltimeResultEP24TSDC_UserLocalTimeResult
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc18getActivityTimeoutEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc18configResultToCStrEi
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc27handleSetDeviceConfigResultEP26TSDS_SetDeviceConfigResult
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc18handleDeviceConfigEP20TSDS_SetDeviceConfig
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpcD2Ev
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpcD0Ev
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc23sendPendingCalCfgResultEsiiiPv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc24clearPendingCalCfgResultEsi
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc16deinitializeSrpcEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc14initializeSrpcEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc7iterateEj$part$0
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc7iterateEj
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc10disconnectEv
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla8Protocol9SuplaSrpc26setChannelConflictResolverEPNS_6Device23ChannelConflictResolverE
+                0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text          0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .data          0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .bss           0x0000000000000000        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc16setNetworkClientEPNS_6ClientE
+                0x0000000000000000       0x57 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc18setActivityTimeoutEj
+                0x0000000000000000        0xa /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc13setServerPortEi
+                0x0000000000000000        0x4 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc14setSuplaCACertEPKc
+                0x0000000000000000        0x4 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc22setSupla3rdPartyCACertEPKc
+                0x0000000000000000        0x5 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc18getActivityTimeoutEv
+                0x0000000000000000        0x5 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000000000000        0x6 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc26setChannelConflictResolverEPNS_6Device23ChannelConflictResolverE
+                0x0000000000000000        0x5 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000000000000        0x4 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .xt.lit        0x0000000000000000      0x190 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .xt.prop       0x0000000000000000     0x18cc /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .literal._ZN5Supla6Sensor16ElectricityMeter12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .text._ZN5Supla6Sensor16ElectricityMeter12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .literal._ZN5Supla6Sensor18MultiDsHandlerBase12startPairingEPNS_8Protocol9SuplaSrpcEP30TCalCfg_SubdevicePairingResult
+ .literal._ZThn8_N5Supla6Sensor18MultiDsHandlerBase12startPairingEPNS_8Protocol9SuplaSrpcEP30TCalCfg_SubdevicePairingResult
+ .literal._ZN5Supla6Sensor18MultiDsHandlerBase24notifySrpcAboutParingEndEiPKc
+ .literal._ZN5Supla6Sensor18MultiDsHandlerBase12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .text._ZN5Supla6Sensor18MultiDsHandlerBase12startPairingEPNS_8Protocol9SuplaSrpcEP30TCalCfg_SubdevicePairingResult
+ .text._ZThn8_N5Supla6Sensor18MultiDsHandlerBase12startPairingEPNS_8Protocol9SuplaSrpcEP30TCalCfg_SubdevicePairingResult
+ .text._ZN5Supla6Sensor18MultiDsHandlerBase24notifySrpcAboutParingEndEiPKc
+ .text._ZN5Supla6Sensor18MultiDsHandlerBase12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .literal._ZN5Supla6Sensor17OcrImpulseCounter12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .text._ZN5Supla6Sensor17OcrImpulseCounter12onRegisteredEPNS_8Protocol9SuplaSrpcE
+LOAD /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+LOAD /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .data._ZN5Supla8Protocol9SuplaSrpc17isSuplaSSLEnabledE
+                0x000000003ffe8636        0x1 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000003ffe8636                _ZN5Supla8Protocol9SuplaSrpc17isSuplaSSLEnabledE
+ .text._ZN16SuplaDeviceClass23createSrpcLayerIfNeededEv
+                0x0000000040207118                _ZN16SuplaDeviceClass23createSrpcLayerIfNeededEv
+ .text._ZN5Supla7Element12onRegisteredEPNS_8Protocol9SuplaSrpcE
+                0x000000004020d160                _ZN5Supla7Element12onRegisteredEPNS_8Protocol9SuplaSrpcE
+ .text._ZN5Supla8Protocol9SuplaSrpc17sendActionTriggerEhj
+                0x0000000040214e8c       0x56 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040214e8c                _ZN5Supla8Protocol9SuplaSrpc17sendActionTriggerEhj
+ .text._ZN5Supla8Protocol9SuplaSrpc16getUserLocaltimeEv
+                0x0000000040214ee4       0x31 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040214ee8                _ZN5Supla8Protocol9SuplaSrpc16getUserLocaltimeEv
+ .text._ZN5Supla8Protocol9SuplaSrpc23sendChannelValueChangedEhPahj
+                0x0000000040214f18       0x4f /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040214f1c                _ZN5Supla8Protocol9SuplaSrpc23sendChannelValueChangedEhPahj
+ .text._ZN5Supla8Protocol9SuplaSrpc31sendExtendedChannelValueChangedEhP26TSuplaChannelExtendedValue
+                0x0000000040214f68       0x40 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040214f6c                _ZN5Supla8Protocol9SuplaSrpc31sendExtendedChannelValueChangedEhP26TSuplaChannelExtendedValue
+ .text._ZN5Supla8Protocol9SuplaSrpc16getChannelConfigEhh
+                0x0000000040214fa8       0x41 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040214fa8                _ZN5Supla8Protocol9SuplaSrpc16getChannelConfigEhh
+ .text._ZN5Supla8Protocol9SuplaSrpc15setDeviceConfigEP20TSDS_SetDeviceConfig
+                0x0000000040214fec       0x42 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040214fec                _ZN5Supla8Protocol9SuplaSrpc15setDeviceConfigEP20TSDS_SetDeviceConfig
+ .text._ZN5Supla8Protocol9SuplaSrpc20sendSubdeviceDetailsEP20TDS_SubdeviceDetails
+                0x0000000040215030       0x51 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215034                _ZN5Supla8Protocol9SuplaSrpc20sendSubdeviceDetailsEP20TDS_SubdeviceDetails
+ .text._ZN5Supla8Protocol9SuplaSrpc24sendRegisterNotificationEP28TDS_RegisterPushNotification
+                0x0000000040215084       0x51 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215088                _ZN5Supla8Protocol9SuplaSrpc24sendRegisterNotificationEP28TDS_RegisterPushNotification
+ .text._ZN5Supla8Protocol9SuplaSrpc6onInitEv
+                0x00000000402150d8       0x7f /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000402150dc                _ZN5Supla8Protocol9SuplaSrpc6onInitEv
+ .text._ZN5Supla8Protocol9SuplaSrpc12onLoadConfigEv
+                0x0000000040215158      0x1e1 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215180                _ZN5Supla8Protocol9SuplaSrpc12onLoadConfigEv
+                0x000000004021533c        0xe /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc22sendRemainingTimeValueEhjhi
+                0x000000004021534c       0xd9 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215354                _ZN5Supla8Protocol9SuplaSrpc22sendRemainingTimeValueEhjhi
+ .text._ZN5Supla8Protocol9SuplaSrpc12verifyConfigEv
+                0x0000000040215428       0x6a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215430                _ZN5Supla8Protocol9SuplaSrpc12verifyConfigEv
+ .text._ZN5Supla8Protocol9SuplaSrpc22sendChannelStateResultEih
+                0x0000000040215494       0x92 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215494                _ZN5Supla8Protocol9SuplaSrpc22sendChannelStateResultEih
+ .text._ZN5Supla8Protocol9SuplaSrpc15isUpdatePendingEv
+                0x0000000040215528       0x32 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000004021552c                _ZN5Supla8Protocol9SuplaSrpc15isUpdatePendingEv
+ .text._ZN5Supla8Protocol9SuplaSrpc22sendRemainingTimeValueEhjPhib
+                0x000000004021555c      0x10d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000004021556c                _ZN5Supla8Protocol9SuplaSrpc22sendRemainingTimeValueEhjPhib
+ .text._ZN5Supla8Protocol9SuplaSrpc17setInitialCaptionEhPKc
+                0x000000004021566c       0x87 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000004021566c                _ZN5Supla8Protocol9SuplaSrpc17setInitialCaptionEhPKc
+ .text._ZN5Supla8Protocol9SuplaSrpc16sendNotificationEiPKcS3_i$part$0
+                0x00000000402156f4       0xf4 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc16sendNotificationEiPKcS3_i
+                0x00000000402157e8       0x40 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000402157ec                _ZN5Supla8Protocol9SuplaSrpc16sendNotificationEiPKcS3_i
+ .text._ZN5Supla8Protocol9SuplaSrpc16setChannelConfigEhiPvih$part$0
+                0x0000000040215828       0xa2 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc16setChannelConfigEhiPvih
+                0x00000000402158cc       0x52 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000402158d0                _ZN5Supla8Protocol9SuplaSrpc16setChannelConfigEhiPvih
+ .text._ZN5Supla8Protocol9SuplaSrpcC2EP16SuplaDeviceClassi
+                0x0000000040215920       0x6d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215930                _ZN5Supla8Protocol9SuplaSrpcC1EP16SuplaDeviceClassi
+                0x0000000040215930                _ZN5Supla8Protocol9SuplaSrpcC2EP16SuplaDeviceClassi
+ .text._ZN5Supla8Protocol9SuplaSrpc10initClientEv
+                0x0000000040215990       0x8f /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215998                _ZN5Supla8Protocol9SuplaSrpc10initClientEv
+ .text._ZN5Supla8Protocol9SuplaSrpc14onVersionErrorEP22TSDC_SuplaVersionError
+                0x0000000040215a20       0x53 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215a28                _ZN5Supla8Protocol9SuplaSrpc14onVersionErrorEP22TSDC_SuplaVersionError
+ .text._ZN5Supla8Protocol9SuplaSrpc16onRegisterResultEP29TSD_SuplaRegisterDeviceResult
+                0x0000000040215a74      0x29f /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215ac8                _ZN5Supla8Protocol9SuplaSrpc16onRegisterResultEP29TSD_SuplaRegisterDeviceResult
+ .text._ZN5Supla8Protocol9SuplaSrpc17onRegisterResultBEP31TSD_SuplaRegisterDeviceResult_B
+                0x0000000040215d14      0x131 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215d28                _ZN5Supla8Protocol9SuplaSrpc17onRegisterResultBEP31TSD_SuplaRegisterDeviceResult_B
+ .text._ZN5Supla8Protocol9SuplaSrpc26onSetActivityTimeoutResultEP34TSDC_SuplaSetActivityTimeoutResult
+                0x0000000040215e48       0x1e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215e4c                _ZN5Supla8Protocol9SuplaSrpc26onSetActivityTimeoutResultEP34TSDC_SuplaSetActivityTimeoutResult
+ .text._ZN5Supla8Protocol9SuplaSrpc4pingEv
+                0x0000000040215e68       0x73 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215e68                _ZN5Supla8Protocol9SuplaSrpc4pingEv
+ .text._ZN5Supla8Protocol9SuplaSrpc19addLastStateAdErrorEPc
+                0x0000000040215edc       0xa0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215eec                _ZN5Supla8Protocol9SuplaSrpc19addLastStateAdErrorEPc
+ .text._ZN5Supla8Protocol9SuplaSrpc22updateLastResponseTimeEv
+                0x0000000040215f7c       0x1b /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215f7c                _ZN5Supla8Protocol9SuplaSrpc22updateLastResponseTimeEv
+ .text._ZN5Supla8Protocol9SuplaSrpc18updateLastSentTimeEv
+                0x0000000040215f98       0x1b /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215f98                _ZN5Supla8Protocol9SuplaSrpc18updateLastSentTimeEv
+                0x0000000040215fb4       0x2e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc24onGetUserLocaltimeResultEP24TSDC_UserLocalTimeResult
+                0x0000000040215fe4       0x27 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040215fe4                _ZN5Supla8Protocol9SuplaSrpc24onGetUserLocaltimeResultEP24TSDC_UserLocalTimeResult
+ .text._ZN5Supla8Protocol9SuplaSrpc18configResultToCStrEi
+                0x000000004021600c       0x1a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040216014                _ZN5Supla8Protocol9SuplaSrpc18configResultToCStrEi
+ .text._ZN5Supla8Protocol9SuplaSrpc27handleSetDeviceConfigResultEP26TSDS_SetDeviceConfigResult
+                0x0000000040216028       0x77 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040216030                _ZN5Supla8Protocol9SuplaSrpc27handleSetDeviceConfigResultEP26TSDS_SetDeviceConfigResult
+ .text._ZN5Supla8Protocol9SuplaSrpc18handleDeviceConfigEP20TSDS_SetDeviceConfig
+                0x00000000402160a0       0xfd /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000402160a8                _ZN5Supla8Protocol9SuplaSrpc18handleDeviceConfigEP20TSDS_SetDeviceConfig
+                0x00000000402161a0       0x6f /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040216210      0x6d3 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000402168e4       0x3a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040216920       0x25 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpcD2Ev
+                0x0000000040216948       0x55 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000004021694c                _ZN5Supla8Protocol9SuplaSrpcD2Ev
+                0x000000004021694c                _ZN5Supla8Protocol9SuplaSrpcD1Ev
+ .text._ZN5Supla8Protocol9SuplaSrpcD0Ev
+                0x00000000402169a0       0x1d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000402169a0                _ZN5Supla8Protocol9SuplaSrpcD0Ev
+ .text._ZN5Supla8Protocol9SuplaSrpc23sendPendingCalCfgResultEsiiiPv
+                0x00000000402169c0       0xde /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000402169cc                _ZN5Supla8Protocol9SuplaSrpc23sendPendingCalCfgResultEsiiiPv
+ .text._ZN5Supla8Protocol9SuplaSrpc24clearPendingCalCfgResultEsi
+                0x0000000040216aa0       0x13 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040216aa4                _ZN5Supla8Protocol9SuplaSrpc24clearPendingCalCfgResultEsi
+ .text._ZN5Supla8Protocol9SuplaSrpc16deinitializeSrpcEv
+                0x0000000040216ab4       0x36 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040216ab8                _ZN5Supla8Protocol9SuplaSrpc16deinitializeSrpcEv
+ .text._ZN5Supla8Protocol9SuplaSrpc14initializeSrpcEv
+                0x0000000040216aec       0x5d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040216afc                _ZN5Supla8Protocol9SuplaSrpc14initializeSrpcEv
+ .text._ZN5Supla8Protocol9SuplaSrpc7iterateEj$part$0
+                0x0000000040216b4c      0x6a8 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .text._ZN5Supla8Protocol9SuplaSrpc7iterateEj
+                0x00000000402171f4       0x47 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000402171f8                _ZN5Supla8Protocol9SuplaSrpc7iterateEj
+ .text._ZN5Supla8Protocol9SuplaSrpc10disconnectEv
+                0x000000004021723c       0x45 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040217240                _ZN5Supla8Protocol9SuplaSrpc10disconnectEv
+ .text._ZN16SuplaDeviceClass12getSrpcLayerEv
+                0x0000000040225ea0                _ZN16SuplaDeviceClass12getSrpcLayerEv
+ .text._ZN5Supla8Protocol9SuplaSrpc25isNetworkRestartRequestedEv
+                0x0000000040226764        0x5 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040226764                _ZN5Supla8Protocol9SuplaSrpc25isNetworkRestartRequestedEv
+ .text._ZN5Supla8Protocol9SuplaSrpc21getConnectionFailTimeEv
+                0x000000004022676c        0xa /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000004022676c                _ZN5Supla8Protocol9SuplaSrpc21getConnectionFailTimeEv
+ .text._ZN5Supla8Protocol9SuplaSrpc9isEnabledEv
+                0x0000000040226778        0x5 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040226778                _ZN5Supla8Protocol9SuplaSrpc9isEnabledEv
+ .text._ZN5Supla8Protocol9SuplaSrpc20isRegisteredAndReadyEv
+                0x0000000040226780       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040226780                _ZN5Supla8Protocol9SuplaSrpc20isRegisteredAndReadyEv
+ .text._ZN5Supla8Protocol9SuplaSrpc10setVersionEi
+                0x0000000040226794        0x5 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x0000000040226794                _ZN5Supla8Protocol9SuplaSrpc10setVersionEi
+ .text._ZNK5Supla8Protocol9SuplaSrpc14getSuplaCACertEv
+                0x000000004022679c        0x4 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000004022679c                _ZNK5Supla8Protocol9SuplaSrpc14getSuplaCACertEv
+ .text._ZNK5Supla8Protocol9SuplaSrpc22getSupla3rdPartyCACertEv
+                0x00000000402267a0        0x5 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000402267a0                _ZNK5Supla8Protocol9SuplaSrpc22getSupla3rdPartyCACertEv
+                0x00000000402267a8       0x1f /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .rodata._ZTVN5Supla8Protocol9SuplaSrpcE
+                0x00000000402282b0       0x80 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000402282b0                _ZTVN5Supla8Protocol9SuplaSrpcE
+ .irom0.text.srpc.c.111.74
+                0x0000000040261f40        0xa /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040261f40                srpc_params_init
+ .irom0.text.srpc.c.115.75
+                0x0000000040261f4c       0x4e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040261f50                srpc_init
+ .irom0.text.srpc.c.162.79
+                0x0000000040261f9c       0x35 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040261fa0                srpc_free
+ .irom0.text.srpc.c.416.88
+                0x0000000040261fd4       0xf2 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040261fdc                srpc_iterate_device
+ .irom0.text.srpc.c.817.130
+                0x00000000402620c8      0xb55 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402620d8                srpc_getdata
+ .irom0.text.srpc.c.1693.131
+                0x0000000040262c20       0x25 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040262c20                srpc_rd_free
+ .irom0.text.srpc.c.1927.136
+                0x0000000040262c48       0x31 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040262c48                srpc_get_proto_version
+ .irom0.text.srpc.c.1942.137
+                0x0000000040262c7c       0x34 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040262c80                srpc_set_proto_version
+ .irom0.text.srpc.c.1703.132
+                0x0000000040262cb0      0x6c7 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040262cdc                srpc_call_min_version_required
+ .irom0.text.srpc.c.1864.133
+                0x0000000040263378       0x33 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263378                srpc_call_allowed
+ .irom0.text.srpc.c.2179.161
+                0x00000000402633ac      0x105 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402633b4                srpc_ds_async_registerdevice_in_chunks
+ .irom0.text.srpc.c.2236.162
+                0x00000000402634b4       0xf9 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402634b4                srpc_ds_async_registerdevice_in_chunks_g
+ .irom0.text.srpc.c.251.83
+                0x00000000402635b0       0x53 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402635b0                srpc_out_queue_push
+ .irom0.text.srpc.c.1875.134
+                0x0000000040263604       0xb5 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263604                srpc_async__call
+ .irom0.text.srpc.c.1921.135
+                0x00000000402636bc        0xc /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402636c0                srpc_async_call
+ .irom0.text.srpc.c.2629.193
+                0x00000000402636c8       0x18 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402636cc                srpc_ds_async_set_subdevice_details
+ .irom0.text.srpc.c.2573.188
+                0x00000000402636e0       0x2e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402636e0                srpc_ds_async_set_device_config_request
+ .irom0.text.srpc.c.2563.187
+                0x0000000040263710       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263710                srpc_ds_async_set_device_config_result
+ .irom0.text.srpc.c.2520.183
+                0x0000000040263724       0x2c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263724                srpc_ds_async_set_channel_config_request
+ .irom0.text.srpc.c.2510.182
+                0x0000000040263750       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263750                srpc_ds_async_set_channel_config_result
+ .irom0.text.srpc.c.2614.192
+                0x0000000040263764       0x3e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263764                srpc_ds_async_send_push_notification
+ .irom0.text.srpc.c.2604.191
+                0x00000000402637a4       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402637a4                srpc_ds_async_register_push_notification
+ .irom0.text.srpc.c.2594.190
+                0x00000000402637b8       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402637b8                srpc_ds_async_action_trigger
+ .irom0.text.srpc.c.2476.179
+                0x00000000402637cc       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402637cc                srpc_ds_async_get_channel_config_request
+ .irom0.text.srpc.c.2441.176
+                0x00000000402637e0       0x3c /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402637e0                srpc_ds_async_device_calcfg_result
+ .irom0.text.srpc.c.2352.169
+                0x000000004026381c       0x34 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x000000004026381c                srpc_ds_async_set_channel_result
+ .irom0.text.srpc.c.2411.174
+                0x0000000040263850       0x79 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263854                srpc_ds_async_channel_extendedvalue_changed
+ .irom0.text.srpc.c.2395.173
+                0x00000000402638cc       0x49 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402638cc                srpc_ds_async_channel_value_changed_c
+ .irom0.text.srpc.c.2069.150
+                0x0000000040263918        0xd /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263918                srpc_csd_async_channel_state_result
+ .irom0.text.srpc.c.2046.147
+                0x0000000040263928        0xd /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263928                srpc_dcs_async_get_user_localtime
+ .irom0.text.srpc.c.2019.143
+                0x0000000040263938        0xd /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263938                srpc_dcs_async_set_activity_timeout
+ .irom0.text.srpc.c.1978.141
+                0x0000000040263948       0x55 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000040263950                srpc_dcs_async_ping_server
+ .irom0.text.srpc.c.2075.151
+                0x00000000402639a0       0x36 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402639a0                srpc_dcs_async_set_caption
+ .irom0.text.srpc.c.2085.152
+                0x00000000402639d8        0xd /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x00000000402639dc                srpc_dcs_async_set_channel_caption
+                0x00000000402778b6      0x965 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000004027821b      0x920 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1662.173
+                0x0000000040280f5c       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1646.172
+                0x0000000040280f70       0x1e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1630.171
+                0x0000000040280f90       0x29 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1626.170
+                0x0000000040280fbc       0x18 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1611.169
+                0x0000000040280fd4       0x23 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1524.168
+                0x0000000040280ff8       0x2f /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1501.167
+                0x0000000040281028       0x33 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1486.166
+                0x000000004028105c       0x36 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1471.165
+                0x0000000040281094       0x28 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1462.164
+                0x00000000402810bc       0x21 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1451.163
+                0x00000000402810e0       0x25 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1415.162
+                0x0000000040281108       0x36 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1410.161
+                0x0000000040281140       0x2a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1378.160
+                0x000000004028116c       0x25 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1366.159
+                0x0000000040281194       0x1b /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1155.158
+                0x00000000402811b0       0x16 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1148.157
+                0x00000000402811c8       0x17 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1038.156
+                0x00000000402811e0       0x1e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1036.155
+                0x0000000040281200       0x26 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1022.154
+                0x0000000040281228       0x24 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1008.153
+                0x000000004028124c       0x1e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.1005.152
+                0x000000004028124c       0x38 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.998.151
+                0x0000000040281284       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.991.150
+                0x0000000040281298       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.985.149
+                0x0000000040281298       0x15 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.974.148
+                0x00000000402812b0       0x16 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.954.147
+                0x00000000402812c8       0x21 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.952.146
+                0x00000000402812e9       0x1e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.947.145
+                0x00000000402812ec       0x1a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.918.144
+                0x0000000040281308       0x32 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.897.143
+                0x000000004028133c       0x15 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.891.142
+                0x0000000040281354       0x24 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.862.141
+                0x0000000040281378       0x17 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.855.140
+                0x0000000040281390       0x17 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.851.139
+                0x00000000402813a8        0x9 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.837.138
+                0x00000000402813b4        0xe /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.802.137
+                0x00000000402813c4       0x22 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.796.136
+                0x00000000402813e8       0x34 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.789.135
+                0x000000004028141c       0x2e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.736.134
+                0x000000004028144c       0x1d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.724.133
+                0x000000004028146c       0x18 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.723.132
+                0x0000000040281484       0x1b /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.718.131
+                0x00000000402814a0       0x28 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.714.130
+                0x00000000402814c8       0x12 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.710.129
+                0x00000000402814dc       0x12 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.706.128
+                0x00000000402814f0       0x13 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.702.127
+                0x0000000040281504       0x16 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.697.126
+                0x000000004028151c       0x14 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.693.125
+                0x0000000040281530       0x17 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.688.124
+                0x0000000040281548       0x17 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.683.123
+                0x0000000040281560       0x17 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.677.122
+                0x0000000040281578       0x2d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.672.121
+                0x00000000402815a8       0x13 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.668.120
+                0x00000000402815bc       0x17 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.664.119
+                0x00000000402815d4       0x19 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.647.118
+                0x00000000402815f0       0x22 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.644.117
+                0x0000000040281614       0x15 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.637.116
+                0x000000004028162c       0x56 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.626.115
+                0x0000000040281684       0x26 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.605.114
+                0x00000000402816ac       0x23 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.596.113
+                0x00000000402816d0       0x41 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.587.112
+                0x0000000040281714       0x3e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.577.111
+                0x0000000040281754       0x5e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.567.110
+                0x00000000402817b4       0x27 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.549.109
+                0x00000000402817dc       0x3b /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.548.108
+                0x0000000040281818       0x17 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.541.107
+                0x0000000040281830        0xc /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.533.106
+                0x000000004028183c       0x34 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.529.105
+                0x0000000040281870       0x2e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.521.104
+                0x00000000402818a0       0x3a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.515.103
+                0x00000000402818dc       0x2b /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.503.102
+                0x0000000040281907       0x3a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.465.101
+                0x0000000040281908       0x33 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.461.100
+                0x000000004028193b       0x3a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.436.99
+                0x000000004028193c       0x4e /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.421.98
+                0x000000004028198a       0x3a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.406.97
+                0x000000004028198a       0x3a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.377.96
+                0x000000004028198a       0x29 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.371.95
+                0x000000004028198a       0x3a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.365.94
+                0x000000004028198c       0x2a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.355.93
+                0x00000000402819b8       0x2d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.320.92
+                0x00000000402819e8       0x55 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.290.91
+                0x0000000040281a3d       0x3a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.231.90
+                0x0000000040281a40       0x20 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.183.89
+                0x0000000040281a60       0x4f /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.166.88
+                0x0000000040281ab0       0x4b /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.153.87
+                0x0000000040281afc       0x13 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.133.86
+                0x0000000040281b10       0x21 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.121.85
+                0x0000000040281b34       0x22 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .irom0.pstr.supla_srpc.cpp.90.84
+                0x0000000040281b58       0x18 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .rodata        0x000000003ffe8708      0x14d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000003ffe8d42       0x46 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .rodata._ZN5Supla8Protocol9SuplaSrpc12onLoadConfigEv.str1.1
+                0x000000003ffebff1        0xe /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .rodata._ZN5Supla8Protocol9SuplaSrpc22sendRemainingTimeValueEhjPhib.str1.1
+                0x000000003ffebfff        0x3 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .rodata._ZN5Supla8Protocol9SuplaSrpc19addLastStateAdErrorEPc.str1.1
+                0x000000003ffec002       0x29 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .rodata._ZN5Supla8Protocol9SuplaSrpc18configResultToCStrEi.str1.1
+                0x000000003ffec02b        0x8 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .rodata._ZN5Supla8Protocol9SuplaSrpc7iterateEj$part$0.str1.1
+                0x000000003ffec02b       0xb8 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000003ffec0e3       0x5a /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000003ffec140       0x18 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x000000003ffec158        0x6 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .debug_frame   0x0000000000001048      0xb34 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .debug_frame   0x00000000000091bc      0x8a4 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .debug_info    0x000000000001ba1e     0x837d /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .debug_info    0x0000000000108bd1     0xd996 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .debug_abbrev  0x00000000000024e4      0x483 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .debug_abbrev  0x0000000000015aef      0xbfa /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .debug_loc     0x0000000000004c0b     0x40a2 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .debug_loc     0x0000000000036974     0x2f31 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+                0x00000000000004f8      0x400 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+                0x0000000000002f10      0x220 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .debug_ranges  0x0000000000000b80      0x440 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .debug_ranges  0x0000000000008658      0x508 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .debug_line    0x000000000000a785     0x4b22 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .debug_line    0x000000000005d4de     0x5bc9 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .debug_str     0x00000000000125ec     0x2321 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .debug_str     0x0000000000044d3d     0x1d7f /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .comment       0x0000000000000012       0x13 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .comment       0x0000000000000012       0x13 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+ .xtensa.info   0x0000000000000038        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla-common/srpc.c.o
+ .xtensa.info   0x0000000000000038        0x0 /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o
+.xt.prop._ZTVN5Supla8Protocol9SuplaSrpcE
+ .xt.prop._ZTVN5Supla8Protocol9SuplaSrpcE
+                0x0000000000000000        0xc /home/runner/work/supla-device/supla-device/out/v26.4/build/libraries/SuplaDevice/supla/protocol/supla_srpc.cpp.o

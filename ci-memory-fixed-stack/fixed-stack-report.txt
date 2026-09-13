@@ -1,0 +1,12 @@
+ESP8266 core 3.1.2; fixed source path; no-extra-4k forced for every variant
+variant	.data	.rodata	.bss	flash	RAM	dRAM_vs_v26.8	dFlash_vs_v26.8
+v26.4-noextra4k	1612	17200	31656	538364	50468	-7892	-34524
+v26.8-noextra4k	1624	24200	32536	572888	58360	+0	+0
+v26.8-noextra4k-nosrpc	1624	23968	32528	563972	58120	-240	-8916
+v26.8-noextra4k-oldhtml	1624	21176	32536	572776	55336	-3024	-112
+
+Arduino summaries:
+v26.4-noextra4k: . Variables and constants in RAM (global, static), used 50468 / 80192 bytes (62%) | . Instruction RAM (IRAM_ATTR, ICACHE_RAM_ATTR), used 60867 / 65536 bytes (92%) | . Code in flash (default, ICACHE_FLASH_ATTR), used 538364 / 1048576 bytes (51%)
+v26.8-noextra4k: . Variables and constants in RAM (global, static), used 58360 / 80192 bytes (72%) | . Instruction RAM (IRAM_ATTR, ICACHE_RAM_ATTR), used 60867 / 65536 bytes (92%) | . Code in flash (default, ICACHE_FLASH_ATTR), used 572888 / 1048576 bytes (54%)
+v26.8-noextra4k-nosrpc: . Variables and constants in RAM (global, static), used 58120 / 80192 bytes (72%) | . Instruction RAM (IRAM_ATTR, ICACHE_RAM_ATTR), used 60867 / 65536 bytes (92%) | . Code in flash (default, ICACHE_FLASH_ATTR), used 563972 / 1048576 bytes (53%)
+v26.8-noextra4k-oldhtml: . Variables and constants in RAM (global, static), used 55336 / 80192 bytes (69%) | . Instruction RAM (IRAM_ATTR, ICACHE_RAM_ATTR), used 60867 / 65536 bytes (92%) | . Code in flash (default, ICACHE_FLASH_ATTR), used 572776 / 1048576 bytes (54%)

@@ -1,0 +1,12 @@
+delta	baseline	variant	type	symbol
+-2504	3935	1431	r	javascript
+-368	4371	4003	r	styles
+-43	241	198	r	headerBegin
+-26	323	297	T	Supla::HtmlGenerator::sendLogsPage(Supla::WebSender*, bool)
+-24	69	45	T	Supla::HtmlGenerator::sendSessionLinks(Supla::WebSender*)
+-17	386	369	T	Supla::HtmlGenerator::sendLoginPage(Supla::WebSender*, bool)
+-16	637	621	T	Supla::HtmlGenerator::sendSetupPage(Supla::WebSender*, bool, Supla::SetupRequestResult)
+-12	179	167	T	Supla::HtmlGenerator::sendBetaForm(Supla::WebSender*)
+-8	279	271	T	Supla::HtmlGenerator::sendForm(Supla::WebSender*)
+-2	17	15	T	Supla::HtmlGenerator::sendJavascript(Supla::WebSender*)
+1	17	18	T	Supla::HtmlGenerator::sendStyle(Supla::WebSender*)

@@ -1,4 +1,4 @@
-name: Temporary ESP8266 memory experiments
+name: Temporary ESP8266 normalized memory experiments
 
 on:
   push:
@@ -10,16 +10,14 @@ permissions:
   contents: write
 
 jobs:
-  memory-experiments:
+  normalized-memory-experiments:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: arduino/setup-arduino-cli@v2
-
-      - name: Install ESP8266 core and project libraries
+      - name: Install toolchain and libraries
         shell: bash
         run: |
           set -euxo pipefail
@@ -27,206 +25,164 @@ jobs:
           arduino-cli config add board_manager.additional_urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
           arduino-cli core update-index
           arduino-cli core install esp8266:esp8266@3.1.2
-          arduino-cli lib install DallasTemperature
-          arduino-cli lib install OneWire
-          arduino-cli lib install "DHT Sensor Library"
-          arduino-cli lib install "Adafruit AHTX0"
-          arduino-cli lib install HX711_ADC
-          arduino-cli lib install PZEM004Tv30
+          arduino-cli lib install DallasTemperature OneWire "DHT Sensor Library" "Adafruit AHTX0" HX711_ADC PZEM004Tv30
           mkdir -p "$HOME/Arduino/libraries"
           cd "$HOME/Arduino/libraries"
           git clone --depth 1 https://github.com/olehs/PZEM004T || true
           git clone --depth 1 https://github.com/kevinlutzer/Arduino-PM1006K || true
           git clone --depth 1 https://github.com/arduino-libraries/Arduino_JSON || true
 
-      - name: Prepare source variants
+      - name: Prepare one fixed source path
         shell: bash
         run: |
           set -euxo pipefail
           git fetch --tags --force
-          for d in /tmp/sd-v26.4 /tmp/sd-v26.8 /tmp/sd-v26.8-nosrpc /tmp/sd-v26.8-oldhtml /tmp/sd-v26.8-nowifiscan; do
-            git worktree remove --force "$d" 2>/dev/null || true
-            rm -rf "$d"
-          done
-          git worktree add --detach /tmp/sd-v26.4 v26.4
-          git worktree add --detach /tmp/sd-v26.8 v26.8
-          git worktree add --detach /tmp/sd-v26.8-nosrpc v26.8
-          git worktree add --detach /tmp/sd-v26.8-oldhtml v26.8
-          git worktree add --detach /tmp/sd-v26.8-nowifiscan v26.8
+          git worktree remove --force /tmp/sd-work 2>/dev/null || true
+          rm -rf /tmp/sd-work
+          git worktree add --detach /tmp/sd-work v26.8
+          rm -rf "$HOME/Arduino/libraries/SuplaDevice"
+          ln -s /tmp/sd-work "$HOME/Arduino/libraries/SuplaDevice"
 
-          # Experiment A: packet logging hooks unavailable on ESP8266.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('/tmp/sd-v26.8-nosrpc/src/supla-common/srpc.h')
-          s = p.read_text()
-          marker = '#define SRPC_WITH_PACKET_LOG_HOOKS\n#endif\n'
-          replacement = '#define SRPC_WITH_PACKET_LOG_HOOKS\n#endif\n\n#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)\n#undef SRPC_WITH_PACKET_LOG_HOOKS\n#endif\n'
-          if marker not in s:
-              raise SystemExit('SRPC marker not found')
-          p.write_text(s.replace(marker, replacement, 1))
-          PY
-
-          # Experiment B: keep v26.8 code but restore v26.4 global HTML/JS/CSS assets.
-          git show v26.4:src/supla/network/html_generator.cpp > /tmp/sd-v26.8-oldhtml/src/supla/network/html_generator.cpp
-
-          # Experiment C: remove the Wi-Fi scan feature series from v26.8.
-          cd /tmp/sd-v26.8-nowifiscan
-          git config user.name memory-experiment
-          git config user.email memory-experiment@example.invalid
-          set +e
-          revert_ok=1
-          for c in 8cef8fb2fb93685206fca360356909ae6643969c 7ca9c1d64ad696ce8b761c8b2af1509775baca45 d576bca135b9855361676f7343e34dab410ed19f 20df6134a432b266fea3b23a981cb947bbf500f3 96e6e71bd55b99f7f942ae9c8cabfd84b0ec19cf; do
-            git revert --no-commit "$c"
-            if [ $? -ne 0 ]; then
-              revert_ok=0
-              break
-            fi
-          done
-          set -e
-          if [ "$revert_ok" -eq 0 ]; then
-            git status --short > "$GITHUB_WORKSPACE/wifi-scan-revert-conflict.txt"
-            git diff --name-only --diff-filter=U >> "$GITHUB_WORKSPACE/wifi-scan-revert-conflict.txt"
-            git revert --abort 2>/dev/null || true
-            git reset --hard v26.8
-            touch "$GITHUB_WORKSPACE/skip-nowifiscan"
-          fi
-
-      - name: Build variants and collect maps
+      - name: Build normalized variants
         shell: bash
         run: |
           set -euxo pipefail
-          rm -rf out-experiments
-          mkdir -p out-experiments "$HOME/Arduino/libraries"
+          rm -rf out-normalized
+          mkdir -p out-normalized
           TOOLROOT="$HOME/.arduino15/packages/esp8266/tools/xtensa-lx106-elf-gcc"
           NM="$(find "$TOOLROOT" -type f -name xtensa-lx106-elf-nm | head -n1)"
           SIZE="$(find "$TOOLROOT" -type f -name xtensa-lx106-elf-size | head -n1)"
-          OBJDUMP="$(find "$TOOLROOT" -type f -name xtensa-lx106-elf-objdump | head -n1)"
+
+          reset_v268() {
+            cd /tmp/sd-work
+            git reset --hard v26.8
+            git clean -fd
+          }
 
           build_one() {
             name="$1"
-            src="$2"
-            out="$GITHUB_WORKSPACE/out-experiments/$name"
-            build="$out/build"
-            mkdir -p "$out"
-            rm -rf "$HOME/Arduino/libraries/SuplaDevice"
-            ln -s "$src" "$HOME/Arduino/libraries/SuplaDevice"
-            arduino-cli compile --fqbn esp8266:esp8266:generic --build-path "$build" --warnings all "$src/examples/esp/Simple" 2>&1 | tee "$out/compile.log"
-            elf="$(find "$build" -type f -name '*.elf' | head -n1)"
-            map="$(find "$build" -type f -name '*.map' | head -n1)"
+            out="$GITHUB_WORKSPACE/out-normalized/$name"
+            rm -rf "$out"
+            mkdir -p "$out/build"
+            arduino-cli compile --fqbn esp8266:esp8266:generic --build-path "$out/build" --warnings all /tmp/sd-work/examples/esp/Simple 2>&1 | tee "$out/compile.log"
+            elf="$(find "$out/build" -type f -name '*.elf' | head -n1)"
+            map="$(find "$out/build" -type f -name '*.map' | head -n1)"
             cp "$elf" "$out/Simple.elf"
             cp "$map" "$out/Simple.map"
             "$SIZE" -A "$elf" > "$out/size-sections.txt"
-            "$OBJDUMP" -h "$elf" > "$out/objdump-sections.txt"
             "$NM" -S --size-sort -C "$elf" > "$out/nm-size-sort.txt"
-            grep -E 'Variables and constants|Instruction RAM|Code in flash|Sketch uses|Global variables use' "$out/compile.log" > "$out/arduino-memory.txt" || true
+            grep -E 'Variables and constants|Instruction RAM|Code in flash' "$out/compile.log" > "$out/arduino-memory.txt" || true
+            grep -E 'core_esp8266_app_entry_noextra4k|g_cont|ESP8266WiFiSTA-WPS' "$map" > "$out/extra4k-map.txt" || true
           }
 
-          build_one v26.4 /tmp/sd-v26.4
-          build_one v26.8 /tmp/sd-v26.8
-          build_one v26.8-nosrpc /tmp/sd-v26.8-nosrpc
-          build_one v26.8-oldhtml /tmp/sd-v26.8-oldhtml
-          if [ ! -e "$GITHUB_WORKSPACE/skip-nowifiscan" ]; then
-            build_one v26.8-nowifiscan /tmp/sd-v26.8-nowifiscan
-          fi
+          reset_v268
+          build_one baseline-a
 
-      - name: Generate experiment report
+          # Same sources, second build: check reproducibility with fixed source path.
+          reset_v268
+          build_one baseline-b
+
+          # Disable SRPC packet hooks only.
+          reset_v268
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/sd-work/src/supla-common/srpc.h')
+          s=p.read_text()
+          marker='#define SRPC_WITH_PACKET_LOG_HOOKS\n#endif\n'
+          repl=marker+'\n#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)\n#undef SRPC_WITH_PACKET_LOG_HOOKS\n#endif\n'
+          if marker not in s: raise SystemExit('marker missing')
+          p.write_text(s.replace(marker,repl,1))
+          PY
+          build_one nosrpc
+
+          # Restore only v26.4 global HTML/JS/CSS source file.
+          reset_v268
+          git -C /tmp/sd-work show v26.4:src/supla/network/html_generator.cpp > /tmp/sd-work/src/supla/network/html_generator.cpp
+          build_one oldhtml
+
+          # Explicitly force ESP8266 no-extra-4k mode on otherwise unchanged v26.8.
+          reset_v268
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/sd-work/examples/esp/Simple/Simple.ino')
+          s=p.read_text()
+          s=s.replace('#include <SuplaDevice.h>', '#include <SuplaDevice.h>\n#ifdef ESP8266\n#include <coredecls.h>\n#endif', 1)
+          needle='void setup() {'
+          repl='void setup() {\n#ifdef ESP8266\n  disable_extra4k_at_link_time();\n#endif'
+          if needle not in s: raise SystemExit('setup missing')
+          p.write_text(s.replace(needle,repl,1))
+          PY
+          build_one noextra4k
+
+      - name: Generate normalized report
         shell: bash
         run: |
           python3 - <<'PY'
           import re
           from pathlib import Path
+          root=Path('out-normalized')
+          names=['baseline-a','baseline-b','nosrpc','oldhtml','noextra4k']
+          def sec(n):
+            d={}
+            for line in (root/n/'size-sections.txt').read_text(errors='replace').splitlines():
+              m=re.match(r'^([.A-Za-z0-9_]+)\s+(\d+)\s+',line.strip())
+              if m:d[m.group(1)]=int(m.group(2))
+            return d
+          data={n:sec(n) for n in names}
+          b=data['baseline-a']
+          bram=sum(b.get(x,0) for x in ['.data','.rodata','.bss'])
+          with (root/'normalized-report.txt').open('w') as f:
+            f.write('ESP8266 core 3.1.2; fixed source path /tmp/sd-work\n')
+            f.write('variant\t.data\t.rodata\t.bss\tflash\tRAM\tdRAM\tdFlash\tnoextra4k\n')
+            for n in names:
+              s=data[n]
+              ram=sum(s.get(x,0) for x in ['.data','.rodata','.bss'])
+              noextra='yes' if 'g_cont' in (root/n/'extra4k-map.txt').read_text(errors='replace') else 'no'
+              f.write(f"{n}\t{s.get('.data',0)}\t{s.get('.rodata',0)}\t{s.get('.bss',0)}\t{s.get('.irom0.text',0)}\t{ram}\t{ram-bram:+d}\t{s.get('.irom0.text',0)-b.get('.irom0.text',0):+d}\t{noextra}\n")
+            f.write('\nArduino summaries:\n')
+            for n in names:
+              f.write(n+': '+' | '.join((root/n/'arduino-memory.txt').read_text(errors='replace').splitlines())+'\n')
 
-          root = Path('out-experiments')
-          names = ['v26.4','v26.8','v26.8-nosrpc','v26.8-oldhtml','v26.8-nowifiscan']
-
-          def sections(name):
-              p = root/name/'size-sections.txt'
-              if not p.exists(): return None
-              d={}
-              for line in p.read_text(errors='replace').splitlines():
-                  m=re.match(r'^([.A-Za-z0-9_]+)\s+(\d+)\s+', line.strip())
-                  if m: d[m.group(1)] = int(m.group(2))
-              return d
-
-          def arduino(name):
-              p=root/name/'arduino-memory.txt'
-              if not p.exists(): return ''
-              return ' | '.join(x.strip() for x in p.read_text(errors='replace').splitlines())
-
-          data={n:sections(n) for n in names if sections(n) is not None}
-          base=data['v26.8']
-          with (root/'experiment-report.txt').open('w') as f:
-              f.write('ESP8266 core 3.1.2, FQBN esp8266:esp8266:generic\n\n')
-              f.write('variant\t.data\t.rodata\t.bss\tIRAM(.text+.text1)\tflash(.irom0.text)\tRAMsum(data+rodata+bss)\tdRAM_vs_v26.8\tdFlash_vs_v26.8\n')
-              for n in names:
-                  if n not in data: continue
-                  s=data[n]
-                  ram=s.get('.data',0)+s.get('.rodata',0)+s.get('.bss',0)
-                  bram=base.get('.data',0)+base.get('.rodata',0)+base.get('.bss',0)
-                  iram=s.get('.text',0)+s.get('.text1',0)
-                  flash=s.get('.irom0.text',0)
-                  f.write(f"{n}\t{s.get('.data',0)}\t{s.get('.rodata',0)}\t{s.get('.bss',0)}\t{iram}\t{flash}\t{ram}\t{ram-bram:+d}\t{flash-base.get('.irom0.text',0):+d}\n")
-              f.write('\nArduino output:\n')
-              for n in names:
-                  if n in data: f.write(f'{n}: {arduino(n)}\n')
-
-          # Top symbol savings for each experimental variant relative to v26.8.
-          def nm(name):
-              d={}
-              p=root/name/'nm-size-sort.txt'
-              for line in p.read_text(errors='replace').splitlines():
-                  parts=line.split(None,3)
-                  if len(parts)<4: continue
-                  try: size=int(parts[1],16)
-                  except ValueError: continue
-                  key=(parts[2],parts[3])
-                  d[key]=d.get(key,0)+size
-              return d
-          b=nm('v26.8')
-          for n in ['v26.8-nosrpc','v26.8-oldhtml','v26.8-nowifiscan']:
-              if not (root/n/'nm-size-sort.txt').exists(): continue
-              x=nm(n)
-              rows=[]
-              for k in set(b)|set(x):
-                  saved=b.get(k,0)-x.get(k,0)
-                  if saved>0: rows.append((saved,b.get(k,0),x.get(k,0),k[0],k[1]))
-              rows.sort(reverse=True)
-              with (root/f'{n}-savings.txt').open('w') as f:
-                  f.write('saved\tv26.8\tvariant\ttype\tsymbol\n')
-                  for row in rows[:150]: f.write('%d\t%d\t%d\t%s\t%s\n'%row)
+          def nm(n):
+            d={}
+            for line in (root/n/'nm-size-sort.txt').read_text(errors='replace').splitlines():
+              p=line.split(None,3)
+              if len(p)<4:continue
+              try:z=int(p[1],16)
+              except:continue
+              d[(p[2],p[3])]=d.get((p[2],p[3]),0)+z
+            return d
+          base=nm('baseline-a')
+          for n in ['nosrpc','oldhtml','noextra4k']:
+            x=nm(n); rows=[]
+            for k in set(base)|set(x):
+              delta=x.get(k,0)-base.get(k,0)
+              if delta: rows.append((delta,base.get(k,0),x.get(k,0),k[0],k[1]))
+            rows.sort(key=lambda r:abs(r[0]),reverse=True)
+            with (root/f'{n}-delta.txt').open('w') as f:
+              f.write('delta\tbaseline\tvariant\ttype\tsymbol\n')
+              for r in rows[:200]:f.write('%d\t%d\t%d\t%s\t%s\n'%r)
           PY
-          cat out-experiments/experiment-report.txt
-          if [ -f wifi-scan-revert-conflict.txt ]; then
-            echo 'Wi-Fi scan revert conflict:'
-            cat wifi-scan-revert-conflict.txt
-          fi
+          cat out-normalized/normalized-report.txt
 
-      - name: Upload full experiment artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: esp8266-memory-experiments-core-3.1.2
-          path: |
-            out-experiments/
-            wifi-scan-revert-conflict.txt
-          if-no-files-found: warn
+          name: esp8266-normalized-memory-core-3.1.2
+          path: out-normalized/
 
-      - name: Commit compact experiment reports
+      - name: Commit normalized reports
         shell: bash
         run: |
           set -euxo pipefail
-          rm -rf ci-memory-experiments
-          mkdir -p ci-memory-experiments
-          cp out-experiments/experiment-report.txt ci-memory-experiments/
-          find out-experiments -maxdepth 1 -name '*-savings.txt' -exec cp {} ci-memory-experiments/ \;
-          for d in out-experiments/v26.*; do
-            [ -d "$d" ] || continue
-            n="$(basename "$d")"
-            mkdir -p "ci-memory-experiments/$n"
-            cp "$d/arduino-memory.txt" "$d/size-sections.txt" "ci-memory-experiments/$n/"
+          rm -rf ci-memory-normalized
+          mkdir -p ci-memory-normalized
+          cp out-normalized/normalized-report.txt ci-memory-normalized/
+          cp out-normalized/*-delta.txt ci-memory-normalized/
+          for d in out-normalized/baseline-a out-normalized/baseline-b out-normalized/nosrpc out-normalized/oldhtml out-normalized/noextra4k; do
+            n="$(basename "$d")"; mkdir -p "ci-memory-normalized/$n"; cp "$d/arduino-memory.txt" "$d/extra4k-map.txt" "ci-memory-normalized/$n/";
           done
-          if [ -f wifi-scan-revert-conflict.txt ]; then cp wifi-scan-revert-conflict.txt ci-memory-experiments/; fi
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add ci-memory-experiments
-          git commit -m 'tmp: add ESP8266 memory experiment results' || true
+          git add ci-memory-normalized
+          git commit -m 'tmp: add normalized ESP8266 memory results' || true
           git push origin HEAD:tmp/esp8266-memory-map-20260913

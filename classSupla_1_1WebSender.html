@@ -113,6 +113,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a105946939dbe883ba9f3117fa64c5efd" id="r_a105946939dbe883ba9f3117fa64c5efd"><td class="memItemLeft" align="right" valign="top"><a id="a105946939dbe883ba9f3117fa64c5efd" name="a105946939dbe883ba9f3117fa64c5efd"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>send</b> (const char *, int size=-1)=0</td></tr>
 <tr class="separator:a105946939dbe883ba9f3117fa64c5efd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8952c34b52b07e145f95096274529f54" id="r_a8952c34b52b07e145f95096274529f54"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8952c34b52b07e145f95096274529f54">sendStatic</a> (const char *data, size_t size)</td></tr>
+<tr class="memdesc:a8952c34b52b07e145f95096274529f54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a static HTML asset stored in program memory.  <br /></td></tr>
+<tr class="separator:a8952c34b52b07e145f95096274529f54"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a193439ef54fa5d2c6bcc675d7f16b5aa" id="r_a193439ef54fa5d2c6bcc675d7f16b5aa"><td class="memItemLeft" align="right" valign="top"><a id="a193439ef54fa5d2c6bcc675d7f16b5aa" name="a193439ef54fa5d2c6bcc675d7f16b5aa"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendSafe</b> (const char *, int size=-1)</td></tr>
 <tr class="separator:a193439ef54fa5d2c6bcc675d7f16b5aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -449,6 +452,30 @@ template&lt;typename Fn &gt; </div>
 
 <p>Start a <code>&lt;select&gt;</code> tag builder. </p>
 <p>This is the low-level variant when extra attributes such as <code>onchange</code> need to be chained manually before calling <a class="el" href="classSupla_1_1HtmlTag.html#a24639357d3595f0aee5b0eca3e310102">HtmlTag::body()</a>. </p>
+
+</div>
+</div>
+<a id="a8952c34b52b07e145f95096274529f54" name="a8952c34b52b07e145f95096274529f54"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8952c34b52b07e145f95096274529f54">&#9670;&#160;</a></span>sendStatic()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::WebSender::sendStatic </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>data</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>size</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Emit a static HTML asset stored in program memory. </p>
+<p>ESP8266 Arduino requires explicit reads from PROGMEM. Other supported targets can send ordinary const data directly. </p>
 
 </div>
 </div>

@@ -25,8 +25,13 @@ void getFavicon() {
     auto svr = serverInstance->getServerPtr();
     svr->setContentLength(CONTENT_LENGTH_UNKNOWN);
     svr->send(200, "image/x-icon", "");
-    serverInstance->getServerPtr()->sendContent((const char *)(Supla::favico),
-                                                sizeof(Supla::favico));
+#if defined(ARDUINO_ARCH_ESP8266)
+    serverInstance->getServerPtr()->sendContent_P(
+        reinterpret_cast<PGM_P>(Supla::favico), sizeof(Supla::favico));
+#else
+    serverInstance->getServerPtr()->sendContent(
+        reinterpret_cast<const char *>(Supla::favico), sizeof(Supla::favico));
+#endif
   }
 }
 

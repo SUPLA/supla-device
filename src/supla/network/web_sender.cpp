@@ -547,7 +547,15 @@ void WebSender::sendTimestamp(uint32_t timestamp) {
     struct tm timeinfo;
     time_t time = timestamp;
     localtime_r(&time, &timeinfo);
-    size = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    size = SUPLA_WEB_SNPRINTF(buf,
+                              sizeof(buf),
+                              "%04d-%02d-%02d %02d:%02d:%02d",
+                              timeinfo.tm_year + 1900,
+                              timeinfo.tm_mon + 1,
+                              timeinfo.tm_mday,
+                              timeinfo.tm_hour,
+                              timeinfo.tm_min,
+                              timeinfo.tm_sec);
   }
   if (size < 0) {
     SUPLA_LOG_WARNING("WebSender error - snprintf failed");

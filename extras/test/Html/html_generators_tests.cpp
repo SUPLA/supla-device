@@ -1127,6 +1127,62 @@ TEST_F(HtmlCaptureTest, TimeParametersRendersClockControls) {
   EXPECT_THAT(sendHtml, HasSubstr("function showHideTimeSettingsToggle()"));
 }
 
+TEST_F(HtmlCaptureTest, TimeParametersAcceptsMinuteAndSecondFormats) {
+  {
+    ConfigMock cfg;
+    ClockMock clock;
+    EXPECT_CALL(cfg, init()).WillOnce(Return(false));
+    EXPECT_CALL(clock, parseLocaltimeFromServer(_))
+        .WillOnce([](TSDC_UserLocalTimeResult* value) {
+          EXPECT_EQ(2023, value->year);
+          EXPECT_EQ(1, value->month);
+          EXPECT_EQ(2, value->day);
+          EXPECT_EQ(3, value->hour);
+          EXPECT_EQ(4, value->min);
+          EXPECT_EQ(0, value->sec);
+        });
+
+    Supla::Html::TimeParameters param(nullptr);
+    EXPECT_TRUE(param.handleResponse("date_time_value", "2023-01-02T03:04"));
+  }
+
+  {
+    ConfigMock cfg;
+    ClockMock clock;
+    EXPECT_CALL(cfg, init()).WillOnce(Return(false));
+    EXPECT_CALL(clock, parseLocaltimeFromServer(_))
+        .WillOnce([](TSDC_UserLocalTimeResult* value) {
+          EXPECT_EQ(2099, value->year);
+          EXPECT_EQ(12, value->month);
+          EXPECT_EQ(31, value->day);
+          EXPECT_EQ(23, value->hour);
+          EXPECT_EQ(59, value->min);
+          EXPECT_EQ(59, value->sec);
+        });
+
+    Supla::Html::TimeParameters param(nullptr);
+    EXPECT_TRUE(
+        param.handleResponse("date_time_value", "2099-12-31T23:59:59"));
+  }
+}
+
+TEST_F(HtmlCaptureTest, TimeParametersRejectsMalformedDateTime) {
+  const char* invalidValues[] = {
+      "2023/01/02T03:04", "2023-01-02 03:04", "2023-01-02T03:04:5",
+      "2023-01-02T03:04:00x", "2023-01-02T03:0a", "2023-01-02T03:04:xx",
+      "2023-01-02T03:04:00:00", "2023-01-02T03:04:000"};
+
+  for (const char* value : invalidValues) {
+    ConfigMock cfg;
+    ClockMock clock;
+    EXPECT_CALL(cfg, init()).WillOnce(Return(false));
+    EXPECT_CALL(clock, parseLocaltimeFromServer(_)).Times(0);
+
+    Supla::Html::TimeParameters param(nullptr);
+    EXPECT_TRUE(param.handleResponse("date_time_value", value)) << value;
+  }
+}
+
 TEST_F(HtmlCaptureTest, EthernetParametersRendersCheckbox) {
   ConfigMock cfg;
   SenderMock sender;

@@ -87,7 +87,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/registry.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/runtime.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/server_config.cpp
-  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/storage.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/suplet_storage.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/thermometer_group.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/virtual_channel.cpp
 
@@ -108,7 +108,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/ethernet_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/network_address_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/sw_update_beta.cpp
-  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/sw_update.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/html_sw_update.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/custom_sw_update.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/text_cmd_input_parameter.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/select_cmd_input_parameter.cpp

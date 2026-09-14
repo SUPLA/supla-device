@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifndef ARDUINO_ARCH_AVR
-#include "sw_update.h"
+#include "html_sw_update.h"
 
 #include <string.h>
 #include <supla/device/sw_update.h>

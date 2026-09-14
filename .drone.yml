@@ -24,6 +24,22 @@ steps:
   commands:
   - python3 extras/tools/generate_html_generator_styles.py --check
 
+- name: arduino_source_basename_check
+  image: devel/freertos
+  pull: never
+  commands:
+  - |
+    set -eu
+    duplicate_names="$(find src -type f \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \) -printf '%f\n' | sort | uniq -d)"
+    if [ -n "${duplicate_names}" ]; then
+      echo "Duplicate Arduino library source basenames found under src:"
+      printf '%s\n' "${duplicate_names}" | while IFS= read -r name; do
+        [ -n "${name}" ] || continue
+        find src -type f \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \) -name "${name}" -print
+      done
+      exit 1
+    fi
+
 - name: tests_compilation
   image: devel/freertos
   pull: never
@@ -315,6 +331,7 @@ steps:
                arduino_esp8266_compilation_check_part_2,
                arduino_esp8266_compilation_check_part_3,
                arduino_mega_compilation_check,
+               arduino_source_basename_check,
                cpplint,
                esp_idf_stable_compilation_check,
                tests_with_valgrind

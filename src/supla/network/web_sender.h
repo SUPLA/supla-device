@@ -5,14 +5,19 @@
 #define SRC_SUPLA_NETWORK_WEB_SENDER_H_
 
 #include <stddef.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <supla/network/html_generator.h>
 
 #if defined(ARDUINO_ARCH_ESP8266)
 #include <pgmspace.h>
 #define SUPLA_WEB_PROGMEM PROGMEM
+#define SUPLA_WEB_SNPRINTF(buffer, size, format, ...) \
+  snprintf_P(buffer, size, PSTR(format), ##__VA_ARGS__)
 #else
 #define SUPLA_WEB_PROGMEM
+#define SUPLA_WEB_SNPRINTF(buffer, size, format, ...) \
+  snprintf(buffer, size, format, ##__VA_ARGS__)
 #endif
 
 namespace Supla {
@@ -80,6 +85,11 @@ class HtmlTag {
    * @brief Append a quoted HTML attribute with escaped value.
    */
   HtmlTag& attr(const char* name, const char* value);
+
+  // Static attribute value in SUPLA_WEB_PROGMEM, escaped as ordinary attr().
+  HtmlTag& attrStatic(const char* name,
+                      const char* value,
+                      size_t size = static_cast<size_t>(-1));
 
   /**
    * @brief Append a quoted HTML attribute with integer value.
@@ -191,9 +201,12 @@ class WebSender {
    * @brief Emit a static HTML asset stored in program memory.
    *
    * ESP8266 Arduino requires explicit reads from PROGMEM. Other supported
-   * targets can send ordinary const data directly.
+   * targets can send ordinary const data directly. Omitted size reads a
+   * terminating NUL with strlen_P on ESP8266. escape preserves sendSafe rules.
    */
-  void sendStatic(const char* data, size_t size);
+  void sendStatic(const char* data,
+                  size_t size = static_cast<size_t>(-1),
+                  bool escape = false);
 
   virtual void sendSafe(const char*, int size = -1);
   virtual void send(int number);

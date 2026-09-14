@@ -16,6 +16,35 @@ namespace Supla {
 
 namespace Html {
 
+namespace {
+const char kSecurityScript[] SUPLA_WEB_PROGMEM =
+"<script>"
+"function securityChange(){"
+"var e=document.getElementById(\"sec\"),"
+"c=document.getElementById(\"custom_ca_input\"),"
+"l=\"1\"==e.value?\"block\":\"none\";"
+"c.style.display=l;}"
+"</script>";
+
+const char kMqttTlsScript[] SUPLA_WEB_PROGMEM =
+"<script>"
+"function mqttTlsChange(){"
+"var port=document.getElementById(\"mqttport\"),"
+"mqtt_tls=document.getElementById(\"mqtttls\");"
+"if(mqtt_tls.value==\"0\")"
+"{port.value=1883;}else{port.value=8883;}"
+"mqttVerificationChange();"
+"}"
+"function mqttVerificationChange(){"
+"var mqtt_tls=document.getElementById(\"mqtttls\"),"
+"mqtt_verify=document.getElementById(\"mqttverify\"),"
+"mqtt_ca=document.getElementById(\"mqtt_ca_input\");"
+"mqtt_ca.style.display=mqtt_tls.value==\"1\"&&"
+"mqtt_verify.value==\"1\"?\"block\":\"none\";"
+"}"
+"</script>";
+}  // namespace
+
 ProtocolParameters::ProtocolParameters(bool addMqttParams,
                                        bool concurrentProtocols)
     : HtmlElement(HTML_SECTION_PROTOCOL),
@@ -105,14 +134,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
             input.finish();
           }, "form-field sensitive");
 
-          sender->send(
-              "<script>"
-              "function securityChange(){"
-              "var e=document.getElementById(\"sec\"),"
-              "c=document.getElementById(\"custom_ca_input\"),"
-              "l=\"1\"==e.value?\"block\":\"none\";"
-              "c.style.display=l;}"
-              "</script>");
+          sender->sendStatic(kSecurityScript, sizeof(kSecurityScript) - 1);
 
           uint8_t securityLevel = 0;
           cfg->getUInt8("security_level", &securityLevel);
@@ -185,14 +207,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               input.finish();
             }, "form-field sensitive");
 
-            sender->send(
-                "<script>"
-                "function securityChange(){"
-                "var e=document.getElementById(\"sec\"),"
-                "c=document.getElementById(\"custom_ca_input\"),"
-                "l=\"1\"==e.value?\"block\":\"none\";"
-                "c.style.display=l;}"
-                "</script>");
+            sender->sendStatic(kSecurityScript, sizeof(kSecurityScript) - 1);
 
             uint8_t securityLevel = 0;
             cfg->getUInt8("security_level", &securityLevel);
@@ -259,23 +274,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               input.finish();
             });
 
-            sender->send(
-                "<script>"
-                "function mqttTlsChange(){"
-                "var port=document.getElementById(\"mqttport\"),"
-                "mqtt_tls=document.getElementById(\"mqtttls\");"
-                "if(mqtt_tls.value==\"0\")"
-                "{port.value=1883;}else{port.value=8883;}"
-                "mqttVerificationChange();"
-                "}"
-                "function mqttVerificationChange(){"
-                "var mqtt_tls=document.getElementById(\"mqtttls\"),"
-                "mqtt_verify=document.getElementById(\"mqttverify\"),"
-                "mqtt_ca=document.getElementById(\"mqtt_ca_input\");"
-                "mqtt_ca.style.display=mqtt_tls.value==\"1\"&&"
-                "mqtt_verify.value==\"1\"?\"block\":\"none\";"
-                "}"
-                "</script>");
+            sender->sendStatic(kMqttTlsScript, sizeof(kMqttTlsScript) - 1);
 
             sender->formField([&]() {
               sender->labelFor("mqtttls", "TLS");
@@ -392,23 +391,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
             input.finish();
           });
 
-          sender->send(
-              "<script>"
-              "function mqttTlsChange(){"
-              "var port=document.getElementById(\"mqttport\"),"
-              "mqtt_tls=document.getElementById(\"mqtttls\");"
-              "if(mqtt_tls.value==\"0\")"
-              "{port.value=1883;}else{port.value=8883;}"
-              "mqttVerificationChange();"
-              "}"
-              "function mqttVerificationChange(){"
-              "var mqtt_tls=document.getElementById(\"mqtttls\"),"
-              "mqtt_verify=document.getElementById(\"mqttverify\"),"
-              "mqtt_ca=document.getElementById(\"mqtt_ca_input\");"
-              "mqtt_ca.style.display=mqtt_tls.value==\"1\"&&"
-              "mqtt_verify.value==\"1\"?\"block\":\"none\";"
-              "}"
-              "</script>");
+          sender->sendStatic(kMqttTlsScript, sizeof(kMqttTlsScript) - 1);
 
           sender->formField([&]() {
             sender->labelFor("mqtttls", "TLS");

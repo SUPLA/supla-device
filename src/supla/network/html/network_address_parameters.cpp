@@ -23,13 +23,13 @@ constexpr const char* kMaskSuffix = "mask";
 constexpr const char* kGatewaySuffix = "gateway";
 constexpr const char* kDns1Suffix = "dns1";
 constexpr const char* kDns2Suffix = "dns2";
-constexpr char kIpv4Pattern[] =
+const char kIpv4Pattern[] SUPLA_WEB_PROGMEM =
 "^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}"
 "(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$";
-constexpr char kNetmaskPattern[] =
+const char kNetmaskPattern[] SUPLA_WEB_PROGMEM =
 "^(((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}"
 "(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])|/?([1-9]|[12][0-9]|3[0-2]))$";
-constexpr char kScript[] =
+const char kScript[] SUPLA_WEB_PROGMEM =
 "<script>"
 "function showHideNetifStaticSettings(selectId, boxId){"
 "var select=document.getElementById(selectId),"
@@ -46,6 +46,27 @@ constexpr char kScript[] =
 "}"
 "}"
 "</script>";
+
+const char kIpLabel[] SUPLA_WEB_PROGMEM = "IP address";
+const char kIpPlaceholder[] SUPLA_WEB_PROGMEM = "192.168.1.100";
+const char kIpTitle[] SUPLA_WEB_PROGMEM =
+"Enter an IPv4 address, e.g. 192.168.1.100";
+const char kMaskLabel[] SUPLA_WEB_PROGMEM = "Subnet mask";
+const char kMaskPlaceholder[] SUPLA_WEB_PROGMEM = "255.255.255.0 or /24";
+const char kMaskTitle[] SUPLA_WEB_PROGMEM =
+"Enter a subnet mask or prefix, e.g. 255.255.255.0 or /24";
+const char kGatewayLabel[] SUPLA_WEB_PROGMEM = "Gateway";
+const char kGatewayPlaceholder[] SUPLA_WEB_PROGMEM = "192.168.1.1";
+const char kGatewayTitle[] SUPLA_WEB_PROGMEM =
+"Enter an IPv4 gateway address, e.g. 192.168.1.1";
+const char kDns1Label[] SUPLA_WEB_PROGMEM = "DNS 1";
+const char kDns1Placeholder[] SUPLA_WEB_PROGMEM = "8.8.8.8";
+const char kDns1Title[] SUPLA_WEB_PROGMEM =
+"Enter an IPv4 DNS server address, e.g. 8.8.8.8";
+const char kDns2Label[] SUPLA_WEB_PROGMEM = "DNS 2 (optional)";
+const char kDns2Placeholder[] SUPLA_WEB_PROGMEM = "8.8.4.4";
+const char kDns2Title[] SUPLA_WEB_PROGMEM =
+"Enter an optional IPv4 DNS server address, e.g. 8.8.4.4";
 }  // namespace
 
 NetworkAddressParameters::NetworkAddressParameters(const char* blobName,
@@ -95,16 +116,20 @@ void NetworkAddressParameters::renderField(Supla::WebSender* sender,
   char key[64] = {};
   buildKey(key, sizeof(key), suffix);
   bool staticMode = config_.ipMode == static_cast<uint8_t>(NetifIpMode::Static);
-  sender->labeledField(key, label, [&]() {
+  sender->formField([&]() {
+    auto labelTag = sender->tag("label");
+    labelTag.attr("for", key).body([&]() {
+      sender->sendStatic(label, static_cast<size_t>(-1), true);
+    });
     auto input = sender->voidTag("input");
     input.attr("type", "text")
         .attr("name", key)
         .attr("id", key)
         .attr("maxlength", 15)
         .attr("inputmode", "decimal")
-        .attr("placeholder", placeholder)
-        .attr("pattern", pattern)
-        .attr("title", title)
+        .attrStatic("placeholder", placeholder)
+        .attrStatic("pattern", pattern)
+        .attrStatic("title", title)
         .attrIf("required", requiredWhenStatic && staticMode);
     if (requiredWhenStatic) {
       input.attr("data-static-required", "1");
@@ -143,7 +168,7 @@ void NetworkAddressParameters::send(Supla::WebSender* sender) {
   char onChange[128] = {};
   buildKey(modeKey, sizeof(modeKey), kModeSuffix);
   buildKey(staticBoxId, sizeof(staticBoxId), kStaticBoxSuffix);
-  snprintf(onChange,
+  SUPLA_WEB_SNPRINTF(onChange,
            sizeof(onChange),
            "showHideNetifStaticSettings(this.id, '%s')",
            staticBoxId);
@@ -162,50 +187,50 @@ void NetworkAddressParameters::send(Supla::WebSender* sender) {
     });
   });
 
-  sender->send(kScript);
+  sender->sendStatic(kScript, sizeof(kScript) - 1);
   sender->toggleBox(
       staticBoxId,
       config_.ipMode == static_cast<uint8_t>(NetifIpMode::Static),
       [&]() {
         renderField(sender,
                     kIpSuffix,
-                    "IP address",
+                    kIpLabel,
                     ipBuf,
-                    "192.168.1.100",
+                    kIpPlaceholder,
                     kIpv4Pattern,
-                    "Enter an IPv4 address, e.g. 192.168.1.100",
+                    kIpTitle,
                     true);
         renderField(sender,
                     kMaskSuffix,
-                    "Subnet mask",
+                    kMaskLabel,
                     maskBuf,
-                    "255.255.255.0 or /24",
+                    kMaskPlaceholder,
                     kNetmaskPattern,
-                    "Enter a subnet mask or prefix, e.g. 255.255.255.0 or /24",
+                    kMaskTitle,
                     true);
         renderField(sender,
                     kGatewaySuffix,
-                    "Gateway",
+                    kGatewayLabel,
                     gatewayBuf,
-                    "192.168.1.1",
+                    kGatewayPlaceholder,
                     kIpv4Pattern,
-                    "Enter an IPv4 gateway address, e.g. 192.168.1.1",
+                    kGatewayTitle,
                     true);
         renderField(sender,
                     kDns1Suffix,
-                    "DNS 1",
+                    kDns1Label,
                     dns1Buf,
-                    "8.8.8.8",
+                    kDns1Placeholder,
                     kIpv4Pattern,
-                    "Enter an IPv4 DNS server address, e.g. 8.8.8.8",
+                    kDns1Title,
                     true);
         renderField(sender,
                     kDns2Suffix,
-                    "DNS 2 (optional)",
+                    kDns2Label,
                     dns2Buf,
-                    "8.8.4.4",
+                    kDns2Placeholder,
                     kIpv4Pattern,
-                    "Enter an optional IPv4 DNS server address, e.g. 8.8.4.4",
+                    kDns2Title,
                     false);
       });
 }

@@ -161,6 +161,25 @@ TEST_F(HtmlTagBuilderTests, SendStaticMatchesRegularSendOutput) {
   EXPECT_EQ(sendHtml, asset);
 }
 
+TEST_F(HtmlTagBuilderTests, StaticAttributesMatchEscapedRegularAttributes) {
+  SenderMock sender;
+  EXPECT_CALL(sender, send(_, _)).WillRepeatedly(
+      [this](const char* data, int size) { appendSentHtml(data, size); });
+  static const char value[] SUPLA_WEB_PROGMEM =
+      "012345678901234567890123456789012345678901234567890123456789012345"
+      "012345678901234567890123456789012345678901234567890123456789012345"
+      "<&\"'>regex[0-9]";
+  sender.voidTag("input").attr("pattern", value).finish();
+  const auto expected = sendHtml;
+  sendHtml.clear();
+  sender.voidTag("input").attrStatic("pattern", value, sizeof(value) - 1)
+      .finish();
+  EXPECT_EQ(sendHtml, expected);
+  sendHtml.clear();
+  sender.voidTag("input").attrStatic("pattern", value).finish();
+  EXPECT_EQ(sendHtml, expected);
+}
+
 TEST_F(HtmlTagBuilderTests, SendSafeTreatsNullAsEmptyString) {
   SenderMock sender;
 
@@ -785,6 +804,112 @@ TEST_F(HtmlTagBuilderTests, WifiParametersLogsScanLastStateWhenMessageChanges) {
   log = logger->getLog();
   ASSERT_NE(nullptr, log);
   EXPECT_THAT(log, HasSubstr("RSSI -74 dBm"));
+  EXPECT_EQ(nullptr, logger->getLog());
+}
+
+TEST_F(HtmlTagBuilderTests, WifiParametersLogsDistinctSsidsWithSameRssi) {
+  ConfigMock cfg;
+  DummyWebServer server;
+  SuplaDeviceClass sdc;
+  auto logger = new Supla::Device::LastStateLogger;
+  sdc.setLastStateLogger(logger);
+  server.setSuplaDeviceClass(&sdc);
+
+  auto cache = Supla::WifiScanResultCache::Instance();
+  cache->beginUpdate();
+  cache->addOrUpdate("ssid_a", -74, 6);
+  cache->addOrUpdate("ssid_b", -74, 11);
+  cache->finishUpdate(millis());
+
+  EXPECT_CALL(cfg, init()).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, setWiFiSSID(_)).Times(2).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, getWiFiSSID(_))
+      .WillOnce([](char* ssid) {
+        std::memcpy(ssid, "ssid_a", sizeof("ssid_a"));
+        return true;
+      })
+      .WillOnce([](char* ssid) {
+        std::memcpy(ssid, "ssid_b", sizeof("ssid_b"));
+        return true;
+      });
+
+  {
+    Supla::Html::WifiParameters params;
+    EXPECT_TRUE(params.handleResponse("sid", "ssid_a"));
+    params.onProcessingEnd();
+    EXPECT_TRUE(params.handleResponse("sid", "ssid_b"));
+    params.onProcessingEnd();
+  }
+
+  ASSERT_TRUE(logger->prepareLastStateLog());
+  char* log = logger->getLog();
+  ASSERT_NE(nullptr, log);
+  EXPECT_THAT(log, HasSubstr("Wi-Fi: \"ssid_b\" found"));
+  log = logger->getLog();
+  ASSERT_NE(nullptr, log);
+  EXPECT_THAT(log, HasSubstr("Wi-Fi: \"ssid_a\" found"));
+  EXPECT_EQ(nullptr, logger->getLog());
+}
+
+TEST_F(HtmlTagBuilderTests,
+       WifiParametersDeduplicatesRepeatedScanStatusUntilItChanges) {
+  ConfigMock cfg;
+  DummyWebServer server;
+  SuplaDeviceClass sdc;
+  auto logger = new Supla::Device::LastStateLogger;
+  sdc.setLastStateLogger(logger);
+  server.setSuplaDeviceClass(&sdc);
+
+  EXPECT_CALL(cfg, init()).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, setWiFiSSID(_)).Times(8).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, getWiFiSSID(_)).Times(8).WillRepeatedly([](char* ssid) {
+    std::memcpy(ssid, "ssid_status", sizeof("ssid_status"));
+    return true;
+  });
+
+  auto saveSsid = [this](Supla::Html::WifiParameters* params) {
+    EXPECT_TRUE(params->handleResponse("sid", "ssid_status"));
+    params->onProcessingEnd();
+  };
+
+  {
+    Supla::Html::WifiParameters params;
+    auto cache = Supla::WifiScanResultCache::Instance();
+
+    cache->beginUpdate();
+    cache->addOrUpdate("ssid_status", -74, 6);
+    cache->finishUpdate(millis());
+    saveSsid(&params);
+    saveSsid(&params);
+
+    cache->beginUpdate();
+    cache->addOrUpdate("other_ssid", -74, 6);
+    cache->finishUpdate(millis());
+    saveSsid(&params);
+    saveSsid(&params);
+
+    time.advance(Supla::WifiScanDefaultMaxAgeMs + 1);
+    saveSsid(&params);
+    saveSsid(&params);
+
+    cache->clear();
+    saveSsid(&params);
+    saveSsid(&params);
+  }
+
+  ASSERT_TRUE(logger->prepareLastStateLog());
+  char* log = logger->getLog();
+  ASSERT_NE(nullptr, log);
+  EXPECT_THAT(log, HasSubstr("Wi-Fi scan result is not available yet"));
+  log = logger->getLog();
+  ASSERT_NE(nullptr, log);
+  EXPECT_THAT(log, HasSubstr("Wi-Fi scan result is no longer fresh"));
+  log = logger->getLog();
+  ASSERT_NE(nullptr, log);
+  EXPECT_THAT(log, HasSubstr("was not found in the latest scan"));
+  log = logger->getLog();
+  ASSERT_NE(nullptr, log);
+  EXPECT_THAT(log, HasSubstr("Wi-Fi: \"ssid_status\" found"));
   EXPECT_EQ(nullptr, logger->getLog());
 }
 

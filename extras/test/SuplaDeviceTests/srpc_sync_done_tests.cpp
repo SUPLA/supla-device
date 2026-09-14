@@ -167,8 +167,10 @@ TEST_F(SuplaSrpcSyncDoneTests,
 
   Supla::messageReceived(nullptr, 0, 0, &protocol, 29);
   EXPECT_FALSE(protocol.isUpdatePending());
+#if SUPLA_SRPC_PACKET_LOG_ENABLED && !defined(SUPLA_DISABLE_LOGS)
   EXPECT_STREQ(TestSrpc::callIdToName(SUPLA_SD_CALL_DEVICE_SYNC_DONE),
                "DEVICE_SYNC_DONE");
+#endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS
 }
 
 TEST_F(SuplaSrpcSyncDoneTests,

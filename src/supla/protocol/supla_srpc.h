@@ -154,6 +154,7 @@ class SuplaSrpc : public ProtocolLayer {
   void setChannelConflictResolver(
       Supla::Device::ChannelConflictResolver *resolver);
 
+#if SUPLA_SRPC_PACKET_LOG_ENABLED && !defined(SUPLA_DISABLE_LOGS)
   static void onPacketSent(void *srpcHandle,
                            unsigned _supla_int_t callId,
                            void *data,
@@ -167,6 +168,7 @@ class SuplaSrpc : public ProtocolLayer {
   void logSrpcPacket(bool send, int callId, const uint8_t *buf, size_t size);
   static const char *callIdToName(int callId);
   static bool isSensitiveCallId(int callId);
+#endif
 
  protected:
   bool ping();

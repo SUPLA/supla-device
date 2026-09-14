@@ -59,6 +59,7 @@ uint8_t effectiveSrpcVersion(int requestedVersion) {
   return SUPLA_PROTO_VERSION;
 }
 
+#if SUPLA_SRPC_PACKET_LOG_ENABLED && !defined(SUPLA_DISABLE_LOGS)
 void logRawHexDump(const char *direction,
                    int callId,
                    const char *callName,
@@ -975,6 +976,8 @@ void logRawHexDump(const char *direction,
   }
 }
 
+#endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS
+
 }  // namespace
 
 Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
@@ -983,6 +986,7 @@ Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
   setSupla3rdPartyCACert(::supla3rdCACert);
 }
 
+#if SUPLA_SRPC_PACKET_LOG_ENABLED && !defined(SUPLA_DISABLE_LOGS)
 void Supla::Protocol::SuplaSrpc::onPacketSent(void *srpcHandle,
                                               unsigned _supla_int_t callId,
                                               void *data,
@@ -1173,6 +1177,7 @@ bool Supla::Protocol::SuplaSrpc::isSensitiveCallId(int callId) {
       return false;
   }
 }
+#endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS
 
 Supla::Protocol::SuplaSrpc::~SuplaSrpc() {
   if (client) {

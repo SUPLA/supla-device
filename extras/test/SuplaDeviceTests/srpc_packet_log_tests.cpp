@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+#if SUPLA_SRPC_PACKET_LOG_ENABLED && !defined(SUPLA_DISABLE_LOGS)
+
 extern "C" const char *supla_test_get_last_log();
 extern "C" void supla_test_clear_last_log();
 
@@ -85,3 +87,5 @@ TEST_F(SrpcPacketLogTests, CalcfgRejectsOversizedDataBeforeRawDump) {
   EXPECT_NE(log.find("DataSize=129"), std::string::npos);
   EXPECT_EQ(log.find("raw=["), std::string::npos);
 }
+
+#endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS

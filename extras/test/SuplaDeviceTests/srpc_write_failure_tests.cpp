@@ -112,6 +112,7 @@ TEST_F(SrpcWriteFailureTests, PartialWriteStopsClientAndLatchesFailure) {
   EXPECT_EQ(Supla::dataWrite(buffer.data(), buffer.size(), &protocol), 0);
 }
 
+#if SUPLA_SRPC_PACKET_LOG_ENABLED && !defined(SUPLA_DISABLE_LOGS)
 TEST_F(SrpcWriteFailureTests, PacketSentUsesCallbackUserParamsForFailureState) {
   SuplaDeviceClass srpcHandleDevice;
   WriteFailureTestSrpc srpcHandle(&srpcHandleDevice);
@@ -124,6 +125,7 @@ TEST_F(SrpcWriteFailureTests, PacketSentUsesCallbackUserParamsForFailureState) {
 
   EXPECT_STREQ(supla_test_get_last_log(), "");
 }
+#endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS
 
 TEST_F(SrpcWriteFailureTests,
        IterateDisconnectsAndSchedulesReconnectAfterWriteFailure) {

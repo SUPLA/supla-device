@@ -7,7 +7,7 @@ var searchData=
   ['selectoption_4',['selectOption',['../classSupla_1_1WebSender.html#a3efe40008e5d86498f5b5b0cafb77a53',1,'Supla::WebSender']]],
   ['selecttag_5',['selectTag',['../classSupla_1_1WebSender.html#a64065122ccd52d4b827f870415a8bb20',1,'Supla::WebSender']]],
   ['send_6',['send',['../classSupla_1_1Html_1_1CustomTextParameter.html#a484860498b86f1f9de2ad6223ad3b684',1,'Supla::Html::CustomTextParameter']]],
-  ['sendstatic_7',['sendStatic',['../classSupla_1_1WebSender.html#a8952c34b52b07e145f95096274529f54',1,'Supla::WebSender']]],
+  ['sendstatic_7',['sendStatic',['../classSupla_1_1WebSender.html#a8e66f827d64ab7c2d043685206547f9e',1,'Supla::WebSender']]],
   ['set_8',['set',['../classSupla_1_1Sensor_1_1VirtualBinary.html#a084decd7c4d7cd07d217a4c2e26b1b18',1,'Supla::Sensor::VirtualBinary']]],
   ['setapplycorrections_9',['setApplyCorrections',['../classSupla_1_1Sensor_1_1ThermHygroMeter.html#a71a51c164460d360c9356e0da82dafc3',1,'Supla::Sensor::ThermHygroMeter']]],
   ['setautomaticfirmwareupdatesupported_10',['setAutomaticFirmwareUpdateSupported',['../classSuplaDeviceClass.html#aca4cdeebae298bd67d782ff395a338c0',1,'SuplaDeviceClass']]],

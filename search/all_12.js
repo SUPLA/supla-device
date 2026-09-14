@@ -20,7 +20,7 @@ var searchData=
   ['selecttag_17',['selectTag',['../classSupla_1_1WebSender.html#a64065122ccd52d4b827f870415a8bb20',1,'Supla::WebSender']]],
   ['selectvaluemapelement_18',['SelectValueMapElement',['../structSupla_1_1Html_1_1SelectValueMapElement.html',1,'Supla::Html']]],
   ['send_19',['send',['../classSupla_1_1Html_1_1CustomTextParameter.html#a484860498b86f1f9de2ad6223ad3b684',1,'Supla::Html::CustomTextParameter']]],
-  ['sendstatic_20',['sendStatic',['../classSupla_1_1WebSender.html#a8952c34b52b07e145f95096274529f54',1,'Supla::WebSender']]],
+  ['sendstatic_20',['sendStatic',['../classSupla_1_1WebSender.html#a8e66f827d64ab7c2d043685206547f9e',1,'Supla::WebSender']]],
   ['sensordata_21',['SensorData',['../structSupla_1_1Sensor_1_1SensorData.html',1,'Supla::Sensor']]],
   ['sequencebutton_22',['SequenceButton',['../classSupla_1_1Control_1_1SequenceButton.html',1,'Supla::Control']]],
   ['serialconfig_23',['SerialConfig',['../structSupla_1_1Modbus_1_1SerialConfig.html',1,'Supla::Modbus']]],

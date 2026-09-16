@@ -295,6 +295,24 @@ TEST(Sd4linuxYamlConfigTests, UsesFixedTlsSuplaServerPort) {
   EXPECT_EQ(config.getSuplaServerPort(), 2016);
 }
 
+TEST(Sd4linuxYamlConfigTests, RejectsCustomCaSecurityLevel) {
+  const auto path = std::filesystem::temp_directory_path() /
+                    ("supla_yaml_security_level_" +
+                     std::to_string(getpid()) + ".yaml");
+  {
+    std::ofstream output(path);
+    ASSERT_TRUE(output.is_open());
+    output << "security_level: 1\n";
+  }
+
+  Supla::LinuxYamlConfig config(path.string());
+  EXPECT_FALSE(config.init());
+
+  std::error_code error;
+  EXPECT_TRUE(std::filesystem::remove(path, error));
+  EXPECT_FALSE(error) << error.message();
+}
+
 TEST(Sd4linuxYamlConfigTests, ParseErrorDoesNotLogYamlSource) {
   const auto path = std::filesystem::temp_directory_path() /
                     ("supla_yaml_parse_error_" + std::to_string(getpid()) +

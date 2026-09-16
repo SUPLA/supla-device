@@ -138,6 +138,13 @@ bool Supla::LinuxYamlConfig::init() {
   if (config.size() == 0) {
     try {
       config = YAML::LoadFile(file);
+      if (config["security_level"] &&
+          config["security_level"].as<unsigned int>() == 1) {
+        SUPLA_LOG_ERROR(
+            "Config: security_level 1 (custom CA) is not supported on "
+            "sd4linux");
+        return false;
+      }
       if (config[Supla::ManufacturerId]) {
         auto manufacturerId = config[Supla::ManufacturerId].as<int>();
         if (manufacturerId < 0 ||

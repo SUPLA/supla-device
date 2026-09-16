@@ -225,11 +225,12 @@ Example:
 
 #### Parameter `security_level`
 
-Defines if Supla server ceritficate should be validated against root CA.
+Defines if Supla server certificate should be validated against root CA.
 Values:
- - 0 - Supla root CA is used for validation (default) - not implemented yet
- - 2 - skip certificate validation - not recommended, however this is the only
- option for now.
+ - 0 - Supla root CA is used for validation (default).
+ - 2 - skip certificate validation (not recommended).
+Value `1` (custom CA) is not supported by sd4linux and causes a configuration
+error.
 Parameter is optional. Default value 0.
 
 Example:

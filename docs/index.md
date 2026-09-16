@@ -23,6 +23,7 @@ Best if you want the quickest start and a large ecosystem of examples/libraries.
 Best for advanced projects and commercial/long-term products where you want full control over memory, networking and updates.
 
 - Start here: [Quickstart: ESP-IDF](quickstart/esp-idf.md)
+- Custom local pages: [ESP-IDF web server custom pages](esp-idf-web-server-custom-pages.md)
 
 ### Linux / macOS (sd4linux)
 A ready-to-run SUPLA device implementation for desktop environments, useful for integration, testing and debugging.

@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <esp_tls.h>
+#include <limits.h>
 #include <mbedtls/pk.h>
 #include <mbedtls/x509_crt.h>
 #include <netinet/in.h>
@@ -34,6 +35,9 @@
 #include <mbedtls/aes.h>
 #endif
 
+#include <memory>
+#include <new>
+
 #include "esp_https_server.h"
 #include "esp_idf_web_server.h"
 
@@ -47,6 +51,11 @@ static constexpr const char *HTTPS_KEY_KEY = "https_key";
 static constexpr size_t HTTPS_CERT_BUFFER_SIZE = 4096;
 static constexpr size_t HTTPS_KEY_BUFFER_SIZE = 4096;
 static constexpr size_t HTTPS_RSA_KEY_BITS = 2048;
+// HTTP-only serves root, beta and favicon. HTTPS additionally serves login,
+// logout, setup and logs.
+static constexpr uint16_t HTTP_STANDARD_URI_HANDLER_COUNT = 3;
+static constexpr uint16_t HTTPS_STANDARD_URI_HANDLER_COUNT = 7;
+static constexpr size_t CUSTOM_POST_BODY_MAX_SIZE = 8192;
 
 static Supla::EspIdfWebServer *srvInst = nullptr;
 
@@ -693,6 +702,20 @@ esp_err_t betaHandler(httpd_req_t *req) {
   return ESP_FAIL;
 }
 
+esp_err_t Supla::EspIdfWebServer::customPageHandler(httpd_req_t *req) {
+  if (srvInst == nullptr || req == nullptr) {
+    if (req != nullptr) {
+      httpd_resp_send_err(
+          req, HTTPD_500_INTERNAL_SERVER_ERROR, "Web server unavailable");
+    }
+    return ESP_OK;
+  }
+
+  auto *page = static_cast<const Supla::EspIdfWebServer::CustomPage *>(
+      req->user_ctx);
+  return srvInst->handleCustomPage(req, page);
+}
+
 /**
  * Custom URI matcher that will catch all URLs for http->https redirect
  *
@@ -772,6 +795,318 @@ Supla::EspIdfWebServer::EspIdfWebServer(Supla::HtmlGenerator *generator,
 Supla::EspIdfWebServer::~EspIdfWebServer() {
   srvInst = nullptr;
   cleanupCerts();
+}
+
+bool Supla::EspIdfWebServer::CustomPostRequest::getValue(
+    const char *field, char *value, size_t valueLen) const {
+  if (body == nullptr || bodyLen == 0 || field == nullptr ||
+      field[0] == '\0' || value == nullptr || valueLen == 0 ||
+      valueLen > static_cast<size_t>(INT_MAX)) {
+    return false;
+  }
+
+  value[0] = '\0';
+  std::unique_ptr<char[]> decoded(new (std::nothrow) char[bodyLen + 1]());
+  if (!decoded ||
+      httpd_query_key_value(body, field, decoded.get(), bodyLen + 1) !=
+          ESP_OK) {
+    return false;
+  }
+
+  if (!urlDecodeInplace(decoded.get(), static_cast<int>(bodyLen + 1))) {
+    return false;
+  }
+  const size_t decodedLen = strlen(decoded.get());
+  if (decodedLen >= valueLen) {
+    return false;
+  }
+  memcpy(value, decoded.get(), decodedLen + 1);
+  return true;
+}
+
+bool Supla::EspIdfWebServer::registerCustomPage(const CustomPage *page) {
+  const char *uri = page && page->uri ? page->uri : "<null>";
+  if (page == nullptr || page->uri == nullptr || page->uri[0] != '/') {
+    SUPLA_LOG_ERROR("SERVER: rejecting custom page with invalid URI: %s", uri);
+    return false;
+  }
+
+  if (page->getHandler == nullptr && page->postHandler == nullptr) {
+    SUPLA_LOG_ERROR("SERVER: rejecting custom page %s without a handler", uri);
+    return false;
+  }
+
+  if (serverHttps || serverHttp) {
+    SUPLA_LOG_ERROR(
+        "SERVER: rejecting custom page %s because the server is running", uri);
+    return false;
+  }
+
+  if (customPageUriMethodConflicts(page)) {
+    SUPLA_LOG_ERROR(
+        "SERVER: rejecting custom page %s because URI/method is already "
+        "registered",
+        uri);
+    return false;
+  }
+
+  if (customPageHandlerCount() +
+          (page->getHandler != nullptr ? 1U : 0U) +
+          (page->postHandler != nullptr ? 1U : 0U) >
+      static_cast<size_t>(UINT16_MAX - HTTPS_STANDARD_URI_HANDLER_COUNT)) {
+    SUPLA_LOG_ERROR("SERVER: rejecting custom page %s: URI handler limit "
+                    "would be exceeded",
+                    uri);
+    return false;
+  }
+
+  customPages.push_back(page);
+  SUPLA_LOG_INFO("SERVER: registered custom page %s (GET=%d POST=%d)",
+                 uri,
+                 page->getHandler != nullptr,
+                 page->postHandler != nullptr);
+  return true;
+}
+
+bool Supla::EspIdfWebServer::customPageUriMethodConflicts(
+    const CustomPage *page) const {
+  if (page == nullptr || page->uri == nullptr) {
+    return true;
+  }
+
+  struct StandardUriMethod {
+    const char *uri;
+    httpd_method_t method;
+  };
+  static constexpr StandardUriMethod standardHandlers[] = {
+      {"/", static_cast<httpd_method_t>(HTTP_ANY)},
+      {"/beta", static_cast<httpd_method_t>(HTTP_ANY)},
+      {"/favicon.ico", HTTP_GET},
+      {"/login", static_cast<httpd_method_t>(HTTP_ANY)},
+      {"/logout", HTTP_POST},
+      {"/setup", static_cast<httpd_method_t>(HTTP_ANY)},
+      {"/logs", static_cast<httpd_method_t>(HTTP_ANY)},
+  };
+
+  auto methodsConflict = [](httpd_method_t left, httpd_method_t right) {
+    return left == HTTP_ANY || right == HTTP_ANY || left == right;
+  };
+  auto uriMethodConflicts = [&](const char *uri, httpd_method_t method) {
+    for (const auto &standard : standardHandlers) {
+      if (strcmp(uri, standard.uri) == 0 &&
+          methodsConflict(method, standard.method)) {
+        return true;
+      }
+    }
+    for (const auto *registered : customPages) {
+      if (registered == nullptr || registered->uri == nullptr ||
+          strcmp(uri, registered->uri) != 0) {
+        continue;
+      }
+      if ((registered->getHandler != nullptr &&
+           methodsConflict(method, HTTP_GET)) ||
+          (registered->postHandler != nullptr &&
+           methodsConflict(method, HTTP_POST))) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  return (page->getHandler != nullptr &&
+          uriMethodConflicts(page->uri, HTTP_GET)) ||
+         (page->postHandler != nullptr &&
+          uriMethodConflicts(page->uri, HTTP_POST));
+}
+
+size_t Supla::EspIdfWebServer::customPageHandlerCount() const {
+  size_t count = 0;
+  for (const auto *page : customPages) {
+    if (page == nullptr) {
+      continue;
+    }
+    if (page->getHandler != nullptr) {
+      count++;
+    }
+    if (page->postHandler != nullptr) {
+      count++;
+    }
+  }
+  return count;
+}
+
+bool Supla::EspIdfWebServer::registerCustomPageHandlers(httpd_handle_t server) {
+  for (const auto *page : customPages) {
+    if (page == nullptr) {
+      continue;
+    }
+
+    if (page->getHandler != nullptr) {
+      httpd_uri_t uri = {.uri = page->uri,
+                         .method = HTTP_GET,
+                         .handler = &Supla::EspIdfWebServer::customPageHandler,
+                         .user_ctx = const_cast<CustomPage *>(page)};
+      esp_err_t result = httpd_register_uri_handler(server, &uri);
+      if (result != ESP_OK) {
+        SUPLA_LOG_ERROR(
+            "SERVER: failed to register custom GET page %s: %d", page->uri,
+            result);
+        return false;
+      }
+    }
+
+    if (page->postHandler != nullptr) {
+      httpd_uri_t uri = {.uri = page->uri,
+                         .method = HTTP_POST,
+                         .handler = &Supla::EspIdfWebServer::customPageHandler,
+                         .user_ctx = const_cast<CustomPage *>(page)};
+      esp_err_t result = httpd_register_uri_handler(server, &uri);
+      if (result != ESP_OK) {
+        SUPLA_LOG_ERROR(
+            "SERVER: failed to register custom POST page %s: %d", page->uri,
+            result);
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool Supla::EspIdfWebServer::readCustomPostBody(httpd_req_t *req,
+                                                char **postBody,
+                                                size_t *postBodyLen) {
+  if (req == nullptr || postBody == nullptr || postBodyLen == nullptr) {
+    return false;
+  }
+
+  *postBody = nullptr;
+  *postBodyLen = 0;
+  if (req->content_len >= CUSTOM_POST_BODY_MAX_SIZE) {
+    SUPLA_LOG_WARNING("SERVER: custom POST body is too large: %zu",
+                      req->content_len);
+    httpd_resp_send_err(
+        req, HTTPD_413_CONTENT_TOO_LARGE, "POST body too large");
+    return false;
+  }
+
+  const size_t bodyLen = req->content_len;
+  char *body = new (std::nothrow) char[bodyLen + 1];
+  if (body == nullptr) {
+    SUPLA_LOG_ERROR("SERVER: failed to allocate custom POST body");
+    httpd_resp_send_err(
+        req, HTTPD_500_INTERNAL_SERVER_ERROR, "Out of memory");
+    return false;
+  }
+
+  size_t remaining = bodyLen;
+  size_t offset = 0;
+  while (remaining > 0) {
+    int ret = httpd_req_recv(req, body + offset, remaining);
+    if (ret <= 0) {
+      delete[] body;
+      if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+        httpd_resp_send_err(req, HTTPD_408_REQ_TIMEOUT, "Request timeout");
+      } else {
+        httpd_resp_send_err(
+            req, HTTPD_400_BAD_REQUEST, "Invalid POST request");
+      }
+      return false;
+    }
+    offset += static_cast<size_t>(ret);
+    remaining -= static_cast<size_t>(ret);
+  }
+
+  body[offset] = '\0';
+  char csrfToken[65] = {};
+  if (httpd_query_key_value(body, "csrf", csrfToken, sizeof(csrfToken)) !=
+          ESP_OK ||
+      !isCsrfTokenValid(csrfToken)) {
+    SUPLA_LOG_WARNING("SERVER: invalid CSRF token on custom page POST");
+    delete[] body;
+    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Invalid CSRF token");
+    return false;
+  }
+
+  *postBody = body;
+  *postBodyLen = offset;
+  return true;
+}
+
+esp_err_t Supla::EspIdfWebServer::handleCustomPage(
+    httpd_req_t *req, const CustomPage *page) {
+  if (req == nullptr || page == nullptr) {
+    if (req != nullptr) {
+      httpd_resp_send_err(
+          req, HTTPD_404_NOT_FOUND, "Custom page not found");
+    }
+    return ESP_OK;
+  }
+
+  CustomPageGetHandler getCallback = nullptr;
+  CustomPagePostHandler postCallback = nullptr;
+  if (req->method == HTTP_GET) {
+    getCallback = page->getHandler;
+  } else if (req->method == HTTP_POST) {
+    postCallback = page->postHandler;
+  }
+  if ((req->method == HTTP_GET && getCallback == nullptr) ||
+      (req->method == HTTP_POST && postCallback == nullptr) ||
+      (req->method != HTTP_GET && req->method != HTTP_POST)) {
+    httpd_resp_send_err(
+        req, HTTPD_405_METHOD_NOT_ALLOWED, "Method not allowed");
+    return ESP_OK;
+  }
+
+  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
+  const bool httpOnly = resolveWebServerMode() == WebServerMode::HttpOnly;
+  reloadSaltPassword();
+  if (!httpOnly && isAuthorizationBlocked()) {
+    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
+    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
+    return ESP_OK;
+  }
+
+  const bool passwordConfigured = isPasswordConfigured();
+  if (!httpOnly && !passwordConfigured &&
+      page->factoryDefaultPolicy ==
+          CustomPageFactoryDefaultPolicy::RedirectToSetup) {
+    notifyClientConnected(req->method == HTTP_POST);
+    if (req->method == HTTP_POST) {
+      char *postBody = nullptr;
+      size_t postBodyLen = 0;
+      if (!readCustomPostBody(req, &postBody, &postBodyLen)) {
+        return ESP_OK;
+      }
+      delete[] postBody;
+    }
+    return redirect(req, 303, "/setup");
+  }
+
+  char sessionCookie[256] = {};
+  if (!httpOnly && passwordConfigured) {
+    if (!ensureAuthorized(req, sessionCookie, sizeof(sessionCookie))) {
+      return redirect(req, 303, loginOrSetupUrl(), "main");
+    }
+    if (req->method == HTTP_POST) {
+      notifyClientConnected(true);
+    }
+  } else {
+    notifyClientConnected(req->method == HTTP_POST);
+  }
+
+  if (req->method == HTTP_GET) {
+    return getCallback(req, page->userData);
+  }
+
+  char *postBody = nullptr;
+  size_t postBodyLen = 0;
+  if (!readCustomPostBody(req, &postBody, &postBodyLen)) {
+    return ESP_OK;
+  }
+  CustomPostRequest postRequest(postBody, postBodyLen);
+  esp_err_t result = postCallback(req, postRequest, page->userData);
+  delete[] postBody;
+  return result;
 }
 
 void Supla::EspIdfWebServer::setWebServerMode(WebServerMode mode) {
@@ -1296,10 +1631,18 @@ void Supla::EspIdfWebServer::start() {
 
   if (activeMode == WebServerMode::HttpOnly) {
     SUPLA_LOG_INFO("SERVER: starting local web server in HTTP mode");
+    config.max_uri_handlers = static_cast<uint16_t>(
+        HTTP_STANDARD_URI_HANDLER_COUNT + customPageHandlerCount());
     if (httpd_start(&serverHttp, &config) == ESP_OK) {
       httpd_register_uri_handler(serverHttp, &uriRoot);
       httpd_register_uri_handler(serverHttp, &uriBeta);
       httpd_register_uri_handler(serverHttp, &uriFavicon);
+      if (!registerCustomPageHandlers(serverHttp)) {
+        SUPLA_LOG_ERROR("SERVER: stopping HTTP server after custom page "
+                        "registration failure");
+        httpd_stop(serverHttp);
+        serverHttp = nullptr;
+      }
       // for http we do not have login/logout and setup currently
       //      httpd_register_uri_handler(serverHttp, &uriLogin);
       //      httpd_register_uri_handler(serverHttp, &uriLogout);
@@ -1327,7 +1670,8 @@ void Supla::EspIdfWebServer::start() {
         httpd_ssl_config_t configHttps = HTTPD_SSL_CONFIG_DEFAULT();
         configHttps.httpd.lru_purge_enable = true;
         configHttps.httpd.max_open_sockets = 5;
-        configHttps.httpd.max_uri_handlers = 7;
+        configHttps.httpd.max_uri_handlers = static_cast<uint16_t>(
+            HTTPS_STANDARD_URI_HANDLER_COUNT + customPageHandlerCount());
 
         configHttps.servercert = httpsServerCert;
         configHttps.servercert_len = httpsServerCertLen;
@@ -1344,16 +1688,23 @@ void Supla::EspIdfWebServer::start() {
           httpd_register_uri_handler(serverHttps, &uriSetup);
           httpd_register_uri_handler(serverHttps, &uriLogs);
 
-          config.uri_match_fn = uriMatchAll;
-          config.max_uri_handlers = 1;
-          config.max_open_sockets = 1;
-          if (httpd_start(&serverHttp, &config) == ESP_OK) {
-            httpd_uri_t redirectAll = {
-                .uri = "/",  // we use uriMatchAll which will catch all URLs
-                .method = static_cast<httpd_method_t>(HTTP_ANY),
-                .handler = redirectHandler,
-                .user_ctx = NULL};
-            httpd_register_uri_handler(serverHttp, &redirectAll);
+          if (!registerCustomPageHandlers(serverHttps)) {
+            SUPLA_LOG_ERROR("SERVER: stopping HTTPS server after custom page "
+                            "registration failure");
+            httpd_stop(serverHttps);
+            serverHttps = nullptr;
+          } else {
+            config.uri_match_fn = uriMatchAll;
+            config.max_uri_handlers = 1;
+            config.max_open_sockets = 1;
+            if (httpd_start(&serverHttp, &config) == ESP_OK) {
+              httpd_uri_t redirectAll = {
+                  .uri = "/",  // we use uriMatchAll which will catch all URLs
+                  .method = static_cast<httpd_method_t>(HTTP_ANY),
+                  .handler = redirectHandler,
+                  .user_ctx = NULL};
+              httpd_register_uri_handler(serverHttp, &redirectAll);
+            }
           }
         } else {
           SUPLA_LOG_ERROR("Failed to start local https web server");

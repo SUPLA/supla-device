@@ -999,15 +999,17 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
     auto cmdOpen = cmdOpenParameter.as<std::string>();
     cv->setCmdOpen(cmdOpen);
   } else {
-    SUPLA_LOG_WARNING("CmdValve[%d]: missing \"cmd_open\" parameter",
-                      channelNumber);
+    SUPLA_LOG_ERROR("CmdValve[%d]: missing \"cmd_open\" parameter",
+                    channelNumber);
+    return false;
   }
   if (auto cmdCloseParameter = getAndMarkChannelParameter(ch, "cmd_close")) {
     auto cmdClose = cmdCloseParameter.as<std::string>();
     cv->setCmdClose(cmdClose);
   } else {
-    SUPLA_LOG_WARNING("CmdValve[%d]: missing \"cmd_close\" parameter",
-                      channelNumber);
+    SUPLA_LOG_ERROR("CmdValve[%d]: missing \"cmd_close\" parameter",
+                    channelNumber);
+    return false;
   }
 
   if (!addStateParser(ch, cv, parser, true)) {
@@ -1053,20 +1055,40 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
   if (auto cmdUpOnParameter = getAndMarkChannelParameter(ch, "cmd_up_on")) {
     auto cmdUpOn = cmdUpOnParameter.as<std::string>();
     cr->setCmdUpOn(cmdUpOn);
+  } else {
+    SUPLA_LOG_ERROR(
+        "CmdRollerShutter[%d]: missing \"cmd_up_on\" parameter",
+        channelNumber);
+    return false;
   }
   if (auto cmdUpOffParameter = getAndMarkChannelParameter(ch, "cmd_up_off")) {
     auto cmdUpOff = cmdUpOffParameter.as<std::string>();
     cr->setCmdUpOff(cmdUpOff);
+  } else {
+    SUPLA_LOG_ERROR(
+        "CmdRollerShutter[%d]: missing \"cmd_up_off\" parameter",
+        channelNumber);
+    return false;
   }
 
   if (auto cmdDownOnParameter = getAndMarkChannelParameter(ch, "cmd_down_on")) {
     auto cmdDownOn = cmdDownOnParameter.as<std::string>();
     cr->setCmdDownOn(cmdDownOn);
+  } else {
+    SUPLA_LOG_ERROR(
+        "CmdRollerShutter[%d]: missing \"cmd_down_on\" parameter",
+        channelNumber);
+    return false;
   }
   if (auto cmdDownOffParameter =
           getAndMarkChannelParameter(ch, "cmd_down_off")) {
     auto cmdDownOff = cmdDownOffParameter.as<std::string>();
     cr->setCmdDownOff(cmdDownOff);
+  } else {
+    SUPLA_LOG_ERROR(
+        "CmdRollerShutter[%d]: missing \"cmd_down_off\" parameter",
+        channelNumber);
+    return false;
   }
 
   return addCommonParametersParsed(ch, cr, parser);

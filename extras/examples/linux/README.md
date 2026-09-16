@@ -108,6 +108,12 @@ routed to syslog and current working directory is changed to `/`
 (as in daemon mode). However, separate process isn't forked and application
 runs in foreground.
 
+Use `./supla-device-linux --help` to list all command-line options. In builds
+with the insecure debug interface enabled, `--debug-socket` reads local debug
+commands from a Unix socket and `--debug-log-port PORT` streams logs over TCP
+(`0` disables the stream). These interfaces are intended for development only.
+See `debug_socket/README.md` for build and usage details.
+
 ## Logs, problems, bugs, help
 
 In case of any problem, please check first logs from supla-device. By default,
@@ -208,7 +214,7 @@ reserved for official Supla products.
 
 Use it to change log level to different value.
 Parameter is optional. Default log level is `info`.
-Allowed values: `debug`, `verbose`, `warning`, `error`
+Allowed values: `info`, `debug`, `verbose`, `warning`, `error`
 
 Example:
 
@@ -285,7 +291,8 @@ Example:
 ### MQTT broker connection
 
 Below parameters should be defined under `mqtt` key (as in examples below).
-Required if using [`MQTT` as source](#parsed-channel-source-parameter)
+Required if using [`MQTT` as source](#parsed-channel-source-parameter) or
+output.
 
 #### Parameter `host`
 
@@ -295,9 +302,10 @@ Mandatory.
 #### Parameter `port`
 
 Defines MQTT broker port to which device should connect to. This application
-can use SSL/TLS encrypted connection, but by default port 1883 is used in MQTT
-broker as not SSL/TLS.
-Parameter is optional - default value: 1883.
+can use SSL/TLS encrypted connection. Parameter is optional. The default is
+`1883` when `use_ssl` is `false` and `8883` when `use_ssl` is `true`. An
+explicit `port` value overrides these defaults. Using port `8883` also enables
+TLS when `use_ssl` is omitted.
 
 #### Parameter `username`
 
@@ -330,14 +338,14 @@ Defines the location of the CA certificate file that will be
 used to verify the MQTT broker certificate.
 Parameter is optional - default value: "".
 
-Example (no SSL/TSL, anonymous):
+Example (no SSL/TLS, anonymous):
 
     mqtt:
       host: mqtt.example.org
       port: 1883
       client_name: sl4d_client_001
 
-Example (with SSL/TSL with login):
+Example (with SSL/TLS with login):
 
     mqtt:
       host: mqtt-ssl.example.org
@@ -390,7 +398,7 @@ Supported channel types:
 * `ElectricityMeterParsed` - related class `Supla::Sensor::ElectricityMeterParsed`
 * `BinaryParsed` - related class `Supla::Sensor::BinaryParsed`
 * `ActionTriggerParsed` - related class `Supla::Control::ActionTriggerParsed`
-* `HumidityParsed` - related class `Supla::Sensor::HumidityParsed
+* `HumidityParsed` - related class `Supla::Sensor::HumidityParsed`
 * `PressureParsed` - related class `Supla::Sensor::PressureParsed`
 * `WindParsed` - related class `Supla::Sensor::WindParsed`
 * `RainParsed` - related class `Supla::Sensor::RainParsed`
@@ -398,11 +406,12 @@ Supported channel types:
 * `GeneralPurposeMeterParsed` - related class `Supla::Sensor::GeneralPurposeMeter`
 * `WeightParsed` - related class `Supla::Sensor::Weight`
 * `DistanceParsed` - related class `Supla::Sensor::Distance`
+* `ContainerParsed` - related class `Supla::Sensor::ContainerParsed`
 * `Hvac`, `CustomHvac` - related class `Supla::Control::HvacBase`
 * `CustomChannel` - supports arbitrary channel type
 * `RgbCctParsed` - related class `Supla::Control::RgbCctBase` - not a real support for this function. Just a working class to test it.
 
-Example channels configuration (details are exaplained later):
+Example channels configuration (details are explained later):
 
     channels:
       - type: VirtualRelay
@@ -546,7 +555,7 @@ Example channels configuration (details are exaplained later):
         state: 1
         state_on_values: [1, true, "ON"]
         parser:
-          type: JSON
+          type: Json
           refresh_time_ms: 1000
         source:
           type: File
@@ -773,11 +782,11 @@ be executed on every turn on/off action.
 
 `CmdRelay` accepts the same parameters as `VirtualRelay`. Additionally it supports
 two extra configuration options:
-`cmd_on` - command to be exectued on turn on.
+`cmd_on` - command to be executed on turn on.
 `cmd_off` - command to be executed on turn off.
 
 When `CmdRelay` is added without `state` parameter, then it will use internal
-memory to keep it's state, which will be always consistent with last executed
+memory to keep its state, which will be always consistent with last executed
 action on relay channel. Such state can be saved to Storage.
 
 Another option for `CmdRelay` is to define `state` parameter. When `state`
@@ -793,7 +802,7 @@ when its state is invalid (i.e. source file wasn't modified for a long time, or
 value was set to -1).
 
 Parameter `state_on_values` allows to define array of integers, bools or strings, which are interpreted
-s state "on". I.e. `state_on_values = [3, "connect", "online"]` will set channel to "on"
+as state "on". I.e. `state_on_values = [3, "connect", "online"]` will set channel to "on"
 when state is `3`, `"connect"` or `"online"`. Otherwise, it will set channel to "off" with exception to
 value -1 which is used as invalid state. The default values for `state_on_values` are used. In addition 
 to the value `1`, the following values will be treated as state on: `true`, `"ON"`, `"On"`, `"on"`, `"Y"`,
@@ -803,9 +812,9 @@ Parameter `action_trigger` allows to use `ActionTriggerParsed` channel to send a
 to Supla server depending on channel state (or value). Example:
 
     action_trigger:
-      use: at1
-      on_state: [1, 0]
-      on_state: [2, 1]
+      - use: at1
+      - on_state: [1, 0]
+      - on_state: [2, 1]
 
 Exact values and configuration is explained in `ActionTriggerParsed` section.
 Parameter `use: at1` indicates which `ActionTriggerParsed` instance should be used
@@ -843,6 +852,38 @@ Required parameters:
 `cmd_on` - command executed when thermostat starts heating or cooling,
 `cmd_off` - command executed when thermostat stops heating or cooling.
 
+Optional parameters:
+
+`cmd_on_secondary` and `cmd_off_secondary` - commands for the secondary heating
+or cooling output. They are required when `default_function` is `heat_cool`.
+`aux_thermometer_channel_no` - channel number of an auxiliary thermometer,
+`binary_sensor_channel_no` - channel number of a binary sensor used by HVAC.
+`default_function` - default HVAC function. Supported values are `heat`, `cool`,
+`heat_cool`, `dhw`, and `diff`.
+
+### Fronius
+
+`Fronius` reads data from a Fronius inverter or meter over HTTP.
+
+Required parameter: `ip` - inverter IP address.
+Optional parameters: `port` (default `80`), `device_id` (default `1`), and
+`device_type` (default `0`). Supported device types are `0` (single-phase
+inverter), `1` (three-phase inverter), and `2` (three-phase meter).
+
+### SolarEdge
+
+`SolarEdge` reads data from the SolarEdge monitoring API.
+
+Required parameters: `api_key`, `site_id`, and `inverter_serial_number`.
+The Linux client also requires a configured system clock.
+
+### Afore
+
+`Afore` reads data from an Afore inverter over HTTP.
+
+Required parameters: `ip` and `login_and_password`. The latter is Base64-encoded
+`login:password` text. Optional parameter: `port` (default `80`).
+
 ## Output channels which publish payloads
 
 ### `output` parameter
@@ -851,14 +892,15 @@ channel state. It must be defined as a channel sub-element.
 
 `output` have one common mandatory parameter `type` which defines type
 of the used output. There is also an optional `name` parameter. If you name your
-source, then it can be reused for multiple parsers.
+output, then it can be reused by multiple channels.
 
-There are three supported parser types:
+There are three supported output types:
 1. `File` - use file as an output. File name is provided by `file` parameter
 2. `Cmd` - use Linux command line as an output. Command is provided by `command`
    field.
-3. `MQTT` - use published topic to MQTT broker. A published topic name containing
-control information is provided by `control_topic`.
+3. `MQTT` - publish to an MQTT broker. The mandatory `control_topic` parameter
+   specifies the topic. Optional `qos` selects the MQTT publish QoS and defaults
+   to `0`.
 
 `Cmd` uses a trusted command template executed by POSIX `/bin/sh`. Use portable
 POSIX shell syntax in the template; trusted redirections, pipelines, `&&`,
@@ -879,7 +921,7 @@ syntax; shell operators in the payload are ordinary argument characters.
 ### `payload` parameter
 `payload` converts channel state change values to the values to be published to 
 a predefined `output`. I.e. in CustomRelay turn on/off commands are published
-to the `output` in formar defined by `payload` based on the `set_state`. Then
+to the `output` in format defined by `payload` based on the `set_state`. Then
 `turn_on_payload` and `turn_off_payload` are written to the `output`.
 
 There are two templates defined:
@@ -915,7 +957,11 @@ options:\
 `turn_on_payload` - value to be published on turn on,\
 `turn_off_payload` - value to be published on turn off,\
 `set_state` - field name used by a `Json` payload. For a `Simple` payload,
-omit `set_state` because the output is the raw value.
+omit `set_state` because the output is the raw value,\
+`aux_thermometer_channel_no` - channel number of an auxiliary thermometer,\
+`binary_sensor_channel_no` - channel number of a binary sensor used by HVAC,\
+`default_function` - default HVAC function: `heat`, `cool`, `heat_cool`, `dhw`,
+or `diff`.
 
 For example, with `payload.type: Json` and `set_state: state`, the output is
 `{"state": "1"}` when the HVAC output is enabled and `{"state": "0"}` when it
@@ -970,7 +1016,7 @@ additionally you can define `expiration_time_sec` parameter. If last modificatio
 time of a file is older than `expiration_time_sec` then this source will be
 considered as invalid. `expiration_time_sec` is by default set to 10 minutes. 
 In order to disable time expiration check, please set `expiration_time_sec` to 0.
-2. `Cmd` - use Linux command line as an input. Command is provided by `commonad`
+2. `Cmd` - use Linux command line as an input. Command is provided by `command`
    field.
 3. `MQTT` - use subscribe topic from MQTT broker. Requires defining the [`mqtt`](#mqtt-broker-connection)
    section. A subscribed topic name containing status information is provided by
@@ -984,9 +1030,14 @@ In order to disable time expiration check, please set `expiration_time_sec` to 0
    When the connection to the MQTT broker is lost, all channels using `MQTT` source
    will be automatically set to offline state. They return to online state once the
    connection is restored and data is received.
-4. `HTTP` - use HTTP/HTTPS GET response body as an input. It supports static
-   headers, `auth.type: none`, `auth.type: bearer_file`, `refresh_time_ms`,
-   `timeout_ms` and `expiration_time_sec`. HTTP source keeps the last successful
+4. `HTTP` - use HTTP/HTTPS GET response body as an input. It supports `method`
+   (currently only `GET`, default), static headers, `auth.type: none`,
+   `auth.type: bearer_file` with `auth.token_file`, `refresh_time_ms`,
+   `timeout_ms`, `expiration_time_sec`, and `max_body_size_bytes`.
+   Defaults are `30000 ms`, `10000 ms`, `600 s`, and `1048576 bytes`,
+   respectively. `refresh_time_ms` must be at least `10`, `timeout_ms` must be
+   positive, `expiration_time_sec` must be non-negative, and
+   `max_body_size_bytes` must be positive. HTTP source keeps the last successful
    response in memory and returns cached content until `refresh_time_ms` expires.
    Failed requests don't clear the cache. If cached content is older than
    `expiration_time_sec`, the source is considered invalid. More details and an
@@ -1031,8 +1082,9 @@ Type of parser is selected with a `type` parameter. You can provide a name for
 your parser with `name` parameter (named parsers can be reused for different
 channels). Additionally, parsers allow to configure `refresh_time_ms` parameter
 which provides period of time in ms, how often parser will try to refresh data
-from source. Please keep in mind that it doesn't override refresh times which
-are used in channel itself. I.e. thermometers are refreshed every 10 s, while
+from source. Values below `10 ms` are clamped to `10 ms`. Please keep in mind
+that it doesn't override refresh times which are used in channel itself. I.e.
+thermometers are refreshed every 10 s, while
 binary sensors are refreshed every 100 ms. Default refresh time for parser is
 set to 5 s, so in that case thermometer value will update every 10 s, and
 binary sensor every 5 s. If you'll set `refresh_time_ms` to `200`, then
@@ -1122,7 +1174,7 @@ Add channel with "thermometer + hygrometer" type.
 Mandatory parameters: `temperature` - defines key/index by which data is fetched
 from `parser` for temperature value, `humidity` - defines key/index by which
 data is fetched from `parser` for humidity value;
-Optional parameter: `multiplier_temp` - defines multiplier for temperatur value
+Optional parameter: `multiplier_temp` - defines multiplier for temperature value
 (you can put any floating point number), `multiplier_humi` - defines multiplier
 for humidity value.
 
@@ -1173,7 +1225,7 @@ sensor. Allowed values: `opening_door`, `opening_window`, `opening_roller_shutte
 
 Add 3-phase electricity meter channel.
 
-All paramters are optional, however it is reasonable to provide at least one ;).
+All parameters are optional, however it is reasonable to provide at least one ;).
 
 There are two "global" parameters, and few parameters associated with
 specific phases.
@@ -1242,7 +1294,8 @@ AMIplus meter on standard single tariff:
 Creates instance of "action trigger" channel. There is only one mandatory
 parameter `name` which is used in other channels to reference this channel.
 
-Action trigger can be used only in `BinaryParsed` and `CmdRelay` channels.
+Action trigger can be used in `BinaryParsed`, `CmdRelay`, and `CustomRelay`
+channels.
 Here is example configuration of action trigger for `BinaryParsed` channel:
 
     action_trigger:
@@ -1258,9 +1311,9 @@ Action "1" will be published when channel state changes from "0" (off) to "1" (o
 Action "2" will be published when value from `parser` is "5".
 Action "3" will be published when value from `parser` changes from "6" to "7".
 
-Both `BinaryParsed` and `CmdRelay` have state which can be equal to "0" (off) or
-"1" (on). Additionally `CmdRelay` can have state "-1" which is set when channel
-is offline.
+`BinaryParsed`, `CmdRelay`, and `CustomRelay` have state which can be equal to
+"0" (off) or "1" (on). Additionally `CmdRelay` can have state "-1" which is
+set when channel is offline.
 So `state` refers to channel state reported to Supla. On the other hand, `value` represents
 value which is read from `parser`. I.e. we can take input from file, which can have
 values from -1 to 10. Value "-1" for `CmdRelay` will be interpret as "offline" (when
@@ -1289,7 +1342,7 @@ It is allowed to configure multiple "on_" conditions to generate the same action
 For action, please use only following numbers: 0, 1, 2, 3, 4, 5, 6, and
 10, 11, 12, 13, 14, 15.
 
-When aciton is used and device is registered in Cloud, there will be action
+When an action is used and device is registered in Cloud, there will be action
 trigger channel with actions corresponding to buttons, as defined in:
 [proto.h](https://github.com/SUPLA/supla-device/blob/660a79b66676c995730b5aa8452543440f519772/src/supla-common/proto.h#L2111)
 
@@ -1383,6 +1436,14 @@ from `parser`.
 Optional parameter: `multiplier` - defines multiplier for fetched value
 (you can put any floating point number).
 
+### `ContainerParsed`
+Add channel with "container level" type.
+
+The channel requires a `parser`. Optional parameter: `level` - defines the
+key/index by which the container fill level is fetched from the parser.
+`multiplier` can be used to scale the fetched level. If `level` is omitted, the
+reported fill level is `0`.
+
 
 ## Battery information for Parsed channels
 
@@ -1406,7 +1467,7 @@ describes the battery powering the whole device instead of only this channel:
   battery_state: battery
   battery_state_applies_to_whole_device: true
   parser:
-    type: JSON
+    type: Json
   source:
     type: File
     file: sensor.json
@@ -1417,6 +1478,11 @@ Example `sensor.json`:
 ```json
 {"temperature": 21.5, "battery": "low"}
 ```
+
+The optional `battery_powered` field defines a parser key or index containing
+the battery-powered flag. It requires a parser. Use
+`force_battery_powered: true` to mark a channel as battery-powered with a fixed
+value, including channels without a parser.
 
 # Running supla-device as a service
 

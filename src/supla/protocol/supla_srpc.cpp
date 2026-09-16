@@ -1958,6 +1958,138 @@ void Supla::Protocol::SuplaSrpc::scheduleReconnect(uint32_t now) {
   lastIterateTime = now;
 }
 
+#ifndef ARDUINO_ARCH_AVR
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((noinline))
+#endif
+bool Supla::Protocol::SuplaSrpc::autodiscover(uint32_t now) {
+  autodiscoverRetryCounter++;
+  if (autodiscoverRetryCounter > 4) {
+    if (autodiscoverRetryCounter == 5) {
+      SUPLA_LOG_WARNING("Autodiscover failed too many times. Giving up");
+    }
+    autodiscoverRetryCounter = 6;
+    return false;
+  }
+
+  // Try to get server from AD
+  SUPLA_LOG_INFO("Supla server name not set. Trying to get it from AD");
+  // fetch json from https://autodiscover.supla.org/users/email@host
+  const char server[] = "iot.autodiscover.supla.org";
+  auto adClient = createNetworkClient();
+  if (adClient == nullptr) {
+    SUPLA_LOG_ERROR("Failed to create autodiscovery network client");
+    waitForIterate = 1000;
+    return false;
+  }
+  adClient->setSSLEnabled(true);
+  adClient->setCACert(::suplaCACert);
+
+  if (1 == adClient->connect(server, 443)) {
+    adClient->write("GET /users/");
+    adClient->write(Supla::RegisterDevice::getEmail());
+    adClient->write(" HTTP/1.1\r\n");
+    adClient->write("Host: ");
+    adClient->write(server);
+    adClient->write("\r\n");
+#define HTTP_AGENT_SIZE 100
+    char httpAgent[HTTP_AGENT_SIZE] = {};
+    Supla::RegisterDevice::generateHttpAgent(httpAgent, HTTP_AGENT_SIZE);
+
+    adClient->write("User-Agent: ");
+    adClient->write(httpAgent);
+    adClient->write("\r\n");
+    adClient->write("Accept: application/json\r\n");
+    char guid[SUPLA_GUID_SIZE * 2 + 1] = {};
+    generateHexString(Supla::RegisterDevice::getGUID(), guid, SUPLA_GUID_SIZE);
+    adClient->write("X-GUID: ");
+    adClient->write(guid);
+    adClient->write("\r\n");
+    adClient->write("Connection: close\r\n\r\n");
+
+    char buf[512] = {};
+    char *bufPos = buf;
+    int timeout = 3000;
+
+    bool dataReady = false;
+    do {
+      int len = adClient->read(bufPos, sizeof(buf) - 1 - (bufPos - buf));
+      if (len > 0) {
+        SUPLA_LOG_DEBUG("Data read: %d", len);
+        bufPos += len;
+        *bufPos = 0;
+      }
+      delay(1);
+      timeout--;
+      if (timeout == 0) {
+        break;
+      }
+    } while (adClient->connected() && (bufPos - buf) < 512);
+
+    adClient->stop();
+    delete adClient;
+    adClient = nullptr;
+
+    SUPLA_LOG_DEBUG("Data: %s", buf);
+
+    // get http return code from string
+    if (strncmp(buf, "HTTP/1.1 404", 12) == 0) {
+      SUPLA_LOG_DEBUG("HTTP/1.1 404 not found");
+      autodiscoverRetryCounter = 6;
+      addLastStateAdError(buf);
+      return false;
+    }
+
+    if (strncmp(buf, "HTTP/1.1 200", 12) != 0) {
+      SUPLA_LOG_DEBUG("HTTP/1.1 200 not found");
+      addLastStateAdError(buf);
+      return false;
+    }
+
+    const char serverKey[] = "\"server\":\"";
+
+    char *serverName = strstr(buf, serverKey);
+    if (serverName != nullptr) {
+      serverName += sizeof(serverKey) - 1;
+      char *serverEnd = strchr(serverName, '\"');
+      if (serverEnd != nullptr) {
+        *serverEnd = 0;
+        Supla::RegisterDevice::setServerName(serverName);
+        dataReady = true;
+        char tmp[sizeof("AD got server: ") + SUPLA_SERVER_NAME_MAXSIZE - 1] =
+            {};
+        snprintf(tmp, sizeof(tmp), "AD got server: %s", serverName);
+        sdc->addLastStateLog(tmp);
+        auto cfg = Supla::Storage::ConfigInstance();
+        if (cfg) {
+          cfg->setSuplaServer(serverName);
+          cfg->saveWithDelay(1000);
+          // reload config to initialize certificates etc.
+          onLoadConfig();
+        }
+      }
+    }
+
+    if (!dataReady) {
+      SUPLA_LOG_DEBUG("Supla server name not found from AD");
+      waitForIterate = 1000;
+      return false;
+    }
+
+  } else {
+    SUPLA_LOG_DEBUG("AD connection failed");
+    adClient->stop();
+    delete adClient;
+    adClient = nullptr;
+    waitForIterate = 1000;
+    return false;
+  }
+
+  lastIterateTime = now;
+  return true;
+}
+#endif  // !ARDUINO_ARCH_AVR
+
 bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   if (!isEnabled()) {
     return false;
@@ -1980,130 +2112,8 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
 
 #ifndef ARDUINO_ARCH_AVR
   if (Supla::RegisterDevice::isServerNameEmpty() &&
-      !Supla::RegisterDevice::isEmailEmpty()) {
-    autodiscoverRetryCounter++;
-    if (autodiscoverRetryCounter > 4) {
-      if (autodiscoverRetryCounter == 5) {
-        SUPLA_LOG_WARNING("Autodiscover failed too many times. Giving up");
-      }
-      autodiscoverRetryCounter = 6;
-      return false;
-    }
-
-    // Try to get server from AD
-    SUPLA_LOG_INFO("Supla server name not set. Trying to get it from AD");
-    // fetch json from https://autodiscover.supla.org/users/email@host
-    const char server[] = "iot.autodiscover.supla.org";
-    auto adClient = createNetworkClient();
-    if (adClient == nullptr) {
-      SUPLA_LOG_ERROR("Failed to create autodiscovery network client");
-      waitForIterate = 1000;
-      return false;
-    }
-    adClient->setSSLEnabled(true);
-    adClient->setCACert(::suplaCACert);
-
-    if (1 == adClient->connect(server, 443)) {
-      adClient->write("GET /users/");
-      adClient->write(Supla::RegisterDevice::getEmail());
-      adClient->write(" HTTP/1.1\r\n");
-      adClient->write("Host: ");
-      adClient->write(server);
-      adClient->write("\r\n");
-#define HTTP_AGENT_SIZE 100
-      char httpAgent[HTTP_AGENT_SIZE] = {};
-      Supla::RegisterDevice::generateHttpAgent(httpAgent, HTTP_AGENT_SIZE);
-
-      adClient->write("User-Agent: ");
-      adClient->write(httpAgent);
-      adClient->write("\r\n");
-      adClient->write("Accept: application/json\r\n");
-      char guid[SUPLA_GUID_SIZE * 2 + 1] = {};
-      generateHexString(
-          Supla::RegisterDevice::getGUID(), guid, SUPLA_GUID_SIZE);
-      adClient->write("X-GUID: ");
-      adClient->write(guid);
-      adClient->write("\r\n");
-      adClient->write("Connection: close\r\n\r\n");
-
-      char buf[512] = {};
-      char *bufPos = buf;
-      int timeout = 3000;
-
-      bool dataReady = false;
-      do {
-        int len = adClient->read(bufPos, sizeof(buf) - 1 - (bufPos - buf));
-        if (len > 0) {
-          SUPLA_LOG_DEBUG("Data read: %d", len);
-          bufPos += len;
-          *bufPos = 0;
-        }
-        delay(1);
-        timeout--;
-        if (timeout == 0) {
-          break;
-        }
-      } while (adClient->connected() && (bufPos - buf) < 512);
-
-      adClient->stop();
-      delete adClient;
-      adClient = nullptr;
-
-      SUPLA_LOG_DEBUG("Data: %s", buf);
-
-      // get http return code from string
-      if (strncmp(buf, "HTTP/1.1 404", 12) == 0) {
-        SUPLA_LOG_DEBUG("HTTP/1.1 404 not found");
-        autodiscoverRetryCounter = 6;
-        addLastStateAdError(buf);
-        return false;
-      }
-
-      if (strncmp(buf, "HTTP/1.1 200", 12) != 0) {
-        SUPLA_LOG_DEBUG("HTTP/1.1 200 not found");
-        addLastStateAdError(buf);
-        return false;
-      }
-
-      const char serverKey[] = "\"server\":\"";
-
-      char *serverName = strstr(buf, serverKey);
-      if (serverName != nullptr) {
-        serverName += sizeof(serverKey) - 1;
-        char *serverEnd = strchr(serverName, '"');
-        if (serverEnd != nullptr) {
-          *serverEnd = 0;
-          Supla::RegisterDevice::setServerName(serverName);
-          dataReady = true;
-          char tmp[200] = {};
-          snprintf(tmp, sizeof(tmp), "AD got server: %s", serverName);
-          sdc->addLastStateLog(tmp);
-          auto cfg = Supla::Storage::ConfigInstance();
-          if (cfg) {
-            cfg->setSuplaServer(serverName);
-            cfg->saveWithDelay(1000);
-            // reload config to initialize certificates etc.
-            onLoadConfig();
-          }
-        }
-      }
-
-      if (!dataReady) {
-        SUPLA_LOG_DEBUG("Supla server name not found from AD");
-        waitForIterate = 1000;
-        return false;
-      }
-
-    } else {
-      SUPLA_LOG_DEBUG("AD connection failed");
-      adClient->stop();
-      delete adClient;
-      adClient = nullptr;
-      waitForIterate = 1000;
-      return false;
-    }
-
-    lastIterateTime = _millis;
+      !Supla::RegisterDevice::isEmailEmpty() && !autodiscover(_millis)) {
+    return false;
   }
 #endif  // !ARDUINO_ARCH_AVR
 

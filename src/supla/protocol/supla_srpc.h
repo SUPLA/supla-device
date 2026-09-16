@@ -176,6 +176,9 @@ class SuplaSrpc : public ProtocolLayer {
   void initializeSrpc();
   void deinitializeSrpc();
   void addLastStateAdError(char *buf);
+#ifndef ARDUINO_ARCH_AVR
+  bool autodiscover(uint32_t now);
+#endif
 
   uint8_t version = 0;
   uint8_t activityTimeoutS = 30;

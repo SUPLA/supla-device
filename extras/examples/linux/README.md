@@ -190,6 +190,20 @@ Example:
 
     name: My fancy device
 
+#### Parameter `manufacturer_id`
+
+Sets the manufacturer identifier sent in the device registration header.
+Parameter is optional. Default value is `0`.
+Allowed values are integers from `0` to `32767`. Values other than `0` are
+reserved for official Supla products.
+
+#### Parameter `product_id`
+
+Sets the product identifier sent in the device registration header.
+Parameter is optional. Default value is `0`.
+Allowed values are integers from `0` to `32767`. Values other than `0` are
+reserved for official Supla products.
+
 #### Parameter `log_level`
 
 Use it to change log level to different value.

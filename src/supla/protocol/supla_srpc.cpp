@@ -476,18 +476,21 @@ void logRegisterDeviceHeader(int callId,
 
   SUPLA_LOG_DEBUG(
       "SRPC %s call=%s(%d) size=%zu wire_proto=%u "
-      "payload={Email=<redacted>, "
-      "AuthKey=<redacted>, GUID=<redacted>, Name=\"%s\", SoftVer=\"%s\", "
-      "ServerName=\"%s\", Flags=0x%" PRIX32
-      ", ManufacturerID=%d, ProductID=%d, "
-      "channel_count=%u}",
+      "payload={Email=<redacted>, AuthKey=<redacted>, "
+      "GUID=<redacted>}",
       direction,
       callName,
       callId,
       size,
-      static_cast<unsigned int>(packet->version),
-      escapedName,
-      escapedSoftVer,
+      static_cast<unsigned int>(packet->version));
+
+  SUPLA_LOG_DEBUG("SRPC cont=[Name=\"%s\", SoftVer=\"%s\"]",
+                  escapedName,
+                  escapedSoftVer);
+
+  SUPLA_LOG_DEBUG(
+      "SRPC cont=[ServerName=\"%s\", Flags=0x%" PRIX32
+      ", ManufacturerID=%d, ProductID=%d, channel_count=%u]",
       escapedServerName,
       static_cast<uint32_t>(header.Flags),
       static_cast<int16_t>(header.ManufacturerID),
@@ -911,21 +914,71 @@ void logRawHexDump(const char *direction,
                    size_t size,
                    bool verbose) {
   const size_t rleThreshold = 6;
-#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266) || defined(__AVR__) || \
-    defined(ARDUINO_ARCH_AVR)
-  char tmp[256] = {};
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266) || defined(ESP32) || \
+    defined(ARDUINO_ARCH_ESP32) || defined(ESP_PLATFORM) || \
+    defined(SUPLA_DEVICE_ESP32) || defined(__AVR__) || defined(ARDUINO_ARCH_AVR)
+  constexpr size_t rawLogBufferSize = 256;
+  // supla_device_logf() has a 256-byte formatted-log buffer.  Leave room for
+  // the metadata prefix on the first chunk and use a shorter continuation
+  // prefix for the remaining chunks.
+  constexpr size_t rawLogFirstChunkSize = 176;
+  constexpr size_t rawLogContinuationChunkSize = 232;
 #else
-  char tmp[2048] = {};
+  constexpr size_t rawLogBufferSize = 2048;
+  constexpr size_t rawLogFirstChunkSize = rawLogBufferSize;
+  constexpr size_t rawLogContinuationChunkSize = rawLogBufferSize;
 #endif
+  char tmp[rawLogBufferSize] = {};
   size_t pos = 0;
-  bool truncated = false;
-  size_t i = 0;
-  for (; i < size;) {
-    if (pos + 4 >= sizeof(tmp)) {
-      truncated = true;
-      break;
+  bool firstChunk = true;
+
+  auto flushChunk = [&]() {
+    if (pos == 0 && !firstChunk) {
+      return;
     }
 
+    if (firstChunk) {
+      if (verbose) {
+        SUPLA_LOG_VERBOSE("SRPC %s call=%s(%d) size=%zu raw=[%s]",
+                          direction,
+                          callName,
+                          callId,
+                          size,
+                          tmp);
+      } else {
+        SUPLA_LOG_DEBUG("SRPC %s call=%s(%d) size=%zu raw=[%s]",
+                        direction,
+                        callName,
+                        callId,
+                        size,
+                        tmp);
+      }
+      firstChunk = false;
+    } else if (verbose) {
+      SUPLA_LOG_VERBOSE("SRPC raw-cont=[%s]", tmp);
+    } else {
+      SUPLA_LOG_DEBUG("SRPC raw-cont=[%s]", tmp);
+    }
+
+    pos = 0;
+    tmp[0] = '\0';
+  };
+
+  auto appendChunk = [&](const char *token) {
+    const size_t tokenLen = strlen(token);
+    const size_t chunkLimit =
+        firstChunk ? rawLogFirstChunkSize : rawLogContinuationChunkSize;
+    if (pos + tokenLen >= chunkLimit) {
+      flushChunk();
+    }
+    if (!appendLogToken(tmp, sizeof(tmp), &pos, token)) {
+      flushChunk();
+      appendLogToken(tmp, sizeof(tmp), &pos, token);
+    }
+  };
+
+  size_t i = 0;
+  for (; i < size;) {
     size_t run = 1;
     while (i + run < size && buf[i + run] == buf[i]) {
       run++;
@@ -934,46 +987,18 @@ void logRawHexDump(const char *direction,
     if (run >= rleThreshold) {
       char runToken[32] = {};
       snprintf(runToken, sizeof(runToken), "%02X{%zu} ", buf[i], run);
-      if (!appendLogToken(tmp, sizeof(tmp), &pos, runToken)) {
-        truncated = true;
-        break;
-      }
+      appendChunk(runToken);
       i += run;
       continue;
     }
 
     char byteToken[4] = {};
     snprintf(byteToken, sizeof(byteToken), "%02X ", buf[i]);
-    if (!appendLogToken(tmp, sizeof(tmp), &pos, byteToken)) {
-      truncated = true;
-      break;
-    }
+    appendChunk(byteToken);
     i++;
   }
 
-  if (i < size) {
-    truncated = true;
-  }
-
-  if (truncated) {
-    appendLogToken(tmp, sizeof(tmp), &pos, "...");
-  }
-
-  if (verbose) {
-    SUPLA_LOG_VERBOSE("SRPC %s call=%s(%d) size=%zu raw=[%s]",
-                      direction,
-                      callName,
-                      callId,
-                      size,
-                      tmp);
-  } else {
-    SUPLA_LOG_DEBUG("SRPC %s call=%s(%d) size=%zu raw=[%s]",
-                    direction,
-                    callName,
-                    callId,
-                    size,
-                    tmp);
-  }
+  flushChunk();
 }
 
 #endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS

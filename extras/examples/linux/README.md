@@ -1138,6 +1138,9 @@ function should report m3.
 Optional parameter: `default_function` - defines default impulse counter
 function. Supported values: `electricity_meter`, `energy_meter`, `gas_meter`,
 `water_meter`, `heat_meter`, `events`, `seconds`.
+Optional parameter: `default_function_number` - defines default impulse counter
+function by its numeric identifier. When both `default_function` and
+`default_function_number` are specified, the numeric value takes precedence.
 
 ### `BinaryParsed`
 

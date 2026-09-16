@@ -295,6 +295,22 @@ TEST(Sd4linuxYamlConfigTests, UsesFixedTlsSuplaServerPort) {
   EXPECT_EQ(config.getSuplaServerPort(), 2016);
 }
 
+TEST(Sd4linuxYamlConfigTests, UsesDefaultAndConfiguredSuplaProtocolVersion) {
+  TestLinuxYamlConfig config;
+
+  config.config = YAML::Load("supla: {}\n");
+  EXPECT_EQ(config.getProtoVersion(), 27);
+
+  config.config = YAML::Load("supla:\n  proto: 29\n");
+  EXPECT_EQ(config.getProtoVersion(), 29);
+
+  config.config = YAML::Load("supla:\n  proto: 22\n");
+  EXPECT_EQ(config.getProtoVersion(), 23);
+
+  config.config = YAML::Load("supla:\n  proto: 30\n");
+  EXPECT_EQ(config.getProtoVersion(), 29);
+}
+
 TEST(Sd4linuxYamlConfigTests, RejectsCustomCaSecurityLevel) {
   const auto path = std::filesystem::temp_directory_path() /
                     ("supla_yaml_security_level_" +

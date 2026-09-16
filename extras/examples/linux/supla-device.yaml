@@ -10,6 +10,7 @@ security_level: 0 # validate server certificate using Supla CA
 supla:
   server: svr123.supla.org
   mail: mail@user.com
+  proto: 27
 
 channels:
   - type: VirtualRelay

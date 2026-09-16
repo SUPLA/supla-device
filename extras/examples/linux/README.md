@@ -253,11 +253,20 @@ Mandatory.
 Defines mail address which is used for user account on Supla Server.
 Mandatory.
 
+#### Parameter `proto`
+
+Defines the SUPLA protocol version used by sd4linux.
+Parameter is optional. Default value is `27`.
+Effective values are in the range `23`–`29`.
+Values below `23` are raised to `23`, and values above `29` are capped at `29`
+by the implementation.
+
 Example:
 
     supla:
       server: svr12.supla.org
       mail: user@my_mail_server.com
+      proto: 27
 
 ### MQTT broker connection
 
@@ -1425,7 +1434,7 @@ Example output:
              └─7944 /home/supla/supla-device/extras/examples/linux/build/supla-device-linux -s
 
     maj 18 14:38:52 supla-dev-01 supla-device-linux[7944]: Enter normal mode
-    maj 18 14:38:52 supla-dev-01 supla-device-linux[7944]: Using Supla protocol version 16
+    maj 18 14:38:52 supla-dev-01 supla-device-linux[7944]: Using Supla protocol version 27
     maj 18 14:38:52 supla-dev-01 supla-device-linux[7944]: LAST STATE ADDED: SuplaDevice initialized
     maj 18 14:38:52 supla-dev-01 supla-device-linux[7944]: Current status: [5] SuplaDevice initialized
     maj 18 14:38:52 supla-dev-01 supla-device-linux[7944]: Establishing connection with: beta-cloud.supla.org (port: 2016)

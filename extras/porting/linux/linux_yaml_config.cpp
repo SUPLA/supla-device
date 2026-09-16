@@ -420,12 +420,18 @@ int Supla::LinuxYamlConfig::getProtoVersion() {
   try {
     if (config["supla"] && config["supla"]["proto"]) {
       auto version = config["supla"]["proto"].as<int>();
+      if (version < 23) {
+        return 23;
+      }
+      if (version > SUPLA_PROTO_VERSION) {
+        return SUPLA_PROTO_VERSION;
+      }
       return version;
     }
   } catch (const YAML::Exception& ex) {
     logError(file, ex);
   }
-  return 23;
+  return 27;
 }
 
 bool Supla::LinuxYamlConfig::setGUID(const char* guidRaw) {

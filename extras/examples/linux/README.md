@@ -239,18 +239,13 @@ Example:
 ### Supla server connection
 
 Below parameters should be defined under `supla` key (as in examples below).
+sd4linux always uses the TLS connection on port `2016`; the port is fixed and is
+not configurable in YAML.
 
 #### Parameter `server`
 
 Defines Supla server address.
 Mandatory.
-
-#### Parameter `port`
-
-Defines Supla server port to which device should connect to. This application
-use only TLS encrypted connection, so by default port 2016 is used in Supla
-for this purpose.
-Parameter is optional - default value: 2016.
 
 #### Parameter `mail`
 
@@ -261,7 +256,6 @@ Example:
 
     supla:
       server: svr12.supla.org
-      port: 2016
       mail: user@my_mail_server.com
 
 ### MQTT broker connection

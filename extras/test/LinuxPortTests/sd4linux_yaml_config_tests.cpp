@@ -139,6 +139,7 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   using Supla::LinuxYamlConfig::addCustomHvac;
   using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
+  using Supla::LinuxYamlConfig::config;
 };
 
 class UmaskGuard {
@@ -285,6 +286,13 @@ TEST(Sd4linuxYamlConfigTests, AllowsRgbCctWithoutStateAndRejectsMissingParser) {
                                       0,
                                       nullptr));
   deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, UsesFixedTlsSuplaServerPort) {
+  TestLinuxYamlConfig config;
+  config.config = YAML::Load("port: 2015\n");
+
+  EXPECT_EQ(config.getSuplaServerPort(), 2016);
 }
 
 TEST(Sd4linuxYamlConfigTests, ParseErrorDoesNotLogYamlSource) {

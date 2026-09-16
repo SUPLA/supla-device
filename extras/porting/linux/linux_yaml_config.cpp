@@ -391,14 +391,8 @@ bool Supla::LinuxYamlConfig::getSuplaServer(char* result) {
 }
 
 int32_t Supla::LinuxYamlConfig::getSuplaServerPort() {
-  try {
-    if (config["port"]) {
-      auto port = config["port"].as<int>();
-      return port;
-    }
-  } catch (const YAML::Exception& ex) {
-    logError(file, ex);
-  }
+  // sd4linux uses only the TLS SUPLA endpoint.  Keep the shared Config API
+  // intact for other platforms, but do not expose a configurable port here.
   return 2016;
 }
 

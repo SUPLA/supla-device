@@ -2200,32 +2200,32 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     // Perform registration if we are not yet registered
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
-    auto registerHeader = *Supla::RegisterDevice::getRegDevHeaderPtr();
+    auto *registerHeader = Supla::RegisterDevice::getRegDevHeaderPtr();
     if (Supla::RegisterDevice::isSleepingDeviceEnabled() &&
         effectiveSrpcVersion(version) >= 29) {
-      registerHeader.Flags |= SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
+      registerHeader->Flags |= SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
     } else if (effectiveSrpcVersion(version) < 29) {
-      registerHeader.Flags &= ~SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
+      registerHeader->Flags &= ~SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
     }
     SUPLA_LOG_INFO(
         "Registering device: wire_proto=%u, ManufacturerID=%d, ProductID=%d, "
         "Flags=0x%" PRIX32 ", channels=%u",
         static_cast<unsigned int>(effectiveSrpcVersion(version)),
-        static_cast<int>(registerHeader.ManufacturerID),
-        static_cast<int>(registerHeader.ProductID),
-        static_cast<uint32_t>(registerHeader.Flags),
-        static_cast<unsigned int>(registerHeader.channel_count));
+        static_cast<int>(registerHeader->ManufacturerID),
+        static_cast<int>(registerHeader->ProductID),
+        static_cast<uint32_t>(registerHeader->Flags),
+        static_cast<unsigned int>(registerHeader->channel_count));
     if (version <= 24) {
       if (!srpc_ds_async_registerdevice_in_chunks(
               srpc,
-              &registerHeader,
+              registerHeader,
               Supla::RegisterDevice::getChannelPtr_D)) {
         SUPLA_LOG_WARNING("Fatal SRPC failure!");
       }
     } else {
       if (!srpc_ds_async_registerdevice_in_chunks_g(
               srpc,
-              &registerHeader,
+              registerHeader,
               Supla::RegisterDevice::getChannelPtr_E)) {
         SUPLA_LOG_WARNING("Fatal SRPC failure!");
       }

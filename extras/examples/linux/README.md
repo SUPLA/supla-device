@@ -742,8 +742,12 @@ More examples can be found in subfolders of `extras/examples/linux`.
 
 ### Common parameters
 
-All channels accept following parameter:
+All channels accept the following parameters:
 `initial_caption` - allows to define initial caption for channel.
+`channel_number` - optional channel number override. Allowed values are from
+`0` to `127`.
+`icon_id` - optional default icon identifier, from `0` to `255`. The server
+applies this value when the channel has no icon configured yet.
 
 ### VirtualRelay
 

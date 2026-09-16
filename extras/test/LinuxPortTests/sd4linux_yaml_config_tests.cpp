@@ -21,6 +21,7 @@
 
 #include "linux_yaml_config.h"
 #include "supla/control/custom_hvac.h"
+#include "supla/control/custom_relay.h"
 #include "supla/control/rgbcct_parsed.h"
 
 extern "C" const char *supla_test_get_last_log();
@@ -114,11 +115,12 @@ class FakeYamlParser : public Supla::Parser::Parser {
 
 class FakePayload : public Supla::Payload::Payload {
  public:
-  FakePayload() : Supla::Payload::Payload(nullptr) {
+  explicit FakePayload(bool basedOnIndex = false)
+      : Supla::Payload::Payload(nullptr), basedOnIndex(basedOnIndex) {
   }
 
   bool isBasedOnIndex() override {
-    return false;
+    return basedOnIndex;
   }
 
   void turnOn(const std::string&,
@@ -136,6 +138,9 @@ class FakePayload : public Supla::Payload::Payload {
 
   std::string lastKey;
   int lastIndex = -1;
+
+ private:
+  bool basedOnIndex;
 };
 
 class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
@@ -145,6 +150,7 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
 
   using Supla::LinuxYamlConfig::addRgbCctParsed;
   using Supla::LinuxYamlConfig::addCustomHvac;
+  using Supla::LinuxYamlConfig::addCustomRelay;
   using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
   using Supla::LinuxYamlConfig::config;
@@ -562,5 +568,37 @@ TEST(Sd4linuxYamlConfigTests, MapsCustomHvacJsonStateField) {
   EXPECT_EQ(payload.lastKey, "state");
   EXPECT_EQ(payload.lastIndex, -1);
 
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsCustomRelayWithoutPayload) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.parseChannel(YAML::Load("type: CustomRelay\n"), 0));
+  EXPECT_EQ(Supla::Element::last(), previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RequiresStateFieldForCustomRelayJsonPayload) {
+  TestLinuxYamlConfig config;
+  FakePayload payload;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.addCustomRelay(YAML::Load("type: CustomRelay\n"),
+                                     0,
+                                     nullptr,
+                                     &payload));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, AllowsCustomRelaySimplePayloadWithoutStateField) {
+  TestLinuxYamlConfig config;
+  FakePayload payload(true);
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addCustomRelay(YAML::Load("type: CustomRelay\n"),
+                                    0,
+                                    nullptr,
+                                    &payload));
   deleteCreatedElement(previousElement);
 }

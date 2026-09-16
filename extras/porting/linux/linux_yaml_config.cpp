@@ -1077,6 +1077,12 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
                                             Parser::Parser* parser,
                                             Payload::Payload* payload) {
   SUPLA_LOG_INFO("Channel[%d] config: adding CustomRelay", channelNumber);
+  if (payload == nullptr) {
+    SUPLA_LOG_ERROR(
+        "Channel[%d] config: CustomRelay requires output and payload",
+        channelNumber);
+    return false;
+  }
   auto cr = new Supla::Control::CustomRelay(parser, payload);
   if (auto initialStateParameter =
           getAndMarkChannelParameter(ch, "initial_state")) {
@@ -1111,7 +1117,7 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
     return false;
   }
 
-  if (!addStatePayload(ch, cr, payload, false)) {
+  if (!addStatePayload(ch, cr, payload, !payload->isBasedOnIndex())) {
     return false;
   }
 

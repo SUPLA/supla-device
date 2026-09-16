@@ -894,11 +894,16 @@ to a specific `output` with each turn on/off action. Currently, there are 2 temp
 `Simple` and `Json`, for which there are 3 outputs: `File`, `Cmd` and `MQTT`.\
 Templates are functionally similar to parsers and outputs are functionally similar to sources.
 
-`CustomRelay` accepts the same parameters as `VirtualRelay`. Additionally, it supports
-three extra configuration options:\
-`set_state` - `state` equivalent for `payload` - it will use configured `payload` to publish turn on/off payloads,\
+`CustomRelay` requires `output` and `payload` parameters. It accepts the same
+state-related parameters as `CmdRelay`: `state`, `state_on_values`,
+`offline_on_invalid_state`, and `action_trigger`. Without `state`, the relay
+uses its internal state.
+
+It supports the following payload options:\
+`set_state` - field name used by a `Json` payload. It is required for `Json` and
+optional for `Simple`, which publishes the raw value.\
 `turn_on_payload` - value to be published on turn on,\
-`turn_off_payload` - value to be published on turn on.
+`turn_off_payload` - value to be published on turn off.
 
 ### CustomHvac
 

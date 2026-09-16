@@ -153,6 +153,7 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   using Supla::LinuxYamlConfig::addCustomRelay;
   using Supla::LinuxYamlConfig::addCmdValve;
   using Supla::LinuxYamlConfig::addCmdRollerShutter;
+  using Supla::LinuxYamlConfig::addVirtualRelay;
   using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
   using Supla::LinuxYamlConfig::config;
@@ -630,5 +631,42 @@ TEST(Sd4linuxYamlConfigTests,
                                               "cmd_down_on: down\n"),
                                           0,
                                           nullptr));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsChannelNumberOutsideAllowedRange) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.parseChannel(
+      YAML::Load("type: VirtualRelay\nchannel_number: -1\n"), 0));
+  EXPECT_EQ(Supla::Element::last(), previousElement);
+
+  EXPECT_FALSE(config.parseChannel(
+      YAML::Load("type: VirtualRelay\nchannel_number: 128\n"), 0));
+  EXPECT_EQ(Supla::Element::last(), previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsIconIdOutsideAllowedRange) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.addVirtualRelay(YAML::Load("icon_id: -1\n"), 0));
+  deleteCreatedElement(previousElement);
+
+  previousElement = Supla::Element::last();
+  EXPECT_FALSE(config.addVirtualRelay(YAML::Load("icon_id: 256\n"), 0));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsParsedIconIdOutsideAllowedRange) {
+  TestLinuxYamlConfig config;
+  FakeYamlSource source;
+  FakeYamlParser parser(&source);
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.addRgbCctParsed(YAML::Load("icon_id: 256\n"),
+                                      0,
+                                      &parser));
   deleteCreatedElement(previousElement);
 }

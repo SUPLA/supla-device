@@ -781,6 +781,12 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     if (auto channelNumberParameter =
             getAndMarkChannelParameter(ch, "channel_number")) {
       channelNumber = channelNumberParameter.as<int>();
+      if (channelNumber < 0 || channelNumber >= SUPLA_CHANNELMAXCOUNT) {
+        SUPLA_LOG_ERROR(
+            "Config: channel_number has to be in range 0..%d",
+            SUPLA_CHANNELMAXCOUNT - 1);
+        return false;
+      }
     }
     if (channelNumber == -1) {
       channelNumber = channelIndex;
@@ -2940,6 +2946,12 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
   if (auto channelNumberParameter =
           getAndMarkChannelParameter(ch, "channel_number")) {  // optional
     int channelNumber = channelNumberParameter.as<int>();
+    if (channelNumber < 0 || channelNumber >= SUPLA_CHANNELMAXCOUNT) {
+      SUPLA_LOG_ERROR(
+          "Channel config: channel_number has to be in range 0..%d",
+          SUPLA_CHANNELMAXCOUNT - 1);
+      return false;
+    }
     auto ch = sensor->getChannel();
     if (ch) {
       if (!ch->setChannelNumber(channelNumber)) {
@@ -2951,9 +2963,14 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
   if (auto iconIdParameter =
           getAndMarkChannelParameter(ch, "icon_id")) {  // optional
     int iconId = iconIdParameter.as<int>();
+    if (iconId < 0 || iconId > 255) {
+      SUPLA_LOG_ERROR(
+          "Channel config: icon_id has to be in range 0..255");
+      return false;
+    }
     auto ch = sensor->getChannel();
     if (ch) {
-      ch->setDefaultIcon(iconId);
+      ch->setDefaultIcon(static_cast<uint8_t>(iconId));
     }
   }
   if (batteryAdded) {
@@ -2972,6 +2989,12 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
   if (auto channelNumberParameter =
           getAndMarkChannelParameter(ch, "channel_number")) {  // optional
     int channelNumber = channelNumberParameter.as<int>();
+    if (channelNumber < 0 || channelNumber >= SUPLA_CHANNELMAXCOUNT) {
+      SUPLA_LOG_ERROR(
+          "Channel config: channel_number has to be in range 0..%d",
+          SUPLA_CHANNELMAXCOUNT - 1);
+      return false;
+    }
     auto ch = element->getChannel();
     if (ch) {
       if (!ch->setChannelNumber(channelNumber)) {
@@ -2983,9 +3006,14 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
   if (auto iconIdParameter =
           getAndMarkChannelParameter(ch, "icon_id")) {  // optional
     int iconId = iconIdParameter.as<int>();
+    if (iconId < 0 || iconId > 255) {
+      SUPLA_LOG_ERROR(
+          "Channel config: icon_id has to be in range 0..255");
+      return false;
+    }
     auto ch = element->getChannel();
     if (ch) {
-      ch->setDefaultIcon(iconId);
+      ch->setDefaultIcon(static_cast<uint8_t>(iconId));
     }
   }
   return true;

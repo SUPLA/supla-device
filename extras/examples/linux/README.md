@@ -690,7 +690,6 @@ Example channels configuration (details are exaplained later):
       name: thermostat_2
       turn_on_payload: 1
       turn_off_payload: 0
-      set_state: state
       output:
         type: MQTT
         control_topic: "thermostat/2"
@@ -905,9 +904,17 @@ three extra configuration options:\
 
 `CustomHvac` is `Hvac` channel with `output` support.
 
-`CustomHvac` accepts configuration options:\
+`CustomHvac` requires `output`, `payload`, and
+`main_thermometer_channel_no` parameters. It accepts the following additional
+options:\
 `turn_on_payload` - value to be published on turn on,\
-`turn_off_payload` - value to be published on turn on.
+`turn_off_payload` - value to be published on turn off,\
+`set_state` - field name used by a `Json` payload. For a `Simple` payload,
+omit `set_state` because the output is the raw value.
+
+For example, with `payload.type: Json` and `set_state: state`, the output is
+`{"state": "1"}` when the HVAC output is enabled and `{"state": "0"}` when it
+is disabled.
 
 ### CustomChannel
 

@@ -128,6 +128,14 @@ class FakePayload : public Supla::Payload::Payload {
   void turnOff(const std::string&,
                std::variant<int, bool, std::string>) override {
   }
+
+  void addKey(const std::string& key, int index) override {
+    lastKey = key;
+    lastIndex = index;
+  }
+
+  std::string lastKey;
+  int lastIndex = -1;
 };
 
 class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
@@ -539,4 +547,20 @@ TEST(Sd4linuxYamlConfigTests, AcceptsCustomHvacWithPayload) {
   ASSERT_NE(createdElement, previousElement);
   ASSERT_NE(customHvac, nullptr);
   delete createdElement;
+}
+
+TEST(Sd4linuxYamlConfigTests, MapsCustomHvacJsonStateField) {
+  TestLinuxYamlConfig config;
+  FakePayload payload;
+  auto previousElement = Supla::Element::last();
+  auto channel = YAML::Load(
+      "type: CustomHvac\n"
+      "main_thermometer_channel_no: 1\n"
+      "set_state: state\n");
+
+  EXPECT_TRUE(config.addCustomHvac(channel, 0, &payload));
+  EXPECT_EQ(payload.lastKey, "state");
+  EXPECT_EQ(payload.lastIndex, -1);
+
+  deleteCreatedElement(previousElement);
 }

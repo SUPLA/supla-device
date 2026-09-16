@@ -1390,6 +1390,16 @@ bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch,
     auto turnOffPayload = turnOffParameter.as<std::string>();
     hvac->setSetOffValue(turnOffPayload);
   }
+  if (auto stateParameter =
+          getAndMarkChannelParameter(ch, Supla::Payload::HvacState)) {
+    if (payload->isBasedOnIndex()) {
+      int index = stateParameter.as<int>();
+      hvac->setMapping(Supla::Payload::HvacState, index);
+    } else {
+      std::string key = stateParameter.as<std::string>();
+      hvac->setMapping(Supla::Payload::HvacState, key);
+    }
+  }
   if (auto mainThermometerParameter =
           getAndMarkChannelParameter(ch, "main_thermometer_channel_no")) {
     mainThermometerChannelNo = mainThermometerParameter.as<int>();

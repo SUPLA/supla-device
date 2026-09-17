@@ -121,8 +121,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   ${_SUPLA_ROOT_FROM_LINUX}/src/supla/pv/solaredge.cpp
   ${_SUPLA_ROOT_FROM_LINUX}/src/supla/pv/afore.cpp
 
-  ${_SUPLA_ROOT_FROM_LINUX}/src/supla-common/tools.c
-  ${_SUPLA_ROOT_FROM_LINUX}/src/supla-common/eh.c
+  ${SUPLA_LINUX_PORT_DIR}/linux_process.cpp
   ${_SUPLA_ROOT_FROM_LINUX}/src/supla-common/proto_check.cpp
 
   ${SUPLA_LINUX_PORT_DIR}/linux_log.c

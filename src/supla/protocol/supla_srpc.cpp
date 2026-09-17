@@ -61,6 +61,7 @@ uint8_t effectiveSrpcVersion(int requestedVersion) {
   return SUPLA_PROTO_VERSION;
 }
 
+#if SUPLA_SRPC_PACKET_LOG_ENABLED && !defined(SUPLA_DISABLE_LOGS)
 void logRawHexDump(const char *direction,
                    int callId,
                    const char *callName,
@@ -477,18 +478,21 @@ void logRegisterDeviceHeader(int callId,
 
   SUPLA_LOG_DEBUG(
       "SRPC %s call=%s(%d) size=%zu wire_proto=%u "
-      "payload={Email=<redacted>, "
-      "AuthKey=<redacted>, GUID=<redacted>, Name=\"%s\", SoftVer=\"%s\", "
-      "ServerName=\"%s\", Flags=0x%" PRIX32
-      ", ManufacturerID=%d, ProductID=%d, "
-      "channel_count=%u}",
+      "payload={Email=<redacted>, AuthKey=<redacted>, "
+      "GUID=<redacted>}",
       direction,
       callName,
       callId,
       size,
-      static_cast<unsigned int>(packet->version),
-      escapedName,
-      escapedSoftVer,
+      static_cast<unsigned int>(packet->version));
+
+  SUPLA_LOG_DEBUG("SRPC cont=[Name=\"%s\", SoftVer=\"%s\"]",
+                  escapedName,
+                  escapedSoftVer);
+
+  SUPLA_LOG_DEBUG(
+      "SRPC cont=[ServerName=\"%s\", Flags=0x%" PRIX32
+      ", ManufacturerID=%d, ProductID=%d, channel_count=%u]",
       escapedServerName,
       static_cast<uint32_t>(header.Flags),
       static_cast<int16_t>(header.ManufacturerID),
@@ -912,21 +916,71 @@ void logRawHexDump(const char *direction,
                    size_t size,
                    bool verbose) {
   const size_t rleThreshold = 6;
-#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266) || defined(__AVR__) || \
-    defined(ARDUINO_ARCH_AVR)
-  char tmp[256] = {};
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266) || defined(ESP32) || \
+    defined(ARDUINO_ARCH_ESP32) || defined(ESP_PLATFORM) || \
+    defined(SUPLA_DEVICE_ESP32) || defined(__AVR__) || defined(ARDUINO_ARCH_AVR)
+  constexpr size_t rawLogBufferSize = 256;
+  // supla_device_logf() has a 256-byte formatted-log buffer.  Leave room for
+  // the metadata prefix on the first chunk and use a shorter continuation
+  // prefix for the remaining chunks.
+  constexpr size_t rawLogFirstChunkSize = 176;
+  constexpr size_t rawLogContinuationChunkSize = 232;
 #else
-  char tmp[2048] = {};
+  constexpr size_t rawLogBufferSize = 2048;
+  constexpr size_t rawLogFirstChunkSize = rawLogBufferSize;
+  constexpr size_t rawLogContinuationChunkSize = rawLogBufferSize;
 #endif
+  char tmp[rawLogBufferSize] = {};
   size_t pos = 0;
-  bool truncated = false;
-  size_t i = 0;
-  for (; i < size;) {
-    if (pos + 4 >= sizeof(tmp)) {
-      truncated = true;
-      break;
+  bool firstChunk = true;
+
+  auto flushChunk = [&]() {
+    if (pos == 0 && !firstChunk) {
+      return;
     }
 
+    if (firstChunk) {
+      if (verbose) {
+        SUPLA_LOG_VERBOSE("SRPC %s call=%s(%d) size=%zu raw=[%s]",
+                          direction,
+                          callName,
+                          callId,
+                          size,
+                          tmp);
+      } else {
+        SUPLA_LOG_DEBUG("SRPC %s call=%s(%d) size=%zu raw=[%s]",
+                        direction,
+                        callName,
+                        callId,
+                        size,
+                        tmp);
+      }
+      firstChunk = false;
+    } else if (verbose) {
+      SUPLA_LOG_VERBOSE("SRPC raw-cont=[%s]", tmp);
+    } else {
+      SUPLA_LOG_DEBUG("SRPC raw-cont=[%s]", tmp);
+    }
+
+    pos = 0;
+    tmp[0] = '\0';
+  };
+
+  auto appendChunk = [&](const char *token) {
+    const size_t tokenLen = strlen(token);
+    const size_t chunkLimit =
+        firstChunk ? rawLogFirstChunkSize : rawLogContinuationChunkSize;
+    if (pos + tokenLen >= chunkLimit) {
+      flushChunk();
+    }
+    if (!appendLogToken(tmp, sizeof(tmp), &pos, token)) {
+      flushChunk();
+      appendLogToken(tmp, sizeof(tmp), &pos, token);
+    }
+  };
+
+  size_t i = 0;
+  for (; i < size;) {
     size_t run = 1;
     while (i + run < size && buf[i + run] == buf[i]) {
       run++;
@@ -935,47 +989,21 @@ void logRawHexDump(const char *direction,
     if (run >= rleThreshold) {
       char runToken[32] = {};
       snprintf(runToken, sizeof(runToken), "%02X{%zu} ", buf[i], run);
-      if (!appendLogToken(tmp, sizeof(tmp), &pos, runToken)) {
-        truncated = true;
-        break;
-      }
+      appendChunk(runToken);
       i += run;
       continue;
     }
 
     char byteToken[4] = {};
     snprintf(byteToken, sizeof(byteToken), "%02X ", buf[i]);
-    if (!appendLogToken(tmp, sizeof(tmp), &pos, byteToken)) {
-      truncated = true;
-      break;
-    }
+    appendChunk(byteToken);
     i++;
   }
 
-  if (i < size) {
-    truncated = true;
-  }
-
-  if (truncated) {
-    appendLogToken(tmp, sizeof(tmp), &pos, "...");
-  }
-
-  if (verbose) {
-    SUPLA_LOG_VERBOSE("SRPC %s call=%s(%d) size=%zu raw=[%s]",
-                      direction,
-                      callName,
-                      callId,
-                      size,
-                      tmp);
-  } else {
-    SUPLA_LOG_DEBUG("SRPC %s call=%s(%d) size=%zu raw=[%s]",
-                    direction,
-                    callName,
-                    callId,
-                    size,
-                    tmp);
-  }
+  flushChunk();
 }
+
+#endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS
 
 }  // namespace
 
@@ -985,6 +1013,7 @@ Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
   setSupla3rdPartyCACert(::supla3rdCACert);
 }
 
+#if SUPLA_SRPC_PACKET_LOG_ENABLED && !defined(SUPLA_DISABLE_LOGS)
 void Supla::Protocol::SuplaSrpc::onPacketSent(void *srpcHandle,
                                               unsigned _supla_int_t callId,
                                               void *data,
@@ -1175,6 +1204,7 @@ bool Supla::Protocol::SuplaSrpc::isSensitiveCallId(int callId) {
       return false;
   }
 }
+#endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS
 
 Supla::Protocol::SuplaSrpc::~SuplaSrpc() {
   if (client) {
@@ -1958,6 +1988,138 @@ void Supla::Protocol::SuplaSrpc::scheduleReconnect(uint32_t now) {
   lastIterateTime = now;
 }
 
+#ifndef ARDUINO_ARCH_AVR
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((noinline))
+#endif
+bool Supla::Protocol::SuplaSrpc::autodiscover(uint32_t now) {
+  autodiscoverRetryCounter++;
+  if (autodiscoverRetryCounter > 4) {
+    if (autodiscoverRetryCounter == 5) {
+      SUPLA_LOG_WARNING("Autodiscover failed too many times. Giving up");
+    }
+    autodiscoverRetryCounter = 6;
+    return false;
+  }
+
+  // Try to get server from AD
+  SUPLA_LOG_INFO("Supla server name not set. Trying to get it from AD");
+  // fetch json from https://autodiscover.supla.org/users/email@host
+  const char server[] = "iot.autodiscover.supla.org";
+  auto adClient = createNetworkClient();
+  if (adClient == nullptr) {
+    SUPLA_LOG_ERROR("Failed to create autodiscovery network client");
+    waitForIterate = 1000;
+    return false;
+  }
+  adClient->setSSLEnabled(true);
+  adClient->setCACert(::suplaCACert);
+
+  if (1 == adClient->connect(server, 443)) {
+    adClient->write("GET /users/");
+    adClient->write(Supla::RegisterDevice::getEmail());
+    adClient->write(" HTTP/1.1\r\n");
+    adClient->write("Host: ");
+    adClient->write(server);
+    adClient->write("\r\n");
+#define HTTP_AGENT_SIZE 100
+    char httpAgent[HTTP_AGENT_SIZE] = {};
+    Supla::RegisterDevice::generateHttpAgent(httpAgent, HTTP_AGENT_SIZE);
+
+    adClient->write("User-Agent: ");
+    adClient->write(httpAgent);
+    adClient->write("\r\n");
+    adClient->write("Accept: application/json\r\n");
+    char guid[SUPLA_GUID_SIZE * 2 + 1] = {};
+    generateHexString(Supla::RegisterDevice::getGUID(), guid, SUPLA_GUID_SIZE);
+    adClient->write("X-GUID: ");
+    adClient->write(guid);
+    adClient->write("\r\n");
+    adClient->write("Connection: close\r\n\r\n");
+
+    char buf[512] = {};
+    char *bufPos = buf;
+    int timeout = 3000;
+
+    bool dataReady = false;
+    do {
+      int len = adClient->read(bufPos, sizeof(buf) - 1 - (bufPos - buf));
+      if (len > 0) {
+        SUPLA_LOG_DEBUG("Data read: %d", len);
+        bufPos += len;
+        *bufPos = 0;
+      }
+      delay(1);
+      timeout--;
+      if (timeout == 0) {
+        break;
+      }
+    } while (adClient->connected() && (bufPos - buf) < 512);
+
+    adClient->stop();
+    delete adClient;
+    adClient = nullptr;
+
+    SUPLA_LOG_DEBUG("Data: %s", buf);
+
+    // get http return code from string
+    if (strncmp(buf, "HTTP/1.1 404", 12) == 0) {
+      SUPLA_LOG_DEBUG("HTTP/1.1 404 not found");
+      autodiscoverRetryCounter = 6;
+      addLastStateAdError(buf);
+      return false;
+    }
+
+    if (strncmp(buf, "HTTP/1.1 200", 12) != 0) {
+      SUPLA_LOG_DEBUG("HTTP/1.1 200 not found");
+      addLastStateAdError(buf);
+      return false;
+    }
+
+    const char serverKey[] = "\"server\":\"";
+
+    char *serverName = strstr(buf, serverKey);
+    if (serverName != nullptr) {
+      serverName += sizeof(serverKey) - 1;
+      char *serverEnd = strchr(serverName, '\"');
+      if (serverEnd != nullptr) {
+        *serverEnd = 0;
+        Supla::RegisterDevice::setServerName(serverName);
+        dataReady = true;
+        char tmp[sizeof("AD got server: ") + SUPLA_SERVER_NAME_MAXSIZE - 1] =
+            {};
+        snprintf(tmp, sizeof(tmp), "AD got server: %s", serverName);
+        sdc->addLastStateLog(tmp);
+        auto cfg = Supla::Storage::ConfigInstance();
+        if (cfg) {
+          cfg->setSuplaServer(serverName);
+          cfg->saveWithDelay(1000);
+          // reload config to initialize certificates etc.
+          onLoadConfig();
+        }
+      }
+    }
+
+    if (!dataReady) {
+      SUPLA_LOG_DEBUG("Supla server name not found from AD");
+      waitForIterate = 1000;
+      return false;
+    }
+
+  } else {
+    SUPLA_LOG_DEBUG("AD connection failed");
+    adClient->stop();
+    delete adClient;
+    adClient = nullptr;
+    waitForIterate = 1000;
+    return false;
+  }
+
+  lastIterateTime = now;
+  return true;
+}
+#endif  // !ARDUINO_ARCH_AVR
+
 bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   if (!isEnabled()) {
     return false;
@@ -1980,130 +2142,8 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
 
 #ifndef ARDUINO_ARCH_AVR
   if (Supla::RegisterDevice::isServerNameEmpty() &&
-      !Supla::RegisterDevice::isEmailEmpty()) {
-    autodiscoverRetryCounter++;
-    if (autodiscoverRetryCounter > 4) {
-      if (autodiscoverRetryCounter == 5) {
-        SUPLA_LOG_WARNING("Autodiscover failed too many times. Giving up");
-      }
-      autodiscoverRetryCounter = 6;
-      return false;
-    }
-
-    // Try to get server from AD
-    SUPLA_LOG_INFO("Supla server name not set. Trying to get it from AD");
-    // fetch json from https://autodiscover.supla.org/users/email@host
-    const char server[] = "iot.autodiscover.supla.org";
-    auto adClient = createNetworkClient();
-    if (adClient == nullptr) {
-      SUPLA_LOG_ERROR("Failed to create autodiscovery network client");
-      waitForIterate = 1000;
-      return false;
-    }
-    adClient->setSSLEnabled(true);
-    adClient->setCACert(::suplaCACert);
-
-    if (1 == adClient->connect(server, 443)) {
-      adClient->write("GET /users/");
-      adClient->write(Supla::RegisterDevice::getEmail());
-      adClient->write(" HTTP/1.1\r\n");
-      adClient->write("Host: ");
-      adClient->write(server);
-      adClient->write("\r\n");
-#define HTTP_AGENT_SIZE 100
-      char httpAgent[HTTP_AGENT_SIZE] = {};
-      Supla::RegisterDevice::generateHttpAgent(httpAgent, HTTP_AGENT_SIZE);
-
-      adClient->write("User-Agent: ");
-      adClient->write(httpAgent);
-      adClient->write("\r\n");
-      adClient->write("Accept: application/json\r\n");
-      char guid[SUPLA_GUID_SIZE * 2 + 1] = {};
-      generateHexString(
-          Supla::RegisterDevice::getGUID(), guid, SUPLA_GUID_SIZE);
-      adClient->write("X-GUID: ");
-      adClient->write(guid);
-      adClient->write("\r\n");
-      adClient->write("Connection: close\r\n\r\n");
-
-      char buf[512] = {};
-      char *bufPos = buf;
-      int timeout = 3000;
-
-      bool dataReady = false;
-      do {
-        int len = adClient->read(bufPos, sizeof(buf) - 1 - (bufPos - buf));
-        if (len > 0) {
-          SUPLA_LOG_DEBUG("Data read: %d", len);
-          bufPos += len;
-          *bufPos = 0;
-        }
-        delay(1);
-        timeout--;
-        if (timeout == 0) {
-          break;
-        }
-      } while (adClient->connected() && (bufPos - buf) < 512);
-
-      adClient->stop();
-      delete adClient;
-      adClient = nullptr;
-
-      SUPLA_LOG_DEBUG("Data: %s", buf);
-
-      // get http return code from string
-      if (strncmp(buf, "HTTP/1.1 404", 12) == 0) {
-        SUPLA_LOG_DEBUG("HTTP/1.1 404 not found");
-        autodiscoverRetryCounter = 6;
-        addLastStateAdError(buf);
-        return false;
-      }
-
-      if (strncmp(buf, "HTTP/1.1 200", 12) != 0) {
-        SUPLA_LOG_DEBUG("HTTP/1.1 200 not found");
-        addLastStateAdError(buf);
-        return false;
-      }
-
-      const char serverKey[] = "\"server\":\"";
-
-      char *serverName = strstr(buf, serverKey);
-      if (serverName != nullptr) {
-        serverName += sizeof(serverKey) - 1;
-        char *serverEnd = strchr(serverName, '"');
-        if (serverEnd != nullptr) {
-          *serverEnd = 0;
-          Supla::RegisterDevice::setServerName(serverName);
-          dataReady = true;
-          char tmp[200] = {};
-          snprintf(tmp, sizeof(tmp), "AD got server: %s", serverName);
-          sdc->addLastStateLog(tmp);
-          auto cfg = Supla::Storage::ConfigInstance();
-          if (cfg) {
-            cfg->setSuplaServer(serverName);
-            cfg->saveWithDelay(1000);
-            // reload config to initialize certificates etc.
-            onLoadConfig();
-          }
-        }
-      }
-
-      if (!dataReady) {
-        SUPLA_LOG_DEBUG("Supla server name not found from AD");
-        waitForIterate = 1000;
-        return false;
-      }
-
-    } else {
-      SUPLA_LOG_DEBUG("AD connection failed");
-      adClient->stop();
-      delete adClient;
-      adClient = nullptr;
-      waitForIterate = 1000;
-      return false;
-    }
-
-    lastIterateTime = _millis;
+      !Supla::RegisterDevice::isEmailEmpty() && !autodiscover(_millis)) {
+    return false;
   }
 #endif  // !ARDUINO_ARCH_AVR
 
@@ -2200,32 +2240,32 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     // Perform registration if we are not yet registered
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
-    auto registerHeader = *Supla::RegisterDevice::getRegDevHeaderPtr();
+    auto *registerHeader = Supla::RegisterDevice::getRegDevHeaderPtr();
     if (Supla::RegisterDevice::isSleepingDeviceEnabled() &&
         effectiveSrpcVersion(version) >= 29) {
-      registerHeader.Flags |= SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
+      registerHeader->Flags |= SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
     } else if (effectiveSrpcVersion(version) < 29) {
-      registerHeader.Flags &= ~SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
+      registerHeader->Flags &= ~SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
     }
     SUPLA_LOG_INFO(
         "Registering device: wire_proto=%u, ManufacturerID=%d, ProductID=%d, "
         "Flags=0x%" PRIX32 ", channels=%u",
         static_cast<unsigned int>(effectiveSrpcVersion(version)),
-        static_cast<int>(registerHeader.ManufacturerID),
-        static_cast<int>(registerHeader.ProductID),
-        static_cast<uint32_t>(registerHeader.Flags),
-        static_cast<unsigned int>(registerHeader.channel_count));
+        static_cast<int>(registerHeader->ManufacturerID),
+        static_cast<int>(registerHeader->ProductID),
+        static_cast<uint32_t>(registerHeader->Flags),
+        static_cast<unsigned int>(registerHeader->channel_count));
     if (version <= 24) {
       if (!srpc_ds_async_registerdevice_in_chunks(
               srpc,
-              &registerHeader,
+              registerHeader,
               Supla::RegisterDevice::getChannelPtr_D)) {
         SUPLA_LOG_WARNING("Fatal SRPC failure!");
       }
     } else {
       if (!srpc_ds_async_registerdevice_in_chunks_g(
               srpc,
-              &registerHeader,
+              registerHeader,
               Supla::RegisterDevice::getChannelPtr_E)) {
         SUPLA_LOG_WARNING("Fatal SRPC failure!");
       }

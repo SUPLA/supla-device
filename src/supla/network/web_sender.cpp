@@ -58,6 +58,17 @@ HtmlTag& HtmlTag::attr(const char* name, const char* value) {
   return *this;
 }
 
+HtmlTag& HtmlTag::attrStatic(const char* name, const char* value, size_t size) {
+  if (!finished_ && sender_ && name) {
+    sender_->send(" ");
+    sender_->send(name);
+    sender_->send("=\"");
+    sender_->sendStatic(value, size, true);
+    sender_->send("\"");
+  }
+  return *this;
+}
+
 HtmlTag& HtmlTag::attr(const char* name, int value) {
   if (!finished_ && sender_ && name) {
     sender_->send(" ");
@@ -134,6 +145,41 @@ void HtmlTag::release() {
 }
 
 WebSender::~WebSender() {}
+
+void WebSender::sendStatic(const char* data, size_t size, bool escape) {
+  if (data == nullptr || size == 0) {
+    return;
+  }
+
+#if defined(ARDUINO_ARCH_ESP8266)
+  if (size == static_cast<size_t>(-1)) {
+    size = strlen_P(data);
+  }
+  char buffer[128];
+  size_t offset = 0;
+  while (offset < size) {
+    const size_t chunk = size - offset < sizeof(buffer)
+                             ? size - offset
+                             : sizeof(buffer);
+    memcpy_P(buffer, data + offset, chunk);
+    if (escape) {
+      sendSafe(buffer, static_cast<int>(chunk));
+    } else {
+      send(buffer, static_cast<int>(chunk));
+    }
+    offset += chunk;
+  }
+#else
+  if (size == static_cast<size_t>(-1)) {
+    size = strlen(data);
+  }
+  if (escape) {
+    sendSafe(data, static_cast<int>(size));
+  } else {
+    send(data, static_cast<int>(size));
+  }
+#endif
+}
 
 void WebSender::labelFor(const char* id, const char* text) {
   auto label = tag("label");
@@ -501,7 +547,15 @@ void WebSender::sendTimestamp(uint32_t timestamp) {
     struct tm timeinfo;
     time_t time = timestamp;
     localtime_r(&time, &timeinfo);
-    size = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    size = SUPLA_WEB_SNPRINTF(buf,
+                              sizeof(buf),
+                              "%04d-%02d-%02d %02d:%02d:%02d",
+                              timeinfo.tm_year + 1900,
+                              timeinfo.tm_mon + 1,
+                              timeinfo.tm_mday,
+                              timeinfo.tm_hour,
+                              timeinfo.tm_min,
+                              timeinfo.tm_sec);
   }
   if (size < 0) {
     SUPLA_LOG_WARNING("WebSender error - snprintf failed");

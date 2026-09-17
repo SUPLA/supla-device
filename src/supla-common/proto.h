@@ -4,6 +4,19 @@
 #ifndef supla_proto_H_
 #define supla_proto_H_
 
+// Controls compilation of detailed SRPC packet logging.  SUPLA_DISABLE_LOGS
+// always takes precedence over an explicit enable.
+#ifndef SUPLA_SRPC_PACKET_LOG_ENABLED
+#if defined(SUPLA_DISABLE_LOGS)
+#define SUPLA_SRPC_PACKET_LOG_ENABLED 0
+#elif defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266) || \
+    defined(__AVR__) || defined(ARDUINO_ARCH_AVR)
+#define SUPLA_SRPC_PACKET_LOG_ENABLED 0
+#else
+#define SUPLA_SRPC_PACKET_LOG_ENABLED 1
+#endif
+#endif
+
 #ifdef _WIN32
 // *** WINDOWS ***
 
@@ -684,14 +697,14 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNEL_FLAG_HAS_PARENT 0x20000000                  // ver. >= 21
 #define SUPLA_CHANNEL_FLAG_CALCFG_RESTART_SUBDEVICE 0x40000000    // ver. >= 25
 #define SUPLA_CHANNEL_FLAG_BATTERY_COVER_AVAILABLE 0x80000000     // ver. >= 25
-#define SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED 0x100000000      // ver. >= 28
-#define SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED 0x200000000  // ver. >= 28
+#define SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED 0x100000000      // ver. >= 29
+#define SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED 0x200000000  // ver. >= 29
 #define SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED \
-  0x400000000  // ver. >= 28
+  0x400000000  // ver. >= 29
 #define SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED \
-  0x800000000  // ver. >= 28
+  0x800000000  // ver. >= 29
 #define SUPLA_CHANNEL_FLAG_RELAY_MODE_NOT_SET_SUPPORTED \
-  0x1000000000  // ver. >= 28; weekly schedule no-op program
+  0x1000000000  // ver. >= 29; weekly schedule no-op program
 #pragma pack(push, 1)
 
 typedef struct {
@@ -2444,7 +2457,7 @@ typedef struct {
 typedef struct {
   char hi;  // actual state of relay  - 0 turned off, >= 1 - turned on
   unsigned _supla_int16_t flags;  // SUPLA_RELAY_FLAG_*
-  unsigned char RelayMode;        // see SUPLA_RELAY_MODE_, v. >= 28,
+  unsigned char RelayMode;        // see SUPLA_RELAY_MODE_, v. >= 29,
                                   // only if channel Flags:
                                   // SUPLA_CHANNEL_FLAG_RELAY_MODE_* are set.
 } TRelayChannel_Value;            // v. >= 15
@@ -2882,6 +2895,7 @@ typedef struct {
 #define SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE 3
 #define SUPLA_CONFIG_TYPE_OCR 4
 #define SUPLA_CONFIG_TYPE_EXTENDED 5
+#define SUPLA_CONFIG_TYPE_EXTENDED_WEEKLY_SCHEDULE 6
 
 /********************************************
  * DEVICE CONFIG STRUCTURES
@@ -3273,6 +3287,33 @@ typedef struct {
   // Days of week are numbered: 0 - Sunday, 1 - Monday, etc.
   unsigned char Quarters[SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE / 2];  // 336 B
 } TChannelConfig_WeeklySchedule;                                  // v. >= 21
+
+#define SUPLA_EXTENDED_WEEKLY_SCHEDULE_MODEL_UNSPECIFIED 0
+// The channel supports switching between manual and weekly schedule modes,
+// but weekly schedule configuration is not available through SUPLA.
+// PayloadVersion and PayloadSize have to be 0 for this model.
+#define SUPLA_EXTENDED_WEEKLY_SCHEDULE_MODEL_MODE_ONLY 1
+#define SUPLA_EXTENDED_WEEKLY_SCHEDULE_MODEL_PROVENT 2
+
+#define SUPLA_EXTENDED_WEEKLY_SCHEDULE_ENVELOPE_VERSION 1
+#define SUPLA_EXTENDED_WEEKLY_SCHEDULE_HEADER_SIZE 16
+#define SUPLA_EXTENDED_WEEKLY_SCHEDULE_PAYLOAD_MAXSIZE \
+  (SUPLA_CHANNEL_CONFIG_MAXSIZE - SUPLA_EXTENDED_WEEKLY_SCHEDULE_HEADER_SIZE)
+
+// ConfigSize has to equal HeaderSize + PayloadSize. HeaderSize has to be at
+// least SUPLA_EXTENDED_WEEKLY_SCHEDULE_HEADER_SIZE and cannot exceed
+// ConfigSize.
+typedef struct {
+  unsigned char Version;  // SUPLA_EXTENDED_WEEKLY_SCHEDULE_ENVELOPE_VERSION
+  unsigned char HeaderSize;
+  unsigned _supla_int16_t Model;  // SUPLA_EXTENDED_WEEKLY_SCHEDULE_MODEL_
+  unsigned _supla_int16_t PayloadVersion;
+  unsigned _supla_int16_t PayloadSize;
+  unsigned char Reserved[8];  // Set to 0 when sending; ignore when receiving.
+  // For HeaderSize greater than SUPLA_EXTENDED_WEEKLY_SCHEDULE_HEADER_SIZE,
+  // payload starts at ((unsigned char *)config) + HeaderSize.
+  unsigned char Payload[SUPLA_EXTENDED_WEEKLY_SCHEDULE_PAYLOAD_MAXSIZE];
+} TChannelConfig_ExtendedWeeklySchedule;  // v. >= 29
 
 // Config used for thermometers, humidity sensors, and thermometers with
 // humidity channels.

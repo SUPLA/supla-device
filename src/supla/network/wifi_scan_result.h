@@ -8,14 +8,21 @@
 
 namespace Supla {
 
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+constexpr uint8_t WifiScanMaxResults = 5;
+#elif defined(ESP32) || defined(ARDUINO_ARCH_ESP32) || \
+    defined(SUPLA_DEVICE_ESP32)
+constexpr uint8_t WifiScanMaxResults = 8;
+#else
 constexpr uint8_t WifiScanMaxResults = 16;
+#endif
 constexpr uint8_t WifiScanSsidMaxSize = 33;
 constexpr uint32_t WifiScanDefaultMaxAgeMs = 5 * 60 * 1000;
 
 struct WifiScanResult {
   char ssid[WifiScanSsidMaxSize] = {};
-  int32_t rssi = 0;
-  int32_t channel = 0;
+  int8_t rssi = 0;
+  uint8_t channel = 0;
 };
 
 enum class WifiScanLookupStatus : uint8_t {

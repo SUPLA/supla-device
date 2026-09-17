@@ -4,7 +4,6 @@
 #include "html_generator.h"
 
 #include <SuplaDevice.h>
-#include <string.h>
 #include <supla/device/register_device.h>
 #include <supla/network/html_element.h>
 #include <supla/time.h>
@@ -17,7 +16,7 @@
 #define SUPLA_CSRF_LOGIN_SETUP_PROTECTION 0
 #endif
 
-const char headerBegin[] =
+const char headerBegin[] SUPLA_WEB_PROGMEM =
     "<!doctype html>"
     "<html lang=en>"
     "<head>"
@@ -29,7 +28,7 @@ const char headerBegin[] =
 // Generated from extras/resources/css_for_cfg_page.css.
 #include "html_generator_styles.inc"
 
-const char javascript[] =
+const char javascript[] SUPLA_WEB_PROGMEM =
     "<script>"
     "function protocolChanged(){"
     "var e=document.getElementById(\"pro\"),"
@@ -168,15 +167,15 @@ const char javascript[] =
 
     "</script>";
 
-const char headerEnd[] = "</head>";
+const char headerEnd[] SUPLA_WEB_PROGMEM = "</head>";
 
-const char bodyBegin[] = "<body>";
+const char bodyBegin[] SUPLA_WEB_PROGMEM = "<body>";
 
-const char wrapperBegin[] =
+const char wrapperBegin[] SUPLA_WEB_PROGMEM =
     "<div class=\"wrapper\">"
     "<div class=\"content\">";
 
-const char logoSvg[] =
+const char logoSvg[] SUPLA_WEB_PROGMEM =
     "<svg id=logo version=1.1 viewBox=\"0 0 200 200\" x=0 xml:space=preserve "
     "y=0>"
     "<path "
@@ -223,9 +222,10 @@ const char logoSvg[] =
     "7.8"
     "c7.1-2.3,11.1-9.1,9.6-15.9C180.9,93,174.8,88.5,167.7,88.5z\"/></svg>";
 
-const char bodyEnd[] = "</body></html>";
+const char bodyEnd[] SUPLA_WEB_PROGMEM = "</body></html>";
 
-const char dataSavedBox[] = "<div id=\"msg\">Data saved</div>";
+const char dataSavedBox[] SUPLA_WEB_PROGMEM =
+    "<div id=\"msg\">Data saved</div>";
 
 Supla::HtmlGenerator::~HtmlGenerator() {
 }
@@ -240,7 +240,7 @@ void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender,
   if (dataSaved) {
     sendDataSaved(sender);
   }
-  sender->send(wrapperBegin, strlen(wrapperBegin));
+  sender->sendStatic(wrapperBegin, sizeof(wrapperBegin) - 1);
   sendLogo(sender);
   sender->send("<div id=\"loader\">Loading...</div>");
   sender->send("<div class=\"form\" id=\"form_content\">");
@@ -261,7 +261,7 @@ void Supla::HtmlGenerator::sendLogsPage(Supla::WebSender *sender,
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
-  sender->send(wrapperBegin, strlen(wrapperBegin));
+  sender->sendStatic(wrapperBegin, sizeof(wrapperBegin) - 1);
   sendLogo(sender);
   sender->send("<div id=\"loader\">Loading...</div>");
   sender->send("<div id=\"form_content\">");
@@ -299,7 +299,7 @@ void Supla::HtmlGenerator::sendBetaPage(Supla::WebSender *sender,
   if (dataSaved) {
     sendDataSaved(sender);
   }
-  sender->send(wrapperBegin, strlen(wrapperBegin));
+  sender->sendStatic(wrapperBegin, sizeof(wrapperBegin) - 1);
   sendLogo(sender);
   sender->send("<div id=\"loader\">Loading...</div>");
   sender->send("<div class=\"form\" id=\"form_content\">");
@@ -320,7 +320,7 @@ void Supla::HtmlGenerator::sendLoginPage(Supla::WebSender *sender,
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
-  sender->send(wrapperBegin, strlen(wrapperBegin));
+  sender->sendStatic(wrapperBegin, sizeof(wrapperBegin) - 1);
   sendLogo(sender);
   sender->send("<div id=\"loader\">Loading...</div>");
   sender->send("<div class=\"form\" id=\"form_content\">");
@@ -366,7 +366,7 @@ void Supla::HtmlGenerator::sendSetupPage(
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
-  sender->send(wrapperBegin, strlen(wrapperBegin));
+  sender->sendStatic(wrapperBegin, sizeof(wrapperBegin) - 1);
   sendLogo(sender);
   sender->send("<div id=\"loader\">Loading...</div>");
   sender->send("<div class=\"form\" id=\"form_content\">");
@@ -452,7 +452,7 @@ void Supla::HtmlGenerator::sendSetupPage(
 }
 
 void Supla::HtmlGenerator::sendHeaderBegin(Supla::WebSender *sender) {
-  sender->send(headerBegin, strlen(headerBegin));
+  sender->sendStatic(headerBegin, sizeof(headerBegin) - 1);
   sendTitle(sender);
 }
 
@@ -467,19 +467,19 @@ void Supla::HtmlGenerator::sendHeader(Supla::WebSender *sender) {
 }
 
 void Supla::HtmlGenerator::sendHeaderEnd(Supla::WebSender *sender) {
-  sender->send(headerEnd, strlen(headerEnd));
+  sender->sendStatic(headerEnd, sizeof(headerEnd) - 1);
 }
 
 void Supla::HtmlGenerator::sendBodyBegin(Supla::WebSender *sender) {
-  sender->send(bodyBegin, strlen(bodyBegin));
+  sender->sendStatic(bodyBegin, sizeof(bodyBegin) - 1);
 }
 
 void Supla::HtmlGenerator::sendDataSaved(Supla::WebSender *sender) {
-  sender->send(dataSavedBox);
+  sender->sendStatic(dataSavedBox, sizeof(dataSavedBox) - 1);
 }
 
 void Supla::HtmlGenerator::sendLogo(Supla::WebSender *sender) {
-  sender->send(logoSvg, strlen(logoSvg));
+  sender->sendStatic(logoSvg, sizeof(logoSvg) - 1);
 }
 
 void Supla::HtmlGenerator::sendDeviceInfo(Supla::WebSender *sender) {
@@ -609,14 +609,14 @@ void Supla::HtmlGenerator::sendSessionLinks(Supla::WebSender *sender) {
 
 void Supla::HtmlGenerator::sendBodyEnd(Supla::WebSender *sender) {
   sendJavascript(sender);
-  sender->send(bodyEnd, strlen(bodyEnd));
+  sender->sendStatic(bodyEnd, sizeof(bodyEnd) - 1);
 }
 
 // methods called in sendHeader default implementation
 void Supla::HtmlGenerator::sendStyle(Supla::WebSender *sender) {
-  sender->send(styles, strlen(styles));
+  sender->sendStatic(styles, sizeof(styles) - 1);
 }
 
 void Supla::HtmlGenerator::sendJavascript(Supla::WebSender *sender) {
-  sender->send(javascript, strlen(javascript));
+  sender->sendStatic(javascript, sizeof(javascript) - 1);
 }

@@ -96,9 +96,33 @@ An Arduino-based SUPLA device typically:
 
 ---
 
+## Detailed SRPC packet logging
+
+`SUPLA_SRPC_PACKET_LOG_ENABLED` controls compilation of detailed SRPC packet
+logging. Its defaults are:
+
+- disabled when `SUPLA_DISABLE_LOGS` is defined,
+- disabled on ESP8266 and AVR,
+- enabled on other supported targets, including ESP32 Arduino, ESP-IDF debug,
+  Linux/native, and host tests.
+
+`SUPLA_DISABLE_LOGS` always disables it, including when
+`SUPLA_SRPC_PACKET_LOG_ENABLED=1` is supplied.
+
+Enable it with a global compiler define:
+
+    -DSUPLA_SRPC_PACKET_LOG_ENABLED=1
+
+For an ESP8266 Arduino IDE sketch, put the define in
+`<MySketch>.ino.globals.h` so it is visible when the library sources are
+compiled:
+
+    #define SUPLA_SRPC_PACKET_LOG_ENABLED 1
+
+---
+
 ## Next steps
 
 - Networking setup: [How-to: Networking](../howto/networking.md)
 - Persistent storage: [How-to: Storage](../howto/storage.md)
 - Core concepts: [Channels](../concepts/channels.md)
-

@@ -3,7 +3,7 @@
 
 #include <SuplaDevice.h>
 #include <linux_network.h>
-#include <supla-common/tools.h>
+#include <linux_process.h>
 #include <supla/control/dimmer_leds.h>
 #include <supla/control/rgb_leds.h>
 #include <supla/control/rgbw_leds.h>
@@ -143,7 +143,10 @@ int main(int argc, char *argv[]) {
     auto config = std::make_unique<Supla::LinuxYamlConfig>(cfgFile);
     // we init it earlier than in SuplaDevice.begin, because it is needed
     // earlier
-    config->init();
+    if (!config->init()) {
+      SUPLA_LOG_ERROR("Configuration initialization failed. Exit");
+      exit(1);
+    }
 
     if (result.count("debug") || config->isDebug()) {
       logLevel = LOG_DEBUG;

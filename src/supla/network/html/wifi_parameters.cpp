@@ -22,6 +22,31 @@ namespace Supla {
 namespace Html {
 
 namespace {
+const char kWifiScanScriptBegin[] SUPLA_WEB_PROGMEM =
+"<script>"
+"var wifiScanHints=Object.create(null);"
+"var wifiScanHintClasses=Object.create(null);";
+
+const char kWifiScanScriptEnd[] SUPLA_WEB_PROGMEM =
+";function wifiSsidChanged(){"
+"var e=document.getElementById('sid');"
+"var h=document.getElementById('wifi_scan_hint');"
+"if(e==null||h==null){return;}"
+"if(e.value==''){h.textContent='';h.className='hint';return;}"
+"if(wifiScanFresh){"
+"if(wifiScanHints[e.value]){"
+"h.textContent=wifiScanHints[e.value];"
+"h.className=wifiScanHintClasses[e.value]||'hint';"
+"}else{"
+"h.textContent="
+"'Warning: this network was not found in the latest Wi-Fi scan';"
+"h.className='hint warn';"
+"}"
+"}else{"
+"h.textContent='Wi-Fi scan result is not available yet';"
+"h.className='hint';"
+"}}"
+"</script>";
 
 constexpr char WifiSsidListId[] = "wifi_ssid_list";
 constexpr char WifiSsidHintId[] = "wifi_scan_hint";
@@ -38,27 +63,25 @@ bool hasFreshWifiScanResults() {
 void formatWifiScanMessage(char *message,
                            size_t messageSize,
                            const char *ssid,
-                           bool includeSsid) {
+                           bool includeSsid,
+                           WifiScanLookupStatus status,
+                           const WifiScanResult &result) {
   if (message == nullptr || messageSize == 0) {
     return;
   }
   message[0] = '\0';
 
-  WifiScanResult result = {};
-  auto status = WifiScanResultCache::Instance()->lookup(
-      ssid, &result, millis(), WifiScanDefaultMaxAgeMs);
-
   switch (status) {
     case WifiScanLookupStatus::Found: {
       if (includeSsid) {
-        snprintf(message,
+        SUPLA_WEB_SNPRINTF(message,
                  messageSize,
                  "Wi-Fi: \"%s\" found, RSSI %d dBm, quality %d%%",
                  ssid,
                  static_cast<int>(result.rssi),
                  Supla::rssiToSignalStrength(result.rssi));
       } else {
-        snprintf(message,
+        SUPLA_WEB_SNPRINTF(message,
                  messageSize,
                  "Found in Wi-Fi scan: RSSI %d dBm, quality %d%%",
                  static_cast<int>(result.rssi),
@@ -68,12 +91,12 @@ void formatWifiScanMessage(char *message,
     }
     case WifiScanLookupStatus::NotFound: {
       if (includeSsid) {
-        snprintf(message,
+        SUPLA_WEB_SNPRINTF(message,
                  messageSize,
                  "Wi-Fi: \"%s\" was not found in the latest scan",
                  ssid);
       } else {
-        snprintf(
+        SUPLA_WEB_SNPRINTF(
             message,
             messageSize,
             "Warning: this network was not found in the latest Wi-Fi scan");
@@ -81,12 +104,14 @@ void formatWifiScanMessage(char *message,
       break;
     }
     case WifiScanLookupStatus::Stale: {
-      snprintf(message, messageSize, "Wi-Fi scan result is no longer fresh");
+      SUPLA_WEB_SNPRINTF(
+          message, messageSize, "Wi-Fi scan result is no longer fresh");
       break;
     }
     case WifiScanLookupStatus::NotAvailable:
     default: {
-      snprintf(message, messageSize, "Wi-Fi scan result is not available yet");
+      SUPLA_WEB_SNPRINTF(
+          message, messageSize, "Wi-Fi scan result is not available yet");
       break;
     }
   }
@@ -157,7 +182,11 @@ void sendWifiScanHint(Supla::WebSender *sender, const char *ssid) {
   hint.body([&]() {
     if (ssid != nullptr && ssid[0] != '\0') {
       char message[96] = {};
-      formatWifiScanMessage(message, sizeof(message), ssid, false);
+      WifiScanResult result = {};
+      auto status = WifiScanResultCache::Instance()->lookup(
+          ssid, &result, millis(), WifiScanDefaultMaxAgeMs);
+      formatWifiScanMessage(message, sizeof(message), ssid, false, status,
+                            result);
       sender->sendSafe(message);
     }
   });
@@ -184,9 +213,7 @@ void sendWifiSsidDatalist(Supla::WebSender *sender) {
 }
 
 void sendWifiScanScript(Supla::WebSender *sender) {
-  sender->send("<script>"
-               "var wifiScanHints=Object.create(null);"
-               "var wifiScanHintClasses=Object.create(null);");
+  sender->sendStatic(kWifiScanScriptBegin, sizeof(kWifiScanScriptBegin) - 1);
 
   bool freshScan = hasFreshWifiScanResults();
   auto cache = WifiScanResultCache::Instance();
@@ -198,7 +225,7 @@ void sendWifiScanScript(Supla::WebSender *sender) {
       }
 
       char message[96] = {};
-      snprintf(message,
+      SUPLA_WEB_SNPRINTF(message,
                sizeof(message),
                "Found in Wi-Fi scan: RSSI %d dBm, quality %d%%",
                static_cast<int>(result.rssi),
@@ -219,25 +246,7 @@ void sendWifiScanScript(Supla::WebSender *sender) {
 
   sender->send("var wifiScanFresh=");
   sender->send(freshScan ? "true" : "false");
-  sender->send(";function wifiSsidChanged(){"
-               "var e=document.getElementById('sid');"
-               "var h=document.getElementById('wifi_scan_hint');"
-               "if(e==null||h==null){return;}"
-               "if(e.value==''){h.textContent='';h.className='hint';return;}"
-               "if(wifiScanFresh){"
-               "if(wifiScanHints[e.value]){"
-               "h.textContent=wifiScanHints[e.value];"
-               "h.className=wifiScanHintClasses[e.value]||'hint';"
-               "}else{"
-               "h.textContent="
-               "'Warning: this network was not found in the latest Wi-Fi scan';"
-               "h.className='hint warn';"
-               "}"
-               "}else{"
-               "h.textContent='Wi-Fi scan result is not available yet';"
-               "h.className='hint';"
-               "}}"
-               "</script>");
+  sender->sendStatic(kWifiScanScriptEnd, sizeof(kWifiScanScriptEnd) - 1);
 }
 
 }  // namespace
@@ -366,16 +375,31 @@ void WifiParameters::logWifiScanResult() {
     return;
   }
 
-  char message[128] = {};
-  formatWifiScanMessage(message, sizeof(message), ssid, true);
-  if (message[0] == '\0' ||
-      strncmp(message, lastLoggedWifiScanMessage, sizeof(message)) == 0) {
+  // FNV-1a over the SSID, without formatting or retaining the log text.
+  uint32_t ssidHash = 2166136261u;
+  for (const char *ptr = ssid; *ptr; ++ptr) {
+    ssidHash ^= static_cast<uint8_t>(*ptr);
+    ssidHash *= 16777619u;
+  }
+  WifiScanResult result = {};
+  auto status = WifiScanResultCache::Instance()->lookup(
+      ssid, &result, millis(), WifiScanDefaultMaxAgeMs);
+  const int8_t rssi = status == WifiScanLookupStatus::Found ? result.rssi : 0;
+  if (lastWifiScanLogValid && lastWifiScanSsidHash == ssidHash &&
+      lastWifiScanStatus == static_cast<uint8_t>(status) &&
+      lastWifiScanRssi == rssi) {
     return;
   }
 
-  strncpy(lastLoggedWifiScanMessage, message,
-          sizeof(lastLoggedWifiScanMessage) - 1);
-  lastLoggedWifiScanMessage[sizeof(lastLoggedWifiScanMessage) - 1] = '\0';
+  char message[128] = {};
+  formatWifiScanMessage(message, sizeof(message), ssid, true, status, result);
+  if (message[0] == '\0') {
+    return;
+  }
+  lastWifiScanSsidHash = ssidHash;
+  lastWifiScanStatus = static_cast<uint8_t>(status);
+  lastWifiScanRssi = rssi;
+  lastWifiScanLogValid = true;
   server->addLastStateLog(message);
 }
 

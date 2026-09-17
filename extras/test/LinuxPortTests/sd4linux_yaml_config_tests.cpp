@@ -22,6 +22,7 @@
 #include "linux_yaml_config.h"
 #include "supla/control/action_trigger_parsed.h"
 #include "supla/control/custom_hvac.h"
+#include "supla/control/custom_relay.h"
 #include "supla/control/rgbcct_parsed.h"
 #include "supla/control/virtual_relay.h"
 
@@ -116,11 +117,12 @@ class FakeYamlParser : public Supla::Parser::Parser {
 
 class FakePayload : public Supla::Payload::Payload {
  public:
-  FakePayload() : Supla::Payload::Payload(nullptr) {
+  explicit FakePayload(bool basedOnIndex = false)
+      : Supla::Payload::Payload(nullptr), basedOnIndex(basedOnIndex) {
   }
 
   bool isBasedOnIndex() override {
-    return false;
+    return basedOnIndex;
   }
 
   void turnOn(const std::string&,
@@ -130,6 +132,17 @@ class FakePayload : public Supla::Payload::Payload {
   void turnOff(const std::string&,
                std::variant<int, bool, std::string>) override {
   }
+
+  void addKey(const std::string& key, int index) override {
+    lastKey = key;
+    lastIndex = index;
+  }
+
+  std::string lastKey;
+  int lastIndex = -1;
+
+ private:
+  bool basedOnIndex;
 };
 
 class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
@@ -140,9 +153,13 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   using Supla::LinuxYamlConfig::addActionTriggerParsed;
   using Supla::LinuxYamlConfig::addRgbCctParsed;
   using Supla::LinuxYamlConfig::addCustomHvac;
+  using Supla::LinuxYamlConfig::addCustomRelay;
+  using Supla::LinuxYamlConfig::addCmdValve;
+  using Supla::LinuxYamlConfig::addCmdRollerShutter;
   using Supla::LinuxYamlConfig::addVirtualRelay;
   using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
+  using Supla::LinuxYamlConfig::config;
 };
 
 class UmaskGuard {
@@ -341,6 +358,47 @@ TEST(Sd4linuxYamlConfigTests, RejectsUnknownRelayDefaultFunction) {
   EXPECT_FALSE(config.addVirtualRelay(
       YAML::Load("default_function: coffee_machine"), 0));
   deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, UsesFixedTlsSuplaServerPort) {
+  TestLinuxYamlConfig config;
+  config.config = YAML::Load("port: 2015\n");
+
+  EXPECT_EQ(config.getSuplaServerPort(), 2016);
+}
+
+TEST(Sd4linuxYamlConfigTests, UsesDefaultAndConfiguredSuplaProtocolVersion) {
+  TestLinuxYamlConfig config;
+
+  config.config = YAML::Load("supla: {}\n");
+  EXPECT_EQ(config.getProtoVersion(), 27);
+
+  config.config = YAML::Load("supla:\n  proto: 29\n");
+  EXPECT_EQ(config.getProtoVersion(), 29);
+
+  config.config = YAML::Load("supla:\n  proto: 22\n");
+  EXPECT_EQ(config.getProtoVersion(), 23);
+
+  config.config = YAML::Load("supla:\n  proto: 30\n");
+  EXPECT_EQ(config.getProtoVersion(), 29);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsCustomCaSecurityLevel) {
+  const auto path = std::filesystem::temp_directory_path() /
+                    ("supla_yaml_security_level_" +
+                     std::to_string(getpid()) + ".yaml");
+  {
+    std::ofstream output(path);
+    ASSERT_TRUE(output.is_open());
+    output << "security_level: 1\n";
+  }
+
+  Supla::LinuxYamlConfig config(path.string());
+  EXPECT_FALSE(config.init());
+
+  std::error_code error;
+  EXPECT_TRUE(std::filesystem::remove(path, error));
+  EXPECT_FALSE(error) << error.message();
 }
 
 TEST(Sd4linuxYamlConfigTests, ParseErrorDoesNotLogYamlSource) {
@@ -553,4 +611,117 @@ TEST(Sd4linuxYamlConfigTests, AcceptsCustomHvacWithPayload) {
   ASSERT_NE(createdElement, previousElement);
   ASSERT_NE(customHvac, nullptr);
   delete createdElement;
+}
+
+TEST(Sd4linuxYamlConfigTests, MapsCustomHvacJsonStateField) {
+  TestLinuxYamlConfig config;
+  FakePayload payload;
+  auto previousElement = Supla::Element::last();
+  auto channel = YAML::Load(
+      "type: CustomHvac\n"
+      "main_thermometer_channel_no: 1\n"
+      "set_state: state\n");
+
+  EXPECT_TRUE(config.addCustomHvac(channel, 0, &payload));
+  EXPECT_EQ(payload.lastKey, "state");
+  EXPECT_EQ(payload.lastIndex, -1);
+
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsCustomRelayWithoutPayload) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.parseChannel(YAML::Load("type: CustomRelay\n"), 0));
+  EXPECT_EQ(Supla::Element::last(), previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RequiresStateFieldForCustomRelayJsonPayload) {
+  TestLinuxYamlConfig config;
+  FakePayload payload;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.addCustomRelay(YAML::Load("type: CustomRelay\n"),
+                                     0,
+                                     nullptr,
+                                     &payload));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, AllowsCustomRelaySimplePayloadWithoutStateField) {
+  TestLinuxYamlConfig config;
+  FakePayload payload(true);
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addCustomRelay(YAML::Load("type: CustomRelay\n"),
+                                    0,
+                                    nullptr,
+                                    &payload));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsCmdValveWithoutRequiredCommand) {
+  TestLinuxYamlConfig config;
+  FakeYamlSource source;
+  FakeYamlParser parser(&source);
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.addCmdValve(YAML::Load(
+                                     "cmd_close: close\n"
+                                     "state: state\n"),
+                                 0,
+                                 &parser));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     RejectsCmdRollerShutterWithoutRequiredCommand) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.addCmdRollerShutter(YAML::Load(
+                                              "cmd_up_on: up\n"
+                                              "cmd_up_off: up_off\n"
+                                              "cmd_down_on: down\n"),
+                                          0,
+                                          nullptr));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsChannelNumberOutsideAllowedRange) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.parseChannel(
+      YAML::Load("type: VirtualRelay\nchannel_number: -1\n"), 0));
+  EXPECT_EQ(Supla::Element::last(), previousElement);
+
+  EXPECT_FALSE(config.parseChannel(
+      YAML::Load("type: VirtualRelay\nchannel_number: 128\n"), 0));
+  EXPECT_EQ(Supla::Element::last(), previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsIconIdOutsideAllowedRange) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.addVirtualRelay(YAML::Load("icon_id: -1\n"), 0));
+  deleteCreatedElement(previousElement);
+
+  previousElement = Supla::Element::last();
+  EXPECT_FALSE(config.addVirtualRelay(YAML::Load("icon_id: 256\n"), 0));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsParsedIconIdOutsideAllowedRange) {
+  TestLinuxYamlConfig config;
+  FakeYamlSource source;
+  FakeYamlParser parser(&source);
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_FALSE(config.addRgbCctParsed(YAML::Load("icon_id: 256\n"),
+                                      0,
+                                      &parser));
+  deleteCreatedElement(previousElement);
 }

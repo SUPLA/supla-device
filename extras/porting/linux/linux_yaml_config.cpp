@@ -118,16 +118,14 @@ bool Supla::LinuxYamlConfig::addCommonChannelParameters(
 void Supla::LinuxYamlConfig::logError(const std::string& filename,
                                       const YAML::Exception& ex) const {
   if (ex.mark.line >= 0 && ex.mark.column >= 0) {
-    SUPLA_LOG_ERROR(
-        "Config file YAML error in '%s' at line %d, column %d: %s",
-        filename.c_str(),
-        ex.mark.line + 1,
-        ex.mark.column + 1,
-        ex.what());
-  } else {
-    SUPLA_LOG_ERROR("Config file YAML error in '%s': %s",
+    SUPLA_LOG_ERROR("Config file YAML error in '%s' at line %d, column %d: %s",
                     filename.c_str(),
+                    ex.mark.line + 1,
+                    ex.mark.column + 1,
                     ex.what());
+  } else {
+    SUPLA_LOG_ERROR(
+        "Config file YAML error in '%s': %s", filename.c_str(), ex.what());
   }
 }
 
@@ -140,6 +138,13 @@ bool Supla::LinuxYamlConfig::init() {
   if (config.size() == 0) {
     try {
       config = YAML::LoadFile(file);
+      if (config["security_level"] &&
+          config["security_level"].as<unsigned int>() == 1) {
+        SUPLA_LOG_ERROR(
+            "Config: security_level 1 (custom CA) is not supported on "
+            "sd4linux");
+        return false;
+      }
       if (config[Supla::ManufacturerId]) {
         auto manufacturerId = config[Supla::ManufacturerId].as<int>();
         if (manufacturerId < 0 ||
@@ -393,14 +398,8 @@ bool Supla::LinuxYamlConfig::getSuplaServer(char* result) {
 }
 
 int32_t Supla::LinuxYamlConfig::getSuplaServerPort() {
-  try {
-    if (config["port"]) {
-      auto port = config["port"].as<int>();
-      return port;
-    }
-  } catch (const YAML::Exception& ex) {
-    logError(file, ex);
-  }
+  // sd4linux uses only the TLS SUPLA endpoint.  Keep the shared Config API
+  // intact for other platforms, but do not expose a configurable port here.
   return 2016;
 }
 
@@ -421,12 +420,18 @@ int Supla::LinuxYamlConfig::getProtoVersion() {
   try {
     if (config["supla"] && config["supla"]["proto"]) {
       auto version = config["supla"]["proto"].as<int>();
+      if (version < 23) {
+        return 23;
+      }
+      if (version > SUPLA_PROTO_VERSION) {
+        return SUPLA_PROTO_VERSION;
+      }
       return version;
     }
   } catch (const YAML::Exception& ex) {
     logError(file, ex);
   }
-  return 23;
+  return 27;
 }
 
 bool Supla::LinuxYamlConfig::setGUID(const char* guidRaw) {
@@ -776,6 +781,12 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     if (auto channelNumberParameter =
             getAndMarkChannelParameter(ch, "channel_number")) {
       channelNumber = channelNumberParameter.as<int>();
+      if (channelNumber < 0 || channelNumber >= SUPLA_CHANNELMAXCOUNT) {
+        SUPLA_LOG_ERROR(
+            "Config: channel_number has to be in range 0..%d",
+            SUPLA_CHANNELMAXCOUNT - 1);
+        return false;
+      }
     }
     if (channelNumber == -1) {
       channelNumber = channelIndex;
@@ -916,14 +927,6 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
                       type.c_str());
       return false;
     }
-
-    if (ch.size() >
-        usedChannelParameters.size() + untrackedChannelParameterCount) {
-      SUPLA_LOG_WARNING("Channel[%d] config: too many parameters",
-                        channelNumber);
-    }
-    return true;
-
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"type\" parameter",
                     channelIndex);
@@ -1008,15 +1011,17 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
     auto cmdOpen = cmdOpenParameter.as<std::string>();
     cv->setCmdOpen(cmdOpen);
   } else {
-    SUPLA_LOG_WARNING("CmdValve[%d]: missing \"cmd_open\" parameter",
-                      channelNumber);
+    SUPLA_LOG_ERROR("CmdValve[%d]: missing \"cmd_open\" parameter",
+                    channelNumber);
+    return false;
   }
   if (auto cmdCloseParameter = getAndMarkChannelParameter(ch, "cmd_close")) {
     auto cmdClose = cmdCloseParameter.as<std::string>();
     cv->setCmdClose(cmdClose);
   } else {
-    SUPLA_LOG_WARNING("CmdValve[%d]: missing \"cmd_close\" parameter",
-                      channelNumber);
+    SUPLA_LOG_ERROR("CmdValve[%d]: missing \"cmd_close\" parameter",
+                    channelNumber);
+    return false;
   }
 
   if (!addStateParser(ch, cv, parser, true)) {
@@ -1062,20 +1067,40 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
   if (auto cmdUpOnParameter = getAndMarkChannelParameter(ch, "cmd_up_on")) {
     auto cmdUpOn = cmdUpOnParameter.as<std::string>();
     cr->setCmdUpOn(cmdUpOn);
+  } else {
+    SUPLA_LOG_ERROR(
+        "CmdRollerShutter[%d]: missing \"cmd_up_on\" parameter",
+        channelNumber);
+    return false;
   }
   if (auto cmdUpOffParameter = getAndMarkChannelParameter(ch, "cmd_up_off")) {
     auto cmdUpOff = cmdUpOffParameter.as<std::string>();
     cr->setCmdUpOff(cmdUpOff);
+  } else {
+    SUPLA_LOG_ERROR(
+        "CmdRollerShutter[%d]: missing \"cmd_up_off\" parameter",
+        channelNumber);
+    return false;
   }
 
   if (auto cmdDownOnParameter = getAndMarkChannelParameter(ch, "cmd_down_on")) {
     auto cmdDownOn = cmdDownOnParameter.as<std::string>();
     cr->setCmdDownOn(cmdDownOn);
+  } else {
+    SUPLA_LOG_ERROR(
+        "CmdRollerShutter[%d]: missing \"cmd_down_on\" parameter",
+        channelNumber);
+    return false;
   }
   if (auto cmdDownOffParameter =
           getAndMarkChannelParameter(ch, "cmd_down_off")) {
     auto cmdDownOff = cmdDownOffParameter.as<std::string>();
     cr->setCmdDownOff(cmdDownOff);
+  } else {
+    SUPLA_LOG_ERROR(
+        "CmdRollerShutter[%d]: missing \"cmd_down_off\" parameter",
+        channelNumber);
+    return false;
   }
 
   return addCommonParametersParsed(ch, cr, parser);
@@ -1086,6 +1111,12 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
                                             Parser::Parser* parser,
                                             Payload::Payload* payload) {
   SUPLA_LOG_INFO("Channel[%d] config: adding CustomRelay", channelNumber);
+  if (payload == nullptr) {
+    SUPLA_LOG_ERROR(
+        "Channel[%d] config: CustomRelay requires output and payload",
+        channelNumber);
+    return false;
+  }
   auto cr = new Supla::Control::CustomRelay(parser, payload);
   if (auto initialStateParameter =
           getAndMarkChannelParameter(ch, "initial_state")) {
@@ -1120,7 +1151,7 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
     return false;
   }
 
-  if (!addStatePayload(ch, cr, payload, false)) {
+  if (!addStatePayload(ch, cr, payload, !payload->isBasedOnIndex())) {
     return false;
   }
 
@@ -1401,6 +1432,16 @@ bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch,
           getAndMarkChannelParameter(ch, "turn_off_payload")) {
     auto turnOffPayload = turnOffParameter.as<std::string>();
     hvac->setSetOffValue(turnOffPayload);
+  }
+  if (auto stateParameter =
+          getAndMarkChannelParameter(ch, Supla::Payload::HvacState)) {
+    if (payload->isBasedOnIndex()) {
+      int index = stateParameter.as<int>();
+      hvac->setMapping(Supla::Payload::HvacState, index);
+    } else {
+      std::string key = stateParameter.as<std::string>();
+      hvac->setMapping(Supla::Payload::HvacState, key);
+    }
   }
   if (auto mainThermometerParameter =
           getAndMarkChannelParameter(ch, "main_thermometer_channel_no")) {
@@ -1769,20 +1810,20 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
 
       for (auto param : phaseParameters) {
         std::string paramName;
-        for (std::string_view name : {"voltage",
-                                      "current",
-                                      "fwd_act_energy",
-                                      "rvr_act_energy",
-                                      "fwd_react_energy",
-                                      "rvr_react_energy",
-                                      "power_active",
-                                      "rvr_power_active",
-                                      "power_reactive",
-                                      "power_apparent",
-                                      "phase_angle",
-                                      "power_factor"}) {
+        for (const char* name : {"voltage",
+                                 "current",
+                                 "fwd_act_energy",
+                                 "rvr_act_energy",
+                                 "fwd_react_energy",
+                                 "rvr_react_energy",
+                                 "power_active",
+                                 "rvr_power_active",
+                                 "power_reactive",
+                                 "power_apparent",
+                                 "phase_angle",
+                                 "power_factor"}) {
           if (param[name]) {
-            paramName = std::string{name} + "_" +   // NOLINT(whitespace/braces)
+            paramName = std::string{name} + "_" +  // NOLINT(whitespace/braces)
                         std::to_string(phaseId);
             if (parser->isBasedOnIndex()) {
               int index = param[name].as<int>();
@@ -2903,6 +2944,12 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
   if (auto channelNumberParameter =
           getAndMarkChannelParameter(ch, "channel_number")) {  // optional
     int channelNumber = channelNumberParameter.as<int>();
+    if (channelNumber < 0 || channelNumber >= SUPLA_CHANNELMAXCOUNT) {
+      SUPLA_LOG_ERROR(
+          "Channel config: channel_number has to be in range 0..%d",
+          SUPLA_CHANNELMAXCOUNT - 1);
+      return false;
+    }
     auto ch = sensor->getChannel();
     if (ch) {
       if (!ch->setChannelNumber(channelNumber)) {
@@ -2914,9 +2961,14 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
   if (auto iconIdParameter =
           getAndMarkChannelParameter(ch, "icon_id")) {  // optional
     int iconId = iconIdParameter.as<int>();
+    if (iconId < 0 || iconId > 255) {
+      SUPLA_LOG_ERROR(
+          "Channel config: icon_id has to be in range 0..255");
+      return false;
+    }
     auto ch = sensor->getChannel();
     if (ch) {
-      ch->setDefaultIcon(iconId);
+      ch->setDefaultIcon(static_cast<uint8_t>(iconId));
     }
   }
   if (batteryAdded) {
@@ -2936,6 +2988,12 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
   if (auto channelNumberParameter =
           getAndMarkChannelParameter(ch, "channel_number")) {  // optional
     int channelNumber = channelNumberParameter.as<int>();
+    if (channelNumber < 0 || channelNumber >= SUPLA_CHANNELMAXCOUNT) {
+      SUPLA_LOG_ERROR(
+          "Channel config: channel_number has to be in range 0..%d",
+          SUPLA_CHANNELMAXCOUNT - 1);
+      return false;
+    }
     auto ch = element->getChannel();
     if (ch) {
       if (!ch->setChannelNumber(channelNumber)) {
@@ -2947,9 +3005,14 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
   if (auto iconIdParameter =
           getAndMarkChannelParameter(ch, "icon_id")) {  // optional
     int iconId = iconIdParameter.as<int>();
+    if (iconId < 0 || iconId > 255) {
+      SUPLA_LOG_ERROR(
+          "Channel config: icon_id has to be in range 0..255");
+      return false;
+    }
     auto ch = element->getChannel();
     if (ch) {
-      ch->setDefaultIcon(iconId);
+      ch->setDefaultIcon(static_cast<uint8_t>(iconId));
     }
   }
   return addDefaultFunctionNumber(ch, element);

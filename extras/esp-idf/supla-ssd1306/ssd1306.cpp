@@ -158,8 +158,16 @@ namespace Display {
 
 SSD1306::SSD1306(Supla::I2CDriver *driver,
                  uint8_t address,
-                 uint32_t frequency)
-    : address(address), frequency(frequency), driver(driver) {
+                 uint32_t frequency,
+                 uint8_t height)
+    : address(address),
+      frequency(frequency),
+      displayHeight(height == 32 ? 32 : HEIGHT),
+      driver(driver) {
+}
+
+int SSD1306::getHeight() const {
+  return displayHeight;
 }
 
 bool SSD1306::initialize() {
@@ -186,8 +194,10 @@ bool SSD1306::initialize() {
 
   const uint8_t commands[] = {
       0xAE, 0x20, 0x00, 0xB0, 0xC8, 0x00, 0x10, 0x40, 0x81, 0x59,
-      0xA1, 0xA6, 0xA8, 0x3F, 0xA4, 0xD3, 0x00, 0xD5, 0x80, 0xD9,
-      0xF1, 0xDA, 0x12, 0xDB, 0x40, 0x8D, 0x14, 0xAF,
+      0xA1, 0xA6, 0xA8, static_cast<uint8_t>(displayHeight - 1), 0xA4,
+      0xD3, 0x00, 0xD5, 0x80, 0xD9, 0xF1, 0xDA,
+      static_cast<uint8_t>(displayHeight == 32 ? 0x02 : 0x12), 0xDB, 0x40,
+      0x8D, 0x14, 0xAF,
   };
   driver->aquire();
   bool success = true;
@@ -342,7 +352,7 @@ void SSD1306::progressBar(int y, uint8_t percent) {
 }
 
 void SSD1306::flush() {
-  flushRegion(0, DISPLAY_PAGES, 0, WIDTH);
+  flushRegion(0, displayHeight / 8, 0, WIDTH);
 }
 
 bool SSD1306::flushRegion(int firstPage,
@@ -350,7 +360,7 @@ bool SSD1306::flushRegion(int firstPage,
                           int firstColumn,
                           int columnCount) {
   if (firstPage < 0 || pageCount < 1 ||
-      firstPage + pageCount > DISPLAY_PAGES || firstColumn < 0 ||
+      firstPage + pageCount > displayHeight / 8 || firstColumn < 0 ||
       columnCount < 1 || firstColumn + columnCount > WIDTH ||
       driver == nullptr || !initialized || !screenOn) {
     return false;
@@ -380,7 +390,7 @@ void SSD1306::drawChar7x9(int y, int x, char value) {
 }
 
 void SSD1306::drawChar5x7(int page, int column, char value) {
-  if (page < 0 || page >= DISPLAY_PAGES || column < 0 || column >= WIDTH) {
+  if (page < 0 || page >= displayHeight / 8 || column < 0 || column >= WIDTH) {
     return;
   }
   int index = fontIndex(value);

@@ -5,11 +5,12 @@ name: My fancy device
 log_level: debug
 proto_verbose_log: false
 state_files_path: "/var/local/supla-device"
-security_level: 0 # disable certyficate verification
+security_level: 0 # validate server certificate using Supla CA
 
 supla:
   server: svr123.supla.org
   mail: mail@user.com
+  proto: 27
 
 channels:
   - type: VirtualRelay

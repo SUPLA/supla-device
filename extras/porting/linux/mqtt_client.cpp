@@ -4,7 +4,7 @@
 #include "mqtt_client.h"
 
 #include <pthread.h>
-#include <supla-common/tools.h>
+#include <linux_process.h>
 #include <supla/network/client.h>
 #include <supla/time.h>
 #include <unistd.h>

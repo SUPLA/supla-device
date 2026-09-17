@@ -9,7 +9,27 @@ namespace Supla {
 
 namespace {
 WifiScanResultCache instance;
+
+int8_t clampRssi(int32_t rssi) {
+  if (rssi < -128) {
+    return -128;
+  }
+  if (rssi > 127) {
+    return 127;
+  }
+  return static_cast<int8_t>(rssi);
 }
+
+uint8_t clampChannel(int32_t channel) {
+  if (channel < 0) {
+    return 0;
+  }
+  if (channel > 255) {
+    return 255;
+  }
+  return static_cast<uint8_t>(channel);
+}
+}  // namespace
 
 void WifiScanResultCache::sortByRssi() {
   for (uint8_t i = 1; i < count; i++) {
@@ -51,11 +71,13 @@ void WifiScanResultCache::addOrUpdate(const char *ssid,
     return;
   }
 
+  const int8_t boundedRssi = clampRssi(rssi);
+  const uint8_t boundedChannel = clampChannel(channel);
   int idx = find(ssid);
   if (idx >= 0) {
-    if (rssi > entries[idx].rssi) {
-      entries[idx].rssi = rssi;
-      entries[idx].channel = channel;
+    if (boundedRssi > entries[idx].rssi) {
+      entries[idx].rssi = boundedRssi;
+      entries[idx].channel = boundedChannel;
     }
     return;
   }
@@ -64,15 +86,15 @@ void WifiScanResultCache::addOrUpdate(const char *ssid,
     idx = count++;
   } else {
     idx = findWeakest();
-    if (idx < 0 || rssi <= entries[idx].rssi) {
+    if (idx < 0 || boundedRssi <= entries[idx].rssi) {
       return;
     }
   }
 
   strncpy(entries[idx].ssid, ssid, WifiScanSsidMaxSize - 1);
   entries[idx].ssid[WifiScanSsidMaxSize - 1] = '\0';
-  entries[idx].rssi = rssi;
-  entries[idx].channel = channel;
+  entries[idx].rssi = boundedRssi;
+  entries[idx].channel = boundedChannel;
 }
 
 void WifiScanResultCache::finishUpdate(uint32_t timestamp) {

@@ -25,6 +25,7 @@ TEST_F(WifiScanResultCacheTests, KeepsStrongestResultForDuplicatedSsid) {
   cache->beginUpdate();
   cache->addOrUpdate("ssid", -80, 1);
   cache->addOrUpdate("ssid", -55, 6);
+  cache->addOrUpdate("ssid", -90, 11);
   cache->finishUpdate(1000);
 
   Supla::WifiScanResult result = {};
@@ -89,6 +90,14 @@ TEST_F(WifiScanResultCacheTests, BoundsResultsAndKeepsStrongerNetworks) {
             cache->lookup("strong", &result, 1000));
   EXPECT_EQ(-30, result.rssi);
   EXPECT_EQ(Supla::WifiScanLookupStatus::NotFound,
+            cache->lookup("ssid_00", &result, 1000));
+  for (int i = 0; i < Supla::WifiScanMaxResults; ++i) {
+    ASSERT_TRUE(cache->getResult(i, &result));
+    EXPECT_EQ(i == 0 ? -30 : -90 + Supla::WifiScanMaxResults - i,
+              result.rssi);
+  }
+  EXPECT_FALSE(cache->getResult(Supla::WifiScanMaxResults, &result));
+  EXPECT_EQ(Supla::WifiScanLookupStatus::NotFound,
             cache->lookup("weak", &result, 1000));
 }
 
@@ -101,4 +110,33 @@ TEST_F(WifiScanResultCacheTests, ReportsStaleScan) {
   Supla::WifiScanResult result = {};
   EXPECT_EQ(Supla::WifiScanLookupStatus::Stale,
             cache->lookup("ssid", &result, 2001, 1000));
+}
+
+TEST(WifiScanResultTests, UsesPlatformCapacity) {
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+  EXPECT_EQ(5, Supla::WifiScanMaxResults);
+#elif defined(ESP32) || defined(ARDUINO_ARCH_ESP32) || \
+    defined(SUPLA_DEVICE_ESP32)
+  EXPECT_EQ(8, Supla::WifiScanMaxResults);
+#else
+  EXPECT_EQ(16, Supla::WifiScanMaxResults);
+#endif
+}
+
+TEST_F(WifiScanResultCacheTests, ClampsOutOfRangeRssiAndChannel) {
+  auto cache = Supla::WifiScanResultCache::Instance();
+  cache->beginUpdate();
+  cache->addOrUpdate("low", -1000, -1);
+  cache->addOrUpdate("high", 1000, 1000);
+  cache->finishUpdate(1000);
+
+  Supla::WifiScanResult result = {};
+  ASSERT_EQ(Supla::WifiScanLookupStatus::Found,
+            cache->lookup("low", &result, 1000));
+  EXPECT_EQ(-128, result.rssi);
+  EXPECT_EQ(0, result.channel);
+  ASSERT_EQ(Supla::WifiScanLookupStatus::Found,
+            cache->lookup("high", &result, 1000));
+  EXPECT_EQ(127, result.rssi);
+  EXPECT_EQ(255, result.channel);
 }

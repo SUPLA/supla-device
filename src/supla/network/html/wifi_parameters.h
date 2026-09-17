@@ -26,7 +26,10 @@ class WifiParameters : public HtmlElement {
 
   bool checkboxFound = false;
   bool wifiSettingsSeen = false;
-  char lastLoggedWifiScanMessage[128] = {};
+  uint32_t lastWifiScanSsidHash = 0;
+  int8_t lastWifiScanRssi = 0;
+  uint8_t lastWifiScanStatus = 0;
+  bool lastWifiScanLogValid = false;
   NetworkAddressParameters netifParameters;
 };
 

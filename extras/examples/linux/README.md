@@ -387,6 +387,7 @@ if you need something more.
 Supported channel types:
 * `VirtualRelay` - related class `Supla::Control::VirtualRelay`
 * `CmdRelay` - related class `Supla::Control::CmdRelay`
+* `CustomRelay` - related class `Supla::Control::CustomRelay`
 * `CmdValve` - related class `Supla::Control::CmdValve`
 * `CmdRollerShutter` - related class `Supla::Control::CmdRollerShutter`
 * `Fronius` - related class `Supla::PV::Fronius`
@@ -753,7 +754,8 @@ More examples can be found in subfolders of `extras/examples/linux`.
 All channels accept the following parameters:
 `initial_caption` - allows to define initial caption for channel.
 `channel_number` - optional channel number override. Allowed values are from
-`0` to `127`.
+`0` to `127`; explicitly configured channel numbers must be unique. Duplicate
+channel numbers cause a configuration error.
 `icon_id` - optional default icon identifier, from `0` to `255`. The server
 applies this value when the channel has no icon configured yet.
 
@@ -899,8 +901,9 @@ There are three supported output types:
 2. `Cmd` - use Linux command line as an output. Command is provided by `command`
    field.
 3. `MQTT` - publish to an MQTT broker. The mandatory `control_topic` parameter
-   specifies the topic. Optional `qos` selects the MQTT publish QoS and defaults
-   to `0`.
+   specifies the topic. Optional `qos` selects the MQTT publish QoS, defaults
+   to `0`, and accepts values from `0` to `2`. Other values cause a
+   configuration error.
 
 `Cmd` uses a trusted command template executed by POSIX `/bin/sh`. Use portable
 POSIX shell syntax in the template; trusted redirections, pipelines, `&&`,

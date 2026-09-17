@@ -21,8 +21,7 @@ namespace Supla::Source {
 class Mqtt : public Source {
  public:
   Mqtt(const Supla::LinuxYamlConfig& yamlConfig,
-       const std::vector<std::string>& topics,
-       int qos);
+       const std::vector<std::string>& topics);
   ~Mqtt();
 
   std::string getContent() override;
@@ -32,7 +31,6 @@ class Mqtt : public Source {
   std::shared_ptr<Supla::LinuxMqttClient> client;
   std::string latestMessage;
   std::vector<std::string> topics;
-  int qos;
 };
 }  // namespace Supla::Source
 

@@ -1,30 +1,31 @@
 # Android TV integration
 
-This example shows how to use the Android TV integration with Supla.
+This example shows how to use the Android TV integration with SUPLA.
 
-# Instalation
+# Installation
 
 ## sd4linux
 
 Follow the standard instructions for sd4linux (supla-device for Linux) installation
-from (here)[https://github.com/SUPLA/supla-device/tree/main/extras/examples/linux].
+from [the Linux example documentation](https://github.com/SUPLA/supla-device/tree/main/extras/examples/linux).
 
 ## adb setup
 
-`adb` allows to connect to the Android TV device and it will be used by our script
-to fetch data from TV.
+`adb` connects to the Android TV device and is used by the script to fetch data
+from the TV.
 
 For Debian based distributions, you can install it with
 
     sudo apt install adb
 
-Next, get IP address of your Android TV (you can read it from TV's settings or you
-or from router). Here we assume that it is 192.168.0.10. Make sure that you use static IP
+Next, get the IP address of your Android TV (you can read it from the TV's
+settings or from the router). Here we assume that it is 192.168.0.10. Make sure
+that you use a static IP
 allocation on DHCP server for your TV. Otherwise this IP will change over time.
 
     adb connect 192.168.0.10
 
-First execution of this command will fail, however on TV's screen you will see
+The first execution of this command will fail; however, on the TV screen you will see a
 prompt about connection attempt. Follow screen instructions and always allow connections
 from your PC.
 
@@ -40,15 +41,15 @@ It should produce some output on the console.
 
 ## Folder for storing data and log
 
-sd4linux requires a folder to store data. We will also store state of TV in a
-file.
-I assume that your user name is: supla_user with home home directory set to /home/supla_user.
+sd4linux requires a folder to store data. We will also store the TV state in a
+file. This example assumes that your user name is `supla_user` and the home
+directory is `/home/supla_user`.
 
 First we'll create folder for storing data:
 
     mkdir -p /home/supla_user/android_tv
 
-Make sure that it it is owned by supla_user and has write permissions:
+Make sure that it is owned by supla_user and has write permissions:
 
     chown -R supla_user:supla_user /home/supla_user/android_tv
     chmod -R 755 /home/supla_user/android_tv
@@ -69,7 +70,8 @@ Edit `media_state.sh` to change the following parameters:
     # Adjust atv.state file name and location. Use absolute path without ~
     filename="/home/supla_user/android_tv/atv.state"
 
-In case of any issues with the script, you can turn on logs in this file by changing comments here:
+In case of any issues with the script, you can enable logging by changing the
+comments here:
 
     logfile="/dev/null"
     # To enable logs, uncomment the following line and comment the line above.
@@ -82,14 +84,14 @@ You can check if everything works by running script manually:
 
     ./media_state.sh
 
-Nothing should be printed on the console. You can check if atv.state file exists
-in the folder `/home/supla_user/android_tv` and if it contains data:
+Nothing should be printed on the console. You can check whether the `atv.state`
+file exists in `/home/supla_user/android_tv` and contains data:
 
     cat /home/supla_user/android_tv/atv.state
 
 There should be some number in this file.
 
-Use CTRL+C to interupt the script.
+Use CTRL+C to interrupt the script.
 
 Now, we'll configure the service to run `media_state.sh`.
 We'll use `systemctl`.
@@ -118,10 +120,9 @@ And check if it works:
 
 ## sd4linux configuration
 
-Please follow instructions in [https://github.com/SUPLA/supla-device/tree/main/extras/examples/linux/README.md]
+Please follow instructions in the
+[Linux example README](https://github.com/SUPLA/supla-device/tree/main/extras/examples/linux/README.md)
 to install sd4linux as a service (it's at the end of that file).
 Adjust it to use `android_tv.yaml` file from the folder `/home/supla_user/android_tv`.
 
 Please also adjust `android_tv.yaml` and provide your server address, email, etc.
-
-

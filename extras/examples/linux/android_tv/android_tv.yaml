@@ -15,7 +15,7 @@ channels:
     offline_on_invalid_state: true
     initial_state: restore
 # Full list of keycode: https://developer.android.com/reference/android/view/KeyEvent
-    cmd_on: "adb shell input keyevent 85"  # play/payse
+    cmd_on: "adb shell input keyevent 85"  # play/pause
     cmd_off: "adb shell input keyevent 86" # stop
     source:
       type: File
@@ -32,7 +32,7 @@ channels:
       - use: at1
 # Send AT(1) when state is changed to 1 (from any state)
       - on_state: [1, 1]
-# Send AT(2) when sate is changed from 1 (play) to offline or stop/pause
+# Send AT(2) when state changes from 1 (play) to offline or stop/pause
       - on_state_change: [1, 0, 2]
       - on_state_change: [1, -1, 2]
 

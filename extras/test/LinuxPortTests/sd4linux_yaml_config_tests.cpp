@@ -157,6 +157,7 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   using Supla::LinuxYamlConfig::addOutput;
   using Supla::LinuxYamlConfig::addVirtualRelay;
   using Supla::LinuxYamlConfig::addSource;
+  using Supla::LinuxYamlConfig::loadTopLevelSources;
   using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
   using Supla::LinuxYamlConfig::config;
@@ -337,6 +338,20 @@ TEST(Sd4linuxYamlConfigTests, RejectsQosForMqttSource) {
   EXPECT_EQ(config.addSource(YAML::Load(
                 "type: MQTT\n"
                 "state_topic: state\n"
+                "qos: 1\n")),
+            nullptr);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsQosForReusedMqttSource) {
+  TestLinuxYamlConfig config;
+
+  ASSERT_TRUE(config.loadTopLevelSources(YAML::Load(
+      "mqtt_state:\n"
+      "  type: MQTT\n"
+      "  state_topic: state\n")));
+
+  EXPECT_EQ(config.addSource(YAML::Load(
+                "use: mqtt_state\n"
                 "qos: 1\n")),
             nullptr);
 }

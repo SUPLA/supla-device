@@ -2174,6 +2174,10 @@ Supla::Payload::Payload* Supla::LinuxYamlConfig::addPayload(
 Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
     const YAML::Node& source) {
   Supla::Source::Source* src = nullptr;
+  if (source["qos"]) {
+    SUPLA_LOG_ERROR("Config: unrecognized parameter \"qos\" for source");
+    return nullptr;
+  }
   if (source["use"]) {
     std::string use = source["use"].as<std::string>();
     src = findSource(use);
@@ -2216,11 +2220,6 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       std::string cmd = source["command"].as<std::string>();
       src = new Supla::Source::Cmd(cmd.c_str());
     } else if (type == "MQTT") {
-      if (source["qos"]) {
-        SUPLA_LOG_ERROR(
-            "Config: unrecognized parameter \"qos\" for MQTT source");
-        return nullptr;
-      }
       auto base_state_topic = source["state_topic"].as<std::string>();
       std::vector<std::string> allSubTopics;
       if (source["sub_topics"] && source["sub_topics"].size() > 0) {

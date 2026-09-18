@@ -785,3 +785,50 @@ TEST(ChannelElementTests, LocalConfigTypeOutsideRuntimeBitmapIsRejected) {
   EXPECT_EQ(element.getLocallyChangedConfigTypes(), 0);
   EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
 }
+
+TEST(ChannelElementTests, NewLocalConfigAfterRejectionStartsFreshAttempts) {
+  for (int configType : {SUPLA_CONFIG_TYPE_DEFAULT,
+                         SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
+                         SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE,
+                         SUPLA_CONFIG_TYPE_EXTENDED}) {
+    SCOPED_TRACE(configType);
+    Supla::Channel::resetToDefaults();
+    SuplaSrpcLayerMock srpc;
+    TestingChannelElement element;
+    element.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+    Supla::ConfigTypesBitmap configTypes;
+    configTypes.set(configType);
+    element.setUsedConfigTypes(configTypes);
+    element.onRegistered(&srpc);
+    element.markChannelConfigReceivedForTesting(configType);
+    element.handleChannelConfigFinished();
+
+    // More edits than the retry budget: each new edit must have its own budget.
+    for (int edit = 0; edit < 4; ++edit) {
+      SCOPED_TRACE(edit);
+      element.triggerSetChannelConfig(configType, true);
+      ASSERT_TRUE(element.isLocalConfigChangePending(configType));
+      ASSERT_EQ(element.getChannelConfigState(),
+                Supla::ChannelConfigState::LocalChangePending);
+      EXPECT_CALL(srpc, setChannelConfig(0, SUPLA_CHANNELFNC_POWERSWITCH,
+                                         _, 4, configType))
+          .WillOnce(Return(true));
+      EXPECT_FALSE(element.iterateConnected());
+      ASSERT_TRUE(::testing::Mock::VerifyAndClearExpectations(&srpc));
+
+      TSDS_SetChannelConfigResult result = {};
+      result.ConfigType = configType;
+      result.Result = SUPLA_CONFIG_RESULT_FALSE;
+      element.handleSetChannelConfigResult(&result);
+      EXPECT_FALSE(element.isLocalConfigChangePending(configType));
+      EXPECT_EQ(element.getChannelConfigState(),
+                Supla::ChannelConfigState::SetChannelConfigFailed);
+
+      EXPECT_CALL(srpc, setChannelConfig(_, _, _, _, _)).Times(0);
+      element.triggerSetChannelConfig(configType, false);
+      EXPECT_TRUE(element.iterateConnected());
+      EXPECT_TRUE(element.iterateConnected());
+      ASSERT_TRUE(::testing::Mock::VerifyAndClearExpectations(&srpc));
+    }
+  }
+}

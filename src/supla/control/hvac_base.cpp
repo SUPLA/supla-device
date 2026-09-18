@@ -268,14 +268,16 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
                      getChannelNumber());
     }
 
-    // Load the common channel-config exchange state.
-    loadConfigChangeFlag();
-
   } else {
     SUPLA_LOG_ERROR("HVAC[%d]: can't work without config storage",
                     getChannelNumber());
   }
   updateWeeklyScheduleConfigTypes();
+  if (cfg) {
+    // Restore pending changes only after the stored function and parameters
+    // determine all supported config types, including the ALT schedule.
+    loadConfigChangeFlag();
+  }
 }
 
 void HvacBase::onLoadState() {

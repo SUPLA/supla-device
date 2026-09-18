@@ -104,8 +104,8 @@ class ElementWithChannelActions : public Element, public LocalAction {
   uint8_t handleChannelConfig(TSD_ChannelConfig *result,
                               bool local = false) override;
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *result,
-                               bool altSchedule,
-                               bool local) override;
+                               bool altSchedule = false,
+                               bool local = false) override;
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;
   void purgeConfig() override;

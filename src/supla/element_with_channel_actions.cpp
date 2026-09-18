@@ -706,20 +706,26 @@ void Supla::ElementWithChannelActions::purgeConfig() {
 
 void Supla::ElementWithChannelActions::triggerSetChannelConfig(
     int configType, bool localChange) {
-  // don't trigger setChannelConfig if it failed in previous attempt
-  if (channelConfigState != Supla::ChannelConfigState::SetChannelConfigFailed) {
-    if (localChange && !setLocalConfigChange(configType)) {
+  // Do not retry rejected data automatically. A new local edit starts a new
+  // exchange and must still be protected from incoming server configuration.
+  if (channelConfigState == Supla::ChannelConfigState::SetChannelConfigFailed &&
+      !localChange) {
+    return;
+  }
+  if (localChange) {
+    if (!setLocalConfigChange(configType)) {
       return;
     }
-    if (localChange ||
-        (channelConfigState != Supla::ChannelConfigState::LocalChangePending &&
-         channelConfigState != Supla::ChannelConfigState::LocalChangeSent)) {
-      channelConfigState = localChange
-                                ? Supla::ChannelConfigState::LocalChangePending
-                                : Supla::ChannelConfigState::ResendConfig;
-    }
-    receivedConfigTypes.clear(configType);
+    setChannelConfigAttempts = 0;
   }
+  if (localChange ||
+      (channelConfigState != Supla::ChannelConfigState::LocalChangePending &&
+       channelConfigState != Supla::ChannelConfigState::LocalChangeSent)) {
+    channelConfigState = localChange
+                              ? Supla::ChannelConfigState::LocalChangePending
+                              : Supla::ChannelConfigState::ResendConfig;
+  }
+  receivedConfigTypes.clear(configType);
 }
 
 bool Supla::ElementWithChannelActions::iterateConfigExchange() {

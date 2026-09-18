@@ -546,6 +546,58 @@ TEST_F(ActionTriggerTests, StateStorageDisabledDoesNotReadOrWriteMode) {
   EXPECT_EQ(at.handleNewValueFromServer(&command), 1);
 }
 
+TEST_F(ActionTriggerTests, FirstEmptyServerConfigStillBuildsButtonHandlers) {
+  Supla::Control::Button button(10);
+  button.setMulticlickTime(300, true);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+
+  EXPECT_FALSE(button.isEventAlreadyUsed(Supla::ON_CLICK_1, false));
+  applyActionTriggerServerConfig(&at, 0);
+  EXPECT_TRUE(button.isEventAlreadyUsed(Supla::ON_CLICK_1, false));
+}
+
+TEST_F(ActionTriggerTests, RepeatedServerConfigDoesNotScheduleAnotherSave) {
+  StorageMock storage;
+  Supla::Control::ActionTrigger at;
+  at.enableStateStorage();
+  EXPECT_CALL(storage, scheduleSave(2000, 0)).Times(2);
+
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_TOGGLE_x2);
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_TOGGLE_x2);
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_TOGGLE_x3);
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_TOGGLE_x3);
+}
+
+TEST_F(ActionTriggerTests,
+       SameServerConfigIsReappliedAfterPublishingModeChange) {
+  Supla::Control::Button button(10);
+  button.setMulticlickTime(300, true);
+  Supla::Control::ActionTrigger at;
+  ActionHandlerMock localHandler;
+  button.addAction(Supla::INTERNAL_BUTTON_MOVE_UP, localHandler,
+                   Supla::CONDITIONAL_ON_PRESS);
+  button.addAction(Supla::INTERNAL_BUTTON_UP_STOP, localHandler,
+                   Supla::CONDITIONAL_ON_RELEASE);
+  at.attach(button);
+  at.onInit();
+  applyActionTriggerServerConfig(&at, 0);
+
+  loadMqttActionTriggerMode(&at, 2);
+  applyActionTriggerServerConfig(&at, 0);
+  EXPECT_FALSE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_FALSE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
+
+  loadMqttActionTriggerMode(&at, 0);
+  applyActionTriggerServerConfig(&at, 0);
+  EXPECT_TRUE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_TRUE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
+}
+
 TEST_F(ActionTriggerTests, AttachToMonostableButton) {
   SrpcMock srpc;
   ignoreAtValueUpdates(&srpc);
@@ -1861,6 +1913,106 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
     at.iterateConnected();
   }
 }
+
+TEST_F(ActionTriggerTests,
+       ManageLocalActionsForBistableDirectionalPressAndRelease) {
+  SrpcMock srpc;
+  ignoreAtValueUpdates(&srpc);
+  Supla::Control::Button button(10);
+  button.setMulticlickTime(500, true);
+  Supla::Control::ActionTrigger actionTrigger;
+  ActionHandlerMock localHandler;
+  actionTrigger.setAlwaysUseOnClick1();
+
+  button.addAction(Supla::INTERNAL_BUTTON_MOVE_UP,
+                   localHandler,
+                   Supla::CONDITIONAL_ON_PRESS);
+  button.addAction(Supla::INTERNAL_BUTTON_UP_STOP,
+                   localHandler,
+                   Supla::CONDITIONAL_ON_RELEASE);
+  actionTrigger.attach(button);
+
+  actionTrigger.onInit();
+
+  // Directional press/release actions must remain local actions. They must
+  // not be converted to ON_CLICK_1 as an old bistable ON_CHANGE action was.
+  EXPECT_TRUE(button.isEventAlreadyUsed(Supla::ON_CLICK_1, false));
+  EXPECT_EQ(button.getHandlerForClient(&localHandler, Supla::ON_CLICK_1),
+            nullptr);
+  EXPECT_TRUE(button.isEventAlreadyUsed(Supla::CONDITIONAL_ON_PRESS, false));
+  EXPECT_TRUE(
+      button.isEventAlreadyUsed(Supla::CONDITIONAL_ON_RELEASE, false));
+  EXPECT_TRUE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_TRUE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
+
+  TSD_ChannelConfig result = {};
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
+  config.ActiveActions = SUPLA_ACTION_CAP_TOGGLE_x1;
+  memcpy(result.Config, &config, sizeof(config));
+  actionTrigger.handleChannelConfig(&result);
+
+  // TOGGLE_x1 is the old bistable Action Trigger operation. It must disable
+  // both new directional local edges, even though AT itself runs on click 1.
+  EXPECT_FALSE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_FALSE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
+  EXPECT_TRUE(
+      button.getHandlerForClient(&actionTrigger, Supla::ON_CLICK_1)
+          ->isEnabled());
+
+  // No local movement may run in parallel with an active TOGGLE_x1 AT.
+  EXPECT_CALL(localHandler, handleAction(_, _)).Times(0);
+  button.runAction(Supla::CONDITIONAL_ON_PRESS);
+  button.runAction(Supla::CONDITIONAL_ON_RELEASE);
+  testing::Mock::VerifyAndClearExpectations(&localHandler);
+
+  config.ActiveActions = SUPLA_ACTION_CAP_TURN_ON;
+  memcpy(result.Config, &config, sizeof(config));
+  actionTrigger.handleChannelConfig(&result);
+
+  EXPECT_FALSE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_TRUE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
+
+  config.ActiveActions = SUPLA_ACTION_CAP_TURN_OFF;
+  memcpy(result.Config, &config, sizeof(config));
+  actionTrigger.handleChannelConfig(&result);
+
+  EXPECT_TRUE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_FALSE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
+
+  config.ActiveActions = 0;
+  memcpy(result.Config, &config, sizeof(config));
+  actionTrigger.handleChannelConfig(&result);
+
+  // Removing the AT configuration restores both local directional actions.
+  EXPECT_TRUE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_TRUE(button.getHandlerForClient(
+      &localHandler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
+  EXPECT_FALSE(button.getHandlerForClient(
+      &actionTrigger, Supla::ON_PRESS)->isEnabled());
+  EXPECT_FALSE(button.getHandlerForClient(
+      &actionTrigger, Supla::ON_RELEASE)->isEnabled());
+
+  EXPECT_CALL(localHandler,
+              handleAction(Supla::CONDITIONAL_ON_PRESS,
+                           Supla::INTERNAL_BUTTON_MOVE_UP));
+  EXPECT_CALL(localHandler,
+              handleAction(Supla::CONDITIONAL_ON_RELEASE,
+                           Supla::INTERNAL_BUTTON_UP_STOP));
+  button.runAction(Supla::CONDITIONAL_ON_PRESS);
+  button.runAction(Supla::CONDITIONAL_ON_RELEASE);
+}
+
 TEST_F(ActionTriggerTests,
        ManageLocalActionsForBistableButtonConditionalOnChange) {
   SrpcMock srpc;

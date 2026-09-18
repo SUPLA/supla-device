@@ -30,10 +30,6 @@ support is enabled by default when CURL is found. Use
 ## Compilation
 
 We use CMake to control build process.
-Please adjust SUPLA_DEVICE_PATH to the actual path where supla-device repository
-was cloned.
-
-    export SUPLA_DEVICE_PATH=~/supla-device
     cd supla-device/extras/examples/linux
     mkdir build
     cd build
@@ -151,7 +147,7 @@ You can specify your own config file:
 
     ./supla-device-linux -c /path/to/your/file/supla-cfg.yml
 
-## GUID, AUTHKEY, last_state.txt, state.bin
+## GUID, AUTHKEY and persistent state files
 
 GUID and AUTHKEY is automatically generated (if missing) and stored in location:
 `var/lib/supla-device/guid_auth.yaml`. Directory may be modified, but file
@@ -163,18 +159,20 @@ access to the `var/lib/supla-device` location. I.e. by calling:
     sudo chown supla_user /var/lib/supla-device
     sudo chmod 700 /var/lib/supla-device
 
-The application creates these state files with owner-only permissions (`0600`).
+The application creates these persistent files with owner-only permissions
+(`0600`): `guid_auth.yaml`, `config_storage.bin`, `state.bin`, and
+`last_state.txt`.
 
 Adjust "supla_user" to your user name.
 
-`last_state.txt` file contain last runtime "last state" log (similar to
+`last_state.txt` contains the last runtime "last state" log (similar to
 "last state" log available on web interface for i.e. ESP8266 devices). It is
 rewritten on each startup.
 
-Application will fail not start when it doesn't have access to this location.
+The application will fail to start when it doesn't have access to this location.
 
-Location for those files may be modified by providing providing
-`state_files_path` in you config YAML file.
+The location for these files may be modified by providing `state_files_path` in
+your config YAML file.
 
 ## Example supla-device.yaml config file
 
@@ -233,7 +231,7 @@ Example:
 #### Parameter `state_files_path`
 
 Defines location where supla-device will read/write GUID, AUTHKEY and
-`last_state.txt` and `state.bin`.
+`config_storage.bin`, `last_state.txt`, and `state.bin`.
 Parameter is optional. Default value is: `var/lib/supla-device` (relative path).
 Allowed values: any valid relative or absolute path where supla-device will have
 proper rights to write and read files.
@@ -305,7 +303,7 @@ Defines MQTT broker port to which device should connect to. This application
 can use SSL/TLS encrypted connection. Parameter is optional. The default is
 `1883` when `use_ssl` is `false` and `8883` when `use_ssl` is `true`. An
 explicit `port` value overrides these defaults. Using port `8883` also enables
-TLS when `use_ssl` is omitted.
+TLS when `use_ssl` is omitted or set to `false`.
 
 #### Parameter `username`
 
@@ -360,8 +358,8 @@ so we should set `verify_ca` to `true`
 
       verify_ca: true
 
-If the server is trusted but its certificate is self-signed or its CA is not in 
-the system's trusted certificates tray, we can use a PEM file with the certificate
+If the server is trusted but its certificate is self-signed or its CA is not in
+the system's trusted certificate store, we can use a PEM file with the certificate
 path and specify the file location as `ca_file`.
 
       ca_file: ca_chain.pem
@@ -387,6 +385,7 @@ if you need something more.
 Supported channel types:
 * `VirtualRelay` - related class `Supla::Control::VirtualRelay`
 * `CmdRelay` - related class `Supla::Control::CmdRelay`
+* `CustomRelay` - related class `Supla::Control::CustomRelay`
 * `CmdValve` - related class `Supla::Control::CmdValve`
 * `CmdRollerShutter` - related class `Supla::Control::CmdRollerShutter`
 * `Fronius` - related class `Supla::PV::Fronius`
@@ -755,7 +754,8 @@ All channels accept the following parameters:
 `default_function_number` - numeric `SUPLA_CHANNELFNC_*` value used as the
 initial channel function.
 `channel_number` - optional channel number override. Allowed values are from
-`0` to `127`.
+`0` to `127`; explicitly configured channel numbers must be unique. Duplicate
+channel numbers cause a configuration error.
 `icon_id` - optional default icon identifier, from `0` to `255`. The server
 applies this value when the channel has no icon configured yet.
 
@@ -911,8 +911,9 @@ There are three supported output types:
 2. `Cmd` - use Linux command line as an output. Command is provided by `command`
    field.
 3. `MQTT` - publish to an MQTT broker. The mandatory `control_topic` parameter
-   specifies the topic. Optional `qos` selects the MQTT publish QoS and defaults
-   to `0`.
+   specifies the topic. Optional `qos` selects the MQTT publish QoS, defaults
+   to `0`, and accepts values from `0` to `2`. Other values cause a
+   configuration error.
 
 `Cmd` uses a trusted command template executed by POSIX `/bin/sh`. Use portable
 POSIX shell syntax in the template; trusted redirections, pipelines, `&&`,
@@ -949,8 +950,9 @@ to a specific `output` with each turn on/off action. Currently, there are 2 temp
 Templates are functionally similar to parsers and outputs are functionally similar to sources.
 
 `CustomRelay` requires `output` and `payload` parameters. It accepts the same
-state-related parameters as `CmdRelay`: `state`, `state_on_values`,
-`offline_on_invalid_state`, and `action_trigger`. Without `state`, the relay
+state-related parameters as `CmdRelay`: `initial_state`, `state`,
+`state_on_values`, `offline_on_invalid_state`, and `action_trigger`.
+`initial_state` accepts `on`, `off`, or `restore`. Without `state`, the relay
 uses its internal state.
 
 It supports the following payload options:\
@@ -1269,7 +1271,7 @@ List of allowed parameters:
 
 `ElectricityMeterParsed` in example config file above contain definition of
 mapping that can be used with
-[wmbusmters](https://github.com/weetmuts/wmbusmeters) integration with Tauron
+[wmbusmeters](https://github.com/weetmuts/wmbusmeters) integration with Tauron
 AMIplus meter on two tariff billing. Supla doesn't provide tariffs, however
 in this example phase_1 energy is used for tariff 1 data, and phase_2 energy is
 used for tariff 2 data.
@@ -1279,7 +1281,7 @@ reverse active power fields and then shown as one positive or negative number
 (depending on actual value).
 
 Below example may be used for
-[wmbusmters](https://github.com/weetmuts/wmbusmeters) integration for Tauron
+[wmbusmeters](https://github.com/weetmuts/wmbusmeters) integration for Tauron
 AMIplus meter on standard single tariff:
 
       - type: ElectricityMeterParsed

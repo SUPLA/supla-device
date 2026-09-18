@@ -13,13 +13,12 @@
 namespace Supla::Source {
 
 Mqtt::Mqtt(const Supla::LinuxYamlConfig& yamlConfig,
-           const std::vector<std::string>& topics,
-           int qos)
-    : topics(topics), qos(qos) {
+           const std::vector<std::string>& topics)
+    : topics(topics) {
   client = Supla::LinuxMqttClient::getInstance(yamlConfig);
   for (auto& topic : topics) {
     SUPLA_LOG_DEBUG("Mark topic %s to subscribe", topic.c_str());
-    client->subscribeTopic(topic, qos);
+    client->subscribeTopic(topic);
   }
 }
 

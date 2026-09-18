@@ -70,8 +70,7 @@ std::shared_ptr<Supla::LinuxMqttClient>& Supla::LinuxMqttClient::getInstance(
   return instance;
 }
 
-void Supla::LinuxMqttClient::subscribeTopic(const std::string& topic, int qos) {
-  (void)qos;
+void Supla::LinuxMqttClient::subscribeTopic(const std::string& topic) {
   topics[topic] = "";
 }
 

@@ -122,6 +122,9 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   Supla::ActionHandler *localHandlerClient = nullptr;
   uint16_t localHandlerAction = 0;
   uint32_t activeActionsFromServer = 0;
+  // Comparison cache only: PublishAllDisableAll overwrites the effective mask
+  // above. Keep state storage and its existing format unchanged.
+  uint32_t lastReceivedActiveActions = 0;
   uint32_t disablesLocalOperation = 0;
   uint32_t disabledCapabilities = 0;
 
@@ -132,6 +135,7 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   bool alwaysUseOnClick1 = false;
   bool enabled = true;
   bool localHandlerSwitchConfigured = false;
+  bool channelConfigReceived = false;
   bool weeklyScheduleAvailable = true;
   WeeklyScheduleComponents weeklyScheduleComponents;
 };

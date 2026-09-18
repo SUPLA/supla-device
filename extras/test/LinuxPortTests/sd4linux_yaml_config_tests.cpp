@@ -35,9 +35,8 @@ void initExtensions() {
 }  // namespace Supla::Linux
 
 Supla::Source::Mqtt::Mqtt(const Supla::LinuxYamlConfig&,
-                          const std::vector<std::string>& topics,
-                          int qos)
-    : topics(topics), qos(qos) {
+                          const std::vector<std::string>& topics)
+    : topics(topics) {
 }
 
 Supla::Source::Mqtt::~Mqtt() {
@@ -154,9 +153,14 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   using Supla::LinuxYamlConfig::addRgbCctParsed;
   using Supla::LinuxYamlConfig::addCustomHvac;
   using Supla::LinuxYamlConfig::addCustomRelay;
+  using Supla::LinuxYamlConfig::addCmdRelay;
   using Supla::LinuxYamlConfig::addCmdValve;
   using Supla::LinuxYamlConfig::addCmdRollerShutter;
+  using Supla::LinuxYamlConfig::addHvac;
+  using Supla::LinuxYamlConfig::addOutput;
   using Supla::LinuxYamlConfig::addVirtualRelay;
+  using Supla::LinuxYamlConfig::addSource;
+  using Supla::LinuxYamlConfig::loadTopLevelSources;
   using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
   using Supla::LinuxYamlConfig::config;
@@ -383,6 +387,58 @@ TEST(Sd4linuxYamlConfigTests, UsesDefaultAndConfiguredSuplaProtocolVersion) {
   EXPECT_EQ(config.getProtoVersion(), 29);
 }
 
+TEST(Sd4linuxYamlConfigTests, RejectsQosForMqttSource) {
+  TestLinuxYamlConfig config;
+
+  EXPECT_EQ(config.addSource(YAML::Load(
+                "type: MQTT\n"
+                "state_topic: state\n"
+                "qos: 1\n")),
+            nullptr);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsQosForReusedMqttSource) {
+  TestLinuxYamlConfig config;
+
+  ASSERT_TRUE(config.loadTopLevelSources(YAML::Load(
+      "mqtt_state:\n"
+      "  type: MQTT\n"
+      "  state_topic: state\n")));
+
+  EXPECT_EQ(config.addSource(YAML::Load(
+                "use: mqtt_state\n"
+                "qos: 1\n")),
+            nullptr);
+}
+
+TEST(Sd4linuxYamlConfigTests, AcceptsMqttOutputQosRange) {
+  TestLinuxYamlConfig config;
+
+  for (int qos = 0; qos <= 2; qos++) {
+    EXPECT_NE(config.addOutput(YAML::Load(
+                  "type: MQTT\n"
+                  "control_topic: control\n"
+                  "qos: " +
+                  std::to_string(qos))),
+              nullptr);
+  }
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsMqttOutputQosOutsideRange) {
+  TestLinuxYamlConfig config;
+
+  EXPECT_EQ(config.addOutput(YAML::Load(
+                "type: MQTT\n"
+                "control_topic: control\n"
+                "qos: -1\n")),
+            nullptr);
+  EXPECT_EQ(config.addOutput(YAML::Load(
+                "type: MQTT\n"
+                "control_topic: control\n"
+                "qos: 3\n")),
+            nullptr);
+}
+
 TEST(Sd4linuxYamlConfigTests, RejectsCustomCaSecurityLevel) {
   const auto path = std::filesystem::temp_directory_path() /
                     ("supla_yaml_security_level_" +
@@ -399,6 +455,78 @@ TEST(Sd4linuxYamlConfigTests, RejectsCustomCaSecurityLevel) {
   std::error_code error;
   EXPECT_TRUE(std::filesystem::remove(path, error));
   EXPECT_FALSE(error) << error.message();
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsUnsupportedSecurityLevel) {
+  const auto path = std::filesystem::temp_directory_path() /
+                    ("supla_yaml_security_level_unsupported_" +
+                     std::to_string(getpid()) + ".yaml");
+  {
+    std::ofstream output(path);
+    ASSERT_TRUE(output.is_open());
+    output << "security_level: 3\n";
+  }
+
+  Supla::LinuxYamlConfig config(path.string());
+  EXPECT_FALSE(config.init());
+
+  std::error_code error;
+  EXPECT_TRUE(std::filesystem::remove(path, error));
+  EXPECT_FALSE(error) << error.message();
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsUnsupportedLogLevel) {
+  const auto path = std::filesystem::temp_directory_path() /
+                    ("supla_yaml_log_level_unsupported_" +
+                     std::to_string(getpid()) + ".yaml");
+  {
+    std::ofstream output(path);
+    ASSERT_TRUE(output.is_open());
+    output << "log_level: trace\n";
+  }
+
+  Supla::LinuxYamlConfig config(path.string());
+  EXPECT_FALSE(config.init());
+
+  std::error_code error;
+  EXPECT_TRUE(std::filesystem::remove(path, error));
+  EXPECT_FALSE(error) << error.message();
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsUnsupportedInitialStateForRelays) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+  auto invalidState = YAML::Load("initial_state: invalid\n");
+
+  EXPECT_FALSE(config.addVirtualRelay(invalidState, 0));
+  EXPECT_EQ(Supla::Element::last(), previousElement);
+  EXPECT_FALSE(config.addCmdRelay(invalidState, 0, nullptr));
+  EXPECT_EQ(Supla::Element::last(), previousElement);
+
+  FakePayload payload;
+  EXPECT_FALSE(config.addCustomRelay(invalidState, 0, nullptr, &payload));
+  EXPECT_EQ(Supla::Element::last(), previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsUnsupportedHvacDefaultFunction) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+  auto invalidFunction = YAML::Load(
+      "cmd_on: on\n"
+      "cmd_off: off\n"
+      "main_thermometer_channel_no: 1\n"
+      "default_function: unknown\n");
+
+  EXPECT_FALSE(config.addHvac(invalidFunction, 0));
+  deleteCreatedElement(previousElement);
+
+  FakePayload payload;
+  previousElement = Supla::Element::last();
+  auto customInvalidFunction = YAML::Load(
+      "main_thermometer_channel_no: 1\n"
+      "default_function: unknown\n");
+  EXPECT_FALSE(config.addCustomHvac(customInvalidFunction, 0, &payload));
+  deleteCreatedElement(previousElement);
 }
 
 TEST(Sd4linuxYamlConfigTests, ParseErrorDoesNotLogYamlSource) {
@@ -700,6 +828,25 @@ TEST(Sd4linuxYamlConfigTests, RejectsChannelNumberOutsideAllowedRange) {
   EXPECT_FALSE(config.parseChannel(
       YAML::Load("type: VirtualRelay\nchannel_number: 128\n"), 0));
   EXPECT_EQ(Supla::Element::last(), previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     RejectsDuplicateChannelNumberWithoutReassigningExistingChannel) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.parseChannel(
+      YAML::Load("type: VirtualRelay\nchannel_number: 5\n"), 0));
+  auto firstChannel = Supla::Element::last();
+  ASSERT_NE(firstChannel, previousElement);
+  EXPECT_EQ(firstChannel->getChannelNumber(), 5);
+
+  EXPECT_FALSE(config.parseChannel(
+      YAML::Load("type: VirtualRelay\nchannel_number: 5\n"), 1));
+  EXPECT_EQ(Supla::Element::last(), firstChannel);
+  EXPECT_EQ(firstChannel->getChannelNumber(), 5);
+
+  deleteCreatedElement(previousElement);
 }
 
 TEST(Sd4linuxYamlConfigTests, RejectsIconIdOutsideAllowedRange) {

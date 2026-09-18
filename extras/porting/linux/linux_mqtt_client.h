@@ -27,7 +27,7 @@ class LinuxMqttClient {
 
   void unsubscribeTopic(const std::string& topic);
 
-  void subscribeTopic(const std::string& topic, int qos);
+  void subscribeTopic(const std::string& topic);
 
   static void publishCallback(void**, struct mqtt_response_publish* published);
 

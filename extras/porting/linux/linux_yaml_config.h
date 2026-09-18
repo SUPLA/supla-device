@@ -4,17 +4,17 @@
 /*
  * Linux YAML based config file.
  *
- * It contain two parts:
- * 1. etc/supla-device.yaml file with user defined read-only configuration
- * 2. var/supla-device.yaml file used for supla-device read/write storage for
- *    GUID and AUTHKEY
+ * It contains a read-only YAML configuration file (by default
+ * etc/supla-device.yaml) and read/write files below state_files_path:
+ * guid_auth.yaml for GUID and AUTHKEY, config_storage.bin for writable
+ * configuration, and state.bin for runtime state.
  *
  * All "set" methods are executed against read/write storage or disabled.
  * It overrides some "get" methods to use read only storage with different
  * keys than those used by default in supla-device.
  *
  * Example config yaml file. Names and values are case-sensitive.
- * Please pay attantion to spaces, as those are important in yaml files.
+ * Please pay attention to spaces, as those are important in YAML files.
 
 name: Device name
 # log_level - optional, values: info (default), debug, verbose, warning, error
@@ -35,12 +35,12 @@ channels:
   - type: VirtualRelay
 
   - type: ImpulseCounterParsed
+    counter: total_m3
     source:
       type: File
       file: /home/something
     parser:
       type: Json
-      counter: total_m3
 
  */
 

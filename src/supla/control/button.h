@@ -90,6 +90,9 @@ class Button : public SimpleButton, public ActionHandler {
  protected:
   void setActionTriggerModeLocked(bool locked);
   void evaluateMaxMulticlickValue();
+  // Used by ActionTrigger for bistable directional press/release pairs.
+  // Counting clicks (including CFG x10) remains independent of this policy.
+  void setConditionalActionsOnClick1(bool enabled);
   // disbles repeating "on hold" if repeat time is lower than threshold
   // threshold 0 disables always
   void disableRepeatOnHold(uint32_t threshold = 0);
@@ -113,6 +116,7 @@ class Button : public SimpleButton, public ActionHandler {
   bool suppressActionsUntilRelease = false;
   bool allowHoldOnPowerOn = false;
   bool waitingForRelease = false;
+  bool conditionalActionsOnClick1 = false;
 
   static int buttonCounter;
 };

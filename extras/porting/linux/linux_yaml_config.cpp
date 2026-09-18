@@ -138,12 +138,30 @@ bool Supla::LinuxYamlConfig::init() {
   if (config.size() == 0) {
     try {
       config = YAML::LoadFile(file);
-      if (config["security_level"] &&
-          config["security_level"].as<unsigned int>() == 1) {
-        SUPLA_LOG_ERROR(
-            "Config: security_level 1 (custom CA) is not supported on "
-            "sd4linux");
-        return false;
+      if (config["security_level"]) {
+        int securityLevel = config["security_level"].as<int>();
+        if (securityLevel == 1) {
+          SUPLA_LOG_ERROR(
+              "Config: security_level 1 (custom CA) is not supported on "
+              "sd4linux");
+          return false;
+        }
+        if (securityLevel != 0 && securityLevel != 2) {
+          SUPLA_LOG_ERROR(
+              "Config: unsupported security_level %d (allowed values: 0, 2)",
+              securityLevel);
+          return false;
+        }
+      }
+      if (config["log_level"]) {
+        std::string logLevel = config["log_level"].as<std::string>();
+        if (logLevel != "info" && logLevel != "debug" &&
+            logLevel != "verbose" && logLevel != "warning" &&
+            logLevel != "error") {
+          SUPLA_LOG_ERROR("Config: unsupported log_level \"%s\"",
+                          logLevel.c_str());
+          return false;
+        }
       }
       if (config[Supla::ManufacturerId]) {
         auto manufacturerId = config[Supla::ManufacturerId].as<int>();
@@ -778,8 +796,10 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     }
 
     int channelNumber = -1;
+    bool channelNumberConfigured = false;
     if (auto channelNumberParameter =
             getAndMarkChannelParameter(ch, "channel_number")) {
+      channelNumberConfigured = true;
       channelNumber = channelNumberParameter.as<int>();
       if (channelNumber < 0 || channelNumber >= SUPLA_CHANNELMAXCOUNT) {
         SUPLA_LOG_ERROR(
@@ -790,6 +810,12 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     }
     if (channelNumber == -1) {
       channelNumber = channelIndex;
+    }
+    if (channelNumberConfigured &&
+        !Supla::RegisterDevice::isChannelNumberFree(channelNumber)) {
+      SUPLA_LOG_ERROR("Config: channel_number %d is already in use",
+                      channelNumber);
+      return false;
     }
 
     if (auto nameParameter = getAndMarkChannelParameter(ch, "name")) {
@@ -936,11 +962,22 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
 
 bool Supla::LinuxYamlConfig::addVirtualRelay(const YAML::Node& ch,
                                              int channelNumber) {
-  SUPLA_LOG_INFO("Channel[%d] config: adding VirtualRelay", channelNumber);
-  auto vr = new Supla::Control::VirtualRelay();
+  std::string initialState;
   if (auto initialStateParameter =
           getAndMarkChannelParameter(ch, "initial_state")) {
-    auto initialState = initialStateParameter.as<std::string>();
+    initialState = initialStateParameter.as<std::string>();
+    if (initialState != "on" && initialState != "off" &&
+        initialState != "restore") {
+      SUPLA_LOG_ERROR("Channel[%d] config: unknown initial state \"%s\"",
+                      channelNumber,
+                      initialState.c_str());
+      return false;
+    }
+  }
+
+  SUPLA_LOG_INFO("Channel[%d] config: adding VirtualRelay", channelNumber);
+  auto vr = new Supla::Control::VirtualRelay();
+  if (!initialState.empty()) {
     if (initialState == "on") {
       vr->setDefaultStateOn();
     } else if (initialState == "off") {
@@ -958,11 +995,22 @@ bool Supla::LinuxYamlConfig::addVirtualRelay(const YAML::Node& ch,
 bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
                                          int channelNumber,
                                          Supla::Parser::Parser* parser) {
-  SUPLA_LOG_INFO("Channel[%d] config: adding CmdRelay", channelNumber);
-  auto cr = new Supla::Control::CmdRelay(parser);
+  std::string initialState;
   if (auto initialStateParameter =
           getAndMarkChannelParameter(ch, "initial_state")) {
-    auto initialState = initialStateParameter.as<std::string>();
+    initialState = initialStateParameter.as<std::string>();
+    if (initialState != "on" && initialState != "off" &&
+        initialState != "restore") {
+      SUPLA_LOG_ERROR("Channel[%d] config: unknown initial state \"%s\"",
+                      channelNumber,
+                      initialState.c_str());
+      return false;
+    }
+  }
+
+  SUPLA_LOG_INFO("Channel[%d] config: adding CmdRelay", channelNumber);
+  auto cr = new Supla::Control::CmdRelay(parser);
+  if (!initialState.empty()) {
     if (initialState == "on") {
       cr->setDefaultStateOn();
     } else if (initialState == "off") {
@@ -1110,6 +1158,19 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
                                             int channelNumber,
                                             Parser::Parser* parser,
                                             Payload::Payload* payload) {
+  std::string initialState;
+  if (auto initialStateParameter =
+          getAndMarkChannelParameter(ch, "initial_state")) {
+    initialState = initialStateParameter.as<std::string>();
+    if (initialState != "on" && initialState != "off" &&
+        initialState != "restore") {
+      SUPLA_LOG_ERROR("Channel[%d] config: unknown initial state \"%s\"",
+                      channelNumber,
+                      initialState.c_str());
+      return false;
+    }
+  }
+
   SUPLA_LOG_INFO("Channel[%d] config: adding CustomRelay", channelNumber);
   if (payload == nullptr) {
     SUPLA_LOG_ERROR(
@@ -1118,9 +1179,7 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
     return false;
   }
   auto cr = new Supla::Control::CustomRelay(parser, payload);
-  if (auto initialStateParameter =
-          getAndMarkChannelParameter(ch, "initial_state")) {
-    auto initialState = initialStateParameter.as<std::string>();
+  if (!initialState.empty()) {
     if (initialState == "on") {
       cr->setDefaultStateOn();
     } else if (initialState == "off") {
@@ -1404,6 +1463,11 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
     } else if (function == "diff") {
       hvac->getChannel()->setDefaultFunction(
           SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
+    } else {
+      SUPLA_LOG_ERROR("Channel[%d] config: unknown default function \"%s\"",
+                      channelNumber,
+                      function.c_str());
+      return false;
     }
   }
   return addCommonParameters(ch, hvac);
@@ -1501,6 +1565,11 @@ bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch,
     } else if (function == "diff") {
       hvac->getChannel()->setDefaultFunction(
           SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
+    } else {
+      SUPLA_LOG_ERROR("Channel[%d] config: unknown default function \"%s\"",
+                      channelNumber,
+                      function.c_str());
+      return false;
     }
   }
   return addCommonParameters(ch, hvac);
@@ -2108,6 +2177,10 @@ Supla::Payload::Payload* Supla::LinuxYamlConfig::addPayload(
 Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
     const YAML::Node& source) {
   Supla::Source::Source* src = nullptr;
+  if (source["qos"]) {
+    SUPLA_LOG_ERROR("Config: unrecognized parameter \"qos\" for source");
+    return nullptr;
+  }
   if (source["use"]) {
     std::string use = source["use"].as<std::string>();
     src = findSource(use);
@@ -2151,7 +2224,6 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       src = new Supla::Source::Cmd(cmd.c_str());
     } else if (type == "MQTT") {
       auto base_state_topic = source["state_topic"].as<std::string>();
-      int qos = source["qos"].as<int>(0);
       std::vector<std::string> allSubTopics;
       if (source["sub_topics"] && source["sub_topics"].size() > 0) {
         auto sub_topics = source["sub_topics"].as<std::vector<std::string>>();
@@ -2163,7 +2235,7 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       } else {
         allSubTopics.push_back(base_state_topic);
       }
-      src = new Supla::Source::Mqtt(*this, allSubTopics, qos);
+      src = new Supla::Source::Mqtt(*this, allSubTopics);
     } else if (type == "HTTP") {
 #ifndef SUPLA_LINUX_HTTP_SOURCE_ENABLED
       SUPLA_LOG_ERROR(
@@ -2312,6 +2384,12 @@ Supla::Output::Output* Supla::LinuxYamlConfig::addOutput(
     } else if (type == "MQTT") {
       std::string controlTopic = output["control_topic"].as<std::string>();
       int qos = output["qos"].as<int>(0);
+      if (qos < 0 || qos > 2) {
+        SUPLA_LOG_ERROR(
+            "Config: MQTT output qos has to be in range 0..2 (got %d)",
+            qos);
+        return nullptr;
+      }
       out = new Supla::Output::Mqtt(*this, controlTopic.c_str(), qos);
     } else {
       SUPLA_LOG_ERROR("Config: unknown output type \"%s\"", type.c_str());
@@ -2952,6 +3030,12 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     }
     auto ch = sensor->getChannel();
     if (ch) {
+      if (ch->getChannelNumber() != channelNumber &&
+          !Supla::RegisterDevice::isChannelNumberFree(channelNumber)) {
+        SUPLA_LOG_ERROR("Channel config: channel_number %d is already in use",
+                        channelNumber);
+        return false;
+      }
       if (!ch->setChannelNumber(channelNumber)) {
         SUPLA_LOG_ERROR("Failed to set channel number: %d", channelNumber);
         return false;
@@ -2996,6 +3080,12 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
     }
     auto ch = element->getChannel();
     if (ch) {
+      if (ch->getChannelNumber() != channelNumber &&
+          !Supla::RegisterDevice::isChannelNumberFree(channelNumber)) {
+        SUPLA_LOG_ERROR("Channel config: channel_number %d is already in use",
+                        channelNumber);
+        return false;
+      }
       if (!ch->setChannelNumber(channelNumber)) {
         SUPLA_LOG_ERROR("Failed to set channel number: %d", channelNumber);
         return false;

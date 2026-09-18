@@ -471,6 +471,26 @@ void RollerShutterInterface::handleAction(int, int action) {
       break;
     }
 
+    // Stop only the direction requested by the latest directional press.
+    // lastDirection also covers a reversal waiting for the motor interlock.
+    case UP_STOP: {
+      if (lastDirectionWasOpen()) {
+        stop();
+      }
+      break;
+    }
+
+    case INTERNAL_BUTTON_UP_STOP: {
+      if (rsConfig.buttonsUpsideDown == 2) {
+        if (lastDirectionWasClose()) {
+          stop();
+        }
+      } else if (lastDirectionWasOpen()) {
+        stop();
+      }
+      break;
+    }
+
     case MOVE_UP_OR_STOP: {
       if (inMove()) {
         stop();
@@ -504,6 +524,24 @@ void RollerShutterInterface::handleAction(int, int action) {
         stop();
       } else {
         moveDown();
+      }
+      break;
+    }
+
+    case DOWN_STOP: {
+      if (lastDirectionWasClose()) {
+        stop();
+      }
+      break;
+    }
+
+    case INTERNAL_BUTTON_DOWN_STOP: {
+      if (rsConfig.buttonsUpsideDown == 2) {
+        if (lastDirectionWasOpen()) {
+          stop();
+        }
+      } else if (lastDirectionWasClose()) {
+        stop();
       }
       break;
     }
@@ -1510,10 +1548,14 @@ void RollerShutterInterface::setupButtonActions(Supla::Control::Button *button,
         button->addAction(Supla::STOP, this, Supla::ON_HOLD_RELEASE);
       }
     } else if (button->isBistable()) {
-      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP
-                                   : Supla::MOVE_UP_OR_STOP,
+      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP
+                                   : Supla::MOVE_UP,
                         this,
-                        Supla::CONDITIONAL_ON_CHANGE);
+                        Supla::CONDITIONAL_ON_PRESS);
+      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_UP_STOP
+                                   : Supla::UP_STOP,
+                        this,
+                        Supla::CONDITIONAL_ON_RELEASE);
     } else if (button->isCentral()) {
       button->addAction(Supla::OPEN, this, Supla::ON_PRESS);
     }
@@ -1537,10 +1579,14 @@ void RollerShutterInterface::setupButtonActions(Supla::Control::Button *button,
         button->addAction(Supla::STOP, this, Supla::ON_HOLD_RELEASE);
       }
     } else if (button->isBistable()) {
-      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP
-                                   : Supla::MOVE_DOWN_OR_STOP,
+      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_DOWN
+                                   : Supla::MOVE_DOWN,
                         this,
-                        Supla::CONDITIONAL_ON_CHANGE);
+                        Supla::CONDITIONAL_ON_PRESS);
+      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_DOWN_STOP
+                                   : Supla::DOWN_STOP,
+                        this,
+                        Supla::CONDITIONAL_ON_RELEASE);
     } else if (button->isCentral()) {
       button->addAction(Supla::CLOSE, this, Supla::ON_PRESS);
     }

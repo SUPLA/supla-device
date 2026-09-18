@@ -60,15 +60,20 @@ void Button::onTimer() {
     }
     return;
   }
+
   uint32_t timeDelta = millis() - lastStateChangeMs;
   bool stateChanged = false;
+  const bool deferConditionalEdges =
+      conditionalActionsOnClick1 && isBistable() && multiclickTimeMs > 0;
   if (stateResult == TO_PRESSED) {
     SUPLA_LOG_DEBUG("Button[%d] pressed", getButtonNumber());
     stateChanged = true;
     runAction(ON_PRESS);
     runAction(ON_CHANGE);
     if (clickCounter <= 1 && holdSend == 0) {
-      runAction(CONDITIONAL_ON_PRESS);
+      if (!deferConditionalEdges) {
+        runAction(CONDITIONAL_ON_PRESS);
+      }
       runAction(CONDITIONAL_ON_CHANGE);
     }
   } else if (stateResult == TO_RELEASED) {
@@ -77,7 +82,9 @@ void Button::onTimer() {
     runAction(ON_RELEASE);
     runAction(ON_CHANGE);
     if (clickCounter <= 1 && holdSend == 0) {
-      runAction(CONDITIONAL_ON_RELEASE);
+      if (!deferConditionalEdges) {
+        runAction(CONDITIONAL_ON_RELEASE);
+      }
       runAction(CONDITIONAL_ON_CHANGE);
     }
     if (clickCounter <= 1 && holdSend > 0) {
@@ -135,6 +142,10 @@ void Button::onTimer() {
           if (holdSend == 0 && clickCounter != 255) {
             switch (clickCounter) {
               case 1: {
+                if (deferConditionalEdges) {
+                  runAction(stateResult == PRESSED ? CONDITIONAL_ON_PRESS
+                                                   : CONDITIONAL_ON_RELEASE);
+                }
                 runAction(ON_CLICK_1);
                 break;
               }
@@ -206,7 +217,10 @@ void Button::onTimer() {
             }
           }
           clickCounter = 255;
-          if (timeDelta > multiclickTimeMs) {
+          if (timeDelta > multiclickTimeMs ||
+              (deferConditionalEdges && maxMulticlickValueConfigured == 1)) {
+            // With no higher clicks configured, accept the next edge right
+            // away. In particular, never swallow the directional stop.
             holdSend = 0;
             clickCounter = 0;
           }
@@ -250,10 +264,20 @@ void Button::enableAction(int32_t action,
   evaluateMaxMulticlickValue();
 }
 
+void Button::setConditionalActionsOnClick1(bool enabled) {
+  if (conditionalActionsOnClick1 || enabled) {
+    // Reconfiguration must not replay an edge collected under the old policy.
+    clickCounter = 0;
+    holdSend = 0;
+  }
+  conditionalActionsOnClick1 = enabled;
+  evaluateMaxMulticlickValue();
+}
+
 void Button::evaluateMaxMulticlickValue() {
   auto ptr = ActionHandlerClient::begin;
   uint8_t clickCounterValueForEvent = 0;
-  maxMulticlickValueConfigured = 0;
+  maxMulticlickValueConfigured = conditionalActionsOnClick1 ? 1 : 0;
   while (ptr) {
     if (ptr->trigger == this && ptr->isEnabled()) {
       switch (ptr->onEvent) {

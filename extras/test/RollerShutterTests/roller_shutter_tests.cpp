@@ -7,11 +7,13 @@
 #include <storage_mock.h>
 #include <supla/actions.h>
 #include <supla/channel.h>
+#include <supla/control/button.h>
 #include <supla/control/bistable_roller_shutter.h>
 #include <supla/control/roller_shutter.h>
 #include <supla/control/tripple_button_roller_shutter.h>
 #include <supla/device/register_device.h>
 #include <supla_io_mock.h>
+#include <array>
 
 #include "gmock/gmock.h"
 
@@ -74,6 +76,227 @@ class RollerShutterTestAccess : public Supla::Control::RollerShutter {
     relayDownOn();
   }
 };
+
+class StatefulDigitalInterface : public DigitalInterface {
+ public:
+  void digitalWrite(uint8_t pin, uint8_t value) override {
+    levels[pin] = value;
+  }
+
+  int digitalRead(uint8_t pin) override {
+    return levels[pin];
+  }
+
+  void analogWrite(uint8_t, int) override {
+  }
+
+  void pinMode(uint8_t, uint8_t) override {
+  }
+
+  unsigned int pulseIn(uint8_t, uint8_t, uint64_t) override {
+    return 0;
+  }
+
+  void setInput(uint8_t pin, uint8_t value) {
+    levels[pin] = value;
+  }
+
+  uint8_t level(uint8_t pin) const {
+    return levels[pin];
+  }
+
+ private:
+  std::array<uint8_t, 256> levels{};
+};
+
+class BistableRollerShutterRig {
+ public:
+  static constexpr uint8_t kUpOutput = 1;
+  static constexpr uint8_t kDownOutput = 2;
+  static constexpr uint8_t kUpButtonInput = 3;
+  static constexpr uint8_t kDownButtonInput = 4;
+
+  StatefulDigitalInterface gpio;
+  SimpleTime time;
+  Supla::Control::RollerShutter rollerShutter;
+  Supla::Control::Button upButton;
+  Supla::Control::Button downButton;
+
+  BistableRollerShutterRig()
+      : rollerShutter(kUpOutput, kDownOutput),
+        upButton(kUpButtonInput),
+        downButton(kDownButtonInput) {
+    upButton.setButtonType(Supla::Control::Button::ButtonType::BISTABLE);
+    downButton.setButtonType(Supla::Control::Button::ButtonType::BISTABLE);
+    upButton.setDebounceDelay(0);
+    downButton.setDebounceDelay(0);
+    upButton.setSwNoiseFilterDelay(0);
+    downButton.setSwNoiseFilterDelay(0);
+
+    gpio.setInput(kUpButtonInput, LOW);
+    gpio.setInput(kDownButtonInput, LOW);
+    rollerShutter.attach(&upButton, &downButton);
+    rollerShutter.onInit();
+  }
+
+  void setButton(Supla::Control::Button &button,
+                 uint8_t inputPin,
+                 bool pressed) {
+    gpio.setInput(inputPin, pressed ? HIGH : LOW);
+
+    // Advance time so the button state machine observes the edge.
+    time.advance(1);
+    button.onTimer();
+    time.advance(1);
+    button.onTimer();
+    rollerShutter.onTimer();
+  }
+
+  void advanceRollerShutter(uint32_t milliseconds) {
+    time.advance(milliseconds);
+    rollerShutter.onTimer();
+  }
+
+  void expectStopped() const {
+    EXPECT_EQ(gpio.level(kUpOutput), LOW);
+    EXPECT_EQ(gpio.level(kDownOutput), LOW);
+  }
+
+  void expectMovingUp() const {
+    EXPECT_EQ(gpio.level(kUpOutput), HIGH);
+    EXPECT_EQ(gpio.level(kDownOutput), LOW);
+  }
+
+  void expectMovingDown() const {
+    EXPECT_EQ(gpio.level(kUpOutput), LOW);
+    EXPECT_EQ(gpio.level(kDownOutput), HIGH);
+  }
+};
+
+class BistableRollerShutterFixture : public testing::Test {
+ protected:
+  void SetUp() override {
+    Supla::Channel::resetToDefaults();
+  }
+
+  void TearDown() override {
+    Supla::Channel::resetToDefaults();
+  }
+};
+
+TEST_F(BistableRollerShutterFixture,
+       PressStartsMovementAndReleaseStopsMovement) {
+  BistableRollerShutterRig rig;
+
+  rig.expectStopped();
+
+  rig.setButton(rig.downButton, BistableRollerShutterRig::kDownButtonInput,
+                true);
+  rig.expectMovingDown();
+
+  rig.setButton(rig.downButton, BistableRollerShutterRig::kDownButtonInput,
+                false);
+  rig.expectStopped();
+  rig.advanceRollerShutter(501);
+  rig.expectStopped();
+}
+
+TEST_F(BistableRollerShutterFixture,
+       PressingUpStartsMovementAndReleaseStopsMovement) {
+  BistableRollerShutterRig rig;
+
+  rig.expectStopped();
+
+  rig.setButton(rig.upButton, BistableRollerShutterRig::kUpButtonInput, true);
+  rig.expectMovingUp();
+
+  rig.setButton(rig.upButton, BistableRollerShutterRig::kUpButtonInput, false);
+  rig.expectStopped();
+  rig.advanceRollerShutter(501);
+  rig.expectStopped();
+}
+
+TEST_F(BistableRollerShutterFixture,
+       PressingDownWhileMovingDownKeepsDirectionUntilRelease) {
+  BistableRollerShutterRig rig;
+
+  // Model an already running motor (for example after a remote command),
+  // then operate the bistable DOWN input.
+  rig.rollerShutter.moveDown();
+  rig.rollerShutter.onTimer();
+  rig.expectMovingDown();
+
+  rig.setButton(rig.downButton, BistableRollerShutterRig::kDownButtonInput,
+                true);
+  rig.expectMovingDown();
+
+  rig.setButton(rig.downButton, BistableRollerShutterRig::kDownButtonInput,
+                false);
+  rig.expectStopped();
+  rig.advanceRollerShutter(501);
+  rig.expectStopped();
+}
+
+TEST_F(BistableRollerShutterFixture,
+       PressingUpWhileMovingDownReversesAndStaleDownReleaseIsIgnored) {
+  BistableRollerShutterRig rig;
+
+  // Model an already running motor and keep DOWN pressed before pressing UP.
+  rig.rollerShutter.moveDown();
+  rig.rollerShutter.onTimer();
+  rig.expectMovingDown();
+
+  rig.setButton(rig.downButton, BistableRollerShutterRig::kDownButtonInput,
+                true);
+  rig.expectMovingDown();
+
+  rig.setButton(rig.upButton, BistableRollerShutterRig::kUpButtonInput, true);
+  rig.expectStopped();
+
+  // The reverse direction is protected by the motor interlock.
+  rig.advanceRollerShutter(501);
+  rig.expectMovingUp();
+
+  // Releasing the old DOWN button must not stop the newer UP command.
+  rig.setButton(rig.downButton, BistableRollerShutterRig::kDownButtonInput,
+                false);
+  rig.expectMovingUp();
+
+  rig.setButton(rig.upButton, BistableRollerShutterRig::kUpButtonInput, false);
+  rig.expectStopped();
+  rig.advanceRollerShutter(501);
+  rig.expectStopped();
+}
+
+TEST_F(BistableRollerShutterFixture,
+       ReleasingReverseButtonBeforeInterlockCancelsPendingMovement) {
+  BistableRollerShutterRig rig;
+
+  rig.rollerShutter.moveDown();
+  rig.rollerShutter.onTimer();
+  rig.expectMovingDown();
+
+  rig.setButton(rig.upButton, BistableRollerShutterRig::kUpButtonInput, true);
+  rig.expectStopped();
+
+  // Releasing UP before the interlock expires cancels the pending reverse.
+  rig.setButton(rig.upButton, BistableRollerShutterRig::kUpButtonInput, false);
+  rig.advanceRollerShutter(501);
+  rig.expectStopped();
+}
+
+TEST_F(BistableRollerShutterFixture,
+       InvertedButtonsStopTheMappedDirectionOnRelease) {
+  BistableRollerShutterRig rig;
+
+  rig.rollerShutter.setRsConfigButtonsUpsideDownValue(2);
+
+  rig.setButton(rig.upButton, BistableRollerShutterRig::kUpButtonInput, true);
+  rig.expectMovingDown();
+
+  rig.setButton(rig.upButton, BistableRollerShutterRig::kUpButtonInput, false);
+  rig.expectStopped();
+}
 
 TEST_F(RollerShutterFixture, basicTests) {
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);

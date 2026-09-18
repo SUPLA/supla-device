@@ -136,6 +136,13 @@ enum Action {
   SEQUENCE_3_START,
   SEQUENCE_3_STOP,
 
+  // Direction-specific roller shutter stops. Keep new actions at the end so
+  // ids of existing actions remain unchanged.
+  UP_STOP,
+  DOWN_STOP,
+  INTERNAL_BUTTON_UP_STOP,
+  INTERNAL_BUTTON_DOWN_STOP,
+
   // Keep it as last item
   ACTION_ID_MAX
 };

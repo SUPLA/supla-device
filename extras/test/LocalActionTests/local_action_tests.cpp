@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <supla/local_action.h>
 #include <supla/action_handler.h>
+#include <supla/control/virtual_relay.h>
+#include <supla/events.h>
 
 class ActionHandlerMock : public Supla::ActionHandler {
  public:
@@ -203,4 +205,47 @@ TEST(LocalActionTests, ConfigModeDisableRestoresOnlyPreviouslyEnabledActions) {
   EXPECT_TRUE(enabledClient->isEnabled());
   EXPECT_FALSE(disabledClient->isEnabled());
   EXPECT_TRUE(alwaysEnabledClient->isEnabled());
+}
+
+TEST(LocalActionTests, AllowListIsAdditionalAndEmptyListBlocksAllActions) {
+  Supla::LocalAction trigger;
+  ActionHandlerMock output;
+  ActionHandlerMock unlock;
+  ActionHandlerMock alwaysEnabled;
+
+  trigger.addAction(10, output, 1);
+  trigger.addAction(11, unlock, 1);
+  trigger.addAction(12, alwaysEnabled, 1, true);
+
+  EXPECT_CALL(output, handleAction(1, 10)).Times(1);
+  EXPECT_CALL(unlock, handleAction(1, 11)).Times(1);
+  EXPECT_CALL(alwaysEnabled, handleAction(1, 12)).Times(1);
+  trigger.runAction(1);
+
+  testing::Mock::VerifyAndClearExpectations(&output);
+  testing::Mock::VerifyAndClearExpectations(&unlock);
+  testing::Mock::VerifyAndClearExpectations(&alwaysEnabled);
+
+  EXPECT_CALL(output, handleAction).Times(0);
+  EXPECT_CALL(unlock, handleAction(1, 11));
+  EXPECT_CALL(alwaysEnabled, handleAction).Times(0);
+  trigger.runAction(1, {11});
+
+  testing::Mock::VerifyAndClearExpectations(&output);
+  testing::Mock::VerifyAndClearExpectations(&unlock);
+  testing::Mock::VerifyAndClearExpectations(&alwaysEnabled);
+  EXPECT_CALL(output, handleAction).Times(0);
+  EXPECT_CALL(unlock, handleAction).Times(0);
+  EXPECT_CALL(alwaysEnabled, handleAction).Times(0);
+  trigger.runAction(1, {});
+}
+
+TEST(LocalActionTests, AllowListIsForwardedThroughChannelActionElements) {
+  Supla::Control::VirtualRelay relay;
+  ActionHandlerMock output;
+  relay.addAction(10, output, Supla::ON_TURN_ON);
+
+  EXPECT_CALL(output, handleAction(Supla::ON_TURN_ON, 10)).Times(2);
+  relay.runAction(Supla::ON_TURN_ON);
+  relay.runAction(Supla::ON_TURN_ON, {10});
 }

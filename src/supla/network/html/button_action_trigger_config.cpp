@@ -42,10 +42,17 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int32_t value = 0;
+    int32_t localUnlock = 0;
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     Supla::Config::generateKey(key, channelNumber,
                              Supla::ConfigTag::BtnActionTriggerCfgTagPrefix);
     cfg->getInt32(key, &value);
+    char localUnlockKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    Supla::Config::generateKey(
+        localUnlockKey,
+        channelNumber,
+        Supla::ConfigTag::BtnActionTriggerLocalUnlockTagPrefix);
+    cfg->getInt32(localUnlockKey, &localUnlock);
 
     char label[100] = {};
     if (labelPrefix) {
@@ -73,6 +80,26 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
             value == 2);
       });
     });
+
+    char unlockLabel[100] = {};
+    if (labelPrefix) {
+      snprintf(unlockLabel,
+               sizeof(unlockLabel),
+               "%s local unlock while locked",
+               labelPrefix);
+    } else {
+      snprintf(unlockLabel,
+               sizeof(unlockLabel),
+               "IN%d local unlock while locked",
+               buttonNumber);
+    }
+    sender->labeledField(localUnlockKey, unlockLabel, [&]() {
+      auto select = sender->selectTag(localUnlockKey, localUnlockKey);
+      select.body([&]() {
+        sender->selectOption(0, "Disabled", localUnlock == 0);
+        sender->selectOption(1, "Enabled", localUnlock != 0);
+      });
+    });
   }
 }
 
@@ -96,6 +123,15 @@ bool ButtonActionTriggerConfig::handleResponse(const char* key,
         break;
       }
     }
+    return true;
+  }
+  Supla::Config::generateKey(
+      keyRef,
+      channelNumber,
+      Supla::ConfigTag::BtnActionTriggerLocalUnlockTagPrefix);
+  if (strcmp(key, keyRef) == 0) {
+    int unlock = stringToUInt(value);
+    cfg->setInt32(keyRef, unlock == 0 ? 0 : 1);
     return true;
   }
   return false;

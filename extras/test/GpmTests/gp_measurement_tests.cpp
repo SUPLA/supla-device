@@ -392,6 +392,8 @@ TEST_F(GpMeasurementTestsFixture, defaultParametersShouldntOverwriteConfig) {
   EXPECT_CALL(config, init());
 
   EXPECT_CALL(config, saveWithDelay(_)).Times(0);
+  EXPECT_CALL(config, getUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillOnce(Return(false));
   EXPECT_CALL(
       config,
       getBlob(

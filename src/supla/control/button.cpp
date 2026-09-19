@@ -45,18 +45,100 @@ void Button::onInit() {
   SimpleButton::onInit();
 }
 
+bool Button::runActionWithActionTriggerPolicy(uint16_t event) {
+  if (actionTriggerSuppressActionsUntilRelease) {
+    return true;
+  }
+  actionTriggerDispatching = true;
+  const bool hasLockAction = hasEnabledAction(event, Supla::LOCK) ||
+                             hasEnabledAction(event, Supla::UNLOCK) ||
+                             hasEnabledAction(event, Supla::TOGGLE_LOCK);
+  if (!actionTriggerModeLocked && !hasLockAction) {
+    runAction(event);
+    actionTriggerDispatching = false;
+    return false;
+  }
+
+  const bool allowConfigActions =
+      keepConfigButtonTriggerAlwaysAvailable && configButton;
+  // A locked button without local unlock permission may retain only its
+  // explicitly allowed configuration actions. Lock control actions belong to
+  // the AT that owns the binding and must not unlock another AT here.
+  if (actionTriggerModeLocked && !actionTriggerLocalUnlockAllowed) {
+    if (allowConfigActions) {
+      runAction(event,
+                {Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY,
+                 Supla::LEAVE_CONFIG_MODE_AND_RESET});
+    } else {
+      runAction(event, {});
+    }
+    actionTriggerDispatching = false;
+    return false;
+  }
+
+  // Select one control action deterministically. A configuration can contain
+  // both LOCK and UNLOCK on one event; executing all of them would make the
+  // final mode depend on the allocation order of handlers.
+  int selectedLockAction = -1;
+  if (actionTriggerModeLocked) {
+    if (hasEnabledAction(event, Supla::UNLOCK)) {
+      selectedLockAction = Supla::UNLOCK;
+    } else if (hasEnabledAction(event, Supla::TOGGLE_LOCK)) {
+      selectedLockAction = Supla::TOGGLE_LOCK;
+    } else if (hasEnabledAction(event, Supla::LOCK)) {
+      selectedLockAction = Supla::LOCK;
+    }
+  } else if (hasEnabledAction(event, Supla::LOCK)) {
+    selectedLockAction = Supla::LOCK;
+  } else if (hasEnabledAction(event, Supla::TOGGLE_LOCK)) {
+    selectedLockAction = Supla::TOGGLE_LOCK;
+  } else if (hasEnabledAction(event, Supla::UNLOCK)) {
+    selectedLockAction = Supla::UNLOCK;
+  }
+
+  if (selectedLockAction < 0) {
+    if (allowConfigActions) {
+      runAction(event,
+                {Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY,
+                 Supla::LEAVE_CONFIG_MODE_AND_RESET});
+    } else {
+      runAction(event, {});
+    }
+    actionTriggerDispatching = false;
+    return actionTriggerSuppressActionsUntilRelease;
+  }
+
+  if (allowConfigActions) {
+    runAction(event,
+              {static_cast<uint16_t>(selectedLockAction),
+               Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY,
+               Supla::LEAVE_CONFIG_MODE_AND_RESET});
+  } else {
+    runAction(event, {static_cast<uint16_t>(selectedLockAction)});
+  }
+  actionTriggerDispatching = false;
+  return actionTriggerSuppressActionsUntilRelease;
+}
+
 void Button::onTimer() {
   int stateResult = state.update();
   if (!state.isReady()) {
     return;
   }
-  if (disabled || actionTriggerModeLocked) {
+  if (disabled) {
     return;
   }
   if (suppressActionsUntilRelease) {
     if (stateResult == TO_RELEASED ||
         (stateResult == RELEASED && !state.isPressedOrPending())) {
       suppressActionsUntilRelease = false;
+    }
+    return;
+  }
+  if (actionTriggerSuppressActionsUntilRelease) {
+    if (stateResult == TO_RELEASED ||
+        (stateResult == RELEASED && !state.isPressedOrPending())) {
+      actionTriggerSuppressActionsUntilRelease = false;
     }
     return;
   }
@@ -68,27 +150,27 @@ void Button::onTimer() {
   if (stateResult == TO_PRESSED) {
     SUPLA_LOG_DEBUG("Button[%d] pressed", getButtonNumber());
     stateChanged = true;
-    runAction(ON_PRESS);
-    runAction(ON_CHANGE);
+    if (runActionWithActionTriggerPolicy(ON_PRESS)) return;
+    if (runActionWithActionTriggerPolicy(ON_CHANGE)) return;
     if (clickCounter <= 1 && holdSend == 0) {
       if (!deferConditionalEdges) {
-        runAction(CONDITIONAL_ON_PRESS);
+        if (runActionWithActionTriggerPolicy(CONDITIONAL_ON_PRESS)) return;
       }
-      runAction(CONDITIONAL_ON_CHANGE);
+      if (runActionWithActionTriggerPolicy(CONDITIONAL_ON_CHANGE)) return;
     }
   } else if (stateResult == TO_RELEASED) {
     SUPLA_LOG_DEBUG("Button[%d] released", getButtonNumber());
     stateChanged = true;
-    runAction(ON_RELEASE);
-    runAction(ON_CHANGE);
+    if (runActionWithActionTriggerPolicy(ON_RELEASE)) return;
+    if (runActionWithActionTriggerPolicy(ON_CHANGE)) return;
     if (clickCounter <= 1 && holdSend == 0) {
       if (!deferConditionalEdges) {
-        runAction(CONDITIONAL_ON_RELEASE);
+        if (runActionWithActionTriggerPolicy(CONDITIONAL_ON_RELEASE)) return;
       }
-      runAction(CONDITIONAL_ON_CHANGE);
+      if (runActionWithActionTriggerPolicy(CONDITIONAL_ON_CHANGE)) return;
     }
     if (clickCounter <= 1 && holdSend > 0) {
-      runAction(ON_HOLD_RELEASE);
+      if (runActionWithActionTriggerPolicy(ON_HOLD_RELEASE)) return;
     }
   }
 
@@ -121,7 +203,7 @@ void Button::onTimer() {
             timeDelta > (holdTimeMs +
                          static_cast<uint32_t>(holdSend) * repeatOnHoldMs) &&
             (repeatOnHoldEnabled || holdSend == 0)) {
-          runAction(ON_HOLD);
+          if (runActionWithActionTriggerPolicy(ON_HOLD)) return;
           ++holdSend;
         }
         if (clickCounter >= 1 && stateResult == PRESSED &&
@@ -143,76 +225,79 @@ void Button::onTimer() {
             switch (clickCounter) {
               case 1: {
                 if (deferConditionalEdges) {
-                  runAction(stateResult == PRESSED ? CONDITIONAL_ON_PRESS
-                                                   : CONDITIONAL_ON_RELEASE);
+                  if (runActionWithActionTriggerPolicy(
+                          stateResult == PRESSED ? CONDITIONAL_ON_PRESS
+                                                 : CONDITIONAL_ON_RELEASE)) {
+                    return;
+                  }
                 }
-                runAction(ON_CLICK_1);
+                if (runActionWithActionTriggerPolicy(ON_CLICK_1)) return;
                 break;
               }
               case 2:
-                runAction(ON_CLICK_2);
+                if (runActionWithActionTriggerPolicy(ON_CLICK_2)) return;
                 break;
               case 3:
-                runAction(ON_CLICK_3);
+                if (runActionWithActionTriggerPolicy(ON_CLICK_3)) return;
                 break;
               case 4:
-                runAction(ON_CLICK_4);
+                if (runActionWithActionTriggerPolicy(ON_CLICK_4)) return;
                 break;
               case 5:
-                runAction(ON_CLICK_5);
+                if (runActionWithActionTriggerPolicy(ON_CLICK_5)) return;
                 break;
               case 6:
-                runAction(ON_CLICK_6);
+                if (runActionWithActionTriggerPolicy(ON_CLICK_6)) return;
                 break;
               case 7:
-                runAction(ON_CLICK_7);
+                if (runActionWithActionTriggerPolicy(ON_CLICK_7)) return;
                 break;
               case 8:
-                runAction(ON_CLICK_8);
+                if (runActionWithActionTriggerPolicy(ON_CLICK_8)) return;
                 break;
               case 9:
-                runAction(ON_CLICK_9);
+                if (runActionWithActionTriggerPolicy(ON_CLICK_9)) return;
                 break;
               case 10:
-                runAction(ON_CLICK_10);
-                runAction(ON_CRAZY_CLICKER);
+                if (runActionWithActionTriggerPolicy(ON_CLICK_10)) return;
+                if (runActionWithActionTriggerPolicy(ON_CRAZY_CLICKER)) return;
                 break;
             }
           } else {
             switch (clickCounter) {
               // LONG click is send for clicking after HOLD
               case 0:
-                runAction(ON_LONG_CLICK_0);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_0)) return;
                 break;
               case 1:
-                runAction(ON_LONG_CLICK_1);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_1)) return;
                 break;
               case 2:
-                runAction(ON_LONG_CLICK_2);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_2)) return;
                 break;
               case 3:
-                runAction(ON_LONG_CLICK_3);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_3)) return;
                 break;
               case 4:
-                runAction(ON_LONG_CLICK_4);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_4)) return;
                 break;
               case 5:
-                runAction(ON_LONG_CLICK_5);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_5)) return;
                 break;
               case 6:
-                runAction(ON_LONG_CLICK_6);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_6)) return;
                 break;
               case 7:
-                runAction(ON_LONG_CLICK_7);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_7)) return;
                 break;
               case 8:
-                runAction(ON_LONG_CLICK_8);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_8)) return;
                 break;
               case 9:
-                runAction(ON_LONG_CLICK_9);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_9)) return;
                 break;
               case 10:
-                runAction(ON_LONG_CLICK_10);
+                if (runActionWithActionTriggerPolicy(ON_LONG_CLICK_10)) return;
                 break;
             }
           }
@@ -232,7 +317,7 @@ void Button::onTimer() {
             timeDelta > (holdTimeMs +
                          static_cast<uint32_t>(holdSend) * repeatOnHoldMs) &&
             (repeatOnHoldEnabled || holdSend == 0)) {
-          runAction(ON_HOLD);
+          if (runActionWithActionTriggerPolicy(ON_HOLD)) return;
           ++holdSend;
         }
         if (clickCounter >= 1 && stateResult == PRESSED &&
@@ -584,13 +669,38 @@ void Button::enableButton() {
 }
 
 void Button::setActionTriggerModeLocked(bool locked) {
+  setActionTriggerModeLocked(locked,
+                             actionTriggerLocalUnlockAllowed,
+                             keepConfigButtonTriggerAlwaysAvailable);
+}
+
+void Button::setActionTriggerModeLocked(
+    bool locked,
+    bool localUnlockAllowed,
+    bool keepConfigButtonTriggerAlwaysAvailableValue) {
   if (actionTriggerModeLocked == locked) {
+    const bool policyChanged =
+        actionTriggerLocalUnlockAllowed != localUnlockAllowed ||
+        keepConfigButtonTriggerAlwaysAvailable !=
+            keepConfigButtonTriggerAlwaysAvailableValue;
+    actionTriggerLocalUnlockAllowed = localUnlockAllowed;
+    keepConfigButtonTriggerAlwaysAvailable =
+        keepConfigButtonTriggerAlwaysAvailableValue;
+    if (policyChanged && state.isPressedOrPending()) {
+      actionTriggerSuppressActionsUntilRelease = true;
+      clickCounter = 0;
+      holdSend = 0;
+      waitingForRelease = false;
+      lastStateChangeMs = millis();
+    }
     return;
   }
   actionTriggerModeLocked = locked;
-  if (!locked) {
-    suppressActionsUntilRelease = state.isPressedOrPending();
-  }
+  actionTriggerLocalUnlockAllowed = localUnlockAllowed;
+  keepConfigButtonTriggerAlwaysAvailable =
+      keepConfigButtonTriggerAlwaysAvailableValue;
+  actionTriggerSuppressActionsUntilRelease =
+      state.isPressedOrPending() || actionTriggerDispatching;
   clickCounter = 0;
   holdSend = 0;
   waitingForRelease = false;

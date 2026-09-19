@@ -5,6 +5,9 @@
 #define SRC_SUPLA_LOCAL_ACTION_H_
 
 #include <stdint.h>
+#include <stddef.h>
+
+#include <initializer_list>
 
 namespace Supla {
 
@@ -50,8 +53,15 @@ class LocalAction {
       bool alwaysEnabled = false);
 
   virtual void runAction(uint16_t event) const;
+  // The allow-list is an additional restriction.  An empty initializer list
+  // deliberately blocks every action, while the one-argument overload keeps
+  // the historic, unrestricted behavior.
+  virtual void runAction(
+      uint16_t event,
+      std::initializer_list<uint16_t> allowOnlyActions) const;
 
   virtual bool isEventAlreadyUsed(uint16_t event, bool ignoreAlwaysEnabled);
+  virtual bool hasEnabledAction(uint16_t event, uint16_t action) const;
   virtual ActionHandlerClient *getHandlerForFirstClient(uint16_t event);
   virtual ActionHandlerClient *getHandlerForClient(ActionHandler *client,
                                                    uint16_t event);
@@ -62,6 +72,9 @@ class LocalAction {
   virtual void enableOtherClients(const ActionHandler *client, uint16_t event);
 
   static void DeleteActionsHandledBy(const ActionHandler *client);
+  static void DeleteActionsHandledByExcept(
+      const ActionHandler *client,
+      std::initializer_list<uint16_t> preservedActions);
   static void DeleteActionsTriggeredBy(const LocalAction *action);
   static void DeleteAction(const LocalAction *trigger,
                            const ActionHandler *client,
@@ -81,6 +94,12 @@ class LocalAction {
   virtual bool disableActionsInConfigMode();
 
   static ActionHandlerClient *getClientListPtr();
+
+ private:
+  void runAction(uint16_t event,
+                 const uint16_t *allowOnlyActions,
+                 size_t allowOnlyActionsCount,
+                 bool hasAllowOnlyActions) const;
 };
 
 };  // namespace Supla

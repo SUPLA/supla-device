@@ -127,12 +127,14 @@ Supla::Control::ActionTrigger::~ActionTrigger() {
 
 void Supla::Control::ActionTrigger::attach(Supla::Control::Button *button) {
   if (attachedButton != nullptr && attachedButton != button) {
-    attachedButton->setActionTriggerModeLocked(false);
+    attachedButton->setActionTriggerModeLocked(false, false, false);
   }
   attachedButton = button;
   if (attachedButton != nullptr) {
     attachedButton->setActionTriggerModeLocked(
-        channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED);
+        channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED,
+        localUnlockAllowed,
+        keepConfigButtonTriggerAlwaysAvailable);
   }
 }
 
@@ -141,7 +143,32 @@ void Supla::Control::ActionTrigger::attach(Supla::Control::Button &button) {
 }
 
 void Supla::Control::ActionTrigger::handleAction(int, int action) {
-  if (!enabled || channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED) {
+  if (!enabled) {
+    return;
+  }
+
+  switch (action) {
+    case Supla::LOCK:
+      applyManualButtonMode(SUPLA_BUTTON_MODE_LOCKED);
+      return;
+    case Supla::UNLOCK:
+      if (channel.getButtonMode() != SUPLA_BUTTON_MODE_LOCKED ||
+          localUnlockAllowed) {
+        applyManualButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
+      }
+      return;
+    case Supla::TOGGLE_LOCK:
+      if (channel.getButtonMode() != SUPLA_BUTTON_MODE_LOCKED ||
+          localUnlockAllowed) {
+        applyManualButtonMode(
+            channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED
+                ? SUPLA_BUTTON_MODE_NOT_SET
+                : SUPLA_BUTTON_MODE_LOCKED);
+      }
+      return;
+  }
+
+  if (channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED) {
     return;
   }
   uint32_t actionCap = getActionTriggerCap(action);
@@ -161,7 +188,10 @@ const Supla::Channel *Supla::Control::ActionTrigger::getChannel() const {
 }
 
 void Supla::Control::ActionTrigger::activateAction(int action) {
-  channel.activateAction(getActionTriggerCap(action));
+  const uint32_t actionCap = getActionTriggerCap(action);
+  if (actionCap != 0) {
+    channel.activateAction(actionCap);
+  }
 }
 
 int Supla::Control::ActionTrigger::getActionTriggerCap(int action) {
@@ -522,7 +552,8 @@ void Supla::Control::ActionTrigger::rebuildForAttachedButton() {
                                      Supla::ON_CLICK_1,
                                      localHandlerAction);
   }
-  Supla::LocalAction::DeleteActionsHandledBy(this);
+  Supla::LocalAction::DeleteActionsHandledByExcept(
+      this, {Supla::LOCK, Supla::UNLOCK, Supla::TOGGLE_LOCK});
   localHandlerForEnabledAt = nullptr;
   localHandlerForDisabledAt = nullptr;
   localHandlerClient = nullptr;
@@ -793,8 +824,20 @@ void Supla::Control::ActionTrigger::onLoadConfig(SuplaDeviceClass *sdc) {
         getChannel()->getChannelNumber(),
         Supla::ConfigTag::BtnActionTriggerCfgTagPrefix);
     cfg->getInt32(key, &value);
+
+    int32_t localUnlockValue = 0;
+    Supla::Config::generateKey(
+        key,
+        getChannel()->getChannelNumber(),
+        Supla::ConfigTag::BtnActionTriggerLocalUnlockTagPrefix);
+    if (cfg->getInt32(key, &localUnlockValue)) {
+      localUnlockAllowed = localUnlockValue != 0;
+    } else {
+      localUnlockAllowed = false;
+    }
     loadConfigChangeFlag();
   }
+  setLocalUnlockAllowed(localUnlockAllowed);
 
   const auto previousHandlingType = actionHandlingType;
   switch (value) {
@@ -898,6 +941,40 @@ void Supla::Control::ActionTrigger::setAlwaysUseOnClick1() {
   alwaysUseOnClick1 = true;
 }
 
+Supla::Control::ActionTrigger &
+Supla::Control::ActionTrigger::setLocalUnlockAllowed(bool allowed) {
+  localUnlockAllowed = allowed;
+  if (attachedButton != nullptr) {
+    attachedButton->setActionTriggerModeLocked(
+        channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED,
+        localUnlockAllowed,
+        keepConfigButtonTriggerAlwaysAvailable);
+  }
+  return *this;
+}
+
+bool Supla::Control::ActionTrigger::isLocalUnlockAllowed() const {
+  return localUnlockAllowed;
+}
+
+Supla::Control::ActionTrigger &
+Supla::Control::ActionTrigger::setKeepConfigButtonTriggerAlwaysAvailable(
+    bool keep) {
+  keepConfigButtonTriggerAlwaysAvailable = keep;
+  if (attachedButton != nullptr) {
+    attachedButton->setActionTriggerModeLocked(
+        channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED,
+        localUnlockAllowed,
+        keepConfigButtonTriggerAlwaysAvailable);
+  }
+  return *this;
+}
+
+bool Supla::Control::ActionTrigger::
+    keepsConfigButtonTriggerAlwaysAvailable() const {
+  return keepConfigButtonTriggerAlwaysAvailable;
+}
+
 void Supla::Control::ActionTrigger::enable() {
   enabled = true;
 }
@@ -993,21 +1070,11 @@ int32_t Supla::Control::ActionTrigger::handleNewValueFromServer(
   switch (properties->ButtonMode) {
     case SUPLA_BUTTON_MODE_LOCKED:
     case SUPLA_BUTTON_MODE_NOT_SET: {
-      if (weeklySchedule != nullptr) {
-        weeklySchedule->switchToManualMode();
-      }
-      channel.setWeeklyScheduleEnabled(false);
-      applyButtonMode(properties->ButtonMode);
-      scheduleStateSave();
+      applyManualButtonMode(properties->ButtonMode);
       return 1;
     }
     case SUPLA_BUTTON_MODE_CMD_SWITCH_TO_MANUAL: {
-      if (weeklySchedule != nullptr) {
-        weeklySchedule->switchToManualMode();
-      }
-      channel.setWeeklyScheduleEnabled(false);
-      applyButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
-      scheduleStateSave();
+      applyManualButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
       return 1;
     }
     case SUPLA_BUTTON_MODE_CMD_WEEKLY_SCHEDULE: {
@@ -1058,8 +1125,20 @@ void Supla::Control::ActionTrigger::applyButtonMode(uint8_t mode) {
   channel.setButtonMode(mode);
   if (attachedButton != nullptr) {
     attachedButton->setActionTriggerModeLocked(
-        mode == SUPLA_BUTTON_MODE_LOCKED);
+        mode == SUPLA_BUTTON_MODE_LOCKED,
+        localUnlockAllowed,
+        keepConfigButtonTriggerAlwaysAvailable);
   }
+}
+
+void Supla::Control::ActionTrigger::applyManualButtonMode(uint8_t mode) {
+  auto *weeklySchedule = weeklyScheduleComponents.getController();
+  if (weeklySchedule != nullptr) {
+    weeklySchedule->switchToManualMode();
+  }
+  channel.setWeeklyScheduleEnabled(false);
+  applyButtonMode(mode);
+  scheduleStateSave();
 }
 
 void Supla::Control::ActionTrigger::scheduleStateSave(uint32_t delayMsMax,

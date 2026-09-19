@@ -143,6 +143,12 @@ enum Action {
   INTERNAL_BUTTON_UP_STOP,
   INTERNAL_BUTTON_DOWN_STOP,
 
+  // ActionTrigger button mode controls. Keep these ids at the end so all
+  // previously stored/local action ids remain unchanged.
+  LOCK,
+  UNLOCK,
+  TOGGLE_LOCK,
+
   // Keep it as last item
   ACTION_ID_MAX
 };

@@ -70,6 +70,14 @@ class InspectableButton : public Supla::Control::Button {
   bool isActionTriggerModeLocked() const {
     return actionTriggerModeLocked;
   }
+
+  bool isLocalUnlockAllowed() const {
+    return actionTriggerLocalUnlockAllowed;
+  }
+
+  bool keepsConfigButtonTriggerAlwaysAvailable() const {
+    return keepConfigButtonTriggerAlwaysAvailable;
+  }
 };
 
 class TimeInterfaceStub : public TimeInterface {
@@ -134,16 +142,32 @@ void ignoreAtValueUpdates(SrpcMock *srpc) {
   EXPECT_CALL(*srpc, valueChanged(_, _, _, _, _)).Times(AnyNumber());
 }
 
+void expectActionTriggerConfigStorage(ConfigMock *cfg,
+                                      int weeklyScheduleBlobSize = 0) {
+  EXPECT_CALL(*cfg, getBlobSize(testing::StrEq("0_at_weekly")))
+      .WillOnce(Return(weeklyScheduleBlobSize));
+  EXPECT_CALL(*cfg, getUInt32(testing::StrEq("0_cfg_chng_t"), _))
+      .WillOnce(Return(false));
+  EXPECT_CALL(*cfg, getUInt8(testing::StrEq("0_cfg_chng"), _))
+      .WillOnce(Return(false));
+  EXPECT_CALL(*cfg, getUInt8(testing::StrEq("0_weekly_chng"), _))
+      .WillOnce(Return(false));
+}
+
 void loadMqttActionTriggerMode(Supla::Control::ActionTrigger *at,
                                int32_t mode) {
   ConfigMock cfg;
   EXPECT_CALL(cfg, init());
-  EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([mode](const char *key,
-                                                   int32_t *value) {
-    EXPECT_STREQ(key, "0_mqtt_at");
-    *value = mode;
-    return true;
+  EXPECT_CALL(cfg, getInt32(_, _)).WillRepeatedly([mode](const char *key,
+                                                         int32_t *value) {
+    if (strcmp(key, "0_mqtt_at") == 0) {
+      *value = mode;
+      return true;
+    }
+    EXPECT_STREQ(key, "0_at_unlock");
+    return false;
   });
+  expectActionTriggerConfigStorage(&cfg);
   at->onLoadConfig(nullptr);
 }
 
@@ -459,6 +483,124 @@ TEST_F(ActionTriggerTests, ManualLockIsReportedAsChannelValue) {
   at.iterateConnected();
 }
 
+TEST_F(ActionTriggerTests, LockActionsShareButtonModeAndAttachLifecycle) {
+  TimeInterfaceStub time;
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+
+  at.setLocalUnlockAllowed(true)
+      .setKeepConfigButtonTriggerAlwaysAvailable(true);
+  at.attach(button);
+  EXPECT_FALSE(button.isActionTriggerModeLocked());
+  EXPECT_TRUE(button.isLocalUnlockAllowed());
+  EXPECT_TRUE(button.keepsConfigButtonTriggerAlwaysAvailable());
+
+  at.handleAction(Supla::ON_HOLD, Supla::LOCK);
+  EXPECT_TRUE(button.isActionTriggerModeLocked());
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
+
+  at.handleAction(Supla::ON_HOLD, Supla::UNLOCK);
+  EXPECT_FALSE(button.isActionTriggerModeLocked());
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->getButtonMode(),
+            SUPLA_BUTTON_MODE_NOT_SET);
+
+  at.setLocalUnlockAllowed(false);
+  at.handleAction(Supla::ON_HOLD, Supla::LOCK);
+  at.handleAction(Supla::ON_HOLD, Supla::TOGGLE_LOCK);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
+
+  at.attach(nullptr);
+  EXPECT_FALSE(button.isActionTriggerModeLocked());
+  EXPECT_FALSE(button.isLocalUnlockAllowed());
+  EXPECT_FALSE(button.keepsConfigButtonTriggerAlwaysAvailable());
+}
+
+TEST_F(ActionTriggerTests, RebuildPreservesUserLockActionBindings) {
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+
+  button.addAction(Supla::TOGGLE_LOCK, at, Supla::ON_HOLD);
+  ASSERT_TRUE(button.hasEnabledAction(Supla::ON_HOLD, Supla::TOGGLE_LOCK));
+
+  at.onInit();
+  EXPECT_TRUE(button.hasEnabledAction(Supla::ON_HOLD, Supla::TOGGLE_LOCK));
+
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  auto *actionTriggerConfig =
+      reinterpret_cast<TChannelConfig_ActionTrigger *>(config.Config);
+  actionTriggerConfig->ActiveActions = SUPLA_ACTION_CAP_HOLD;
+  EXPECT_EQ(at.handleChannelConfig(&config), SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_TRUE(button.hasEnabledAction(Supla::ON_HOLD, Supla::TOGGLE_LOCK));
+}
+
+TEST_F(ActionTriggerTests, LocalUnlockPolicyIsLoadedAndPropagatedToButton) {
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  ConfigMock cfg;
+
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg, getInt32(_, _)).WillRepeatedly(
+      [](const char *key, int32_t *value) {
+        if (strcmp(key, "0_at_unlock") == 0) {
+          *value = 1;
+          return true;
+        }
+        EXPECT_STREQ(key, "0_mqtt_at");
+        *value = 0;
+        return true;
+      });
+  expectActionTriggerConfigStorage(&cfg);
+  at.onLoadConfig(nullptr);
+
+  EXPECT_TRUE(at.isLocalUnlockAllowed());
+  EXPECT_TRUE(button.isLocalUnlockAllowed());
+}
+
+TEST_F(ActionTriggerTests, LocalLockActionLeavesWeeklyScheduleForManualMode) {
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  auto *schedule = new Supla::Control::ExternalManagedWeeklySchedule();
+  ASSERT_TRUE(at.setWeeklyScheduleController(schedule));
+
+  TSD_SuplaChannelNewValue command = {};
+  auto *properties =
+      reinterpret_cast<TActionTriggerProperties *>(command.value);
+  properties->ButtonMode = SUPLA_BUTTON_MODE_CMD_WEEKLY_SCHEDULE;
+  ASSERT_EQ(at.handleNewValueFromServer(&command), 1);
+  ASSERT_TRUE(schedule->isActive());
+
+  at.handleAction(Supla::ON_HOLD, Supla::UNLOCK);
+  EXPECT_FALSE(schedule->isActive());
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_NOT_SET);
+}
+
+TEST_F(ActionTriggerTests, RestoredLockedStateIsPropagatedToAttachedButton) {
+  TimeInterfaceStub time;
+  StorageMock storage;
+  storage.defaultInitialization(4);
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  at.enableStateStorage();
+
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(uint32_t), _))
+      .WillOnce([](uint32_t, unsigned char *data, uint32_t, bool) {
+        uint32_t state = static_cast<uint32_t>(1) << 31;
+        memcpy(data, &state, sizeof(state));
+        return sizeof(uint32_t);
+      });
+  at.onLoadState();
+
+  EXPECT_TRUE(button.isActionTriggerModeLocked());
+}
+
 TEST_F(ActionTriggerTests, InvalidWeeklyScheduleModeIsRejected) {
   TimeInterfaceStub time;
   Supla::Control::ActionTrigger at;
@@ -472,9 +614,16 @@ TEST_F(ActionTriggerTests, InvalidWeeklyScheduleModeIsRejected) {
 
 TEST_F(ActionTriggerTests, WeeklyScheduleModeIsRestoredFromStateStorage) {
   TimeInterfaceStub time;
-  ::testing::NiceMock<ConfigMock> cfg;
-  ON_CALL(cfg, getBlobSize(testing::StrEq("0_at_weekly")))
-      .WillByDefault(Return(sizeof(TChannelConfig_WeeklySchedule)));
+  ConfigMock cfg;
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg, getInt32(_, _)).WillRepeatedly([](const char *key,
+                                                       int32_t *) {
+    EXPECT_TRUE(strcmp(key, "0_mqtt_at") == 0 ||
+                strcmp(key, "0_at_unlock") == 0);
+    return false;
+  });
+  expectActionTriggerConfigStorage(&cfg,
+                                   sizeof(TChannelConfig_WeeklySchedule));
   StorageMock storage;
   storage.defaultInitialization(4);
   Supla::Control::ActionTrigger at;
@@ -2498,14 +2647,16 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   ActionHandlerMock ah;
 
   EXPECT_CALL(cfg, init());
-  EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([](const char *key, int32_t *buf) {
+  EXPECT_CALL(cfg, getInt32(_, _)).WillRepeatedly([](const char *key,
+                                                      int32_t *buf) {
     if (strcmp(key, "0_mqtt_at") == 0) {
       *buf = 2;
       return true;
     }
-    EXPECT_TRUE(false);
+    EXPECT_STREQ(key, "0_at_unlock");
     return false;
   });
+  expectActionTriggerConfigStorage(&cfg);
 
   // initial configuration
   b1.addAction(Supla::TOGGLE, ah, Supla::ON_PRESS);
@@ -2624,14 +2775,16 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   ActionHandlerMock ah;
 
   EXPECT_CALL(cfg, init());
-  EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([](const char *key, int32_t *buf) {
+  EXPECT_CALL(cfg, getInt32(_, _)).WillRepeatedly([](const char *key,
+                                                      int32_t *buf) {
     if (strcmp(key, "0_mqtt_at") == 0) {
       *buf = 1;
       return true;
     }
-    EXPECT_TRUE(false);
+    EXPECT_STREQ(key, "0_at_unlock");
     return false;
   });
+  expectActionTriggerConfigStorage(&cfg);
 
   // initial configuration
   b1.addAction(Supla::TOGGLE, ah, Supla::ON_PRESS);
@@ -2783,14 +2936,16 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   ActionHandlerMock ah;
 
   EXPECT_CALL(cfg, init());
-  EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([](const char *key, int32_t *buf) {
+  EXPECT_CALL(cfg, getInt32(_, _)).WillRepeatedly([](const char *key,
+                                                      int32_t *buf) {
     if (strcmp(key, "0_mqtt_at") == 0) {
       *buf = 0;
       return true;
     }
-    EXPECT_TRUE(false);
+    EXPECT_STREQ(key, "0_at_unlock");
     return false;
   });
+  expectActionTriggerConfigStorage(&cfg);
 
   // initial configuration
   b1.addAction(Supla::TOGGLE, ah, Supla::ON_PRESS);

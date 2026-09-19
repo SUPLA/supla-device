@@ -31,6 +31,7 @@ const char BtnHoldTag[] = "btn_hold";
 const char BtnMulticlickTag[] = "btn_multiclick";
 const char BtnConfigTag[] = "btn_cfg";
 const char BtnActionTriggerCfgTagPrefix[] = "mqtt_at";
+const char BtnActionTriggerLocalUnlockTagPrefix[] = "at_unlock";
 
 const char VolumeCfgTag[] = "volume";
 
@@ -103,6 +104,7 @@ static_assert(sizeof(BtnHoldTag) < 16);
 static_assert(sizeof(BtnMulticlickTag) < 16);
 static_assert(sizeof(BtnConfigTag) < 16);
 static_assert(sizeof(BtnActionTriggerCfgTagPrefix) < 16);
+static_assert(sizeof(BtnActionTriggerLocalUnlockTagPrefix) < 16);
 static_assert(sizeof(VolumeCfgTag) < 16);
 static_assert(sizeof(EmCtTypeTag) < 12);
 static_assert(sizeof(EmPhaseLedTag) < 12);

@@ -89,6 +89,10 @@ class Button : public SimpleButton, public ActionHandler {
 
  protected:
   void setActionTriggerModeLocked(bool locked);
+  void setActionTriggerModeLocked(bool locked,
+                                  bool localUnlockAllowed,
+                                  bool keepConfigButtonTriggerAlwaysAvailable);
+  bool runActionWithActionTriggerPolicy(uint16_t event);
   void evaluateMaxMulticlickValue();
   // Used by ActionTrigger for bistable directional press/release pairs.
   // Counting clicks (including CFG x10) remains independent of this policy.
@@ -113,6 +117,10 @@ class Button : public SimpleButton, public ActionHandler {
   int8_t buttonNumber = -1;
   bool disabled = false;
   bool actionTriggerModeLocked = false;
+  bool actionTriggerLocalUnlockAllowed = false;
+  bool keepConfigButtonTriggerAlwaysAvailable = false;
+  bool actionTriggerSuppressActionsUntilRelease = false;
+  bool actionTriggerDispatching = false;
   bool suppressActionsUntilRelease = false;
   bool allowHoldOnPowerOn = false;
   bool waitingForRelease = false;

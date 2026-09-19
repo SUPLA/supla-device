@@ -91,6 +91,10 @@ class HvacRuntimeF : public ::testing::Test {
 
 TEST_F(HvacRuntimeF, antifreezeCheck) {
   EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg, getUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillRepeatedly(Return(false));
   EXPECT_EQ(hvac->getChannelNumber(), 0);
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
@@ -351,6 +355,10 @@ TEST_F(HvacRuntimeF, antifreezeCheck) {
 
 TEST_F(HvacRuntimeF, antifreezeCheckInCoolMode) {
   EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg, getUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillRepeatedly(Return(false));
   EXPECT_EQ(hvac->getChannelNumber(), 0);
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
@@ -623,6 +631,10 @@ TEST_F(HvacRuntimeF, antifreezeCheckInCoolMode) {
 
 TEST_F(HvacRuntimeF, antifreezeCheckWithProgramAndOffMode) {
   EXPECT_CALL(cfg, init());
+  EXPECT_CALL(cfg, getUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillRepeatedly(Return(false));
   EXPECT_EQ(hvac->getChannelNumber(), 0);
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);

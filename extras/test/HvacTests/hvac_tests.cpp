@@ -1245,6 +1245,8 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillOnce(Return(false));
   EXPECT_CALL(cfg, getUInt8(StrEq("0_cfg_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
@@ -1374,6 +1376,8 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt32(StrEq("0_cfg_chng_t"), _))
       .WillOnce(Return(false));
   EXPECT_CALL(cfg, getUInt8(StrEq("0_cfg_chng"), _))
       .Times(1)
@@ -1547,6 +1551,8 @@ TEST_F(HvacTestWithChannelSetupF,
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt32(StrEq("0_cfg_chng_t"), _))
       .WillOnce(Return(false));
   EXPECT_CALL(cfg, getUInt8(StrEq("0_cfg_chng"), _))
       .Times(1)
@@ -1862,6 +1868,8 @@ TEST_F(HvacTestWithChannelSetupF,
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt32(StrEq("0_cfg_chng_t"), _))
       .WillOnce(Return(false));
   EXPECT_CALL(cfg, getUInt8(StrEq("0_cfg_chng"), _))
       .Times(1)

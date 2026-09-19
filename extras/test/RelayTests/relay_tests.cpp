@@ -1490,6 +1490,7 @@ TEST_F(RelayFixture, manualForcedModeIsStoredAndRestored) {
   ASSERT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_FORCED_ON);
 
   ASSERT_TRUE(::testing::Mock::VerifyAndClearExpectations(&storage));
+  EXPECT_CALL(storage, scheduleSave(5000, 2000)).Times(2);
   EXPECT_CALL(storage, readStorage(_, _, sizeof(uint32_t), _))
       .WillOnce(Return(0));
   EXPECT_CALL(storage, readStorage(_, _, sizeof(uint8_t), _))
@@ -1864,6 +1865,10 @@ TEST_F(RelayFixture, weeklyScheduleModeIsStoredInRelayState) {
             SUPLA_CONFIG_RESULT_TRUE);
 
   ASSERT_TRUE(::testing::Mock::VerifyAndClearExpectations(&storage));
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(uint32_t), _))
+      .WillOnce(Return(0));
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(uint8_t), _))
+      .WillOnce(Return(0));
   EXPECT_CALL(storage, scheduleSave(5000, 2000)).Times(1);
   enableWeeklySchedule(&relay);
 

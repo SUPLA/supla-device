@@ -91,6 +91,18 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
 
   void setAlwaysUseOnClick1();
 
+  // Controls whether a locked AT button may execute local UNLOCK or
+  // TOGGLE_LOCK actions. The default keeps the historic full lock behavior.
+  ActionTrigger &setLocalUnlockAllowed(bool allowed = true);
+  bool isLocalUnlockAllowed() const;
+
+  // Explicit opt-in for a shared configuration button. This does not make
+  // every alwaysEnabled action bypass an AT lock; only the two built-in
+  // configuration actions are retained by Button when this is enabled.
+  ActionTrigger &setKeepConfigButtonTriggerAlwaysAvailable(
+      bool keep = true);
+  bool keepsConfigButtonTriggerAlwaysAvailable() const;
+
   void enable();
   void disable();
 
@@ -113,6 +125,7 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   void scheduleStateSave(uint32_t delayMsMax = 5000,
                          uint32_t delayMsMin = 2000);
   void applyButtonMode(uint8_t mode);
+  void applyManualButtonMode(uint8_t mode);
   void addActionToButtonAndDisableIt(int event, int action);
   void parseActiveActionsFromServer();
 
@@ -137,6 +150,8 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   bool localHandlerSwitchConfigured = false;
   bool channelConfigReceived = false;
   bool weeklyScheduleAvailable = true;
+  bool localUnlockAllowed = false;
+  bool keepConfigButtonTriggerAlwaysAvailable = false;
   WeeklyScheduleComponents weeklyScheduleComponents;
 };
 

@@ -69,6 +69,17 @@ class RelayRollerShutterPairFixture : public testing::Test {
         .WillOnce(Return(false));
   }
 
+  void expectMissingTypedConfigAndWeeklyStorage(ConfigMock &config) {
+    EXPECT_CALL(config, getUInt32(StrEq("0_cfg_chng_t"), _))
+        .WillOnce(Return(false));
+    EXPECT_CALL(config, getBlobSize(StrEq("0_r_weekly")))
+        .WillOnce(Return(0));
+    EXPECT_CALL(config, getBlobSize(StrEq("1_r_weekly")))
+        .WillOnce(Return(0));
+    EXPECT_CALL(config, getUInt32(StrEq("1_cfg_chng_t"), _))
+        .WillOnce(Return(false));
+  }
+
   void expectMissingPrimaryLegacyWeeklyFlag(ConfigMock &config) {
     EXPECT_CALL(config, getUInt8(StrEq("0_weekly_chng"), _))
         .WillOnce(Return(false));
@@ -388,6 +399,7 @@ TEST_F(RelayRollerShutterPairFixture,
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
   expectMissingPrimaryLegacyWeeklyFlag(config);
   expectMissingSecondaryLegacyWeeklyFlag(config);
+  expectMissingTypedConfigAndWeeklyStorage(config);
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(DoAll(SetArgPointee<1>(primaryFunction), Return(true)));
@@ -844,6 +856,7 @@ TEST_F(RelayRollerShutterPairFixture,
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
   expectMissingPrimaryLegacyWeeklyFlag(config);
   expectMissingSecondaryLegacyWeeklyFlag(config);
+  expectMissingTypedConfigAndWeeklyStorage(config);
 
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -875,6 +888,7 @@ TEST_F(RelayRollerShutterPairFixture,
 
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
   expectMissingSecondaryLegacyWeeklyFlag(config);
+  expectMissingTypedConfigAndWeeklyStorage(config);
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(DoAll(SetArgPointee<1>(primaryFunction), Return(true)));
@@ -913,6 +927,7 @@ TEST_F(RelayRollerShutterPairFixture,
 
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
   expectMissingSecondaryLegacyWeeklyFlag(config);
+  expectMissingTypedConfigAndWeeklyStorage(config);
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(DoAll(SetArgPointee<1>(primaryFunction), Return(true)));
@@ -951,6 +966,7 @@ TEST_F(RelayRollerShutterPairFixture,
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
   expectMissingPrimaryLegacyWeeklyFlag(config);
   expectMissingSecondaryLegacyWeeklyFlag(config);
+  expectMissingTypedConfigAndWeeklyStorage(config);
   EXPECT_CALL(config, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(DoAll(SetArgPointee<1>(primaryFunction), Return(true)));

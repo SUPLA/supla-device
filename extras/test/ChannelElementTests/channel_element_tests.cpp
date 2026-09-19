@@ -626,6 +626,7 @@ TEST(ChannelElementTests, LocalConfigTypesAreStoredAsUInt32) {
 
   ConfigMock cfg;
   TestingChannelElement element;
+  EXPECT_CALL(cfg, init());
   Supla::ConfigTypesBitmap configTypes;
   configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
   configTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
@@ -645,6 +646,7 @@ TEST(ChannelElementTests, ClearingLastLocalChangeResumesMissingConfigUpload) {
   ConfigMock cfg;
   SuplaSrpcLayerMock srpc;
   TestingChannelElement element;
+  EXPECT_CALL(cfg, init());
   auto channel = element.getChannel();
   channel->setType(SUPLA_CHANNELTYPE_RELAY);
   channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
@@ -682,6 +684,7 @@ TEST(ChannelElementTests, ClearingSentLocalChangeWaitsForAcknowledgement) {
   ConfigMock cfg;
   SuplaSrpcLayerMock srpc;
   TestingChannelElement element;
+  EXPECT_CALL(cfg, init());
   auto channel = element.getChannel();
   channel->setType(SUPLA_CHANNELTYPE_RELAY);
   channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
@@ -723,6 +726,7 @@ TEST(ChannelElementTests, LegacyConfigFlagsAreMigratedToTypedBitmap) {
 
   ConfigMock cfg;
   TestingChannelElement element;
+  EXPECT_CALL(cfg, init());
   Supla::ConfigTypesBitmap configTypes;
   configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
   configTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
@@ -761,6 +765,7 @@ TEST(ChannelElementTests, StoredConfigTypesAreSanitizedToUsedRuntimeBitmap) {
 
   ConfigMock cfg;
   TestingChannelElement element;
+  EXPECT_CALL(cfg, init());
   Supla::ConfigTypesBitmap configTypes;
   configTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   element.setUsedConfigTypes(configTypes);

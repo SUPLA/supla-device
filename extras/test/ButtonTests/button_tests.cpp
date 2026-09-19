@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 #include <simple_time.h>
 #include <supla/io.h>
+#include <supla/control/action_trigger.h>
 #include <supla/control/button.h>
 #include <supla/control/sequence_button.h>
 #include <supla/storage/config_tags.h>
@@ -25,6 +26,14 @@ class ButtonTestDouble : public Supla::Control::Button {
 
   void setActionTriggerModeLockedForTest(bool locked) {
     setActionTriggerModeLocked(locked);
+  }
+
+  void dispatchActionForTest(uint16_t event) {
+    runActionWithActionTriggerPolicy(event);
+  }
+
+  void setConfigButtonForTest(bool enabled) {
+    configButton = enabled;
   }
 
   uint16_t holdTimeMsForTest() const {
@@ -113,6 +122,309 @@ TEST(ButtonTests, UnlockBeforeDebounceDoesNotReleasePendingPress) {
   button.onTimer();
   time.advance(30);
   button.onTimer();
+}
+
+TEST(ButtonTests, LockedButtonAllowsConfiguredHoldToggleExactlyOnce) {
+  SimpleTime time;
+  DigitalInterfaceMock ioMock;
+  ActionHandlerMock output;
+  Supla::Control::ActionTrigger actionTrigger;
+  int pinState = 0;
+
+  EXPECT_CALL(ioMock, pinMode(5, INPUT));
+  EXPECT_CALL(ioMock, digitalRead(5))
+      .WillRepeatedly([&pinState](int) { return pinState; });
+  EXPECT_CALL(output, handleAction).Times(0);
+
+  Supla::Control::Button button(5, false, false);
+  actionTrigger.setLocalUnlockAllowed(true);
+  actionTrigger.attach(button);
+  button.setHoldTime(200);
+  button.onInit();
+  // Register the ordinary action before the lock action to verify that the
+  // result does not depend on handler registration order.
+  button.addAction(100, output, Supla::ON_HOLD, true);
+  button.addAction(Supla::TOGGLE_LOCK, actionTrigger, Supla::ON_HOLD);
+  actionTrigger.onInit();
+
+  pinState = 1;
+  time.advance(1000);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  time.advance(300);
+  button.onTimer();
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
+
+  // Repeated HOLD and release of the locking gesture do not toggle again.
+  time.advance(300);
+  button.onTimer();
+  pinState = 0;
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
+
+  // A new HOLD unlocks once; its release and repeated HOLD remain inert.
+  pinState = 1;
+  time.advance(1000);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  time.advance(300);
+  button.onTimer();
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_NOT_SET);
+  time.advance(300);
+  button.onTimer();
+  pinState = 0;
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_NOT_SET);
+}
+
+TEST(ButtonTests, LockedButtonRejectsLocalUnlockWhenDisabled) {
+  SimpleTime time;
+  DigitalInterfaceMock ioMock;
+  ActionHandlerMock output;
+  Supla::Control::ActionTrigger actionTrigger;
+  int pinState = 0;
+
+  EXPECT_CALL(ioMock, pinMode(5, INPUT));
+  EXPECT_CALL(ioMock, digitalRead(5))
+      .WillRepeatedly([&pinState](int) { return pinState; });
+  EXPECT_CALL(output, handleAction).Times(0);
+
+  Supla::Control::Button button(5, false, false);
+  actionTrigger.attach(button);
+  actionTrigger.handleAction(Supla::ON_HOLD, Supla::LOCK);
+  button.setHoldTime(200);
+  button.onInit();
+  button.addAction(100, output, Supla::ON_HOLD, true);
+  button.addAction(Supla::UNLOCK, actionTrigger, Supla::ON_HOLD);
+
+  pinState = 1;
+  time.advance(1000);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  time.advance(300);
+  button.onTimer();
+
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
+}
+
+TEST(ButtonTests, ConflictingLockActionsHaveDeterministicPriority) {
+  SimpleTime time;
+  ButtonTestDouble button(-1);
+  Supla::Control::ActionTrigger actionTrigger;
+  actionTrigger.setLocalUnlockAllowed(true);
+  actionTrigger.attach(button);
+
+  // Register in the reverse order of the priority used by Button.
+  button.addAction(Supla::UNLOCK, actionTrigger, Supla::ON_CLICK_5);
+  button.addAction(Supla::LOCK, actionTrigger, Supla::ON_CLICK_5);
+  button.dispatchActionForTest(Supla::ON_CLICK_5);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
+
+  // Start a separate gesture before checking the locked-state priority.
+  button.setActionTriggerModeLockedForTest(false);
+  actionTrigger.handleAction(Supla::ON_HOLD, Supla::LOCK);
+  button.dispatchActionForTest(Supla::ON_CLICK_5);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_NOT_SET);
+}
+
+TEST(ButtonTests, DuplicateToggleBindingsChangeLockOnce) {
+  SimpleTime time;
+  ButtonTestDouble button(-1);
+  Supla::Control::ActionTrigger actionTrigger;
+  actionTrigger.setLocalUnlockAllowed(true);
+  actionTrigger.attach(button);
+
+  button.addAction(Supla::TOGGLE_LOCK, actionTrigger, Supla::ON_CLICK_1);
+  button.addAction(Supla::TOGGLE_LOCK, actionTrigger, Supla::ON_CLICK_1);
+  button.dispatchActionForTest(Supla::ON_CLICK_1);
+
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
+}
+
+TEST(ButtonTests, ExplicitConfigButtonCapabilityKeepsOnlyConfigActions) {
+  SimpleTime time;
+  ButtonTestDouble button(-1);
+  Supla::Control::ActionTrigger actionTrigger;
+  ActionHandlerMock configAction;
+  ActionHandlerMock ordinaryAction;
+  actionTrigger.setKeepConfigButtonTriggerAlwaysAvailable(true);
+  actionTrigger.attach(button);
+  actionTrigger.handleAction(Supla::ON_HOLD, Supla::LOCK);
+  button.setConfigButtonForTest(true);
+  button.addAction(Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY,
+                   configAction,
+                   Supla::ON_HOLD,
+                   true);
+  button.addAction(123, ordinaryAction, Supla::ON_HOLD, true);
+
+  EXPECT_CALL(configAction,
+              handleAction(Supla::ON_HOLD,
+                           Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY));
+  EXPECT_CALL(ordinaryAction, handleAction).Times(0);
+  button.dispatchActionForTest(Supla::ON_HOLD);
+}
+
+TEST(ButtonTests, ConfigCapabilityDoesNotPermitAnotherAtToUnlock) {
+  SimpleTime time;
+  ButtonTestDouble button(-1);
+  Supla::Control::ActionTrigger lockedAt;
+  Supla::Control::ActionTrigger otherAt;
+  lockedAt.setKeepConfigButtonTriggerAlwaysAvailable(true);
+  lockedAt.attach(button);
+  otherAt.setLocalUnlockAllowed(true);
+  otherAt.handleAction(Supla::ON_HOLD, Supla::LOCK);
+  lockedAt.handleAction(Supla::ON_HOLD, Supla::LOCK);
+  button.setConfigButtonForTest(true);
+  button.addAction(Supla::UNLOCK, otherAt, Supla::ON_HOLD);
+
+  button.dispatchActionForTest(Supla::ON_HOLD);
+
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(lockedAt.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(otherAt.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
+}
+
+TEST(ButtonTests, LockTransitionStopsRemainingEventsOfOnePress) {
+  SimpleTime time;
+  DigitalInterfaceMock ioMock;
+  ActionHandlerMock output;
+  Supla::Control::ActionTrigger actionTrigger;
+  int pinState = 0;
+
+  EXPECT_CALL(ioMock, pinMode(5, INPUT));
+  EXPECT_CALL(ioMock, digitalRead(5))
+      .WillRepeatedly([&pinState](int) { return pinState; });
+  EXPECT_CALL(output, handleAction).Times(0);
+
+  Supla::Control::Button button(5, false, false);
+  actionTrigger.setLocalUnlockAllowed(true);
+  actionTrigger.attach(button);
+  actionTrigger.handleAction(Supla::ON_HOLD, Supla::LOCK);
+  button.onInit();
+  button.addAction(Supla::UNLOCK, actionTrigger, Supla::ON_PRESS);
+  button.addAction(123, output, Supla::ON_CHANGE, true);
+
+  pinState = 1;
+  time.advance(1000);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_NOT_SET);
+}
+
+TEST(ButtonTests, UnlockPermissionChangeDuringPressWaitsForNewGesture) {
+  SimpleTime time;
+  DigitalInterfaceMock ioMock;
+  Supla::Control::ActionTrigger actionTrigger;
+  int pinState = 0;
+
+  EXPECT_CALL(ioMock, pinMode(5, INPUT));
+  EXPECT_CALL(ioMock, digitalRead(5))
+      .WillRepeatedly([&pinState](int) { return pinState; });
+
+  Supla::Control::Button button(5, false, false);
+  actionTrigger.attach(button);
+  actionTrigger.handleAction(Supla::ON_HOLD, Supla::LOCK);
+  button.setHoldTime(200);
+  button.onInit();
+  button.addAction(Supla::UNLOCK, actionTrigger, Supla::ON_HOLD);
+
+  pinState = 1;
+  time.advance(1000);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  actionTrigger.setLocalUnlockAllowed(true);
+  time.advance(300);
+  button.onTimer();
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
+
+  pinState = 0;
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+
+  pinState = 1;
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  time.advance(300);
+  button.onTimer();
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_NOT_SET);
+}
+
+TEST(ButtonTests, LockOnReleaseDoesNotLeakIntoFollowingClick) {
+  SimpleTime time;
+  DigitalInterfaceMock ioMock;
+  ActionHandlerMock output;
+  Supla::Control::ActionTrigger actionTrigger;
+  int pinState = 0;
+
+  EXPECT_CALL(ioMock, pinMode(5, INPUT));
+  EXPECT_CALL(ioMock, digitalRead(5))
+      .WillRepeatedly([&pinState](int) { return pinState; });
+  EXPECT_CALL(output, handleAction).Times(0);
+
+  Supla::Control::Button button(5, false, false);
+  actionTrigger.attach(button);
+  button.setMulticlickTime(300);
+  button.onInit();
+  button.addAction(Supla::LOCK, actionTrigger, Supla::ON_RELEASE);
+  button.addAction(200, output, Supla::ON_CLICK_1);
+
+  pinState = 1;
+  time.advance(1000);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  pinState = 0;
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  time.advance(500);
+  button.onTimer();
+
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(actionTrigger.getChannel())
+                ->getButtonMode(),
+            SUPLA_BUTTON_MODE_LOCKED);
 }
 
 TEST(ButtonTests, SetMulticlickTimeClampsToPersistedConfigRange) {

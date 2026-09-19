@@ -145,6 +145,8 @@ void loadInvalidStoredTiltConfig(Supla::Control::RollerShutterInterface *rs,
         *value = -1;
         return true;
       });
+  EXPECT_CALL(*config, getUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillOnce(Return(false));
   EXPECT_CALL(*config, getUInt8(StrEq("0_cfg_chng"), _))
       .WillOnce(Return(false));
   EXPECT_CALL(
@@ -685,6 +687,8 @@ TEST_F(RollerShutterInterfaceFixture,
   Supla::Control::RollerShutterConfig persistedRsConfig = {};
 
   EXPECT_CALL(config, init()).WillRepeatedly(Return(true));
+  EXPECT_CALL(config, getUInt32(StrEq("0_cfg_chng_t"), _))
+      .WillRepeatedly(Return(false));
   EXPECT_CALL(
       config,
       setBlob(

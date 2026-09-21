@@ -1,0 +1,504 @@
+{
+  "classes": [
+    {
+      "name": "Supla::Element",
+      "header": "supla/element.h",
+      "limits": {
+        "host": 24,
+        "avr": 5,
+        "esp8266": 12,
+        "esp32": 12
+      }
+    },
+    {
+      "name": "Supla::Channel",
+      "header": "supla/channels/channel.h",
+      "limits": {
+        "host": 72,
+        "avr": 44,
+        "esp8266": 56,
+        "esp32": 56
+      }
+    },
+    {
+      "name": "Supla::ChannelElement",
+      "header": "supla/channel_element.h",
+      "limits": {
+        "host": 128,
+        "avr": 58,
+        "esp8266": 88,
+        "esp32": 88
+      }
+    },
+    {
+      "name": "Supla::Control::SimpleButton",
+      "header": "supla/control/simple_button.h",
+      "limits": {
+        "host": 64,
+        "avr": 26,
+        "esp8266": 40,
+        "esp32": 40
+      }
+    },
+    {
+      "name": "Supla::Control::Button",
+      "header": "supla/control/button.h",
+      "limits": {
+        "host": 96,
+        "avr": 51,
+        "esp8266": 68,
+        "esp32": 68
+      }
+    },
+    {
+      "name": "Supla::Control::Relay",
+      "header": "supla/control/relay.h",
+      "limits": {
+        "host": 224,
+        "avr": 126,
+        "esp8266": 168,
+        "esp32": 168
+      }
+    },
+    {
+      "name": "Supla::Control::BistableRelay",
+      "header": "supla/control/bistable_relay.h",
+      "limits": {
+        "host": 256,
+        "avr": 141,
+        "esp8266": 184,
+        "esp32": 184
+      }
+    },
+    {
+      "name": "Supla::Control::RollerShutter",
+      "header": "supla/control/roller_shutter.h",
+      "limits": {
+        "host": 256,
+        "avr": 136,
+        "esp8266": 184,
+        "esp32": 184
+      }
+    },
+    {
+      "name": "Supla::Control::HvacBase",
+      "header": "supla/control/hvac_base.h",
+      "limits": {
+        "host": 1112,
+        "avr": 1010,
+        "esp8266": 1056,
+        "esp32": 1056
+      }
+    },
+    {
+      "name": "Supla::Control::LightingPwmBase",
+      "header": "supla/control/lighting_pwm_base.h",
+      "limits": {
+        "host": 312,
+        "avr": 207,
+        "esp8266": 248,
+        "esp32": 248
+      }
+    },
+    {
+      "name": "Supla::Control::RGBWBase",
+      "header": "supla/control/rgbw_base.h",
+      "limits": {
+        "host": 312,
+        "avr": 207,
+        "esp8266": 248,
+        "esp32": 248
+      }
+    },
+    {
+      "name": "Supla::Control::DimmerBase",
+      "header": "supla/control/dimmer_base.h",
+      "limits": {
+        "host": 312,
+        "avr": 207,
+        "esp8266": 248,
+        "esp32": 248
+      }
+    },
+    {
+      "name": "Supla::Control::ValveBase",
+      "header": "supla/control/valve_base.h",
+      "limits": {
+        "host": 232,
+        "avr": 150,
+        "esp8266": 184,
+        "esp32": 184
+      }
+    },
+    {
+      "name": "Supla::Control::RollerShutterInterface",
+      "header": "supla/control/roller_shutter_interface.h",
+      "limits": {
+        "host": 208,
+        "avr": 111,
+        "esp8266": 152,
+        "esp32": 152
+      }
+    },
+    {
+      "name": "Supla::Sensor::GeneralPurposeChannelBase",
+      "header": "supla/sensor/general_purpose_channel_base.h",
+      "limits": {
+        "host": 256,
+        "avr": 170,
+        "esp8266": 208,
+        "esp32": 208
+      }
+    },
+    {
+      "name": "Supla::Sensor::GeneralPurposeMeasurement",
+      "header": "supla/sensor/general_purpose_measurement.h",
+      "limits": {
+        "host": 256,
+        "avr": 170,
+        "esp8266": 208,
+        "esp32": 208
+      }
+    },
+    {
+      "name": "Supla::Sensor::GeneralPurposeMeter",
+      "header": "supla/sensor/general_purpose_meter.h",
+      "limits": {
+        "host": 288,
+        "avr": 185,
+        "esp8266": 232,
+        "esp32": 232
+      }
+    },
+    {
+      "name": "Supla::Sensor::ThermHygroMeter",
+      "header": "supla/sensor/therm_hygro_meter.h",
+      "limits": {
+        "host": 136,
+        "avr": 69,
+        "esp8266": 104,
+        "esp32": 104
+      }
+    },
+    {
+      "name": "Supla::Sensor::Thermometer",
+      "header": "supla/sensor/thermometer.h",
+      "limits": {
+        "host": 144,
+        "avr": 71,
+        "esp8266": 104,
+        "esp32": 104
+      }
+    },
+    {
+      "name": "Supla::Sensor::HygroMeter",
+      "header": "supla/sensor/hygro_meter.h",
+      "limits": {
+        "host": 136,
+        "avr": 69,
+        "esp8266": 104,
+        "esp32": 104
+      }
+    },
+    {
+      "name": "Supla::Sensor::ThermHygroPressMeter",
+      "header": "supla/sensor/therm_hygro_press_meter.h",
+      "limits": {
+        "host": 208,
+        "avr": 113,
+        "esp8266": 160,
+        "esp32": 160
+      }
+    },
+    {
+      "name": "Supla::Sensor::ThermPressMeter",
+      "header": "supla/sensor/therm_press_meter.h",
+      "limits": {
+        "host": 208,
+        "avr": 113,
+        "esp8266": 160,
+        "esp32": 160
+      }
+    },
+    {
+      "name": "Supla::Sensor::ElectricityMeter",
+      "header": "supla/sensor/electricity_meter.h",
+      "limits": {
+        "host": 728,
+        "avr": 658,
+        "esp8266": 688,
+        "esp32": 688
+      }
+    },
+    {
+      "name": "Supla::Sensor::OnePhaseElectricityMeter",
+      "header": "supla/sensor/one_phase_electricity_meter.h",
+      "limits": {
+        "host": 728,
+        "avr": 658,
+        "esp8266": 688,
+        "esp32": 688
+      }
+    },
+    {
+      "name": "Supla::Sensor::BinaryBase",
+      "header": "supla/sensor/binary_base.h",
+      "limits": {
+        "host": 160,
+        "avr": 103,
+        "esp8266": 128,
+        "esp32": 128
+      }
+    },
+    {
+      "name": "Supla::Sensor::Binary",
+      "header": "supla/sensor/binary.h",
+      "limits": {
+        "host": 184,
+        "avr": 114,
+        "esp8266": 144,
+        "esp32": 144
+      }
+    },
+    {
+      "name": "Supla::Sensor::VirtualBinary",
+      "header": "supla/sensor/virtual_binary.h",
+      "limits": {
+        "host": 184,
+        "avr": 113,
+        "esp8266": 144,
+        "esp32": 144
+      }
+    },
+    {
+      "name": "Supla::Sensor::VirtualImpulseCounter",
+      "header": "supla/sensor/virtual_impulse_counter.h",
+      "limits": {
+        "host": 160,
+        "avr": 77,
+        "esp8266": 120,
+        "esp32": 120
+      }
+    },
+    {
+      "name": "Supla::Sensor::ImpulseCounter",
+      "header": "supla/sensor/impulse_counter.h",
+      "limits": {
+        "host": 192,
+        "avr": 97,
+        "esp8266": 144,
+        "esp32": 144
+      }
+    },
+    {
+      "name": "Supla::Sensor::Pressure",
+      "header": "supla/sensor/pressure.h",
+      "limits": {
+        "host": 128,
+        "avr": 62,
+        "esp8266": 96,
+        "esp32": 96
+      }
+    },
+    {
+      "name": "Supla::Sensor::Wind",
+      "header": "supla/sensor/wind.h",
+      "limits": {
+        "host": 128,
+        "avr": 62,
+        "esp8266": 96,
+        "esp32": 96
+      }
+    },
+    {
+      "name": "Supla::Sensor::Rain",
+      "header": "supla/sensor/rain.h",
+      "limits": {
+        "host": 128,
+        "avr": 62,
+        "esp8266": 96,
+        "esp32": 96
+      }
+    },
+    {
+      "name": "Supla::Sensor::Distance",
+      "header": "supla/sensor/distance.h",
+      "limits": {
+        "host": 136,
+        "avr": 66,
+        "esp8266": 96,
+        "esp32": 96
+      }
+    },
+    {
+      "name": "Supla::Sensor::Weight",
+      "header": "supla/sensor/weight.h",
+      "limits": {
+        "host": 144,
+        "avr": 66,
+        "esp8266": 104,
+        "esp32": 104
+      }
+    },
+    {
+      "name": "Supla::Sensor::ParticleMeter",
+      "header": "supla/sensor/particle_meter.h",
+      "limits": {
+        "host": 96,
+        "avr": 37,
+        "esp8266": 72,
+        "esp32": 72
+      }
+    },
+    {
+      "name": "Supla::Sensor::VirtualThermometer",
+      "header": "supla/sensor/virtual_thermometer.h",
+      "limits": {
+        "host": 152,
+        "avr": 75,
+        "esp8266": 112,
+        "esp32": 112
+      }
+    },
+    {
+      "name": "Supla::Sensor::VirtualThermHygroMeter",
+      "header": "supla/sensor/virtual_therm_hygro_meter.h",
+      "limits": {
+        "host": 152,
+        "avr": 77,
+        "esp8266": 120,
+        "esp32": 120
+      }
+    },
+    {
+      "name": "Supla::Sensor::VirtualHygroMeter",
+      "header": "supla/sensor/virtual_hygromometer.h",
+      "limits": {
+        "host": 144,
+        "avr": 73,
+        "esp8266": 112,
+        "esp32": 112
+      }
+    },
+    {
+      "name": "Supla::Sensor::MultiDsSensor",
+      "header": "supla/sensor/multi_ds_sensor.h",
+      "limits": {
+        "host": 184,
+        "avr": 89,
+        "esp8266": 144,
+        "esp32": 144
+      }
+    },
+    {
+      "name": "Supla::Sensor::MultiDsHandlerBase",
+      "header": "supla/sensor/multi_ds_handler_base.h",
+      "limits": {
+        "host": 192,
+        "avr": 64,
+        "esp8266": 112,
+        "esp32": 112
+      }
+    },
+    {
+      "name": "Supla::Sensor::Container",
+      "header": "supla/sensor/container.h",
+      "limits": {
+        "host": 176,
+        "avr": 98,
+        "esp8266": 136,
+        "esp32": 136
+      }
+    },
+    {
+      "name": "Supla::Sensor::TemperatureDropSensor",
+      "header": "supla/sensor/temperature_drop_sensor.h",
+      "limits": {
+        "host": 368,
+        "avr": 266,
+        "esp8266": 312,
+        "esp32": 312
+      }
+    },
+    {
+      "name": "Supla::Protocol::Mqtt",
+      "header": "supla/protocol/mqtt.h",
+      "limits": {
+        "host": 1144,
+        "avr": 1115,
+        "esp8266": 1128,
+        "esp32": 1128
+      }
+    },
+    {
+      "name": "Supla::Config",
+      "header": "supla/storage/config.h",
+      "limits": {
+        "host": 24,
+        "avr": 15,
+        "esp8266": 20,
+        "esp32": 20
+      }
+    },
+    {
+      "name": "Supla::KeyValue",
+      "header": "supla/storage/key_value.h",
+      "limits": {
+        "host": 32,
+        "avr": 17,
+        "esp8266": 24,
+        "esp32": 24
+      }
+    },
+    {
+      "name": "Supla::Suplet::Manager",
+      "header": "supla/suplet/manager.h",
+      "limits": {
+        "host": 96,
+        "avr": 23,
+        "esp8266": 48,
+        "esp32": 48
+      }
+    },
+    {
+      "name": "Supla::Protocol::ProtocolLayer",
+      "header": "supla/protocol/protocol_layer.h",
+      "limits": {
+        "host": 32,
+        "avr": 8,
+        "esp8266": 16,
+        "esp32": 16
+      }
+    },
+    {
+      "name": "Supla::Protocol::SuplaSrpc",
+      "header": "supla/protocol/supla_srpc.h",
+      "limits": {
+        "host": 144,
+        "avr": 62,
+        "esp8266": 92,
+        "esp32": 92
+      }
+    },
+    {
+      "name": "Supla::WebServer",
+      "header": "supla/network/web_server.h",
+      "limits": {
+        "host": 120,
+        "avr": 82,
+        "esp8266": 100,
+        "esp32": 100
+      }
+    },
+    {
+      "name": "SuplaDeviceClass",
+      "header": "SuplaDevice.h",
+      "limits": {
+        "host": 224,
+        "avr": 115,
+        "esp8266": 152,
+        "esp32": 152
+      }
+    }
+  ]
+}

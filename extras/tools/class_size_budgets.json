@@ -51,6 +51,16 @@
       }
     },
     {
+      "name": "Supla::Control::ActionTrigger",
+      "header": "supla/control/action_trigger.h",
+      "limits": {
+        "host": 176,
+        "avr": 89,
+        "esp8266": 128,
+        "esp32": 128
+      }
+    },
+    {
       "name": "Supla::Control::Relay",
       "header": "supla/control/relay.h",
       "limits": {

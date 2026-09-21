@@ -48,6 +48,8 @@ steps:
   - cd extras/test/build
   - cmake ..
   - make -j32
+  - cd ../../..
+  - python3 extras/tools/check_class_sizes.py --platform host
 
 - name: mqtt_documentation
   image: devel/freertos
@@ -180,12 +182,15 @@ steps:
   - ln -s /drone/src ~/Arduino/libraries/supla-device
   - cd examples/esp
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./RGBW/
+  - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./RGB_CCT/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./RollerShutter/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./SequenceButton/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./WebInterface/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./AHT/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./ConfigModeInputs/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./ThermostatBasic/
+  - cd ../..
+  - python3 extras/tools/check_class_sizes.py --platform esp8266
 
 - name: arduino_esp32_compilation_check_part_1
   image: devel/arduino-cli
@@ -269,6 +274,9 @@ steps:
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-path /drone/arduino_cache  --export-binaries --warnings all ./WebInterface/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-path /drone/arduino_cache  --export-binaries --warnings all ./AHT/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-path /drone/arduino_cache  --export-binaries --warnings all ./ConfigModeInputs/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-path /drone/arduino_cache  --export-binaries --warnings all ./RGB_CCT/
+  - cd ../..
+  - python3 extras/tools/check_class_sizes.py --platform esp32
 
 
 - name: arduino_mega_compilation_check
@@ -295,6 +303,8 @@ steps:
   - arduino-cli compile --fqbn arduino:avr:mega --optimize-for-debug --export-binaries --warnings all ./AHT/
   - arduino-cli compile --fqbn arduino:avr:mega --optimize-for-debug --export-binaries --warnings all ./HX711_Weight_sensor/
   - arduino-cli compile --fqbn arduino:avr:mega --optimize-for-debug --export-binaries --warnings all ./DSwithNotification/
+  - cd ../..
+  - python3 extras/tools/check_class_sizes.py --platform avr
 
 - name: cpplint
   image: devel/supla-core

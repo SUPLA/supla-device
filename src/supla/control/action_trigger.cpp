@@ -117,9 +117,7 @@ Supla::Control::ActionTrigger::ActionTrigger() {
   channel.setDefaultFunction(SUPLA_CHANNELFNC_ACTIONTRIGGER);
   channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
-  channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
-  usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
 }
 
 Supla::Control::ActionTrigger::~ActionTrigger() {
@@ -991,6 +989,7 @@ bool Supla::Control::ActionTrigger::setWeeklyScheduleController(
           controller, configHandler, programSource)) {
     return false;
   }
+  weeklyScheduleAvailable = true;
   updateWeeklyScheduleCapabilities();
   return true;
 }

@@ -9,6 +9,19 @@
 namespace Supla {
 namespace Control {
 
+struct WeeklyScheduleComponents::State {
+  enum class LifecycleState : uint8_t {
+    Unassigned,
+    Assigned,
+    Started,
+  };
+
+  LifecycleState lifecycleState = LifecycleState::Unassigned;
+  WeeklyScheduleController *controller = nullptr;
+  WeeklyScheduleConfigHandler *configHandler = nullptr;
+  WeeklyScheduleProgramSource *programSource = nullptr;
+};
+
 static_assert(DayOfWeek_Sunday == 0 && DayOfWeek_Monday == 1 &&
                   DayOfWeek_Tuesday == 2 && DayOfWeek_Wednesday == 3 &&
                   DayOfWeek_Thursday == 4 && DayOfWeek_Friday == 5 &&
@@ -124,67 +137,82 @@ void WeeklyScheduleController::setWeeklyScheduleProgramSource(
 }
 
 WeeklyScheduleComponents::~WeeklyScheduleComponents() {
-  configHandler_ = nullptr;
-  programSource_ = nullptr;
-  delete controller_;
-  controller_ = nullptr;
+  if (state_ != nullptr) {
+    state_->configHandler = nullptr;
+    state_->programSource = nullptr;
+    delete state_->controller;
+    state_->controller = nullptr;
+    delete state_;
+    state_ = nullptr;
+  }
 }
 
 bool WeeklyScheduleComponents::set(
     WeeklyScheduleController *controller,
     WeeklyScheduleConfigHandler *configHandler,
     WeeklyScheduleProgramSource *programSource) {
-  bool sameComponents = controller == controller_ &&
-                        configHandler == configHandler_ &&
-                        programSource == programSource_;
-  if (lifecycleState_ == LifecycleState::Started) {
+  if (state_ == nullptr) {
+    state_ = new State;
+  }
+
+  bool sameComponents = controller == state_->controller &&
+                        configHandler == state_->configHandler &&
+                        programSource == state_->programSource;
+  if (state_->lifecycleState == State::LifecycleState::Started) {
     return sameComponents;
   }
-  if (lifecycleState_ != LifecycleState::Unassigned && sameComponents) {
+  if (state_->lifecycleState != State::LifecycleState::Unassigned &&
+      sameComponents) {
     return true;
   }
-  if (controller != controller_) {
-    configHandler_ = nullptr;
-    programSource_ = nullptr;
-    delete controller_;
-    controller_ = controller;
+  if (controller != state_->controller) {
+    state_->configHandler = nullptr;
+    state_->programSource = nullptr;
+    delete state_->controller;
+    state_->controller = controller;
   }
-  configHandler_ = configHandler;
-  programSource_ = programSource;
-  if (controller_) {
-    controller_->setWeeklyScheduleProgramSource(programSource_);
+  state_->configHandler = configHandler;
+  state_->programSource = programSource;
+  if (state_->controller != nullptr) {
+    state_->controller->setWeeklyScheduleProgramSource(
+        state_->programSource);
   }
-  lifecycleState_ = LifecycleState::Assigned;
+  state_->lifecycleState = State::LifecycleState::Assigned;
   return true;
 }
 
 void WeeklyScheduleComponents::loadConfig() {
-  lifecycleState_ = LifecycleState::Started;
-  if (configHandler_) {
-    configHandler_->onLoadConfig();
+  if (state_ == nullptr) {
+    return;
+  }
+  state_->lifecycleState = State::LifecycleState::Started;
+  if (state_->configHandler != nullptr) {
+    state_->configHandler->onLoadConfig();
   }
 }
 
 bool WeeklyScheduleComponents::isAssigned() const {
-  return lifecycleState_ != LifecycleState::Unassigned;
+  return state_ != nullptr &&
+         state_->lifecycleState != State::LifecycleState::Unassigned;
 }
 
 bool WeeklyScheduleComponents::isStarted() const {
-  return lifecycleState_ == LifecycleState::Started;
+  return state_ != nullptr &&
+         state_->lifecycleState == State::LifecycleState::Started;
 }
 
 WeeklyScheduleController *WeeklyScheduleComponents::getController() const {
-  return controller_;
+  return state_ == nullptr ? nullptr : state_->controller;
 }
 
 WeeklyScheduleConfigHandler *
 WeeklyScheduleComponents::getConfigHandler() const {
-  return configHandler_;
+  return state_ == nullptr ? nullptr : state_->configHandler;
 }
 
 WeeklyScheduleProgramSource *
 WeeklyScheduleComponents::getProgramSource() const {
-  return programSource_;
+  return state_ == nullptr ? nullptr : state_->programSource;
 }
 
 bool ExternalManagedWeeklySchedule::canActivate() const {

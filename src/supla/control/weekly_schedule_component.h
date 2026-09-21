@@ -145,16 +145,8 @@ class WeeklyScheduleComponents {
   WeeklyScheduleProgramSource *getProgramSource() const;
 
  private:
-  enum class LifecycleState : uint8_t {
-    Unassigned,
-    Assigned,
-    Started,
-  };
-
-  LifecycleState lifecycleState_ = LifecycleState::Unassigned;
-  WeeklyScheduleController *controller_ = nullptr;
-  WeeklyScheduleConfigHandler *configHandler_ = nullptr;
-  WeeklyScheduleProgramSource *programSource_ = nullptr;
+  struct State;
+  State *state_ = nullptr;
 };
 
 class ExternalManagedWeeklySchedule : public WeeklyScheduleController {

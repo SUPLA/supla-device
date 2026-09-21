@@ -149,7 +149,8 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   bool enabled = true;
   bool localHandlerSwitchConfigured = false;
   bool channelConfigReceived = false;
-  bool weeklyScheduleAvailable = true;
+  // Native weekly schedule is opt-in to preserve the legacy AT contract.
+  bool weeklyScheduleAvailable = false;
   bool localUnlockAllowed = false;
   bool keepConfigButtonTriggerAlwaysAvailable = false;
   WeeklyScheduleComponents weeklyScheduleComponents;

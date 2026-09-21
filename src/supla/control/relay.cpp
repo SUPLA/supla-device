@@ -124,6 +124,7 @@ bool Relay::setWeeklyScheduleController(
           controller, configHandler, programSource)) {
     return false;
   }
+  weeklyScheduleAvailable = true;
   usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   usedConfigTypes.clear(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
   if (configHandler) {
@@ -209,8 +210,10 @@ void Relay::updateWeeklyScheduleCapabilities() {
   auto *controller = weeklyScheduleComponents.getController();
   auto *configHandler = weeklyScheduleComponents.getConfigHandler();
   const bool nativeWeeklySchedule =
-      canUseWeeklySchedule() && !weeklyScheduleComponents.isAssigned();
+      weeklyScheduleAvailable && canUseWeeklySchedule() &&
+      !weeklyScheduleComponents.isAssigned();
   const bool configurableWeeklySchedule =
+      weeklyScheduleAvailable &&
       (nativeWeeklySchedule ||
        (configHandler && configHandler->supportsConfigType(
                              SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))) &&
@@ -262,7 +265,8 @@ void Relay::updateWeeklyScheduleCapabilities() {
 void Relay::updateAutomaticModeCapability() {
   auto *controller = weeklyScheduleComponents.getController();
   if (isAutomaticModeSupported() ||
-      (controller != nullptr && controller->isExternallyManaged())) {
+      (weeklyScheduleAvailable && controller != nullptr &&
+       controller->isExternallyManaged())) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED);
   } else {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED);
@@ -1388,7 +1392,7 @@ void Relay::setTurnOffWhenEmptyAggregator(bool turnOff) {
 }
 
 bool Relay::isWeeklyScheduleSupported() const {
-  if (!canUseWeeklySchedule()) {
+  if (!weeklyScheduleAvailable || !canUseWeeklySchedule()) {
     return false;
   }
   auto func = channel.getDefaultFunction();
@@ -1399,6 +1403,19 @@ bool Relay::isWeeklyScheduleSupported() const {
 
 bool Relay::canUseWeeklySchedule() const {
   return true;
+}
+
+Relay &Relay::setWeeklyScheduleAvailable(bool available) {
+  weeklyScheduleAvailable = available;
+  if (available) {
+    ensureNativeWeeklyScheduleController();
+  }
+  updateWeeklyScheduleCapabilities();
+  return *this;
+}
+
+bool Relay::isWeeklyScheduleAvailable() const {
+  return weeklyScheduleAvailable;
 }
 
 Relay &Relay::setAutomaticModeSupported(bool supported) {
@@ -1478,7 +1495,7 @@ bool Relay::isManualActionAllowed(bool turnOn) const {
 }
 
 bool Relay::isWeeklyScheduleProgramModeSupported(uint8_t mode) const {
-  if (!canUseWeeklySchedule()) {
+  if (!weeklyScheduleAvailable || !canUseWeeklySchedule()) {
     return false;
   }
 
@@ -1502,7 +1519,7 @@ bool Relay::isWeeklyScheduleProgramModeSupported(uint8_t mode) const {
 }
 
 bool Relay::isWeeklyScheduleProgramModeAvailable(uint8_t mode) const {
-  if (!canUseWeeklySchedule()) {
+  if (!weeklyScheduleAvailable || !canUseWeeklySchedule()) {
     return false;
   }
   switch (mode) {

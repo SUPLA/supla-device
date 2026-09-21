@@ -313,7 +313,7 @@ TEST(Sd4linuxYamlConfigTests, AllowsRgbCctWithoutStateAndRejectsMissingParser) {
 }
 
 TEST(Sd4linuxYamlConfigTests,
-     RelayDefaultFunctionEnablesWeeklyScheduleCapability) {
+     RelayDefaultFunctionKeepsWeeklyScheduleOptIn) {
   TestLinuxYamlConfig config;
   auto previousElement = Supla::Element::last();
 
@@ -324,7 +324,7 @@ TEST(Sd4linuxYamlConfigTests,
   ASSERT_NE(relay, nullptr);
   EXPECT_EQ(relay->getChannel()->getDefaultFunction(),
             SUPLA_CHANNELFNC_LIGHTSWITCH);
-  EXPECT_TRUE(relay->getChannel()->isWeeklyScheduleAvailable());
+  EXPECT_FALSE(relay->getChannel()->isWeeklyScheduleAvailable());
   deleteCreatedElement(previousElement);
 }
 

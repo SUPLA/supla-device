@@ -99,6 +99,8 @@ class ElementWithChannelActions : public Element, public LocalAction {
   bool isEventAlreadyUsed(uint16_t event, bool ignoreAlwaysEnabled) override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   bool iterateConnected() override;
+  // Keep the deprecated Element overload visible for source compatibility.
+  using Element::iterateConnected;
   void handleChannelConfigFinished() override;
   void handleChannelConfigFinished(int channelNumber) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *result,

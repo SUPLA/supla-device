@@ -49,6 +49,9 @@ BistableRelay::BistableRelay(Supla::Io::IoPin outputPin,
   statusInputPin.setMode(INPUT);
   stateOnInit = STATE_ON_INIT_KEEP;
   setMinimumAllowedDurationMs(1000);
+  if (!isStatusUnknown()) {
+    setWeeklyScheduleAvailable();
+  }
 }
 
 BistableRelay::BistableRelay(Supla::Io::Base *io,

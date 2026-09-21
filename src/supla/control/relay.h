@@ -241,6 +241,8 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isCyclicMode() const;
 
   bool isWeeklyScheduleSupported() const;
+  Relay &setWeeklyScheduleAvailable(bool available = true);
+  bool isWeeklyScheduleAvailable() const;
   Relay &setAutomaticModeSupported(bool supported = true);
   bool isAutomaticModeSupported() const;
   bool isAutomaticMode() const;
@@ -320,6 +322,8 @@ class Relay : public ChannelElement, public ActionHandler {
   bool skipInitialStateSetting = false;
   bool preloadStateOnSoftReset = false;
   bool automaticModeSupported = false;
+  // Native weekly schedule is opt-in to preserve the legacy Relay contract.
+  bool weeklyScheduleAvailable = false;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
   Supla::Io::IoPin outputPin;

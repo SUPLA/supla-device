@@ -143,15 +143,21 @@ void ignoreAtValueUpdates(SrpcMock *srpc) {
 }
 
 void expectActionTriggerConfigStorage(ConfigMock *cfg,
-                                      int weeklyScheduleBlobSize = 0) {
-  EXPECT_CALL(*cfg, getBlobSize(testing::StrEq("0_at_weekly")))
-      .WillOnce(Return(weeklyScheduleBlobSize));
+                                      int weeklyScheduleBlobSize = -1,
+                                      bool expectLegacyWeeklyChangeFlag =
+                                          false) {
+  if (weeklyScheduleBlobSize >= 0) {
+    EXPECT_CALL(*cfg, getBlobSize(testing::StrEq("0_at_weekly")))
+        .WillOnce(Return(weeklyScheduleBlobSize));
+  }
   EXPECT_CALL(*cfg, getUInt32(testing::StrEq("0_cfg_chng_t"), _))
       .WillOnce(Return(false));
   EXPECT_CALL(*cfg, getUInt8(testing::StrEq("0_cfg_chng"), _))
       .WillOnce(Return(false));
-  EXPECT_CALL(*cfg, getUInt8(testing::StrEq("0_weekly_chng"), _))
-      .WillOnce(Return(false));
+  if (expectLegacyWeeklyChangeFlag) {
+    EXPECT_CALL(*cfg, getUInt8(testing::StrEq("0_weekly_chng"), _))
+        .WillOnce(Return(false));
+  }
 }
 
 void loadMqttActionTriggerMode(Supla::Control::ActionTrigger *at,
@@ -217,6 +223,11 @@ TEST_F(ActionTriggerTests, DefaultConfigIgnoresFunctionField) {
             SUPLA_CHANNELFNC_ACTIONTRIGGER);
 }
 
+TEST_F(ActionTriggerTests, DeprecatedIterateConnectedOverloadRemainsCallable) {
+  Supla::Control::ActionTrigger at;
+  EXPECT_TRUE(at.iterateConnected(nullptr));
+}
+
 TEST_F(ActionTriggerTests, InvalidDefaultConfigDoesNotChangeActiveActions) {
   Supla::Control::ActionTrigger at;
   applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_HOLD);
@@ -238,16 +249,22 @@ TEST_F(ActionTriggerTests, EmptyDefaultConfigPreservesActiveActions) {
   EXPECT_TRUE(at.isAnyActionEnabledOnServer());
 }
 
-TEST_F(ActionTriggerTests, WeeklyScheduleIsAvailableByDefaultAndLoadedLazily) {
+TEST_F(ActionTriggerTests, WeeklyScheduleIsOptInAndLoadedLazily) {
   Supla::Control::ActionTrigger at;
 
   EXPECT_TRUE(at.getChannel()->getFlags() &
               SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
-  EXPECT_TRUE(at.getChannel()->getFlags() &
-              SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+  EXPECT_FALSE(at.getChannel()->getFlags() &
+               SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
 
   TSD_ChannelConfig emptyConfig = {};
   emptyConfig.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  EXPECT_EQ(at.handleWeeklySchedule(&emptyConfig, false, false),
+            SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
+
+  at.setWeeklyScheduleAvailable();
+  EXPECT_TRUE(at.getChannel()->getFlags() &
+              SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   EXPECT_EQ(at.handleWeeklySchedule(&emptyConfig, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
@@ -261,6 +278,20 @@ TEST_F(ActionTriggerTests, WeeklyScheduleIsAvailableByDefaultAndLoadedLazily) {
   EXPECT_EQ(memcmp(&schedule, &defaultSchedule, sizeof(schedule)), 0);
   EXPECT_FALSE(actionTriggerValue(at)->Flags &
                SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
+}
+
+TEST_F(ActionTriggerTests,
+       ExplicitOptInCanBeDisabledWithoutDisablingButtonMode) {
+  Supla::Control::ActionTrigger at;
+  at.setWeeklyScheduleAvailable();
+  EXPECT_TRUE(at.getChannel()->getFlags() &
+              SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+
+  at.setWeeklyScheduleAvailable(false);
+  EXPECT_FALSE(at.getChannel()->getFlags() &
+               SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+  EXPECT_TRUE(at.getChannel()->getFlags() &
+              SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
 }
 
 TEST_F(ActionTriggerTests, WeeklyScheduleCanBeDisabledWithoutDisablingLock) {
@@ -410,6 +441,7 @@ TEST_F(ActionTriggerTests,
 TEST_F(ActionTriggerTests, WeeklyScheduleConfigDoesNotEnableSchedule) {
   TimeInterfaceStub time;
   Supla::Control::ActionTrigger at;
+  at.setWeeklyScheduleAvailable();
   auto config = makeActionTriggerWeeklySchedule(SUPLA_BUTTON_MODE_LOCKED);
 
   EXPECT_EQ(at.handleWeeklySchedule(&config, false, false),
@@ -424,6 +456,7 @@ TEST_F(ActionTriggerTests, WeeklyScheduleAndManualCommandsControlButtonMode) {
   ClockStub clock;
   InspectableButton button(10);
   Supla::Control::ActionTrigger at;
+  at.setWeeklyScheduleAvailable();
   at.attach(button);
   at.activateAction(SUPLA_ACTION_CAP_TOGGLE_x1);
   applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_TOGGLE_x1);
@@ -604,6 +637,7 @@ TEST_F(ActionTriggerTests, RestoredLockedStateIsPropagatedToAttachedButton) {
 TEST_F(ActionTriggerTests, InvalidWeeklyScheduleModeIsRejected) {
   TimeInterfaceStub time;
   Supla::Control::ActionTrigger at;
+  at.setWeeklyScheduleAvailable();
   auto config = makeActionTriggerWeeklySchedule(0xFF);
 
   EXPECT_EQ(at.handleWeeklySchedule(&config, false, false),
@@ -623,10 +657,11 @@ TEST_F(ActionTriggerTests, WeeklyScheduleModeIsRestoredFromStateStorage) {
     return false;
   });
   expectActionTriggerConfigStorage(&cfg,
-                                   sizeof(TChannelConfig_WeeklySchedule));
+                                   sizeof(TChannelConfig_WeeklySchedule), true);
   StorageMock storage;
   storage.defaultInitialization(4);
   Supla::Control::ActionTrigger at;
+  at.setWeeklyScheduleAvailable();
   at.enableStateStorage();
   at.onLoadConfig(nullptr);
 
@@ -655,6 +690,7 @@ TEST_F(ActionTriggerTests, WeeklyScheduleModeIsSavedInStateStorage) {
       });
   Supla::Control::ActionTrigger at;
   at.enableStateStorage();
+  at.setWeeklyScheduleAvailable();
   auto config = makeActionTriggerWeeklySchedule(SUPLA_BUTTON_MODE_LOCKED);
   ASSERT_EQ(at.handleWeeklySchedule(&config, false, false),
             SUPLA_CONFIG_RESULT_TRUE);

@@ -46,25 +46,27 @@ void Button::onInit() {
 }
 
 bool Button::runActionWithActionTriggerPolicy(uint16_t event) {
-  if (actionTriggerSuppressActionsUntilRelease) {
+  if (runtimeFlags.actionTriggerSuppressActionsUntilRelease) {
     return true;
   }
-  actionTriggerDispatching = true;
+  runtimeFlags.actionTriggerDispatching = true;
   const bool hasLockAction = hasEnabledAction(event, Supla::LOCK) ||
                              hasEnabledAction(event, Supla::UNLOCK) ||
                              hasEnabledAction(event, Supla::TOGGLE_LOCK);
-  if (!actionTriggerModeLocked && !hasLockAction) {
+  if (!runtimeFlags.actionTriggerModeLocked && !hasLockAction) {
     runAction(event);
-    actionTriggerDispatching = false;
+    runtimeFlags.actionTriggerDispatching = false;
     return false;
   }
 
   const bool allowConfigActions =
-      keepConfigButtonTriggerAlwaysAvailable && configButton;
+      runtimeFlags.keepConfigButtonTriggerAlwaysAvailable &&
+      runtimeFlags.configButton;
   // A locked button without local unlock permission may retain only its
   // explicitly allowed configuration actions. Lock control actions belong to
   // the AT that owns the binding and must not unlock another AT here.
-  if (actionTriggerModeLocked && !actionTriggerLocalUnlockAllowed) {
+  if (runtimeFlags.actionTriggerModeLocked &&
+      !runtimeFlags.actionTriggerLocalUnlockAllowed) {
     if (allowConfigActions) {
       runAction(event,
                 {Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY,
@@ -72,7 +74,7 @@ bool Button::runActionWithActionTriggerPolicy(uint16_t event) {
     } else {
       runAction(event, {});
     }
-    actionTriggerDispatching = false;
+    runtimeFlags.actionTriggerDispatching = false;
     return false;
   }
 
@@ -80,7 +82,7 @@ bool Button::runActionWithActionTriggerPolicy(uint16_t event) {
   // both LOCK and UNLOCK on one event; executing all of them would make the
   // final mode depend on the allocation order of handlers.
   int selectedLockAction = -1;
-  if (actionTriggerModeLocked) {
+  if (runtimeFlags.actionTriggerModeLocked) {
     if (hasEnabledAction(event, Supla::UNLOCK)) {
       selectedLockAction = Supla::UNLOCK;
     } else if (hasEnabledAction(event, Supla::TOGGLE_LOCK)) {
@@ -104,8 +106,8 @@ bool Button::runActionWithActionTriggerPolicy(uint16_t event) {
     } else {
       runAction(event, {});
     }
-    actionTriggerDispatching = false;
-    return actionTriggerSuppressActionsUntilRelease;
+    runtimeFlags.actionTriggerDispatching = false;
+    return runtimeFlags.actionTriggerSuppressActionsUntilRelease;
   }
 
   if (allowConfigActions) {
@@ -116,8 +118,8 @@ bool Button::runActionWithActionTriggerPolicy(uint16_t event) {
   } else {
     runAction(event, {static_cast<uint16_t>(selectedLockAction)});
   }
-  actionTriggerDispatching = false;
-  return actionTriggerSuppressActionsUntilRelease;
+  runtimeFlags.actionTriggerDispatching = false;
+  return runtimeFlags.actionTriggerSuppressActionsUntilRelease;
 }
 
 void Button::onTimer() {
@@ -125,20 +127,20 @@ void Button::onTimer() {
   if (!state.isReady()) {
     return;
   }
-  if (disabled) {
+  if (runtimeFlags.disabled) {
     return;
   }
-  if (suppressActionsUntilRelease) {
+  if (runtimeFlags.suppressActionsUntilRelease) {
     if (stateResult == TO_RELEASED ||
         (stateResult == RELEASED && !state.isPressedOrPending())) {
-      suppressActionsUntilRelease = false;
+      runtimeFlags.suppressActionsUntilRelease = false;
     }
     return;
   }
-  if (actionTriggerSuppressActionsUntilRelease) {
+  if (runtimeFlags.actionTriggerSuppressActionsUntilRelease) {
     if (stateResult == TO_RELEASED ||
         (stateResult == RELEASED && !state.isPressedOrPending())) {
-      actionTriggerSuppressActionsUntilRelease = false;
+      runtimeFlags.actionTriggerSuppressActionsUntilRelease = false;
     }
     return;
   }
@@ -146,7 +148,8 @@ void Button::onTimer() {
   uint32_t timeDelta = millis() - lastStateChangeMs;
   bool stateChanged = false;
   const bool deferConditionalEdges =
-      conditionalActionsOnClick1 && isBistable() && multiclickTimeMs > 0;
+      runtimeFlags.conditionalActionsOnClick1 && isBistable() &&
+      multiclickTimeMs > 0;
   if (stateResult == TO_PRESSED) {
     SUPLA_LOG_DEBUG("Button[%d] pressed", getButtonNumber());
     stateChanged = true;
@@ -174,7 +177,7 @@ void Button::onTimer() {
     }
   }
 
-  if (waitingForRelease) {
+  if (runtimeFlags.waitingForRelease) {
     if (stateResult != TO_RELEASED) {
       return;
     } else {
@@ -183,7 +186,7 @@ void Button::onTimer() {
       lastStateChangeMs = millis();
     }
   }
-  waitingForRelease = false;
+  runtimeFlags.waitingForRelease = false;
 
   if (stateChanged) {
     lastStateChangeMs = millis();
@@ -202,7 +205,7 @@ void Button::onTimer() {
         if (clickCounter <= 1 && holdTimeMs > 0 &&
             timeDelta > (holdTimeMs +
                          static_cast<uint32_t>(holdSend) * repeatOnHoldMs) &&
-            (repeatOnHoldEnabled || holdSend == 0)) {
+            (runtimeFlags.repeatOnHoldEnabled || holdSend == 0)) {
           if (runActionWithActionTriggerPolicy(ON_HOLD)) return;
           ++holdSend;
         }
@@ -311,12 +314,12 @@ void Button::onTimer() {
           }
         }
       }
-    } else if (allowHoldOnPowerOn) {
+    } else if (runtimeFlags.allowHoldOnPowerOn) {
       if (isMonostable() && stateResult == PRESSED) {
         if (clickCounter <= 1 && holdTimeMs > 0 &&
             timeDelta > (holdTimeMs +
                          static_cast<uint32_t>(holdSend) * repeatOnHoldMs) &&
-            (repeatOnHoldEnabled || holdSend == 0)) {
+            (runtimeFlags.repeatOnHoldEnabled || holdSend == 0)) {
           if (runActionWithActionTriggerPolicy(ON_HOLD)) return;
           ++holdSend;
         }
@@ -350,19 +353,20 @@ void Button::enableAction(int32_t action,
 }
 
 void Button::setConditionalActionsOnClick1(bool enabled) {
-  if (conditionalActionsOnClick1 || enabled) {
+  if (runtimeFlags.conditionalActionsOnClick1 || enabled) {
     // Reconfiguration must not replay an edge collected under the old policy.
     clickCounter = 0;
     holdSend = 0;
   }
-  conditionalActionsOnClick1 = enabled;
+  runtimeFlags.conditionalActionsOnClick1 = enabled;
   evaluateMaxMulticlickValue();
 }
 
 void Button::evaluateMaxMulticlickValue() {
   auto ptr = ActionHandlerClient::begin;
   uint8_t clickCounterValueForEvent = 0;
-  maxMulticlickValueConfigured = conditionalActionsOnClick1 ? 1 : 0;
+  maxMulticlickValueConfigured =
+      runtimeFlags.conditionalActionsOnClick1 ? 1 : 0;
   while (ptr) {
     if (ptr->trigger == this && ptr->isEnabled()) {
       switch (ptr->onEvent) {
@@ -465,7 +469,7 @@ void Button::repeatOnHoldEvery(unsigned int timeMs) {
     timeMs = UINT16_MAX;
   }
   repeatOnHoldMs = timeMs;
-  repeatOnHoldEnabled = (timeMs > 0);
+  runtimeFlags.repeatOnHoldEnabled = (timeMs > 0);
 }
 
 bool Button::isBistable() const {
@@ -582,7 +586,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
         // ON is "0", which is default value
         SUPLA_LOG_DEBUG("Button[%d] enabling IN as config button",
             getButtonNumber());
-        configButton = true;
+        runtimeFlags.configButton = true;
         addAction(Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY,
                   sdc,
                   Supla::ON_CLICK_10,
@@ -600,7 +604,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
 
 void Button::configureAsConfigButton(SuplaDeviceClass *sdc) {
   SUPLA_LOG_DEBUG("Button[%d]::configureAsConfigButton", getButtonNumber());
-  configButton = true;
+  runtimeFlags.configButton = true;
   dontUseOnLoadConfig();
   setHoldTime(CFG_MODE_ON_HOLD_TIME);
   setMulticlickTime(300, isBistable());
@@ -613,7 +617,7 @@ void Button::configureAsConfigButton(SuplaDeviceClass *sdc) {
 }
 
 bool Button::disableActionsInConfigMode() {
-  return configButton;
+  return runtimeFlags.configButton;
 }
 
 void Button::setButtonType(const ButtonType type) {
@@ -646,23 +650,23 @@ void Button::setOnLoadConfigType(OnLoadConfigType type) {
 
 void Button::disableRepeatOnHold(uint32_t threshold) {
   if (threshold == 0 || repeatOnHoldMs < threshold) {
-    repeatOnHoldEnabled = false;
+    runtimeFlags.repeatOnHoldEnabled = false;
   }
 }
 
 void Button::enableRepeatOnHold() {
-  repeatOnHoldEnabled = (repeatOnHoldMs > 0);
+  runtimeFlags.repeatOnHoldEnabled = (repeatOnHoldMs > 0);
 }
 
 void Button::disableButton() {
   SUPLA_LOG_DEBUG("Button[%d]: disabling button", getButtonNumber());
-  disabled = true;
+  runtimeFlags.disabled = true;
 }
 
 void Button::enableButton() {
   SUPLA_LOG_DEBUG("Button[%d]: enabling button", getButtonNumber());
-  disabled = false;
-  suppressActionsUntilRelease = state.isPressedOrPending();
+  runtimeFlags.disabled = false;
+  runtimeFlags.suppressActionsUntilRelease = state.isPressedOrPending();
   clickCounter = 0;
   holdSend = 0;
   lastStateChangeMs = millis();
@@ -670,40 +674,41 @@ void Button::enableButton() {
 
 void Button::setActionTriggerModeLocked(bool locked) {
   setActionTriggerModeLocked(locked,
-                             actionTriggerLocalUnlockAllowed,
-                             keepConfigButtonTriggerAlwaysAvailable);
+                             runtimeFlags.actionTriggerLocalUnlockAllowed,
+                             runtimeFlags
+                                 .keepConfigButtonTriggerAlwaysAvailable);
 }
 
 void Button::setActionTriggerModeLocked(
     bool locked,
     bool localUnlockAllowed,
     bool keepConfigButtonTriggerAlwaysAvailableValue) {
-  if (actionTriggerModeLocked == locked) {
+  if (runtimeFlags.actionTriggerModeLocked == locked) {
     const bool policyChanged =
-        actionTriggerLocalUnlockAllowed != localUnlockAllowed ||
-        keepConfigButtonTriggerAlwaysAvailable !=
+        runtimeFlags.actionTriggerLocalUnlockAllowed != localUnlockAllowed ||
+        runtimeFlags.keepConfigButtonTriggerAlwaysAvailable !=
             keepConfigButtonTriggerAlwaysAvailableValue;
-    actionTriggerLocalUnlockAllowed = localUnlockAllowed;
-    keepConfigButtonTriggerAlwaysAvailable =
+    runtimeFlags.actionTriggerLocalUnlockAllowed = localUnlockAllowed;
+    runtimeFlags.keepConfigButtonTriggerAlwaysAvailable =
         keepConfigButtonTriggerAlwaysAvailableValue;
     if (policyChanged && state.isPressedOrPending()) {
-      actionTriggerSuppressActionsUntilRelease = true;
+      runtimeFlags.actionTriggerSuppressActionsUntilRelease = true;
       clickCounter = 0;
       holdSend = 0;
-      waitingForRelease = false;
+      runtimeFlags.waitingForRelease = false;
       lastStateChangeMs = millis();
     }
     return;
   }
-  actionTriggerModeLocked = locked;
-  actionTriggerLocalUnlockAllowed = localUnlockAllowed;
-  keepConfigButtonTriggerAlwaysAvailable =
+  runtimeFlags.actionTriggerModeLocked = locked;
+  runtimeFlags.actionTriggerLocalUnlockAllowed = localUnlockAllowed;
+  runtimeFlags.keepConfigButtonTriggerAlwaysAvailable =
       keepConfigButtonTriggerAlwaysAvailableValue;
-  actionTriggerSuppressActionsUntilRelease =
-      state.isPressedOrPending() || actionTriggerDispatching;
+  runtimeFlags.actionTriggerSuppressActionsUntilRelease =
+      state.isPressedOrPending() || runtimeFlags.actionTriggerDispatching;
   clickCounter = 0;
   holdSend = 0;
-  waitingForRelease = false;
+  runtimeFlags.waitingForRelease = false;
   lastStateChangeMs = millis();
 }
 
@@ -721,7 +726,7 @@ void Button::handleAction(int event, int action) {
       break;
     }
     case Supla::TOGGLE: {
-      if (disabled) {
+      if (runtimeFlags.disabled) {
         enableButton();
       } else {
         disableButton();
@@ -736,7 +741,7 @@ uint32_t Button::getLastStateChange() const {
 }
 
 void Button::waitForRelease() {
-  waitingForRelease = true;
+  runtimeFlags.waitingForRelease = true;
 }
 
 

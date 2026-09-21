@@ -2580,6 +2580,36 @@ TEST_F(RelayFixture, weeklyScheduleReportsModeAndSwitchesToManualAndBack) {
   EXPECT_TRUE(relay.isOn());
 }
 
+TEST_F(RelayFixture,
+       cmdSwitchToManualDisablesWeeklyWithoutAutomaticCapability) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  RelayWithAutomaticWeeklySchedule relay(1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.onLoadConfig(nullptr);
+
+  EXPECT_FALSE(relay.isAutomaticModeSupported());
+  auto config = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_FORCED_ON);
+  ASSERT_EQ(relay.handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  enableWeeklySchedule(&relay);
+  ASSERT_TRUE(relay.isWeeklyScheduleActive());
+
+  auto *value = relayValue(relay);
+  ASSERT_NE(value, nullptr);
+  ASSERT_TRUE(value->flags & SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
+
+  TSD_SuplaChannelNewValue newValue = {};
+  reinterpret_cast<TRelayChannel_Value *>(newValue.value)->RelayMode =
+      SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL;
+  EXPECT_EQ(relay.handleNewValueFromServer(&newValue), 1);
+
+  EXPECT_FALSE(relay.isWeeklyScheduleActive());
+  EXPECT_FALSE(relayValue(relay)->flags &
+               SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(relayValue(relay)->RelayMode, SUPLA_RELAY_MODE_NOT_SET);
+}
+
 TEST_F(RelayFixture, stateOnInitTests) {
   int gpio1 = 1;
   int gpio2 = 2;

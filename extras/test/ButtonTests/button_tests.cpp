@@ -33,7 +33,7 @@ class ButtonTestDouble : public Supla::Control::Button {
   }
 
   void setConfigButtonForTest(bool enabled) {
-    configButton = enabled;
+    runtimeFlags.configButton = enabled;
   }
 
   uint16_t holdTimeMsForTest() const {

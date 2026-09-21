@@ -291,6 +291,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isManualActionAllowed(bool turnOn) const;
   bool isManualForcedModeSupported() const;
   bool setManualForcedMode(uint8_t mode);
+  void disableWeeklySchedule();
   void applyWeeklyScheduleProgram(uint8_t programMode, bool programChanged);
   virtual bool applyWeeklyScheduleState(bool on);
   void notifyWeeklyScheduleManualAction();

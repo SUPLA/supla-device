@@ -68,15 +68,15 @@ class InspectableButton : public Supla::Control::Button {
   using Supla::Control::Button::Button;
 
   bool isActionTriggerModeLocked() const {
-    return actionTriggerModeLocked;
+    return runtimeFlags.actionTriggerModeLocked;
   }
 
   bool isLocalUnlockAllowed() const {
-    return actionTriggerLocalUnlockAllowed;
+    return runtimeFlags.actionTriggerLocalUnlockAllowed;
   }
 
   bool keepsConfigButtonTriggerAlwaysAvailable() const {
-    return keepConfigButtonTriggerAlwaysAvailable;
+    return runtimeFlags.keepConfigButtonTriggerAlwaysAvailable;
   }
 };
 

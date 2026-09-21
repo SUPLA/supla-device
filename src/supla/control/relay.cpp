@@ -663,7 +663,8 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   }
 
   if (relayValue->RelayMode == SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL) {
-    setAutomaticMode(false);
+    disableWeeklySchedule();
+    channel.setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
     Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
     return 1;
   }
@@ -1439,15 +1440,19 @@ bool Relay::isAutomaticMode() const {
   return channel.getRelayMode() == SUPLA_RELAY_MODE_AUTOMATIC;
 }
 
-bool Relay::setAutomaticMode(bool enabled) {
-  if (enabled && !isAutomaticModeSupported()) {
-    return false;
-  }
+void Relay::disableWeeklySchedule() {
   auto *weeklySchedule = weeklyScheduleComponents.getController();
   if (weeklySchedule != nullptr && weeklySchedule->isActive()) {
     weeklySchedule->switchToManualMode();
   }
   channel.setRelayWeeklyScheduleEnabled(false);
+}
+
+bool Relay::setAutomaticMode(bool enabled) {
+  if (enabled && !isAutomaticModeSupported()) {
+    return false;
+  }
+  disableWeeklySchedule();
   channel.setRelayMode(enabled ? SUPLA_RELAY_MODE_AUTOMATIC
                                : SUPLA_RELAY_MODE_NOT_SET);
   return true;

@@ -85,9 +85,30 @@ class Button : public SimpleButton, public ActionHandler {
 
   uint32_t getLastStateChange() const;
 
-  void setAllowHoldOnPowerOn(bool allow) { allowHoldOnPowerOn = allow; }
+  void setAllowHoldOnPowerOn(bool allow) {
+    runtimeFlags.allowHoldOnPowerOn = allow;
+  }
 
  protected:
+  struct RuntimeFlags {
+    uint16_t actionTriggerModeLocked : 1;
+    uint16_t actionTriggerLocalUnlockAllowed : 1;
+    uint16_t keepConfigButtonTriggerAlwaysAvailable : 1;
+    uint16_t actionTriggerSuppressActionsUntilRelease : 1;
+    uint16_t actionTriggerDispatching : 1;
+    uint16_t suppressActionsUntilRelease : 1;
+    uint16_t repeatOnHoldEnabled : 1;
+    uint16_t configButton : 1;
+    uint16_t disabled : 1;
+    uint16_t allowHoldOnPowerOn : 1;
+    uint16_t waitingForRelease : 1;
+    uint16_t conditionalActionsOnClick1 : 1;
+    uint16_t reserved : 4;
+  };
+
+  static_assert(sizeof(RuntimeFlags) == sizeof(uint16_t),
+                "Button runtime flags must fit in uint16_t");
+
   void setActionTriggerModeLocked(bool locked);
   void setActionTriggerModeLocked(bool locked,
                                   bool localUnlockAllowed,
@@ -107,24 +128,13 @@ class Button : public SimpleButton, public ActionHandler {
   uint16_t holdSend = 0;
   uint16_t holdTimeMs = 0;
   uint16_t multiclickTimeMs = 0;
+  RuntimeFlags runtimeFlags = {};
   ButtonType buttonType = ButtonType::MONOSTABLE;
   enum OnLoadConfigType onLoadConfigType = OnLoadConfigType::LOAD_FULL_CONFIG;
 
   uint8_t clickCounter = 0;
   uint8_t maxMulticlickValueConfigured = 0;
-  bool repeatOnHoldEnabled = false;
-  bool configButton = false;
   int8_t buttonNumber = -1;
-  bool disabled = false;
-  bool actionTriggerModeLocked = false;
-  bool actionTriggerLocalUnlockAllowed = false;
-  bool keepConfigButtonTriggerAlwaysAvailable = false;
-  bool actionTriggerSuppressActionsUntilRelease = false;
-  bool actionTriggerDispatching = false;
-  bool suppressActionsUntilRelease = false;
-  bool allowHoldOnPowerOn = false;
-  bool waitingForRelease = false;
-  bool conditionalActionsOnClick1 = false;
 
   static int buttonCounter;
 };

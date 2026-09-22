@@ -144,7 +144,7 @@ class TestingChannelElement : public Supla::ChannelElement {
   }
 
   uint8_t getLocallyChangedConfigTypes() const {
-    return locallyChangedConfigTypes;
+    return locallyChangedConfigTypes.getAll();
   }
 
   bool isLocalConfigChangePending(int configType) const {
@@ -212,6 +212,23 @@ using ::testing::_;
 using ::testing::Return;
 using ::testing::SetArgPointee;
 using ::testing::StrEq;
+
+TEST(ChannelElementTests, ConfigTypesBitmapPreservesStorageBitAssignments) {
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  configTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  configTypes.set(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
+  configTypes.set(SUPLA_CONFIG_TYPE_OCR);
+  configTypes.set(SUPLA_CONFIG_TYPE_EXTENDED);
+
+  // The raw value is stored as uint32_t and must remain compatible with
+  // existing devices: bits 0, 2, 3, 4 and 5 represent these five types.
+  EXPECT_EQ(configTypes.getAll(), 0x3D);
+  EXPECT_FALSE(configTypes.isSet(1));
+
+  configTypes.clear(SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(configTypes.getAll(), 0x3C);
+}
 
 TEST(ChannelElementTests, ConfigExchangeNoConfigOnServer) {
   Supla::Channel::resetToDefaults();
@@ -315,6 +332,63 @@ TEST(ChannelElementTests, SuccessfulSingleConfigExchangeResetsAttempts) {
     EXPECT_FALSE(element.iterateConnected());
     element.handleSetChannelConfigResult(&result);
   }
+}
+
+TEST(ChannelElementTests, ExhaustedSendAttemptsAllowFreshLocalConfigExchange) {
+  Supla::Channel::resetToDefaults();
+
+  SuplaSrpcLayerMock srpc;
+  TestingChannelElement element;
+  EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
+  auto channel = element.getChannel();
+  channel->setType(SUPLA_CHANNELTYPE_RELAY);
+  channel->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  Supla::ConfigTypesBitmap configTypes;
+  configTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  element.setUsedConfigTypes(configTypes);
+  element.onRegistered(&srpc);
+  element.handleChannelConfigFinished();
+
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+  EXPECT_CALL(
+      srpc,
+      setChannelConfig(
+          0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_DEFAULT))
+      .Times(3)
+      .WillRepeatedly(Return(false));
+  for (int i = 0; i < 3; i++) {
+    EXPECT_TRUE(element.iterateConnected());
+    EXPECT_EQ(element.getChannelConfigState(),
+              Supla::ChannelConfigState::LocalChangePending);
+    EXPECT_TRUE(element.isLocalConfigChangePending(SUPLA_CONFIG_TYPE_DEFAULT));
+  }
+
+  // Exhaustion must stop sending, without wrapping the counter or state.
+  for (int i = 0; i < 5; i++) {
+    EXPECT_TRUE(element.iterateConnected());
+  }
+  EXPECT_FALSE(element.isLocalConfigChangePending(SUPLA_CONFIG_TYPE_DEFAULT));
+  EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
+  ASSERT_TRUE(::testing::Mock::VerifyAndClearExpectations(&srpc));
+
+  element.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+  EXPECT_CALL(
+      srpc,
+      setChannelConfig(
+          0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_DEFAULT))
+      .WillOnce(Return(true));
+  EXPECT_FALSE(element.iterateConnected());
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::LocalChangeSent);
+
+  TSDS_SetChannelConfigResult result = {};
+  result.ChannelNumber = channel->getChannelNumber();
+  result.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  result.Result = SUPLA_CONFIG_RESULT_TRUE;
+  element.handleSetChannelConfigResult(&result);
+  EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
+  EXPECT_FALSE(element.isLocalConfigChangePending(SUPLA_CONFIG_TYPE_DEFAULT));
 }
 
 TEST(ChannelElementTests, ConfigExchange2xNoConfigOnServer) {

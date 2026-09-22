@@ -19,23 +19,20 @@ enum class ChannelConfigState : uint8_t {
   SetChannelConfigFailed = 3,
   WaitForConfigFinished = 4,
   ResendConfig = 5,
-  LocalChangeSent = 6
+  LocalChangeSent = 6,
+  LAST_STATE_MAX  // Sentinel: one past the last valid state.
 };
+
+static_assert(static_cast<uint8_t>(ChannelConfigState::LAST_STATE_MAX) <= 16,
+              "ChannelConfigState does not fit in 4 bits");
 
 #pragma pack(push, 1)
 struct ConfigTypesBitmap {
  private:
-  union {
-    struct {
-      uint8_t configFinishedReceived: 1;
-      uint8_t defaultConfig: 1;
-      uint8_t weeklySchedule: 1;
-      uint8_t altWeeklySchedule: 1;
-      uint8_t ocrConfig: 1;
-      uint8_t extendedDefaultConfig: 1;
-    };
-    uint8_t all = 0;
-  };
+  // This is a runtime-only bitmap. The local-change storage keeps the raw
+  // value as uint32_t, so the bit assignments must remain compatible with
+  // SUPLA_CONFIG_TYPE_* values used by legacy devices.
+  uint8_t all = 0;
 
  public:
   bool isSet(int configType) const;
@@ -43,13 +40,13 @@ struct ConfigTypesBitmap {
   void clearAll();
   void setAll(uint8_t values);
   uint8_t getAll() const;
-  void setConfigFinishedReceived();
-  void clearConfigFinishedReceived();
-  bool isConfigFinishedReceived() const;
   void set(int configType, bool value = true);
   bool operator!=(const ConfigTypesBitmap &other) const;
 };
 #pragma pack(pop)
+
+static_assert(sizeof(ConfigTypesBitmap) == 1,
+              "ConfigTypesBitmap must remain one byte");
 
 class Condition;
 class ActionHandler;
@@ -153,16 +150,12 @@ class ElementWithChannelActions : public Element, public LocalAction {
   bool setLocalConfigChange(int configType, bool value = true);
   void clearLocalConfigChanges(int configType, int secondConfigType = -1);
   uint8_t getUsedLocalConfigTypes() const;
-  Supla::ChannelConfigState channelConfigState =
-      Supla::ChannelConfigState::None;
-
-  uint8_t setChannelConfigAttempts = 0;
-  // Bit number maps directly to SUPLA_CONFIG_TYPE_*. NVS stores the bitmap as
-  // uint32_t, but currently only four types are locally changeable (DEFAULT,
-  // WEEKLY_SCHEDULE, ALT_WEEKLY_SCHEDULE and EXTENDED), and all their type IDs
-  // fit in 0..7. Widen this field and the related helpers to uint16_t or
-  // uint32_t before adding a locally changed config type >= 8.
-  uint8_t locallyChangedConfigTypes = 0;
+  // Keep exchange state in one byte. The retry counter must stay in 2 bits.
+  ChannelConfigState channelConfigState : 4;
+  uint8_t setChannelConfigAttempts : 2;
+  uint8_t configFinishedReceived : 1;
+  uint8_t reserved : 1;
+  ConfigTypesBitmap locallyChangedConfigTypes;
   ConfigTypesBitmap usedConfigTypes;
   ConfigTypesBitmap receivedConfigTypes;
 

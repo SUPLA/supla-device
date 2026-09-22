@@ -19,12 +19,26 @@ class CustomChannel
   Supla::Channel *getChannel() override;
 //  const char *getValue();
   void setValue(std::string);
+  void setChannelType(uint32_t);
 
  private:
-  Supla::Channel channel;
+  class CustomChannelType : public Supla::Channel {
+   public:
+    uint32_t getChannelType() const override {
+      return channelTypeValue;
+    }
+
+    void setChannelType(uint32_t type) {
+      channelTypeValue = type;
+    }
+
+   private:
+    uint32_t channelTypeValue = 0;
+  };
+
+  CustomChannelType channel;
 };
 
 }  // namespace Supla
 
 #endif  // EXTRAS_PORTING_LINUX_SUPLA_CUSTOM_CHANNEL_H_
-

@@ -149,6 +149,7 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
 
   using Supla::LinuxYamlConfig::addRgbCctParsed;
   using Supla::LinuxYamlConfig::addCustomHvac;
+  using Supla::LinuxYamlConfig::addCustomChannel;
   using Supla::LinuxYamlConfig::addCustomRelay;
   using Supla::LinuxYamlConfig::addCmdRelay;
   using Supla::LinuxYamlConfig::addCmdValve;
@@ -667,6 +668,26 @@ TEST(Sd4linuxYamlConfigTests, RejectsCustomHvacWithoutPayload) {
 
   EXPECT_FALSE(config.parseChannel(channel, 0));
   EXPECT_EQ(Supla::Element::last(), previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, PreservesArbitraryCustomChannelTypes) {
+  TestLinuxYamlConfig config;
+
+  for (uint32_t type : {static_cast<uint32_t>(SUPLA_CHANNELTYPE_DIGIGLASS),
+                        424242u}) {
+    auto previousElement = Supla::Element::last();
+    auto channel = YAML::Load("channel_type: " + std::to_string(type) +
+                              "\nvalue: 01 02 03 04 05 06 07 08\n");
+
+    ASSERT_TRUE(config.addCustomChannel(channel, 0, nullptr));
+    auto createdElement = Supla::Element::last();
+    ASSERT_NE(createdElement, previousElement);
+
+    TDS_SuplaDeviceChannel_D registration = {};
+    createdElement->getChannel()->fillDeviceChannelStruct(&registration);
+    EXPECT_EQ(registration.Type, type);
+    deleteCreatedElement(previousElement);
+  }
 }
 
 TEST(Sd4linuxYamlConfigTests, AcceptsCustomHvacWithPayload) {

@@ -249,7 +249,7 @@ class Channel : public LocalAction {
   virtual bool isExtended() const;
   bool isUpdateReady() const;
   int getChannelNumber() const;
-  uint32_t getChannelType() const;
+  virtual uint32_t getChannelType() const;
 
   void setType(uint32_t type);
 

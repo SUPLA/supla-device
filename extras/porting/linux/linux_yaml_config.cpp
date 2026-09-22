@@ -2885,14 +2885,7 @@ bool Supla::LinuxYamlConfig::addCustomChannel(const YAML::Node& ch,
   if (auto channelTypeParameter =
           getAndMarkChannelParameter(ch, Supla::ChannelType)) {
     uint32_t type = channelTypeParameter.as<uint32_t>();
-    custom->getChannel()->setType(type);
-    if (custom->getChannel()->getChannelType() != type) {
-      SUPLA_LOG_ERROR("Channel[%d] config: %s value %d not supported",
-                      channelNumber,
-                      Supla::ChannelType,
-                      type);
-      return false;
-    }
+    custom->setChannelType(type);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
                     channelNumber,

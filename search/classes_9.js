@@ -9,6 +9,7 @@ var searchData=
   ['instancerecord_6',['InstanceRecord',['../structSupla_1_1Suplet_1_1InstanceRecord.html',1,'Supla::Suplet']]],
   ['instancetable_7',['InstanceTable',['../classSupla_1_1Suplet_1_1InstanceTable.html',1,'Supla::Suplet']]],
   ['internalpinoutput_8',['InternalPinOutput',['../classSupla_1_1Control_1_1InternalPinOutput.html',1,'Supla::Control']]],
-  ['iopin_9',['IoPin',['../structSupla_1_1Io_1_1IoPin.html',1,'Supla::Io']]],
-  ['ipaddress_10',['IPAddress',['../classIPAddress.html',1,'']]]
+  ['iogroup_9',['IoGroup',['../classSupla_1_1Io_1_1IoGroup.html',1,'Supla::Io']]],
+  ['iopin_10',['IoPin',['../structSupla_1_1Io_1_1IoPin.html',1,'Supla::Io']]],
+  ['ipaddress_11',['IPAddress',['../classIPAddress.html',1,'']]]
 ];

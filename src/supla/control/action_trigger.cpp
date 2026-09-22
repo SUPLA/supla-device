@@ -131,8 +131,8 @@ void Supla::Control::ActionTrigger::attach(Supla::Control::Button *button) {
   if (attachedButton != nullptr) {
     attachedButton->setActionTriggerModeLocked(
         channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED,
-        localUnlockAllowed,
-        keepConfigButtonTriggerAlwaysAvailable);
+        runtimeFlags.localUnlockAllowed,
+        runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
   }
 }
 
@@ -141,7 +141,7 @@ void Supla::Control::ActionTrigger::attach(Supla::Control::Button &button) {
 }
 
 void Supla::Control::ActionTrigger::handleAction(int, int action) {
-  if (!enabled) {
+  if (!runtimeFlags.enabled) {
     return;
   }
 
@@ -151,13 +151,13 @@ void Supla::Control::ActionTrigger::handleAction(int, int action) {
       return;
     case Supla::UNLOCK:
       if (channel.getButtonMode() != SUPLA_BUTTON_MODE_LOCKED ||
-          localUnlockAllowed) {
+          runtimeFlags.localUnlockAllowed) {
         applyManualButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
       }
       return;
     case Supla::TOGGLE_LOCK:
       if (channel.getButtonMode() != SUPLA_BUTTON_MODE_LOCKED ||
-          localUnlockAllowed) {
+          runtimeFlags.localUnlockAllowed) {
         applyManualButtonMode(
             channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED
                 ? SUPLA_BUTTON_MODE_NOT_SET
@@ -343,7 +343,7 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
 
     if (activeActionsFromServer ||
         actionHandlingType == ActionHandlingType_PublishAllDisableNone ||
-        alwaysUseOnClick1) {
+        runtimeFlags.alwaysUseOnClick1) {
       // disable on_press, on_release, on_change local actions and enable
       // on_click_1
       if (localHandlerForDisabledAt && localHandlerForEnabledAt) {
@@ -378,7 +378,7 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
           actionHandlingType == ActionHandlingType_PublishAllDisableNone) {
         attachedButton->enableAction(actionId, this, eventId);
       } else {
-        if (eventId != Supla::ON_CLICK_1 || !alwaysUseOnClick1) {
+        if (eventId != Supla::ON_CLICK_1 || !runtimeFlags.alwaysUseOnClick1) {
           attachedButton->disableAction(actionId, this, eventId);
         }
       }
@@ -456,7 +456,7 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
         attachedButton->isEventAlreadyUsed(Supla::CONDITIONAL_ON_RELEASE, true);
     attachedButton->setConditionalActionsOnClick1(
         directionalPair &&
-        (activeActionsFromServer || alwaysUseOnClick1 ||
+        (activeActionsFromServer || runtimeFlags.alwaysUseOnClick1 ||
          actionHandlingType == ActionHandlingType_PublishAllDisableNone));
   }
 }
@@ -467,7 +467,7 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
     return Supla::ApplyConfigResult::DataError;
   }
   if (result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
-    if (!weeklyScheduleAvailable) {
+    if (!runtimeFlags.weeklyScheduleAvailable) {
       return Supla::ApplyConfigResult::NotSupported;
     }
     ensureNativeWeeklyScheduleController();
@@ -489,7 +489,7 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
   TChannelConfig_ActionTrigger *config =
       reinterpret_cast<TChannelConfig_ActionTrigger *>(result->Config);
   Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
-  if (channelConfigReceived &&
+  if (runtimeFlags.channelConfigReceived &&
       lastReceivedActiveActions == config->ActiveActions) {
     // Preserve an in-flight click/release when the server repeats its
     // configuration, e.g. after reconnecting. Local callers can still force
@@ -497,7 +497,7 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
     return Supla::ApplyConfigResult::Success;
   }
   lastReceivedActiveActions = config->ActiveActions;
-  channelConfigReceived = true;
+  runtimeFlags.channelConfigReceived = true;
   activeActionsFromServer = config->ActiveActions;
   SUPLA_LOG_DEBUG(
       "AT[%d] received config with active actions: 0x%X",
@@ -544,7 +544,8 @@ void Supla::Control::ActionTrigger::rebuildForAttachedButton() {
     return;
   }
 
-  if (attachedButton && localHandlerSwitchConfigured && localHandlerClient) {
+  if (attachedButton && runtimeFlags.localHandlerSwitchConfigured &&
+      localHandlerClient) {
     Supla::LocalAction::DeleteAction(attachedButton,
                                      localHandlerClient,
                                      Supla::ON_CLICK_1,
@@ -556,7 +557,7 @@ void Supla::Control::ActionTrigger::rebuildForAttachedButton() {
   localHandlerForDisabledAt = nullptr;
   localHandlerClient = nullptr;
   localHandlerAction = 0;
-  localHandlerSwitchConfigured = false;
+  runtimeFlags.localHandlerSwitchConfigured = false;
   disablesLocalOperation = 0;
   channel.setActionTriggerCaps(0);
 
@@ -620,7 +621,7 @@ void Supla::Control::ActionTrigger::rebuildForAttachedButton() {
           localHandlerForDisabledAt->client, Supla::ON_CLICK_1);
       if (localHandlerForEnabledAt) {
         localHandlerForEnabledAt->disable();
-        localHandlerSwitchConfigured = true;
+        runtimeFlags.localHandlerSwitchConfigured = true;
       } else {
         localHandlerClient = nullptr;
         localHandlerAction = 0;
@@ -777,7 +778,7 @@ void Supla::Control::ActionTrigger::disableATCapability(uint32_t capToDisable) {
 }
 
 void Supla::Control::ActionTrigger::onSaveState() {
-  if (!storageEnabled) {
+  if (!runtimeFlags.storageEnabled) {
     return;
   }
 
@@ -829,13 +830,13 @@ void Supla::Control::ActionTrigger::onLoadConfig(SuplaDeviceClass *sdc) {
         getChannel()->getChannelNumber(),
         Supla::ConfigTag::BtnActionTriggerLocalUnlockTagPrefix);
     if (cfg->getInt32(key, &localUnlockValue)) {
-      localUnlockAllowed = localUnlockValue != 0;
+      runtimeFlags.localUnlockAllowed = localUnlockValue != 0;
     } else {
-      localUnlockAllowed = false;
+      runtimeFlags.localUnlockAllowed = false;
     }
     loadConfigChangeFlag();
   }
-  setLocalUnlockAllowed(localUnlockAllowed);
+  setLocalUnlockAllowed(runtimeFlags.localUnlockAllowed);
 
   const auto previousHandlingType = actionHandlingType;
   switch (value) {
@@ -861,16 +862,16 @@ void Supla::Control::ActionTrigger::onLoadConfig(SuplaDeviceClass *sdc) {
     }
   }
   if (previousHandlingType != actionHandlingType) {
-    channelConfigReceived = false;
+    runtimeFlags.channelConfigReceived = false;
   }
 }
 
 void Supla::Control::ActionTrigger::onLoadState() {
-  if (!storageEnabled) {
+  if (!runtimeFlags.storageEnabled) {
     return;
   }
 
-  channelConfigReceived = false;
+  runtimeFlags.channelConfigReceived = false;
 
   uint32_t state = activeActionsFromServer;
   const bool stateLoaded = Supla::Storage::ReadState(
@@ -922,7 +923,7 @@ void Supla::Control::ActionTrigger::onLoadState() {
 }
 
 void Supla::Control::ActionTrigger::enableStateStorage() {
-  storageEnabled = true;
+  runtimeFlags.storageEnabled = true;
 }
 
 void Supla::Control::ActionTrigger::addActionToButtonAndDisableIt(int action,
@@ -936,49 +937,49 @@ bool Supla::Control::ActionTrigger::isAnyActionEnabledOnServer() const {
 }
 
 void Supla::Control::ActionTrigger::setAlwaysUseOnClick1() {
-  alwaysUseOnClick1 = true;
+  runtimeFlags.alwaysUseOnClick1 = true;
 }
 
 Supla::Control::ActionTrigger &
 Supla::Control::ActionTrigger::setLocalUnlockAllowed(bool allowed) {
-  localUnlockAllowed = allowed;
+  runtimeFlags.localUnlockAllowed = allowed;
   if (attachedButton != nullptr) {
     attachedButton->setActionTriggerModeLocked(
         channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED,
-        localUnlockAllowed,
-        keepConfigButtonTriggerAlwaysAvailable);
+        runtimeFlags.localUnlockAllowed,
+        runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
   }
   return *this;
 }
 
 bool Supla::Control::ActionTrigger::isLocalUnlockAllowed() const {
-  return localUnlockAllowed;
+  return runtimeFlags.localUnlockAllowed;
 }
 
 Supla::Control::ActionTrigger &
 Supla::Control::ActionTrigger::setKeepConfigButtonTriggerAlwaysAvailable(
     bool keep) {
-  keepConfigButtonTriggerAlwaysAvailable = keep;
+  runtimeFlags.keepConfigButtonTriggerAlwaysAvailable = keep;
   if (attachedButton != nullptr) {
     attachedButton->setActionTriggerModeLocked(
         channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED,
-        localUnlockAllowed,
-        keepConfigButtonTriggerAlwaysAvailable);
+        runtimeFlags.localUnlockAllowed,
+        runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
   }
   return *this;
 }
 
 bool Supla::Control::ActionTrigger::
     keepsConfigButtonTriggerAlwaysAvailable() const {
-  return keepConfigButtonTriggerAlwaysAvailable;
+  return runtimeFlags.keepConfigButtonTriggerAlwaysAvailable;
 }
 
 void Supla::Control::ActionTrigger::enable() {
-  enabled = true;
+  runtimeFlags.enabled = true;
 }
 
 void Supla::Control::ActionTrigger::disable() {
-  enabled = false;
+  runtimeFlags.enabled = false;
 }
 
 bool Supla::Control::ActionTrigger::setWeeklyScheduleController(
@@ -989,13 +990,14 @@ bool Supla::Control::ActionTrigger::setWeeklyScheduleController(
           controller, configHandler, programSource)) {
     return false;
   }
-  weeklyScheduleAvailable = true;
+  runtimeFlags.weeklyScheduleAvailable = true;
   updateWeeklyScheduleCapabilities();
   return true;
 }
 
 bool Supla::Control::ActionTrigger::ensureNativeWeeklyScheduleController() {
-  if (!weeklyScheduleAvailable || weeklyScheduleComponents.isAssigned()) {
+  if (!runtimeFlags.weeklyScheduleAvailable ||
+      weeklyScheduleComponents.isAssigned()) {
     return false;
   }
   auto *weeklySchedule = new ActionTriggerWeeklySchedule(this);
@@ -1012,7 +1014,7 @@ void Supla::Control::ActionTrigger::updateWeeklyScheduleCapabilities() {
   auto *controller = weeklyScheduleComponents.getController();
   auto *configHandler = weeklyScheduleComponents.getConfigHandler();
   bool configurable =
-      weeklyScheduleAvailable && configHandler != nullptr &&
+      runtimeFlags.weeklyScheduleAvailable && configHandler != nullptr &&
       configHandler->supportsConfigType(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   if (configurable) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
@@ -1021,18 +1023,18 @@ void Supla::Control::ActionTrigger::updateWeeklyScheduleCapabilities() {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
     usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   }
-  if (!weeklyScheduleAvailable && controller != nullptr) {
+  if (!runtimeFlags.weeklyScheduleAvailable && controller != nullptr) {
     controller->switchToManualMode();
   }
 }
 
 bool Supla::Control::ActionTrigger::isWeeklyScheduleSupported() const {
-  return weeklyScheduleAvailable;
+  return runtimeFlags.weeklyScheduleAvailable;
 }
 
 Supla::Control::ActionTrigger &
 Supla::Control::ActionTrigger::setWeeklyScheduleAvailable(bool available) {
-  weeklyScheduleAvailable = available;
+  runtimeFlags.weeklyScheduleAvailable = available;
   if (available) {
     ensureNativeWeeklyScheduleController();
   }
@@ -1125,8 +1127,8 @@ void Supla::Control::ActionTrigger::applyButtonMode(uint8_t mode) {
   if (attachedButton != nullptr) {
     attachedButton->setActionTriggerModeLocked(
         mode == SUPLA_BUTTON_MODE_LOCKED,
-        localUnlockAllowed,
-        keepConfigButtonTriggerAlwaysAvailable);
+        runtimeFlags.localUnlockAllowed,
+        runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
   }
 }
 
@@ -1142,7 +1144,7 @@ void Supla::Control::ActionTrigger::applyManualButtonMode(uint8_t mode) {
 
 void Supla::Control::ActionTrigger::scheduleStateSave(uint32_t delayMsMax,
                                                        uint32_t delayMsMin) {
-  if (storageEnabled) {
+  if (runtimeFlags.storageEnabled) {
     Supla::Storage::ScheduleSave(delayMsMax, delayMsMin);
   }
 }

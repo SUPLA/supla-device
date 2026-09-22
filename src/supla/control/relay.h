@@ -316,15 +316,33 @@ class Relay : public ChannelElement, public ActionHandler {
   uint16_t minimumAllowedDurationMs = 0;
   int16_t defaultRelatedMeterChannelNo = -1;
 
-  bool keepTurnOnDurationMs = false;
-  bool turnOffWhenEmptyAggregator = true;
-  bool initDone = false;
-  bool restartTimerOnToggle = false;
-  bool skipInitialStateSetting = false;
-  bool preloadStateOnSoftReset = false;
-  bool automaticModeSupported = false;
-  // Native weekly schedule is opt-in to preserve the legacy Relay contract.
-  bool weeklyScheduleAvailable = false;
+  // Runtime-only flags; state storage uses a separate representation.
+  struct RuntimeFlags {
+    RuntimeFlags()
+        : keepTurnOnDurationMs(false),
+          turnOffWhenEmptyAggregator(true),
+          initDone(false),
+          restartTimerOnToggle(false),
+          skipInitialStateSetting(false),
+          preloadStateOnSoftReset(false),
+          automaticModeSupported(false),
+          weeklyScheduleAvailable(false) {}
+
+    uint8_t keepTurnOnDurationMs : 1;
+    uint8_t turnOffWhenEmptyAggregator : 1;
+    uint8_t initDone : 1;
+    uint8_t restartTimerOnToggle : 1;
+    uint8_t skipInitialStateSetting : 1;
+    uint8_t preloadStateOnSoftReset : 1;
+    uint8_t automaticModeSupported : 1;
+    // Native weekly schedule remains opt-in.
+    uint8_t weeklyScheduleAvailable : 1;
+  };
+
+  static_assert(sizeof(RuntimeFlags) == sizeof(uint8_t),
+                "Relay runtime flags must fit in uint8_t");
+
+  RuntimeFlags runtimeFlags;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
   Supla::Io::IoPin outputPin;

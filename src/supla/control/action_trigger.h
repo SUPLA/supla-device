@@ -133,7 +133,6 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;
   Supla::ActionHandlerClient *localHandlerForDisabledAt = nullptr;
   Supla::ActionHandler *localHandlerClient = nullptr;
-  uint16_t localHandlerAction = 0;
   uint32_t activeActionsFromServer = 0;
   // Comparison cache only: PublishAllDisableAll overwrites the effective mask
   // above. Keep state storage and its existing format unchanged.
@@ -143,16 +142,35 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
 
   Supla::AtChannel channel;
 
+  uint16_t localHandlerAction = 0;
   ActionHandlingType actionHandlingType = ActionHandlingType_RelayOnSuplaServer;
-  bool storageEnabled = false;
-  bool alwaysUseOnClick1 = false;
-  bool enabled = true;
-  bool localHandlerSwitchConfigured = false;
-  bool channelConfigReceived = false;
-  // Native weekly schedule is opt-in to preserve the legacy AT contract.
-  bool weeklyScheduleAvailable = false;
-  bool localUnlockAllowed = false;
-  bool keepConfigButtonTriggerAlwaysAvailable = false;
+  // Runtime-only flags; state storage uses a separate representation.
+  struct RuntimeFlags {
+    RuntimeFlags()
+        : storageEnabled(false),
+          alwaysUseOnClick1(false),
+          enabled(true),
+          localHandlerSwitchConfigured(false),
+          channelConfigReceived(false),
+          weeklyScheduleAvailable(false),
+          localUnlockAllowed(false),
+          keepConfigButtonTriggerAlwaysAvailable(false) {}
+
+    uint8_t storageEnabled : 1;
+    uint8_t alwaysUseOnClick1 : 1;
+    uint8_t enabled : 1;
+    uint8_t localHandlerSwitchConfigured : 1;
+    uint8_t channelConfigReceived : 1;
+    // Native weekly schedule remains opt-in.
+    uint8_t weeklyScheduleAvailable : 1;
+    uint8_t localUnlockAllowed : 1;
+    uint8_t keepConfigButtonTriggerAlwaysAvailable : 1;
+  };
+
+  static_assert(sizeof(RuntimeFlags) == sizeof(uint8_t),
+                "ActionTrigger runtime flags must fit in uint8_t");
+
+  RuntimeFlags runtimeFlags;
   WeeklyScheduleComponents weeklyScheduleComponents;
 };
 

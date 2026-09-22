@@ -124,7 +124,7 @@ bool Relay::setWeeklyScheduleController(
           controller, configHandler, programSource)) {
     return false;
   }
-  weeklyScheduleAvailable = true;
+  runtimeFlags.weeklyScheduleAvailable = true;
   usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   usedConfigTypes.clear(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
   if (configHandler) {
@@ -210,10 +210,10 @@ void Relay::updateWeeklyScheduleCapabilities() {
   auto *controller = weeklyScheduleComponents.getController();
   auto *configHandler = weeklyScheduleComponents.getConfigHandler();
   const bool nativeWeeklySchedule =
-      weeklyScheduleAvailable && canUseWeeklySchedule() &&
+      runtimeFlags.weeklyScheduleAvailable && canUseWeeklySchedule() &&
       !weeklyScheduleComponents.isAssigned();
   const bool configurableWeeklySchedule =
-      weeklyScheduleAvailable &&
+      runtimeFlags.weeklyScheduleAvailable &&
       (nativeWeeklySchedule ||
        (configHandler && configHandler->supportsConfigType(
                              SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))) &&
@@ -265,7 +265,7 @@ void Relay::updateWeeklyScheduleCapabilities() {
 void Relay::updateAutomaticModeCapability() {
   auto *controller = weeklyScheduleComponents.getController();
   if (isAutomaticModeSupported() ||
-      (weeklyScheduleAvailable && controller != nullptr &&
+      (runtimeFlags.weeklyScheduleAvailable && controller != nullptr &&
        controller->isExternallyManaged())) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_RELAY_MODE_AUTOMATIC_SUPPORTED);
   } else {
@@ -415,8 +415,8 @@ void Relay::onInit() {
     stateOn = true;
   }
 
-  if (skipInitialStateSetting) {
-    skipInitialStateSetting = false;
+  if (runtimeFlags.skipInitialStateSetting) {
+    runtimeFlags.skipInitialStateSetting = false;
     for (auto buttonListElement = buttonList; buttonListElement;
          buttonListElement = buttonListElement->next) {
       auto attachedButton = buttonListElement->button;
@@ -429,7 +429,7 @@ void Relay::onInit() {
               stateOn = false;
             }
           } else {
-            skipInitialStateSetting = true;
+            runtimeFlags.skipInitialStateSetting = true;
             return;
           }
         }
@@ -453,7 +453,7 @@ void Relay::onInit() {
           attachedButton->addAction(Supla::TURN_ON, this, Supla::ON_PRESS);
           attachedButton->addAction(Supla::TURN_OFF, this, Supla::ON_RELEASE);
           if (!attachedButton->isReady()) {
-            skipInitialStateSetting = true;
+            runtimeFlags.skipInitialStateSetting = true;
           } else {
             if (attachedButton->getLastState() == Supla::Control::PRESSED) {
               stateOn = true;
@@ -465,11 +465,11 @@ void Relay::onInit() {
       }
     }
   }
-  initDone = true;
+  runtimeFlags.initDone = true;
 
-  if (!skipInitialStateSetting) {
+  if (!runtimeFlags.skipInitialStateSetting) {
     uint32_t duration = durationMs;
-    if (!isLastResetSoft() || preloadStateOnSoftReset) {
+    if (!isLastResetSoft() || runtimeFlags.preloadStateOnSoftReset) {
       if (stateOn) {
         turnOn(duration);
       } else {
@@ -727,7 +727,8 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
       return 0;
     }
     notifyWeeklyScheduleManualAction();
-    if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
+    if (runtimeFlags.keepTurnOnDurationMs || isStaircaseFunction() ||
+        isImpulseFunction()) {
       turnOff(0);  // newValue->DurationMS may contain "turn on duration" which
                    // result in unexpected "turn on after duration ms received
                    // in turnOff message"
@@ -754,7 +755,8 @@ void Relay::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
     return;
   }
 
-  if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
+  if (runtimeFlags.keepTurnOnDurationMs || isStaircaseFunction() ||
+      isImpulseFunction()) {
     value->DurationMS = storedTurnOnDurationMs;
   }
 }
@@ -796,7 +798,8 @@ void Relay::applyDuration(int32_t duration, bool turnOn) {
       storedTurnOnDurationMs = durationMs;
     }
 
-    if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
+    if (runtimeFlags.keepTurnOnDurationMs || isStaircaseFunction() ||
+        isImpulseFunction()) {
       durationMs = storedTurnOnDurationMs;
     }
   }
@@ -1099,7 +1102,7 @@ Relay &Relay::setDefaultStateRestore() {
 }
 
 Relay &Relay::setPreloadStateOnSoftReset(bool enabled) {
-  preloadStateOnSoftReset = enabled;
+  runtimeFlags.preloadStateOnSoftReset = enabled;
   return *this;
 }
 
@@ -1177,8 +1180,8 @@ bool Relay::setRuntimeFunction(uint32_t newFunction) {
   }
 
   if (isStaircaseFunction() || isImpulseFunction()) {
-    keepTurnOnDurationMs = true;
-    if (initDone) {
+    runtimeFlags.keepTurnOnDurationMs = true;
+    if (runtimeFlags.initDone) {
       if (isStaircaseFunction() && !wasStaircaseFunction) {
         storedTurnOnDurationMs = defaultStaircaseDurationMs;
       }
@@ -1187,7 +1190,7 @@ bool Relay::setRuntimeFunction(uint32_t newFunction) {
       }
     }
   } else {
-    keepTurnOnDurationMs = false;
+    runtimeFlags.keepTurnOnDurationMs = false;
     if (!isCyclicMode()) {
       storedTurnOnDurationMs = 0;
     }
@@ -1212,7 +1215,7 @@ bool Relay::setRuntimeFunction(uint32_t newFunction) {
       !isManualForcedModeSupported()) {
     channel.setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
   }
-  if (weeklyScheduleControllerCreated && initDone &&
+  if (weeklyScheduleControllerCreated && runtimeFlags.initDone &&
       !weeklyScheduleComponents.isStarted()) {
     weeklyScheduleComponents.loadConfig();
   }
@@ -1378,7 +1381,7 @@ void Relay::updateRelayHvacAggregator() {
       auto ptr =
           Supla::Control::RelayHvacAggregator::Add(getChannelNumber(), this);
       if (ptr) {
-        ptr->setTurnOffWhenEmpty(turnOffWhenEmptyAggregator);
+        ptr->setTurnOffWhenEmpty(runtimeFlags.turnOffWhenEmptyAggregator);
       }
       return;
     }
@@ -1389,11 +1392,11 @@ void Relay::updateRelayHvacAggregator() {
 }
 
 void Relay::setTurnOffWhenEmptyAggregator(bool turnOff) {
-  turnOffWhenEmptyAggregator = turnOff;
+  runtimeFlags.turnOffWhenEmptyAggregator = turnOff;
 }
 
 bool Relay::isWeeklyScheduleSupported() const {
-  if (!weeklyScheduleAvailable || !canUseWeeklySchedule()) {
+  if (!runtimeFlags.weeklyScheduleAvailable || !canUseWeeklySchedule()) {
     return false;
   }
   auto func = channel.getDefaultFunction();
@@ -1407,7 +1410,7 @@ bool Relay::canUseWeeklySchedule() const {
 }
 
 Relay &Relay::setWeeklyScheduleAvailable(bool available) {
-  weeklyScheduleAvailable = available;
+  runtimeFlags.weeklyScheduleAvailable = available;
   if (available) {
     ensureNativeWeeklyScheduleController();
   }
@@ -1416,11 +1419,11 @@ Relay &Relay::setWeeklyScheduleAvailable(bool available) {
 }
 
 bool Relay::isWeeklyScheduleAvailable() const {
-  return weeklyScheduleAvailable;
+  return runtimeFlags.weeklyScheduleAvailable;
 }
 
 Relay &Relay::setAutomaticModeSupported(bool supported) {
-  automaticModeSupported = supported;
+  runtimeFlags.automaticModeSupported = supported;
   updateAutomaticModeCapability();
   auto *controller = weeklyScheduleComponents.getController();
   const bool activeExternalWeeklySchedule =
@@ -1433,7 +1436,7 @@ Relay &Relay::setAutomaticModeSupported(bool supported) {
 }
 
 bool Relay::isAutomaticModeSupported() const {
-  return automaticModeSupported;
+  return runtimeFlags.automaticModeSupported;
 }
 
 bool Relay::isAutomaticMode() const {
@@ -1500,7 +1503,7 @@ bool Relay::isManualActionAllowed(bool turnOn) const {
 }
 
 bool Relay::isWeeklyScheduleProgramModeSupported(uint8_t mode) const {
-  if (!weeklyScheduleAvailable || !canUseWeeklySchedule()) {
+  if (!runtimeFlags.weeklyScheduleAvailable || !canUseWeeklySchedule()) {
     return false;
   }
 
@@ -1524,7 +1527,7 @@ bool Relay::isWeeklyScheduleProgramModeSupported(uint8_t mode) const {
 }
 
 bool Relay::isWeeklyScheduleProgramModeAvailable(uint8_t mode) const {
-  if (!weeklyScheduleAvailable || !canUseWeeklySchedule()) {
+  if (!runtimeFlags.weeklyScheduleAvailable || !canUseWeeklySchedule()) {
     return false;
   }
   switch (mode) {
@@ -1745,15 +1748,15 @@ void Relay::purgeRelayConfigOnly() {
 }
 
 void Relay::setRestartTimerOnToggle(bool restart) {
-  restartTimerOnToggle = restart;
+  runtimeFlags.restartTimerOnToggle = restart;
 }
 
 bool Relay::isRestartTimerOnToggle() const {
-  return restartTimerOnToggle;
+  return runtimeFlags.restartTimerOnToggle;
 }
 
 bool Relay::isFullyInitialized() const {
-  return initDone && !skipInitialStateSetting;
+  return runtimeFlags.initDone && !runtimeFlags.skipInitialStateSetting;
 }
 
 void Relay::setNewChannelValue(bool value) {

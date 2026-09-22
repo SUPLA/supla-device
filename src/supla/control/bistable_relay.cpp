@@ -108,7 +108,7 @@ void BistableRelay::onInit() {
   busy = true;
   Supla::Control::Relay::onInit();
   busy = false;
-  if (!skipInitialStateSetting) {
+  if (!runtimeFlags.skipInitialStateSetting) {
     if (stateOnInit == STATE_ON_INIT_ON ||
         stateOnInit == STATE_ON_INIT_RESTORED_ON) {
       turnOn();

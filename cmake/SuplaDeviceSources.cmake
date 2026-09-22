@@ -13,6 +13,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel_extended.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/io.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/io/io_pin.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/io/io_group.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/tools.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/element.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/local_action.cpp

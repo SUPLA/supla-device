@@ -33,3 +33,6 @@ Supla::Channel *Supla::CustomChannel::getChannel() {
   return &channel;
 }
 
+void Supla::CustomChannel::setChannelType(uint32_t type) {
+  channel.setChannelType(type);
+}

@@ -95,6 +95,20 @@ Supla::LinuxYamlConfig::LinuxYamlConfig(const std::string& file) : file(file) {
 }
 
 Supla::LinuxYamlConfig::~LinuxYamlConfig() {
+  // Parsers and payloads keep non-owning pointers to sources and outputs.
+  // Destroy those dependants before releasing the objects they reference.
+  for (const auto& entry : payloads) {
+    delete entry.second;
+  }
+  for (const auto& entry : parsers) {
+    delete entry.second;
+  }
+  for (const auto& entry : outputs) {
+    delete entry.second;
+  }
+  for (const auto& entry : sources) {
+    delete entry.second;
+  }
 }
 
 void Supla::LinuxYamlConfig::markChannelParameterUsed() {

@@ -167,7 +167,7 @@ void Supla::ElementWithChannelActions::runAction(uint16_t event) const {
 
 void Supla::ElementWithChannelActions::runAction(
     uint16_t event,
-    std::initializer_list<uint16_t> allowOnlyActions) const {
+    const ActionAllowList &allowOnlyActions) const {
   auto channel = getChannel();
   if (channel) {
     channel->runAction(event, allowOnlyActions);

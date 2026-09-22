@@ -193,7 +193,13 @@ bool Clock::getLocalTime(struct tm *timeInfo) {
     return false;
   }
   time_t currentTime = getTimeStamp();
+#if defined(__AVR__)
+  // AVR libc declares localtime_r as void; there is no status value to test.
+  localtime_r(&currentTime, timeInfo);
+  return true;
+#else
   return localtime_r(&currentTime, timeInfo) != nullptr;
+#endif
 }
 
 void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {

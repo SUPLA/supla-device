@@ -107,34 +107,22 @@ void LocalAction::addAction(uint16_t action,
 }
 
 void LocalAction::runAction(uint16_t event) const {
-  runAction(event, nullptr, 0, false);
+  runActionInternal(event, nullptr);
 }
 
 void LocalAction::runAction(
-    uint16_t event, std::initializer_list<uint16_t> allowOnlyActions) const {
-  runAction(event,
-            allowOnlyActions.begin(),
-            allowOnlyActions.size(),
-            true);
+    uint16_t event, const ActionAllowList &allowOnlyActions) const {
+  runActionInternal(event, &allowOnlyActions);
 }
 
-void LocalAction::runAction(uint16_t event,
-                            const uint16_t *allowOnlyActions,
-                            size_t allowOnlyActionsCount,
-                            bool hasAllowOnlyActions) const {
+void LocalAction::runActionInternal(
+    uint16_t event, const ActionAllowList *allowOnlyActions) const {
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {
-    bool actionAllowed = !hasAllowOnlyActions;
-    if (hasAllowOnlyActions) {
-      for (size_t i = 0; i < allowOnlyActionsCount; i++) {
-        if (allowOnlyActions[i] == ptr->action) {
-          actionAllowed = true;
-          break;
-        }
-      }
-    }
+    bool actionAllowed = allowOnlyActions == nullptr ||
+                         allowOnlyActions->contains(ptr->action);
     bool duplicateLockAction = false;
-    if (hasAllowOnlyActions && actionAllowed && ptr->client &&
+    if (allowOnlyActions != nullptr && actionAllowed && ptr->client &&
         (ptr->action == Supla::LOCK || ptr->action == Supla::UNLOCK ||
          ptr->action == Supla::TOGGLE_LOCK)) {
       auto previous = ActionHandlerClient::begin;
@@ -299,17 +287,12 @@ void LocalAction::DeleteActionsHandledBy(const ActionHandler *client) {
 
 void LocalAction::DeleteActionsHandledByExcept(
     const ActionHandler *client,
-    std::initializer_list<uint16_t> preservedActions) {
+    const ActionAllowList &preservedActions) {
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {
     auto next = ptr->next;
     bool preserve = false;
-    for (uint16_t action : preservedActions) {
-      if (ptr->action == action) {
-        preserve = true;
-        break;
-      }
-    }
+    preserve = preservedActions.contains(ptr->action);
     if (!preserve && ptr->client && ptr->client->getRealClient() == client) {
       delete ptr;
       next = ActionHandlerClient::begin;

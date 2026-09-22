@@ -113,7 +113,7 @@ class ElementWithChannelActions : public Element, public LocalAction {
   void runAction(uint16_t event) const override;
   void runAction(
       uint16_t event,
-      std::initializer_list<uint16_t> allowOnlyActions) const override;
+      const ActionAllowList &allowOnlyActions) const override;
 
   bool isAnyUpdatePending() const override;
 

@@ -3797,6 +3797,8 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
 
   channel.clearHvacState();
 
+  initDefaultWeeklySchedule();
+
   saveConfig(changedLocally);
 
   clearLastOutputValue();

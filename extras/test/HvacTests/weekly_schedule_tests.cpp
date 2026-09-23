@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <config_mock.h>
+#include <config_simulator.h>
 #include <clock_mock.h>
 #include <clock_stub.h>
 #include <gtest/gtest.h>
@@ -863,6 +864,170 @@ TEST_F(HvacWeeklyScheduleTestsF, InitDefaultWeeklyScheduleResetsExistingData) {
 
   EXPECT_EQ(hvac->getProgramById(1).SetpointTemperatureHeat, 1900);
   EXPECT_EQ(hvac->getProgramById(1, true).SetpointTemperatureCool, 2400);
+}
+
+TEST(HvacWeeklyScheduleStartupTests,
+     FunctionChangeToDomesticHotWaterResetsAndPersistsSchedule) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  ConfigSimulator cfg;
+
+  {
+    OutputSimulator heating;
+    OutputSimulator cooling;
+    Supla::Control::HvacBase hvac(&heating, &cooling);
+    hvac.enableDomesticHotWaterFunctionSupport();
+    hvac.onLoadConfig(nullptr);
+    hvac.onInit();
+    hvac.onRegistered(nullptr);
+    ASSERT_EQ(hvac.getChannel()->getDefaultFunction(),
+              SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
+    ASSERT_EQ(hvac.getProgramById(1).Mode, SUPLA_HVAC_MODE_HEAT_COOL);
+
+    hvac.changeFunction(SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER, false);
+    EXPECT_EQ(hvac.getProgramById(1).Mode, SUPLA_HVAC_MODE_HEAT);
+    EXPECT_EQ(hvac.getProgramById(1).SetpointTemperatureHeat, 4000);
+    uint32_t pendingTypes = 0;
+    ASSERT_TRUE(cfg.getUInt32("0_cfg_chng_t", &pendingTypes));
+    EXPECT_NE(pendingTypes & (1U << SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE), 0U);
+
+    ClockStub clock;
+    time.advance(31000);
+    ASSERT_TRUE(hvac.turnOnWeeklySchedlue());
+    EXPECT_EQ(hvac.getMode(), SUPLA_HVAC_MODE_HEAT);
+
+    TChannelConfig_WeeklySchedule stored = {};
+    ASSERT_TRUE(cfg.getBlob("0_hvac_weekly",
+                            reinterpret_cast<char *>(&stored),
+                            sizeof(stored)));
+    EXPECT_EQ(stored.Program[0].Mode, SUPLA_HVAC_MODE_HEAT);
+    EXPECT_EQ(stored.Program[0].SetpointTemperatureHeat, 4000);
+  }
+
+  Supla::Channel::resetToDefaults();
+  OutputSimulator heating;
+  OutputSimulator cooling;
+  Supla::Control::HvacBase restored(&heating, &cooling);
+  restored.enableDomesticHotWaterFunctionSupport();
+  restored.onLoadConfig(nullptr);
+  restored.onInit();
+  restored.onRegistered(nullptr);
+  EXPECT_EQ(restored.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER);
+  EXPECT_EQ(restored.getProgramById(1).Mode, SUPLA_HVAC_MODE_HEAT);
+  EXPECT_EQ(restored.getProgramById(1).SetpointTemperatureHeat, 4000);
+
+  TSD_ChannelConfig staleServerConfig = {};
+  staleServerConfig.Func = SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER;
+  staleServerConfig.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  staleServerConfig.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  auto *staleSchedule = reinterpret_cast<TChannelConfig_WeeklySchedule *>(
+      staleServerConfig.Config);
+  staleSchedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
+  staleSchedule->Program[0].SetpointTemperatureHeat = 2500;
+  memset(staleSchedule->Quarters, 0x11, sizeof(staleSchedule->Quarters));
+  EXPECT_EQ(restored.handleWeeklySchedule(&staleServerConfig, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(restored.getProgramById(1).SetpointTemperatureHeat, 4000);
+}
+
+TEST(HvacWeeklyScheduleStartupTests,
+     FunctionResetRestoresMainAndAltSchedulesAfterRestart) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  ConfigSimulator cfg;
+
+  {
+    OutputSimulator output;
+    Supla::Control::HvacBase hvac(&output);
+    hvac.onLoadConfig(nullptr);
+    hvac.onInit();
+    hvac.onRegistered(nullptr);
+    ASSERT_EQ(hvac.getChannel()->getDefaultFunction(),
+              SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+    ASSERT_TRUE(hvac.setProgram(1, SUPLA_HVAC_MODE_HEAT, 2500, 0));
+    ASSERT_TRUE(hvac.setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2600, true));
+
+    hvac.changeFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT, true);
+    EXPECT_EQ(hvac.getProgramById(1).SetpointTemperatureHeat, 2500);
+    EXPECT_EQ(hvac.getProgramById(1, true).SetpointTemperatureCool, 2600);
+
+    hvac.changeFunction(0, true);
+    EXPECT_EQ(hvac.getProgramById(1).SetpointTemperatureHeat, 1900);
+    EXPECT_EQ(hvac.getProgramById(1, true).SetpointTemperatureCool, 2400);
+  }
+
+  Supla::Channel::resetToDefaults();
+  OutputSimulator output;
+  Supla::Control::HvacBase restored(&output);
+  restored.onLoadConfig(nullptr);
+  restored.onInit();
+  restored.onRegistered(nullptr);
+  EXPECT_EQ(restored.getProgramById(1).SetpointTemperatureHeat, 1900);
+  EXPECT_EQ(restored.getProgramById(1, true).SetpointTemperatureCool, 2400);
+}
+
+TEST(HvacWeeklyScheduleStartupTests,
+     FunctionChangeAwayAndBackReplacesAltScheduleInStorage) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  ConfigSimulator cfg;
+
+  {
+    OutputSimulator heating;
+    OutputSimulator cooling;
+    Supla::Control::HvacBase hvac(&heating, &cooling);
+    hvac.enableDomesticHotWaterFunctionSupport();
+    hvac.onLoadConfig(nullptr);
+    hvac.onInit();
+    hvac.onRegistered(nullptr);
+    hvac.changeFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT, false);
+    ASSERT_TRUE(hvac.setProgram(1, SUPLA_HVAC_MODE_HEAT, 2500, 0));
+    ASSERT_TRUE(hvac.setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2600, true));
+
+    hvac.changeFunction(SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER, false);
+    hvac.changeFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT, false);
+    EXPECT_EQ(hvac.getProgramById(1).SetpointTemperatureHeat, 1900);
+    EXPECT_EQ(hvac.getProgramById(1, true).SetpointTemperatureCool, 2400);
+  }
+
+  Supla::Channel::resetToDefaults();
+  OutputSimulator heating;
+  OutputSimulator cooling;
+  Supla::Control::HvacBase restored(&heating, &cooling);
+  restored.enableDomesticHotWaterFunctionSupport();
+  restored.onLoadConfig(nullptr);
+  restored.onInit();
+  restored.onRegistered(nullptr);
+  EXPECT_EQ(restored.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  EXPECT_EQ(restored.getProgramById(1).SetpointTemperatureHeat, 1900);
+  EXPECT_EQ(restored.getProgramById(1, true).SetpointTemperatureCool, 2400);
+}
+
+TEST(HvacWeeklyScheduleStartupTests,
+     FunctionChangeKeepsExternalScheduleController) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  ConfigSimulator cfg;
+  OutputSimulator output;
+  Supla::Control::HvacBase hvac(&output);
+  ASSERT_TRUE(hvac.setWeeklyScheduleController(
+      new Supla::Control::ExternalManagedWeeklySchedule()));
+  hvac.onLoadConfig(nullptr);
+  hvac.onInit();
+  hvac.onRegistered(nullptr);
+  ASSERT_TRUE(hvac.turnOnWeeklySchedlue());
+
+  hvac.changeFunction(0, true);
+
+  EXPECT_FALSE(hvac.getChannel()->isWeeklyScheduleAvailable());
+  TChannelConfig_WeeklySchedule nativeSchedule = {};
+  EXPECT_FALSE(cfg.getBlob("0_hvac_weekly",
+                           reinterpret_cast<char *>(&nativeSchedule),
+                           sizeof(nativeSchedule)));
+  EXPECT_TRUE(hvac.turnOnWeeklySchedlue());
+  EXPECT_TRUE(hvac.isWeeklyScheduleEnabled());
 }
 
 TEST_F(HvacWeeklyScheduleTestsF, HvacClassCanDefineItsDefaultWeeklySchedule) {

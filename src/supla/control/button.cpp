@@ -258,7 +258,7 @@ void Button::enableAction(int32_t action,
 }
 
 void Button::setConditionalActionsOnClick1(bool enabled) {
-  if (conditionalActionsOnClick1 || enabled) {
+  if (conditionalActionsOnClick1 != enabled) {
     // Reconfiguration must not replay an edge collected under the old policy.
     clickCounter = 0;
     holdSend = 0;

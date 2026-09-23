@@ -31,6 +31,7 @@ class ActionTrigger : public Element, public ActionHandler {
  public:
   ActionTrigger();
   virtual ~ActionTrigger();
+  ActionTrigger *getActionTrigger() override { return this; }
 
   // Use below methods to attach button instance to ActionTrigger.
   // It will automatically register to all supported button actions
@@ -76,6 +77,9 @@ class ActionTrigger : public Element, public ActionHandler {
  protected:
   void addActionToButtonAndDisableIt(int event, int action);
   void parseActiveActionsFromServer();
+  bool hasDirectionalPair() const;
+  bool requiresClickMode() const;
+  static void synchronizeDirectionalButtonModes();
 
   Supla::Control::Button *attachedButton = nullptr;
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;

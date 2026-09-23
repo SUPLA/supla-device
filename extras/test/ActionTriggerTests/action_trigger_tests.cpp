@@ -1527,7 +1527,7 @@ TEST_F(ActionTriggerTests,
   memcpy(result.Config, &config, sizeof(config));
   actionTrigger.handleChannelConfig(&result);
 
-  EXPECT_FALSE(button.getHandlerForClient(
+  EXPECT_TRUE(button.getHandlerForClient(
       &localHandler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
   EXPECT_TRUE(button.getHandlerForClient(
       &localHandler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
@@ -1538,7 +1538,7 @@ TEST_F(ActionTriggerTests,
 
   EXPECT_TRUE(button.getHandlerForClient(
       &localHandler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
-  EXPECT_FALSE(button.getHandlerForClient(
+  EXPECT_TRUE(button.getHandlerForClient(
       &localHandler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
 
   config.ActiveActions = 0;
@@ -1563,6 +1563,51 @@ TEST_F(ActionTriggerTests,
                            Supla::INTERNAL_BUTTON_UP_STOP));
   button.runAction(Supla::CONDITIONAL_ON_PRESS);
   button.runAction(Supla::CONDITIONAL_ON_RELEASE);
+}
+
+TEST_F(ActionTriggerTests, OrdinaryBistableEdgesKeepTurnMasks) {
+  Supla::Control::Button button(10);
+  button.setMulticlickTime(300, true);
+  ActionHandlerMock handler;
+  Supla::Control::ActionTrigger at;
+  button.addAction(Supla::TURN_ON, handler, Supla::CONDITIONAL_ON_PRESS);
+  button.addAction(Supla::TURN_OFF, handler, Supla::CONDITIONAL_ON_RELEASE);
+  at.attach(button);
+  at.onInit();
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_TURN_ON);
+  EXPECT_FALSE(button.getHandlerForClient(
+      &handler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_TRUE(button.getHandlerForClient(
+      &handler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_TURN_OFF);
+  EXPECT_TRUE(button.getHandlerForClient(
+      &handler, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_FALSE(button.getHandlerForClient(
+      &handler, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
+}
+
+TEST_F(ActionTriggerTests, DirectionalPairDoesNotExemptOtherEdgeHandlers) {
+  Supla::Control::Button button(10);
+  button.setMulticlickTime(300, true);
+  ActionHandlerMock motor;
+  ActionHandlerMock other;
+  Supla::Control::ActionTrigger at;
+  button.addAction(Supla::MOVE_DOWN, motor, Supla::CONDITIONAL_ON_PRESS);
+  button.addAction(Supla::DOWN_STOP, motor, Supla::CONDITIONAL_ON_RELEASE);
+  button.addAction(Supla::TURN_ON, other, Supla::CONDITIONAL_ON_PRESS);
+  button.addAction(Supla::TURN_OFF, other, Supla::CONDITIONAL_ON_RELEASE);
+  at.attach(button);
+  at.onInit();
+  applyActionTriggerServerConfig(
+      &at, SUPLA_ACTION_CAP_TURN_ON | SUPLA_ACTION_CAP_TURN_OFF);
+  EXPECT_TRUE(button.getHandlerForClient(
+      &motor, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_TRUE(button.getHandlerForClient(
+      &motor, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
+  EXPECT_FALSE(button.getHandlerForClient(
+      &other, Supla::CONDITIONAL_ON_PRESS)->isEnabled());
+  EXPECT_FALSE(button.getHandlerForClient(
+      &other, Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
 }
 
 TEST_F(ActionTriggerTests,

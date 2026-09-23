@@ -16,6 +16,10 @@ class AtChannel : public Channel {
   void activateAction(uint32_t action);
   uint32_t popAction();
   void setRelatedChannel(uint8_t channelNumber);
+  // Protocol encoding: zero means unrelated, otherwise channel number + 1.
+  uint8_t getRelatedChannelNumber() const {
+    return actionTriggerProperties.relatedChannelNumber;
+  }
   void setDisablesLocalOperation(uint32_t actions);
   void enableValueUpdates();
 

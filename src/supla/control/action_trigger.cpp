@@ -14,6 +14,56 @@
 #include <supla/events.h>
 #include <supla/storage/config_tags.h>
 
+namespace {
+// Recognize an actual directional pair, not arbitrary conditional handlers.
+bool isDirectionalHandler(const Supla::ActionHandlerClient *handler) {
+  int press = -1;
+  int release = -1;
+  switch (handler->action) {
+    case Supla::MOVE_UP:
+    case Supla::UP_STOP:
+      press = Supla::MOVE_UP;
+      release = Supla::UP_STOP;
+      break;
+    case Supla::MOVE_DOWN:
+    case Supla::DOWN_STOP:
+      press = Supla::MOVE_DOWN;
+      release = Supla::DOWN_STOP;
+      break;
+    case Supla::INTERNAL_BUTTON_MOVE_UP:
+    case Supla::INTERNAL_BUTTON_UP_STOP:
+      press = Supla::INTERNAL_BUTTON_MOVE_UP;
+      release = Supla::INTERNAL_BUTTON_UP_STOP;
+      break;
+    case Supla::INTERNAL_BUTTON_MOVE_DOWN:
+    case Supla::INTERNAL_BUTTON_DOWN_STOP:
+      press = Supla::INTERNAL_BUTTON_MOVE_DOWN;
+      release = Supla::INTERNAL_BUTTON_DOWN_STOP;
+      break;
+    default:
+      return false;
+  }
+  const bool isPress = handler->action == press &&
+      handler->onEvent == Supla::CONDITIONAL_ON_PRESS;
+  const bool isRelease = handler->action == release &&
+      handler->onEvent == Supla::CONDITIONAL_ON_RELEASE;
+  if (!handler->client || (!isPress && !isRelease)) {
+    return false;
+  }
+  for (auto other = Supla::ActionHandlerClient::begin; other;
+       other = other->next) {
+    if (other->trigger == handler->trigger &&
+        other->client == handler->client &&
+        other->action == (isPress ? release : press) &&
+        other->onEvent == (isPress ? Supla::CONDITIONAL_ON_RELEASE
+                                  : Supla::CONDITIONAL_ON_PRESS)) {
+      return true;
+    }
+  }
+  return false;
+}
+}  // namespace
+
 Supla::Control::ActionTrigger::ActionTrigger() {
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_ACTIONTRIGGER);
@@ -309,17 +359,68 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
         }
       }
     }
-    // Unlike ON_CHANGE, a directional pair cannot be cloned as one action on
-    // ON_CLICK_1: the resolved input state selects press or release. Keep the
-    // original handlers (and their individual AT masks), deferring only their
-    // events. CFG x10 alone must not enable this policy.
-    const bool directionalPair = attachedButton->isBistable() &&
-        attachedButton->isEventAlreadyUsed(Supla::CONDITIONAL_ON_PRESS, true) &&
-        attachedButton->isEventAlreadyUsed(Supla::CONDITIONAL_ON_RELEASE, true);
-    attachedButton->setConditionalActionsOnClick1(
-        directionalPair &&
-        (activeActionsFromServer || alwaysUseOnClick1 ||
-         actionHandlingType == ActionHandlingType_PublishAllDisableNone));
+    // TURN_ON/OFF publish raw edges. Only TOGGLE_x1 overrides the paired
+    // local motor operation, independently of other handlers on these events.
+    if (attachedButton->isBistable()) {
+      for (auto handler = Supla::ActionHandlerClient::begin; handler;
+           handler = handler->next) {
+        if (handler->trigger == attachedButton &&
+            isDirectionalHandler(handler)) {
+          if (activeActionsFromServer & SUPLA_ACTION_CAP_TOGGLE_x1) {
+            handler->disable();
+          } else {
+            handler->enable();
+          }
+        }
+      }
+    }
+  }
+  synchronizeDirectionalButtonModes();
+}
+
+bool Supla::Control::ActionTrigger::hasDirectionalPair() const {
+  if (!attachedButton || !attachedButton->isBistable()) {
+    return false;
+  }
+  for (auto handler = Supla::ActionHandlerClient::begin; handler;
+       handler = handler->next) {
+    if (handler->trigger == attachedButton && isDirectionalHandler(handler)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Supla::Control::ActionTrigger::requiresClickMode() const {
+  return activeActionsFromServer || alwaysUseOnClick1 ||
+      actionHandlingType != ActionHandlingType_RelayOnSuplaServer;
+}
+
+void Supla::Control::ActionTrigger::synchronizeDirectionalButtonModes() {
+  // Configuration-time scan only: no peer pointers, extra RAM or timer work.
+  for (auto element = Supla::Element::begin(); element;
+       element = element->next()) {
+    auto at = element->getActionTrigger();
+    if (!at || !at->attachedButton) {
+      continue;
+    }
+    bool useClicks = false;
+    if (at->hasDirectionalPair()) {
+      useClicks = at->requiresClickMode();
+      const auto related = at->channel.getRelatedChannelNumber();
+      if (related && !useClicks) {
+        for (auto peerElement = Supla::Element::begin(); peerElement;
+             peerElement = peerElement->next()) {
+          auto peer = peerElement->getActionTrigger();
+          if (peer && peer->channel.getRelatedChannelNumber() == related &&
+              peer->hasDirectionalPair() && peer->requiresClickMode()) {
+            useClicks = true;
+            break;
+          }
+        }
+      }
+    }
+    at->attachedButton->setConditionalActionsOnClick1(useClicks);
   }
 }
 
@@ -367,6 +468,7 @@ void Supla::Control::ActionTrigger::setRelatedChannel(Element &element) {
 void Supla::Control::ActionTrigger::setRelatedChannel(Channel *relatedChannel) {
   if (relatedChannel) {
     channel.setRelatedChannel(relatedChannel->getChannelNumber());
+    synchronizeDirectionalButtonModes();
   }
 }
 
@@ -382,6 +484,13 @@ void Supla::Control::ActionTrigger::rebuildForAttachedButton() {
   if (!attachedButton) {
     parseActiveActionsFromServer();
     return;
+  }
+
+  // Explicit rebuilds and changed masks discard this input's old sequence.
+  // Peer synchronization alone must preserve its pending STOP/click deadline.
+  if (attachedButton->conditionalActionsOnClick1) {
+    attachedButton->clickCounter = 0;
+    attachedButton->holdSend = 0;
   }
 
   if (attachedButton && localHandlerSwitchConfigured && localHandlerClient) {
@@ -470,15 +579,20 @@ void Supla::Control::ActionTrigger::rebuildForAttachedButton() {
   if (attachedButton) {
     // Configure default actions for bistable button
     if (attachedButton->isBistable()) {
-      if (attachedButton->isEventAlreadyUsed(Supla::ON_PRESS, true) ||
-          attachedButton->isEventAlreadyUsed(Supla::CONDITIONAL_ON_PRESS,
-                                             true)) {
-        disablesLocalOperation |= SUPLA_ACTION_CAP_TURN_ON;
-      }
-      if (attachedButton->isEventAlreadyUsed(Supla::ON_RELEASE, true) ||
-          attachedButton->isEventAlreadyUsed(Supla::CONDITIONAL_ON_RELEASE,
-                                             true)) {
-        disablesLocalOperation |= SUPLA_ACTION_CAP_TURN_OFF;
+      for (auto handler = Supla::ActionHandlerClient::begin; handler;
+           handler = handler->next) {
+        if (handler->trigger != attachedButton || handler->isAlwaysEnabled()) {
+          continue;
+        }
+        if (isDirectionalHandler(handler)) {
+          disablesLocalOperation |= SUPLA_ACTION_CAP_TOGGLE_x1;
+        } else if (handler->onEvent == Supla::ON_PRESS ||
+                   handler->onEvent == Supla::CONDITIONAL_ON_PRESS) {
+          disablesLocalOperation |= SUPLA_ACTION_CAP_TURN_ON;
+        } else if (handler->onEvent == Supla::ON_RELEASE ||
+                   handler->onEvent == Supla::CONDITIONAL_ON_RELEASE) {
+          disablesLocalOperation |= SUPLA_ACTION_CAP_TURN_OFF;
+        }
       }
       // Bistable roller shutters use conditional press/release for one
       // directional local action pair. Preserve the old bistable behavior:
@@ -695,6 +809,7 @@ bool Supla::Control::ActionTrigger::isAnyActionEnabledOnServer() const {
 
 void Supla::Control::ActionTrigger::setAlwaysUseOnClick1() {
   alwaysUseOnClick1 = true;
+  synchronizeDirectionalButtonModes();
 }
 
 void Supla::Control::ActionTrigger::enable() {

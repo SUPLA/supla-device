@@ -91,6 +91,7 @@ class Button : public SimpleButton, public ActionHandler {
   void evaluateMaxMulticlickValue();
   // Used by ActionTrigger for bistable directional press/release pairs.
   // Counting clicks (including CFG x10) remains independent of this policy.
+  // Reapplying the same policy preserves pending clicks and release timing.
   void setConditionalActionsOnClick1(bool enabled);
   // disbles repeating "on hold" if repeat time is lower than threshold
   // threshold 0 disables always

@@ -12,6 +12,9 @@ class SuplaDeviceClass;
 namespace Supla {
 
 class Channel;
+namespace Control {
+class ActionTrigger;
+}
 namespace Protocol {
 class SuplaSrpc;
 }  // namespace Protocol
@@ -28,6 +31,8 @@ class Element {
  public:
   explicit Element(ElementMode mode = ElementMode::Registered);
   virtual ~Element();
+  // Typed access without RTTI, including ATs whose button is not initialized.
+  virtual Control::ActionTrigger *getActionTrigger() { return nullptr; }
   /**
    * Returns first Element (based on creation order)
    *

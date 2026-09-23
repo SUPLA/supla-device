@@ -7,10 +7,12 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <simple_time.h>
+#include <storage_mock.h>
 #include <supla/at_channel.h>
 #include <supla/control/action_trigger.h>
 #include <supla/control/button.h>
 #include <supla/control/relay.h>
+#include <supla/control/relay_roller_shutter_pair.h>
 #include <supla/control/roller_shutter.h>
 #include <supla/events.h>
 #include <supla/storage/config_tags.h>
@@ -83,7 +85,7 @@ class BistableInputTest : public testing::TestWithParam<bool> {
   }
 
   void initialize(bool cfg = true, bool alwaysClick1 = false,
-                  bool initiallyPressed = false) {
+                  bool initiallyPressed = false, bool initTriggers = true) {
     config.setInt32(Supla::ConfigTag::BtnConfigTag, cfg ? 0 : 1);
     gpio[kInput] = initiallyPressed;
     button = std::make_unique<Supla::Control::Button>(kInput);
@@ -110,10 +112,15 @@ class BistableInputTest : public testing::TestWithParam<bool> {
     for (int i = 0; i < 2; ++i) {
       triggers[i] = std::make_unique<Supla::Control::ActionTrigger>();
       triggers[i]->attach(i == 0 ? button.get() : downButton.get());
+      if (shutter) {
+        triggers[i]->setRelatedChannel(*shutter);
+      }
       if (alwaysClick1) {
         triggers[i]->setAlwaysUseOnClick1();
       }
-      triggers[i]->onInit();
+      if (initTriggers) {
+        triggers[i]->onInit();
+      }
     }
     tick(10);
     outputChanges.clear();
@@ -465,16 +472,12 @@ TEST_P(DirectionalInputTest, DirectionalStopIsNotSwallowedWithOnlyClickOne) {
   expectStopped();
 }
 
-TEST_P(DirectionalInputTest, TurnOnAndOffKeepIndependentDirectionalMasks) {
+TEST_P(DirectionalInputTest, TurnOnAndOffPreserveDirectionalStartAndStop) {
   initialize();
   configure(SUPLA_ACTION_CAP_TURN_ON);
   edge(true);
   EXPECT_THAT(actions[0], testing::ElementsAre(SUPLA_ACTION_CAP_TURN_ON));
   tick(301);
-  expectStopped();
-  // A remote command starts the motor. The unmasked release must stop it.
-  shutter->moveUp();
-  tick(10);
   EXPECT_EQ(gpio[kOutput], HIGH);
   edge(false);
   tick(301);
@@ -486,22 +489,25 @@ TEST_P(DirectionalInputTest, TurnOnAndOffKeepIndependentDirectionalMasks) {
   EXPECT_EQ(gpio[kOutput], HIGH);
   edge(false);
   tick(301);
-  EXPECT_EQ(gpio[kOutput], HIGH);
+  expectStopped();
   EXPECT_THAT(actions[0], testing::ElementsAre(SUPLA_ACTION_CAP_TURN_ON,
                                              SUPLA_ACTION_CAP_TURN_OFF));
 }
 
-TEST_P(DirectionalInputTest, TurnOnAndOffTogetherDisableBothLocalEdges) {
+TEST_P(DirectionalInputTest, TurnOnAndOffTogetherPreserveBothLocalEdges) {
   initialize();
   configure(SUPLA_ACTION_CAP_TURN_ON | SUPLA_ACTION_CAP_TURN_OFF);
   edge(true);
   tick(301);
+  EXPECT_EQ(gpio[kOutput], HIGH);
   edge(false);
   tick(301);
-  EXPECT_TRUE(outputChanges.empty());
+  expectStopped();
+  EXPECT_EQ(outputChanges.size(), 2);
   EXPECT_THAT(actions[0], testing::ElementsAre(SUPLA_ACTION_CAP_TURN_ON,
                                              SUPLA_ACTION_CAP_TURN_OFF));
   configure(0);
+  tick(501);
   edge(true);
   EXPECT_EQ(gpio[kOutput], HIGH);
   edge(false);
@@ -514,9 +520,6 @@ TEST_P(DirectionalInputTest, UnmaskedReleaseWorksWithoutAnyClickHandler) {
   // Only raw TURN_ON is subscribed, but the local release still needs x1.
   ASSERT_EQ(button->getMaxMulticlickValue(), 1);
   edge(true);
-  expectStopped();
-  shutter->moveUp();
-  tick(10);
   EXPECT_EQ(gpio[kOutput], HIGH);
   edge(false);
   expectStopped();
@@ -580,6 +583,290 @@ TEST_P(DirectionalInputTest, UpsideDownMapsDeferredPressAndReleaseTogether) {
   edge(false);
   tick(301);
   expectStopped();
+}
+
+TEST_P(DirectionalInputTest, RemovingToggleOneRestoresEdgesWithTurnCaps) {
+  initialize();
+  const auto turns = SUPLA_ACTION_CAP_TURN_ON | SUPLA_ACTION_CAP_TURN_OFF;
+  configure(turns | SUPLA_ACTION_CAP_TOGGLE_x1);
+  edge(true);
+  tick(301);
+  edge(false);
+  tick(301);
+  EXPECT_TRUE(outputChanges.empty());
+  configure(turns);
+  actions[0].clear();
+  edge(true);
+  tick(301);
+  EXPECT_EQ(gpio[kOutput], HIGH);
+  edge(false);
+  tick(301);
+  expectStopped();
+  EXPECT_THAT(actions[0], testing::ElementsAre(SUPLA_ACTION_CAP_TURN_ON,
+                                             SUPLA_ACTION_CAP_TURN_OFF));
+  auto properties = reinterpret_cast<const TActionTriggerProperties *>(
+      triggers[0]->getChannel()->getValuePtr());
+  EXPECT_EQ(properties->disablesLocalOperation, SUPLA_ACTION_CAP_TOGGLE_x1);
+}
+
+TEST_P(DirectionalInputTest, OneConfiguredInputDefersBothDirections) {
+  initialize();
+  for (int configured = 0; configured < 2; ++configured) {
+    configure(SUPLA_ACTION_CAP_TOGGLE_x2, configured);
+    for (int input = 0; input < 2; ++input) {
+      outputChanges.clear();
+      edge(true, input ? kDownInput : kInput);
+      tick(100);
+      edge(false, input ? kDownInput : kInput);
+      tick(301);
+      EXPECT_TRUE(outputChanges.empty());
+      expectStopped();
+    }
+    EXPECT_THAT(actions[configured],
+                testing::ElementsAre(SUPLA_ACTION_CAP_TOGGLE_x2));
+    EXPECT_TRUE(actions[1 - configured].empty());
+    configure(0, configured);
+    actions = {};
+  }
+  for (int input = 0; input < 2; ++input) {
+    edge(true, input ? kDownInput : kInput);
+    EXPECT_EQ(gpio[input ? kDownOutput : kOutput], HIGH);
+    edge(false, input ? kDownInput : kInput);
+    expectStopped();
+    tick(501);
+  }
+}
+
+TEST_P(DirectionalInputTest, ToggleOneOnlyMasksItsOwnInput) {
+  initialize();
+  configure(SUPLA_ACTION_CAP_TOGGLE_x1);
+  edge(true, kDownInput);
+  expectStopped();
+  tick(301);
+  EXPECT_EQ(gpio[kDownOutput], HIGH);
+  edge(false, kDownInput);
+  tick(301);
+  expectStopped();
+  tick(501);
+  outputChanges.clear();
+  edge(true);
+  tick(301);
+  edge(false);
+  tick(301);
+  EXPECT_TRUE(outputChanges.empty());
+}
+
+TEST_P(DirectionalInputTest, PeerConfigChangePreservesPendingStop) {
+  initialize();
+  configure(SUPLA_ACTION_CAP_TOGGLE_x2);
+  edge(true, kDownInput);
+  tick(301);
+  EXPECT_EQ(gpio[kDownOutput], HIGH);
+  edge(false, kDownInput);
+  tick(100);
+  configure(SUPLA_ACTION_CAP_TOGGLE_x3);
+  tick(200);
+  expectStopped();
+}
+
+TEST_P(DirectionalInputTest, PeerConfigChangePreservesClickSequence) {
+  initialize();
+  configure(SUPLA_ACTION_CAP_TOGGLE_x2, 1);
+  edge(true, kDownInput);
+  tick(100);
+  configure(SUPLA_ACTION_CAP_TOGGLE_x3);
+  edge(false, kDownInput);
+  tick(301);
+  EXPECT_THAT(actions[1], testing::ElementsAre(SUPLA_ACTION_CAP_TOGGLE_x2));
+  EXPECT_TRUE(outputChanges.empty());
+}
+
+TEST_P(DirectionalInputTest, SingleAlwaysClickFlagKeepsBothInputsDeferred) {
+  initialize();
+  triggers[0]->setAlwaysUseOnClick1();
+  triggers[0]->rebuildForAttachedButton();
+  configure(SUPLA_ACTION_CAP_TOGGLE_x2, 1);
+  configure(0, 1);
+  edge(true, kDownInput);
+  tick(100);
+  edge(false, kDownInput);
+  tick(301);
+  EXPECT_TRUE(outputChanges.empty());
+  EXPECT_TRUE(actions[0].empty());
+  EXPECT_TRUE(actions[1].empty());
+}
+
+TEST_P(DirectionalInputTest, UnrelatedInputDoesNotInheritClickMode) {
+  initialize();
+  Supla::Channel otherChannel;
+  triggers[1]->setRelatedChannel(otherChannel);
+  configure(SUPLA_ACTION_CAP_TOGGLE_x2);
+  edge(true, kDownInput);
+  EXPECT_EQ(gpio[kDownOutput], HIGH);
+  edge(false, kDownInput);
+  expectStopped();
+}
+
+TEST_P(DirectionalInputTest, PeerOldReleaseDoesNotStopNewDirection) {
+  initialize();
+  configure(SUPLA_ACTION_CAP_TOGGLE_x2);
+  edge(true, kDownInput);
+  tick(301);
+  EXPECT_EQ(gpio[kDownOutput], HIGH);
+  edge(true);
+  tick(301);
+  expectStopped();
+  tick(501);
+  EXPECT_EQ(gpio[kOutput], HIGH);
+  edge(false, kDownInput);
+  tick(301);
+  EXPECT_EQ(gpio[kOutput], HIGH);
+  edge(false);
+  tick(301);
+  expectStopped();
+}
+
+TEST_P(DirectionalInputTest, OnlyRemovingLastAtRestoresImmediateEdges) {
+  initialize();
+  configure(SUPLA_ACTION_CAP_TOGGLE_x2);
+  configure(SUPLA_ACTION_CAP_TOGGLE_x3, 1);
+  configure(0);
+  edge(true);
+  tick(100);
+  edge(false);
+  tick(301);
+  EXPECT_TRUE(outputChanges.empty());
+  configure(0, 1);
+  edge(true);
+  EXPECT_EQ(gpio[kOutput], HIGH);
+  edge(false);
+  expectStopped();
+}
+
+TEST_P(DirectionalInputTest, PublishingModesDeferPeerWithoutMaskingIt) {
+  initialize();
+  for (int mode : {1, 2}) {
+    configurePublishing(mode);
+    configure(0);
+    edge(true, kDownInput);
+    expectStopped();
+    tick(301);
+    EXPECT_EQ(gpio[kDownOutput], HIGH);
+    edge(false, kDownInput);
+    tick(301);
+    expectStopped();
+    tick(501);
+  }
+  EXPECT_TRUE(actions[1].empty());
+}
+
+TEST_P(DirectionalInputTest, ConfigurationBeforePeerInitAppliesToBothInputs) {
+  initialize(true, false, false, false);
+  configure(SUPLA_ACTION_CAP_TOGGLE_x2, 1);
+  triggers[0]->onInit();
+  triggers[1]->onInit();
+  for (int pin : {kInput, kDownInput}) {
+    edge(true, pin);
+    tick(100);
+    edge(false, pin);
+    tick(301);
+  }
+  EXPECT_TRUE(outputChanges.empty());
+  EXPECT_THAT(actions[1], testing::ElementsAre(SUPLA_ACTION_CAP_TOGGLE_x2));
+}
+
+TEST_P(DirectionalInputTest, RestoredMaskWorksWithReverseAtInitialization) {
+  initialize(true, false, false, false);
+  testing::NiceMock<StorageMock> storage;
+  storage.defaultInitialization(8);
+  for (auto &trigger : triggers) {
+    trigger->enableStateStorage();
+  }
+  EXPECT_CALL(storage, readStorage(testing::_, testing::_, 4, testing::_))
+      .WillOnce([](unsigned int, unsigned char *data, unsigned int, bool) {
+        const uint32_t mask = SUPLA_ACTION_CAP_TOGGLE_x2;
+        memcpy(data, &mask, sizeof(mask));
+        return sizeof(mask);
+      })
+      .WillOnce([](unsigned int, unsigned char *data, unsigned int, bool) {
+        const uint32_t mask = 0;
+        memcpy(data, &mask, sizeof(mask));
+        return sizeof(mask);
+      });
+  // Read AT state only; the fixture's shutter has its own storage layout.
+  triggers[0]->onLoadState();
+  triggers[1]->onLoadState();
+  triggers[1]->onInit();
+  triggers[0]->onInit();
+  ASSERT_TRUE(triggers[0]->isAnyActionEnabledOnServer());
+  for (int pin : {kInput, kDownInput}) {
+    edge(true, pin);
+    tick(100);
+    edge(false, pin);
+    tick(301);
+  }
+  EXPECT_TRUE(outputChanges.empty());
+  EXPECT_THAT(actions[0], testing::ElementsAre(SUPLA_ACTION_CAP_TOGGLE_x2));
+}
+
+TEST_P(DirectionalInputTest, RuntimeRelayModeSeparatesInputClickPolicies) {
+  Supla::Control::Button up(kInput);
+  Supla::Control::Button down(kDownInput);
+  Supla::Control::RelayRollerShutterPair pair(kOutput, kDownOutput, true,
+                                            false);
+  Supla::Control::ActionTrigger upAt;
+  Supla::Control::ActionTrigger downAt;
+  for (auto input : {&up, &down}) {
+    input->setMulticlickTime(300, true);
+    input->setDebounceDelay(0);
+    input->setSwNoiseFilterDelay(0);
+    input->addAction(Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY, device,
+                     Supla::ON_CLICK_10, true);
+  }
+  pair.attach(&up, &down, &upAt, &downAt);
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  pair.onInit();
+  upAt.onInit();
+  downAt.onInit();
+  TSD_ChannelConfig message = {};
+  message.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  message.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger settings = {};
+  settings.ActiveActions = SUPLA_ACTION_CAP_TOGGLE_x2;
+  memcpy(message.Config, &settings, sizeof(settings));
+  upAt.handleChannelConfig(&message);
+  auto advance = [&](int duration) {
+    for (int i = 0; i < duration; ++i) {
+      time.advance(1);
+      up.onTimer();
+      down.onTimer();
+      pair.onTimer();
+      pair.iterateAlways();
+    }
+  };
+  advance(10);
+  outputChanges.clear();
+  gpio[kDownInput] = HIGH;
+  advance(100);
+  gpio[kDownInput] = LOW;
+  advance(301);
+  EXPECT_TRUE(outputChanges.empty());
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  advance(10);
+  gpio[kDownInput] = HIGH;
+  advance(5);
+  EXPECT_EQ(gpio[kDownOutput], HIGH);
+  gpio[kDownInput] = LOW;
+  advance(5);
+  expectStopped();
+  pair.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  advance(501);
+  outputChanges.clear();
+  gpio[kDownInput] = HIGH;
+  advance(100);
+  gpio[kDownInput] = LOW;
+  advance(301);
+  EXPECT_TRUE(outputChanges.empty());
 }
 
 INSTANTIATE_TEST_SUITE_P(RelayAndRollerShutter, BistableInputTest,

@@ -54,8 +54,8 @@
       "name": "Supla::Control::ActionTrigger",
       "header": "supla/control/action_trigger.h",
       "limits": {
-        "host": 176,
-        "avr": 89,
+        "host": 192,
+        "avr": 93,
         "esp8266": 128,
         "esp32": 128
       }
@@ -65,7 +65,7 @@
       "header": "supla/control/relay.h",
       "limits": {
         "host": 224,
-        "avr": 126,
+        "avr": 123,
         "esp8266": 168,
         "esp32": 168
       }
@@ -75,7 +75,7 @@
       "header": "supla/control/bistable_relay.h",
       "limits": {
         "host": 256,
-        "avr": 141,
+        "avr": 138,
         "esp8266": 184,
         "esp32": 184
       }

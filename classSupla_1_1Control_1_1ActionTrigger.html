@@ -92,6 +92,7 @@ $(function(){ initResizable(false); });
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classSupla_1_1Control_1_1ActionTrigger-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Supla::Control::ActionTrigger Class Reference</div></div>
@@ -155,6 +156,8 @@ Collaboration diagram for Supla::Control::ActionTrigger:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a1ebb1ae2d6358530780dac69591da813" id="r_a1ebb1ae2d6358530780dac69591da813"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classSupla_1_1Control_1_1ActionTrigger.html">ActionTrigger</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1ebb1ae2d6358530780dac69591da813">getActionTrigger</a> () override</td></tr>
+<tr class="separator:a1ebb1ae2d6358530780dac69591da813"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeefc4f6c4a17d1ca79ca3f30af0d5be1" id="r_aeefc4f6c4a17d1ca79ca3f30af0d5be1"><td class="memItemLeft" align="right" valign="top"><a id="aeefc4f6c4a17d1ca79ca3f30af0d5be1" name="aeefc4f6c4a17d1ca79ca3f30af0d5be1"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>attach</b> (<a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *)</td></tr>
 <tr class="separator:aeefc4f6c4a17d1ca79ca3f30af0d5be1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -389,6 +392,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>addActionToButtonAndD
 <tr class="memitem:a8d2fc25c36def006c6a30da7cdb7f55f" id="r_a8d2fc25c36def006c6a30da7cdb7f55f"><td class="memItemLeft" align="right" valign="top"><a id="a8d2fc25c36def006c6a30da7cdb7f55f" name="a8d2fc25c36def006c6a30da7cdb7f55f"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>parseActiveActionsFromServer</b> ()</td></tr>
 <tr class="separator:a8d2fc25c36def006c6a30da7cdb7f55f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e3583b68b4973a45bc60ea7341f1f3f" id="r_a9e3583b68b4973a45bc60ea7341f1f3f"><td class="memItemLeft" align="right" valign="top"><a id="a9e3583b68b4973a45bc60ea7341f1f3f" name="a9e3583b68b4973a45bc60ea7341f1f3f"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>hasDirectionalPair</b> () const</td></tr>
+<tr class="separator:a9e3583b68b4973a45bc60ea7341f1f3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38e36f3b32121c0fbaf0035f23959d3b" id="r_a38e36f3b32121c0fbaf0035f23959d3b"><td class="memItemLeft" align="right" valign="top"><a id="a38e36f3b32121c0fbaf0035f23959d3b" name="a38e36f3b32121c0fbaf0035f23959d3b"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>requiresClickMode</b> () const</td></tr>
+<tr class="separator:a38e36f3b32121c0fbaf0035f23959d3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-methods" name="pro-static-methods"></a>
+Static Protected Member Functions</h2></td></tr>
+<tr class="memitem:a349062364833a0c39fc67742e19bcc95" id="r_a349062364833a0c39fc67742e19bcc95"><td class="memItemLeft" align="right" valign="top"><a id="a349062364833a0c39fc67742e19bcc95" name="a349062364833a0c39fc67742e19bcc95"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>synchronizeDirectionalButtonModes</b> ()</td></tr>
+<tr class="separator:a349062364833a0c39fc67742e19bcc95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -483,6 +498,33 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ActionHandler.html">Supla::ActionHandler</a>.</p>
+
+</div>
+</div>
+<a id="a1ebb1ae2d6358530780dac69591da813" name="a1ebb1ae2d6358530780dac69591da813"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ebb1ae2d6358530780dac69591da813">&#9670;&#160;</a></span>getActionTrigger()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classSupla_1_1Control_1_1ActionTrigger.html">ActionTrigger</a> * Supla::Control::ActionTrigger::getActionTrigger </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a>.</p>
 
 </div>
 </div>

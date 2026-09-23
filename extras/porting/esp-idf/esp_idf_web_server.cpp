@@ -826,6 +826,8 @@ bool Supla::EspIdfWebServer::CustomPostRequest::getValue(
 
 bool Supla::EspIdfWebServer::registerCustomPage(const CustomPage *page) {
   const char *uri = page && page->uri ? page->uri : "<null>";
+  // The log macros can compile out their arguments when logging is disabled.
+  (void)uri;
   if (page == nullptr || page->uri == nullptr || page->uri[0] != '/') {
     SUPLA_LOG_ERROR("SERVER: rejecting custom page with invalid URI: %s", uri);
     return false;

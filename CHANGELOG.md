@@ -1,5 +1,45 @@
 # CHANGELOG.md
 
+# 26.09.02 (2026-09-23 input handling, channel configuration and platform improvements)
+
+### Generic
+- Preserve local channel configuration changes until the server acknowledges them.
+- Add normal/low battery state reporting for channels and parsed Linux sensors.
+- Add `IoGroup` to drive multiple physical GPIO/PWM outputs from one logical pin, including per-output polarity and interrupt mapping.
+- Add version 29 weekly schedule handling and improve protocol registration, device synchronization and SRPC error reporting.
+- Fix state-storage backup invalidation and roll back partially parsed key-value data after a failed load.
+
+### Buttons, Roller Shutters & Lighting
+- Improve bistable button and ActionTrigger handling for roller shutters, including directional press/release actions, click sequences and paired inputs.
+- Fix roller shutter control through bistable buttons when ActionTrigger is enabled.
+- Add persistent manual suspension for lighting PWM channels and reject control commands while suspended.
+- Fix relay countdown startup when the millisecond counter is zero and refresh MQTT discovery after relay/roller-shutter mode changes.
+
+### Channels & Sensors
+- Validate channel numbers, electricity-meter type masks, HVAC channel assignments and temperature-control types before use.
+- Fix MultiDS online state for invalid readings and add a configurable sensor refresh interval.
+- Improve AC detection reliability, sensor input validation and recovery from disconnected or missing sensors.
+- Add ESP-IDF drivers for PCF85063A clocks and SSD1306 displays, including 32-pixel-high displays and a percent character.
+
+### MQTT, Networking & Web UI
+- Add per-channel MQTT availability reporting and fix HVAC toggle handling for percentage-based heating devices.
+- Add custom local pages to the ESP-IDF web server.
+- Reduce web UI RAM use by serving static assets from program memory; improve Wi-Fi scan handling and HTML buffer validation.
+- Improve ESP-IDF OTA error reporting and retries, and fix Arduino ESP Wi-Fi client lifetime when switching TLS modes.
+
+### ESP-IDF & Arduino
+- Update the stable ESP-IDF build environment to 6.0.2.
+- Reduce SRPC buffer and packet-logging memory use on ESP targets, and move CA certificates out of the `SuplaDevice` header.
+- Fix Arduino source filename collisions and add ESP RGB+CCT and relay/roller-shutter examples.
+
+### Linux / sd4linux
+- Validate YAML channel, icon, QoS, TLS and command settings, and support configurable SUPLA protocol version and custom HVAC/relay state mapping.
+- Preserve arbitrary `CustomChannel` type values and fix YAML configuration object ownership.
+- Add RGB+CCT state configuration and battery state reporting for parsed channels; secure state files and avoid logging parser source contents.
+
+### Experimental
+- Rework Suplet CALCFG transfers and add optional staged instance artifacts with atomic activation. Suplets remain disabled by default and are not production-ready.
+
 # 26.08 (2026-08-14 security, configuration and platform improvements)
 
 ### Breaking changes

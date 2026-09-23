@@ -134,6 +134,7 @@ class RelayRollerShutterPair : public ElementWithChannelActions {
   RelayRollerShutterPair &setDefaultStateOff();
   RelayRollerShutterPair &setDefaultStateRestore();
   RelayRollerShutterPair &setPreloadStateOnSoftReset(bool enabled = true);
+  RelayRollerShutterPair &setWeeklyScheduleAvailable(bool available = true);
   bool setDefaultFunctions(uint32_t primaryFunction,
                            uint32_t secondaryFunction);
   bool setRuntimeFunctions(uint32_t primaryFunction,

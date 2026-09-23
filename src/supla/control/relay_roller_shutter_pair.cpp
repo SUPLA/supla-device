@@ -312,10 +312,6 @@ RelayRollerShutterPair::RelayRollerShutterPair(
   secondaryChannel.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
 
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
-  // The pair owns the Relay engines and exposes their weekly schedule in
-  // relay mode. Keep this explicit now that standalone Relay is opt-in.
-  relay0.setWeeklyScheduleAvailable();
-  relay1.setWeeklyScheduleAvailable();
   relay0.refreshWeeklyScheduleCapabilities();
   relay1.refreshWeeklyScheduleCapabilities();
   applyRuntimeMode();
@@ -501,6 +497,14 @@ RelayRollerShutterPair &RelayRollerShutterPair::setPreloadStateOnSoftReset(
     bool enabled) {
   relay0.setPreloadStateOnSoftReset(enabled);
   relay1.setPreloadStateOnSoftReset(enabled);
+  return *this;
+}
+
+RelayRollerShutterPair &RelayRollerShutterPair::setWeeklyScheduleAvailable(
+    bool available) {
+  relay0.setWeeklyScheduleAvailable(available);
+  relay1.setWeeklyScheduleAvailable(available);
+  syncPrimaryWeeklyScheduleConfigType();
   return *this;
 }
 

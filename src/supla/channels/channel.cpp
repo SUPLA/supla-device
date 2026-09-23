@@ -3,7 +3,6 @@
 
 #include "channel.h"
 
-#include <supla/channel_function_string.h>
 #include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
 #include <supla-common/srpc.h>
@@ -313,15 +312,10 @@ void Channel::setType(uint32_t type) {
 }
 
 void Channel::setDefault(uint32_t value) {
-  SUPLA_LOG_DEBUG("Channel[%d]: setDefaultFunction: %s (%d)",
-                  channelNumber,
-                  Supla::channelFunctionToString(value),
-                  value);
+  SUPLA_LOG_DEBUG("Channel[%d]: setDefaultFunction: %d", channelNumber, value);
   if (value > UINT16_MAX) {
-    SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %s (%d)",
-                    channelNumber,
-                    Supla::channelFunctionToString(value),
-                    value);
+    SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %d",
+                    channelNumber, value);
     value = 0;
   }
 

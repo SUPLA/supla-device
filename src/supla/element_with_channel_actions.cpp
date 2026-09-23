@@ -4,7 +4,6 @@
 #include "element_with_channel_actions.h"
 
 #include <inttypes.h>
-#include <supla/channel_function_string.h>
 #include <supla/channels/channel.h>
 #include <supla/condition.h>
 #include <supla/element.h>
@@ -228,16 +227,12 @@ bool Supla::ElementWithChannelActions::loadFunctionFromConfig() {
     int32_t channelFunc = cfg->getChannelFunction(getChannelNumber());
     if (channelFunc >= 0) {
       if (channel->isFunctionValid(channelFunc)) {
-        SUPLA_LOG_INFO("Channel[%d] loaded function: %s (%d)",
-                       channel->getChannelNumber(),
-                       Supla::channelFunctionToString(channelFunc),
-                       channelFunc);
+        SUPLA_LOG_INFO("Channel[%d] loaded function: %d",
+                       channel->getChannelNumber(), channelFunc);
         setFunction(channelFunc);
       } else {
-        SUPLA_LOG_INFO("Channel[%d] invalid function: %s (%d)",
-                       channel->getChannelNumber(),
-                       Supla::channelFunctionToString(channelFunc),
-                       channelFunc);
+        SUPLA_LOG_INFO("Channel[%d] invalid function: %d",
+                       channel->getChannelNumber(), channelFunc);
       }
       return true;
     } else {
@@ -519,10 +514,9 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
 uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     TSD_ChannelConfig *result, bool local) {
   SUPLA_LOG_DEBUG(
-      "Channel[%d] handleChannelConfig, func %s (%d), configtype %d, "
+      "Channel[%d] handleChannelConfig, func %d, configtype %d, "
       "configsize %d",
       getChannelNumber(),
-      Supla::channelFunctionToString(result->Func),
       result->Func,
       result->ConfigType,
       result->ConfigSize);
@@ -531,9 +525,7 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     // Apply channel function setting
     auto newFunction = static_cast<uint32_t>(result->Func);
     if (newFunction != getChannel()->getDefaultFunction()) {
-      SUPLA_LOG_INFO("Channel[%d] function changed to %s (%d)",
-                     getChannelNumber(),
-                     Supla::channelFunctionToString(newFunction),
+      SUPLA_LOG_INFO("Channel[%d] function changed to %d", getChannelNumber(),
                      newFunction);
       setAndSaveFunction(newFunction);
       for (auto proto = Supla::Protocol::ProtocolLayer::first();
@@ -809,9 +801,8 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
                                       channelConfigSize,
                                       nextConfigType)) {
             SUPLA_LOG_INFO(
-                "Channel[%d] SetChannelConfig send, func %s (%d), type %s (%d)",
+                "Channel[%d] SetChannelConfig send, func %d, type %s (%d)",
                 getChannelNumber(),
-                Supla::channelFunctionToString(defaultFunction),
                 defaultFunction,
                 configTypeToString(nextConfigType),
                 nextConfigType);

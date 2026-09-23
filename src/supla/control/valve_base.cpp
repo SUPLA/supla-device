@@ -5,7 +5,6 @@
 
 #include <string.h>
 #include <supla/actions.h>
-#include <supla/channel_function_string.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/network.h>
 #include <supla/protocol/protocol_layer.h>
@@ -227,10 +226,9 @@ void ValveBase::onSaveState() {
 Supla::ApplyConfigResult ValveBase::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
   SUPLA_LOG_DEBUG(
-      "Valve[%d]:applyChannelConfig, func %s (%d), configtype %d, configsize "
+      "Valve[%d]:applyChannelConfig, func %d, configtype %d, configsize "
       "%d",
       getChannelNumber(),
-      Supla::channelFunctionToString(result->Func),
       result->Func,
       result->ConfigType,
       result->ConfigSize);
@@ -280,9 +278,7 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
       break;
     }
     default: {
-      SUPLA_LOG_WARNING("Valve[%d]: unsupported func %s (%d)",
-                        getChannelNumber(),
-                        Supla::channelFunctionToString(result->Func),
+      SUPLA_LOG_WARNING("Valve[%d]: unsupported func %d", getChannelNumber(),
                         result->Func);
       break;
     }
@@ -328,9 +324,8 @@ void ValveBase::fillChannelConfig(void *channelConfig,
     }
     default:
       SUPLA_LOG_WARNING(
-          "Valve[%d]: fill channel config for unknown function %s (%d)",
+          "Valve[%d]: fill channel config for unknown function %d",
           channel.getChannelNumber(),
-          Supla::channelFunctionToString(channel.getDefaultFunction()),
           channel.getDefaultFunction());
       return;
   }

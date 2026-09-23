@@ -3,8 +3,6 @@
 
 #include "hvac_base.h"
 
-#include <supla/channel_function_string.h>
-
 #include <stdint.h>
 #include <string.h>
 #include <supla/actions.h>
@@ -923,9 +921,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   }
 
   if (channelFunction != getChannel()->getDefaultFunction()) {
-    SUPLA_LOG_INFO("HVAC[%d]: function changed to %s (%d)",
-                   getChannelNumber(),
-                   Supla::channelFunctionToString(channelFunction),
+    SUPLA_LOG_INFO("HVAC[%d]: function changed to %d", getChannelNumber(),
                    channelFunction);
     changeFunction(channelFunction, false);
     triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
@@ -3772,12 +3768,8 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
     return;
   }
 
-  SUPLA_LOG_DEBUG("HVAC[%d]: changing function from %s (%d) to %s (%d)",
-                  getChannelNumber(),
-                  Supla::channelFunctionToString(currentFunction),
-                  currentFunction,
-                  Supla::channelFunctionToString(newFunction),
-                  newFunction);
+  SUPLA_LOG_DEBUG("HVAC[%d]: changing function from %d to %d",
+                  getChannelNumber(), currentFunction, newFunction);
 
   if (newFunction == 0) {
     // for "none/disbled" function we keep internal setting and then we
@@ -4547,9 +4539,8 @@ void HvacBase::fillDefaultWeeklySchedule(
       default: {
         SUPLA_LOG_WARNING(
             "HVAC[%d]: no default weekly schedule defined for "
-            "function %s (%d)",
+            "function %d",
             getChannelNumber(),
-            Supla::channelFunctionToString(channelFunction),
             channelFunction);
         return;
       }

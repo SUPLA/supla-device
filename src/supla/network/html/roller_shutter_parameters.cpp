@@ -4,7 +4,6 @@
 #ifndef ARDUINO_ARCH_AVR
 #include <supla/network/html/roller_shutter_parameters.h>
 
-#include <supla/channel_function_string.h>
 
 #include <stdio.h>
 #include <stdint.h>
@@ -369,8 +368,7 @@ bool RollerShutterParameters::handleResponse(const char* key,
     if (rs->isFunctionSupported(channelFunc)) {
       rs->setAndSaveFunction(channelFunc);
     } else {
-      SUPLA_LOG_WARNING("RsHtml: Unsupported channel function: %s (%d)",
-                        Supla::channelFunctionToString(channelFunc),
+      SUPLA_LOG_WARNING("RsHtml: Unsupported channel function: %d",
                         channelFunc);
       return true;
     }

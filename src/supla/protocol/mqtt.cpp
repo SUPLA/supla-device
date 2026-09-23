@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "mqtt.h"
-#include <supla/channel_function_string.h>
 
 #include <SuplaDevice.h>
 #include <ctype.h>
@@ -1495,9 +1494,7 @@ void Mqtt::publishHADiscoveryRelayImpulse(Supla::Element *element,
       break;
     }
     default: {
-      SUPLA_LOG_WARNING("Mqtt: channel function %s (%d) not supported",
-                        Supla::channelFunctionToString(chFunction),
-                        chFunction);
+      SUPLA_LOG_WARNING("Mqtt: channel function %d not supported", chFunction);
       return;
     }
   }

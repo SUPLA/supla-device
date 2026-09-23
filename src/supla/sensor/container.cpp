@@ -5,7 +5,6 @@
 
 #include <supla-common/proto.h>
 #include <supla/actions.h>
-#include <supla/channel_function_string.h>
 #include <supla/events.h>
 #include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
@@ -429,10 +428,9 @@ void Container::onLoadConfig(SuplaDeviceClass *) {
 Supla::ApplyConfigResult Container::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
   SUPLA_LOG_DEBUG(
-      "Contaier[%d]:applyChannelConfig, func %s (%d), configtype %d, "
+      "Contaier[%d]:applyChannelConfig, func %d, configtype %d, "
       "configsize %d",
       getChannelNumber(),
-      Supla::channelFunctionToString(result->Func),
       result->Func,
       result->ConfigType,
       result->ConfigSize);
@@ -484,10 +482,8 @@ Supla::ApplyConfigResult Container::applyChannelConfig(
       break;
     }
     default: {
-      SUPLA_LOG_WARNING("Container[%d]: unsupported func %s (%d)",
-                        getChannelNumber(),
-                        Supla::channelFunctionToString(result->Func),
-                        result->Func);
+      SUPLA_LOG_WARNING("Container[%d]: unsupported func %d",
+                        getChannelNumber(), result->Func);
       break;
     }
   }
@@ -564,9 +560,8 @@ void Container::fillChannelConfig(void *channelConfig,
     }
     default:
       SUPLA_LOG_WARNING(
-          "Container[%d]: fill channel config for unknown function %s (%d)",
+          "Container[%d]: fill channel config for unknown function %d",
           channel.getChannelNumber(),
-          Supla::channelFunctionToString(channel.getDefaultFunction()),
           channel.getDefaultFunction());
       return;
   }

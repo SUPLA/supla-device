@@ -9,7 +9,6 @@
 #include "relay.h"
 
 #include <supla/actions.h>
-#include <supla/channel_function_string.h>
 #include <supla/condition.h>
 #include <supla/condition_getter.h>
 #include <supla/control/button.h>
@@ -282,10 +281,9 @@ void Relay::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
 Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
                                                    bool local) {
   SUPLA_LOG_DEBUG(
-      "Relay[%d] applyChannelConfig, func %s (%d), configtype %d, configsize "
+      "Relay[%d] applyChannelConfig, func %d, configtype %d, configsize "
       "%d",
       getChannelNumber(),
-      Supla::channelFunctionToString(result->Func),
       result->Func,
       result->ConfigType,
       result->ConfigSize);
@@ -1356,9 +1354,8 @@ void Relay::fillChannelConfig(void *channelConfig,
     }
   } else {
     SUPLA_LOG_WARNING(
-        "Relay[%d] fill channel config for unknown function %s (%d)",
+        "Relay[%d] fill channel config for unknown function %d",
         channel.getChannelNumber(),
-        Supla::channelFunctionToString(channel.getDefaultFunction()),
         channel.getDefaultFunction());
     return;
   }

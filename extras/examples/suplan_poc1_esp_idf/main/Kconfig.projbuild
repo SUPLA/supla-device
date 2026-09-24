@@ -1,0 +1,23 @@
+menu "SupLAN PoC1"
+
+config SUPLAN_POC1_WIFI_SSID
+  string "Wi-Fi SSID"
+  default ""
+
+config SUPLAN_POC1_WIFI_PASSWORD
+  string "Wi-Fi password"
+  default ""
+
+choice SUPLAN_POC1_ROLE
+  prompt "Static PoC1 node role"
+  default SUPLAN_POC1_ROLE_A
+
+config SUPLAN_POC1_ROLE_A
+  bool "Node A (relay resource 50001)"
+
+config SUPLAN_POC1_ROLE_B
+  bool "Node B (Action Trigger resource 50002)"
+
+endchoice
+
+endmenu

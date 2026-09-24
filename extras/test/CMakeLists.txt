@@ -61,6 +61,7 @@ option(SUPLA_TEST_REQUIRE_CURL
   "Fail test configuration when CURL is missing" OFF)
 
 find_package(CURL QUIET)
+find_package(OpenSSL REQUIRED)
 set(SUPLA_TEST_CURL_HTTP_ENABLED OFF)
 if(CURL_FOUND AND SUPLA_TEST_ENABLE_CURL_HTTP)
   set(SUPLA_TEST_CURL_HTTP_ENABLED ON)
@@ -105,7 +106,11 @@ file(GLOB TEST_SRC CONFIGURE_DEPENDS
   SupletTests/*.cpp
   DebugTests/*.cpp
   SpiTests/*.cpp
+  SupLanTests/*.cpp
   )
+list(APPEND TEST_SRC
+  ../porting/linux/suplan_crypto_openssl.cpp
+)
 
 file(GLOB SD4LINUX_TEST_SRC CONFIGURE_DEPENDS
   LinuxPortTests/*.cpp
@@ -219,11 +224,14 @@ target_include_directories(supladevicetests BEFORE PRIVATE
 )
 
 target_include_directories(supladevicetests PRIVATE
+  ${SUPLA_DEVICE_SRC_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles
   ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-interrupt-ac-to-dc-io
   ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-mcp23008
   ${CMAKE_CURRENT_SOURCE_DIR}/../esp-idf/supla-spi-driver
   ${CMAKE_CURRENT_SOURCE_DIR}/../porting/esp-idf
+  ${CMAKE_CURRENT_SOURCE_DIR}/../porting/linux
+  ${CMAKE_CURRENT_SOURCE_DIR}/../examples/suplan_poc1_common
   ${cjson_SOURCE_DIR}
 )
 
@@ -240,6 +248,7 @@ target_link_libraries(supladevicetests
     gtest
     gmock
     gtest_main
+    OpenSSL::Crypto
   )
 
 target_link_libraries(sd4linuxtests

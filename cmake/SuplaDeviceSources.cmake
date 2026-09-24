@@ -3,8 +3,11 @@ include_guard()
 get_filename_component(SUPLA_DEVICE_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
 set(SUPLA_DEVICE_SRC_DIR "${SUPLA_DEVICE_ROOT_DIR}/src")
 
+include(${CMAKE_CURRENT_LIST_DIR}/SupLanSources.cmake)
+
 set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/SuplaDevice.cpp
+  ${SUPLAN_CORE_SRCS}
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/uptime.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel.cpp
@@ -155,6 +158,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/ip_address.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/protocol_layer.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/suplan_protocol.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/supla_srpc.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt_handler_registry.cpp

@@ -15,6 +15,8 @@ set(SUPLA_DEVICE_PORTING_SRCS
   ../../porting/esp-idf/esp_idf_sector_wl_storage.cpp
   ../../porting/esp-idf/esp_idf_watchdog.cpp
   ../../porting/esp-idf/esp_idf_security_logger.cpp
+  ../../porting/esp-idf/suplan_crypto_mbedtls.cpp
+  ../../porting/esp-idf/suplan_udp_espidf.cpp
 )
 
 
@@ -33,6 +35,7 @@ idf_component_register(SRCS
     mqtt
     esp_timer
     esp_partition
+    lwip
     mbedtls
   EMBED_TXTFILES supla_org_cert.pem supla_3rd_cert.pem
 )

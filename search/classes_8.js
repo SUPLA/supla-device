@@ -16,7 +16,9 @@ var searchData=
   ['hvacparameterflags_13',['HvacParameterFlags',['../structHvacParameterFlags.html',1,'']]],
   ['hvacparameters_14',['HvacParameters',['../classSupla_1_1Html_1_1HvacParameters.html',1,'Supla::Html']]],
   ['hvacptr_15',['HvacPtr',['../structSupla_1_1Control_1_1RelayHvacAggregator_1_1HvacPtr.html',1,'Supla::Control::RelayHvacAggregator']]],
-  ['hx711_16',['HX711',['../classSupla_1_1Sensor_1_1HX711.html',1,'Supla::Sensor']]],
-  ['hx711configdata_17',['HX711ConfigData',['../structSupla_1_1Sensor_1_1HX711ConfigData.html',1,'Supla::Sensor']]],
-  ['hygrometer_18',['HygroMeter',['../classSupla_1_1Sensor_1_1HygroMeter.html',1,'Supla::Sensor']]]
+  ['hvacweeklyschedule_16',['HvacWeeklySchedule',['../classSupla_1_1Control_1_1HvacWeeklySchedule.html',1,'Supla::Control']]],
+  ['hvacweeklyschedulepolicy_17',['HvacWeeklySchedulePolicy',['../classSupla_1_1Control_1_1HvacWeeklySchedulePolicy.html',1,'Supla::Control']]],
+  ['hx711_18',['HX711',['../classSupla_1_1Sensor_1_1HX711.html',1,'Supla::Sensor']]],
+  ['hx711configdata_19',['HX711ConfigData',['../structSupla_1_1Sensor_1_1HX711ConfigData.html',1,'Supla::Sensor']]],
+  ['hygrometer_20',['HygroMeter',['../classSupla_1_1Sensor_1_1HygroMeter.html',1,'Supla::Sensor']]]
 ];

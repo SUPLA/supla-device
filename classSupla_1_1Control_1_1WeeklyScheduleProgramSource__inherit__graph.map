@@ -1,0 +1,13 @@
+<map id="Supla::Control::WeeklyScheduleProgramSource" name="Supla::Control::WeeklyScheduleProgramSource">
+<area shape="rect" id="Node000001" title=" " alt="" coords="98,5,301,46"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1NativeWeeklyScheduleConfigHandler.html" title=" " alt="" coords="106,94,293,135"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="202,62,202,94,197,94,197,62"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Control_1_1HvacWeeklySchedule.html" title=" " alt="" coords="5,183,186,223"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="166,147,121,184,117,180,163,143"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Control_1_1NativeWeeklyScheduleController.html" title=" " alt="" coords="210,183,397,223"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="236,143,282,180,278,184,233,147"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Control_1_1ActionTriggerWeeklySchedule.html" title=" " alt="" coords="107,271,292,312"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="270,235,225,273,221,269,267,231"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1Control_1_1RelayWeeklySchedule.html" title=" " alt="" coords="316,271,497,312"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="340,232,385,269,381,273,337,236"/>
+</map>

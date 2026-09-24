@@ -1,3 +1,20 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="$classSupla_1_1Device_1_1SwUpdate.html" title=" " alt="" coords="5,5,173,31"/>
+<area shape="rect" id="Node000000" href="$classSupla_1_1Control_1_1WeeklyScheduleConfigHandler.html" title=" " alt="" coords="5,5,209,46"/>
+<area shape="rect" id="Node000001" href="$classSupla_1_1Control_1_1NativeWeeklyScheduleConfigHandler.html" title=" " alt="" coords="265,37,452,78"/>
+<area shape="poly" id="edge228_Node000000_Node000001" title=" " alt="" coords="224,38,264,43,264,48,224,43"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1HvacWeeklySchedule.html" title=" " alt="" coords="512,103,692,143"/>
+<area shape="poly" id="edge229_Node000001_Node000002" title=" " alt="" coords="452,80,524,99,522,105,450,85"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Control_1_1NativeWeeklyScheduleController.html" title=" " alt="" coords="508,37,695,78"/>
+<area shape="poly" id="edge230_Node000001_Node000005" title=" " alt="" coords="467,55,508,55,508,60,467,60"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1Control_1_1ActionTriggerWeeklySchedule.html" title=" " alt="" coords="743,5,928,46"/>
+<area shape="poly" id="edge231_Node000005_Node000006" title=" " alt="" coords="710,40,743,36,743,41,711,45"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1Control_1_1RelayWeeklySchedule.html" title=" " alt="" coords="745,71,926,111"/>
+<area shape="poly" id="edge232_Node000005_Node000007" title=" " alt="" coords="711,71,745,75,744,81,710,76"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Control_1_1WeeklyScheduleController.html" title=" " alt="" coords="257,103,460,143"/>
+<area shape="poly" id="edge234_Node000003_Node000002" title=" " alt="" coords="475,120,511,120,511,126,475,126"/>
+<area shape="poly" id="edge235_Node000003_Node000005" title=" " alt="" coords="450,96,522,76,524,81,452,101"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Control_1_1ExternalManagedWeeklySchedule.html" title=" " alt="" coords="516,168,687,209"/>
+<area shape="poly" id="edge233_Node000003_Node000004" title=" " alt="" coords="452,145,524,165,522,170,450,150"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1Control_1_1WeeklyScheduleProgramSource.html" title=" " alt="" coords="5,71,209,111"/>
+<area shape="poly" id="edge236_Node000008_Node000001" title=" " alt="" coords="224,73,264,67,264,73,225,78"/>
 </map>

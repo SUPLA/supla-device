@@ -1,0 +1,7 @@
+<map id="Supla::Control::NativeWeeklyScheduleConfigHandler" name="Supla::Control::NativeWeeklyScheduleConfigHandler">
+<area shape="rect" id="Node000001" title=" " alt="" coords="257,39,444,79"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1WeeklyScheduleConfigHandler.html" title=" " alt="" coords="5,5,209,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="224,39,256,43,256,49,224,44"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Control_1_1WeeklyScheduleProgramSource.html" title=" " alt="" coords="5,71,209,111"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="224,73,256,69,256,74,224,78"/>
+</map>

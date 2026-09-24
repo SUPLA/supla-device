@@ -1,10 +1,10 @@
 <map id="Supla::ElementWithChannelActions" name="Supla::ElementWithChannelActions">
-<area shape="rect" id="Node000001" title=" " alt="" coords="177,113,357,154"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="177,128,357,169"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,8,113,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="96,38,231,110,229,115,94,43"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="130,11,139,20,131,30,114,33,113,28,129,25,134,20,126,15"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,39,236,125,233,130,90,44"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="129,9,136,13,139,21,131,31,114,34,113,29,129,26,134,20,132,17,127,14"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="202,8,332,33"/>
-<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="270,49,270,113,264,113,264,49"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="270,49,270,128,264,128,264,49"/>
 <area shape="rect" id="Node000004" href="$structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="356,8,528,33"/>
-<area shape="poly" id="edge4_Node000001_Node000004" title=" " alt="" coords="411,44,299,115,296,111,408,40"/>
+<area shape="poly" id="edge4_Node000001_Node000004" title=" " alt="" coords="414,45,296,130,293,126,411,40"/>
 </map>

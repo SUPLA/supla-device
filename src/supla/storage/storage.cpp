@@ -221,9 +221,9 @@ int Storage::updateStorage(unsigned int offset,
   }
 
   unsigned char *currentData = new unsigned char[size];
-  readStorage(offset, currentData, size, false);
+  const int readBytes = readStorage(offset, currentData, size, false);
 
-  if (memcmp(currentData, buf, size)) {
+  if (readBytes != size || memcmp(currentData, buf, size)) {
     delete[] currentData;
     if (stateStorage != nullptr) {
       stateStorage->notifyUpdate();

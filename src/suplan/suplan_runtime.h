@@ -140,18 +140,22 @@ class Runtime {
   };
 
   struct RetryEntry {
-    bool used;
     uint8_t peerIndex;
     ResourceId resource;
     uint64_t sessionId;
     uint32_t sequence;
     uint32_t lastTransmitMs;
-    uint8_t attempts;
-    uint8_t sessionRecoveryAttempts;
-    uint8_t flags;
-    bool awaitingSession;
+    // Retry frames are non-empty, so frameLength == 0 marks a free slot.
+    // Bounded retry state fits one byte: attempts are 0..3, recovery attempts
+    // are 0..1, and flags use four bits.
+    uint8_t attempts : 2;
+    uint8_t sessionRecoveryAttempts : 1;
+    uint8_t flags : 4;
+    uint8_t awaitingSession : 1;
     uint16_t frameLength;
     uint8_t frame[SUPLAN_MAX_RETRY_FRAME_BYTES];
+
+    bool isUsed() const { return frameLength != 0; }
   };
 
   struct DeferredApplication {

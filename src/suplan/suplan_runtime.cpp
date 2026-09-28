@@ -20,6 +20,10 @@ static const uint8_t kRetryReadRequest = 1U << 0;
 static const uint8_t kRetryReadExpectsState = 1U << 1;
 static const uint8_t kRetryReadStateReceived = 1U << 2;
 static const uint8_t kRetryAwaitingReadState = 1U << 3;
+static_assert(kAckMaxAttempts <= 3,
+              "RetryEntry attempts field supports up to three attempts");
+static_assert(kRetryAwaitingReadState < 16,
+              "RetryEntry flags field stores four bits");
 static const uint8_t kTxKindAck = 1;
 static const uint8_t kTxKindData = 2;
 static const uint8_t kTxKindSessionAccept = 4;
@@ -190,7 +194,7 @@ int Runtime::allocateSession(uint8_t peerIndex) {
       selected = i;
       ++diagnostics_.sessionReplaced;
       for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
-        if (retries_[r].used &&
+        if (retries_[r].isUsed() &&
             retries_[r].sessionId == sessions_[i].sessionId) {
           clearRetryEntry(&retries_[r]);
         }
@@ -207,7 +211,7 @@ int Runtime::allocateSession(uint8_t peerIndex) {
     for (uint8_t i = 0; i < SUPLAN_MAX_ACTIVE_SESSIONS; ++i) {
       bool busy = false;
       for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
-        if (retries_[r].used &&
+        if (retries_[r].isUsed() &&
             retries_[r].sessionId == sessions_[i].sessionId) {
           busy = true;
         }
@@ -227,7 +231,8 @@ int Runtime::allocateSession(uint8_t peerIndex) {
   if (sessions_[selected].used && sessions_[selected].peerIndex != peerIndex) {
     const uint64_t evictedSession = sessions_[selected].sessionId;
     for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
-      if (retries_[r].used && retries_[r].sessionId == evictedSession) {
+      if (retries_[r].isUsed() &&
+          retries_[r].sessionId == evictedSession) {
         clearRetryEntry(&retries_[r]);
       }
     }
@@ -242,7 +247,7 @@ int Runtime::allocateSession(uint8_t peerIndex) {
 int Runtime::findRetry(uint8_t peerIndex, uint64_t sessionId,
                        uint32_t sequence) const {
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
-    if (retries_[i].used && retries_[i].peerIndex == peerIndex &&
+    if (retries_[i].isUsed() && retries_[i].peerIndex == peerIndex &&
         retries_[i].sessionId == sessionId &&
         retries_[i].sequence == sequence) {
       return i;
@@ -253,7 +258,7 @@ int Runtime::findRetry(uint8_t peerIndex, uint64_t sessionId,
 
 int Runtime::findFreeRetry() const {
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
-    if (!retries_[i].used) {
+    if (!retries_[i].isUsed()) {
       return i;
     }
   }
@@ -306,7 +311,7 @@ void Runtime::updatePoolHighWater() {
   }
   used[6] = fragmentReassembler_.active() ? 1 : 0;
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
-    used[7] += retries_[i].used ? 1 : 0;
+    used[7] += retries_[i].isUsed() ? 1 : 0;
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
     used[8] += deferred_[i].used ? 1 : 0;
@@ -346,7 +351,7 @@ PoolDiagnostics Runtime::poolDiagnostics() const {
     result.interests.used += interests_[i].used ? 1 : 0;
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
-    result.retries.used += retries_[i].used ? 1 : 0;
+    result.retries.used += retries_[i].isUsed() ? 1 : 0;
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
     result.deferredEvents.used += deferred_[i].used ? 1 : 0;
@@ -562,7 +567,7 @@ void Runtime::recoverSession(uint8_t peerIndex, uint64_t sessionId) {
   bool retryAfterHandshake = false;
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
-    if (!retry->used || retry->peerIndex != peerIndex ||
+    if (!retry->isUsed() || retry->peerIndex != peerIndex ||
         retry->sessionId != sessionId) {
       continue;
     }
@@ -746,7 +751,7 @@ bool Runtime::forgetSession(uint8_t peerIndex) {
       const uint64_t sessionId = sessions_[i].sessionId;
       clearSessionEntry(&sessions_[i]);
       for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
-        if (retries_[r].used && retries_[r].sessionId == sessionId) {
+        if (retries_[r].isUsed() && retries_[r].sessionId == sessionId) {
           clearRetryEntry(&retries_[r]);
         }
       }
@@ -867,7 +872,7 @@ void Runtime::drainDeferred() {
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
-    if (!retry->used || !retry->awaitingSession) {
+    if (!retry->isUsed() || !retry->awaitingSession) {
       continue;
     }
     int sessionIndex = -1;
@@ -902,7 +907,6 @@ void Runtime::drainDeferred() {
                        &session->nextTransmitSequence,
                        &session->lastActivityMs, applicationBuffer_,
                        applicationLength, true, resource)) {
-      retry->used = true;
       retry->peerIndex = peerIndex;
       retry->resource = resource;
       retry->sessionRecoveryAttempts = recoveryAttempts;
@@ -1077,7 +1081,6 @@ bool Runtime::sendProtectedToEndpoint(
   }
   if (ackRequired) {
     RetryEntry *retry = &retries_[retryIndex];
-    retry->used = true;
     retry->peerIndex = peerIndex;
     retry->resource = resource;
     retry->sessionId = sessionId;
@@ -1872,7 +1875,7 @@ void Runtime::sendAck(uint8_t peerIndex, SessionEntry *session,
 void Runtime::noteReadState(uint8_t peerIndex, const ResourceId &resource) {
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
-    if (!retry->used || retry->peerIndex != peerIndex ||
+    if (!retry->isUsed() || retry->peerIndex != peerIndex ||
         (retry->flags & (kRetryReadRequest | kRetryReadExpectsState)) !=
             (kRetryReadRequest | kRetryReadExpectsState) ||
         retry->resource.type != resource.type ||
@@ -1974,7 +1977,8 @@ void Runtime::iterate() {
       bool recoveryWaiting = false;
       if (initiator) {
         for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
-          if (retries_[r].used && retries_[r].peerIndex == peerIndex &&
+          if (retries_[r].isUsed() &&
+              retries_[r].peerIndex == peerIndex &&
               retries_[r].awaitingSession) {
             recoveryWaiting = true;
             break;
@@ -1999,7 +2003,7 @@ void Runtime::iterate() {
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
-    if (retry->used &&
+    if (retry->isUsed() &&
         (retry->flags & kRetryAwaitingReadState) != 0) {
       if (static_cast<uint32_t>(now - retry->lastTransmitMs) >=
           kReadStateResponseTimeoutMs) {
@@ -2010,7 +2014,7 @@ void Runtime::iterate() {
       }
       continue;
     }
-    if (retry->used && retry->awaitingSession) {
+    if (retry->isUsed() && retry->awaitingSession) {
       bool sessionActive = false;
       for (uint8_t s = 0; s < SUPLAN_MAX_ACTIVE_SESSIONS; ++s) {
         if (sessions_[s].used &&
@@ -2024,7 +2028,8 @@ void Runtime::iterate() {
       }
       continue;
     }
-    if (!retry->used || static_cast<uint32_t>(now - retry->lastTransmitMs) <
+    if (!retry->isUsed() ||
+        static_cast<uint32_t>(now - retry->lastTransmitMs) <
             kAckRetryMs) {
       continue;
     }

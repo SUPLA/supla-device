@@ -12,6 +12,7 @@
 #include <cstring>
 
 #include "suplan_crypto_openssl.h"
+#include "suplan_poc1_profile.h"
 
 namespace {
 
@@ -296,6 +297,29 @@ TEST(SupLanAdapter, FansOutStateExtendedStateAndActionToMappedPeers) {
   pair.pump(8);
   EXPECT_EQ(pair.appB.actionCalls, 1U);
   EXPECT_EQ(pair.appC.actionCalls, 1U);
+}
+
+TEST(SupLanAdapter, DispatchesControlToInitializedSuplaRelay) {
+  Supla::Control::VirtualRelay relay;
+  Supla::SupLan::Poc1::initializeRelay(&relay);
+
+  const uint32_t resourceId = 50001;
+  const Supla::Protocol::SupLanResourceMapping mapping = {
+      resourceId, static_cast<uint8_t>(relay.getChannelNumber()), 0, false};
+  Supla::Protocol::SupLan protocol(nullptr, nullptr, &mapping, 1);
+  const ResourceId resource = {Supla::SupLan::kResourceTypeChannel,
+                               resourceId};
+  uint8_t payload[17] = {};
+  payload[0] = 1;
+  payload[4] = Supla::SupLan::kChannelNumberUnresolved;
+  payload[9] = 1;
+
+  ASSERT_FALSE(relay.isOn());
+  EXPECT_EQ(protocol.dispatchControl(
+                resource, Supla::SupLan::kSuplaCallChannelSetValue, payload,
+                sizeof(payload)),
+            SUPLA_RESULTCODE_TRUE);
+  EXPECT_TRUE(relay.isOn());
 }
 
 }  // namespace

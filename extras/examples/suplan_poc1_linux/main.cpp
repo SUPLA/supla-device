@@ -717,8 +717,7 @@ int main(int argc, char **argv) {
   HarnessState state = {role.c_str(), nullptr, nullptr, 0, 0, 0};
   if (nodeA) {
     state.relay = new Supla::Control::VirtualRelay();
-    state.relay->setDefaultStateOff();
-    state.relay->onInit();
+    Supla::SupLan::Poc1::initializeRelay(state.relay);
   } else {
     state.actionChannel = new Supla::AtChannel();
   }

@@ -4,6 +4,7 @@
 #ifndef EXTRAS_EXAMPLES_SUPLAN_POC1_COMMON_SUPLAN_POC1_PROFILE_H_
 #define EXTRAS_EXAMPLES_SUPLAN_POC1_COMMON_SUPLAN_POC1_PROFILE_H_
 
+#include <supla/control/virtual_relay.h>
 #include <suplan/suplan_acl.h>
 
 namespace Supla {
@@ -14,6 +15,13 @@ static const uint32_t kRelayResourceId = 50001;
 static const uint32_t kActionResourceId = 50002;
 static const uint32_t kDeviceAId = 1001;
 static const uint32_t kDeviceBId = 1002;
+
+inline void initializeRelay(Supla::Control::VirtualRelay *relay) {
+  if (relay != nullptr) {
+    relay->setDefaultStateOff();
+    relay->onInit();
+  }
+}
 
 // TEST FIXTURE ONLY. Never use these deterministic PoC credentials in a
 // deployed device or copy them into production provisioning.

@@ -415,11 +415,11 @@ static void poc1Task(void *) {
   }
   if (kNodeA) {
     relay = new Supla::Control::VirtualRelay();
-    relay->setDefaultStateOff();
+    Supla::SupLan::Poc1::initializeRelay(relay);
   } else {
     actionChannel = new Supla::AtChannel();
   }
-    protocol = new (protocolStorage) Protocol(
+  protocol = new (protocolStorage) Protocol(
       &SuplaDevice, &peers, localMapping(), 1, applicationEvent, nullptr);
   runtime = new (runtimeStorage) Runtime(
       &crypto, &randomPort, &datagrams, protocol, &peers,

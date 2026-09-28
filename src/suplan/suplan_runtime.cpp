@@ -14,7 +14,12 @@ namespace SupLan {
 namespace {
 static const uint8_t kResultNotAllowed = 24;
 static const uint8_t kResultChannelNotFound = 25;
+static const uint8_t kResultTrue = 3;
 static const uint32_t kLocateReplyRateLimitMs = 100;
+static const uint8_t kRetryReadRequest = 1U << 0;
+static const uint8_t kRetryReadExpectsState = 1U << 1;
+static const uint8_t kRetryReadStateReceived = 1U << 2;
+static const uint8_t kRetryAwaitingReadState = 1U << 3;
 static const uint8_t kTxKindAck = 1;
 static const uint8_t kTxKindData = 2;
 static const uint8_t kTxKindSessionAccept = 4;
@@ -81,7 +86,7 @@ void Runtime::clearSessionEntry(SessionEntry *session) {
   session->nextTransmitSequence = 0;
   session->receiveReplay.reset();
   session->lastActivityMs = 0;
-  memset(session->controlResults, 0, sizeof(session->controlResults));
+  memset(session->ackResults, 0, sizeof(session->ackResults));
 }
 
 void Runtime::clearPendingHandshake(PendingHandshake *pending) {
@@ -98,6 +103,12 @@ void Runtime::clearPendingHandshake(PendingHandshake *pending) {
   pending->lastTransmitMs = 0;
   pending->expiresAtMs = 0;
   pending->attempts = 0;
+}
+
+void Runtime::clearRetryEntry(RetryEntry *retry) {
+  if (retry != nullptr) {
+    memset(retry, 0, sizeof(*retry));
+  }
 }
 
 bool Runtime::sameNode(const NodeAddress &left,
@@ -181,7 +192,7 @@ int Runtime::allocateSession(uint8_t peerIndex) {
       for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
         if (retries_[r].used &&
             retries_[r].sessionId == sessions_[i].sessionId) {
-          retries_[r].used = false;
+          clearRetryEntry(&retries_[r]);
         }
       }
       break;
@@ -217,7 +228,7 @@ int Runtime::allocateSession(uint8_t peerIndex) {
     const uint64_t evictedSession = sessions_[selected].sessionId;
     for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
       if (retries_[r].used && retries_[r].sessionId == evictedSession) {
-        retries_[r].used = false;
+        clearRetryEntry(&retries_[r]);
       }
     }
   }
@@ -438,15 +449,10 @@ void Runtime::startLocate(uint8_t peerIndex) {
   if (peer == nullptr || !peers_->hasActiveGrants(peerIndex)) {
     return;
   }
-  PeerMaterial material = {};
-  if (!peers_->materialFor(crypto_, peerIndex, &material)) {
-    return;
-  }
   if (peer->endpointState != kPeerEndpointNone) {
     startHandshake(peerIndex);
     return;
   }
-  const uint32_t now = datagrams_->nowMs();
   for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
     if (locates_[i].used && locates_[i].peerIndex == peerIndex) {
       return;
@@ -463,6 +469,11 @@ void Runtime::startLocate(uint8_t peerIndex) {
     ++diagnostics_.poolReject;
     return;
   }
+  PeerMaterial material = {};
+  if (!peers_->materialFor(crypto_, peerIndex, &material)) {
+    return;
+  }
+  const uint32_t now = datagrams_->nowMs();
   uint8_t nonce[kNonceSize];
   uint8_t mac[kPeerLocatorSize];
   uint8_t frame[50];
@@ -496,10 +507,6 @@ void Runtime::startHandshake(uint8_t peerIndex) {
       datagrams_ == nullptr || random_ == nullptr || crypto_ == nullptr) {
     return;
   }
-  PeerMaterial material = {};
-  if (!peers_->materialFor(crypto_, peerIndex, &material)) {
-    return;
-  }
   for (uint8_t i = 0; i < SUPLAN_MAX_ACTIVE_SESSIONS; ++i) {
     if (sessions_[i].used && sessions_[i].peerIndex == peerIndex) {
       return;
@@ -510,6 +517,10 @@ void Runtime::startHandshake(uint8_t peerIndex) {
   }
   if (peer->endpointState == kPeerEndpointNone) {
     startLocate(peerIndex);
+    return;
+  }
+  PeerMaterial material = {};
+  if (!peers_->materialFor(crypto_, peerIndex, &material)) {
     return;
   }
   const Endpoint endpoint = peer->endpoint;
@@ -547,6 +558,69 @@ void Runtime::startHandshake(uint8_t peerIndex) {
   updatePoolHighWater();
 }
 
+void Runtime::recoverSession(uint8_t peerIndex, uint64_t sessionId) {
+  bool retryAfterHandshake = false;
+  for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
+    RetryEntry *retry = &retries_[i];
+    if (!retry->used || retry->peerIndex != peerIndex ||
+        retry->sessionId != sessionId) {
+      continue;
+    }
+    SessionEntry *session = nullptr;
+    for (uint8_t s = 0; s < SUPLAN_MAX_ACTIVE_SESSIONS; ++s) {
+      if (sessions_[s].used && sessions_[s].peerIndex == peerIndex &&
+          sessions_[s].sessionId == sessionId) {
+        session = &sessions_[s];
+        break;
+      }
+    }
+    if (retry->sessionRecoveryAttempts != 0 || session == nullptr ||
+        retry->frameLength > sizeof(retry->frame)) {
+      clearRetryEntry(retry);
+      continue;
+    }
+    ReplayWindow replay;
+    size_t applicationLength = 0;
+    uint64_t decodedSessionId = 0;
+    uint32_t decodedSequence = 0;
+    const ProtectedDataResult result = decodeProtectedData(
+        crypto_, &session->transmit, retry->frame, retry->frameLength,
+        &replay, applicationBuffer_, sizeof(applicationBuffer_),
+        &decodedSessionId, &decodedSequence, &applicationLength);
+    ApplicationDataView application = {};
+    if ((result != kProtectedDataOk && result != kProtectedDataDuplicate) ||
+        decodedSessionId != retry->sessionId ||
+        decodedSequence != retry->sequence ||
+        applicationLength > sizeof(retry->frame) ||
+        !decodeApplicationData(applicationBuffer_, applicationLength,
+                               &application) ||
+        application.flags != kAckRequired) {
+      clearRetryEntry(retry);
+      continue;
+    }
+    const uint16_t oldFrameLength = retry->frameLength;
+    memcpy(retry->frame, applicationBuffer_, applicationLength);
+    if (oldFrameLength > applicationLength) {
+      memset(retry->frame + applicationLength, 0,
+             oldFrameLength - applicationLength);
+    }
+    retry->frameLength = static_cast<uint16_t>(applicationLength);
+    retry->sessionRecoveryAttempts = 1;
+    retry->awaitingSession = true;
+    retryAfterHandshake = true;
+  }
+  for (uint8_t i = 0; i < SUPLAN_MAX_ACTIVE_SESSIONS; ++i) {
+    if (sessions_[i].used && sessions_[i].peerIndex == peerIndex &&
+        sessions_[i].sessionId == sessionId) {
+      clearSessionEntry(&sessions_[i]);
+    }
+  }
+  if (retryAfterHandshake) {
+    startHandshake(peerIndex);
+  }
+  updatePoolHighWater();
+}
+
 bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
   const PeerRecord *peer = peers_->get(peerIndex);
   const bool readAuthorized = peers_->authorize(peerIndex, resource,
@@ -560,7 +634,7 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
   size_t length = kApplicationHeaderSize + kResourceHeaderSize;
   applicationBuffer_[0] = kMessageClassNative;
   putUint32(applicationBuffer_ + 1, kNativeReadResource);
-  applicationBuffer_[5] = 0;
+  applicationBuffer_[5] = kAckRequired;
   if (!encodeResourceId(resource.type, resource.id,
                         applicationBuffer_ + kApplicationHeaderSize)) {
     return false;
@@ -673,7 +747,7 @@ bool Runtime::forgetSession(uint8_t peerIndex) {
       clearSessionEntry(&sessions_[i]);
       for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
         if (retries_[r].used && retries_[r].sessionId == sessionId) {
-          retries_[r].used = false;
+          clearRetryEntry(&retries_[r]);
         }
       }
       removed = true;
@@ -791,6 +865,59 @@ void Runtime::drainDeferred() {
   if (processing_) {
     return;
   }
+  for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
+    RetryEntry *retry = &retries_[i];
+    if (!retry->used || !retry->awaitingSession) {
+      continue;
+    }
+    int sessionIndex = -1;
+    for (uint8_t s = 0; s < SUPLAN_MAX_ACTIVE_SESSIONS; ++s) {
+      if (sessions_[s].used &&
+          sessions_[s].peerIndex == retry->peerIndex) {
+        sessionIndex = s;
+        break;
+      }
+    }
+    if (sessionIndex < 0) {
+      startHandshake(retry->peerIndex);
+      continue;
+    }
+    SessionEntry *session = &sessions_[sessionIndex];
+    const uint8_t peerIndex = retry->peerIndex;
+    const uint16_t applicationLength = retry->frameLength;
+    const uint8_t recoveryAttempts = retry->sessionRecoveryAttempts;
+    const uint8_t readFlags = retry->flags &
+        static_cast<uint8_t>(kRetryReadRequest | kRetryReadExpectsState);
+    const ResourceId resource = retry->resource;
+    const uint64_t sessionId = session->sessionId;
+    const uint32_t sequence = session->nextTransmitSequence;
+    if (applicationLength == 0 ||
+        applicationLength > sizeof(applicationBuffer_)) {
+      clearRetryEntry(retry);
+      continue;
+    }
+    memcpy(applicationBuffer_, retry->frame, applicationLength);
+    clearRetryEntry(retry);
+    if (!sendProtected(peerIndex, &session->transmit, sessionId,
+                       &session->nextTransmitSequence,
+                       &session->lastActivityMs, applicationBuffer_,
+                       applicationLength, true, resource)) {
+      retry->used = true;
+      retry->peerIndex = peerIndex;
+      retry->resource = resource;
+      retry->sessionRecoveryAttempts = recoveryAttempts;
+      retry->flags = readFlags;
+      retry->awaitingSession = true;
+      retry->frameLength = applicationLength;
+      memcpy(retry->frame, applicationBuffer_, applicationLength);
+      continue;
+    }
+    const int newRetryIndex = findRetry(peerIndex, sessionId, sequence);
+    if (newRetryIndex >= 0) {
+      retries_[newRetryIndex].sessionRecoveryAttempts = recoveryAttempts;
+      retries_[newRetryIndex].awaitingSession = false;
+    }
+  }
   for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
     DeferredApplication *queued = &deferred_[i];
     if (!queued->used) {
@@ -815,12 +942,20 @@ void Runtime::drainDeferred() {
     ResourceId resource = {};
     const bool parsed = decodeApplicationData(queued->data, queued->length,
                                               &app);
-    if (parsed && app.messageClass == kMessageClassSuplaCall) {
-      const uint8_t *payload = nullptr;
-      size_t payloadLength = 0;
-      if (resourceFromApplication(app, &resource, &payload, &payloadLength)) {
-        (void)payload;
-        (void)payloadLength;
+    if (parsed) {
+      if (app.messageClass == kMessageClassSuplaCall) {
+        const uint8_t *payload = nullptr;
+        size_t payloadLength = 0;
+        if (resourceFromApplication(app, &resource, &payload,
+                                   &payloadLength)) {
+          (void)payload;
+          (void)payloadLength;
+        }
+      } else if (app.messageClass == kMessageClassNative &&
+                 app.messageType == kNativeReadResource &&
+                 app.bodyLength == kResourceHeaderSize) {
+        resource.type = app.body[0];
+        resource.id = getUint32(app.body + 1);
       }
     }
     SessionEntry *session = &sessions_[sessionIndex];
@@ -886,6 +1021,15 @@ bool Runtime::sendProtectedToEndpoint(
     ++diagnostics_.poolReject;
     return false;
   }
+  uint8_t retryFlags = 0;
+  if (ackRequired && applicationLength >= kApplicationHeaderSize &&
+      applicationData[0] == kMessageClassNative &&
+      getUint32(applicationData + 1) == kNativeReadResource) {
+    retryFlags |= kRetryReadRequest;
+    if (peers_->authorize(peerIndex, resource, kPermissionRead)) {
+      retryFlags |= kRetryReadExpectsState;
+    }
+  }
   uint8_t frameKind = kTxKindData;
   if (applicationData[0] == kMessageClassNative &&
       getUint32(applicationData + 1) == 1) {
@@ -940,6 +1084,9 @@ bool Runtime::sendProtectedToEndpoint(
     retry->sequence = sequence;
     retry->lastTransmitMs = datagrams_->nowMs();
     retry->attempts = 1;
+    retry->sessionRecoveryAttempts = 0;
+    retry->flags = retryFlags;
+    retry->awaitingSession = false;
     retry->frameLength = static_cast<uint16_t>(frameLength);
     memcpy(retry->frame, transmitFrame_, frameLength);
     updatePoolHighWater();
@@ -1488,7 +1635,6 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
                            uint32_t sequence,
                            const ApplicationDataView &application,
                            bool duplicate) {
-  (void)sequence;
   if (application.messageType == 1) {
     if (duplicate || application.flags != 0 || application.bodyLength != 5) {
       ++diagnostics_.invalidDataDrop;
@@ -1499,14 +1645,26 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
     const int retryIndex = findRetry(peerIndex, session->sessionId,
                                      ackedSequence);
     if (retryIndex >= 0) {
-      const ResourceId resource = retries_[retryIndex].resource;
-      retries_[retryIndex].used = false;
-      ++diagnostics_.ackRx;
-      if (application_ != nullptr) {
-        application_->operationAcknowledged(peerIndex, resource,
-                                            ackedSequence, result);
+      RetryEntry *retry = &retries_[retryIndex];
+      if ((retry->flags & kRetryAwaitingReadState) == 0) {
+        const ResourceId resource = retry->resource;
+        const bool expectsState =
+            (retry->flags & kRetryReadExpectsState) != 0;
+        const bool stateReceived =
+            (retry->flags & kRetryReadStateReceived) != 0;
+        if (expectsState && result == kResultTrue && !stateReceived) {
+          retry->flags |= kRetryAwaitingReadState;
+          retry->lastTransmitMs = datagrams_->nowMs();
+        } else {
+          clearRetryEntry(retry);
+        }
+        ++diagnostics_.ackRx;
+        if (application_ != nullptr) {
+          application_->operationAcknowledged(peerIndex, resource,
+                                              ackedSequence, result);
+        }
+        updatePoolHighWater();
       }
-      updatePoolHighWater();
     }
     return;
   }
@@ -1520,8 +1678,9 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
     (void)forgetSession(peerIndex);
     return;
   }
-  if (application.messageType != kNativeReadResource || duplicate ||
-      application.flags != 0 || application.bodyLength != kResourceHeaderSize) {
+  if (application.messageType != kNativeReadResource ||
+      application.flags != kAckRequired ||
+      application.bodyLength != kResourceHeaderSize) {
     ++diagnostics_.invalidDataDrop;
     return;
   }
@@ -1533,6 +1692,15 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
                                                  kPermissionRead);
   const bool actionAuthorized = peers_->authorize(peerIndex, resource,
                                                    kPermissionAction);
+  if (duplicate) {
+    const uint8_t cacheIndex = static_cast<uint8_t>(sequence & 63U);
+    const uint8_t result = session->ackResults[cacheIndex];
+    if (result != 0 && isLocalSource(peer) &&
+        (readAuthorized || actionAuthorized)) {
+      sendAck(peerIndex, session, sequence, result);
+    }
+    return;
+  }
   if (!isLocalSource(peer) || (!readAuthorized && !actionAuthorized)) {
     ++diagnostics_.aclReject;
     return;
@@ -1550,6 +1718,9 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
       if (application_ != nullptr) {
         application_->readInterestRefreshed(peerIndex, resource, true);
       }
+      session->ackResults[static_cast<uint8_t>(sequence & 63U)] =
+          kResultTrue;
+      sendAck(peerIndex, session, sequence, kResultTrue);
     }
     return;
   }
@@ -1568,6 +1739,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
   if (application_ != nullptr) {
     application_->readInterestRefreshed(peerIndex, resource, false);
   }
+  session->ackResults[static_cast<uint8_t>(sequence & 63U)] = kResultTrue;
   size_t responseLength = 0;
   if (buildResourceApplication(kMessageClassSuplaCall,
                                kSuplaCallDeviceChannelValueChangedC, 0,
@@ -1576,6 +1748,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
     (void)enqueueApplication(peerIndex, applicationBuffer_, responseLength,
                              true);
   }
+  sendAck(peerIndex, session, sequence, kResultTrue);
 }
 
 void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
@@ -1603,7 +1776,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
       if (duplicate) {
         ++diagnostics_.controlDuplicateSuppressed;
         const uint8_t cacheIndex = static_cast<uint8_t>(sequence & 63U);
-        result = session->controlResults[cacheIndex];
+        result = session->ackResults[cacheIndex];
         sendAck(peerIndex, session, sequence, result);
         return;
       }
@@ -1616,13 +1789,13 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
       if (duplicate) {
         ++diagnostics_.controlDuplicateSuppressed;
         const uint8_t cacheIndex = static_cast<uint8_t>(sequence & 63U);
-        result = session->controlResults[cacheIndex];
+        result = session->ackResults[cacheIndex];
         sendAck(peerIndex, session, sequence, result);
         return;
       }
     }
     const uint8_t cacheIndex = static_cast<uint8_t>(sequence & 63U);
-    session->controlResults[cacheIndex] = result;
+    session->ackResults[cacheIndex] = result;
     sendAck(peerIndex, session, sequence, result);
     return;
   }
@@ -1634,6 +1807,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
       ++diagnostics_.invalidDataDrop;
       return;
     }
+    noteReadState(peerIndex, resource);
     if (application_ != nullptr) {
       application_->receiveState(peerIndex, resource, application.messageType,
                                  payload, payloadLength);
@@ -1651,6 +1825,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
       ++diagnostics_.invalidDataDrop;
       return;
     }
+    noteReadState(peerIndex, resource);
     if (application_ != nullptr) {
       application_->receiveState(peerIndex, resource, application.messageType,
                                  payload, payloadLength);
@@ -1691,6 +1866,23 @@ void Runtime::sendAck(uint8_t peerIndex, SessionEntry *session,
                     &session->lastActivityMs, applicationBuffer_, 11, false,
                     ResourceId())) {
     ++diagnostics_.ackTx;
+  }
+}
+
+void Runtime::noteReadState(uint8_t peerIndex, const ResourceId &resource) {
+  for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
+    RetryEntry *retry = &retries_[i];
+    if (!retry->used || retry->peerIndex != peerIndex ||
+        (retry->flags & (kRetryReadRequest | kRetryReadExpectsState)) !=
+            (kRetryReadRequest | kRetryReadExpectsState) ||
+        retry->resource.type != resource.type ||
+        retry->resource.id != resource.id) {
+      continue;
+    }
+    retry->flags |= kRetryReadStateReceived;
+    if ((retry->flags & kRetryAwaitingReadState) != 0) {
+      clearRetryEntry(retry);
+    }
   }
 }
 
@@ -1776,7 +1968,26 @@ void Runtime::iterate() {
       attempt->lastTransmitMs = now;
     }
     if (static_cast<int32_t>(now - attempt->expiresAtMs) >= 0) {
+      const bool initiator = attempt->initiator;
+      const uint8_t peerIndex = attempt->peerIndex;
       clearPendingHandshake(attempt);
+      bool recoveryWaiting = false;
+      if (initiator) {
+        for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
+          if (retries_[r].used && retries_[r].peerIndex == peerIndex &&
+              retries_[r].awaitingSession) {
+            recoveryWaiting = true;
+            break;
+          }
+        }
+      }
+      if (recoveryWaiting) {
+        PeerRecord *peer = peers_->get(peerIndex);
+        if (peer != nullptr) {
+          peer->endpointState = kPeerEndpointNone;
+          startLocate(peerIndex);
+        }
+      }
     }
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
@@ -1788,13 +1999,39 @@ void Runtime::iterate() {
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
+    if (retry->used &&
+        (retry->flags & kRetryAwaitingReadState) != 0) {
+      if (static_cast<uint32_t>(now - retry->lastTransmitMs) >=
+          kReadStateResponseTimeoutMs) {
+        const uint8_t peerIndex = retry->peerIndex;
+        const ResourceId resource = retry->resource;
+        clearRetryEntry(retry);
+        (void)requestRead(peerIndex, resource);
+      }
+      continue;
+    }
+    if (retry->used && retry->awaitingSession) {
+      bool sessionActive = false;
+      for (uint8_t s = 0; s < SUPLAN_MAX_ACTIVE_SESSIONS; ++s) {
+        if (sessions_[s].used &&
+            sessions_[s].peerIndex == retry->peerIndex) {
+          sessionActive = true;
+          break;
+        }
+      }
+      if (!sessionActive) {
+        startHandshake(retry->peerIndex);
+      }
+      continue;
+    }
     if (!retry->used || static_cast<uint32_t>(now - retry->lastTransmitMs) <
             kAckRetryMs) {
       continue;
     }
     if (retry->attempts >= kAckMaxAttempts) {
       const uint8_t peerIndex = retry->peerIndex;
-      (void)forgetSession(peerIndex);
+      const uint64_t sessionId = retry->sessionId;
+      recoverSession(peerIndex, sessionId);
       continue;
     }
     PeerRecord *peer = peers_->get(retry->peerIndex);

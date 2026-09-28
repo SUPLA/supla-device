@@ -11,6 +11,8 @@ namespace SupLan {
 
 class EspIdfUdpPort : public DatagramPort {
  public:
+  static const size_t kMaxMulticastInterfaces = 4;
+
   EspIdfUdpPort();
   ~EspIdfUdpPort() override;
 
@@ -24,10 +26,19 @@ class EspIdfUdpPort : public DatagramPort {
                   Endpoint *endpoint) override;
   size_t maxDatagramPayload() const override;
   uint32_t nowMs() const override;
+  size_t multicastInterfaceCount() const;
+  size_t joinedMulticastInterfaceCount() const;
 
  private:
+  bool refreshMulticastInterfaces();
+
   int socket_;
   size_t maxDatagramPayload_;
+  uint32_t interfaceAddresses_[kMaxMulticastInterfaces];
+  size_t interfaceCount_;
+  uint32_t joinedAddresses_[kMaxMulticastInterfaces];
+  size_t joinedCount_;
+  uint32_t lastInterfaceRefreshMs_;
 };
 
 }  // namespace SupLan

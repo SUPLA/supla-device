@@ -133,6 +133,9 @@ std::string interfaceNameForAddress(const std::string &address) {
   if (inet_pton(AF_INET, address.c_str(), &target) != 1) {
     return "unknown";
   }
+  if (target.s_addr == htonl(INADDR_ANY)) {
+    return "all active IPv4 multicast interfaces";
+  }
   ifaddrs *interfaces = nullptr;
   if (getifaddrs(&interfaces) != 0) {
     return "unknown";
@@ -182,8 +185,14 @@ void printMulticastSelfTestResult(
   std::cout << "UDP bind                 " << stageStatus(open.udpBind) << '\n'
             << "Multicast group join     "
             << stageStatus(open.multicastGroupJoin) << '\n'
+            << "Multicast interfaces    "
+            << datagrams.multicastInterfaceCount() << " available, "
+            << datagrams.joinedMulticastInterfaceCount() << " joined\n"
             << "Multicast transmit       "
             << (test.transmitSucceeded ? "PASS" : "FAIL") << '\n'
+            << "Multicast interface sends "
+            << datagrams.lastMulticastSendCount() << "/"
+            << datagrams.lastMulticastSendAttemptCount() << '\n'
             << "Local multicast receive  "
             << (receiveSucceeded ? "PASS" : "FAIL") << '\n'
             << "SupLAN peer discovered   "
@@ -612,9 +621,11 @@ bool parseArgs(int argc, char **argv, std::string *role,
   for (int i = 1; i < argc; ++i) {
     const std::string arg(argv[i]);
     if (arg == "--help") {
-      std::cout << "Usage: suplan-poc1-linux --role A|B --bind IPv4 "
+      std::cout << "Usage: suplan-poc1-linux --role A|B [--bind IPv4] "
                    "[--config file.yaml] [--suplan-port 2016] "
-                   "[--max-datagram 250]\n";
+                   "[--max-datagram 250]\n"
+                   "--bind defaults to 0.0.0.0 (all active multicast "
+                   "interfaces).\n";
       printHelp();
       return false;
     }
@@ -647,7 +658,7 @@ bool parseArgs(int argc, char **argv, std::string *role,
 
 int main(int argc, char **argv) {
   std::string role;
-  std::string bindAddress;
+  std::string bindAddress = "0.0.0.0";
   std::string configPath;
   uint16_t cliPort = 0;
   bool hasCliPort = false;
@@ -656,7 +667,8 @@ int main(int argc, char **argv) {
   if (!parseArgs(argc, argv, &role, &bindAddress, &configPath, &cliPort,
                  &hasCliPort, &maxDatagram)) {
     if (argc == 1) {
-      std::cerr << "--role and --bind are required; use --help" << std::endl;
+      std::cerr << "--role is required; --bind is optional; use --help"
+                << std::endl;
     }
     return argc == 2 && std::string(argv[1]) == "--help" ? 0 : 2;
   }
@@ -684,7 +696,8 @@ int main(int argc, char **argv) {
   Supla::SupLan::LinuxUdpPort datagrams;
   if (!datagrams.open(bindAddress.c_str(), port, maxDatagram)) {
     std::cerr << "failed to open IPv4 UDP " << bindAddress << ':' << port
-              << "; bind to an interface address with multicast support"
+              << "; check active IPv4 multicast interfaces or the --bind"
+                 " override"
               << std::endl;
     const Supla::SupLan::LinuxUdpOpenDiagnostics &open =
         datagrams.openDiagnostics();
@@ -727,6 +740,9 @@ int main(int argc, char **argv) {
   }
 
   std::cout << "READY role=" << role << " bind=" << bindAddress << ':' << port
+            << " interfaces=" << (bindAddress == "0.0.0.0" ? "auto" : "one")
+            << " multicast_ifaces=" << datagrams.multicastInterfaceCount()
+            << " joined=" << datagrams.joinedMulticastInterfaceCount()
             << " discovery=239.255.201.6:2016 peers=2 fixture=static"
             << std::endl;
   printHelp();

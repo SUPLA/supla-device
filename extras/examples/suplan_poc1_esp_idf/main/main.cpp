@@ -433,13 +433,17 @@ static void poc1Task(void *) {
   }
   int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
   if (flags >= 0) (void)fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
-  printf("READY role=%s port=2016 multicast=239.255.201.6:2016"
-         " peers=2 fixture=static\n", kRole);
+  printf("READY role=%s port=2016 multicast_ifaces=%u joined=%u"
+         " multicast=239.255.201.6:2016 peers=2 fixture=static\n", kRole,
+         static_cast<unsigned>(datagrams.multicastInterfaceCount()),
+         static_cast<unsigned>(datagrams.joinedMulticastInterfaceCount()));
   printf("Type help for PoC1 commands.\n");
 
   char line[192] = {};
   size_t lineLength = 0;
   bool running = true;
+  const TickType_t loopDelay = pdMS_TO_TICKS(5);
+  const TickType_t effectiveLoopDelay = loopDelay > 0 ? loopDelay : 1;
   uint32_t lastControlDispatch = 0;
   while (running) {
     runtime->iterate();
@@ -468,7 +472,7 @@ static void poc1Task(void *) {
                errno != EINTR) {
       printf("ERROR console read failed errno=%d\n", errno);
     }
-    vTaskDelay(pdMS_TO_TICKS(5));
+    vTaskDelay(effectiveLoopDelay);
   }
   datagrams.close();
   vTaskDelete(nullptr);

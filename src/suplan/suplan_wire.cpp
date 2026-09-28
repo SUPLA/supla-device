@@ -51,30 +51,25 @@ uint64_t getUint64(const uint8_t *input) {
   return value;
 }
 
-static bool validAddress(const NodeAddress &address) {
-  if (address.nameSpace < kNodeIdDevice ||
-      address.nameSpace > kNodeIdLocal) {
-    return false;
-  }
-  if (address.nameSpace == kNodeIdLocal && address.nodeId > 0xFFFFU) {
-    return false;
-  }
-  return true;
-}
-
 bool validPeerContext(const PeerContext *context) {
-  if (context == nullptr ||
-      (context->authorityType != kAuthorityServer &&
-       context->authorityType != kAuthorityLocal) ||
-      !validAddress(context->source) ||
-      !validAddress(context->destination)) {
+  if (context == nullptr) {
     return false;
   }
-  if (context->authorityType == kAuthorityServer &&
-      context->authorityId != 0) {
-    return false;
+
+  switch (context->authorityType) {
+    case kAuthorityServer:
+      return context->authorityId == 0 &&
+          context->source.nameSpace == kNodeIdDevice &&
+          (context->destination.nameSpace == kNodeIdDevice ||
+           context->destination.nameSpace == kNodeIdClient);
+    case kAuthorityLocal:
+      return context->source.nameSpace == kNodeIdLocal &&
+          context->destination.nameSpace == kNodeIdLocal &&
+          context->source.nodeId <= 0xFFFFU &&
+          context->destination.nodeId <= 0xFFFFU;
+    default:
+      return false;
   }
-  return true;
 }
 
 bool encodePeerContext(const PeerContext *context,

@@ -156,6 +156,137 @@ TEST(SupLanWire, ServerClientAndLocalContextsMatchFixedVectors) {
             fromHex("5cd6c3c7836977f658834cb35bfcb9f5"));
 }
 
+TEST(SupLanWire, PeerContextEnforcesV1AuthorityAddressRoleMatrix) {
+  PeerContext server = serverPeer();
+  PeerContext local = {};
+  local.authorityType = Supla::SupLan::kAuthorityLocal;
+  local.authorityId = UINT64_C(0x0102030405060708);
+  local.source.nameSpace = Supla::SupLan::kNodeIdLocal;
+  local.source.nodeId = 1001;
+  local.destination.nameSpace = Supla::SupLan::kNodeIdLocal;
+  local.destination.nodeId = 1002;
+  local.rootEpoch = 1;
+  local.peerGeneration = 1;
+
+  OpenSslCryptoPort crypto;
+  std::array<uint8_t, 32> rootKey = {};
+  std::array<uint8_t, 32> peerKey = {};
+  for (uint8_t i = 0; i < rootKey.size(); ++i) {
+    rootKey[i] = i;
+    peerKey[i] = static_cast<uint8_t>(0x80 + i);
+  }
+  Supla::SupLan::AclEntry acl = {};
+  acl.resource.type = Supla::SupLan::kResourceTypeChannel;
+  acl.resource.id = 50001;
+  acl.permissions = Supla::SupLan::kPermissionRead;
+
+  for (uint8_t authority = 0; authority <= 3; ++authority) {
+    for (uint8_t sourceNamespace = 0; sourceNamespace <= 4;
+         ++sourceNamespace) {
+      for (uint8_t destinationNamespace = 0; destinationNamespace <= 4;
+           ++destinationNamespace) {
+        PeerContext context = authority == Supla::SupLan::kAuthorityLocal
+            ? local : server;
+        context.authorityType = authority;
+        context.authorityId = authority == Supla::SupLan::kAuthorityLocal
+            ? local.authorityId : 0;
+        context.source.nameSpace = sourceNamespace;
+        context.destination.nameSpace = destinationNamespace;
+        const bool expected =
+            (authority == Supla::SupLan::kAuthorityServer &&
+             sourceNamespace == Supla::SupLan::kNodeIdDevice &&
+             (destinationNamespace == Supla::SupLan::kNodeIdDevice ||
+              destinationNamespace == Supla::SupLan::kNodeIdClient)) ||
+            (authority == Supla::SupLan::kAuthorityLocal &&
+             sourceNamespace == Supla::SupLan::kNodeIdLocal &&
+             destinationNamespace == Supla::SupLan::kNodeIdLocal);
+        SCOPED_TRACE(::testing::Message()
+                     << "authority=" << static_cast<int>(authority)
+                     << " source=" << static_cast<int>(sourceNamespace)
+                     << " destination="
+                     << static_cast<int>(destinationNamespace));
+        EXPECT_EQ(Supla::SupLan::validPeerContext(&context), expected);
+
+        std::array<uint8_t, Supla::SupLan::kPeerContextSize> encoded = {};
+        EXPECT_EQ(Supla::SupLan::encodePeerContext(&context,
+                                                    encoded.data()),
+                  expected);
+
+        std::array<uint8_t, Supla::SupLan::kPeerContextSize> received = {};
+        ASSERT_TRUE(Supla::SupLan::encodePeerContext(
+            authority == Supla::SupLan::kAuthorityLocal ? &local : &server,
+            received.data()));
+        received[0] = authority;
+        received[9] = sourceNamespace;
+        received[14] = destinationNamespace;
+        PeerContext decoded = {};
+        EXPECT_EQ(Supla::SupLan::decodePeerContext(received.data(), &decoded),
+                  expected);
+
+        uint8_t index = 0xFF;
+        Supla::SupLan::PeerTable fromPeerKey;
+        Supla::SupLan::PeerTable fromRootKey;
+        if (expected) {
+          EXPECT_TRUE(fromPeerKey.addPeer(
+              &crypto, &context, peerKey.data(), 1, &acl, 1, &index));
+          EXPECT_EQ(fromPeerKey.size(), 1);
+          index = 0xFF;
+          EXPECT_TRUE(fromRootKey.addPeerFromRoot(
+              &crypto, &context, rootKey.data(), 1, &acl, 1, &index));
+          EXPECT_EQ(fromRootKey.size(), 1);
+        } else {
+          EXPECT_FALSE(fromPeerKey.addPeer(
+              &crypto, &context, peerKey.data(), 1, &acl, 1, &index));
+          EXPECT_EQ(fromPeerKey.size(), 0);
+          EXPECT_FALSE(fromRootKey.addPeerFromRoot(
+              &crypto, &context, rootKey.data(), 1, &acl, 1, &index));
+          EXPECT_EQ(fromRootKey.size(), 0);
+        }
+      }
+    }
+  }
+
+  PeerContext invalid = server;
+  invalid.authorityType = 0xFF;
+  EXPECT_FALSE(Supla::SupLan::validPeerContext(&invalid));
+  invalid = server;
+  invalid.authorityId = 1;
+  EXPECT_FALSE(Supla::SupLan::validPeerContext(&invalid));
+  invalid = server;
+  invalid.source.nameSpace = 0xFF;
+  EXPECT_FALSE(Supla::SupLan::validPeerContext(&invalid));
+  invalid = local;
+  invalid.destination.nodeId = 0x10000U;
+  EXPECT_FALSE(Supla::SupLan::validPeerContext(&invalid));
+}
+
+TEST(SupLanWire, InvalidStoredPeerContextCannotBeFoundByLocator) {
+  OpenSslCryptoPort crypto;
+  const PeerContext context = serverPeer();
+  std::array<uint8_t, 32> rootKey = {};
+  for (uint8_t i = 0; i < rootKey.size(); ++i) {
+    rootKey[i] = i;
+  }
+  Supla::SupLan::AclEntry acl = {};
+  acl.resource.type = Supla::SupLan::kResourceTypeChannel;
+  acl.resource.id = 50001;
+  acl.permissions = Supla::SupLan::kPermissionRead;
+
+  Supla::SupLan::PeerTable peers;
+  uint8_t peerIndex = 0;
+  ASSERT_TRUE(peers.addPeerFromRoot(&crypto, &context, rootKey.data(), 1,
+                                    &acl, 1, &peerIndex));
+  Supla::SupLan::PeerMaterial material = {};
+  ASSERT_TRUE(peers.materialFor(&crypto, peerIndex, &material));
+  ASSERT_EQ(peers.findByLocator(material.peerLocator), peerIndex);
+
+  Supla::SupLan::PeerRecord *peer = peers.get(peerIndex);
+  ASSERT_NE(peer, nullptr);
+  peer->contextBytes[9] = Supla::SupLan::kNodeIdClient;
+  EXPECT_EQ(peers.findByLocator(material.peerLocator), -1);
+  EXPECT_FALSE(peers.materialFor(&crypto, peerIndex, &material));
+}
+
 TEST(SupLanCrypto, ServerDevicePeerDerivationMatchesFixedVector) {
   OpenSslCryptoPort crypto;
   const PeerContext context = serverPeer();
@@ -442,11 +573,12 @@ TEST(SupLanData, ProtectedReadMatchesByteExactVectorAndReplayRules) {
   size_t applicationLength = 0;
   ASSERT_TRUE(Supla::SupLan::encodeApplicationData(
       Supla::SupLan::kMessageClassNative,
-      Supla::SupLan::kNativeReadResource, 0, resource.data(), resource.size(),
+      Supla::SupLan::kNativeReadResource, Supla::SupLan::kAckRequired,
+      resource.data(), resource.size(),
       application, sizeof(application), &applicationLength));
   EXPECT_EQ(std::vector<uint8_t>(application,
                                  application + applicationLength),
-            fromHex("020000000300010000c351"));
+            fromHex("020000000301010000c351"));
 
   uint8_t frame[128];
   size_t frameLength = 0;
@@ -456,8 +588,8 @@ TEST(SupLanData, ProtectedReadMatchesByteExactVectorAndReplayRules) {
       sizeof(frame), &frameLength));
   EXPECT_EQ(std::vector<uint8_t>(frame, frame + frameLength),
             fromHex("0105010203040506070800000000000b70c4e890"
-                "5f267bee703c2e52c30a1928572f2691efcc5d91"
-                "4674fc"));
+                "5f277bee703c2e6c7c6d4affa2a64940b79a7e57"
+                "79774f"));
 
   Supla::SupLan::ReplayWindow replay;
   uint8_t plaintext[128];

@@ -107,7 +107,7 @@ class Runtime {
     // ReplayWindow accepts duplicates only inside its 64-packet window. The
     // sequence modulo 64 therefore uniquely selects the cached result while
     // the duplicate remains admissible.
-    uint8_t controlResults[64];
+    uint8_t ackResults[64];
   };
 
   struct PendingHandshake {
@@ -147,6 +147,9 @@ class Runtime {
     uint32_t sequence;
     uint32_t lastTransmitMs;
     uint8_t attempts;
+    uint8_t sessionRecoveryAttempts;
+    uint8_t flags;
+    bool awaitingSession;
     uint16_t frameLength;
     uint8_t frame[SUPLAN_MAX_RETRY_FRAME_BYTES];
   };
@@ -169,6 +172,7 @@ class Runtime {
 
   static void clearSessionEntry(SessionEntry *session);
   static void clearPendingHandshake(PendingHandshake *pending);
+  static void clearRetryEntry(RetryEntry *retry);
 
   static bool fragmentDatagram(void *context, const uint8_t *data,
                                size_t length);
@@ -188,6 +192,7 @@ class Runtime {
   void updatePoolHighWater();
   void startLocate(uint8_t peerIndex);
   void startHandshake(uint8_t peerIndex);
+  void recoverSession(uint8_t peerIndex, uint64_t sessionId);
   bool sendRaw(const Endpoint &endpoint, const uint8_t *data, size_t length,
                uint8_t frameKind);
   bool sendProtected(uint8_t peerIndex, const DirectionalKeys *transmitKeys,
@@ -222,6 +227,7 @@ class Runtime {
                           bool duplicate);
   void sendAck(uint8_t peerIndex, SessionEntry *session, uint32_t sequence,
                uint8_t result);
+  void noteReadState(uint8_t peerIndex, const ResourceId &resource);
   bool addInterest(uint8_t peerIndex, const ResourceId &resource);
   bool interested(uint8_t peerIndex, const ResourceId &resource) const;
   bool resourceFromApplication(const ApplicationDataView &application,

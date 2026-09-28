@@ -89,6 +89,7 @@ static const uint32_t kSessionInitRetryMs = 250;
 static const uint8_t kSessionInitMaxAttempts = 3;
 static const uint32_t kAckRetryMs = 150;
 static const uint8_t kAckMaxAttempts = 3;
+static const uint32_t kReadStateResponseTimeoutMs = 500;
 static const uint32_t kReassemblyTimeoutMs = 1000;
 static const uint8_t kMaxDatagramsPerIterate = 4;
 static const uint32_t kPendingHandshakeTimeoutMs = 3000;

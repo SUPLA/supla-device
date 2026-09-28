@@ -24,6 +24,7 @@ struct LinuxUdpOpenDiagnostics {
 class LinuxUdpPort : public DatagramPort {
  public:
   static const size_t kSelfTestIdentifierBytes = 12;
+  static const size_t kMaxMulticastInterfaces = 16;
 
   LinuxUdpPort();
   ~LinuxUdpPort() override;
@@ -40,6 +41,10 @@ class LinuxUdpPort : public DatagramPort {
   size_t maxDatagramPayload() const override;
   uint32_t nowMs() const override;
   const LinuxUdpOpenDiagnostics &openDiagnostics() const;
+  size_t multicastInterfaceCount() const;
+  size_t joinedMulticastInterfaceCount() const;
+  size_t lastMulticastSendCount() const;
+  size_t lastMulticastSendAttemptCount() const;
   bool beginMulticastSelfTest(
       const uint8_t identifier[kSelfTestIdentifierBytes]);
   bool multicastSelfTestReceived() const;
@@ -52,11 +57,26 @@ class LinuxUdpPort : public DatagramPort {
   bool dataComparisonMatched() const;
 
  private:
+  bool refreshMulticastInterfaces();
+  bool enumerateMulticastInterfaces(uint32_t *addresses,
+                                    uint32_t *indexes, size_t capacity,
+                                    size_t *count) const;
+  bool isLocalAddress(uint32_t address) const;
+
   int socket_;
   int multicastSocket_;
   size_t maxDatagramPayload_;
   Endpoint localEndpoint_;
   LinuxUdpOpenDiagnostics openDiagnostics_;
+  uint32_t selectedAddress_;
+  bool automaticInterfaceSelection_;
+  uint32_t interfaceAddresses_[kMaxMulticastInterfaces];
+  size_t interfaceCount_;
+  uint32_t joinedAddresses_[kMaxMulticastInterfaces];
+  size_t joinedCount_;
+  uint32_t lastInterfaceRefreshMs_;
+  size_t lastMulticastSendCount_;
+  size_t lastMulticastSendAttemptCount_;
   uint8_t selfTestDatagram_[16];
   bool selfTestActive_;
   bool selfTestReceived_;

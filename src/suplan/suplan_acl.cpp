@@ -213,6 +213,10 @@ int PeerTable::findByLocator(const uint8_t locator[16]) const {
   }
   int found = -1;
   for (uint8_t i = 0; i < peerCount_; ++i) {
+    PeerContext context = {};
+    if (!decodePeerContext(peers_[i].contextBytes, &context)) {
+      continue;
+    }
     if (memcmp(peers_[i].peerLocator, locator, kPeerLocatorSize) == 0) {
       if (found != -1) {
         return -2;

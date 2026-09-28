@@ -23,6 +23,33 @@ using Supla::SupLan::Endpoint;
 using Supla::SupLan::NodeAddress;
 using Supla::SupLan::ResourceId;
 
+class CountingCryptoPort : public Supla::SupLan::OpenSslCryptoPort {
+ public:
+  CountingCryptoPort() : sha256Calls(0), hmacSha256Calls(0) {}
+
+  bool sha256(const uint8_t *data, size_t length,
+              uint8_t output[32]) override {
+    ++sha256Calls;
+    return OpenSslCryptoPort::sha256(data, length, output);
+  }
+
+  bool hmacSha256(const uint8_t *key, size_t keyLength,
+                  const uint8_t *data, size_t length,
+                  uint8_t output[32]) override {
+    ++hmacSha256Calls;
+    return OpenSslCryptoPort::hmacSha256(key, keyLength, data, length,
+                                         output);
+  }
+
+  void resetCalls() {
+    sha256Calls = 0;
+    hmacSha256Calls = 0;
+  }
+
+  uint32_t sha256Calls;
+  uint32_t hmacSha256Calls;
+};
+
 struct Packet {
   Endpoint source;
   Endpoint destination;
@@ -34,6 +61,8 @@ struct FakeNetwork {
   std::vector<Packet> packets;
   std::vector<Packet> history;
   uint32_t now;
+  bool failMulticast = false;
+  uint32_t multicastAttempts = 0;
 
   FakeNetwork() : packets(), history(), now(0) {}
 
@@ -42,6 +71,10 @@ struct FakeNetwork {
     if (data == nullptr || length == 0 ||
         length > Supla::SupLan::kMaxDatagramPayload) {
       return false;
+    }
+    if (multicast) {
+      ++multicastAttempts;
+      if (failMulticast) return false;
     }
     Packet packet = {};
     packet.source = source;
@@ -76,7 +109,9 @@ class FakeDatagramPort : public Supla::SupLan::DatagramPort {
       const bool matches = packet.multicast ||
           (packet.destination.address == self_.address &&
            packet.destination.port == self_.port);
-      if (!matches || packet.source.address == self_.address ||
+      if (!matches ||
+          (packet.source.address == self_.address &&
+           packet.source.port == self_.port) ||
           packet.bytes.size() > capacity) {
         continue;
       }
@@ -202,7 +237,7 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
 };
 
 struct RuntimePair {
-  Supla::SupLan::OpenSslCryptoPort crypto;
+  CountingCryptoPort crypto;
   FakeRandomPort randomA;
   FakeRandomPort randomB;
   FakeNetwork network;
@@ -227,9 +262,11 @@ struct RuntimePair {
     return node;
   }
 
-  RuntimePair()
+  explicit RuntimePair(bool sameHost = false)
       : crypto(), randomA(5), randomB(173), network(),
-        endpointA({0x0100007F, 2016}), endpointB({0x0200007F, 2016}),
+        endpointA({0x0100007F, static_cast<uint16_t>(sameHost ? 32171 : 2016)}),
+        endpointB({sameHost ? 0x0100007FU : 0x0200007FU,
+                   static_cast<uint16_t>(sameHost ? 32172 : 2016)}),
         datagramsA(&network, endpointA), datagramsB(&network, endpointB),
         appA(), appB(), peersA(), peersB(),
         runtimeA(&crypto, &randomA, &datagramsA, &appA, &peersA,
@@ -278,6 +315,7 @@ struct RuntimePair {
                                &actionAcl, 1, &actionPeerA));
     EXPECT_TRUE(peersB.addPeerFromRoot(&crypto, &actionContext, rootKey, 1,
                                        &actionAcl, 1, &actionPeerB));
+    crypto.resetCalls();
     appA.runtime = &runtimeA;
   }
 
@@ -289,6 +327,26 @@ struct RuntimePair {
     }
   }
 };
+
+TEST(SupLanRuntime, LocateKdfRunsOnceAndNotAgainWhileLocateIsOutstanding) {
+  RuntimePair pair;
+
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 1U);
+  EXPECT_EQ(pair.crypto.sha256Calls, 1U);
+  EXPECT_EQ(pair.crypto.hmacSha256Calls, 6U);
+
+  pair.network.now += 5;
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 1U);
+  EXPECT_EQ(pair.crypto.sha256Calls, 1U);
+  EXPECT_EQ(pair.crypto.hmacSha256Calls, 6U);
+
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 1U);
+  EXPECT_EQ(pair.crypto.sha256Calls, 1U);
+  EXPECT_EQ(pair.crypto.hmacSha256Calls, 6U);
+}
 
 TEST(SupLanRuntime, LocateSessionReadControlRetryAndDuplicateSuppression) {
   RuntimePair pair;
@@ -319,9 +377,9 @@ TEST(SupLanRuntime, LocateSessionReadControlRetryAndDuplicateSuppression) {
   EXPECT_EQ(pair.appA.controlCalls, 1U);
   EXPECT_EQ(pair.runtimeA.diagnostics().controlDispatched, 1U);
   EXPECT_EQ(pair.runtimeA.diagnostics().controlDuplicateSuppressed, 1U);
-  EXPECT_EQ(pair.runtimeA.diagnostics().ackTx, 2U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().ackTx, 3U);
   EXPECT_EQ(pair.runtimeB.diagnostics().retryTx, 1U);
-  EXPECT_EQ(pair.appB.acknowledged, 1U);
+  EXPECT_EQ(pair.appB.acknowledged, 2U);
   EXPECT_EQ(pair.appB.lastAckResult, 3U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
   EXPECT_EQ(pair.appB.value, 1U);
@@ -377,6 +435,66 @@ TEST(SupLanRuntime, LocateSessionReadControlRetryAndDuplicateSuppression) {
   EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
 }
 
+TEST(SupLanRuntime,
+     LostReadAckRetriesIdenticalFrameAndSuppressesDuplicateRead) {
+  RuntimePair pair;
+  pair.runtimeA.testHooks()->dropNextAckTx = 1;
+  const size_t historyStart = pair.network.history.size();
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().dataDuplicate, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().ackTx, 2U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().ackRx, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().retryTx, 1U);
+  EXPECT_EQ(pair.appB.stateCalls, 1U);
+  EXPECT_EQ(pair.appB.acknowledged, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+
+  std::vector<std::vector<uint8_t> > readTransmissions;
+  for (size_t i = historyStart; i < pair.network.history.size(); ++i) {
+    const Packet &packet = pair.network.history[i];
+    if (!packet.multicast &&
+        packet.source.address == pair.endpointB.address &&
+        packet.destination.address == pair.endpointA.address &&
+        packet.source.port == pair.endpointB.port &&
+        packet.destination.port == pair.endpointA.port &&
+        packet.bytes.size() > 2 &&
+        packet.bytes[0] == Supla::SupLan::kAdaptationFull &&
+        packet.bytes[1] == Supla::SupLan::kVersion &&
+        packet.bytes[2] == Supla::SupLan::kFrameData) {
+      readTransmissions.push_back(packet.bytes);
+    }
+  }
+  ASSERT_EQ(readTransmissions.size(), 2U);
+  EXPECT_EQ(readTransmissions[0], readTransmissions[1]);
+}
+
+TEST(SupLanRuntime, StatefulReadWithoutStateResponseIssuesNewRead) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  const uint32_t readsBefore = pair.runtimeA.diagnostics().readDispatched;
+  const uint32_t statesBefore = pair.appB.stateCalls;
+  const uint32_t acksBefore = pair.runtimeB.diagnostics().ackRx;
+
+  pair.runtimeA.testHooks()->dropNextDataTx = 1;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(8);
+  EXPECT_EQ(pair.runtimeB.diagnostics().ackRx, acksBefore + 1);
+  EXPECT_EQ(pair.appB.stateCalls, statesBefore);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 1U);
+
+  pair.network.now += Supla::SupLan::kReadStateResponseTimeoutMs + 1;
+  pair.runtimeB.iterate();
+  pair.pump(12);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, readsBefore + 2);
+  EXPECT_EQ(pair.appB.stateCalls, statesBefore + 1);
+  EXPECT_EQ(pair.runtimeB.diagnostics().ackRx, acksBefore + 2);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+}
+
 TEST(SupLanRuntime, InvalidProtectedDataNeverReachesApplication) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
@@ -413,7 +531,7 @@ TEST(SupLanRuntime,
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
   pair.pump(20);
 
-  EXPECT_EQ(pair.runtimeA.diagnostics().dataAuthFail, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().dataAuthFail, 2U);
   EXPECT_EQ(pair.runtimeA.diagnostics().sessionRejectTx, 0U);
   EXPECT_EQ(pair.runtimeB.diagnostics().sessionRejectRx, 0U);
   EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 0U);
@@ -486,6 +604,8 @@ TEST(SupLanRuntime, ActionOnlyReadRefreshesInterestAndEventsAreBestEffort) {
   EXPECT_EQ(pair.appA.lastActionId, 0x1234U);
   EXPECT_EQ(pair.runtimeB.diagnostics().actionTx, 1U);
   EXPECT_EQ(pair.runtimeA.diagnostics().actionRx, 1U);
+  EXPECT_EQ(pair.appA.acknowledged, 1U);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().retries.used, 0U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
 
   pair.runtimeA.testHooks()->dropNextDataRx = 1;
@@ -539,7 +659,7 @@ TEST(SupLanRuntime, ReplayedSessionInitDoesNotMoveActiveEndpoint) {
   EXPECT_EQ(pair.appA.controlCalls, 1U);
 }
 
-TEST(SupLanRuntime, LostRemoteSessionIsRecoveredAfterRetryExhaustion) {
+TEST(SupLanRuntime, LostRemoteSessionRetriesControlAfterNewHandshake) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
   pair.pump(20);
@@ -551,14 +671,15 @@ TEST(SupLanRuntime, LostRemoteSessionIsRecoveredAfterRetryExhaustion) {
   ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
                                         sizeof(control)));
   pair.pump(60);
-  EXPECT_EQ(pair.runtimeB.poolDiagnostics().sessions.used, 0U);
-
-  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
-  pair.pump(30);
-  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 2U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 2U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionEstablished, 2U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionEstablished, 2U);
+  EXPECT_EQ(pair.appA.controlCalls, 1U);
+  EXPECT_EQ(pair.appB.acknowledged, 2U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
   EXPECT_EQ(pair.runtimeA.poolDiagnostics().sessions.used, 1U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().sessions.used, 1U);
-  EXPECT_EQ(pair.appB.stateCalls, 2U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
 }
 
 TEST(SupLanRuntime, DeferredControlWaitsForRetrySlot) {
@@ -585,7 +706,7 @@ TEST(SupLanRuntime, DeferredControlWaitsForRetrySlot) {
 
   EXPECT_EQ(pair.appA.controlCalls, 3U);
   EXPECT_EQ(pair.runtimeA.diagnostics().controlDuplicateSuppressed, 2U);
-  EXPECT_EQ(pair.appB.acknowledged, 3U);
+  EXPECT_EQ(pair.appB.acknowledged, 4U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
 }
@@ -625,6 +746,298 @@ TEST(SupLanRuntime, TamperedSessionAcceptIsRejectedThenRetryRecovers) {
             establishedBefore + 1);
   EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, readsBefore + 1);
   EXPECT_EQ(pair.appB.stateCalls, statesBefore + 1);
+}
+
+
+// Discovery audit characterization tests: these expose current limitations.
+// Passing these tests does not mean that unlimited retries are desirable.
+TEST(SupLanDiscoveryAudit,
+     MissingPeerRestartsLocateEveryWindowWithoutDeadline) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  for (uint32_t attempt = 1; attempt <= 240; ++attempt) {
+    pair.network.packets.clear();  // Drop every multicast datagram.
+    pair.network.now = attempt * Supla::SupLan::kLocateReplyWindowMs - 1;
+    pair.runtimeB.iterate();
+    EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, attempt);
+    ++pair.network.now;
+    pair.runtimeB.iterate();
+    EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, attempt + 1);
+    EXPECT_EQ(pair.runtimeB.poolDiagnostics().locates.used, 1U);
+    EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
+  }
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 0U);
+}
+
+TEST(SupLanDiscoveryAudit, LostQueryAndLateJoiningPeerRecoverOnNextAttempt) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  for (int i = 0; i < 3; ++i) {
+    pair.network.packets.clear();
+    pair.network.now += Supla::SupLan::kLocateReplyWindowMs;
+    pair.runtimeB.iterate();
+  }
+  pair.pump(10);
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 4U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+}
+
+TEST(SupLanDiscoveryAudit, LostReplyRecoversWithFreshQuery) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeA.iterate();
+  ASSERT_EQ(pair.network.packets.size(), 1U);
+  ASSERT_EQ(pair.network.packets[0].bytes.size(), 34U);
+  pair.network.packets.clear();
+  pair.network.now = Supla::SupLan::kLocateReplyWindowMs;
+  pair.runtimeB.iterate();
+  pair.pump(10);
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 2U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+}
+
+TEST(SupLanDiscoveryAudit, ReplyJustBeforeDeadlineIsAccepted) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeA.iterate();
+  pair.network.now = Supla::SupLan::kLocateReplyWindowMs - 1;
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateReplyRx, 1U);
+  pair.pump(10);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+}
+
+TEST(SupLanDiscoveryAudit, ReplyAtDeadlineIsRejectedEvenIfAlreadyQueued) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeA.iterate();
+  pair.network.now = Supla::SupLan::kLocateReplyWindowMs;
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateReplyRx, 0U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().invalidLocateDrop, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 2U);
+}
+
+TEST(SupLanDiscoveryAudit, DuplicateQueryIsRateLimitedAndReplyConsumedOnce) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.network.packets.push_back(pair.network.packets.front());
+  pair.runtimeA.iterate();
+  EXPECT_EQ(pair.runtimeA.diagnostics().locateRx, 2U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().locateReplyTx, 1U);
+  ASSERT_EQ(pair.network.packets.size(), 1U);
+  pair.network.packets.push_back(pair.network.packets.front());
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateReplyRx, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().invalidLocateDrop, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+  pair.pump(10);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+}
+
+TEST(SupLanDiscoveryAudit, ReorderedOldReplyCannotReplaceNewCandidate) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeA.iterate();
+  ASSERT_EQ(pair.network.packets.size(), 1U);
+  const Packet oldReply = pair.network.packets.front();
+  pair.network.packets.clear();
+  pair.network.now = Supla::SupLan::kLocateReplyWindowMs;
+  pair.runtimeB.iterate();
+  pair.runtimeA.iterate();
+  pair.network.packets.push_back(oldReply);
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateReplyRx, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().invalidLocateDrop, 1U);
+  pair.pump(10);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+}
+
+TEST(SupLanDiscoveryAudit, ConcurrentReadControlShareLocateButFillGlobalQueue) {
+  RuntimePair pair;
+  uint8_t control[17] = {};
+  control[4] = 0xFF;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource,
+                                        control, sizeof(control)));
+  for (unsigned i = 2; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  }
+  EXPECT_FALSE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().locates.used, 1U);
+  pair.pump(20);
+  EXPECT_EQ(pair.appA.controlCalls, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched,
+            SUPLAN_MAX_DEFERRED_APP_EVENTS - 1U);
+}
+
+TEST(SupLanDiscoveryAudit, UnresponsiveCandidateNeverFallsBackToLocate) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeA.iterate();
+  pair.runtimeB.iterate();  // Candidate accepted; INIT is now dropped.
+  for (unsigned i = 0; i < 100; ++i) {
+    pair.network.packets.clear();
+    pair.network.now += 250;
+    pair.runtimeB.iterate();
+  }
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 1U);
+  EXPECT_GT(pair.runtimeB.diagnostics().sessionInitTx, 3U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
+  EXPECT_EQ(pair.peersB.get(pair.peerB)->endpointState,
+            Supla::SupLan::kPeerEndpointLocateCandidate);
+}
+
+TEST(SupLanDiscoveryAudit,
+     ReadRetriesStaleSessionAndRecoversAtRetainedEndpoint) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  ASSERT_TRUE(pair.runtimeA.forgetSession(pair.peerA));
+  const uint32_t readsBefore = pair.runtimeA.diagnostics().readDispatched;
+  const uint32_t statesBefore = pair.appB.stateCalls;
+  const uint32_t locateTxBefore = pair.runtimeB.diagnostics().locateTx;
+  const size_t historyStart = pair.network.history.size();
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(2);
+  for (uint8_t i = 0; i < Supla::SupLan::kAckMaxAttempts; ++i) {
+    pair.network.now += Supla::SupLan::kAckRetryMs + 1;
+    pair.runtimeB.iterate();
+    pair.runtimeA.iterate();
+  }
+
+  std::vector<std::vector<uint8_t> > staleReadTransmissions;
+  for (size_t i = historyStart; i < pair.network.history.size(); ++i) {
+    const Packet &packet = pair.network.history[i];
+    if (!packet.multicast &&
+        packet.source.port == pair.endpointB.port &&
+        packet.destination.port == pair.endpointA.port &&
+        packet.bytes.size() > 2 &&
+        packet.bytes[0] == Supla::SupLan::kAdaptationFull &&
+        packet.bytes[1] == Supla::SupLan::kVersion &&
+        packet.bytes[2] == Supla::SupLan::kFrameData) {
+      staleReadTransmissions.push_back(packet.bytes);
+    }
+  }
+  ASSERT_EQ(staleReadTransmissions.size(), 3U);
+  EXPECT_EQ(staleReadTransmissions[0], staleReadTransmissions[1]);
+  EXPECT_EQ(staleReadTransmissions[1], staleReadTransmissions[2]);
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, locateTxBefore);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 2U);
+  const size_t historyAfterStaleRetries = pair.network.history.size();
+  pair.pump(20);
+
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, readsBefore + 1);
+  EXPECT_EQ(pair.appB.stateCalls, statesBefore + 1);
+  EXPECT_EQ(pair.appB.acknowledged, 2U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionEstablished, 2U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionEstablished, 2U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().sessions.used, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+  bool foundNewRead = false;
+  for (size_t i = historyAfterStaleRetries; i < pair.network.history.size();
+       ++i) {
+    const Packet &packet = pair.network.history[i];
+    if (!packet.multicast &&
+        packet.source.port == pair.endpointB.port &&
+        packet.destination.port == pair.endpointA.port &&
+        packet.bytes.size() > 2 &&
+        packet.bytes[0] == Supla::SupLan::kAdaptationFull &&
+        packet.bytes[1] == Supla::SupLan::kVersion &&
+        packet.bytes[2] == Supla::SupLan::kFrameData) {
+      foundNewRead = true;
+      EXPECT_NE(packet.bytes, staleReadTransmissions[0]);
+    }
+  }
+  EXPECT_TRUE(foundNewRead);
+}
+
+TEST(SupLanDiscoveryAudit,
+     ReadRecoveryFallsBackToAuthenticatedLocateWhenDirectSessionFails) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  ASSERT_TRUE(pair.runtimeA.forgetSession(pair.peerA));
+  pair.runtimeA.testHooks()->dropNextSessionAcceptTx = 0xFF;
+  const uint32_t locateTxBefore = pair.runtimeB.diagnostics().locateTx;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+
+  for (uint8_t i = 0; i < 32 &&
+       pair.runtimeB.diagnostics().locateTx == locateTxBefore; ++i) {
+    pair.network.now += Supla::SupLan::kSessionInitRetryMs;
+    pair.runtimeB.iterate();
+    pair.runtimeA.iterate();
+  }
+  ASSERT_GT(pair.runtimeB.diagnostics().locateTx, locateTxBefore);
+  pair.runtimeA.testHooks()->dropNextSessionAcceptTx = 0;
+  pair.pump(20);
+
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionEstablished, 2U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 2U);
+  EXPECT_EQ(pair.appB.stateCalls, 2U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateReplyRx, 2U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+}
+
+
+TEST(SupLanDiscoveryAudit, SameIpDistinctPortsPreservedAcrossEntireExchange) {
+  RuntimePair pair(true);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  ASSERT_EQ(pair.network.packets.size(), 1U);
+  const Packet query = pair.network.packets.front();
+  EXPECT_EQ(query.destination.port, 2016U);
+  EXPECT_EQ(query.source.port, pair.endpointB.port);
+  pair.runtimeA.iterate();
+  ASSERT_EQ(pair.network.packets.size(), 1U);
+  const Packet reply = pair.network.packets.front();
+  EXPECT_EQ(reply.source.port, pair.endpointA.port);
+  EXPECT_EQ(reply.destination.port, pair.endpointB.port);
+  pair.pump(10);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+  EXPECT_EQ(pair.appB.stateCalls, 1U);
+  for (const Packet &packet : pair.network.history) {
+    if (packet.multicast) continue;
+    EXPECT_EQ(packet.destination.address, pair.endpointA.address);
+    EXPECT_EQ(packet.destination.port,
+              packet.source.port == pair.endpointA.port
+                  ? pair.endpointB.port : pair.endpointA.port);
+  }
+}
+
+TEST(SupLanDiscoveryAudit, FailedMulticastSendHasNoWindowOrBackoff) {
+  RuntimePair pair;
+  pair.network.failMulticast = true;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.network.now, 0U);
+  EXPECT_EQ(pair.network.multicastAttempts, 3U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().locates.used, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
+}
+
+
+TEST(SupLanDiscoveryAudit, SourceCannotLocateInterestedDestinationAfterIpLoss) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(10);
+  pair.runtimeA.clearEndpoint(pair.peerA);
+  ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
+  const uint32_t statesBefore = pair.appB.stateCalls;
+  uint8_t state[14] = {};
+  state[0] = 0xFF;
+  ASSERT_TRUE(pair.runtimeA.publishState(
+      pair.peerA, pair.resource,
+      Supla::SupLan::kSuplaCallDeviceChannelValueChangedC,
+      state, sizeof(state)));
+  pair.pump(60);
+  EXPECT_GE(pair.runtimeA.diagnostics().locateTx, 3U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateReplyTx, 0U);
+  EXPECT_EQ(pair.appB.stateCalls, statesBefore);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().deferredEvents.used, 1U);
 }
 
 }  // namespace

@@ -14,10 +14,12 @@ import time
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("binary")
-    parser.add_argument("--bind-a", default="127.0.0.1")
-    parser.add_argument("--bind-b", default="127.0.0.1")
+    parser.add_argument("--bind-a", default="0.0.0.0")
+    parser.add_argument("--bind-b", default="0.0.0.0")
     parser.add_argument("--port-a", default="2017")
     parser.add_argument("--port-b", default="2018")
+    parser.add_argument("--discovery-audit", action="store_true",
+                        help="also characterize absent/late peer and self-test")
     args = parser.parse_args()
 
     if args.bind_a == args.bind_b and args.port_a == args.port_b:
@@ -48,6 +50,23 @@ def main():
             stderr=subprocess.STDOUT, bufsize=0)
         processes[role] = process
         selector.register(process.stdout, selectors.EVENT_READ, role)
+
+    def stop(role):
+        process = processes.pop(role)
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=2)
+        try:
+            selector.unregister(process.stdout)
+        except KeyError:
+            pass
+        process.stdin.close()
+        process.stdout.close()
+        partial[role] = b""
 
     def drain(timeout, predicate=None):
         deadline = time.monotonic() + timeout
@@ -104,6 +123,26 @@ def main():
     def event_count(role, marker):
         return sum(marker in line for line in logs[role])
 
+    def multicast_interface_counts(role):
+        rows = [line for line in logs[role]
+                if line.startswith("Multicast interfaces ")]
+        if not rows:
+            raise RuntimeError(f"FAIL: {role} multicast interface status missing")
+        match = re.search(r"(\d+) available, (\d+) joined", rows[-1])
+        if match is None:
+            raise RuntimeError(f"FAIL: {role} multicast interface status invalid")
+        return int(match.group(1)), int(match.group(2))
+
+    def multicast_send_counts(role):
+        rows = [line for line in logs[role]
+                if line.startswith("Multicast interface sends ")]
+        if not rows:
+            raise RuntimeError(f"FAIL: {role} multicast send status missing")
+        match = re.search(r"(\d+)/(\d+)$", rows[-1])
+        if match is None:
+            raise RuntimeError(f"FAIL: {role} multicast send status invalid")
+        return int(match.group(1)), int(match.group(2))
+
     def control_and_ack(value, timeout=3):
         drain(0.03)
         controls_before = event_count("A", "CONTROL resource=50001")
@@ -120,8 +159,28 @@ def main():
         print("PASS: " + description, flush=True)
 
     try:
-        start("A", args.bind_a, config_a, args.port_a)
         start("B", args.bind_b, config_b)
+        if args.discovery_audit:
+            require(drain(3, lambda: seen("B", "READY role=B")),
+                    "requester starts without responder process")
+            send("B", "multicast-self-test")
+            require(drain(4, lambda: seen(
+                "B", "Local multicast receive  PASS") and seen(
+                "B", "Unicast communication    NOT OBSERVED")),
+                "self-test passes without any responding SupLAN peer")
+            before = counters("B")
+            send("B", "read 50001")
+            drain(1.1)
+            absent = counters("B")
+            require(absent["locate_tx"] >= before["locate_tx"] + 3 and
+                    absent["locate_reply_rx"] == before["locate_reply_rx"],
+                    "absent peer produces repeated LOCATE attempts")
+            require(pools("B")["deferredEvents"][0] == 1,
+                    "READ remains queued while peer is absent")
+        start("A", args.bind_a, config_a, args.port_a)
+        if args.discovery_audit:
+            require(drain(5, lambda: seen("B", "STATE resource=50001")),
+                    "late responder services the previously queued READ")
         require(drain(3, lambda: seen("A", "READY role=A") and
                       seen("B", "READY role=B") and
                       seen("A", f"bind={args.bind_a}:{args.port_a}") and
@@ -133,11 +192,18 @@ def main():
         require(drain(4, lambda: seen("A", "Local multicast receive  PASS") and
                       seen("B", "Local multicast receive  PASS")),
                 "local multicast self-test passes on both Linux instances")
+        for role in ("A", "B"):
+            available, joined = multicast_interface_counts(role)
+            sent, attempted = multicast_send_counts(role)
+            require(available > 0 and joined == available and
+                    attempted == available and sent == attempted,
+                    f"{role} sends and joins multicast on every active interface")
 
         b0 = len(logs["B"])
         send("B", "read 50001")
-        require(drain(5, lambda: seen("B", "STATE resource=50001", b0)),
-                "authenticated LOCATE, SESSION and current-state READ")
+        require(drain(5, lambda: seen("B", "STATE resource=50001", b0) and
+                      seen("B", "ACK resource=50001", b0)),
+                "authenticated LOCATE, SESSION and acknowledged current-state READ")
 
         send("B", "control 50001 1")
         require(drain(4, lambda: seen("A", "CONTROL resource=50001 value=1") and
@@ -184,14 +250,41 @@ def main():
         require(drain(5, lambda: seen("B", "STATE resource=50001", b0)),
                 "session loss recovers without deleting authorization or interest")
 
+        sessions_before_reboot = counters("B")["session_established"]
+        retries_before_reboot = counters("B")["retry_tx"]
+        locates_before_reboot = counters("B")["locate_tx"]
+        states_before_reboot = event_count("B", "STATE resource=50001")
+        acks_before_reboot = event_count("B", "ACK resource=50001")
+        a0 = len(logs["A"])
+        stop("A")
+        start("A", args.bind_a, config_a, args.port_a)
+        require(drain(3, lambda: seen("A", "READY role=A", a0)),
+                "responder process restarts with its provisioned peer")
+        b0 = len(logs["B"])
+        send("B", "read 50001")
+        require(drain(6, lambda: seen("B", "STATE resource=50001", b0) and
+                      seen("B", "ACK resource=50001", b0) and
+                      event_count("B", "STATE resource=50001") >
+                      states_before_reboot and
+                      event_count("B", "ACK resource=50001") >
+                      acks_before_reboot),
+                "READ recovers automatically after peer reboot")
+        after_reboot = counters("B")
+        require(after_reboot["retry_tx"] > retries_before_reboot and
+                after_reboot["session_established"] > sessions_before_reboot and
+                after_reboot["locate_tx"] == locates_before_reboot,
+                "peer reboot recovery retries stale READ then handshakes at retained endpoint")
+
         bad_locate_before = counters("A")
         send("B", "clear-endpoint 0")
         send("B", "corrupt-next-tx-mac")
         send("B", "read 50001")
         drain(0.1)
         bad_locate_after = counters("A")
-        require(bad_locate_after["invalid_locate"] ==
-                bad_locate_before["invalid_locate"] + 1 and
+        # Auto interface selection sends one LOCATE on each eligible
+        # interface, so a local peer can observe multiple invalid copies.
+        require(bad_locate_after["invalid_locate"] >
+                bad_locate_before["invalid_locate"] and
                 bad_locate_after["locate_reply_tx"] ==
                 bad_locate_before["locate_reply_tx"] and
                 bad_locate_after["session_init_rx"] ==
@@ -274,8 +367,10 @@ def main():
                 "stale protected sequence outside the replay window is rejected")
 
         a0 = len(logs["A"])
+        b0 = len(logs["B"])
         send("A", "read 50002")
-        require(drain(5, lambda: seen("B", "READ resource=50002", b0)),
+        require(drain(5, lambda: seen("B", "READ resource=50002", b0) and
+                      seen("A", "ACK resource=50002", a0)),
                 "ACTION-only READ establishes future event interest")
         action_a_before = counters("A")
         action_b_before = counters("B")

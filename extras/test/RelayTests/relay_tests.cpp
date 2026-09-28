@@ -996,6 +996,69 @@ TEST_F(RelayFixture, weeklyScheduleConfigIsRejectedForUnsupportedFunction) {
             SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
 }
 
+TEST_F(RelayFixture, weeklyScheduleIsAppliedThroughWeeklyScheduleEntryPoint) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  ON_CALL(cfg, getBlobSize(_)).WillByDefault(Return(-1));
+
+  Supla::Control::Relay relay(1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.setWeeklyScheduleAvailable();
+  relay.onLoadConfig(nullptr);
+
+  auto config = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_FORCED_ON);
+  ASSERT_EQ(relay.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  TChannelConfig_WeeklySchedule applied = {};
+  int appliedSize = 0;
+  relay.fillChannelConfig(&applied, &appliedSize,
+                          SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  ASSERT_EQ(appliedSize, sizeof(applied));
+  EXPECT_EQ(memcmp(&applied, config.Config, sizeof(applied)), 0);
+}
+
+TEST_F(RelayFixture, weeklyScheduleRejectsMismatchedConfigType) {
+  Supla::Control::Relay relay(1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.setWeeklyScheduleAvailable();
+  relay.onLoadConfig(nullptr);
+
+  auto config = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_FORCED_ON);
+  EXPECT_EQ(relay.handleWeeklySchedule(&config, true, false),
+            SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
+}
+
+TEST_F(RelayFixture,
+       remoteWeeklyScheduleDoesNotReplacePendingLocalSchedule) {
+  ::testing::NiceMock<ConfigMock> cfg;
+  ON_CALL(cfg, getBlobSize(_)).WillByDefault(Return(-1));
+
+  Supla::Control::Relay relay(1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.setWeeklyScheduleAvailable();
+  relay.onLoadConfig(nullptr);
+
+  auto localConfig = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_FORCED_OFF);
+  ASSERT_EQ(relay.handleWeeklySchedule(&localConfig, false, true),
+            SUPLA_CONFIG_RESULT_TRUE);
+  relay.triggerSetChannelConfig(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE, true);
+
+  auto remoteConfig = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_LIGHTSWITCH, SUPLA_RELAY_MODE_FORCED_ON);
+  EXPECT_EQ(relay.handleWeeklySchedule(&remoteConfig, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  TChannelConfig_WeeklySchedule applied = {};
+  int appliedSize = 0;
+  relay.fillChannelConfig(&applied, &appliedSize,
+                          SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  ASSERT_EQ(appliedSize, sizeof(applied));
+  EXPECT_EQ(memcmp(&applied, localConfig.Config, sizeof(applied)), 0);
+}
+
 TEST_F(RelayFixture, weeklyNoOpCapabilityMatchesProgramValidation) {
   Supla::Control::Relay regular(1);
   regular.setWeeklyScheduleAvailable();

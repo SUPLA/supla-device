@@ -327,6 +327,16 @@ TEST(Sd4linuxYamlConfigTests,
             SUPLA_CHANNELFNC_LIGHTSWITCH);
   EXPECT_FALSE(relay->getChannel()->isWeeklyScheduleAvailable());
   deleteCreatedElement(previousElement);
+
+  previousElement = Supla::Element::last();
+  EXPECT_TRUE(config.addVirtualRelay(
+      YAML::Load("default_function: light_switch\nweekly_schedule: true"),
+      0));
+  relay = dynamic_cast<Supla::Control::VirtualRelay*>(Supla::Element::last());
+  ASSERT_NE(relay, nullptr);
+  EXPECT_TRUE(relay->isWeeklyScheduleAvailable());
+  EXPECT_TRUE(relay->getChannel()->isWeeklyScheduleAvailable());
+  deleteCreatedElement(previousElement);
 }
 
 TEST(Sd4linuxYamlConfigTests,
@@ -353,6 +363,41 @@ TEST(Sd4linuxYamlConfigTests,
       Supla::Element::last());
   ASSERT_NE(at, nullptr);
   EXPECT_EQ(at->getChannel()->getDefaultFunction(), 700);
+  EXPECT_FALSE(at->isWeeklyScheduleSupported());
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     ActionTriggerWeeklyScheduleCanBeEnabledFromYaml) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addActionTriggerParsed(
+      YAML::Load("name: at\nweekly_schedule: true"), 0));
+  auto at = dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+      Supla::Element::last());
+  ASSERT_NE(at, nullptr);
+  EXPECT_TRUE(at->isWeeklyScheduleSupported());
+  EXPECT_TRUE(at->getChannel()->isWeeklyScheduleAvailable());
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     ParsedRelayWeeklyScheduleCanBeEnabledFromYaml) {
+  TestLinuxYamlConfig config;
+  FakePayload payload(true);
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addCustomRelay(
+      YAML::Load("default_function: light_switch\nweekly_schedule: true"),
+      0,
+      nullptr,
+      &payload));
+  auto relay = dynamic_cast<Supla::Control::CustomRelay*>(
+      Supla::Element::last());
+  ASSERT_NE(relay, nullptr);
+  EXPECT_TRUE(relay->isWeeklyScheduleAvailable());
+  EXPECT_TRUE(relay->getChannel()->isWeeklyScheduleAvailable());
   deleteCreatedElement(previousElement);
 }
 

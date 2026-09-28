@@ -67,6 +67,7 @@ channels:
 namespace Supla {
 
 namespace Control {
+class ActionTrigger;
 class Relay;
 }
 
@@ -180,6 +181,8 @@ class LinuxYamlConfig : public KeyValue {
                      Payload::Payload* payload);
   bool addCommonParameters(const YAML::Node& ch,
                            Supla::Element* element);
+  bool addWeeklyScheduleParameter(const YAML::Node& ch,
+                                  Supla::Element* element);
   bool addDefaultFunctionNumber(const YAML::Node& ch,
                                 Supla::Element* element);
   bool addRelayDefaultFunction(const YAML::Node& ch,

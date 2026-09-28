@@ -48,11 +48,28 @@ void Relay::setRelayStorageSaveDelay(uint32_t delayMs) {
 
 void Relay::fillDefaultWeeklySchedule(
     TChannelConfig_WeeklySchedule *schedule) {
-  if (schedule == nullptr ||
-      isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_NOT_SET)) {
-    // The native Relay default is an all-week no-op schedule.
+  if (schedule == nullptr) {
     return;
   }
+
+  constexpr uint8_t defaultModes[] = {
+      SUPLA_RELAY_MODE_START_ON,
+      SUPLA_RELAY_MODE_START_OFF,
+      SUPLA_RELAY_MODE_FORCED_ON,
+      SUPLA_RELAY_MODE_FORCED_OFF,
+  };
+
+  if (isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_NOT_SET)) {
+    // Define the standard programs but leave every quarter unassigned, so
+    // the default schedule remains inactive until configured by the user.
+    for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE; i++) {
+      if (isWeeklyScheduleProgramModeApplicable(defaultModes[i])) {
+        schedule->Program[i].Mode = defaultModes[i];
+      }
+    }
+    return;
+  }
+
   uint8_t defaultMode = SUPLA_RELAY_MODE_NOT_SET;
   if (isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_FORCED_OFF)) {
     defaultMode = SUPLA_RELAY_MODE_FORCED_OFF;
@@ -64,9 +81,20 @@ void Relay::fillDefaultWeeklySchedule(
     defaultMode = SUPLA_RELAY_MODE_AUTOMATIC;
   }
   if (defaultMode != SUPLA_RELAY_MODE_NOT_SET) {
-    // A Relay without no-op support needs a valid safe default. Program IDs
-    // are packed into nibbles, so 0x11 selects program 1 for both quarters.
+    // A Relay without no-op support needs a safe default in program 1. Add
+    // other modes supported by this Relay after it, without changing that
+    // default. Program IDs are packed into nibbles, so 0x11 selects program 1
+    // for every quarter.
     schedule->Program[0].Mode = defaultMode;
+    int nextProgram = 1;
+    for (const auto mode : defaultModes) {
+      if (mode == defaultMode ||
+          nextProgram >= SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE ||
+          !isWeeklyScheduleProgramModeApplicable(mode)) {
+        continue;
+      }
+      schedule->Program[nextProgram++].Mode = mode;
+    }
     memset(schedule->Quarters, 0x11, sizeof(schedule->Quarters));
   }
 }

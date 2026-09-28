@@ -382,6 +382,22 @@ It is ok to add channels later at the end of the list.
 Currently only limited number of channels are supported. Please let us know
 if you need something more.
 
+Relay channels and `ActionTriggerParsed` can opt in to the native weekly
+schedule with `weekly_schedule: true`. It defaults to `false`. For relays, use
+a function that supports schedules, such as `light_switch` or `power_switch`.
+After enabling it, the channel advertises weekly schedule support to Supla
+Cloud, where you can configure the schedule.
+The default ActionTrigger programs are unlocked and locked, with no time slots
+assigned.
+
+    - type: VirtualRelay
+      default_function: light_switch
+      weekly_schedule: true
+
+    - type: ActionTriggerParsed
+      name: scheduled_actions
+      weekly_schedule: true
+
 Supported channel types:
 * `VirtualRelay` - related class `Supla::Control::VirtualRelay`
 * `CmdRelay` - related class `Supla::Control::CmdRelay`

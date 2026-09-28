@@ -4,12 +4,14 @@
 #include "linux_yaml_config.h"
 
 #include <supla-common/proto.h>
+#include <supla/control/action_trigger.h>
 #include <supla/control/action_trigger_parsed.h>
 #include <supla/control/cmd_relay.h>
 #include <supla/control/cmd_roller_shutter.h>
 #include <supla/control/cmd_valve.h>
 #include <supla/control/control_payload.h>
 #include <supla/control/custom_relay.h>
+#include <supla/control/relay.h>
 #include <supla/control/rgbcct_parsed.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/custom_channel.h>
@@ -3065,12 +3067,18 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
   if (batteryAdded) {
     sensor->updateBatteryInfoFlags();
   }
+  if (!addWeeklyScheduleParameter(ch, dynamic_cast<Supla::Element*>(sensor))) {
+    return false;
+  }
   return addDefaultFunctionNumber(
       ch, dynamic_cast<Supla::Element*>(sensor));
 }
 
 bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
                                                  Supla::Element* element) {
+  if (!addWeeklyScheduleParameter(ch, element)) {
+    return false;
+  }
   if (auto initialCaptionParameter =
           getAndMarkChannelParameter(ch, Supla::InitialCaption)) {
     element->setInitialCaption(
@@ -3113,6 +3121,30 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
     }
   }
   return addDefaultFunctionNumber(ch, element);
+}
+
+bool Supla::LinuxYamlConfig::addWeeklyScheduleParameter(
+    const YAML::Node& ch, Supla::Element* element) {
+  auto parameter = getAndMarkChannelParameter(ch, "weekly_schedule");
+  if (!parameter) {
+    return true;
+  }
+
+  const bool available = parameter.as<bool>();
+  if (auto relay = dynamic_cast<Supla::Control::Relay*>(element)) {
+    relay->setWeeklyScheduleAvailable(available);
+    return true;
+  }
+  if (auto actionTrigger =
+          dynamic_cast<Supla::Control::ActionTrigger*>(element)) {
+    actionTrigger->setWeeklyScheduleAvailable(available);
+    return true;
+  }
+
+  SUPLA_LOG_ERROR(
+      "Channel config: weekly_schedule is supported only for Relay and "
+      "ActionTrigger channels");
+  return false;
 }
 
 bool Supla::LinuxYamlConfig::addDefaultFunctionNumber(

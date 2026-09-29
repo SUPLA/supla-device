@@ -551,7 +551,7 @@ TEST_F(RollerShutterFixture,
 }
 
 TEST_F(RollerShutterFixture,
-       unknownStandardStateRequestsCalibrationAndAbsoluteOpenStartsOpening) {
+       unknownStandardStateRestoresWithoutCalibrationRequestAndOpenCloseWork) {
   StorageMock storage;
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);
 
@@ -577,7 +577,16 @@ TEST_F(RollerShutterFixture,
 
   EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);
   EXPECT_FALSE(rs.isCalibrated());
-  EXPECT_TRUE(rs.isCalibrationRequested());
+  EXPECT_FALSE(rs.isCalibrationRequested());
+  EXPECT_FALSE(rs.isCalibrationInProgress());
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
+
+  rs.onTimer();
+  EXPECT_FALSE(rs.isCalibrationRequested());
+  EXPECT_FALSE(rs.isCalibrationInProgress());
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::STOP_DIR));
 
   TSD_SuplaChannelNewValue newValue = {};
   newValue.DurationMS = (100 << 16) | 100;
@@ -591,6 +600,26 @@ TEST_F(RollerShutterFixture,
 
   EXPECT_EQ(rs.getCurrentDirection(),
             static_cast<int>(Supla::Control::Directions::UP_DIR));
+  EXPECT_FALSE(rs.isCalibrationRequested());
+  EXPECT_FALSE(rs.isCalibrationInProgress());
+
+  EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
+  EXPECT_CALL(storage, scheduleSave(5000, 1000));
+  rs.stop();
+  rs.onTimer();
+  time.advance(501);
+
+  newValue.value[0] = 110;  // absolute CLOSE target
+  EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 1));
+  rs.handleNewValueFromServer(&newValue);
+  rs.onTimer();
+
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::DOWN_DIR));
+  EXPECT_FALSE(rs.isCalibrationRequested());
+  EXPECT_FALSE(rs.isCalibrationInProgress());
 }
 
 TEST_F(RollerShutterFixture,
@@ -631,8 +660,42 @@ TEST_F(RollerShutterFixture,
             static_cast<int>(Supla::Control::Directions::UP_DIR));
 }
 
+TEST_F(RollerShutterFixture, triggerCalibrationSetsCalibrationRequest) {
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown);
+
+  rs.setOpenCloseTime(10000, 10000);
+  rs.setCalibrationFinished();
+  ASSERT_FALSE(rs.isCalibrationRequested());
+
+  rs.triggerCalibration();
+
+  EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);
+  EXPECT_FALSE(rs.isCalibrated());
+  EXPECT_TRUE(rs.isCalibrationRequested());
+}
+
 TEST_F(RollerShutterFixture,
-       unknownTiltStateRequestsCalibrationAndClearsRestoredTilt) {
+       calcfgRecalibrateRequiresAuthorizationAndRequestsCalibration) {
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown);
+  TSD_DeviceCalCfgRequest request = {};
+  request.Command = SUPLA_CALCFG_CMD_RECALIBRATE;
+
+  rs.setOpenCloseTime(10000, 10000);
+  rs.setCalibrationFinished();
+  ASSERT_FALSE(rs.isCalibrationRequested());
+
+  request.SuperUserAuthorized = false;
+  EXPECT_EQ(rs.handleCalcfgFromServer(&request),
+            SUPLA_CALCFG_RESULT_UNAUTHORIZED);
+  EXPECT_FALSE(rs.isCalibrationRequested());
+
+  request.SuperUserAuthorized = true;
+  EXPECT_EQ(rs.handleCalcfgFromServer(&request), SUPLA_CALCFG_RESULT_DONE);
+  EXPECT_TRUE(rs.isCalibrationRequested());
+}
+
+TEST_F(RollerShutterFixture,
+       unknownTiltStateRestoresWithoutRequestAndClearsRestoredTilt) {
   StorageMock storage;
   Supla::Control::RollerShutter rs(gpioUp, gpioDown, true, true);
   rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
@@ -665,7 +728,7 @@ TEST_F(RollerShutterFixture,
   EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);
   EXPECT_EQ(rs.getCurrentTilt(), UNKNOWN_POSITION);
   EXPECT_FALSE(rs.isCalibrated());
-  EXPECT_TRUE(rs.isCalibrationRequested());
+  EXPECT_FALSE(rs.isCalibrationRequested());
 }
 
 TEST_F(RollerShutterFixture, notCalibratedStartup) {

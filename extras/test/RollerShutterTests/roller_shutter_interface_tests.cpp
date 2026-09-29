@@ -133,6 +133,12 @@ struct StoredRollerShutterState {
   int8_t currentPosition;
   int8_t tiltPosition;
 };
+
+struct StoredRollerShutterStateWithoutTilt {
+  uint32_t closingTimeMs;
+  uint32_t openingTimeMs;
+  int8_t currentPosition;
+};
 #pragma pack(pop)
 
 void loadInvalidStoredTiltConfig(Supla::Control::RollerShutterInterface *rs,
@@ -245,6 +251,30 @@ TEST_F(RollerShutterInterfaceFixture, basicTests) {
   EXPECT_FALSE(rs.isFunctionSupported(0));
 
   EXPECT_FALSE(rs.isAutoCalibrationSupported());
+}
+
+TEST_F(RollerShutterInterfaceFixture,
+       unknownStoredPositionWithoutTimeSettingsDoesNotRequestCalibration) {
+  StorageMock storage;
+  Supla::Control::RollerShutterInterface rs;
+  rs.getChannel()->setFlag(SUPLA_CHANNEL_FLAG_TIME_SETTING_NOT_AVAILABLE);
+
+  StoredRollerShutterStateWithoutTilt state = {10000, 10000,
+                                               UNKNOWN_POSITION};
+  storage.defaultInitialization(sizeof(state));
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(state), _))
+      .WillOnce([&state](uint32_t, unsigned char *data, int, bool) {
+        memcpy(data, &state, sizeof(state));
+        return sizeof(state);
+      });
+
+  Supla::Storage::LoadStateStorage();
+  rs.onInit();
+
+  EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);
+  EXPECT_FALSE(rs.isCalibrated());
+  EXPECT_FALSE(rs.isCalibrationRequested());
+  EXPECT_FALSE(rs.isCalibrationInProgress());
 }
 
 TEST_F(RollerShutterInterfaceFixture, rsLocalMovement) {

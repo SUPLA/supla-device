@@ -806,7 +806,7 @@ void RollerShutterInterface::onLoadState() {
       currentPosition = data.currentPosition * 100;
       currentTilt = data.tiltPosition * 100;
       if (getCurrentPosition() == UNKNOWN_POSITION) {
-        setCalibrationNeeded();
+        setNotCalibrated();
       } else {
         setCalibrate(false);
       }
@@ -830,7 +830,7 @@ void RollerShutterInterface::onLoadState() {
           data.openingTimeMs, "opening time", channel.getChannelNumber());
       currentPosition = data.currentPosition * 100;
       if (getCurrentPosition() == UNKNOWN_POSITION) {
-        setCalibrationNeeded();
+        setNotCalibrated();
       } else {
         setCalibrate(false);
       }

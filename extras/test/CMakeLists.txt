@@ -213,6 +213,25 @@ add_executable(sd4linuxtests
   ${SD4LINUX_PORT_SRC}
   )
 
+add_executable(arduinoesp8266_tls_lifetime_tests
+  ArduinoEspPlatformTests/arduino_esp_tls_lifetime_tests.cpp
+  ../../src/supla/network/client.cpp
+  ../../src/supla/network/ip_address.cpp
+)
+target_include_directories(arduinoesp8266_tls_lifetime_tests BEFORE PRIVATE
+  ArduinoEspPlatformTests/fakes
+)
+target_include_directories(arduinoesp8266_tls_lifetime_tests PRIVATE
+  ../../src
+)
+target_compile_definitions(arduinoesp8266_tls_lifetime_tests PRIVATE
+  ARDUINO_ARCH_ESP8266
+)
+target_link_libraries(arduinoesp8266_tls_lifetime_tests PRIVATE
+  gtest
+  gtest_main
+)
+
 target_include_directories(supladevicetests BEFORE PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/MCP23008Tests
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf
@@ -260,10 +279,13 @@ endif()
 
 add_test(NAME supladevicetests COMMAND supladevicetests)
 add_test(NAME sd4linuxtests COMMAND sd4linuxtests)
+add_test(NAME arduinoesp8266_tls_lifetime_tests
+  COMMAND arduinoesp8266_tls_lifetime_tests)
 
 
 supla_apply_warnings(supladevicetests)
 supla_apply_warnings(sd4linuxtests)
+supla_apply_warnings(arduinoesp8266_tls_lifetime_tests)
 supla_apply_warnings(supladevicelib)
 
 target_compile_definitions(supladevicetests PRIVATE

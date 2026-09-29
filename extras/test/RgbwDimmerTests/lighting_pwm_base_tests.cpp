@@ -4,14 +4,19 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <arduino_mock.h>
+#include <config_mock.h>
 #include <supla/control/lighting_pwm_base.h>
 #include <supla/actions.h>
+#include <supla/storage/config_tags.h>
 #include <storage_mock.h>
 #include <simple_time.h>
 
 using ::testing::Return;
 using ::testing::_;
 using ::testing::Le;
+using ::testing::InSequence;
+using ::testing::NiceMock;
+using ::testing::StrEq;
 
 class RgbCctBaseForTest : public Supla::Control::LightingPwmBase {
  public:
@@ -348,4 +353,95 @@ TEST(RgbCctTests, LegacyStorageMigrationIsOptIn) {
 
   rgb.setSkipLegacyMigration();
   EXPECT_FALSE(rgb.isStateStorageMigrationNeeded());
+}
+
+namespace {
+
+void expectLegacyMigrationMarkerPersisted(
+    Supla::Control::LightingPwmBase::LegacyChannelFunction legacyFunction) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  NiceMock<ConfigMock> config;
+  RgbCctBaseForTest rgb;
+  rgb.convertStorageFromLegacyChannel(legacyFunction);
+
+  time.advance(500);
+  rgb.onInit();
+
+  char migrationKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(migrationKey,
+                             rgb.getChannel()->getChannelNumber(),
+                             Supla::ConfigTag::LegacyMigrationTag);
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config, getUInt8(StrEq(migrationKey), _))
+        .WillOnce(Return(false));
+    EXPECT_CALL(config, setUInt8(StrEq(migrationKey), 1))
+        .WillOnce(Return(true));
+    EXPECT_CALL(config, saveWithDelay(1000));
+  }
+
+  rgb.onSaveState();
+
+  EXPECT_FALSE(rgb.isStateStorageMigrationNeeded());
+}
+
+}  // namespace
+
+TEST(RgbCctTests, LegacyRgbMigrationPersistsCompletionMarker) {
+  expectLegacyMigrationMarkerPersisted(
+      Supla::Control::LightingPwmBase::LegacyChannelFunction::RGB);
+}
+
+TEST(RgbCctTests, LegacyRgbwMigrationPersistsCompletionMarker) {
+  expectLegacyMigrationMarkerPersisted(
+      Supla::Control::LightingPwmBase::LegacyChannelFunction::RGBW);
+}
+
+TEST(RgbCctTests, LegacyDimmerMigrationPersistsCompletionMarker) {
+  expectLegacyMigrationMarkerPersisted(
+      Supla::Control::LightingPwmBase::LegacyChannelFunction::Dimmer);
+}
+
+TEST(RgbCctTests, ExistingMigrationMarkerDoesNotRequestConfigPersistence) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  NiceMock<ConfigMock> config;
+  RgbCctBaseForTest rgb;
+  rgb.convertStorageFromLegacyChannel(
+      Supla::Control::LightingPwmBase::LegacyChannelFunction::RGB);
+
+  time.advance(500);
+  rgb.onInit();
+
+  char migrationKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(migrationKey,
+                             rgb.getChannel()->getChannelNumber(),
+                             Supla::ConfigTag::LegacyMigrationTag);
+
+  EXPECT_CALL(config, getUInt8(StrEq(migrationKey), _))
+      .WillOnce([](const char *, uint8_t *value) {
+        *value = 1;
+        return true;
+      });
+  EXPECT_CALL(config, setUInt8(_, _)).Times(0);
+  EXPECT_CALL(config, saveWithDelay(_)).Times(0);
+
+  rgb.onSaveState();
+
+  EXPECT_FALSE(rgb.isStateStorageMigrationNeeded());
+}
+
+TEST(RgbCctTests, StateSaveWithoutMigrationDoesNotRequestConfigPersistence) {
+  Supla::Channel::resetToDefaults();
+  NiceMock<ConfigMock> config;
+  RgbCctBaseForTest rgb;
+
+  EXPECT_CALL(config, getUInt8(_, _)).Times(0);
+  EXPECT_CALL(config, setUInt8(_, _)).Times(0);
+  EXPECT_CALL(config, saveWithDelay(_)).Times(0);
+
+  rgb.onSaveState();
+  rgb.onSaveState();
 }

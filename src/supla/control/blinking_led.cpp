@@ -150,6 +150,12 @@ void BlinkingLed::setCustomSequence(uint32_t onDurationMs,
 }
 
 void BlinkingLed::setCopyStateTo(BlinkingLed *led) {
+  for (auto target = led; target != nullptr; target = target->copyStateTo) {
+    if (target == this) {
+      return;
+    }
+  }
+
   copyStateTo = led;
 
   if (copyStateTo != nullptr) {

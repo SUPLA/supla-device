@@ -36,6 +36,8 @@ using ::testing::StrEq;
 
 namespace {
 
+constexpr uint32_t kPostponedTimeMs = 500;
+
 class CountingActionHandler : public Supla::ActionHandler {
  public:
   void handleAction(int event, int action) override {
@@ -166,6 +168,7 @@ class RelayFixture : public testing::Test {
   StorageMock storage;
   SimpleTime time;
   ProtocolLayerMock protoMock;
+  int gpioValue = 0;
 
   RelayFixture() {
   }
@@ -195,6 +198,22 @@ class RelayFixture : public testing::Test {
       config->TimeMS = timeMs;
     }
     r->handleChannelConfig(&result, false);
+  }
+
+  void initializeRelayForCommunicationTest(Supla::Control::Relay *relay) {
+    ON_CALL(ioMock, digitalRead(0))
+        .WillByDefault(::testing::ReturnPointee(&gpioValue));
+    ON_CALL(ioMock, digitalWrite(0, _))
+        .WillByDefault(::testing::SaveArg<1>(&gpioValue));
+
+    relay->setDefaultStateOff();
+    relay->onLoadConfig(nullptr);
+    relay->onInit();
+    EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _))
+        .Times(::testing::AnyNumber());
+    EXPECT_CALL(protoMock, sendRemainingTimeValue(_, _, _, _))
+        .Times(::testing::AnyNumber());
+    relay->iterateConnected();
   }
 
   TSD_ChannelConfig makeSingleProgramWeeklySchedule(uint32_t func,
@@ -266,6 +285,192 @@ class RelayFixture : public testing::Test {
     return relay->handleNewValueFromServer(&newValue);
   }
 };
+
+TEST_F(RelayFixture, ToggleWithPostponedCommStillPostponesOrdinaryRelay) {
+  Supla::Control::Relay relay(0);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  initializeRelayForCommunicationTest(&relay);
+  time.advance(1);
+
+  int updateCount = 0;
+  int lastReportedState = -1;
+  EXPECT_CALL(protoMock, sendChannelValueChanged(0, _, _, _))
+      .WillRepeatedly([&](uint8_t, int8_t *value, unsigned char, uint32_t) {
+        updateCount++;
+        lastReportedState = value[0];
+      });
+
+  relay.handleAction(0, Supla::TOGGLE_WITH_POSTPONED_COMM);
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 0);
+
+  time.advance(kPostponedTimeMs - 1);
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 0);
+
+  time.advance(1);
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 1);
+  EXPECT_EQ(lastReportedState, 1);
+}
+
+TEST_F(RelayFixture,
+       ShortImpulseReportsOnImmediatelyAndKeepsPhysicalDuration) {
+  Supla::Control::Relay relay(0);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  relay.setStoredTurnOnDurationMs(kPostponedTimeMs);
+  initializeRelayForCommunicationTest(&relay);
+  time.advance(1);
+
+  int updateCount = 0;
+  int lastReportedState = -1;
+  EXPECT_CALL(protoMock, sendChannelValueChanged(0, _, _, _))
+      .WillRepeatedly([&](uint8_t, int8_t *value, unsigned char, uint32_t) {
+        updateCount++;
+        lastReportedState = value[0];
+      });
+
+  relay.handleAction(0, Supla::TOGGLE_WITH_POSTPONED_COMM);
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_TRUE(relay.isOn());
+  EXPECT_EQ(updateCount, 1);
+  EXPECT_EQ(lastReportedState, 1);
+  EXPECT_EQ(relay.getStoredTurnOnDurationMs(),
+            kPostponedTimeMs);
+
+  time.advance(kPostponedTimeMs);
+  relay.iterateAlways();
+  EXPECT_TRUE(relay.isOn());
+  time.advance(1);
+  relay.iterateAlways();
+  EXPECT_FALSE(relay.isOn());
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 2);
+  EXPECT_EQ(lastReportedState, 0);
+}
+
+TEST_F(RelayFixture,
+       ShortImpulseBelowTwicePostponedTimeReportsOnImmediately) {
+  Supla::Control::Relay relay(0);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  relay.setStoredTurnOnDurationMs(2 * kPostponedTimeMs - 100);
+  initializeRelayForCommunicationTest(&relay);
+  time.advance(1);
+
+  int updateCount = 0;
+  EXPECT_CALL(protoMock, sendChannelValueChanged(0, _, _, _))
+      .WillRepeatedly([&](uint8_t, int8_t *, unsigned char, uint32_t) {
+        updateCount++;
+      });
+
+  relay.handleAction(0, Supla::TOGGLE_WITH_POSTPONED_COMM);
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 1);
+}
+
+TEST_F(RelayFixture,
+       ImpulseAtTwicePostponedTimeKeepsPostponedCommunication) {
+  Supla::Control::Relay relay(0);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  relay.setStoredTurnOnDurationMs(2 * kPostponedTimeMs);
+  initializeRelayForCommunicationTest(&relay);
+  time.advance(1);
+
+  int updateCount = 0;
+  EXPECT_CALL(protoMock, sendChannelValueChanged(0, _, _, _))
+      .WillRepeatedly([&](uint8_t, int8_t *, unsigned char, uint32_t) {
+        updateCount++;
+      });
+
+  relay.handleAction(0, Supla::TOGGLE_WITH_POSTPONED_COMM);
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 0);
+  time.advance(kPostponedTimeMs);
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 1);
+}
+
+TEST_F(RelayFixture,
+       EffectiveLongImpulseDurationKeepsPostponedCommunication) {
+  Supla::Control::Relay relay(0);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  relay.setDefaultImpulseDurationMs(300);
+  relay.setStoredTurnOnDurationMs(3 * kPostponedTimeMs);
+  initializeRelayForCommunicationTest(&relay);
+  time.advance(1);
+
+  int updateCount = 0;
+  EXPECT_CALL(protoMock, sendChannelValueChanged(0, _, _, _))
+      .WillRepeatedly([&](uint8_t, int8_t *, unsigned char, uint32_t) {
+        updateCount++;
+      });
+
+  relay.handleAction(0, Supla::TOGGLE_WITH_POSTPONED_COMM);
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 0);
+  time.advance(kPostponedTimeMs);
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 1);
+}
+
+TEST_F(RelayFixture,
+       ShortConfiguredStaircaseStillUsesPostponedCommunication) {
+  Supla::Control::Relay relay(0);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
+  relay.setStoredTurnOnDurationMs(100);
+  initializeRelayForCommunicationTest(&relay);
+  time.advance(1);
+
+  int updateCount = 0;
+  EXPECT_CALL(protoMock, sendChannelValueChanged(0, _, _, _))
+      .WillRepeatedly([&](uint8_t, int8_t *, unsigned char, uint32_t) {
+        updateCount++;
+      });
+
+  relay.handleAction(0, Supla::TOGGLE_WITH_POSTPONED_COMM);
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 0);
+  time.advance(kPostponedTimeMs);
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 1);
+}
+
+TEST_F(RelayFixture,
+       TurningActiveShortImpulseOffStillUsesPostponedCommunication) {
+  Supla::Control::Relay relay(0);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  relay.setStoredTurnOnDurationMs(kPostponedTimeMs);
+  initializeRelayForCommunicationTest(&relay);
+  time.advance(1);
+  relay.turnOn();
+  relay.iterateConnected();
+  ASSERT_TRUE(relay.isOn());
+
+  int updateCount = 0;
+  EXPECT_CALL(protoMock, sendChannelValueChanged(0, _, _, _))
+      .WillRepeatedly([&](uint8_t, int8_t *, unsigned char, uint32_t) {
+        updateCount++;
+      });
+
+  relay.handleAction(0, Supla::TOGGLE_WITH_POSTPONED_COMM);
+  EXPECT_FALSE(relay.isOn());
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 0);
+  time.advance(kPostponedTimeMs);
+  relay.iterateConnected();
+  relay.iterateConnected();
+  EXPECT_EQ(updateCount, 1);
+}
 
 TEST_F(RelayFixture, LightRelayIoPinConstructorUsesConfiguredIoAndPolarity) {
   SuplaIoMock outputIo;

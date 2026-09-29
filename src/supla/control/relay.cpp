@@ -31,6 +31,8 @@ uint16_t Relay::relayStorageSaveDelay = 5000;
 
 namespace {
 
+constexpr uint32_t POSTPONED_TIME = 500;
+
 Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io, int pin, bool highIsOn) {
   Supla::Io::IoPin outputPin(pin, io);
   outputPin.setActiveHigh(highIsOn);
@@ -629,7 +631,8 @@ void Relay::emitCountdownTimerActionIfNeeded() {
 }
 
 bool Relay::iterateConnected() {
-  if (postponeCommTimestamp != 0 && millis() - postponeCommTimestamp < 500) {
+  if (postponeCommTimestamp != 0 &&
+      millis() - postponeCommTimestamp < POSTPONED_TIME) {
     return true;
   }
   postponeCommTimestamp = 0;
@@ -920,7 +923,10 @@ void Relay::handleAction(int event, int action) {
                         channel.getChannelNumber());
         return;
       }
-      postponeCommTimestamp = millis();
+      const bool shortImpulseStarting =
+          isImpulseFunction() && (!isOn() || isRestartTimerOnToggle()) &&
+          storedTurnOnDurationMs < 2 * POSTPONED_TIME;
+      postponeCommTimestamp = shortImpulseStarting ? 0 : millis();
       [[fallthrough]];
     }
     case TOGGLE: {

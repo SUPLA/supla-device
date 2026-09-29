@@ -281,6 +281,71 @@ TEST_F(Sd4linuxJsonParserTests,
 }
 
 TEST_F(Sd4linuxJsonParserTests,
+       ContainerParsedInvalidLevelIsUnavailableAndLaterValidLevelRecovers) {
+  SimpleTime time;
+  FakeJsonSource source;
+  source.content = R"({"level":"invalid"})";
+  Supla::Parser::Json parser(&source);
+  Supla::Sensor::ContainerParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::Level, "level");
+  sensor.setInternalLevelReporting(true);
+
+  sensor.onInit();
+
+  ASSERT_FALSE(parser.isValid());
+  EXPECT_EQ(sensor.getChannel()->getContainerFillValue(), -1);
+  RawContainerValue rawValue = {};
+  sensor.getChannel()->fillRawValue(rawValue.raw);
+  EXPECT_EQ(rawValue.container.level, 0);
+
+  source.content = R"({"level":37})";
+  time.advance(1001);
+  sensor.iterateAlways();
+
+  ASSERT_TRUE(parser.isValid());
+  EXPECT_EQ(sensor.getChannel()->getContainerFillValue(), 37);
+  sensor.getChannel()->fillRawValue(rawValue.raw);
+  EXPECT_EQ(rawValue.container.level, 38);
+}
+
+TEST_F(Sd4linuxJsonParserTests,
+       ContainerParsedDisconnectedSourceIsUnavailableAndRecovers) {
+  SimpleTime time;
+  FakeJsonSource source;
+  source.content = R"({"level":63})";
+  Supla::Parser::Json parser(&source);
+  Supla::Sensor::ContainerParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::Level, "level");
+  sensor.setInternalLevelReporting(true);
+
+  sensor.onInit();
+  ASSERT_TRUE(parser.isValid());
+  ASSERT_EQ(sensor.getChannel()->getContainerFillValue(), 63);
+
+  source.connected = false;
+  time.advance(1001);
+  sensor.iterateAlways();
+
+  ASSERT_TRUE(parser.isValid());
+  EXPECT_FALSE(sensor.getChannel()->isStateOnline());
+  EXPECT_EQ(sensor.getChannel()->getContainerFillValue(), -1);
+  RawContainerValue rawValue = {};
+  sensor.getChannel()->fillRawValue(rawValue.raw);
+  EXPECT_EQ(rawValue.container.level, 0);
+
+  source.connected = true;
+  source.content = R"({"level":24})";
+  time.advance(1001);
+  sensor.iterateAlways();
+
+  EXPECT_TRUE(parser.isValid());
+  EXPECT_TRUE(sensor.getChannel()->isStateOnline());
+  EXPECT_EQ(sensor.getChannel()->getContainerFillValue(), 24);
+  sensor.getChannel()->fillRawValue(rawValue.raw);
+  EXPECT_EQ(rawValue.container.level, 25);
+}
+
+TEST_F(Sd4linuxJsonParserTests,
        ContainerParsedInitialLevelPreservesContainerFlags) {
   SimpleTime time;
   FakeJsonSource source;

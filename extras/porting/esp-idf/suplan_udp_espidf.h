@@ -33,6 +33,7 @@ class EspIdfUdpPort : public DatagramPort {
   bool refreshMulticastInterfaces();
 
   int socket_;
+  int discoverySocket_;
   size_t maxDatagramPayload_;
   uint32_t interfaceAddresses_[kMaxMulticastInterfaces];
   size_t interfaceCount_;

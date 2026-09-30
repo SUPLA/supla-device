@@ -4,8 +4,12 @@
 #include <supla/control/virtual_relay.h>
 #include <supla/protocol/suplan_protocol.h>
 #include <suplan/suplan_crypto.h>
+#include <SuplaDevice.h>
+#include <network_with_mac_mock.h>
+#include <simple_time.h>
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include <array>
 #include <cstdint>
@@ -13,6 +17,7 @@
 
 #include "suplan_crypto_openssl.h"
 #include "suplan_poc1_profile.h"
+#include "protocol_layer_mock.h"
 
 namespace {
 
@@ -115,6 +120,83 @@ class FanoutRandomPort : public Supla::SupLan::RandomPort {
  private:
   uint8_t next_;
 };
+
+class FakeTransportLifecycle
+    : public Supla::Protocol::SupLanTransportLifecycle {
+ public:
+  bool networkUp = false;
+  bool openAllowed = false;
+  bool openState = false;
+  uint32_t openCalls = 0;
+  uint32_t closeCalls = 0;
+
+  bool networkReady(uint32_t) override { return networkUp; }
+  bool isOpen() const override { return openState; }
+  bool open() override {
+    ++openCalls;
+    openState = openAllowed;
+    return openState;
+  }
+  void close() override {
+    ++closeCalls;
+    openState = false;
+  }
+};
+
+class NetworkIsolationDevice : public SuplaDeviceClass {
+ public:
+  void prepare() {
+    createSrpcLayerIfNeeded();
+    initializationDone = true;
+    deviceMode = Supla::DEVICE_MODE_NORMAL;
+  }
+  bool restartRequested() const { return requestNetworkLayerRestart; }
+};
+
+class IndependentProtocol : public ProtocolLayerMock {
+ public:
+  bool protect = true;
+  bool protectsNetworkFromPeerRestart() override { return protect; }
+};
+
+TEST(SupLanDeviceLifecycle, ActivePeerPreventsProtocolOnlyNetworkRestart) {
+  SimpleTime time;
+  testing::NiceMock<NetworkMockWithMac> network;
+  ON_CALL(network, isReady()).WillByDefault(testing::Return(true));
+  NetworkIsolationDevice device;
+  device.prepare();
+  testing::NiceMock<ProtocolLayerMock> failing;
+  testing::NiceMock<IndependentProtocol> active;
+  ON_CALL(failing, isNetworkRestartRequested())
+      .WillByDefault(testing::Return(true));
+  EXPECT_CALL(active, disconnect()).Times(0);
+
+  device.iterate();
+  EXPECT_FALSE(device.restartRequested());
+
+  // Preserve the existing restart behavior without a useful independent peer.
+  active.protect = false;
+  time.advance(100);
+  device.iterate();
+  EXPECT_TRUE(device.restartRequested());
+}
+
+TEST(SupLanDeviceLifecycle, ActualNetworkLossStillDisconnectsAllProtocols) {
+  SimpleTime time;
+  testing::NiceMock<NetworkMockWithMac> network;
+  ON_CALL(network, isReady()).WillByDefault(testing::Return(true));
+  NetworkIsolationDevice device;
+  device.prepare();
+  testing::NiceMock<IndependentProtocol> active;
+  testing::NiceMock<ProtocolLayerMock> other;
+  device.iterate();
+
+  EXPECT_CALL(active, disconnect()).Times(1);
+  EXPECT_CALL(other, disconnect()).Times(1);
+  ON_CALL(network, isReady()).WillByDefault(testing::Return(false));
+  time.advance(100);
+  device.iterate();
+}
 
 class FanoutApplication : public Supla::SupLan::ApplicationPort {
  public:
@@ -299,7 +381,43 @@ TEST(SupLanAdapter, FansOutStateExtendedStateAndActionToMappedPeers) {
   EXPECT_EQ(pair.appC.actionCalls, 1U);
 }
 
+TEST(SupLanAdapter, DisconnectInvalidatesSessionsButPreservesReadInterest) {
+  AdapterFanoutPair pair;
+  ASSERT_TRUE(pair.configured);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resourceB));
+  pair.pump(24);
+  ASSERT_EQ(pair.runtimeA.poolDiagnostics().sessions.used, 1U);
+  ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
+  const auto before = pair.runtimeA.poolDiagnostics();
+
+  FakeTransportLifecycle transport;
+  transport.networkUp = true;
+  transport.openState = true;
+  transport.openAllowed = true;
+  pair.protocolA.attachTransportLifecycle(&transport);
+  pair.protocolA.disconnect();
+  EXPECT_EQ(transport.closeCalls, 1U);
+  EXPECT_FALSE(pair.protocolA.isRegisteredAndReady());
+  const auto after = pair.runtimeA.poolDiagnostics();
+  EXPECT_EQ(after.sessions.used, 0U);
+  EXPECT_EQ(after.pending.used, 0U);
+  EXPECT_EQ(after.interests.used, before.interests.used);
+  EXPECT_EQ(after.peers.used, before.peers.used);
+  EXPECT_EQ(after.aclEntries.used, before.aclEntries.used);
+  EXPECT_EQ(pair.peersA.get(pair.peerAForB)->endpointState,
+            Supla::SupLan::kPeerEndpointNone);
+
+  EXPECT_TRUE(pair.protocolA.iterate(pair.network.now));
+  const uint32_t statesBefore = pair.appB.stateCalls;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resourceB));
+  pair.pump(100);
+  EXPECT_GT(pair.appB.stateCalls, statesBefore);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().sessions.used, 1U);
+}
+
 TEST(SupLanAdapter, DispatchesControlToInitializedSuplaRelay) {
+  testing::NiceMock<ProtocolLayerMock> srpc;
+  testing::NiceMock<ProtocolLayerMock> suplanPeer;
   Supla::Control::VirtualRelay relay;
   Supla::SupLan::Poc1::initializeRelay(&relay);
 
@@ -320,6 +438,79 @@ TEST(SupLanAdapter, DispatchesControlToInitializedSuplaRelay) {
                 sizeof(payload)),
             SUPLA_RESULTCODE_TRUE);
   EXPECT_TRUE(relay.isOn());
+
+  EXPECT_CALL(srpc, sendChannelValueChanged(
+                       0, testing::_, testing::_, testing::_)).Times(1);
+  EXPECT_CALL(suplanPeer, sendChannelValueChanged(
+                              0, testing::_, testing::_, testing::_)).Times(1);
+  relay.getChannel()->sendUpdate();
+}
+
+TEST(SupLanAdapter, TransportLifecycleIsIndependentAndRestartable) {
+  Supla::SupLan::OpenSslCryptoPort crypto;
+  FanoutRandomPort random(3);
+  FanoutNetwork network;
+  const Endpoint endpoint = {0x0100007F, 2016};
+  FanoutDatagramPort datagrams(&network, endpoint);
+  FanoutApplication application;
+  Supla::SupLan::PeerTable peers;
+  const Supla::Protocol::SupLanResourceMapping mapping = {50001, 0, 0, false};
+  FakeTransportLifecycle transport;
+  Supla::Protocol::SupLan protocol(nullptr, &peers, &mapping, 1);
+  Supla::SupLan::Runtime runtime(
+      &crypto, &random, &datagrams, &protocol, &peers,
+      {Supla::SupLan::kNodeIdDevice, 1001},
+      Supla::SupLan::kMinimumSuplaProtoVersion);
+  protocol.attachRuntime(&runtime);
+  protocol.attachTransportLifecycle(&transport);
+
+  ASSERT_TRUE(protocol.verifyConfig());
+  EXPECT_TRUE(protocol.isEnabled());
+  EXPECT_FALSE(protocol.isRegisteredAndReady());
+  EXPECT_FALSE(protocol.protectsNetworkFromPeerRestart());
+  EXPECT_FALSE(protocol.iterate(0));
+  EXPECT_EQ(transport.openCalls, 0U);
+
+  transport.networkUp = true;
+  EXPECT_FALSE(protocol.iterate(10));
+  EXPECT_EQ(transport.openCalls, 1U);
+  EXPECT_FALSE(protocol.isNetworkRestartRequested());
+  EXPECT_FALSE(protocol.iterate(500));
+  EXPECT_EQ(transport.openCalls, 1U);
+
+  transport.openAllowed = true;
+  EXPECT_TRUE(protocol.iterate(1010));
+  EXPECT_EQ(transport.openCalls, 2U);
+  EXPECT_TRUE(protocol.isRegisteredAndReady());
+  EXPECT_TRUE(protocol.protectsNetworkFromPeerRestart());
+
+  transport.networkUp = false;
+  EXPECT_FALSE(protocol.iterate(1020));
+  EXPECT_EQ(transport.closeCalls, 1U);
+  EXPECT_FALSE(protocol.isRegisteredAndReady());
+  EXPECT_FALSE(protocol.protectsNetworkFromPeerRestart());
+
+  transport.networkUp = true;
+  EXPECT_TRUE(protocol.iterate(1030));
+  EXPECT_EQ(transport.openCalls, 3U);
+  protocol.disconnect();
+  EXPECT_EQ(transport.closeCalls, 2U);
+  EXPECT_FALSE(protocol.isRegisteredAndReady());
+  EXPECT_FALSE(protocol.protectsNetworkFromPeerRestart());
+}
+
+TEST(SupLanAdapter, LocalChannelUpdateFansOutToBothProtocolLayers) {
+  testing::NiceMock<ProtocolLayerMock> srpc;
+  testing::NiceMock<ProtocolLayerMock> suplanPeer;
+  Supla::Control::VirtualRelay relay;
+  Supla::SupLan::Poc1::initializeRelay(&relay);
+  relay.turnOn();
+
+  EXPECT_CALL(srpc, sendChannelValueChanged(
+                       0, testing::_, testing::_, testing::_)).Times(1);
+  EXPECT_CALL(suplanPeer, sendChannelValueChanged(
+                              0, testing::_, testing::_, testing::_)).Times(1);
+  relay.getChannel()->sendUpdate();
 }
 
 }  // namespace

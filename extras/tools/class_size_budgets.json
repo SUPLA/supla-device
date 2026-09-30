@@ -524,10 +524,10 @@
       "name": "Supla::SupLan::Runtime",
       "header": "suplan/suplan_runtime.h",
       "limits": {
-        "host": 5136,
-        "avr": 4907,
-        "esp8266": 5112,
-        "esp32": 5112
+        "host": 5040,
+        "avr": 4785,
+        "esp8266": 5008,
+        "esp32": 5008
       }
     },
     {
@@ -535,7 +535,7 @@
       "header": "supla/protocol/suplan_protocol.h",
       "limits": {
         "host": 96,
-        "avr": 22,
+        "avr": 25,
         "esp8266": 48,
         "esp32": 48
       }

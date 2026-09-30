@@ -153,6 +153,15 @@ bool LinuxUdpPort::isOpen() const {
       openDiagnostics_.udpBind == kLinuxUdpStagePass;
 }
 
+bool LinuxUdpPort::hasActiveMulticastInterface() const {
+  uint32_t addresses[kMaxMulticastInterfaces] = {};
+  uint32_t indexes[kMaxMulticastInterfaces] = {};
+  size_t count = 0;
+  return enumerateMulticastInterfaces(addresses, indexes,
+                                      kMaxMulticastInterfaces, &count) &&
+      count > 0;
+}
+
 bool LinuxUdpPort::enumerateMulticastInterfaces(
     uint32_t *addresses, uint32_t *indexes, size_t capacity,
     size_t *count) const {

@@ -63,6 +63,7 @@ class SuplaSrpc : public ProtocolLayer {
   uint32_t getConnectionFailTime() override;
   ConnectionError getConnectionError() const override;
   bool isRegisteredAndReady() override;
+  bool isConnected() const;
   void initClient();
 
   void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) override;

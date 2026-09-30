@@ -2414,6 +2414,10 @@ bool Supla::Protocol::SuplaSrpc::isNetworkRestartRequested() {
   return requestNetworkRestart;
 }
 
+bool Supla::Protocol::SuplaSrpc::isConnected() const {
+  return client != nullptr && client->connected();
+}
+
 uint32_t Supla::Protocol::SuplaSrpc::getConnectionFailTime() {
   // connectionFailCounter is incremented every 10 s
   return connectionFailCounter * 10;

@@ -1,0 +1,14 @@
+menu "SupLAN PoC2 fixture"
+
+config SUPLAN_POC2_ROLE_A
+    bool "Use PoC2 Device A"
+    default n
+    help
+        Selects fixture Device A (1001). The default is Device B (1002).
+
+config SUPLAN_POC2_UNICAST_PORT
+    int "SupLAN UDP unicast port"
+    range 1 65535
+    default 2016
+
+endmenu

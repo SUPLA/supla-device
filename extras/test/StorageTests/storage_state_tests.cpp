@@ -9,6 +9,19 @@
 #include <stdio.h>
 #include <element_with_storage.h>
 
+namespace {
+
+class StorageWithUpdateAccess : public StorageMock {
+ public:
+  int updateForTest(unsigned int offset,
+                    const unsigned char *data,
+                    int size) {
+    return updateStorage(offset, data, size);
+  }
+};
+
+}  // namespace
+
 TEST(StorageStateTests, preambleInitialization) {
   EXPECT_FALSE(Supla::Storage::Init());
 
@@ -25,6 +38,26 @@ TEST(StorageStateTests, preambleInitialization) {
   EXPECT_TRUE(Supla::Storage::Init());
 
   EXPECT_TRUE(storage.isPreampleInitialized());
+}
+
+TEST(StorageStateTests, updateWritesWhenStorageReturnsNoExistingBytes) {
+  StorageWithUpdateAccess storage;
+  const unsigned char value[] = {0x12, 0x34, 0x56};
+
+  EXPECT_CALL(storage,
+              readStorage(0, ::testing::_, sizeof(value), ::testing::_))
+      .WillOnce(::testing::Return(0));
+  EXPECT_CALL(storage,
+              writeStorage(0, ::testing::_, sizeof(value)))
+      .WillOnce([&value](unsigned int,
+                         const unsigned char *data,
+                         unsigned int size) {
+        EXPECT_EQ(size, sizeof(value));
+        EXPECT_EQ(memcmp(data, value, sizeof(value)), 0);
+        return static_cast<int>(size);
+      });
+
+  EXPECT_EQ(storage.updateForTest(0, value, sizeof(value)), sizeof(value));
 }
 
 TEST(StorageStateTests, preambleAlreadyInitialized) {
@@ -168,4 +201,3 @@ TEST(StorageStateTests, preambleAlreadyInitializedWithElement) {
   valueInStorage = 44;
   EXPECT_EQ(memcmp(storage.storageSimulatorData + 15, &valueInStorage, 4), 0);
 }
-

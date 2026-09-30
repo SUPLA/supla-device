@@ -24,7 +24,8 @@ static const char kDiscoveryGroup[] = "239.255.201.6";
 }  // namespace
 
 EspIdfUdpPort::EspIdfUdpPort()
-    : socket_(-1), maxDatagramPayload_(kMaxDatagramPayload),
+    : socket_(-1), discoverySocket_(-1),
+      maxDatagramPayload_(kMaxDatagramPayload),
       interfaceCount_(0), joinedCount_(0), lastInterfaceRefreshMs_(0) {
   memset(interfaceAddresses_, 0, sizeof(interfaceAddresses_));
   memset(joinedAddresses_, 0, sizeof(joinedAddresses_));
@@ -35,7 +36,8 @@ EspIdfUdpPort::~EspIdfUdpPort() {
 }
 
 bool EspIdfUdpPort::open(uint16_t port, size_t maxDatagramPayload) {
-  if (socket_ >= 0 || port == 0 || maxDatagramPayload == 0 ||
+  if (socket_ >= 0 || discoverySocket_ >= 0 || port == 0 ||
+      maxDatagramPayload == 0 ||
       maxDatagramPayload > kMaxDatagramPayload) {
     return false;
   }
@@ -70,6 +72,25 @@ bool EspIdfUdpPort::open(uint16_t port, size_t maxDatagramPayload) {
     return false;
   }
   socket_ = fd;
+  if (port != kDiscoveryPort) {
+    discoverySocket_ = lwip_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    local.sin_port = lwip_htons(kDiscoveryPort);
+    if (discoverySocket_ < 0 ||
+        lwip_setsockopt(discoverySocket_, SOL_SOCKET, SO_REUSEADDR, &reuse,
+                        sizeof(reuse)) != 0 ||
+        lwip_bind(discoverySocket_, reinterpret_cast<sockaddr *>(&local),
+                   sizeof(local)) != 0) {
+      close();
+      return false;
+    }
+    const int discoveryFlags = lwip_fcntl(discoverySocket_, F_GETFL, 0);
+    if (discoveryFlags < 0 ||
+        lwip_fcntl(discoverySocket_, F_SETFL,
+                    discoveryFlags | O_NONBLOCK) != 0) {
+      close();
+      return false;
+    }
+  }
   maxDatagramPayload_ = maxDatagramPayload;
   (void)refreshMulticastInterfaces();
   return true;
@@ -79,6 +100,10 @@ void EspIdfUdpPort::close() {
   if (socket_ >= 0) {
     lwip_close(socket_);
     socket_ = -1;
+  }
+  if (discoverySocket_ >= 0) {
+    lwip_close(discoverySocket_);
+    discoverySocket_ = -1;
   }
   interfaceCount_ = 0;
   joinedCount_ = 0;
@@ -143,20 +168,30 @@ int EspIdfUdpPort::pollReceive(uint8_t *buffer, size_t capacity,
   if (static_cast<uint32_t>(nowMs() - lastInterfaceRefreshMs_) >= 1000) {
     (void)refreshMulticastInterfaces();
   }
-  sockaddr_in source = {};
-  socklen_t sourceLength = sizeof(source);
-  const int received = lwip_recvfrom(socket_, buffer, capacity, MSG_DONTWAIT,
-                                     reinterpret_cast<sockaddr *>(&source),
-                                     &sourceLength);
-  if (received < 0) {
-    return errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR ? 0 : -1;
+  const int sockets[] = {socket_, discoverySocket_};
+  for (size_t i = 0; i < sizeof(sockets) / sizeof(sockets[0]); ++i) {
+    if (sockets[i] < 0) {
+      continue;
+    }
+    sockaddr_in source = {};
+    socklen_t sourceLength = sizeof(source);
+    const int received = lwip_recvfrom(
+        sockets[i], buffer, capacity, MSG_DONTWAIT,
+        reinterpret_cast<sockaddr *>(&source), &sourceLength);
+    if (received < 0) {
+      if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+        continue;
+      }
+      return -1;
+    }
+    if (static_cast<size_t>(received) > capacity) {
+      return -1;
+    }
+    endpoint->address = source.sin_addr.s_addr;
+    endpoint->port = lwip_ntohs(source.sin_port);
+    return received;
   }
-  if (static_cast<size_t>(received) > capacity) {
-    return -1;
-  }
-  endpoint->address = source.sin_addr.s_addr;
-  endpoint->port = lwip_ntohs(source.sin_port);
-  return received;
+  return 0;
 }
 
 size_t EspIdfUdpPort::maxDatagramPayload() const {
@@ -225,7 +260,8 @@ bool EspIdfUdpPort::refreshMulticastInterfaces() {
       continue;
     }
     membership.imr_interface.s_addr = joinedAddresses_[old];
-    (void)lwip_setsockopt(socket_, IPPROTO_IP, IP_DROP_MEMBERSHIP,
+    (void)lwip_setsockopt(discoverySocket_ >= 0 ? discoverySocket_ : socket_,
+                          IPPROTO_IP, IP_DROP_MEMBERSHIP,
                           &membership, sizeof(membership));
     for (size_t move = old + 1; move < joinedCount_; ++move) {
       joinedAddresses_[move - 1] = joinedAddresses_[move];
@@ -245,7 +281,8 @@ bool EspIdfUdpPort::refreshMulticastInterfaces() {
       continue;
     }
     membership.imr_interface.s_addr = addresses[current];
-    if (lwip_setsockopt(socket_, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+    if (lwip_setsockopt(discoverySocket_ >= 0 ? discoverySocket_ : socket_,
+                        IPPROTO_IP, IP_ADD_MEMBERSHIP,
                         &membership, sizeof(membership)) == 0 ||
         errno == EADDRINUSE) {
       joinedAddresses_[joinedCount_++] = addresses[current];

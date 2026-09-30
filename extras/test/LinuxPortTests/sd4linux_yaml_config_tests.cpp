@@ -388,6 +388,62 @@ TEST(Sd4linuxYamlConfigTests, UsesDefaultAndConfiguredSuplaProtocolVersion) {
   EXPECT_EQ(config.getProtoVersion(), 29);
 }
 
+TEST(Sd4linuxYamlConfigTests, SupLanIsDisabledWhenSectionIsAbsent) {
+  TestLinuxYamlConfig config;
+  Supla::LinuxSupLanConfig suplan;
+
+  config.config = YAML::Load("supla: {}\n");
+  ASSERT_TRUE(config.getSupLanConfig(&suplan));
+  EXPECT_FALSE(suplan.enabled);
+  EXPECT_EQ(suplan.role, 0);
+  EXPECT_EQ(suplan.unicastPort, 2016);
+}
+
+TEST(Sd4linuxYamlConfigTests, ReadsSupLanRoleAndUnicastPort) {
+  TestLinuxYamlConfig config;
+  Supla::LinuxSupLanConfig suplan;
+
+  config.config = YAML::Load(
+      "suplan:\n"
+      "  enabled: true\n"
+      "  role: B\n"
+      "  unicast_port: 2018\n");
+  ASSERT_TRUE(config.getSupLanConfig(&suplan));
+  EXPECT_TRUE(suplan.enabled);
+  EXPECT_EQ(suplan.role, 'B');
+  EXPECT_EQ(suplan.unicastPort, 2018);
+}
+
+TEST(Sd4linuxYamlConfigTests, DisabledSupLanDoesNotRequireFixtureRole) {
+  TestLinuxYamlConfig config;
+  Supla::LinuxSupLanConfig suplan;
+
+  config.config = YAML::Load(
+      "suplan:\n"
+      "  enabled: false\n"
+      "  unicast_port: 2018\n");
+  ASSERT_TRUE(config.getSupLanConfig(&suplan));
+  EXPECT_FALSE(suplan.enabled);
+  EXPECT_EQ(suplan.role, 0);
+  EXPECT_EQ(suplan.unicastPort, 2018);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsInvalidEnabledSupLanConfiguration) {
+  TestLinuxYamlConfig config;
+  Supla::LinuxSupLanConfig suplan;
+
+  config.config = YAML::Load("suplan:\n  enabled: true\n");
+  EXPECT_FALSE(config.getSupLanConfig(&suplan));
+
+  config.config = YAML::Load(
+      "suplan:\n  enabled: true\n  role: C\n");
+  EXPECT_FALSE(config.getSupLanConfig(&suplan));
+
+  config.config = YAML::Load(
+      "suplan:\n  enabled: true\n  role: A\n  unicast_port: 65536\n");
+  EXPECT_FALSE(config.getSupLanConfig(&suplan));
+}
+
 TEST(Sd4linuxYamlConfigTests, RejectsQosForMqttSource) {
   TestLinuxYamlConfig config;
 

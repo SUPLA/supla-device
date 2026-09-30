@@ -17,9 +17,10 @@ SupLan::SupLan(SuplaDeviceClass *sdc, Supla::SupLan::PeerTable *peers,
                const SupLanResourceMapping *mappings, uint8_t mappingCount,
                SupLanApplicationEventHandler eventHandler,
                void *eventContext)
-    : ProtocolLayer(sdc), peers_(peers), runtime_(nullptr),
-      mappings_(mappings), mappingCount_(mappingCount),
-      eventHandler_(eventHandler), eventContext_(eventContext), enabled_(true) {
+    : ProtocolLayer(sdc), peers_(peers), runtime_(nullptr), transport_(nullptr),
+      mappings_(mappings), eventHandler_(eventHandler),
+      eventContext_(eventContext), mappingCount_(mappingCount), enabled_(true),
+      transportWasOpen_(false) {
   configEmpty = false;
 }
 
@@ -27,6 +28,19 @@ SupLan::~SupLan() {}
 
 void SupLan::attachRuntime(Supla::SupLan::Runtime *runtime) {
   runtime_ = runtime;
+}
+
+void SupLan::attachTransportLifecycle(
+    SupLanTransportLifecycle *transport) {
+  if (transport_ != nullptr && transport_ != transport &&
+      transport_->isOpen()) {
+    transport_->close();
+  }
+  transport_ = transport;
+  if (transport_ != nullptr) {
+    transport_->resetOpenRetry();
+  }
+  transportWasOpen_ = transport_ != nullptr && transport_->isOpen();
 }
 
 void SupLan::setEnabled(bool enabled) {
@@ -48,6 +62,17 @@ bool SupLan::isEnabled() {
 }
 
 void SupLan::disconnect() {
+  if (transport_ != nullptr && transport_->isOpen()) {
+    transport_->close();
+  }
+  if (transport_ != nullptr) {
+    transport_->resetOpenRetry();
+  }
+  transportWasOpen_ = false;
+  clearPeerTransportState();
+}
+
+void SupLan::clearPeerTransportState() {
   if (peers_ == nullptr || runtime_ == nullptr) {
     return;
   }
@@ -61,10 +86,37 @@ bool SupLan::isConfigEmpty() {
   return false;
 }
 
-bool SupLan::iterate(uint32_t) {
+bool SupLan::iterate(uint32_t nowMs) {
   if (!isEnabled()) {
     return false;
   }
+
+  if (transport_ != nullptr) {
+    if (!transport_->networkReady(nowMs)) {
+      if (transport_->isOpen() || transportWasOpen_) {
+        transport_->close();
+        clearPeerTransportState();
+      }
+      transportWasOpen_ = false;
+      transport_->resetOpenRetry();
+      return false;
+    }
+
+    if (!transport_->isOpen()) {
+      if (transportWasOpen_) {
+        clearPeerTransportState();
+        transportWasOpen_ = false;
+      }
+      if (transport_->openIfDue(nowMs)) {
+        transportWasOpen_ = transport_->isOpen();
+      }
+      if (!transport_->isOpen()) {
+        return false;
+      }
+    }
+    transportWasOpen_ = true;
+  }
+
   runtime_->iterate();
   return true;
 }
@@ -73,12 +125,20 @@ bool SupLan::isNetworkRestartRequested() {
   return false;
 }
 
+bool SupLan::protectsNetworkFromPeerRestart() {
+  return transport_ != nullptr && isRegisteredAndReady();
+}
+
 uint32_t SupLan::getConnectionFailTime() {
   return 0;
 }
 
 bool SupLan::isRegisteredAndReady() {
-  return isEnabled() && mapIsValid();
+  return isEnabled() && mapIsValid() && isTransportOpen();
+}
+
+bool SupLan::isTransportOpen() const {
+  return transport_ == nullptr || transport_->isOpen();
 }
 
 const SupLanResourceMapping *SupLan::findResource(uint32_t resourceId) const {

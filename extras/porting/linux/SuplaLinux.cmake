@@ -60,6 +60,8 @@ get_filename_component(_SUPLA_ROOT_FROM_LINUX "${SUPLA_LINUX_PORT_DIR}/../../.."
 set(SUPLA_DEVICE_LINUX_SRCS
   ${SUPLA_LINUX_PORT_DIR}/linux_network.cpp
   ${SUPLA_LINUX_PORT_DIR}/linux_yaml_config.cpp
+  ${SUPLA_LINUX_PORT_DIR}/suplan_crypto_openssl.cpp
+  ${SUPLA_LINUX_PORT_DIR}/suplan_udp_linux.cpp
   ${SUPLA_LINUX_PORT_DIR}/linux_secure_file.cpp
   ${SUPLA_LINUX_PORT_DIR}/linux_platform.cpp
   ${SUPLA_LINUX_PORT_DIR}/linux_file_state_logger.cpp

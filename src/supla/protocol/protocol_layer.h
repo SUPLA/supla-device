@@ -37,6 +37,10 @@ class ProtocolLayer {
   // done.
   virtual bool iterate(uint32_t _millis) = 0;
   virtual bool isNetworkRestartRequested() = 0;
+  // A ready independent transport can remain useful while another protocol
+  // reconnects. SuplaDevice uses this to avoid restarting a shared network
+  // interface solely for that peer protocol's failure.
+  virtual bool protectsNetworkFromPeerRestart() { return false; }
   virtual uint32_t getConnectionFailTime() = 0;
   virtual bool isConnectionError();
   virtual Supla::ConnectionError getConnectionError() const;

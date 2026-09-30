@@ -35,6 +35,57 @@ int runAsDaemon = 0;
 
 namespace {
 
+// Harness-only fault injection and timing. Measure transmission attempts in
+// the peer process, independently of when the acceptance runner reads logs.
+class HarnessUdpPort : public Supla::SupLan::LinuxUdpPort {
+ public:
+  void armDataRetryTiming() {
+    measureNext_ = true;
+    firstLength_ = 0;
+    retryObserved_ = false;
+  }
+
+  static void observeData(void *context,
+                          const Supla::SupLan::Endpoint &endpoint,
+                          const uint8_t *data, size_t length) {
+    auto *self = static_cast<HarnessUdpPort *>(context);
+    if (self->measureNext_ && length <= sizeof(self->firstFrame_)) {
+      self->measureNext_ = false;
+      self->firstEndpoint_ = endpoint;
+      self->firstLength_ = length;
+      memcpy(self->firstFrame_, data, length);
+      self->firstAttemptMs_ = self->nowMs();
+    } else if (!self->retryObserved_ && self->firstLength_ != 0 &&
+               length == self->firstLength_ &&
+               endpoint.address == self->firstEndpoint_.address &&
+               endpoint.port == self->firstEndpoint_.port &&
+               memcmp(data, self->firstFrame_, length) == 0) {
+      self->retryDelayMs_ = self->nowMs() - self->firstAttemptMs_;
+      self->retryObserved_ = true;
+    }
+  }
+
+  void showDataRetryTiming() const {
+    if (!retryObserved_) {
+      std::cout << "DATA_RETRY_TIMING=PENDING" << std::endl;
+    } else {
+      std::cout << "DATA_RETRY_TIMING delay_ms=" << retryDelayMs_
+                << std::endl;
+    }
+  }
+
+ private:
+  bool measureNext_ = false;
+  bool retryObserved_ = false;
+  size_t firstLength_ = 0;
+  uint32_t firstAttemptMs_ = 0;
+  uint32_t retryDelayMs_ = 0;
+  Supla::SupLan::Endpoint firstEndpoint_ = {};
+  uint8_t firstFrame_[SUPLAN_MAX_APPLICATION_BYTES +
+                      Supla::SupLan::kProtectedHeaderSize +
+                      Supla::SupLan::kAeadTagSize] = {};
+};
+
 struct HarnessState {
   const char *role;
   Supla::Control::VirtualRelay *relay;
@@ -100,8 +151,9 @@ void printHelp() {
                "read <resource-id>, multicast-self-test, "
                "control <resource-id> <value>, emit-action <resource-id> "
                "<action-id>, set-resource-value <resource-id> <value>, "
-               "drop-next-tx <ACK|DATA|FRAGMENT|SESSION_ACCEPT>, "
-               "drop-next-rx <ACK|DATA|FRAGMENT|SESSION_ACCEPT>, "
+               "fail-next-tx <DATA>, show-data-retry-timing, "
+               "drop-next-tx <ACK|DATA|FRAGMENT|SESSION_ACCEPT> [count], "
+               "drop-next-rx <ACK|DATA|FRAGMENT|SESSION_ACCEPT> [count], "
                "corrupt-next-tx-tag, corrupt-next-tx-mac, "
                "corrupt-next-session-mac-tx, force-max-datagram <bytes>, "
                "drop-fragment-number <n>, send-extended <resource-id> <bytes>, "
@@ -114,6 +166,21 @@ void printHelp() {
                "<count>, show-pools, show-counters, reset-test-counters, quit\n"
                "Static profile: A owns relay CHANNEL:50001; B owns event-only "
                "CHANNEL:50002. Keys are test fixtures only.\n";
+}
+
+void printPeerEndpoints(const Supla::SupLan::PeerTable &peers) {
+  for (uint8_t i = 0; i < peers.size(); ++i) {
+    const Supla::SupLan::PeerRecord *peer = peers.get(i);
+    if (peer == nullptr) continue;
+    char address[INET_ADDRSTRLEN] = "unknown";
+    (void)inet_ntop(AF_INET, &peer->endpoint.address, address,
+                    sizeof(address));
+    std::cout << "PEER index=" << static_cast<unsigned>(i)
+              << " endpoint_state="
+              << static_cast<unsigned>(peer->endpointState)
+              << " endpoint=" << address << ':' << peer->endpoint.port
+              << std::endl;
+  }
 }
 
 const char *stageStatus(Supla::SupLan::LinuxUdpStageStatus status) {
@@ -340,18 +407,20 @@ bool loadUnicastPort(const std::string &configPath, uint16_t *port) {
 }
 
 void setHook(uint8_t *counter, const std::string &command,
-             const std::string &frameKind) {
+             const std::string &frameKind, uint8_t count = 1) {
   if (counter == nullptr) {
     std::cout << "ERROR unknown frame kind" << std::endl;
   } else {
-    *counter = 1;
-    std::cout << "OK hook=" << command << " frame=" << frameKind << std::endl;
+    *counter = count;
+    std::cout << "OK hook=" << command << " frame=" << frameKind;
+    if (count != 1) std::cout << " count=" << static_cast<unsigned>(count);
+    std::cout << std::endl;
   }
 }
 
 void handleCommand(const std::string &line, Supla::SupLan::Runtime *runtime,
                    Supla::Protocol::SupLan *protocol, HarnessState *state,
-                   Supla::SupLan::LinuxUdpPort *datagrams,
+                   HarnessUdpPort *datagrams,
                    Supla::SupLan::RandomPort *random,
                    Supla::SupLan::PeerTable *peers,
                    const std::string &interfaceName,
@@ -368,6 +437,7 @@ void handleCommand(const std::string &line, Supla::SupLan::Runtime *runtime,
   } else if (command == "show-status") {
     printCounters(*runtime);
     printPools(*runtime);
+    printPeerEndpoints(*peers);
   } else if (command == "multicast-self-test") {
     if (selfTest->active) {
       std::cout << "ERROR multicast self-test already running" << std::endl;
@@ -491,6 +561,7 @@ void handleCommand(const std::string &line, Supla::SupLan::Runtime *runtime,
     input >> option;
     const bool compareRetry = option == "compare-retry";
     datagrams->captureNextData(compareRetry);
+    if (compareRetry) datagrams->armDataRetryTiming();
     std::cout << "OK capture-next-data armed"
               << (compareRetry ? " with retry comparison" : "")
               << std::endl;
@@ -540,9 +611,30 @@ void handleCommand(const std::string &line, Supla::SupLan::Runtime *runtime,
     } else {
       std::cout << "ERROR max datagram outside supported range" << std::endl;
     }
+  } else if (command == "show-data-retry-timing") {
+    datagrams->showDataRetryTiming();
+  } else if (command == "fail-next-tx") {
+    std::string kind;
+    input >> kind;
+    if (kind == "DATA" || kind == "data") {
+      runtime->testHooks()->failNextDataTx = 1;
+      datagrams->armDataRetryTiming();
+      std::cout << "OK hook=" << command << " frame=" << kind << std::endl;
+    } else {
+      std::cout << "ERROR synchronous send failure supports DATA only"
+                << std::endl;
+    }
   } else if (command == "drop-next-tx" || command == "drop-next-rx") {
     std::string kind;
     input >> kind;
+    unsigned count = 1;
+    if (input >> count) {
+      if (count == 0 || count > UINT8_MAX) {
+        std::cout << "ERROR hook count must be between 1 and 255"
+                  << std::endl;
+        return;
+      }
+    }
     Supla::SupLan::RuntimeTestHooks *hooks = runtime->testHooks();
     uint8_t *counter = nullptr;
     const bool tx = command == "drop-next-tx";
@@ -555,7 +647,7 @@ void handleCommand(const std::string &line, Supla::SupLan::Runtime *runtime,
     else if (kind == "SESSION_ACCEPT" || kind == "session_accept")
       counter = tx ? &hooks->dropNextSessionAcceptTx
                    : &hooks->dropNextSessionAcceptRx;
-    setHook(counter, command, kind);
+    setHook(counter, command, kind, static_cast<uint8_t>(count));
   } else if (command == "corrupt-next-tx-tag") {
     runtime->testHooks()->corruptNextDataTagTx = 1;
     std::cout << "OK hook=" << command << std::endl;
@@ -693,7 +785,7 @@ int main(int argc, char **argv) {
     return 2;
   }
 
-  Supla::SupLan::LinuxUdpPort datagrams;
+  HarnessUdpPort datagrams;
   if (!datagrams.open(bindAddress.c_str(), port, maxDatagram)) {
     std::cerr << "failed to open IPv4 UDP " << bindAddress << ':' << port
               << "; check active IPv4 multicast interfaces or the --bind"
@@ -732,6 +824,7 @@ int main(int argc, char **argv) {
       &crypto, &random, &datagrams, &protocol, &peers,
       Supla::SupLan::Poc1::localNodeAddress(nodeA),
       Supla::SupLan::kMinimumSuplaProtoVersion);
+  runtime.setDataTransmitObserver(HarnessUdpPort::observeData, &datagrams);
   protocol.attachRuntime(&runtime);
   if (!protocol.verifyConfig()) {
     std::cerr << "invalid SupLAN ProtocolLayer mapping" << std::endl;

@@ -62,6 +62,7 @@ channels:
 
 #include <map>
 #include <set>
+#include <cstdint>
 #include <string>
 
 namespace Supla {
@@ -69,6 +70,12 @@ namespace Supla {
 namespace Control {
 class Relay;
 }
+
+struct LinuxSupLanConfig {
+  bool enabled = false;
+  char role = 0;
+  uint16_t unicastPort = 2016;
+};
 
 class LinuxYamlConfig : public KeyValue {
  public:
@@ -115,6 +122,7 @@ class LinuxYamlConfig : public KeyValue {
   bool getEmail(char* result) override;
 
   int getProtoVersion();
+  bool getSupLanConfig(LinuxSupLanConfig* result) const;
 
   std::string getStateFilesPath();
 

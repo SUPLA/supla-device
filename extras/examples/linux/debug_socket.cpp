@@ -3,6 +3,8 @@
 
 #include "debug_socket.h"
 
+#include "suplan_runtime_linux.h"
+
 #include <SuplaDevice.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -61,8 +63,9 @@ class SocketResponseWriter : public Supla::Debug::ResponseWriter {
 
 class DebugUnixSocket {
  public:
-  explicit DebugUnixSocket(const std::string &path)
-      : path(path), processor(&SuplaDevice) {
+  explicit DebugUnixSocket(const std::string &path,
+                           Supla::LinuxSupLanRuntime *suplan)
+      : path(path), processor(&SuplaDevice), suplan(suplan) {
   }
 
   ~DebugUnixSocket() {
@@ -215,6 +218,10 @@ class DebugUnixSocket {
       return;
     }
     SocketResponseWriter writer(clientFd);
+    if (suplan != nullptr &&
+        suplan->processDebugCommand(command.c_str(), &writer)) {
+      return;
+    }
     processor.processLine(command.c_str(), &writer);
   }
 
@@ -231,6 +238,7 @@ class DebugUnixSocket {
   int clientFd = -1;
   std::string command;
   Supla::Debug::CommandProcessor processor;
+  Supla::LinuxSupLanRuntime *suplan;
 };
 
 std::unique_ptr<DebugUnixSocket> debugSocket;
@@ -365,8 +373,9 @@ bool setupLinuxSupletRuntime(Supla::Config *config) {
   return true;
 }
 
-bool initLinuxDebugSocket(const std::string &path) {
-  debugSocket = std::make_unique<DebugUnixSocket>(path);
+bool initLinuxDebugSocket(const std::string &path,
+                          Supla::LinuxSupLanRuntime *suplan) {
+  debugSocket = std::make_unique<DebugUnixSocket>(path, suplan);
   return debugSocket->init();
 }
 

@@ -147,6 +147,40 @@ You can specify your own config file:
 
     ./supla-device-linux -c /path/to/your/file/supla-cfg.yml
 
+## SupLAN PoC2
+
+The ordinary `supla-device-linux` binary can run the PoC1 SupLAN fixture in
+parallel with its normal SUPLA Server connection. Add this section to the YAML
+file to enable node A:
+
+```yaml
+channels:
+  - type: VirtualRelay
+
+suplan:
+  enabled: true
+  role: A
+  unicast_port: 2016
+```
+
+For node B, use `role: B` and make channel 0 an `ActionTriggerParsed` channel.
+The `role` selects the deterministic PoC1 identities, keys, ACL and resource
+mapping; these credentials are test fixtures and must not be used for
+deployment. The normal Linux GUID/AuthKey and Server settings continue to
+control SRPC independently. When the `suplan` section is absent or disabled,
+sd4linux does not create a SupLAN protocol layer.
+
+SupLAN UDP opens after the normal network is ready, binds IPv4 wildcard, and
+joins the discovery group on available multicast interfaces. `unicast_port`
+can be changed when multiple local sd4linux instances share a host.
+
+When the existing Unix debug socket is enabled, it also accepts line commands
+`show-status`, `show-resources`, `show-counters`, `show-pools`, `read`,
+`control`, `set-resource-value`, `emit-action`, `forget-session`, and
+`clear-endpoint`. The `transport on|off` command is a fault-injection test hook
+that can stop and resume SupLAN UDP while SRPC remains connected. See
+`debug_socket/README.md` for examples.
+
 ## GUID, AUTHKEY and persistent state files
 
 GUID and AUTHKEY is automatically generated (if missing) and stored in location:

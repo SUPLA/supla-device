@@ -8,10 +8,12 @@
 
 namespace Supla {
 class Config;
+class LinuxSupLanRuntime;
 }  // namespace Supla
 
 bool setupLinuxSupletRuntime(Supla::Config *config);
-bool initLinuxDebugSocket(const std::string &path);
+bool initLinuxDebugSocket(const std::string &path,
+                          Supla::LinuxSupLanRuntime *suplan = nullptr);
 void iterateLinuxDebugSocket();
 
 #endif  // EXTRAS_EXAMPLES_LINUX_DEBUG_SOCKET_H_

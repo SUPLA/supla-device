@@ -466,6 +466,53 @@ int Supla::LinuxYamlConfig::getProtoVersion() {
   return 27;
 }
 
+bool Supla::LinuxYamlConfig::getSupLanConfig(
+    Supla::LinuxSupLanConfig* result) const {
+  if (result == nullptr) {
+    return false;
+  }
+  *result = {};
+  const YAML::Node section = config["suplan"];
+  if (!section) {
+    return true;
+  }
+  if (!section.IsMap()) {
+    SUPLA_LOG_ERROR("Config: \"suplan\" section has to be a map");
+    return false;
+  }
+
+  try {
+    if (section["enabled"]) {
+      result->enabled = section["enabled"].as<bool>();
+    }
+    if (section["role"]) {
+      const std::string role = section["role"].as<std::string>();
+      if (role != "A" && role != "B") {
+        SUPLA_LOG_ERROR("Config: suplan.role must be A or B");
+        return false;
+      }
+      result->role = role[0];
+    }
+    if (section["unicast_port"]) {
+      const int port = section["unicast_port"].as<int>();
+      if (port < 1 || port > UINT16_MAX) {
+        SUPLA_LOG_ERROR("Config: suplan.unicast_port must be 1..65535");
+        return false;
+      }
+      result->unicastPort = static_cast<uint16_t>(port);
+    }
+  } catch (const YAML::Exception& ex) {
+    logError(file, ex);
+    return false;
+  }
+
+  if (result->enabled && result->role == 0) {
+    SUPLA_LOG_ERROR("Config: suplan.role is required when SupLAN is enabled");
+    return false;
+  }
+  return true;
+}
+
 bool Supla::LinuxYamlConfig::setGUID(const char* guidRaw) {
   char guidHex[SUPLA_GUID_HEXSIZE] = {};
   generateHexString(guidRaw, guidHex, SUPLA_GUID_SIZE);

@@ -75,6 +75,7 @@
 #include <string>
 
 #include "debug_socket.h"
+#include "suplan_runtime_linux.h"
 
 // reguired by linux_log.c
 int logLevel = LOG_INFO;
@@ -178,11 +179,28 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
+    Supla::LinuxSupLanConfig suplanConfig;
+    if (!config->getSupLanConfig(&suplanConfig)) {
+      SUPLA_LOG_ERROR("SupLAN YAML configuration is invalid. Exit");
+      exit(1);
+    }
+
     Supla::LinuxFileStorage storage(config->getStateFilesPath());
 
     SuplaDevice.setLastStateLogger(
         new Supla::Device::FileStateLogger(config->getStateFilesPath()));
     Supla::LinuxNetwork network;
+
+    std::unique_ptr<Supla::LinuxSupLanRuntime> suplanRuntime;
+    if (suplanConfig.enabled) {
+      suplanRuntime.reset(new Supla::LinuxSupLanRuntime(suplanConfig));
+      if (!suplanRuntime->initialize()) {
+        SUPLA_LOG_ERROR("SupLAN PoC fixture initialization failed. Exit");
+        exit(1);
+      }
+      SUPLA_LOG_INFO("SupLAN PoC fixture enabled role=%c port=%u",
+                     suplanConfig.role, suplanConfig.unicastPort);
+    }
 
     if (!setupLinuxSupletRuntime(config.get())) {
       SUPLA_LOG_ERROR("Suplet runtime setup failed. Exit");
@@ -197,7 +215,8 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
-    if (!initLinuxDebugSocket(result["debug-socket"].as<std::string>())) {
+    if (!initLinuxDebugSocket(result["debug-socket"].as<std::string>(),
+                              suplanRuntime.get())) {
       SUPLA_LOG_ERROR("Debug socket init failed. Exit");
       exit(1);
     }

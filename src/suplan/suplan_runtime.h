@@ -56,7 +56,8 @@ struct RuntimeTestHooks {
   uint8_t dropNextDataRx;
   uint8_t dropNextFragmentRx;
   uint8_t dropNextSessionAcceptRx;
-  uint8_t pauseSessionInitRetries;
+  uint8_t pauseSessionInitRetries : 1;
+  uint8_t failNextDataTx : 1;
   uint8_t failNextSessionAllocation;
 };
 
@@ -68,6 +69,14 @@ enum TestFloodKind : uint8_t {
 
 class Runtime {
  public:
+  struct RecoveryStatus {
+    bool active;
+    bool sleeping;
+    uint8_t locateAttempts;
+    uint8_t backgroundStage;
+    uint32_t deadlineMs;
+    uint32_t nextRefreshMs;
+  };
   Runtime(CryptoPort *crypto, RandomPort *random, DatagramPort *datagrams,
           ApplicationPort *application, PeerTable *peers,
           const NodeAddress &localAddress, uint8_t suplaProtoVersion);
@@ -89,12 +98,40 @@ class Runtime {
   bool startFlood(TestFloodKind kind, uint8_t peerIndex, uint16_t count);
   void resetDiagnostics();
   void iterate();
+  bool readNeedsRefresh(uint8_t peerIndex, const ResourceId &resource) const;
+  RecoveryStatus recoveryStatus(uint8_t peerIndex) const;
+  void setPeerSleeping(uint8_t peerIndex, bool sleeping);
+  typedef void (*DataTransmitObserver)(void *, const Endpoint &,
+                                       const uint8_t *, size_t);
+  void setDataTransmitObserver(DataTransmitObserver observer, void *context);
 
   const Diagnostics &diagnostics() const;
   PoolDiagnostics poolDiagnostics() const;
   RuntimeTestHooks *testHooks();
 
  private:
+  struct PeerRecovery {
+    uint32_t deadlineMs;
+    uint32_t lastLocateMs;
+    uint32_t nextRefreshMs;
+    uint8_t locateAttempts;
+    uint8_t backgroundStage;
+    bool active : 1;
+    bool scheduled : 1;
+    bool sleeping : 1;
+  };
+
+  // A dependency consumes at most one slot per locally requested ACL resource.
+  // It contains no plaintext or protected frame from the failed READ.
+  struct ReadDependency {
+    uint32_t resourceId;
+    uint8_t peerIndex;
+    uint8_t resourceType;
+    bool used : 1;
+    bool needsRefresh : 1;
+    bool pending : 1;
+  };
+
   struct SessionEntry {
     bool used;
     uint8_t peerIndex;
@@ -145,6 +182,9 @@ class Runtime {
     uint64_t sessionId;
     uint32_t sequence;
     uint32_t lastTransmitMs;
+    uint32_t controlExpiresAtMs;
+    bool controlDelivery : 1;
+    bool actionDelivery : 1;
     // Retry frames are non-empty, so frameLength == 0 marks a free slot.
     // Bounded retry state fits one byte: attempts are 0..3, recovery attempts
     // are 0..1, and flags use four bits.
@@ -164,6 +204,7 @@ class Runtime {
     uint8_t peerIndex;
     uint8_t length;
     uint8_t data[32];
+    uint32_t controlExpiresAtMs;
   };
 
   struct FloodJob {
@@ -197,22 +238,36 @@ class Runtime {
   void startLocate(uint8_t peerIndex);
   void startHandshake(uint8_t peerIndex);
   void recoverSession(uint8_t peerIndex, uint64_t sessionId);
+  void cancelPeerRecoveryIfIdle(uint8_t peerIndex);
+  void beginRecovery(uint8_t peerIndex);
+  void finishRecovery(uint8_t peerIndex);
+  void iterateRecovery(uint32_t now);
+  void pruneReadDependencies();
+  void noteReachability(uint8_t peerIndex);
+  void completeRead(uint8_t peerIndex, const ResourceId &resource);
+  bool queueRead(uint8_t peerIndex, const ResourceId &resource);
+  int findReadDependency(uint8_t peerIndex, const ResourceId &resource) const;
   bool sendRaw(const Endpoint &endpoint, const uint8_t *data, size_t length,
                uint8_t frameKind);
   bool sendProtected(uint8_t peerIndex, const DirectionalKeys *transmitKeys,
                      uint64_t sessionId, uint32_t *nextTransmitSequence,
                      uint32_t *lastActivityMs,
                      const uint8_t *applicationData, size_t applicationLength,
-                     bool ackRequired, const ResourceId &resource);
+                     bool ackRequired, const ResourceId &resource,
+                     bool actionDelivery = false,
+                     uint32_t actionExpiresAtMs = 0);
   bool sendProtectedToEndpoint(
       uint8_t peerIndex, const Endpoint &endpoint,
       const DirectionalKeys *transmitKeys, uint64_t sessionId,
       uint32_t *nextTransmitSequence, uint32_t *lastActivityMs,
       const uint8_t *applicationData, size_t applicationLength,
-      bool ackRequired, const ResourceId &resource);
+      bool ackRequired, const ResourceId &resource,
+      bool actionDelivery = false, uint32_t actionExpiresAtMs = 0);
   bool enqueueApplication(uint8_t peerIndex, const uint8_t *data,
-                          size_t length, bool mayEstablishSession);
+                          size_t length, bool mayEstablishSession,
+                          bool actionDelivery = false);
   void drainDeferred();
+  void expireControls(uint32_t now);
   void processDatagram(const Endpoint &source, const uint8_t *data,
                        size_t length);
   void processFlood();
@@ -267,6 +322,8 @@ class Runtime {
   RuntimeInterest interests_[SUPLAN_MAX_RUNTIME_INTERESTS];
   RetryEntry retries_[SUPLAN_MAX_RETRY_SLOTS];
   DeferredApplication deferred_[SUPLAN_MAX_DEFERRED_APP_EVENTS];
+  PeerRecovery recovery_[SUPLAN_MAX_PERSISTENT_PEERS];
+  ReadDependency dependencies_[SUPLAN_MAX_TOTAL_ACL_ENTRIES];
   FloodJob flood_;
   FragmentSender fragmentSender_;
   FragmentReassembler fragmentReassembler_;
@@ -279,6 +336,8 @@ class Runtime {
   uint8_t transmitFrame_[SUPLAN_MAX_APPLICATION_BYTES +
                          kProtectedHeaderSize + kAeadTagSize];
   Endpoint fragmentEndpoint_;
+  DataTransmitObserver dataTransmitObserver_;
+  void *dataTransmitContext_;
 };
 
 }  // namespace SupLan

@@ -673,20 +673,20 @@ TEST(SupLanData, ProtectedControlActionAndAckMatchFixedVectors) {
   ASSERT_TRUE(Supla::SupLan::encodeApplicationData(
       Supla::SupLan::kMessageClassSuplaCall,
       700,  // SUPLA_DS_CALL_ACTIONTRIGGER.
-      0, actionBody,
+      Supla::SupLan::kAckRequired, actionBody,
       sizeof(actionBody), application, sizeof(application),
       &applicationLength));
   EXPECT_EQ(std::vector<uint8_t>(application,
                                  application + applicationLength),
-            fromHex("01000002bc00010000c351ff0403020100000000"
+            fromHex("01000002bc01010000c351ff0403020100000000"
                 "000000000000"));
   ASSERT_TRUE(Supla::SupLan::encodeProtectedData(
       &crypto, &keys, sessionId, 2, application, applicationLength, frame,
       sizeof(frame), &frameLength));
   EXPECT_EQ(std::vector<uint8_t>(frame, frame + frameLength),
             fromHex("0105010203040506070800000002001a7bd24d38"
-                "9b3a44ab44eb43d2101cdcbbf7c4c07a66ab8994"
-                "c32005ba05cdde4a7a693105d7e8653e52c8"));
+                "9b3b44ab44eb43d2101cdcbbf7c4c07a66ab8994"
+                "c32043ca6090764c1d404de0ca83af31a33c"));
 
   const uint8_t ackBody[5] = {0x00, 0x00, 0x00, 0x00, 0x03};
   ASSERT_TRUE(Supla::SupLan::encodeApplicationData(

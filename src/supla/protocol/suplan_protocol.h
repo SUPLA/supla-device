@@ -37,6 +37,36 @@ typedef void (*SupLanApplicationEventHandler)(
     const Supla::SupLan::ResourceId &resource, uint32_t messageType,
     const uint8_t *payload, size_t payloadLength);
 
+// Device-side adapter for restartable platform transports. This interface
+// stays outside the portable SupLAN core and is driven by ProtocolLayer's
+// normal SuplaDevice lifecycle.
+class SupLanTransportLifecycle {
+ public:
+  virtual ~SupLanTransportLifecycle() = default;
+  virtual bool networkReady(uint32_t nowMs) = 0;
+  virtual bool isOpen() const = 0;
+  virtual bool open() = 0;
+  virtual void close() = 0;
+
+  // Keep retry timing with the transport adapter rather than the ProtocolLayer
+  // so SupLan's embedded object stays within its existing size budget.
+  bool openIfDue(uint32_t nowMs) {
+    if (openAttempted_ &&
+        static_cast<uint32_t>(nowMs - lastOpenAttemptMs_) < 1000) {
+      return false;
+    }
+    openAttempted_ = true;
+    lastOpenAttemptMs_ = nowMs;
+    return open();
+  }
+
+  void resetOpenRetry() { openAttempted_ = false; }
+
+ private:
+  bool openAttempted_ = false;
+  uint32_t lastOpenAttemptMs_ = 0;
+};
+
 // The adapter uses the existing SUPLA Element/Channel model for local READ
 // and CONTROL dispatch. Remote state/events are handed to the application
 // through a callback because supla-device has no client-side channel cache.
@@ -51,6 +81,7 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   ~SupLan() override;
 
   void attachRuntime(Supla::SupLan::Runtime *runtime);
+  void attachTransportLifecycle(SupLanTransportLifecycle *transport);
   void setEnabled(bool enabled);
   void onInit() override;
   bool onLoadConfig() override;
@@ -60,8 +91,10 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   bool isConfigEmpty() override;
   bool iterate(uint32_t millis) override;
   bool isNetworkRestartRequested() override;
+  bool protectsNetworkFromPeerRestart() override;
   uint32_t getConnectionFailTime() override;
   bool isRegisteredAndReady() override;
+  bool isTransportOpen() const;
   void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) override;
   void sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
                               uint8_t offline,
@@ -93,17 +126,20 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
  private:
   const SupLanResourceMapping *findResource(uint32_t resourceId) const;
   bool mapIsValid() const;
+  void clearPeerTransportState();
   static void putSuplaUint32(uint8_t output[4], uint32_t value);
   static uint32_t getSuplaUint32(const uint8_t input[4]);
   static uint8_t channelOfflineState(const Supla::Channel *channel);
 
   Supla::SupLan::PeerTable *peers_;
   Supla::SupLan::Runtime *runtime_;
+  SupLanTransportLifecycle *transport_;
   const SupLanResourceMapping *mappings_;
-  uint8_t mappingCount_;
   SupLanApplicationEventHandler eventHandler_;
   void *eventContext_;
+  uint8_t mappingCount_;
   bool enabled_;
+  bool transportWasOpen_;
 };
 
 }  // namespace Protocol

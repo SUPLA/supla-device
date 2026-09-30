@@ -549,7 +549,21 @@ void SuplaDeviceClass::iterate(void) {
           iterateConnected = true;
         }
         if (proto->isNetworkRestartRequested()) {
-          requestNetworkLayerRestart = true;
+          bool independentTransportActive = false;
+          for (auto peer = Supla::Protocol::ProtocolLayer::first();
+               peer != nullptr; peer = peer->next()) {
+            if (peer != proto && peer->protectsNetworkFromPeerRestart()) {
+              independentTransportActive = true;
+              break;
+            }
+          }
+          if (independentTransportActive) {
+            SUPLA_LOG_DEBUG(
+                "Protocol requested a network restart; preserving an active "
+                "independent transport");
+          } else {
+            requestNetworkLayerRestart = true;
+          }
         }
         delay(0);
       }

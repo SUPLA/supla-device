@@ -11,6 +11,33 @@ import tempfile
 import time
 
 
+def check_data_comparison(role, logs, send, drain):
+    """Require the response to this query, never a PASS from an older capture."""
+    after = len(logs[role])
+
+    def response():
+        return next((line for line in logs[role][after:]
+                     if line.startswith("DATA_COMPARE=")), None)
+
+    send(role, "show-data-comparison")
+    drain(1, lambda: response() is not None)
+    return response() == "DATA_COMPARE=PASS"
+
+
+def check_data_retry_timing(role, logs, send, drain):
+    """Read peer-measured retry spacing, independent of runner scheduling."""
+    after = len(logs[role])
+
+    def response():
+        return next((line for line in logs[role][after:]
+                     if line.startswith("DATA_RETRY_TIMING")), None)
+
+    send(role, "show-data-retry-timing")
+    drain(1, lambda: response() is not None)
+    match = re.fullmatch(r"DATA_RETRY_TIMING delay_ms=(\d+)", response() or "")
+    return match is not None and int(match.group(1)) >= 150
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("binary")
@@ -106,6 +133,25 @@ def main():
         return {name: int(value) for name, value in
                 re.findall(r"(\w+)=(\d+)", rows[-1])}
 
+    def wait_for_counter(role, name, minimum, timeout):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            before = len([line for line in logs[role]
+                          if line.startswith("COUNTERS ")])
+            send(role, "show-counters")
+            if not drain(min(1.0, deadline - time.monotonic()), lambda:
+                         len([line for line in logs[role]
+                              if line.startswith("COUNTERS ")]) > before):
+                continue
+            rows = [line for line in logs[role]
+                    if line.startswith("COUNTERS ")]
+            values = {key: int(value) for key, value in
+                      re.findall(r"(\w+)=(\d+)", rows[-1])}
+            if values.get(name, 0) >= minimum:
+                return values
+            time.sleep(min(0.05, max(0.0, deadline - time.monotonic())))
+        return None
+
     def pools(role):
         before = len([line for line in logs[role] if line.startswith("POOLS")])
         send(role, "show-pools")
@@ -122,6 +168,15 @@ def main():
 
     def event_count(role, marker):
         return sum(marker in line for line in logs[role])
+
+    def peer_endpoint(role, index, after=0):
+        pattern = re.compile(
+            rf"PEER index={index} endpoint_state=(\d+) endpoint=([^ ]+)")
+        for line in reversed(logs[role][after:]):
+            match = pattern.search(line)
+            if match is not None:
+                return int(match.group(1)), match.group(2)
+        return None
 
     def multicast_interface_counts(role):
         rows = [line for line in logs[role]
@@ -157,6 +212,16 @@ def main():
         if not condition:
             raise RuntimeError("FAIL: " + description)
         print("PASS: " + description, flush=True)
+
+    def require_primary_endpoint(role, expected_port, description):
+        before = len(logs[role])
+        send(role, "show-status")
+        require(drain(5, lambda: seen(
+                    role, "PEER index=0 endpoint_state=", before)),
+                f"{role} reports its authenticated endpoint")
+        endpoint = peer_endpoint(role, 0, before)
+        require(endpoint is not None and endpoint[0] == 2 and
+                endpoint[1].endswith(f":{expected_port}"), description)
 
     try:
         start("B", args.bind_b, config_b)
@@ -204,6 +269,25 @@ def main():
         require(drain(5, lambda: seen("B", "STATE resource=50001", b0) and
                       seen("B", "ACK resource=50001", b0)),
                 "authenticated LOCATE, SESSION and acknowledged current-state READ")
+        b0 = len(logs["B"])
+        send("B", "show-status")
+        require(drain(8, lambda: seen(
+                    "B", "PEER index=0 endpoint_state=", b0)),
+                "B reports its authenticated primary endpoint")
+        endpoint_b = peer_endpoint("B", 0, b0)
+        expected_b_address = (args.bind_a if args.bind_a != "0.0.0.0"
+                              else None)
+        endpoint_match = (
+            endpoint_b is not None and endpoint_b[0] == 2 and
+            endpoint_b[1].endswith(f":{args.port_a}") and
+            (expected_b_address is None or
+             endpoint_b[1] == f"{expected_b_address}:{args.port_a}"))
+        if not endpoint_match:
+            print(f"FAIL: authenticated peer endpoints do not match this run "
+                  f"(B={endpoint_b}; expected A at port {args.port_a})",
+                  flush=True)
+        require(endpoint_match,
+                "LOCATE selected this run's intended A test process")
 
         send("B", "control 50001 1")
         require(drain(4, lambda: seen("A", "CONTROL resource=50001 value=1") and
@@ -235,8 +319,7 @@ def main():
                       len([line for line in logs["B"]
                            if "ACK resource=50001" in line]) > acks_before),
                 "lost ACK retries identical CONTROL without duplicate effect")
-        send("B", "show-data-comparison")
-        require(drain(1, lambda: seen("B", "DATA_COMPARE=PASS")),
+        require(check_data_comparison("B", logs, send, drain),
                 "ACK retry retransmits byte-identical protected DATA")
         a_after_retry = counters("A")
         b_after_retry = counters("B")
@@ -296,9 +379,39 @@ def main():
         send("B", "read 50001")
         require(drain(5, lambda: seen("B", "STATE resource=50001", b0)),
                 "valid LOCATE recovers after rejected LOCATE")
+        # Let every copy from all selected multicast interfaces and any
+        # duplicate SESSION traffic leave the bounded recovery window before
+        # injecting the next handshake fault.
+        drain(1.0)
+        settled_pools_a = pools("A")
+        settled_pools_b = pools("B")
+        require(settled_pools_a["pending"][0] == 0 and
+                settled_pools_a["locates"][0] == 0 and
+                settled_pools_b["pending"][0] == 0 and
+                settled_pools_b["locates"][0] == 0,
+                "no deferred LOCATE or SESSION recovery remains before fault injection")
 
-        bad_session_before = counters("B")
-        bad_session_reads_before = counters("A")["reads"]
+        # Isolate handshake authentication from recovery and endpoint churn.
+        # A fresh pair has one matching active session before B deliberately
+        # forgets its side and sends a tampered SESSION_INIT.
+        a0 = len(logs["A"])
+        b0 = len(logs["B"])
+        stop("A")
+        stop("B")
+        start("A", args.bind_a, config_a, args.port_a)
+        start("B", args.bind_b, config_b)
+        require(drain(3, lambda: seen("A", "READY role=A", a0) and
+                      seen("B", "READY role=B", b0)),
+                "restart both peers before SESSION authentication test")
+        b0 = len(logs["B"])
+        send("B", "read 50001")
+        require(drain(5, lambda: seen("B", "STATE resource=50001", b0)),
+                "fresh SESSION established before authentication fault")
+        require_primary_endpoint(
+            "B", args.port_a,
+            "SESSION authentication test targets this run's A process")
+        bad_session_before_a = counters("A")
+        bad_session_before_b = counters("B")
         state_events_before = event_count("B", "STATE resource=50001")
         b0 = len(logs["B"])
         send("B", "forget-session 0")
@@ -306,32 +419,37 @@ def main():
         require(drain(2, lambda: seen("B", "OK session forgotten", b0) and
                       seen("B", "OK session-init retries paused", b0)),
                 "pause SESSION_INIT retries for deterministic fault check")
-        a0 = len(logs["A"])
-        send("A", "corrupt-next-session-mac-tx")
+        b0 = len(logs["B"])
+        send("B", "corrupt-next-session-mac-tx")
         require(drain(2, lambda: seen(
-                    "A", "OK hook=corrupt-next-session-mac-tx", a0)),
-                "arm SESSION_ACCEPT MAC corruption")
+                    "B", "OK hook=corrupt-next-session-mac-tx", b0)),
+                "arm SESSION_INIT MAC corruption")
         b0 = len(logs["B"])
         send("B", "read 50001")
-        drain(0.1)
-        bad_session_rejected = counters("B")
-        reads_during_rejection = counters("A")["reads"]
-        require(bad_session_rejected["invalid_session"] ==
-                bad_session_before["invalid_session"] + 1 and
-                bad_session_rejected["session_established"] ==
-                bad_session_before["session_established"] and
-                reads_during_rejection == bad_session_reads_before and
+        bad_session_rejected_a = wait_for_counter(
+            "A", "invalid_session",
+            bad_session_before_a["invalid_session"] + 1, 3)
+        require(bad_session_rejected_a is not None,
+                "A rejects the tampered SESSION_INIT MAC")
+        bad_session_rejected_b = counters("B")
+        require(bad_session_rejected_a["session_init_rx"] ==
+                bad_session_before_a["session_init_rx"] and
+                bad_session_rejected_a["session_accept_tx"] ==
+                bad_session_before_a["session_accept_tx"] and
+                bad_session_rejected_a["reads"] == bad_session_before_a["reads"] and
+                bad_session_rejected_b["session_established"] ==
+                bad_session_before_b["session_established"] and
                 event_count("B", "STATE resource=50001") == state_events_before,
-                "tampered SESSION_ACCEPT creates no session or app dispatch")
+                "tampered SESSION_INIT creates no session or app dispatch")
         send("B", "resume-session-init-retries")
         require(drain(2, lambda: seen(
                     "B", "OK session-init retries resumed", b0)),
                 "resume SESSION_INIT retries after rejection check")
         require(drain(5, lambda: seen("B", "STATE resource=50001", b0)),
-                "valid SESSION retry recovers after tampered SESSION_ACCEPT")
-        bad_session_after = counters("B")
+                "valid SESSION retry recovers after tampered SESSION_INIT")
+        bad_session_after = counters("A")
         require(bad_session_after["invalid_session"] >
-                bad_session_before["invalid_session"],
+                bad_session_before_a["invalid_session"],
                 "invalid SESSION authentication is rejected")
 
         auth_before_snapshot = counters("A")
@@ -366,33 +484,199 @@ def main():
                 replay_control_before,
                 "stale protected sequence outside the replay window is rejected")
 
+        # The preceding recovery/fault cases deliberately leave sessions and
+        # pending network work in motion. Start both fixture processes fresh
+        # so the Action Trigger profile begins with one known READ interest
+        # and no unrelated pending handshake traffic.
+        a0 = len(logs["A"])
+        b0 = len(logs["B"])
+        stop("A")
+        stop("B")
+        start("A", args.bind_a, config_a, args.port_a)
+        start("B", args.bind_b, config_b)
+        require(drain(3, lambda: seen("A", "READY role=A", a0) and
+                      seen("B", "READY role=B", b0)),
+                "restart both peers before isolated Action Trigger tests")
+        b0 = len(logs["B"])
+        send("B", "read 50001")
+        require(drain(5, lambda: seen("B", "STATE resource=50001", b0)),
+                "fresh sessions are established for both PoC1 resources")
+
         a0 = len(logs["A"])
         b0 = len(logs["B"])
         send("A", "read 50002")
         require(drain(5, lambda: seen("B", "READ resource=50002", b0) and
                       seen("A", "ACK resource=50002", a0)),
                 "ACTION-only READ establishes future event interest")
+        action_events_before = event_count("A", "ACTION resource=50002")
+        action_acks_before = event_count("B", "ACK resource=50002")
         action_a_before = counters("A")
         action_b_before = counters("B")
         send("B", "emit-action 50002 4660")
-        require(drain(4, lambda: seen("A", "ACTION resource=50002 action=4660",
-                                      a0)), "Action Trigger delivered best effort")
+        require(drain(4, lambda: event_count("A", "ACTION resource=50002") ==
+                      action_events_before + 1 and
+                      event_count("B", "ACK resource=50002") ==
+                      action_acks_before + 1),
+                "Action Trigger is acknowledged exactly once")
         action_a_after = counters("A")
         action_b_after = counters("B")
-        require(action_a_after["ack_tx"] == action_a_before["ack_tx"] and
-                action_b_after["retry_tx"] == action_b_before["retry_tx"] and
+        require(action_a_after["ack_tx"] == action_a_before["ack_tx"] + 1 and
+                action_b_after["ack_rx"] == action_b_before["ack_rx"] + 1 and
                 action_b_after["actions_tx"] == action_b_before["actions_tx"] + 1,
-                "Action Trigger is best effort without ACK or retry")
-        actions_before = len([line for line in logs["A"]
-                              if "ACTION resource=50002" in line])
+                "Action Trigger sets ACK_REQUIRED and releases retry state")
+        require(pools("B")["retries"][0] == 0,
+                "acknowledged Action Trigger releases its retry slot")
+
+        action_events_before = event_count("A", "ACTION resource=50002")
+        action_acks_before = event_count("B", "ACK resource=50002")
+        action_a_before = counters("A")
+        action_b_before = counters("B")
+        send("B", "capture-next-data compare-retry")
+        drain(0.05)
         send("A", "drop-next-rx DATA")
+        drain(0.05)
         send("B", "emit-action 50002 22136")
-        drain(1)
+        require(drain(3, lambda:
+                      event_count("A", "ACTION resource=50002") ==
+                      action_events_before + 1 and
+                      event_count("B", "ACK resource=50002") ==
+                      action_acks_before + 1),
+                "dropped Action Trigger DATA is recovered by one retry")
+        require(check_data_retry_timing("B", logs, send, drain),
+                "dropped DATA retry uses identical frame after at least 150 ms")
+        action_a_after = counters("A")
+        action_b_after = counters("B")
+        require(action_b_after["retry_tx"] == action_b_before["retry_tx"] + 1 and
+                action_a_after["actions_rx"] == action_a_before["actions_rx"] + 1,
+                "recovered Action Trigger dispatches once and completes ACK")
+        require(check_data_comparison("B", logs, send, drain),
+                "Action Trigger DATA retry is byte-identical")
+
+        action_events_before = event_count("A", "ACTION resource=50002")
+        action_acks_before = event_count("B", "ACK resource=50002")
+        action_a_before = counters("A")
+        action_b_before = counters("B")
+        send("B", "capture-next-data compare-retry")
+        drain(0.05)
+        send("A", "drop-next-tx ACK")
+        drain(0.05)
+        send("B", "emit-action 50002 22137")
+        require(drain(3, lambda:
+                      event_count("A", "ACTION resource=50002") ==
+                      action_events_before + 1 and
+                      event_count("B", "ACK resource=50002") ==
+                      action_acks_before + 1),
+                "lost Action Trigger ACK is recovered by duplicate re-ACK")
+        require(check_data_comparison("B", logs, send, drain),
+                "lost-ACK Action Trigger retry is byte-identical")
+        action_a_after = counters("A")
+        action_b_after = counters("B")
+        require(action_a_after["actions_rx"] == action_a_before["actions_rx"] + 1 and
+                action_b_after["retry_tx"] == action_b_before["retry_tx"] + 1 and
+                action_a_after["duplicate"] == action_a_before["duplicate"] + 1,
+                "duplicate Action Trigger is ACKed without redispatch")
+
+        action_events_before = event_count("A", "ACTION resource=50002")
+        action_acks_before = event_count("B", "ACK resource=50002")
+        action_b_before = counters("B")
+        action_a_before = counters("A")
+        send("B", "capture-next-data compare-retry")
+        drain(0.05)
+        send("A", "drop-next-tx ACK 3")
+        drain(0.05)
+        send("B", "emit-action 50002 22138")
+        drain(0.7)
+        action_b_after = counters("B")
+        action_a_after = counters("A")
+        require(event_count("A", "ACTION resource=50002") ==
+                action_events_before + 1 and
+                event_count("B", "ACK resource=50002") == action_acks_before and
+                action_b_after["retry_tx"] == action_b_before["retry_tx"] + 2 and
+                action_b_after["data_tx"] == action_b_before["data_tx"] + 3 and
+                action_a_after["actions_rx"] == action_a_before["actions_rx"] + 1 and
+                action_a_after["duplicate"] == action_a_before["duplicate"] + 2 and
+                pools("B")["retries"][0] == 0,
+                "Action Trigger stops after three DATA attempts without ACK")
+        require(check_data_comparison("B", logs, send, drain),
+                "bounded Action Trigger retries use the identical frame")
+
+        action_events_before = event_count("A", "ACTION resource=50002")
+        action_acks_before = event_count("B", "ACK resource=50002")
+        action_b_before = counters("B")
+        action_a_before = counters("A")
+        send("B", "fail-next-tx DATA")
+        drain(0.05)
+        send("B", "emit-action 50002 22139")
+        require(drain(3, lambda:
+                      event_count("A", "ACTION resource=50002") ==
+                      action_events_before + 1 and
+                      event_count("B", "ACK resource=50002") ==
+                      action_acks_before + 1),
+                "synchronous send failure retries after the bounded delay")
+        require(check_data_retry_timing("B", logs, send, drain),
+                "failed DATA retry uses identical frame after at least 150 ms")
+        action_b_after = counters("B")
+        action_a_after = counters("A")
+        require(action_b_after["retry_tx"] == action_b_before["retry_tx"] + 1 and
+                action_b_after["data_tx"] == action_b_before["data_tx"] + 1 and
+                action_a_after["actions_rx"] == action_a_before["actions_rx"] + 1,
+                "local send failure consumes an attempt and then dispatches once")
+
+        action_events_before = event_count("A", "ACTION resource=50002")
+        action_acks_before = event_count("B", "ACK resource=50002")
+        session_init_before = counters("B")["session_init_tx"]
+        # Role B maps Action Trigger resource 50002 to peer index 1.
+        send("B", "forget-session 1")
+        send("B", "emit-action 50002 22140")
+        require(drain(4, lambda:
+                      event_count("A", "ACTION resource=50002") ==
+                      action_events_before + 1 and
+                      event_count("B", "ACK resource=50002") ==
+                      action_acks_before + 1),
+                "Action Trigger establishes a missing SESSION directly")
+        require(counters("B")["session_init_tx"] > session_init_before,
+                "Action-only delivery initiates SESSION recovery")
+
+        action_events_before = event_count("A", "ACTION resource=50002")
+        action_acks_before = event_count("B", "ACK resource=50002")
+        locate_before = counters("B")["locate_tx"]
+        send("B", "clear-endpoint 1")
+        send("B", "emit-action 50002 22141")
+        require(drain(5, lambda:
+                      event_count("A", "ACTION resource=50002") ==
+                      action_events_before + 1 and
+                      event_count("B", "ACK resource=50002") ==
+                      action_acks_before + 1),
+                "Action Trigger establishes LOCATE and SESSION without READ")
+        require(counters("B")["locate_tx"] > locate_before,
+                "Action-only delivery performs authenticated LOCATE")
+
+        actions_before_unavailable = event_count(
+            "A", "ACTION resource=50002")
+        stop("A")
+        send("B", "clear-endpoint 1")
+        send("B", "emit-action 50002 22142")
+        drain(3.2)
+        a0 = len(logs["A"])
+        start("A", args.bind_a, config_a, args.port_a)
+        require(drain(3, lambda: seen("A", "READY role=A", a0)),
+                "peer returns after Action Trigger expiry")
+        b0 = len(logs["B"])
+        acks_before_refresh = event_count("A", "ACK resource=50002")
         send("A", "read 50002")
-        drain(2)
-        require(len([line for line in logs["A"]
-                     if "ACTION resource=50002" in line]) == actions_before,
-                "missed Action Trigger is never replayed")
+        require(drain(5, lambda: seen("B", "READ resource=50002", b0) and
+                      event_count("A", "ACK resource=50002") >
+                      acks_before_refresh),
+                "READ refreshes interest after peer recovery")
+        require(event_count("A", "ACTION resource=50002") ==
+                actions_before_unavailable,
+                "expired Action Trigger is not replayed after peer recovery")
+
+        b0 = len(logs["B"])
+        send("B", "read 50001")
+        require(drain(5, lambda: seen("B", "STATE resource=50001", b0) and
+                      seen("B", "ACK resource=50001", b0)),
+                "READ refreshes relay interest after responder restart")
 
         b0 = len([line for line in logs["B"] if "payload_bytes=206" in line])
         send("A", "force-max-datagram 96")
@@ -433,6 +717,34 @@ def main():
                 "oversized fragment is rejected without allocating reassembly")
         send("A", "force-max-datagram 250")
         drain(0.1)
+
+        # A native ACK also travels inside protected DATA. It must not consume
+        # the application-DATA failure hook or timing observation.
+        a0 = len(logs["A"])
+        send("B", "fail-next-tx DATA")
+        send("A", "read 50002")
+        require(drain(3, lambda: seen("A", "ACK resource=50002", a0)),
+                "ACK preceding application DATA does not consume failure hook")
+        control_and_ack(1)
+        require(check_data_retry_timing("B", logs, send, drain),
+                "application CONTROL still fails once and retries after ACK")
+
+        # Fault injection happens before adaptation, including fragmented DATA.
+        b0 = len(logs["B"])
+        a0 = len(logs["A"])
+        send("A", "force-max-datagram 96")
+        send("A", "fail-next-tx DATA")
+        send("A", "send-extended 50001 200")
+        require(drain(2, lambda: seen(
+                    "A", "ERROR extended state rejected", a0)),
+                "fragmented DATA observes synchronous failure before send")
+        drain(0.2)
+        require(not seen("B", "payload_bytes=206", b0),
+                "failed fragmented DATA sends no partial or complete state")
+        send("A", "send-extended 50001 200")
+        require(drain(3, lambda: seen("B", "payload_bytes=206", b0)),
+                "fragment failure consumes hook and the next state recovers")
+        send("A", "force-max-datagram 250")
 
         flood_baseline = counters("A")
         send("B", "flood-invalid-locate 1000")
@@ -481,10 +793,13 @@ def main():
         require(drain(4, lambda: seen("B", "READ resource=50002", a0)),
                 "post-fault READ refreshes Action Trigger interest")
         action_before = event_count("A", "ACTION resource=50002")
+        action_ack_before = event_count("B", "ACK resource=50002")
         send("B", "emit-action 50002 4660")
         require(drain(4, lambda: event_count("A", "ACTION resource=50002") ==
-                      action_before + 1),
-                "post-fault Action Trigger is delivered")
+                      action_before + 1 and
+                      event_count("B", "ACK resource=50002") ==
+                      action_ack_before + 1),
+                "post-fault Action Trigger is acknowledged")
         send("A", "show-status")
         send("B", "show-status")
         drain(0.2)

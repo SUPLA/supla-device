@@ -20,6 +20,8 @@ static const uint8_t kRetryReadRequest = 1U << 0;
 static const uint8_t kRetryReadExpectsState = 1U << 1;
 static const uint8_t kRetryReadStateReceived = 1U << 2;
 static const uint8_t kRetryAwaitingReadState = 1U << 3;
+// ADR-008: CONTROL must not survive its foreground recovery deadline.
+static const uint32_t kControlLifetimeMs = 5000;
 static_assert(kAckMaxAttempts <= 3,
               "RetryEntry attempts field supports up to three attempts");
 static_assert(kRetryAwaitingReadState < 16,
@@ -47,6 +49,43 @@ static uint32_t getSuplaUint32(const uint8_t input[4]) {
       (static_cast<uint32_t>(input[2]) << 16) |
       (static_cast<uint32_t>(input[3]) << 24);
 }
+
+static bool isActionApplication(const uint8_t *data, size_t length) {
+  ApplicationDataView application = {};
+  return decodeApplicationData(data, length, &application) &&
+      application.messageClass == kMessageClassSuplaCall &&
+      application.messageType == kSuplaCallActionTrigger &&
+      application.flags == kAckRequired;
+}
+
+static bool isControlApplication(const uint8_t *data, size_t length) {
+  ApplicationDataView application = {};
+  return decodeApplicationData(data, length, &application) &&
+      application.messageClass == kMessageClassSuplaCall &&
+      application.messageType == kSuplaCallChannelSetValue &&
+      application.flags == kAckRequired;
+}
+
+static void putActionDeadline(uint8_t *buffer, size_t capacity,
+                              uint32_t expiresAtMs) {
+  uint8_t *field = buffer + capacity - sizeof(uint32_t);
+  field[0] = static_cast<uint8_t>(expiresAtMs);
+  field[1] = static_cast<uint8_t>(expiresAtMs >> 8);
+  field[2] = static_cast<uint8_t>(expiresAtMs >> 16);
+  field[3] = static_cast<uint8_t>(expiresAtMs >> 24);
+}
+
+static uint32_t getActionDeadline(const uint8_t *buffer, size_t capacity) {
+  return getSuplaUint32(buffer + capacity - sizeof(uint32_t));
+}
+
+static_assert(kApplicationHeaderSize + kResourceHeaderSize + 15 +
+                  sizeof(uint32_t) + 1 <= 32,
+              "Deferred Action Trigger needs deadline metadata slack");
+static_assert(kApplicationHeaderSize + kResourceHeaderSize + 15 +
+                  kProtectedHeaderSize + kAeadTagSize + sizeof(uint32_t) + 1 <=
+                  SUPLAN_MAX_RETRY_FRAME_BYTES,
+              "Retry Action Trigger needs deadline metadata slack");
 }  // namespace
 
 Runtime::Runtime(CryptoPort *crypto, RandomPort *random,
@@ -58,10 +97,12 @@ Runtime::Runtime(CryptoPort *crypto, RandomPort *random,
       suplaProtoVersion_(suplaProtoVersion), processing_(false),
       nextFrameId_(UINT32_C(0xC3000000)), fragmentOrdinal_(0), sessions_(),
       pending_(), locates_(),
-      interests_(), retries_(), deferred_(), flood_(), fragmentSender_(),
+      interests_(), retries_(), deferred_(), recovery_(), dependencies_(),
+      flood_(), fragmentSender_(),
       fragmentReassembler_(), diagnostics_(), poolHighWater_(), hooks_(),
       applicationBuffer_(), transmitFrame_(),
-      fragmentEndpoint_() {
+      fragmentEndpoint_(), dataTransmitObserver_(nullptr),
+      dataTransmitContext_(nullptr) {
   for (uint8_t i = 0; i < SUPLAN_MAX_ACTIVE_SESSIONS; ++i) {
     clearSessionEntry(&sessions_[i]);
   }
@@ -113,6 +154,12 @@ void Runtime::clearRetryEntry(RetryEntry *retry) {
   if (retry != nullptr) {
     memset(retry, 0, sizeof(*retry));
   }
+}
+
+void Runtime::setDataTransmitObserver(DataTransmitObserver observer,
+                                      void *context) {
+  dataTransmitObserver_ = observer;
+  dataTransmitContext_ = context;
 }
 
 bool Runtime::sameNode(const NodeAddress &left,
@@ -449,6 +496,208 @@ bool Runtime::knownSession(void *context, uint64_t sessionId) {
   return false;
 }
 
+int Runtime::findReadDependency(uint8_t peerIndex,
+                                const ResourceId &resource) const {
+  for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+    const ReadDependency &entry = dependencies_[i];
+    if (entry.used && entry.peerIndex == peerIndex &&
+        entry.resourceType == resource.type &&
+        entry.resourceId == resource.id) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+bool Runtime::readNeedsRefresh(uint8_t peerIndex,
+                               const ResourceId &resource) const {
+  const int slot = findReadDependency(peerIndex, resource);
+  return slot >= 0 && dependencies_[slot].needsRefresh;
+}
+
+Runtime::RecoveryStatus Runtime::recoveryStatus(uint8_t peerIndex) const {
+  RecoveryStatus result = {};
+  if (peerIndex < SUPLAN_MAX_PERSISTENT_PEERS) {
+    const PeerRecovery &peer = recovery_[peerIndex];
+    result.active = peer.active;
+    result.sleeping = peer.sleeping;
+    result.locateAttempts = peer.locateAttempts;
+    result.backgroundStage = peer.backgroundStage;
+    result.deadlineMs = peer.deadlineMs;
+    result.nextRefreshMs = peer.nextRefreshMs;
+  }
+  return result;
+}
+
+void Runtime::setPeerSleeping(uint8_t peerIndex, bool sleeping) {
+  if (peerIndex < SUPLAN_MAX_PERSISTENT_PEERS) {
+    recovery_[peerIndex].sleeping = sleeping;
+  }
+}
+
+void Runtime::beginRecovery(uint8_t peerIndex) {
+  PeerRecovery &peer = recovery_[peerIndex];
+  if (!peer.active) {
+    peer.active = true;
+    peer.scheduled = false;
+    peer.locateAttempts = 0;
+    peer.deadlineMs = datagrams_->nowMs() + kControlLifetimeMs;
+  }
+}
+
+void Runtime::finishRecovery(uint8_t peerIndex) {
+  PeerRecovery &peer = recovery_[peerIndex];
+  peer.active = false;
+  bool refresh = false;
+  for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+    ReadDependency &entry = dependencies_[i];
+    if (entry.used && entry.peerIndex == peerIndex) {
+      if (entry.pending) {
+        entry.pending = false;
+        entry.needsRefresh = true;
+      }
+      refresh = refresh || entry.needsRefresh;
+    }
+  }
+  for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
+    if (deferred_[i].used && deferred_[i].peerIndex == peerIndex) {
+      deferred_[i].used = false;
+    }
+  }
+  for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
+    if (retries_[i].isUsed() && retries_[i].peerIndex == peerIndex) {
+      clearRetryEntry(&retries_[i]);
+    }
+  }
+  cancelPeerRecoveryIfIdle(peerIndex);
+  PeerRecord *record = peers_->get(peerIndex);
+  if (record != nullptr &&
+      record->endpointState == kPeerEndpointLocateCandidate) {
+    record->endpoint = Endpoint();
+    record->endpointState = kPeerEndpointNone;
+  }
+  peer.scheduled = refresh;
+  if (refresh) {
+    static const uint32_t delays[] = {5000, 15000, 60000, 300000};
+    const uint32_t base = delays[peer.backgroundStage];
+    uint8_t jitter[4] = {};
+    // Random failure keeps the hard minimum; it never removes the backoff.
+    (void)random_->fillRandom(jitter, sizeof(jitter));
+    peer.nextRefreshMs = datagrams_->nowMs() + base +
+        getUint32(jitter) % (base / 5 + 1);
+    if (peer.backgroundStage < 3) {
+      ++peer.backgroundStage;
+    }
+  }
+}
+
+void Runtime::completeRead(uint8_t peerIndex, const ResourceId &resource) {
+  const int slot = findReadDependency(peerIndex, resource);
+  if (slot >= 0) {
+    dependencies_[slot].pending = false;
+    dependencies_[slot].needsRefresh = false;
+  }
+  recovery_[peerIndex].backgroundStage = 0;
+}
+
+void Runtime::noteReachability(uint8_t peerIndex) {
+  PeerRecovery &peer = recovery_[peerIndex];
+  peer.backgroundStage = 0;
+  if (!peer.active && peer.scheduled) {
+    peer.nextRefreshMs = datagrams_->nowMs();
+  }
+}
+
+void Runtime::pruneReadDependencies() {
+  for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+    ReadDependency &entry = dependencies_[i];
+    if (!entry.used) {
+      continue;
+    }
+    const uint8_t peerIndex = entry.peerIndex;
+    const ResourceId resource = {entry.resourceType, entry.resourceId};
+    if (isLocalDestination(peers_->get(peerIndex)) &&
+        (peers_->authorize(peerIndex, resource, kPermissionRead) ||
+         peers_->authorize(peerIndex, resource, kPermissionAction))) {
+      continue;
+    }
+    // A revoked dependency must not retain queued or retrying READ work.
+    for (uint8_t d = 0; d < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++d) {
+      DeferredApplication &deferred = deferred_[d];
+      ApplicationDataView application = {};
+      ResourceDataView body = {};
+      if (deferred.used && deferred.peerIndex == peerIndex &&
+          decodeApplicationData(deferred.data, deferred.length, &application) &&
+          application.messageClass == kMessageClassNative &&
+          application.messageType == kNativeReadResource &&
+          decodeResourceData(&application, &body) &&
+          body.resource.type == resource.type &&
+          body.resource.id == resource.id) {
+        deferred.used = false;
+      }
+    }
+    for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
+      RetryEntry &retry = retries_[r];
+      if (retry.isUsed() && retry.peerIndex == peerIndex &&
+          (retry.flags & kRetryReadRequest) != 0 &&
+          retry.resource.type == resource.type &&
+          retry.resource.id == resource.id) {
+        clearRetryEntry(&retry);
+      }
+    }
+    entry = ReadDependency();
+    cancelPeerRecoveryIfIdle(peerIndex);
+    bool refresh = false;
+    for (uint8_t d = 0; d < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++d) {
+      refresh = refresh || (dependencies_[d].used &&
+          dependencies_[d].peerIndex == peerIndex &&
+          dependencies_[d].needsRefresh);
+    }
+    if (!refresh) {
+      recovery_[peerIndex].scheduled = false;
+    }
+  }
+}
+
+void Runtime::iterateRecovery(uint32_t now) {
+  pruneReadDependencies();
+  for (uint8_t peerIndex = 0; peerIndex < peers_->size(); ++peerIndex) {
+    PeerRecovery &peer = recovery_[peerIndex];
+    bool handshake = false;
+    for (uint8_t i = 0; i < SUPLAN_MAX_PENDING_HANDSHAKES; ++i) {
+      handshake = handshake || (pending_[i].used && pending_[i].initiator &&
+                                 pending_[i].peerIndex == peerIndex);
+    }
+    bool locate = false;
+    for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
+      locate = locate || (locates_[i].used &&
+                            locates_[i].peerIndex == peerIndex);
+    }
+    const PeerRecord *record = peers_->get(peerIndex);
+    if (peer.active &&
+        (static_cast<int32_t>(now - peer.deadlineMs) >= 0 ||
+         (peer.locateAttempts >= 3 && !locate && !handshake &&
+          record->endpointState == kPeerEndpointNone))) {
+      finishRecovery(peerIndex);
+    }
+    if (!peer.active && peer.scheduled && !peer.sleeping &&
+        static_cast<int32_t>(now - peer.nextRefreshMs) >= 0) {
+      beginRecovery(peerIndex);
+    }
+    if (peer.active) {
+      for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+        ReadDependency &entry = dependencies_[i];
+        if (!entry.used || entry.peerIndex != peerIndex ||
+            !entry.needsRefresh || entry.pending) {
+          continue;
+        }
+        const ResourceId resource = {entry.resourceType, entry.resourceId};
+        (void)queueRead(peerIndex, resource);
+      }
+    }
+  }
+}
+
 void Runtime::startLocate(uint8_t peerIndex) {
   PeerRecord *peer = peers_->get(peerIndex);
   if (peer == nullptr || !peers_->hasActiveGrants(peerIndex)) {
@@ -474,11 +723,21 @@ void Runtime::startLocate(uint8_t peerIndex) {
     ++diagnostics_.poolReject;
     return;
   }
+  const uint32_t now = datagrams_->nowMs();
+  PeerRecovery &recovery = recovery_[peerIndex];
+  if (!recovery.active || recovery.locateAttempts >= 3 ||
+      (recovery.locateAttempts != 0 &&
+       static_cast<uint32_t>(now - recovery.lastLocateMs) <
+           kLocateReplyWindowMs)) {
+    return;
+  }
+  // Scheduling counts attempts even if RNG, MAC or the local send fails.
+  ++recovery.locateAttempts;
+  recovery.lastLocateMs = now;
   PeerMaterial material = {};
   if (!peers_->materialFor(crypto_, peerIndex, &material)) {
     return;
   }
-  const uint32_t now = datagrams_->nowMs();
   uint8_t nonce[kNonceSize];
   uint8_t mac[kPeerLocatorSize];
   uint8_t frame[50];
@@ -498,8 +757,6 @@ void Runtime::startLocate(uint8_t peerIndex) {
   locates_[slot].expiresAtMs = now + kLocateReplyWindowMs;
   if (datagrams_->sendLocateMulticast(frame, sizeof(frame))) {
     ++diagnostics_.locateTx;
-  } else {
-    locates_[slot].used = false;
   }
   memset(nonce, 0, sizeof(nonce));
   memset(mac, 0, sizeof(mac));
@@ -509,7 +766,8 @@ void Runtime::startLocate(uint8_t peerIndex) {
 void Runtime::startHandshake(uint8_t peerIndex) {
   PeerRecord *peer = peers_->get(peerIndex);
   if (peer == nullptr || !peers_->hasActiveGrants(peerIndex) ||
-      datagrams_ == nullptr || random_ == nullptr || crypto_ == nullptr) {
+      datagrams_ == nullptr || random_ == nullptr || crypto_ == nullptr ||
+      !recovery_[peerIndex].active) {
     return;
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_ACTIVE_SESSIONS; ++i) {
@@ -571,6 +829,12 @@ void Runtime::recoverSession(uint8_t peerIndex, uint64_t sessionId) {
         retry->sessionId != sessionId) {
       continue;
     }
+    if (retry->actionDelivery) {
+      // An Action Trigger that has made its first protected DATA attempt is
+      // scoped to this SESSION and must never cross into a replacement one.
+      clearRetryEntry(retry);
+      continue;
+    }
     SessionEntry *session = nullptr;
     for (uint8_t s = 0; s < SUPLAN_MAX_ACTIVE_SESSIONS; ++s) {
       if (sessions_[s].used && sessions_[s].peerIndex == peerIndex &&
@@ -626,6 +890,40 @@ void Runtime::recoverSession(uint8_t peerIndex, uint64_t sessionId) {
   updatePoolHighWater();
 }
 
+void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
+  for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
+    if (deferred_[i].used && deferred_[i].peerIndex == peerIndex) {
+      return;
+    }
+  }
+  for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
+    if (retries_[i].isUsed() && retries_[i].peerIndex == peerIndex) {
+      return;
+    }
+  }
+  if (recovery_[peerIndex].active) {
+    for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+      if (dependencies_[i].used && dependencies_[i].peerIndex == peerIndex &&
+          dependencies_[i].needsRefresh) {
+        return;
+      }
+    }
+  }
+  for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
+    if (locates_[i].used && locates_[i].peerIndex == peerIndex) {
+      locates_[i].used = false;
+    }
+  }
+  for (uint8_t i = 0; i < SUPLAN_MAX_PENDING_HANDSHAKES; ++i) {
+    if (pending_[i].used && pending_[i].initiator &&
+        pending_[i].peerIndex == peerIndex) {
+      clearPendingHandshake(&pending_[i]);
+    }
+  }
+  recovery_[peerIndex].active = false;
+  updatePoolHighWater();
+}
+
 bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
   const PeerRecord *peer = peers_->get(peerIndex);
   const bool readAuthorized = peers_->authorize(peerIndex, resource,
@@ -636,6 +934,38 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
     ++diagnostics_.aclReject;
     return false;
   }
+  pruneReadDependencies();
+  int slot = findReadDependency(peerIndex, resource);
+  if (slot < 0) {
+    for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+      if (!dependencies_[i].used) {
+        slot = i;
+        dependencies_[i].used = true;
+        dependencies_[i].peerIndex = peerIndex;
+        dependencies_[i].resourceType = resource.type;
+        dependencies_[i].resourceId = resource.id;
+        break;
+      }
+    }
+  }
+  if (slot < 0) {
+    ++diagnostics_.poolReject;
+    return false;
+  }
+  if (dependencies_[slot].pending) {
+    return true;
+  }
+  beginRecovery(peerIndex);
+  return queueRead(peerIndex, resource);
+}
+
+bool Runtime::queueRead(uint8_t peerIndex, const ResourceId &resource) {
+  const int slot = findReadDependency(peerIndex, resource);
+  if (slot < 0) {
+    return false;
+  }
+  dependencies_[slot].needsRefresh = true;
+  dependencies_[slot].pending = true;
   size_t length = kApplicationHeaderSize + kResourceHeaderSize;
   applicationBuffer_[0] = kMessageClassNative;
   putUint32(applicationBuffer_ + 1, kNativeReadResource);
@@ -644,7 +974,11 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
                         applicationBuffer_ + kApplicationHeaderSize)) {
     return false;
   }
-  return enqueueApplication(peerIndex, applicationBuffer_, length, true);
+  if (!enqueueApplication(peerIndex, applicationBuffer_, length, true)) {
+    dependencies_[slot].pending = false;
+    return false;
+  }
+  return true;
 }
 
 bool Runtime::sendControl(uint8_t peerIndex, const ResourceId &resource,
@@ -731,17 +1065,18 @@ bool Runtime::publishAction(uint8_t peerIndex, const ResourceId &resource,
                             size_t payloadLength) {
   const PeerRecord *peer = peers_->get(peerIndex);
   if (!isLocalSource(peer) || !interested(peerIndex, resource) ||
-      !peers_->authorize(peerIndex, resource, kPermissionAction)) {
+      !peers_->authorize(peerIndex, resource, kPermissionAction) ||
+      suplaPayload == nullptr || payloadLength != 15) {
     return false;
   }
   if (!buildResourceApplication(kMessageClassSuplaCall,
-                                kSuplaCallActionTrigger, 0, resource,
+                                kSuplaCallActionTrigger, kAckRequired, resource,
                                 suplaPayload, payloadLength, nullptr)) {
     return false;
   }
   return enqueueApplication(peerIndex, applicationBuffer_,
                             kApplicationHeaderSize + kResourceHeaderSize +
-                                payloadLength, false);
+                                payloadLength, true, true);
 }
 
 bool Runtime::forgetSession(uint8_t peerIndex) {
@@ -752,6 +1087,14 @@ bool Runtime::forgetSession(uint8_t peerIndex) {
       clearSessionEntry(&sessions_[i]);
       for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
         if (retries_[r].isUsed() && retries_[r].sessionId == sessionId) {
+          if ((retries_[r].flags & kRetryReadRequest) != 0) {
+            const int slot =
+                findReadDependency(peerIndex, retries_[r].resource);
+            if (slot >= 0) {
+              dependencies_[slot].pending = false;
+              dependencies_[slot].needsRefresh = true;
+            }
+          }
           clearRetryEntry(&retries_[r]);
         }
       }
@@ -836,11 +1179,26 @@ void Runtime::resetDiagnostics() {
 }
 
 bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
-                                 size_t length, bool mayEstablishSession) {
+                                 size_t length, bool mayEstablishSession,
+                                 bool actionDelivery) {
   if (data == nullptr || length == 0 || length > sizeof(deferred_[0].data) ||
       peers_->get(peerIndex) == nullptr) {
     ++diagnostics_.deferredQueueOverflow;
     return false;
+  }
+  if (length >= kApplicationHeaderSize + kResourceHeaderSize &&
+      data[0] == kMessageClassSuplaCall && data[5] == 0) {
+    for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
+      DeferredApplication *queued = &deferred_[i];
+      if (queued->used && queued->peerIndex == peerIndex &&
+          queued->data[0] == kMessageClassSuplaCall && queued->data[5] == 0 &&
+          memcmp(queued->data + kApplicationHeaderSize,
+                 data + kApplicationHeaderSize, kResourceHeaderSize) == 0) {
+        memcpy(queued->data, data, length);
+        queued->length = static_cast<uint8_t>(length);
+        return true;
+      }
+    }
   }
   int slot = -1;
   for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
@@ -859,6 +1217,14 @@ bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
   queued->peerIndex = peerIndex;
   queued->length = static_cast<uint8_t>(length);
   memcpy(queued->data, data, length);
+  queued->controlExpiresAtMs = datagrams_->nowMs() + kControlLifetimeMs;
+  if (actionDelivery && isActionApplication(queued->data, length)) {
+    // Action Trigger applications are 26 bytes; keep the absolute deadline in
+    // the unused tail of this fixed 32-byte deferred slot.
+    putActionDeadline(queued->data, sizeof(queued->data),
+                      datagrams_->nowMs() + kActionDeliveryLifetimeMs);
+  }
+  beginRecovery(peerIndex);
   updatePoolHighWater();
   if (!processing_) {
     drainDeferred();
@@ -866,13 +1232,45 @@ bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
   return true;
 }
 
+void Runtime::expireControls(uint32_t now) {
+  // Cancel recovery only after its last queued operation has gone away.
+  for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
+    DeferredApplication *queued = &deferred_[i];
+    if (queued->used && !isActionApplication(queued->data, queued->length) &&
+        queued->data[0] == kMessageClassSuplaCall &&
+        static_cast<int32_t>(now - queued->controlExpiresAtMs) >= 0) {
+      queued->used = false;
+      cancelPeerRecoveryIfIdle(queued->peerIndex);
+    }
+  }
+  for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
+    RetryEntry *retry = &retries_[i];
+    if (retry->isUsed() && retry->controlDelivery &&
+        static_cast<int32_t>(now - retry->controlExpiresAtMs) >= 0) {
+      const uint8_t peerIndex = retry->peerIndex;
+      clearRetryEntry(retry);
+      cancelPeerRecoveryIfIdle(peerIndex);
+    }
+  }
+}
+
 void Runtime::drainDeferred() {
   if (processing_) {
     return;
   }
+  const uint32_t now = datagrams_->nowMs();
+  expireControls(now);
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
     if (!retry->isUsed() || !retry->awaitingSession) {
+      continue;
+    }
+    if (retry->actionDelivery &&
+        static_cast<int32_t>(now - getActionDeadline(
+            retry->frame, sizeof(retry->frame))) >= 0) {
+      const uint8_t peerIndex = retry->peerIndex;
+      clearRetryEntry(retry);
+      cancelPeerRecoveryIfIdle(peerIndex);
       continue;
     }
     int sessionIndex = -1;
@@ -891,6 +1289,8 @@ void Runtime::drainDeferred() {
     const uint8_t peerIndex = retry->peerIndex;
     const uint16_t applicationLength = retry->frameLength;
     const uint8_t recoveryAttempts = retry->sessionRecoveryAttempts;
+    const bool controlDelivery = retry->controlDelivery;
+    const uint32_t controlExpiresAtMs = retry->controlExpiresAtMs;
     const uint8_t readFlags = retry->flags &
         static_cast<uint8_t>(kRetryReadRequest | kRetryReadExpectsState);
     const ResourceId resource = retry->resource;
@@ -910,6 +1310,8 @@ void Runtime::drainDeferred() {
       retry->peerIndex = peerIndex;
       retry->resource = resource;
       retry->sessionRecoveryAttempts = recoveryAttempts;
+      retry->controlDelivery = controlDelivery;
+      retry->controlExpiresAtMs = controlExpiresAtMs;
       retry->flags = readFlags;
       retry->awaitingSession = true;
       retry->frameLength = applicationLength;
@@ -920,12 +1322,55 @@ void Runtime::drainDeferred() {
     if (newRetryIndex >= 0) {
       retries_[newRetryIndex].sessionRecoveryAttempts = recoveryAttempts;
       retries_[newRetryIndex].awaitingSession = false;
+      retries_[newRetryIndex].controlDelivery = controlDelivery;
+      retries_[newRetryIndex].controlExpiresAtMs = controlExpiresAtMs;
     }
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
     DeferredApplication *queued = &deferred_[i];
     if (!queued->used) {
       continue;
+    }
+    const bool actionDelivery =
+        isActionApplication(queued->data, queued->length);
+    const uint32_t actionExpiresAtMs = actionDelivery
+        ? getActionDeadline(queued->data, sizeof(queued->data)) : 0;
+    if (queued->data[0] == kMessageClassSuplaCall &&
+        queued->data[5] == 0) {
+      const ResourceId stateResource = {
+          queued->data[kApplicationHeaderSize],
+          getUint32(queued->data + kApplicationHeaderSize + 1)};
+      if (!interested(queued->peerIndex, stateResource) ||
+          !peers_->authorize(queued->peerIndex, stateResource,
+                             kPermissionRead)) {
+        queued->used = false;
+        cancelPeerRecoveryIfIdle(queued->peerIndex);
+        continue;
+      }
+    }
+    if (actionDelivery) {
+      ApplicationDataView actionApplication = {};
+      ResourceId actionResource = {};
+      const uint8_t *actionPayload = nullptr;
+      size_t actionPayloadLength = 0;
+      const bool validAction =
+          decodeApplicationData(queued->data, queued->length,
+                                &actionApplication) &&
+          actionApplication.messageClass == kMessageClassSuplaCall &&
+          actionApplication.messageType == kSuplaCallActionTrigger &&
+          actionApplication.flags == kAckRequired &&
+          resourceFromApplication(actionApplication, &actionResource,
+                                  &actionPayload, &actionPayloadLength);
+      (void)actionPayload;
+      (void)actionPayloadLength;
+      if (!validAction ||
+          static_cast<int32_t>(now - actionExpiresAtMs) >= 0 ||
+          !interested(queued->peerIndex, actionResource)) {
+        const uint8_t peerIndex = queued->peerIndex;
+        queued->used = false;
+        cancelPeerRecoveryIfIdle(peerIndex);
+        continue;
+      }
     }
     int sessionIndex = -1;
     for (uint8_t s = 0; s < SUPLAN_MAX_ACTIVE_SESSIONS; ++s) {
@@ -963,11 +1408,32 @@ void Runtime::drainDeferred() {
       }
     }
     SessionEntry *session = &sessions_[sessionIndex];
+    if (actionDelivery && findFreeRetry() < 0) {
+      // Capacity exhaustion is a per-Destination best-effort loss. Do not
+      // leave this Action Trigger in the deferred queue to send it later when
+      // a shared READ/CONTROL retry slot becomes free.
+      queued->used = false;
+      ++diagnostics_.poolReject;
+      cancelPeerRecoveryIfIdle(queued->peerIndex);
+      continue;
+    }
+    const uint32_t sequence = session->nextTransmitSequence;
     if (sendProtected(queued->peerIndex, &session->transmit,
                       session->sessionId, &session->nextTransmitSequence,
                       &session->lastActivityMs, queued->data, queued->length,
-                      parsed && app.flags == kAckRequired, resource)) {
+                      parsed && app.flags == kAckRequired, resource,
+                      actionDelivery, actionExpiresAtMs)) {
+      const int retryIndex = findRetry(queued->peerIndex, session->sessionId,
+                                       sequence);
+      if (retryIndex >= 0 &&
+          isControlApplication(queued->data, queued->length)) {
+        retries_[retryIndex].controlDelivery = true;
+        retries_[retryIndex].controlExpiresAtMs = queued->controlExpiresAtMs;
+      }
       queued->used = false;
+    } else if (parsed && app.flags == 0) {
+      queued->used = false;
+      cancelPeerRecoveryIfIdle(queued->peerIndex);
     }
   }
 }
@@ -979,7 +1445,8 @@ bool Runtime::sendProtected(uint8_t peerIndex,
                             uint32_t *lastActivityMs,
                             const uint8_t *applicationData,
                             size_t applicationLength, bool ackRequired,
-                            const ResourceId &resource) {
+                            const ResourceId &resource, bool actionDelivery,
+                            uint32_t actionExpiresAtMs) {
   PeerRecord *peer = peers_->get(peerIndex);
   if (peer == nullptr ||
       peer->endpointState != kPeerEndpointAuthenticated) {
@@ -988,7 +1455,8 @@ bool Runtime::sendProtected(uint8_t peerIndex,
   return sendProtectedToEndpoint(
       peerIndex, peer->endpoint, transmitKeys, sessionId,
       nextTransmitSequence, lastActivityMs, applicationData,
-      applicationLength, ackRequired, resource);
+      applicationLength, ackRequired, resource, actionDelivery,
+      actionExpiresAtMs);
 }
 
 bool Runtime::sendProtectedToEndpoint(
@@ -996,10 +1464,16 @@ bool Runtime::sendProtectedToEndpoint(
     const DirectionalKeys *transmitKeys, uint64_t sessionId,
     uint32_t *nextTransmitSequence, uint32_t *lastActivityMs,
     const uint8_t *applicationData, size_t applicationLength,
-    bool ackRequired, const ResourceId &resource) {
+    bool ackRequired, const ResourceId &resource, bool actionDelivery,
+    uint32_t actionExpiresAtMs) {
   if (transmitKeys == nullptr || nextTransmitSequence == nullptr ||
       *nextTransmitSequence == UINT32_MAX ||
       applicationLength > SUPLAN_MAX_APPLICATION_BYTES) {
+    return false;
+  }
+  if (actionDelivery &&
+      (!ackRequired ||
+       static_cast<int32_t>(datagrams_->nowMs() - actionExpiresAtMs) >= 0)) {
     return false;
   }
   int retryIndex = -1;
@@ -1052,7 +1526,14 @@ bool Runtime::sendProtectedToEndpoint(
       (nextFrameId_++ & UINT32_C(0x00FFFFFF));
   fragmentOrdinal_ = 0;
   bool sent = true;
-  if ((frameKind == kTxKindAck && hooks_.dropNextAckTx != 0) ||
+  if (frameKind == kTxKindData && dataTransmitObserver_ != nullptr) {
+    dataTransmitObserver_(dataTransmitContext_, endpoint,
+                          transmitFrame_, frameLength);
+  }
+  if (frameKind == kTxKindData && hooks_.failNextDataTx != 0) {
+    --hooks_.failNextDataTx;
+    sent = false;
+  } else if ((frameKind == kTxKindAck && hooks_.dropNextAckTx != 0) ||
       (frameKind == kTxKindData && hooks_.dropNextDataTx != 0)) {
     if (frameKind == kTxKindAck) {
       --hooks_.dropNextAckTx;
@@ -1063,10 +1544,12 @@ bool Runtime::sendProtectedToEndpoint(
     sent = fragmentSender_.send(transmitFrame_, frameLength, maxPayload,
                                 frameId, fragmentDatagram, this);
   }
-  if (!sent) {
+  if (!sent && !ackRequired) {
     return false;
   }
-  ++diagnostics_.dataTx;
+  if (sent) {
+    ++diagnostics_.dataTx;
+  }
   if (applicationData[0] == kMessageClassSuplaCall) {
     const uint32_t messageType = getUint32(applicationData + 1);
     if (messageType == kSuplaCallDeviceChannelValueChangedC ||
@@ -1076,7 +1559,7 @@ bool Runtime::sendProtectedToEndpoint(
       ++diagnostics_.actionTx;
     }
   }
-  if (lastActivityMs != nullptr) {
+  if (sent && lastActivityMs != nullptr) {
     *lastActivityMs = datagrams_->nowMs();
   }
   if (ackRequired) {
@@ -1090,8 +1573,13 @@ bool Runtime::sendProtectedToEndpoint(
     retry->sessionRecoveryAttempts = 0;
     retry->flags = retryFlags;
     retry->awaitingSession = false;
+    retry->actionDelivery = actionDelivery;
     retry->frameLength = static_cast<uint16_t>(frameLength);
     memcpy(retry->frame, transmitFrame_, frameLength);
+    if (actionDelivery) {
+      // Keep action metadata outside the transmitted protected frame.
+      putActionDeadline(retry->frame, sizeof(retry->frame), actionExpiresAtMs);
+    }
     updatePoolHighWater();
   }
   return true;
@@ -1191,6 +1679,13 @@ void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
     if (fragment) {
       ++diagnostics_.reassemblyCompleted;
     }
+    if (adapted.length >= 2 && adapted.data[0] == kVersion &&
+        adapted.data[1] == kFrameData && hooks_.dropNextDataRx != 0) {
+      // Model a transport receive loss before authentication/replay handling.
+      // A retry must therefore arrive as a fresh protected DATA frame.
+      --hooks_.dropNextDataRx;
+      return;
+    }
     processProtected(source, adapted.data, adapted.length);
   }
 }
@@ -1210,11 +1705,11 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
     return;
   }
   PeerRecord *peer = peers_->get(static_cast<uint8_t>(peerIndex));
-  // A LOCATE query is sent by the immutable Destination role to discover its
-  // Source. Ignore looped-back queries and queries sent by the Source itself.
-  // This also prevents multicast loopback from replacing the remote endpoint
-  // with the local socket address.
-  if (peer == nullptr || !isLocalSource(peer)) {
+  // Either endpoint may need to rediscover the other one. This is required
+  // when a Source sends an Action Trigger after losing its cached endpoint.
+  // A valid grant is still required, and SESSION remains the endpoint proof.
+  if (peer == nullptr ||
+      (!isLocalSource(peer) && !isLocalDestination(peer))) {
     ++diagnostics_.invalidLocateDrop;
     return;
   }
@@ -1231,6 +1726,16 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
       !equalBytesConstantTime(expected, mac, sizeof(expected))) {
     ++diagnostics_.invalidLocateDrop;
     return;
+  }
+  // Multicast may loop the request back to this process. Match the fresh
+  // nonce of an outstanding local query so it cannot install our own socket
+  // endpoint as the remote candidate. Authenticate the packet before using
+  // this suppression rule.
+  for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
+    if (locates_[i].used && locates_[i].peerIndex == peerIndex &&
+        memcmp(locates_[i].nonce, nonce, sizeof(nonce)) == 0) {
+      return;
+    }
   }
   ++diagnostics_.locateRx;
   const uint32_t now = datagrams_->nowMs();
@@ -1279,12 +1784,16 @@ void Runtime::processLocateReply(const Endpoint &source, const uint8_t *data,
       ++diagnostics_.invalidLocateDrop;
       return;
     }
-    peer->endpoint = source;
-    peer->endpointState = kPeerEndpointLocateCandidate;
     ++diagnostics_.locateReplyRx;
     const uint8_t peerIndex = locate->peerIndex;
     locate->used = false;
-    startHandshake(peerIndex);
+    // A concurrent inbound SESSION may have confirmed the endpoint while
+    // this LOCATE was outstanding. Discovery cannot demote that endpoint.
+    if (peer->endpointState != kPeerEndpointAuthenticated) {
+      peer->endpoint = source;
+      peer->endpointState = kPeerEndpointLocateCandidate;
+      startHandshake(peerIndex);
+    }
     return;
   }
   ++diagnostics_.invalidLocateDrop;
@@ -1440,6 +1949,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   }
   peer->endpoint = source;
   peer->endpointState = kPeerEndpointAuthenticated;
+  noteReachability(attempt->peerIndex);
   ++diagnostics_.sessionAcceptRx;
   const uint8_t peerIndex = attempt->peerIndex;
   const int sessionIndex = allocateSession(peerIndex);
@@ -1558,6 +2068,7 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
     sessionIndex = admitted;
     ++diagnostics_.sessionEstablished;
   }
+  noteReachability(peerIndex);
   SessionEntry *session = &sessions_[sessionIndex];
   session->lastActivityMs = datagrams_->nowMs();
   if (result == kProtectedDataDuplicate) {
@@ -1583,10 +2094,6 @@ void Runtime::processApplication(SessionEntry *session, uint32_t sequence,
   if (app.messageClass == kMessageClassNative && app.messageType == 1 &&
       hooks_.dropNextAckRx != 0) {
     --hooks_.dropNextAckRx;
-    return;
-  }
-  if (hooks_.dropNextDataRx != 0) {
-    --hooks_.dropNextDataRx;
     return;
   }
   if (app.messageClass == kMessageClassNative) {
@@ -1659,6 +2166,9 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
           retry->flags |= kRetryAwaitingReadState;
           retry->lastTransmitMs = datagrams_->nowMs();
         } else {
+          if ((retry->flags & kRetryReadRequest) != 0) {
+            completeRead(peerIndex, resource);
+          }
           clearRetryEntry(retry);
         }
         ++diagnostics_.ackRx;
@@ -1837,11 +2347,19 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
     return;
   }
   if (application.messageType == kSuplaCallActionTrigger) {
-    if (application.flags != 0 || payloadLength != 15 ||
-        payload[0] != kChannelNumberUnresolved || duplicate ||
+    if (application.flags != kAckRequired || payloadLength != 15 ||
+        payload[0] != kChannelNumberUnresolved ||
         !isLocalDestination(peer) ||
         !peers_->authorize(peerIndex, resource, kPermissionAction)) {
       ++diagnostics_.invalidDataDrop;
+      return;
+    }
+    const uint8_t cacheIndex = static_cast<uint8_t>(sequence & 63U);
+    if (duplicate) {
+      const uint8_t result = session->ackResults[cacheIndex];
+      if (result != 0) {
+        sendAck(peerIndex, session, sequence, result);
+      }
       return;
     }
     if (application_ != nullptr) {
@@ -1849,6 +2367,8 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
                                   payload, payloadLength);
     }
     ++diagnostics_.actionRx;
+    session->ackResults[cacheIndex] = kResultTrue;
+    sendAck(peerIndex, session, sequence, kResultTrue);
     return;
   }
   ++diagnostics_.invalidDataDrop;
@@ -1884,6 +2404,7 @@ void Runtime::noteReadState(uint8_t peerIndex, const ResourceId &resource) {
     }
     retry->flags |= kRetryReadStateReceived;
     if ((retry->flags & kRetryAwaitingReadState) != 0) {
+      completeRead(peerIndex, resource);
       clearRetryEntry(retry);
     }
   }
@@ -1944,6 +2465,8 @@ void Runtime::iterate() {
     return;
   }
   const uint32_t now = datagrams_->nowMs();
+  iterateRecovery(now);
+  expireControls(now);
   processFlood();
   if (fragmentReassembler_.expire(now, kReassemblyTimeoutMs)) {
     ++diagnostics_.reassemblyExpired;
@@ -1974,26 +2497,16 @@ void Runtime::iterate() {
       const bool initiator = attempt->initiator;
       const uint8_t peerIndex = attempt->peerIndex;
       clearPendingHandshake(attempt);
-      bool recoveryWaiting = false;
       if (initiator) {
-        for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
-          if (retries_[r].isUsed() &&
-              retries_[r].peerIndex == peerIndex &&
-              retries_[r].awaitingSession) {
-            recoveryWaiting = true;
-            break;
-          }
-        }
-      }
-      if (recoveryWaiting) {
         PeerRecord *peer = peers_->get(peerIndex);
         if (peer != nullptr) {
+          peer->endpoint = Endpoint();
           peer->endpointState = kPeerEndpointNone;
-          startLocate(peerIndex);
         }
       }
     }
   }
+  iterateRecovery(now);
   for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     if (interests_[i].used &&
         static_cast<uint32_t>(now - interests_[i].lastRefreshMs) >=
@@ -2003,6 +2516,16 @@ void Runtime::iterate() {
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
+    const bool actionDelivery =
+        retry->actionDelivery;
+    if (retry->isUsed() && actionDelivery &&
+        static_cast<int32_t>(now - getActionDeadline(
+            retry->frame, sizeof(retry->frame))) >= 0) {
+      const uint8_t peerIndex = retry->peerIndex;
+      clearRetryEntry(retry);
+      cancelPeerRecoveryIfIdle(peerIndex);
+      continue;
+    }
     if (retry->isUsed() &&
         (retry->flags & kRetryAwaitingReadState) != 0) {
       if (static_cast<uint32_t>(now - retry->lastTransmitMs) >=
@@ -2010,7 +2533,11 @@ void Runtime::iterate() {
         const uint8_t peerIndex = retry->peerIndex;
         const ResourceId resource = retry->resource;
         clearRetryEntry(retry);
-        (void)requestRead(peerIndex, resource);
+        const int slot = findReadDependency(peerIndex, resource);
+        if (slot >= 0) {
+          dependencies_[slot].pending = false;
+          (void)queueRead(peerIndex, resource);
+        }
       }
       continue;
     }
@@ -2034,9 +2561,13 @@ void Runtime::iterate() {
       continue;
     }
     if (retry->attempts >= kAckMaxAttempts) {
-      const uint8_t peerIndex = retry->peerIndex;
-      const uint64_t sessionId = retry->sessionId;
-      recoverSession(peerIndex, sessionId);
+      if (actionDelivery) {
+        clearRetryEntry(retry);
+      } else {
+        const uint8_t peerIndex = retry->peerIndex;
+        const uint64_t sessionId = retry->sessionId;
+        recoverSession(peerIndex, sessionId);
+      }
       continue;
     }
     PeerRecord *peer = peers_->get(retry->peerIndex);
@@ -2047,11 +2578,19 @@ void Runtime::iterate() {
               datagrams_->maxDatagramPayload()
           ? hooks_.maxDatagramPayload : datagrams_->maxDatagramPayload();
       fragmentOrdinal_ = 0;
-      (void)fragmentSender_.send(
-          retry->frame, retry->frameLength, maxPayload,
-          UINT32_C(0xC3000000) |
-              (nextFrameId_++ & UINT32_C(0x00FFFFFF)),
-          fragmentDatagram, this);
+      if (dataTransmitObserver_ != nullptr) {
+        dataTransmitObserver_(dataTransmitContext_, peer->endpoint,
+                              retry->frame, retry->frameLength);
+      }
+      if (hooks_.failNextDataTx != 0) {
+        --hooks_.failNextDataTx;
+      } else if (fragmentSender_.send(
+                     retry->frame, retry->frameLength, maxPayload,
+                     UINT32_C(0xC3000000) |
+                         (nextFrameId_++ & UINT32_C(0x00FFFFFF)),
+                     fragmentDatagram, this)) {
+        ++diagnostics_.dataTx;
+      }
       ++retry->attempts;
       retry->lastTransmitMs = now;
       ++diagnostics_.retryTx;
@@ -2068,6 +2607,9 @@ void Runtime::iterate() {
     processDatagram(source, transmitFrame_, static_cast<size_t>(length));
   }
   drainDeferred();
+  for (uint8_t i = 0; i < peers_->size(); ++i) {
+    cancelPeerRecoveryIfIdle(i);
+  }
   updatePoolHighWater();
 }
 

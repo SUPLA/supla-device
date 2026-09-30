@@ -36,7 +36,9 @@
 #define SUPLAN_MAX_RETRY_SLOTS 2
 #endif
 #ifndef SUPLAN_MAX_RETRY_FRAME_BYTES
-#define SUPLAN_MAX_RETRY_FRAME_BYTES 256
+// READ=43, CONTROL=60, ACTION=58 protected bytes. ACTION also needs five
+// bytes of local deadline metadata. Extended STATE is never acknowledged.
+#define SUPLAN_MAX_RETRY_FRAME_BYTES 64
 #endif
 #ifndef SUPLAN_MAX_DEFERRED_APP_EVENTS
 #define SUPLAN_MAX_DEFERRED_APP_EVENTS 4
@@ -89,6 +91,7 @@ static const uint32_t kSessionInitRetryMs = 250;
 static const uint8_t kSessionInitMaxAttempts = 3;
 static const uint32_t kAckRetryMs = 150;
 static const uint8_t kAckMaxAttempts = 3;
+static const uint32_t kActionDeliveryLifetimeMs = 3000;
 static const uint32_t kReadStateResponseTimeoutMs = 500;
 static const uint32_t kReassemblyTimeoutMs = 1000;
 static const uint8_t kMaxDatagramsPerIterate = 4;

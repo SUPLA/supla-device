@@ -1,8 +1,9 @@
 # sd4linux Insecure Debug Socket
 
 This is a local debug/test interface for the sd4linux example. It listens on a
-Unix domain socket, reads one JSON command per line, and executes it inside the
-running process.
+Unix domain socket, reads one command per line, and executes it inside the
+running process. Existing device commands use JSON. When SupLAN PoC2 is enabled,
+the socket also accepts the plain text SupLAN commands below.
 
 The interface is enabled only in builds compiled with
 `SUPLA_INSECURE_DEBUG_INTERFACE=1`. Treat it as a development hook, not as a
@@ -38,6 +39,34 @@ printf '%s\n' '{"calcfg":"getInstanceList"}' | nc -U /tmp/sd4linux-debug.sock
 Results are returned as JSON lines on the same socket. CALCFG commands are
 injected locally with `SuplaDevice.handleCalcfgFromServer()` and do not send a
 reply to the SUPLA server.
+
+## SupLAN PoC2 Commands
+
+With `suplan.enabled: true`, the same socket also accepts:
+
+```sh
+printf 'show-status\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'show-resources\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'show-counters\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'show-pools\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'read 50001\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'control 50001 1\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'set-resource-value 50001 0\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'emit-action 50002 12\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'forget-session 0\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'clear-endpoint 0\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'transport off\n' | nc -U /tmp/sd4linux-debug.sock
+printf 'transport on\n' | nc -U /tmp/sd4linux-debug.sock
+```
+
+`show-status` reports Linux network readiness, SRPC registration, SupLAN UDP
+state, active session count, fixture role and port. `set-resource-value`
+changes the role A `VirtualRelay` on channel 0 and calls its normal channel
+update path. `emit-action` accepts an Action Trigger action index from 0 to 31
+and queues it through the local channel. SupLAN commands are available only
+while the PoC2 layer is configured. The `transport on|off` fault-injection
+command controls only the SupLAN UDP transport and reports its enabled state;
+it does not disconnect the normal SRPC layer or alter the host network.
 
 ## Channel Value Commands
 

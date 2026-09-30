@@ -33,6 +33,7 @@ class LinuxUdpPort : public DatagramPort {
             size_t maxDatagramPayload);
   void close();
   bool isOpen() const;
+  bool hasActiveMulticastInterface() const;
   bool sendUnicast(const Endpoint &endpoint, const uint8_t *data,
                    size_t length) override;
   bool sendLocateMulticast(const uint8_t *data, size_t length) override;

@@ -269,6 +269,13 @@ endif()
 
 add_test(NAME supladevicetests COMMAND supladevicetests)
 add_test(NAME sd4linuxtests COMMAND sd4linuxtests)
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+  add_test(NAME suplan_acceptance_runner_tests
+    COMMAND ${Python3_EXECUTABLE} -B -m unittest discover
+      -s ${CMAKE_CURRENT_SOURCE_DIR}/../examples/suplan_poc1_linux
+      -p test_run_acceptance.py)
+endif()
 
 
 supla_apply_warnings(supladevicetests)
@@ -287,3 +294,14 @@ target_compile_definitions(supladevicelib PRIVATE
   SUPLA_TEST
   SUPLA_INSECURE_DEBUG_INTERFACE=1
 )
+
+# Compile the actual ESP-IDF UDP implementation with deterministic socket and
+# netif doubles. This checks port/membership routing without ESP hardware.
+add_executable(suplanespudptests
+  SupLanEspUdpTests/suplan_esp_udp_tests.cpp
+  ../porting/esp-idf/suplan_udp_espidf.cpp)
+target_include_directories(suplanespudptests PRIVATE
+  SupLanEspUdpTests/fakes ../../src ../porting/esp-idf)
+target_link_libraries(suplanespudptests PRIVATE gtest_main)
+supla_apply_warnings(suplanespudptests)
+add_test(NAME suplanespudptests COMMAND suplanespudptests)

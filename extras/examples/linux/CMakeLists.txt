@@ -26,7 +26,11 @@ include(${SUPLA_DEVICE_PATH}/extras/porting/linux/SuplaLinux.cmake)
 
 add_library(supladevicelib STATIC)
 add_library(suplalinuxlib STATIC)
-add_executable(supla-device-linux main.cpp debug_socket.cpp)
+add_executable(supla-device-linux
+  main.cpp
+  debug_socket.cpp
+  suplan_runtime_linux.cpp
+)
 
 supla_device(supladevicelib)
 supla_common(supladevicelib)
@@ -51,6 +55,10 @@ target_include_directories(supladevicelib PUBLIC
 target_include_directories(suplalinuxlib PUBLIC
   "${SUPLA_DEVICE_PATH}/src"
   "${SUPLA_DEVICE_PATH}/extras/porting/linux"
+)
+
+target_include_directories(supla-device-linux PRIVATE
+  "${SUPLA_DEVICE_PATH}/extras/examples/suplan_poc1_common"
 )
 
 target_link_libraries(supladevicelib PRIVATE OpenSSL::Crypto)

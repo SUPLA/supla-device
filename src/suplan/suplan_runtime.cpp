@@ -1365,7 +1365,10 @@ void Runtime::drainDeferred() {
       (void)actionPayloadLength;
       if (!validAction ||
           static_cast<int32_t>(now - actionExpiresAtMs) >= 0 ||
-          !interested(queued->peerIndex, actionResource)) {
+          !interested(queued->peerIndex, actionResource) ||
+          !isLocalSource(peers_->get(queued->peerIndex)) ||
+          !peers_->authorize(queued->peerIndex, actionResource,
+                             kPermissionAction)) {
         const uint8_t peerIndex = queued->peerIndex;
         queued->used = false;
         cancelPeerRecoveryIfIdle(peerIndex);
@@ -1472,7 +1475,8 @@ bool Runtime::sendProtectedToEndpoint(
     return false;
   }
   if (actionDelivery &&
-      (!ackRequired ||
+      (!ackRequired || !isLocalSource(peers_->get(peerIndex)) ||
+       !peers_->authorize(peerIndex, resource, kPermissionAction) ||
        static_cast<int32_t>(datagrams_->nowMs() - actionExpiresAtMs) >= 0)) {
     return false;
   }
@@ -2074,6 +2078,9 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
   if (result == kProtectedDataDuplicate) {
     ++diagnostics_.dataDuplicate;
   } else {
+    // A fresh authenticated sequence owns this replay-window cache slot,
+    // even if application validation or dispatch produces no ACK.
+    session->ackResults[static_cast<uint8_t>(sequence & 63U)] = 0;
     ++diagnostics_.dataRx;
   }
   processing_ = true;
@@ -2105,7 +2112,24 @@ void Runtime::processApplication(SessionEntry *session, uint32_t sequence,
   }
 }
 
+void Runtime::pruneInterests(uint32_t now) {
+  for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
+    RuntimeInterest &interest = interests_[i];
+    if (interest.used &&
+        (static_cast<uint32_t>(now - interest.lastRefreshMs) >=
+             kRuntimeInterestTimeoutMs ||
+         !isLocalSource(peers_->get(interest.peerIndex)) ||
+         (!peers_->authorize(interest.peerIndex, interest.resource,
+                             kPermissionRead) &&
+          !peers_->authorize(interest.peerIndex, interest.resource,
+                             kPermissionAction)))) {
+      memset(&interest, 0, sizeof(interest));
+    }
+  }
+}
+
 bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource) {
+  pruneInterests(datagrams_->nowMs());
   for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     RuntimeInterest *interest = &interests_[i];
     if (interest->used && interest->peerIndex == peerIndex &&
@@ -2507,20 +2531,17 @@ void Runtime::iterate() {
     }
   }
   iterateRecovery(now);
-  for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
-    if (interests_[i].used &&
-        static_cast<uint32_t>(now - interests_[i].lastRefreshMs) >=
-            kRuntimeInterestTimeoutMs) {
-      memset(&interests_[i], 0, sizeof(interests_[i]));
-    }
-  }
+  pruneInterests(now);
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
     const bool actionDelivery =
         retry->actionDelivery;
     if (retry->isUsed() && actionDelivery &&
-        static_cast<int32_t>(now - getActionDeadline(
-            retry->frame, sizeof(retry->frame))) >= 0) {
+        (!isLocalSource(peers_->get(retry->peerIndex)) ||
+         !peers_->authorize(retry->peerIndex, retry->resource,
+                            kPermissionAction) ||
+         static_cast<int32_t>(now - getActionDeadline(
+             retry->frame, sizeof(retry->frame))) >= 0)) {
       const uint8_t peerIndex = retry->peerIndex;
       clearRetryEntry(retry);
       cancelPeerRecoveryIfIdle(peerIndex);

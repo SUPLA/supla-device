@@ -234,6 +234,7 @@ class Runtime {
                 uint32_t sequence) const;
   int findFreeRetry() const;
   int findFreeInterest() const;
+  void pruneInterests(uint32_t now);
   void updatePoolHighWater();
   void startLocate(uint8_t peerIndex);
   void startHandshake(uint8_t peerIndex);

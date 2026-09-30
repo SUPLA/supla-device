@@ -178,7 +178,9 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
       *payloadLength = 0;
       return false;
     }
-    if (capacity < 14) {
+    if (!stateAvailable || capacity < 14) {
+      *eventOnly = false;
+      *payloadLength = 0;
       return false;
     }
     *eventOnly = false;
@@ -237,6 +239,7 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
     lastAckResult = result;
   }
 
+  bool stateAvailable = true;
   uint8_t value;
   uint32_t controlCalls;
   uint32_t stateCalls;
@@ -1882,4 +1885,234 @@ TEST(SupLanRecovery, RevokedReadDoesNotCancelOtherAuthorizedControl) {
   EXPECT_EQ(pair.appA.value, 1U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
   EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+}
+
+TEST(SupLanRuntime, QueuedActionRechecksSourceAclBeforeFirstTransmission) {
+  for (bool keepRead : {false, true}) {
+    RuntimePair pair;
+    const ResourceId resource = {Supla::SupLan::kResourceTypeChannel, 50002};
+    ASSERT_TRUE(pair.runtimeA.requestRead(pair.actionPeerA, resource));
+    pair.pump(20);
+    ASSERT_TRUE(pair.runtimeB.forgetSession(pair.actionPeerB));
+    pair.datagramsA.available = false;
+    uint8_t payload[15] = {};
+    payload[0] = 0xFF;
+    ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, resource, payload,
+                                          sizeof(payload)));
+    ASSERT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
+    const Supla::SupLan::AclEntry acl = {
+        keepRead ? resource : ResourceId{
+            Supla::SupLan::kResourceTypeChannel, 50003},
+        keepRead ? Supla::SupLan::kPermissionRead
+                 : Supla::SupLan::kPermissionAction};
+    ASSERT_TRUE(pair.peersB.replaceAcl(pair.actionPeerB, 2, &acl, 1));
+    pair.datagramsA.available = true;
+    pair.pump(20);
+    EXPECT_EQ(pair.appA.actionCalls, 0U);
+    EXPECT_EQ(pair.runtimeB.diagnostics().actionTx, 0U);
+    EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+    EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+    EXPECT_EQ(pair.runtimeB.poolDiagnostics().interests.used,
+              keepRead ? 1U : 0U);
+  }
+}
+
+TEST(SupLanRuntime, ActionRetryStopsAfterSourcePermissionRevocation) {
+  RuntimePair pair;
+  const ResourceId resource = {Supla::SupLan::kResourceTypeChannel, 50002};
+  ASSERT_TRUE(pair.runtimeA.requestRead(pair.actionPeerA, resource));
+  pair.pump(20);
+  uint8_t payload[15] = {};
+  payload[0] = 0xFF;
+  pair.network.dropNextFullData = true;
+  ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, resource, payload,
+                                        sizeof(payload)));
+  ASSERT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 1U);
+  const Supla::SupLan::AclEntry readOnly = {
+      resource, Supla::SupLan::kPermissionRead};
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.actionPeerB, 2, &readOnly, 1));
+  const auto retries = pair.runtimeB.diagnostics().retryTx;
+  pair.pumpMs(500);
+  EXPECT_EQ(pair.appA.actionCalls, 0U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().retryTx, retries);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().interests.used, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().sessions.used, 1U);
+  ASSERT_TRUE(pair.runtimeA.requestRead(pair.actionPeerA, resource));
+  pair.pump(20);
+  EXPECT_EQ(pair.runtimeB.diagnostics().readDispatched, 2U);
+}
+
+TEST(SupLanRuntime, QueuedActionSurvivesUnrelatedAclReplacement) {
+  RuntimePair pair;
+  const ResourceId resource = {Supla::SupLan::kResourceTypeChannel, 50002};
+  ASSERT_TRUE(pair.runtimeA.requestRead(pair.actionPeerA, resource));
+  pair.pump(20);
+  ASSERT_TRUE(pair.runtimeB.forgetSession(pair.actionPeerB));
+  pair.datagramsA.available = false;
+  uint8_t payload[15] = {};
+  payload[0] = 0xFF;
+  ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, resource, payload,
+                                        sizeof(payload)));
+  const Supla::SupLan::AclEntry acl[] = {
+      {resource, Supla::SupLan::kPermissionAction},
+      {{Supla::SupLan::kResourceTypeChannel, 50003},
+       Supla::SupLan::kPermissionRead}};
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.actionPeerB, 2, acl, 2));
+  pair.datagramsA.available = true;
+  pair.runtimeA.testHooks()->dropNextAckTx = 1;
+  pair.pump(20);
+  EXPECT_EQ(pair.appA.actionCalls, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().retryTx, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+}
+
+TEST(SupLanRuntime, RevokedInterestsDoNotExhaustPoolAcrossAclReplacements) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  for (uint32_t i = 0; i <= SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
+    const ResourceId resource = {
+        Supla::SupLan::kResourceTypeChannel, 51000 + i};
+    const Supla::SupLan::AclEntry acl[] = {
+        {pair.resource, Supla::SupLan::kPermissionRead},
+        {resource, Supla::SupLan::kPermissionRead}};
+    ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 2 + i, acl, 2));
+    ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2 + i, acl, 2));
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, resource));
+    pair.pump(20);
+    EXPECT_EQ(pair.appB.stateCalls, i + 2);
+    EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, resource));
+    EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 2U);
+  }
+  EXPECT_EQ(pair.runtimeA.diagnostics().poolReject, 0U);
+  // The still-authorized original interest keeps receiving notifications.
+  uint8_t payload[14] = {};
+  payload[0] = 0xFF;
+  const auto states = pair.appB.stateCalls;
+  ASSERT_TRUE(pair.runtimeA.publishState(pair.peerA, pair.resource,
+      Supla::SupLan::kSuplaCallDeviceChannelValueChangedC,
+      payload, sizeof(payload)));
+  pair.pump(20);
+  EXPECT_EQ(pair.appB.stateCalls, states + 1);
+}
+
+TEST(SupLanRuntime, InterestRetainedWhileAnyReadControlOrActionGrantRemains) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  uint32_t revision = 2;
+  for (uint8_t permission : {Supla::SupLan::kPermissionRead,
+                             Supla::SupLan::kPermissionControl,
+                             Supla::SupLan::kPermissionAction}) {
+    const Supla::SupLan::AclEntry acl = {pair.resource, permission};
+    ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, revision++, &acl, 1));
+    pair.runtimeA.iterate();
+    EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
+    EXPECT_EQ(pair.runtimeA.poolDiagnostics().sessions.used, 1U);
+  }
+  ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, revision, nullptr, 0));
+  pair.runtimeA.iterate();
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 0U);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().sessions.used, 1U);
+}
+
+TEST(SupLanRuntime, ReusedAckSlotCannotCompleteAnUnacceptedRead) {
+  RuntimePair pair;
+  const Supla::SupLan::AclEntry readOnly = {
+      pair.resource, Supla::SupLan::kPermissionRead};
+  ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 2, &readOnly, 1));
+  uint8_t control[17] = {};
+  control[4] = 0xFF;
+  // Sequence 0 leaves a negative CONTROL result in cache slot 0.
+  ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
+                                       sizeof(control)));
+  pair.pump(20);
+  ASSERT_EQ(pair.appB.lastAckResult, 24U);
+  const Supla::SupLan::AclEntry all = {
+      pair.resource, static_cast<uint8_t>(Supla::SupLan::kPermissionRead |
+                                         Supla::SupLan::kPermissionControl)};
+  ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 3, &all, 1));
+  for (unsigned i = 0; i < 63; ++i) {
+    ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
+                                         sizeof(control)));
+    pair.pump(2);
+  }
+  ASSERT_EQ(pair.appB.acknowledged, 64U);
+  const auto acknowledgements = pair.appB.acknowledged;
+  pair.appA.stateAvailable = false;
+  // Sequence 64 must not inherit sequence 0's cached result on retransmission.
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  EXPECT_EQ(pair.runtimeA.diagnostics().resourceNotFound, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 0U);
+  EXPECT_EQ(pair.appB.acknowledged, acknowledgements);
+  EXPECT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 1U);
+  // READ still recovers automatically when the resource becomes available.
+  pair.appA.stateAvailable = true;
+  pair.pumpMs(1000);
+  EXPECT_EQ(pair.appB.stateCalls, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+}
+
+TEST(SupLanRuntime, ReusedAckSlotRetainsNewControlResultForDuplicates) {
+  RuntimePair pair;
+  uint8_t control[17] = {};
+  control[4] = 0xFF;
+  for (unsigned i = 0; i < 64; ++i) {
+    ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
+                                         sizeof(control)));
+    pair.pump(2);
+  }
+  ASSERT_EQ(pair.appA.controlCalls, 64U);
+  pair.runtimeA.testHooks()->dropNextAckTx = 1;
+  ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
+                                       sizeof(control)));
+  pair.pump(20);
+  EXPECT_EQ(pair.appA.controlCalls, 65U);
+  EXPECT_EQ(pair.appB.acknowledged, 65U);
+  EXPECT_EQ(pair.appB.lastAckResult, 3U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().controlDuplicateSuppressed, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+}
+
+TEST(SupLanRuntime, FailedAeadCannotInvalidateAnOlderCachedAck) {
+  RuntimePair pair;
+  uint8_t control[17] = {};
+  control[4] = 0xFF;
+  ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
+                                       sizeof(control)));
+  pair.pump(2);
+  Packet first;
+  bool found = false;
+  for (const Packet &packet : pair.network.history) {
+    if (packet.source.address == pair.endpointB.address &&
+        packet.bytes.size() >= 3 &&
+        packet.bytes[0] == Supla::SupLan::kAdaptationFull &&
+        packet.bytes[2] == Supla::SupLan::kFrameData) {
+      first = packet;
+      found = true;
+      break;
+    }
+  }
+  ASSERT_TRUE(found);
+  for (unsigned i = 0; i < 63; ++i) {
+    ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
+                                         sizeof(control)));
+    pair.pump(2);
+  }
+  pair.runtimeB.testHooks()->corruptNextDataTagTx = 1;
+  ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
+                                       sizeof(control)));
+  pair.pump(2);
+  ASSERT_EQ(pair.runtimeA.diagnostics().dataAuthFail, 1U);
+  const auto acks = pair.runtimeA.diagnostics().ackTx;
+  pair.network.packets.push_back(first);
+  pair.runtimeA.iterate();
+  EXPECT_EQ(pair.runtimeA.diagnostics().ackTx, acks + 1);
+  EXPECT_EQ(pair.runtimeA.diagnostics().controlDuplicateSuppressed, 1U);
+  EXPECT_EQ(pair.appA.controlCalls, 64U);
 }

@@ -240,12 +240,12 @@ def main():
             require(absent["locate_tx"] >= before["locate_tx"] + 3 and
                     absent["locate_reply_rx"] == before["locate_reply_rx"],
                     "absent peer produces repeated LOCATE attempts")
-            require(pools("B")["deferredEvents"][0] == 1,
-                    "READ remains queued while peer is absent")
+            require(pools("B")["deferredEvents"][0] == 0,
+                    "ADR-008 releases foreground READ buffer while peer is absent")
         start("A", args.bind_a, config_a, args.port_a)
         if args.discovery_audit:
-            require(drain(5, lambda: seen("B", "STATE resource=50001")),
-                    "late responder services the previously queued READ")
+            require(drain(10, lambda: seen("B", "STATE resource=50001")),
+                    "late responder services a fresh READ after bounded recovery")
         require(drain(3, lambda: seen("A", "READY role=A") and
                       seen("B", "READY role=B") and
                       seen("A", f"bind={args.bind_a}:{args.port_a}") and

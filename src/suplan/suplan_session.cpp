@@ -23,7 +23,7 @@ static bool validNegotiation(const uint8_t maximumVersion,
                              uint16_t receiveLimit,
                              uint32_t features) {
   return maximumVersion >= kMinimumSuplaProtoVersion &&
-      receiveLimit >= SUPLAN_RX_MAX_REASSEMBLED_FRAME && features == 0;
+      receiveLimit >= kMinimumRxMaxReassembledFrame && features == 0;
 }
 
 bool encodeSessionInit(CryptoPort *crypto, const uint8_t initMacKey[32],
@@ -88,7 +88,7 @@ bool encodeSessionAccept(CryptoPort *crypto, const uint8_t acceptMacKey[32],
       memcmp(accept->peerLocator, encodedInit + 2, 16) != 0 ||
       accept->selectedSuplaProtoVersion < kMinimumSuplaProtoVersion ||
       accept->responderRxMaxReassembledFrame <
-          SUPLAN_RX_MAX_REASSEMBLED_FRAME ||
+          kMinimumRxMaxReassembledFrame ||
       accept->selectedFeatureBits != 0 ||
       accept->selectedSuplaProtoVersion > encodedInit[34]) {
     return false;
@@ -128,7 +128,7 @@ bool decodeSessionAccept(CryptoPort *crypto, const uint8_t acceptMacKey[32],
       memcmp(input + 2, init->peerLocator, 16) != 0 ||
       input[42] > init->suplaProtoVersionMax ||
       input[42] < kMinimumSuplaProtoVersion ||
-      getUint16(input + 43) < SUPLAN_RX_MAX_REASSEMBLED_FRAME ||
+      getUint16(input + 43) < kMinimumRxMaxReassembledFrame ||
       getUint32(input + 45) != 0) {
     return false;
   }

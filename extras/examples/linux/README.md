@@ -163,6 +163,11 @@ suplan:
   unicast_port: 2016
 ```
 
+To select a specific IPv4 interface, add `bind_address: 192.168.0.177`
+using that interface's current local address. This pins the SupLAN unicast
+source address and multicast interface; SRPC networking stays independent.
+The default `0.0.0.0` keeps automatic multicast interface selection.
+
 For node B, use `role: B` and make channel 0 an `ActionTriggerParsed` channel.
 The `role` selects the deterministic PoC1 identities, keys, ACL and resource
 mapping; these credentials are test fixtures and must not be used for
@@ -415,6 +420,22 @@ It is ok to add channels later at the end of the list.
 
 Currently only limited number of channels are supported. Please let us know
 if you need something more.
+
+Relay channels and `ActionTriggerParsed` can opt in to the native weekly
+schedule with `weekly_schedule: true`. It defaults to `false`. For relays, use
+a function that supports schedules, such as `light_switch` or `power_switch`.
+After enabling it, the channel advertises weekly schedule support to Supla
+Cloud, where you can configure the schedule.
+The default ActionTrigger programs are unlocked and locked, with no time slots
+assigned.
+
+    - type: VirtualRelay
+      default_function: light_switch
+      weekly_schedule: true
+
+    - type: ActionTriggerParsed
+      name: scheduled_actions
+      weekly_schedule: true
 
 Supported channel types:
 * `VirtualRelay` - related class `Supla::Control::VirtualRelay`

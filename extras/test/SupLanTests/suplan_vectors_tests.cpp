@@ -17,7 +17,11 @@
 #include <string>
 #include <vector>
 
+#ifdef SUPLAN_VECTOR_CRYPTO_HEADER
+#include SUPLAN_VECTOR_CRYPTO_HEADER
+#else
 #include "suplan_crypto_openssl.h"
+#endif
 #include "suplan_poc1_profile.h"
 
 namespace {
@@ -41,7 +45,11 @@ std::vector<uint8_t> fromHex(const char *input) {
 
 using Supla::SupLan::PeerContext;
 using Supla::SupLan::PeerMaterial;
-using Supla::SupLan::OpenSslCryptoPort;
+#ifdef SUPLAN_VECTOR_CRYPTO_TYPE
+using VectorCryptoPort = SUPLAN_VECTOR_CRYPTO_TYPE;
+#else
+using VectorCryptoPort = Supla::SupLan::OpenSslCryptoPort;
+#endif
 
 struct DatagramCapture {
   std::vector<std::vector<uint8_t> > datagrams;
@@ -117,7 +125,7 @@ TEST(SupLanWire, ServerClientAndLocalContextsMatchFixedVectors) {
             fromHex("02010203040506070803000003e903000003ea00"
                 "00000100000001"));
 
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   std::array<uint8_t, 32> root = {};
   for (uint8_t i = 0; i < root.size(); ++i) {
     root[i] = i;
@@ -168,7 +176,7 @@ TEST(SupLanWire, PeerContextEnforcesV1AuthorityAddressRoleMatrix) {
   local.rootEpoch = 1;
   local.peerGeneration = 1;
 
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   std::array<uint8_t, 32> rootKey = {};
   std::array<uint8_t, 32> peerKey = {};
   for (uint8_t i = 0; i < rootKey.size(); ++i) {
@@ -261,7 +269,7 @@ TEST(SupLanWire, PeerContextEnforcesV1AuthorityAddressRoleMatrix) {
 }
 
 TEST(SupLanWire, InvalidStoredPeerContextCannotBeFoundByLocator) {
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   const PeerContext context = serverPeer();
   std::array<uint8_t, 32> rootKey = {};
   for (uint8_t i = 0; i < rootKey.size(); ++i) {
@@ -288,7 +296,7 @@ TEST(SupLanWire, InvalidStoredPeerContextCannotBeFoundByLocator) {
 }
 
 TEST(SupLanCrypto, ServerDevicePeerDerivationMatchesFixedVector) {
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   const PeerContext context = serverPeer();
   std::array<uint8_t, 32> root = {};
   for (uint8_t i = 0; i < root.size(); ++i) {
@@ -336,7 +344,7 @@ TEST(SupLanCrypto, ServerDevicePeerDerivationMatchesFixedVector) {
 }
 
 TEST(SupLanProfile, StaticPeerKeysMatchRootDerivationAndFixedVector) {
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   Supla::SupLan::PeerTable nodeA;
   Supla::SupLan::PeerTable nodeB;
   uint8_t primaryA = 0;
@@ -380,7 +388,7 @@ TEST(SupLanProfile, StaticPeerKeysMatchRootDerivationAndFixedVector) {
 }
 
 TEST(SupLanCrypto, LocateMacsAndFramesMatchFixedVectors) {
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   PeerMaterial material = {};
   const auto locator = fromHex("46521d2f6e26c5015da7c5748b606850");
   const auto locateKey = fromHex(
@@ -422,7 +430,7 @@ TEST(SupLanCrypto, LocateMacsAndFramesMatchFixedVectors) {
 }
 
 TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   const auto peerKey = fromHex(
       "615620310e8a6abbf50536fdcb665e96341e8881"
           "4a5fcee5474636357ca7e985");
@@ -524,7 +532,7 @@ TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
 }
 
 TEST(SupLanAcl, RevisionReplacementAndControlImpliesRead) {
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   const auto peerKey = fromHex(
       "615620310e8a6abbf50536fdcb665e96341e8881"
           "4a5fcee5474636357ca7e985");
@@ -562,7 +570,7 @@ TEST(SupLanAcl, RevisionReplacementAndControlImpliesRead) {
 }
 
 TEST(SupLanData, ProtectedReadMatchesByteExactVectorAndReplayRules) {
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   Supla::SupLan::DirectionalKeys keys = {};
   const auto trafficKey = fromHex("f207633a8d05799b28b0c734e138ccfa");
   const auto noncePrefix = fromHex("7933a4a94ddd66a9");
@@ -632,7 +640,7 @@ TEST(SupLanData, ProtectedReadMatchesByteExactVectorAndReplayRules) {
 }
 
 TEST(SupLanData, ProtectedControlActionAndAckMatchFixedVectors) {
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   Supla::SupLan::DirectionalKeys keys = {};
   const auto trafficKey = fromHex("f207633a8d05799b28b0c734e138ccfa");
   const auto noncePrefix = fromHex("7933a4a94ddd66a9");
@@ -718,7 +726,7 @@ TEST(SupLanData, ReplayWindowAcceptsReorderingAndRejectsOldSequence) {
 }
 
 TEST(SupLanData, ProtectedFramesRespectPoCApplicationBound) {
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   Supla::SupLan::DirectionalKeys keys = {};
   uint8_t oversizedApplication[SUPLAN_MAX_APPLICATION_BYTES + 1] = {};
   oversizedApplication[0] = Supla::SupLan::kMessageClassNative;
@@ -861,7 +869,7 @@ TEST(SupLanFragmentation, RejectsMalformedRangesAndConflictingOverlap) {
 }
 
 TEST(SupLanCrypto, OpenSslPrimitiveKnownAnswers) {
-  OpenSslCryptoPort crypto;
+  VectorCryptoPort crypto;
   const uint8_t message[] = {'a', 'b', 'c'};
   uint8_t digest[32];
   ASSERT_TRUE(crypto.sha256(message, sizeof(message), digest));

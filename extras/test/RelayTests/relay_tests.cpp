@@ -1021,6 +1021,8 @@ TEST_F(RelayFixture, weeklyNoOpCapabilityMatchesProgramValidation) {
   EXPECT_EQ(defaultSize, sizeof(defaultSchedule));
   EXPECT_EQ(defaultSchedule.Program[0].Mode,
             SUPLA_RELAY_MODE_FORCED_OFF);
+  EXPECT_EQ(defaultSchedule.Program[1].Mode,
+            SUPLA_RELAY_MODE_FORCED_ON);
   for (auto quarters : defaultSchedule.Quarters) {
     EXPECT_EQ(quarters, 0x11);
   }
@@ -1087,6 +1089,11 @@ TEST_F(RelayFixture, weeklyModeGroupsSelectSafeDefaults) {
                             SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
     EXPECT_EQ(size, sizeof(schedule));
     EXPECT_EQ(schedule.Program[0].Mode, testCase.expectedDefault);
+    if (testCase.expectedDefault == SUPLA_RELAY_MODE_START_OFF) {
+      EXPECT_EQ(schedule.Program[1].Mode, SUPLA_RELAY_MODE_START_ON);
+    } else {
+      EXPECT_EQ(schedule.Program[1].Mode, SUPLA_RELAY_MODE_NOT_SET);
+    }
     for (auto quarters : schedule.Quarters) {
       EXPECT_EQ(quarters, 0x11);
     }
@@ -1765,6 +1772,27 @@ TEST_F(RelayFixture, relayClassCanDefineItsDefaultWeeklySchedule) {
   EXPECT_EQ(schedule.Program[0].Mode, SUPLA_RELAY_MODE_FORCED_OFF);
   EXPECT_EQ(Supla::Control::getWeeklyScheduleProgramId(&schedule, 0), 1);
   EXPECT_EQ(Supla::Control::getWeeklyScheduleProgramId(&schedule, 1), 0);
+}
+
+TEST_F(RelayFixture,
+       defaultWeeklyScheduleDefinesFourProgramsAndLeavesQuartersUnassigned) {
+  Supla::Control::Relay relay(1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
+  relay.setWeeklyScheduleAvailable();
+
+  TChannelConfig_WeeklySchedule schedule = {};
+  int size = 0;
+  relay.fillChannelConfig(&schedule, &size,
+                          SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+
+  ASSERT_EQ(size, sizeof(schedule));
+  EXPECT_EQ(schedule.Program[0].Mode, SUPLA_RELAY_MODE_START_ON);
+  EXPECT_EQ(schedule.Program[1].Mode, SUPLA_RELAY_MODE_START_OFF);
+  EXPECT_EQ(schedule.Program[2].Mode, SUPLA_RELAY_MODE_FORCED_ON);
+  EXPECT_EQ(schedule.Program[3].Mode, SUPLA_RELAY_MODE_FORCED_OFF);
+  for (auto quarter : schedule.Quarters) {
+    EXPECT_EQ(quarter, 0);
+  }
 }
 
 TEST_F(RelayFixture, noOpWeeklyScheduleIsStoredWithoutEnablingSchedule) {

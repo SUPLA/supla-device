@@ -1159,7 +1159,12 @@ Supla::Control::ActionTrigger::setWeeklyScheduleAvailable(bool available) {
 
 void Supla::Control::ActionTrigger::fillDefaultWeeklySchedule(
     TChannelConfig_WeeklySchedule *schedule) {
-  (void)(schedule);
+  if (schedule == nullptr) {
+    return;
+  }
+
+  schedule->Program[0].Mode = SUPLA_BUTTON_MODE_NOT_SET;
+  schedule->Program[1].Mode = SUPLA_BUTTON_MODE_LOCKED;
 }
 
 bool Supla::Control::ActionTrigger::isWeeklyScheduleProgramModeSupported(

@@ -21,6 +21,10 @@ class StorageWithUpdateAccess : public StorageMock {
 };
 
 }  // namespace
+class TestableStorageMock : public StorageMock {
+ public:
+  using Supla::Storage::updateStorage;
+};
 
 TEST(StorageStateTests, preambleInitialization) {
   EXPECT_FALSE(Supla::Storage::Init());
@@ -152,6 +156,31 @@ TEST(StorageStateTests, preambleInitializationWithElement) {
   secPreamble.crc1 = 17076;
   secPreamble.crc2 = 17076;
   EXPECT_EQ(memcmp(&secPreamble, storage.storageSimulatorData + 8, 7), 0);
+}
+
+TEST(StorageStateTests, updateStorageWritesAfterShortRead) {
+  TestableStorageMock storage;
+  const unsigned char expectedData[] = {0x12, 0x34, 0x56, 0x78};
+
+  EXPECT_CALL(storage,
+              readStorage(0, ::testing::_, sizeof(expectedData), false))
+      .WillOnce([&expectedData](unsigned int, unsigned char *data,
+                                unsigned int size, bool) {
+        // Make the old implementation's memcmp equal deterministically even
+        // though the storage reports a short read.
+        memcpy(data, expectedData, size);
+        return static_cast<int>(size - 1);
+      });
+  EXPECT_CALL(storage,
+              writeStorage(0, ::testing::_, sizeof(expectedData)))
+      .WillOnce([&expectedData](unsigned int, const unsigned char *data,
+                               unsigned int size) {
+        EXPECT_EQ(memcmp(data, expectedData, size), 0);
+        return static_cast<int>(size);
+      });
+
+  EXPECT_EQ(storage.updateStorage(0, expectedData, sizeof(expectedData)),
+            sizeof(expectedData));
 }
 
 TEST(StorageStateTests, preambleAlreadyInitializedWithElement) {

@@ -10,7 +10,8 @@
 namespace Supla {
 namespace SupLan {
 
-static bool validProtectedFrame(const uint8_t *frame, size_t length) {
+static bool validProtectedFrame(const uint8_t *frame, size_t length,
+                                size_t maximumLength) {
   if (frame == nullptr || length < kProtectedHeaderSize +
           kApplicationHeaderSize + kAeadTagSize ||
       frame[0] != kVersion || frame[1] != kFrameData) {
@@ -20,7 +21,7 @@ static bool validProtectedFrame(const uint8_t *frame, size_t length) {
   return cipherLength >= kApplicationHeaderSize &&
       length == kProtectedHeaderSize + static_cast<size_t>(cipherLength) +
           kAeadTagSize &&
-      length <= SUPLAN_RX_MAX_REASSEMBLED_FRAME;
+      length <= maximumLength;
 }
 
 FragmentSender::FragmentSender() : fragmentCount_(0) {}
@@ -28,7 +29,8 @@ FragmentSender::FragmentSender() : fragmentCount_(0) {}
 bool FragmentSender::send(const uint8_t *protectedFrame, size_t frameLength,
                           size_t maxDatagramPayload, uint32_t frameId,
                           DatagramSendFn sendFn, void *sendContext) {
-  if (sendFn == nullptr || !validProtectedFrame(protectedFrame, frameLength) ||
+  if (sendFn == nullptr ||
+      !validProtectedFrame(protectedFrame, frameLength, UINT16_MAX) ||
       maxDatagramPayload < 1 || maxDatagramPayload > kMaxDatagramPayload) {
     return false;
   }
@@ -135,7 +137,7 @@ AdaptationResult FragmentReassembler::accept(
   if (datagram[0] == kAdaptationFull) {
     const uint8_t *complete = datagram + 1;
     const size_t completeLength = datagramLength - 1;
-    if (!validProtectedFrame(complete, completeLength)) {
+    if (!validProtectedFrame(complete, completeLength, sizeof(frame_))) {
       ++rejectedCount_;
       return kAdaptationMalformed;
     }
@@ -224,7 +226,7 @@ AdaptationResult FragmentReassembler::accept(
   if (receivedBytes_ != totalLength_) {
     return kAdaptationPending;
   }
-  if (!validProtectedFrame(frame_, totalLength_)) {
+  if (!validProtectedFrame(frame_, totalLength_, sizeof(frame_))) {
     clear();
     ++rejectedCount_;
     return kAdaptationMalformed;

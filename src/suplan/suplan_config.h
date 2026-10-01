@@ -26,6 +26,12 @@
 #ifndef SUPLAN_MAX_RUNTIME_INTERESTS
 #define SUPLAN_MAX_RUNTIME_INTERESTS 8
 #endif
+#ifndef SUPLAN_MAX_READ_DEPENDENCIES
+#define SUPLAN_MAX_READ_DEPENDENCIES SUPLAN_MAX_TOTAL_ACL_ENTRIES
+#endif
+#ifndef SUPLAN_MAX_PEER_RECOVERY_STATES
+#define SUPLAN_MAX_PEER_RECOVERY_STATES SUPLAN_MAX_PERSISTENT_PEERS
+#endif
 #ifndef SUPLAN_MAX_REASSEMBLY_SLOTS
 #define SUPLAN_MAX_REASSEMBLY_SLOTS 1
 #endif
@@ -99,6 +105,16 @@ static const uint32_t kPendingHandshakeTimeoutMs = 3000;
 static const uint32_t kRuntimeInterestTimeoutMs = 300000;
 // Action Trigger call 700 is part of the PoC payload subset from SUPLA v16.
 static const uint8_t kMinimumSuplaProtoVersion = 16;
+static_assert(SUPLAN_MAX_PEER_RECOVERY_STATES >= SUPLAN_MAX_PERSISTENT_PEERS,
+              "Recovery uses one bounded state per persistent peer");
+// Wire requirement, independent of either endpoint's compile-time profile.
+static const uint16_t kMinimumRxMaxReassembledFrame = 1024;
+static_assert(SUPLAN_RX_MAX_REASSEMBLED_FRAME >=
+                  kMinimumRxMaxReassembledFrame &&
+                  SUPLAN_RX_MAX_REASSEMBLED_FRAME <= UINT16_MAX,
+              "Local RX profile must satisfy the v1 fragmentation minimum");
+static_assert(SUPLAN_RX_MAX_REASSEMBLED_FRAME % 8 == 0,
+              "Reassembly bitmap requires a whole number of bytes");
 
 }  // namespace SupLan
 }  // namespace Supla

@@ -305,3 +305,17 @@ target_include_directories(suplanespudptests PRIVATE
 target_link_libraries(suplanespudptests PRIVATE gtest_main)
 supla_apply_warnings(suplanespudptests)
 add_test(NAME suplanespudptests COMMAND suplanespudptests)
+
+# Compile a larger local RX/TX profile without changing PoC1/PoC2 defaults.
+# A scripted authenticated peer advertises 1024, 2048 or 4096 independently.
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/SupLanSources.cmake)
+add_executable(suplandirectionaltests
+  SupLanDirectionalTests/suplan_directional_tests.cpp
+  ../porting/linux/suplan_crypto_openssl.cpp ${SUPLAN_CORE_SRCS})
+target_include_directories(suplandirectionaltests PRIVATE
+  ../../src ../porting/linux)
+target_compile_definitions(suplandirectionaltests PRIVATE
+  SUPLAN_RX_MAX_REASSEMBLED_FRAME=2048 SUPLAN_MAX_APPLICATION_BYTES=1536)
+target_link_libraries(suplandirectionaltests PRIVATE gtest_main OpenSSL::Crypto)
+supla_apply_warnings(suplandirectionaltests)
+add_test(NAME suplandirectionaltests COMMAND suplandirectionaltests)

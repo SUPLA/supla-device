@@ -26,8 +26,9 @@ namespace Supla {
 class LinuxSupLanRuntime::TransportLifecycle
     : public Protocol::SupLanTransportLifecycle {
  public:
-  TransportLifecycle(SupLan::LinuxUdpPort* datagrams, uint16_t port)
-      : datagrams_(datagrams), port_(port) {}
+  TransportLifecycle(SupLan::LinuxUdpPort* datagrams, uint16_t port,
+                     const std::string& bindAddress)
+      : datagrams_(datagrams), port_(port), bindAddress_(bindAddress) {}
 
   bool networkReady(uint32_t nowMs) override {
     if (!enabled_ || !Network::IsReady() || datagrams_ == nullptr) {
@@ -49,7 +50,7 @@ class LinuxSupLanRuntime::TransportLifecycle
 
   bool open() override {
     if (datagrams_ == nullptr ||
-        !datagrams_->open("0.0.0.0", port_,
+        !datagrams_->open(bindAddress_.c_str(), port_,
                           SupLan::kMaxDatagramPayload)) {
       return false;
     }
@@ -80,6 +81,7 @@ class LinuxSupLanRuntime::TransportLifecycle
  private:
   SupLan::LinuxUdpPort* datagrams_;
   uint16_t port_;
+  std::string bindAddress_;
   uint32_t lastMulticastProbeMs_ = 0;
   bool haveMulticastProbe_ = false;
   bool multicastReady_ = false;
@@ -144,7 +146,8 @@ bool LinuxSupLanRuntime::initialize() {
                                         primaryPeer_, false}
       : Protocol::SupLanResourceMapping{SupLan::Poc1::kActionResourceId, 0,
                                         actionPeer_, true};
-  transport_.reset(new TransportLifecycle(&datagrams_, config_.unicastPort));
+  transport_.reset(new TransportLifecycle(
+      &datagrams_, config_.unicastPort, config_.bindAddress));
   protocol_.reset(new Protocol::SupLan(
       &SuplaDevice, &peers_, &mapping_, 1, onApplicationEvent, this));
   runtime_.reset(new SupLan::Runtime(
@@ -165,9 +168,22 @@ void LinuxSupLanRuntime::onApplicationEvent(
     const SupLan::ResourceId& resource, uint32_t messageType,
     const uint8_t* payload, size_t payloadLength) {
   if (event == Protocol::kSupLanRemoteState) {
-    SUPLA_LOG_INFO("SupLAN STATE peer=%u resource=%" PRIu32 " bytes=%u",
-                   peerIndex, resource.id,
-                   static_cast<unsigned>(payloadLength));
+    if (messageType == SupLan::kSuplaCallDeviceChannelValueChangedC &&
+        payload != nullptr &&
+        payloadLength == sizeof(TDS_SuplaDeviceChannelValue_C)) {
+      TDS_SuplaDeviceChannelValue_C value = {};
+      memcpy(&value, payload, sizeof(value));
+      SUPLA_LOG_INFO("SupLAN STATE peer=%u resource=%" PRIu32
+                     " bytes=%u channel=%u value0=%u",
+                     peerIndex, resource.id,
+                     static_cast<unsigned>(payloadLength),
+                     value.ChannelNumber,
+                     static_cast<unsigned char>(value.value[0]));
+    } else {
+      SUPLA_LOG_INFO("SupLAN STATE peer=%u resource=%" PRIu32 " bytes=%u",
+                     peerIndex, resource.id,
+                     static_cast<unsigned>(payloadLength));
+    }
   } else if (event == Protocol::kSupLanRemoteAction) {
     const uint32_t actionId = payload != nullptr && payloadLength >= 5
         ? static_cast<uint32_t>(payload[1]) |
@@ -210,7 +226,36 @@ bool LinuxSupLanRuntime::processDebugCommand(
         "show-pools, read <resource>, control <resource> <0|1>, "
         "set-resource-value <resource> <0|1>, emit-action <resource> "
         "<action>, forget-session <peer>, clear-endpoint <peer>, "
-        "transport <on|off> (test)\n");
+        "transport <on|off>, mtu <48..250> (test), "
+        "fault <drop-ack-rx|drop-fragment-tx|corrupt-data-tag> <0..3>\n");
+  } else if (command == "fault") {
+    std::string kind;
+    unsigned count = 0;
+    uint8_t* counter = nullptr;
+    if (input >> kind >> count && count <= 3) {
+      auto* hooks = runtime_->testHooks();
+      if (kind == "drop-ack-rx") {
+        counter = &hooks->dropNextAckRx;
+      } else if (kind == "drop-fragment-tx") {
+        counter = &hooks->dropNextFragmentTx;
+      } else if (kind == "corrupt-data-tag") {
+        counter = &hooks->corruptNextDataTagTx;
+      }
+    }
+    if (counter == nullptr) {
+      writeText(writer, "ERROR expected supported fault and count 0..3\n");
+    } else {
+      *counter = static_cast<uint8_t>(count);
+      writeText(writer, "OK bounded test fault applied\n");
+    }
+  } else if (command == "mtu") {
+    unsigned mtu = 0;
+    if (!(input >> mtu) || mtu < 48 || mtu > SupLan::kMaxDatagramPayload) {
+      writeText(writer, "ERROR expected MTU 48..250\n");
+    } else {
+      runtime_->testHooks()->maxDatagramPayload = mtu;
+      writeText(writer, "OK test MTU applied\n");
+    }
   } else if (command == "show-status") {
     writeStatus(writer);
   } else if (command == "show-resources") {

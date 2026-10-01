@@ -126,6 +126,7 @@ void Runtime::clearSessionEntry(SessionEntry *session) {
   session->used = false;
   session->peerIndex = 0;
   session->sessionId = 0;
+  session->peerRxMaxReassembledFrame = 0;
   memset(&session->transmit, 0, sizeof(session->transmit));
   memset(&session->receive, 0, sizeof(session->receive));
   session->nextTransmitSequence = 0;
@@ -145,6 +146,7 @@ void Runtime::clearPendingHandshake(PendingHandshake *pending) {
   memset(&pending->keys, 0, sizeof(pending->keys));
   pending->receiveReplay.reset();
   pending->sessionId = 0;
+  pending->peerRxMaxReassembledFrame = 0;
   pending->lastTransmitMs = 0;
   pending->expiresAtMs = 0;
   pending->attempts = 0;
@@ -498,7 +500,7 @@ bool Runtime::knownSession(void *context, uint64_t sessionId) {
 
 int Runtime::findReadDependency(uint8_t peerIndex,
                                 const ResourceId &resource) const {
-  for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+  for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
     const ReadDependency &entry = dependencies_[i];
     if (entry.used && entry.peerIndex == peerIndex &&
         entry.resourceType == resource.type &&
@@ -549,7 +551,7 @@ void Runtime::finishRecovery(uint8_t peerIndex) {
   PeerRecovery &peer = recovery_[peerIndex];
   peer.active = false;
   bool refresh = false;
-  for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+  for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
     ReadDependency &entry = dependencies_[i];
     if (entry.used && entry.peerIndex == peerIndex) {
       if (entry.pending) {
@@ -609,7 +611,7 @@ void Runtime::noteReachability(uint8_t peerIndex) {
 }
 
 void Runtime::pruneReadDependencies() {
-  for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+  for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
     ReadDependency &entry = dependencies_[i];
     if (!entry.used) {
       continue;
@@ -648,7 +650,7 @@ void Runtime::pruneReadDependencies() {
     entry = ReadDependency();
     cancelPeerRecoveryIfIdle(peerIndex);
     bool refresh = false;
-    for (uint8_t d = 0; d < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++d) {
+    for (uint8_t d = 0; d < SUPLAN_MAX_READ_DEPENDENCIES; ++d) {
       refresh = refresh || (dependencies_[d].used &&
           dependencies_[d].peerIndex == peerIndex &&
           dependencies_[d].needsRefresh);
@@ -685,7 +687,7 @@ void Runtime::iterateRecovery(uint32_t now) {
       beginRecovery(peerIndex);
     }
     if (peer.active) {
-      for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+      for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
         ReadDependency &entry = dependencies_[i];
         if (!entry.used || entry.peerIndex != peerIndex ||
             !entry.needsRefresh || entry.pending) {
@@ -902,7 +904,7 @@ void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
     }
   }
   if (recovery_[peerIndex].active) {
-    for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+    for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
       if (dependencies_[i].used && dependencies_[i].peerIndex == peerIndex &&
           dependencies_[i].needsRefresh) {
         return;
@@ -937,7 +939,7 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
   pruneReadDependencies();
   int slot = findReadDependency(peerIndex, resource);
   if (slot < 0) {
-    for (uint8_t i = 0; i < SUPLAN_MAX_TOTAL_ACL_ENTRIES; ++i) {
+    for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
       if (!dependencies_[i].used) {
         slot = i;
         dependencies_[i].used = true;
@@ -1474,6 +1476,29 @@ bool Runtime::sendProtectedToEndpoint(
       applicationLength > SUPLAN_MAX_APPLICATION_BYTES) {
     return false;
   }
+  // PROTO-014: admission applies before encryption, sequence consumption or TX.
+  // Include responder-pending keys used for a protected admission rejection.
+  uint16_t peerReceiveLimit = 0;
+  for (uint8_t i = 0; i < SUPLAN_MAX_ACTIVE_SESSIONS; ++i) {
+    if (sessions_[i].used && sessions_[i].peerIndex == peerIndex &&
+        sessions_[i].sessionId == sessionId) {
+      peerReceiveLimit = sessions_[i].peerRxMaxReassembledFrame;
+      break;
+    }
+  }
+  if (peerReceiveLimit == 0) {
+    for (uint8_t i = 0; i < SUPLAN_MAX_PENDING_HANDSHAKES; ++i) {
+      if (pending_[i].used && pending_[i].peerIndex == peerIndex &&
+          pending_[i].sessionId == sessionId) {
+        peerReceiveLimit = pending_[i].peerRxMaxReassembledFrame;
+        break;
+      }
+    }
+  }
+  if (applicationLength + kProtectedHeaderSize + kAeadTagSize >
+      peerReceiveLimit) {
+    return false;
+  }
   if (actionDelivery &&
       (!ackRequired || !isLocalSource(peers_->get(peerIndex)) ||
        !peers_->authorize(peerIndex, resource, kPermissionAction) ||
@@ -1858,6 +1883,7 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
   response->initiator = false;
   response->peerIndex = peerIndex;
   response->endpoint = source;
+  response->peerRxMaxReassembledFrame = init.rxMaxReassembledFrame;
   memcpy(response->initFrame, data, sizeof(response->initFrame));
   SessionAccept accept = {};
   memcpy(accept.peerLocator, init.peerLocator, kPeerLocatorSize);
@@ -1940,6 +1966,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   }
   memcpy(attempt->acceptFrame, data, sizeof(attempt->acceptFrame));
   attempt->sessionId = accept.sessionId;
+  attempt->peerRxMaxReassembledFrame = accept.responderRxMaxReassembledFrame;
   if (!deriveSessionKeys(crypto_, material.peerKey,
                          material.contextHash, init.ni,
                          accept.nr, attempt->initFrame,
@@ -1963,6 +1990,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   }
   SessionEntry *session = &sessions_[sessionIndex];
   session->sessionId = attempt->sessionId;
+  session->peerRxMaxReassembledFrame = attempt->peerRxMaxReassembledFrame;
   session->transmit = attempt->keys.initiatorToResponder;
   session->receive = attempt->keys.responderToInitiator;
   session->nextTransmitSequence = 0;
@@ -2061,6 +2089,8 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
     }
     SessionEntry *session = &sessions_[admitted];
     session->sessionId = pendingSession->sessionId;
+    session->peerRxMaxReassembledFrame =
+        pendingSession->peerRxMaxReassembledFrame;
     session->transmit = pendingSession->keys.responderToInitiator;
     session->receive = pendingSession->keys.initiatorToResponder;
     session->receiveReplay = pendingSession->receiveReplay;

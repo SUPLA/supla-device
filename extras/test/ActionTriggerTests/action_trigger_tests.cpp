@@ -274,8 +274,11 @@ TEST_F(ActionTriggerTests, WeeklyScheduleIsOptInAndLoadedLazily) {
   at.fillChannelConfig(
       &schedule, &size, SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   EXPECT_EQ(size, sizeof(TChannelConfig_WeeklySchedule));
-  const TChannelConfig_WeeklySchedule defaultSchedule = {};
-  EXPECT_EQ(memcmp(&schedule, &defaultSchedule, sizeof(schedule)), 0);
+  EXPECT_EQ(schedule.Program[0].Mode, SUPLA_BUTTON_MODE_NOT_SET);
+  EXPECT_EQ(schedule.Program[1].Mode, SUPLA_BUTTON_MODE_LOCKED);
+  for (auto quarter : schedule.Quarters) {
+    EXPECT_EQ(quarter, 0);
+  }
   EXPECT_FALSE(actionTriggerValue(at)->Flags &
                SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
 }

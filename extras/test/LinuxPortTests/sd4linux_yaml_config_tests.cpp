@@ -327,6 +327,16 @@ TEST(Sd4linuxYamlConfigTests,
             SUPLA_CHANNELFNC_LIGHTSWITCH);
   EXPECT_FALSE(relay->getChannel()->isWeeklyScheduleAvailable());
   deleteCreatedElement(previousElement);
+
+  previousElement = Supla::Element::last();
+  EXPECT_TRUE(config.addVirtualRelay(
+      YAML::Load("default_function: light_switch\nweekly_schedule: true"),
+      0));
+  relay = dynamic_cast<Supla::Control::VirtualRelay*>(Supla::Element::last());
+  ASSERT_NE(relay, nullptr);
+  EXPECT_TRUE(relay->isWeeklyScheduleAvailable());
+  EXPECT_TRUE(relay->getChannel()->isWeeklyScheduleAvailable());
+  deleteCreatedElement(previousElement);
 }
 
 TEST(Sd4linuxYamlConfigTests,
@@ -353,6 +363,41 @@ TEST(Sd4linuxYamlConfigTests,
       Supla::Element::last());
   ASSERT_NE(at, nullptr);
   EXPECT_EQ(at->getChannel()->getDefaultFunction(), 700);
+  EXPECT_FALSE(at->isWeeklyScheduleSupported());
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     ActionTriggerWeeklyScheduleCanBeEnabledFromYaml) {
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addActionTriggerParsed(
+      YAML::Load("name: at\nweekly_schedule: true"), 0));
+  auto at = dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+      Supla::Element::last());
+  ASSERT_NE(at, nullptr);
+  EXPECT_TRUE(at->isWeeklyScheduleSupported());
+  EXPECT_TRUE(at->getChannel()->isWeeklyScheduleAvailable());
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     ParsedRelayWeeklyScheduleCanBeEnabledFromYaml) {
+  TestLinuxYamlConfig config;
+  FakePayload payload(true);
+  auto previousElement = Supla::Element::last();
+
+  EXPECT_TRUE(config.addCustomRelay(
+      YAML::Load("default_function: light_switch\nweekly_schedule: true"),
+      0,
+      nullptr,
+      &payload));
+  auto relay = dynamic_cast<Supla::Control::CustomRelay*>(
+      Supla::Element::last());
+  ASSERT_NE(relay, nullptr);
+  EXPECT_TRUE(relay->isWeeklyScheduleAvailable());
+  EXPECT_TRUE(relay->getChannel()->isWeeklyScheduleAvailable());
   deleteCreatedElement(previousElement);
 }
 
@@ -397,6 +442,7 @@ TEST(Sd4linuxYamlConfigTests, SupLanIsDisabledWhenSectionIsAbsent) {
   EXPECT_FALSE(suplan.enabled);
   EXPECT_EQ(suplan.role, 0);
   EXPECT_EQ(suplan.unicastPort, 2016);
+  EXPECT_EQ(suplan.bindAddress, "0.0.0.0");
 }
 
 TEST(Sd4linuxYamlConfigTests, ReadsSupLanRoleAndUnicastPort) {
@@ -412,6 +458,21 @@ TEST(Sd4linuxYamlConfigTests, ReadsSupLanRoleAndUnicastPort) {
   EXPECT_TRUE(suplan.enabled);
   EXPECT_EQ(suplan.role, 'B');
   EXPECT_EQ(suplan.unicastPort, 2018);
+}
+
+TEST(Sd4linuxYamlConfigTests, SupLanCanSelectAnIPv4Interface) {
+  TestLinuxYamlConfig config;
+  Supla::LinuxSupLanConfig suplan;
+  config.config = YAML::Load(
+      "suplan:\n  enabled: true\n  role: B\n"
+      "  bind_address: 192.168.0.177\n");
+  ASSERT_TRUE(config.getSupLanConfig(&suplan));
+  EXPECT_EQ(suplan.bindAddress, "192.168.0.177");
+  for (const char* invalid : {"localhost", "::1", "256.0.0.1", "''"}) {
+    config.config = YAML::Load(std::string("suplan:\n  bind_address: ") +
+                               invalid + "\n");
+    EXPECT_FALSE(config.getSupLanConfig(&suplan));
+  }
 }
 
 TEST(Sd4linuxYamlConfigTests, DisabledSupLanDoesNotRequireFixtureRole) {

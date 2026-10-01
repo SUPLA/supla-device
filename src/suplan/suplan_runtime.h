@@ -136,6 +136,7 @@ class Runtime {
     bool used;
     uint8_t peerIndex;
     uint64_t sessionId;
+    uint16_t peerRxMaxReassembledFrame;
     DirectionalKeys transmit;
     DirectionalKeys receive;
     uint32_t nextTransmitSequence;
@@ -157,6 +158,7 @@ class Runtime {
     SessionKeys keys;
     ReplayWindow receiveReplay;
     uint64_t sessionId;
+    uint16_t peerRxMaxReassembledFrame;
     uint32_t lastTransmitMs;
     uint32_t expiresAtMs;
     uint8_t attempts;
@@ -323,8 +325,8 @@ class Runtime {
   RuntimeInterest interests_[SUPLAN_MAX_RUNTIME_INTERESTS];
   RetryEntry retries_[SUPLAN_MAX_RETRY_SLOTS];
   DeferredApplication deferred_[SUPLAN_MAX_DEFERRED_APP_EVENTS];
-  PeerRecovery recovery_[SUPLAN_MAX_PERSISTENT_PEERS];
-  ReadDependency dependencies_[SUPLAN_MAX_TOTAL_ACL_ENTRIES];
+  PeerRecovery recovery_[SUPLAN_MAX_PEER_RECOVERY_STATES];
+  ReadDependency dependencies_[SUPLAN_MAX_READ_DEPENDENCIES];
   FloodJob flood_;
   FragmentSender fragmentSender_;
   FragmentReassembler fragmentReassembler_;

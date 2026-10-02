@@ -198,6 +198,8 @@ static_assert((unsigned int)1 == sizeof(TDS_GetChannelIntParamsRequest));
 static_assert((unsigned int)4 == sizeof(TRelayChannel_Value));
 static_assert(sizeof(TRelayChannel_Value) <=
               (unsigned int)SUPLA_CHANNELVALUE_SIZE);
+static_assert(sizeof(TActionTriggerProperties) <=
+              (unsigned int)SUPLA_CHANNELVALUE_SIZE);
 static_assert((unsigned int)6 == sizeof(TDS_GetChannelConfigRequest));
 static_assert((unsigned int)520 == sizeof(TSD_ChannelConfig));
 static_assert((unsigned int)520 == sizeof(TSDS_SetChannelConfig));
@@ -244,7 +246,6 @@ static_assert(sizeof(TCSD_RollerShutterValue) <= SUPLA_CHANNELVALUE_SIZE);
 static_assert(sizeof(TDSC_FacadeBlindValue) <= SUPLA_CHANNELVALUE_SIZE);
 static_assert(sizeof(TCSD_FacadeBlindValue) <= SUPLA_CHANNELVALUE_SIZE);
 static_assert((unsigned int)15 == sizeof(TDS_ActionTrigger));
-static_assert((unsigned int)8 >= sizeof(TActionTriggerProperties));
 static_assert((unsigned int)420 == sizeof(TSC_SuplaScene));
 static_assert((unsigned int)8408 == sizeof(TSC_SuplaScenePack));
 static_assert((unsigned int)220 == sizeof(TSC_SuplaSceneState));
@@ -358,4 +359,25 @@ static_assert((unsigned int)10202 == sizeof(TSC_SuplaChannelExtendedValuePack));
 static_assert(sizeof(TChannelAndTimerState_ExtendedValue) <=
               (unsigned int)SUPLA_CHANNELEXTENDEDVALUE_SIZE);
 static_assert(sizeof(TSC_GetChannelValueResult) == 1055);
+#endif
+
+// SupLAN public v1 frozen wire sizes.
+static_assert(sizeof(TSuplaSuplanPeerContext) == 27);
+static_assert(sizeof(TSuplaSuplanResource) == 5);
+static_assert(sizeof(TSuplaSuplanAclEntry) == 6);
+static_assert(sizeof(TSD_SuplaDeviceIdentities) == 520);
+static_assert(sizeof(TDS_SuplaDeviceIdentitiesResult) == 5);
+static_assert(sizeof(TSDS_SuplaSetSuplanSourceAssociation) == 568);
+static_assert(sizeof(TDS_SuplaSetSuplanSourceAssociationResult) == 65);
+static_assert(sizeof(TSDS_SuplaSetSuplanDestinationAssociation) == 600);
+static_assert(sizeof(TDS_SuplaSetSuplanDestinationAssociationResult) == 32);
+static_assert(sizeof(TDS_SuplaEnsureResourceAccess) == 6);
+static_assert(sizeof(TSD_SuplaEnsureResourceAccessResult) == 2);
+static_assert(offsetof(TSD_SuplaDeviceIdentities, ChannelId) == 8);
+static_assert(offsetof(TSDS_SuplaSetSuplanSourceAssociation, Acl) == 34);
+static_assert(offsetof(TSDS_SuplaSetSuplanDestinationAssociation, Resources) ==
+              66);
+#ifdef SUPLA_DEVICE
+static_assert(sizeof(TSDS_SuplaSetSuplanDestinationAssociation) ==
+              SUPLA_MAX_DATA_SIZE);
 #endif

@@ -18,6 +18,7 @@
 #include <supla/device/register_device.h>
 #include <supla/device/remote_device_config.h>
 #include <supla/device/security_logger.h>
+#include <supla/device/server_identity.h>
 #include <supla/device/status_led.h>
 #include <supla/device/subdevice_pairing_handler.h>
 #include <supla/device/sw_update.h>
@@ -1581,6 +1582,8 @@ void SuplaDeviceClass::resetToFactorySettings() {
     cfg->initDefaultDeviceConfig();
     cfg->commit();
   }
+
+  Supla::Device::ServerIdentity::factoryReset();
 
   // cleanup state storage data
   // TODO(klew): add handling of persistant data (like energy counters)

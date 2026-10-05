@@ -1937,13 +1937,24 @@ void Supla::Protocol::SuplaSrpc::onSetActivityTimeoutResult(
   SUPLA_LOG_DEBUG("Activity timeout set to %d s", result->activity_timeout);
 }
 
+bool Supla::Protocol::SuplaSrpc::rotateServerRoot() {
+  if (!serverIdentityState.rotateRoot()) {
+    return false;
+  }
+  disconnect();
+  return true;
+}
+
 void Supla::Protocol::SuplaSrpc::onDeviceIdentities(
     const TSD_SuplaDeviceIdentities *snapshot) {
   if (!snapshot || !srpc) {
     return;
   }
   TDS_SuplaDeviceIdentitiesResult result = {};
-  if (isRegisteredAndReady()) {
+  if (effectiveSrpcVersion(version) < 29 || !serverIdentityState.capable()) {
+    result.Result = SUPLA_SUPLAN_RESULT_UNSUPPORTED;
+    result.RootEpoch = serverIdentityState.rootEpoch();
+  } else if (isRegisteredAndReady()) {
     result = serverIdentityState.accept(*snapshot);
   } else {
     result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
@@ -2266,6 +2277,12 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
     auto *registerHeader = Supla::RegisterDevice::getRegDevHeaderPtr();
+    if (effectiveSrpcVersion(version) >= 29 && serverIdentityState.capable()) {
+      registerHeader->Flags |= SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED |
+                               SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
+    } else {
+      registerHeader->Flags &= ~SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED;
+    }
     if (Supla::RegisterDevice::isSleepingDeviceEnabled() &&
         effectiveSrpcVersion(version) >= 29) {
       registerHeader->Flags |= SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
@@ -2289,14 +2306,14 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       if (!srpc_ds_async_registerdevice_in_chunks(
               srpc,
               registerHeader,
-              Supla::RegisterDevice::getChannelPtr_D)) {
+              Supla::Device::ServerIdentity::registrationChannel_D)) {
         SUPLA_LOG_WARNING("Fatal SRPC failure!");
       }
     } else {
       if (!srpc_ds_async_registerdevice_in_chunks_g(
               srpc,
               registerHeader,
-              Supla::RegisterDevice::getChannelPtr_E)) {
+              Supla::Device::ServerIdentity::registrationChannel_E)) {
         SUPLA_LOG_WARNING("Fatal SRPC failure!");
       }
     }

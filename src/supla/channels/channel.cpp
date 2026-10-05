@@ -11,6 +11,7 @@
 #include <supla/correction.h>
 #include <math.h>
 #include <supla/device/register_device.h>
+#include <supla/device/server_identity.h>
 
 #include <string.h>
 
@@ -72,6 +73,9 @@ Channel::Channel(int number) {
 }
 
 Channel::~Channel() {
+  if (!Supla::Device::ServerIdentity::channelChanging(channelNumber, true)) {
+    SUPLA_LOG_ERROR("Cannot persist removed SERVER Channel identity");
+  }
   ++registrationChanges;
   if (serverChannelId) {
     ++identityChanges;
@@ -128,6 +132,14 @@ bool Channel::setChannelNumber(int newChannelNumber) {
   }
   if (newChannelNumber == oldChannelNumber) {
     return true;
+  }
+  auto conflict = GetByChannelNumber(newChannelNumber);
+  if (conflict && conflict != this && conflict->serverChannelId &&
+      !Supla::Device::ServerIdentity::channelChanging(newChannelNumber)) {
+    return false;
+  }
+  if (!Supla::Device::ServerIdentity::channelChanging(oldChannelNumber)) {
+    return false;
   }
   ++registrationChanges;
   if (serverChannelId) {

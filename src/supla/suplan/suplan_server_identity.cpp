@@ -1,19 +1,24 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "server_identity.h"
+#include <supla/suplan/suplan_server_identity.h>
 
 #include <string.h>
+#include <stdlib.h>
+#include <supla/crypto.h>
 #include <supla/channels/channel.h>
 #include <supla/crc16.h>
 #include <supla/device/register_device.h>
 #include <supla/storage/config.h>
-#include <supla/tools.h>
 
 namespace {
 const char kRootKey[] = "sl-root";
 const char kIdentityKey[] = "sl-identity";
 const int kRootSize = 39;
+// v1 was already an explicit ChannelNumber/ChannelId record. v2/v3 preserve
+// its layout and encode synchronized/pending-transition state respectively.
+const uint8_t kIdentityReady = 2;
+const uint8_t kIdentityTransition = 3;
 
 void put32(uint8_t *p, uint32_t v) {
   for (int i = 0; i < 4; ++i) {
@@ -33,8 +38,7 @@ void seal(uint8_t *data, int size) {
   data[size - 1] = static_cast<uint8_t>(crc >> 8);
 }
 bool valid(const uint8_t *data, int size) {
-  return data[0] == 1 &&
-         calculateCrc16(data, size - 2) ==
+  return calculateCrc16(data, size - 2) ==
              (data[size - 2] | (static_cast<uint16_t>(data[size - 1]) << 8));
 }
 bool uniform(const uint8_t *data, int size, uint8_t value) {
@@ -62,10 +66,107 @@ bool validIds(const TSD_SuplaDeviceIdentities &s) {
   }
   return true;
 }
+// Bounded, transient serialization storage; never a frame-sized stack array.
+struct Buffer {
+  explicit Buffer(int size) : data(static_cast<uint8_t *>(calloc(size, 1))) {}
+  ~Buffer() { free(data); }
+  uint8_t *data;
+};
 }  // namespace
 
+Supla::Device::ServerIdentity *Supla::Device::ServerIdentity::active = nullptr;
+
+Supla::Device::ServerIdentity::ServerIdentity() {
+  rootValid = identityValid = rootDurable = identityDurable = false;
+  registrationPrepared = registrationValid = transition = syncComplete = false;
+  identitiesAccepted = contextInvalidated = false;
+}
+
+Supla::Device::ServerIdentity::~ServerIdentity() {
+  abandonRegistration();
+  if (active == this) {
+    active = nullptr;
+  }
+  memset(root, 0, sizeof(root));
+}
+
+bool Supla::Device::ServerIdentity::channelChanging(uint8_t number,
+                                                     bool removing) {
+  if (!active) {
+    return true;
+  }
+  for (int i = 0; active->registrationPrepared &&
+                  i < active->registrationCount; ++i) {
+    if (active->registrationNumbers[i] == number) {
+      active->contextInvalidated = true;
+      active->identitiesAccepted = false;
+      break;
+    }
+  }
+  if (active->forgetChannel(number)) {
+    return true;
+  }
+  if (!removing) {
+    return false;
+  }
+  // A destructor cannot retain the removed object. Forget all associations
+  // with a durable barrier rather than leave one eligible for number reuse.
+  // Persistent configuration changes must preflight forgetChannel() and honor
+  // failure; no durable lifecycle change is possible on an unwritable backend.
+  active->identityValid = false;
+  active->transition = true;
+  active->syncComplete = false;
+  uint8_t tombstone[kIdentityPrefix + 2] = {kIdentityTransition};
+  put32(tombstone + 2, active->deviceId);
+  seal(tombstone, sizeof(tombstone));
+  return active->persist(kIdentityKey, tombstone, sizeof(tombstone));
+}
+
+void Supla::Device::ServerIdentity::factoryReset() {
+  if (active) {
+    // Config reset already erased records. Drop runtime credentials/context.
+    auto owner = active;
+    auto cfg = owner->config;
+    owner->load(nullptr);
+    owner->config = cfg;
+    active = owner;
+  }
+}
+
+bool Supla::Device::ServerIdentity::rotateRoot() {
+  bool previousValid = rootValid;
+  rootValid = false;
+  if (!ensureRoot()) {
+    rootValid = previousValid;
+    return false;
+  }
+  abandonRegistration();
+  syncComplete = false;
+  return true;
+}
+
+bool Supla::Device::ServerIdentity::capable() const {
+#if defined(ESP32) || defined(SUPLA_DEVICE_ESP32) || defined(ESP_PLATFORM) || \
+    defined(ARDUINO_ARCH_ESP8266) || defined(ESP8266) || \
+    defined(SUPLA_LINUX) || defined(SUPLA_TEST)
+  return config != nullptr;
+#else
+  return false;
+#endif
+}
+
+void Supla::Device::ServerIdentity::abandonRegistration() {
+  free(registrationNumbers);
+  registrationNumbers = nullptr;
+  registrationValid = registrationPrepared = identitiesAccepted = false;
+}
+
 void Supla::Device::ServerIdentity::load(Config *cfg) {
+  abandonRegistration();
+  active = cfg ? this : nullptr;
   config = cfg;
+  epoch = 0;
+  memset(root, 0, sizeof(root));
   for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next()) {
     ch->serverChannelId = 0;
   }
@@ -79,7 +180,7 @@ void Supla::Device::ServerIdentity::load(Config *cfg) {
   if (config->getBlobSize(kRootKey) == kRootSize &&
       config->getBlob(kRootKey, reinterpret_cast<char *>(rootRecord),
                       sizeof(rootRecord)) &&
-      valid(rootRecord, kRootSize)) {
+      rootRecord[0] == 1 && valid(rootRecord, kRootSize)) {
     uint32_t storedEpoch = get32(rootRecord + 1);
     if (storedEpoch != 0 && storedEpoch != UINT32_MAX &&
         !uniform(rootRecord + 5, 32, 0) && !uniform(rootRecord + 5, 32, 0xFF)) {
@@ -92,8 +193,14 @@ void Supla::Device::ServerIdentity::load(Config *cfg) {
   if (size < kIdentityPrefix + 2 || size > kIdentityMaxSize) {
     return;
   }
-  uint8_t record[kIdentityMaxSize] = {};
+  Buffer workspace(kIdentityMaxSize);
+  auto record = workspace.data;
+  if (!record) {
+    return;
+  }
   if (!config->getBlob(kIdentityKey, reinterpret_cast<char *>(record), size) ||
+      (record[0] != 1 && record[0] != kIdentityReady &&
+       record[0] != kIdentityTransition) ||
       !valid(record, size)) {
     return;
   }
@@ -135,11 +242,12 @@ void Supla::Device::ServerIdentity::load(Config *cfg) {
   identityValid = true;
   // Existing Channels remain usable; removed associations need cleanup/sync.
   identityDurable = !missing;
-  transition = missing;
+  transition = missing || record[0] == kIdentityTransition;
 }
 
 bool Supla::Device::ServerIdentity::registrationStarted() {
-  syncComplete = registrationValid = registrationPrepared = false;
+  abandonRegistration();
+  syncComplete = false;
   int count = Supla::RegisterDevice::getChannelCount();
   if (count < 0 || count > SUPLA_CHANNELMAXCOUNT) {
     return false;
@@ -147,6 +255,10 @@ bool Supla::Device::ServerIdentity::registrationStarted() {
   int n = 0;
   for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next(), ++n) {
     int number = ch->getChannelNumber();
+    if (n >= count) {
+      abandonRegistration();
+      return false;
+    }
     if (number < 0 || number >= SUPLA_CHANNELMAXCOUNT ||
         Supla::Channel::GetByChannelNumber(number) != ch) {
       return false;
@@ -155,14 +267,40 @@ bool Supla::Device::ServerIdentity::registrationStarted() {
   if (n != count) {
     return false;
   }
+  registrationNumbers = static_cast<uint8_t *>(malloc(count ? count : 1));
+  if (!registrationNumbers) {
+    return false;
+  }
+  n = 0;
+  for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next(), ++n) {
+    registrationNumbers[n] = static_cast<uint8_t>(ch->getChannelNumber());
+  }
   registrationCount = static_cast<uint8_t>(count);
-  registrationGeneration = Supla::Channel::registrationGeneration();
+  contextInvalidated = false;
   registrationPrepared = true;
+  active = this;
   return true;
 }
+TDS_SuplaDeviceChannel_D *
+Supla::Device::ServerIdentity::registrationChannel_D(int index) {
+  if (!active || !active->registrationContextValid() || index < 0 ||
+      index >= active->registrationCount) {
+    return nullptr;
+  }
+  return Supla::RegisterDevice::getChannelByNumberPtr_D(
+      active->registrationNumbers[index]);
+}
+TDS_SuplaDeviceChannel_E *
+Supla::Device::ServerIdentity::registrationChannel_E(int index) {
+  if (!active || !active->registrationContextValid() || index < 0 ||
+      index >= active->registrationCount) {
+    return nullptr;
+  }
+  return Supla::RegisterDevice::getChannelByNumberPtr_E(
+      active->registrationNumbers[index]);
+}
 bool Supla::Device::ServerIdentity::registrationContextValid() const {
-  return registrationPrepared && registrationGeneration ==
-      Supla::Channel::registrationGeneration();
+  return registrationPrepared && !contextInvalidated;
 }
 bool Supla::Device::ServerIdentity::registrationInvalidated() const {
   return registrationPrepared && !registrationContextValid();
@@ -171,11 +309,31 @@ void Supla::Device::ServerIdentity::registrationSucceeded() {
   registrationValid = registrationContextValid();
 }
 void Supla::Device::ServerIdentity::disconnected() {
-  registrationValid = registrationPrepared = syncComplete = false;
+  abandonRegistration();
+  syncComplete = false;
   // An unfinished identity transition survives an ordinary reconnect.
 }
 void Supla::Device::ServerIdentity::syncDone() {
-  if (registrationValid && registrationContextValid()) {
+  if (registrationValid && registrationContextValid() &&
+      identitiesAccepted &&
+      identityDurable) {
+    if (identityTransition()) {
+      Buffer workspace(kIdentityMaxSize);
+      auto record = workspace.data;
+      int size = config ? config->getBlobSize(kIdentityKey) : -1;
+      if (!record || size < kIdentityPrefix + 2 || size > kIdentityMaxSize ||
+          !config->getBlob(kIdentityKey,
+                           reinterpret_cast<char *>(record), size) ||
+          !valid(record, size)) {
+        return;
+      }
+      record[0] = kIdentityReady;
+      seal(record, size);
+      if (!persist(kIdentityKey, record, size)) {
+        return;
+      }
+      identityDurable = true;
+    }
     syncComplete = true;
     transition = false;
     identityGeneration = Supla::Channel::identityGeneration();
@@ -196,7 +354,11 @@ bool Supla::Device::ServerIdentity::persist(const char *key,
   }
   // Restore staged data on failure so an unrelated later commit cannot install
   // an unacknowledged update behind the still-valid runtime snapshot.
-  uint8_t previous[kIdentityMaxSize];
+  Buffer workspace(kIdentityMaxSize);
+  auto previous = workspace.data;
+  if (!previous) {
+    return false;
+  }
   int previousSize = config->getBlobSize(key);
   bool saved = previousSize >= 0 && previousSize <= kIdentityMaxSize;
   if (saved && !config->getBlob(key, reinterpret_cast<char *>(previous),
@@ -233,13 +395,18 @@ bool Supla::Device::ServerIdentity::ensureRoot() {
     put32(record + 1, epoch);
     memcpy(record + 5, root, sizeof(root));
   } else {
-    Supla::fillRandom(record + 5, 32);
-    if (uniform(record + 5, 32, 0) || uniform(record + 5, 32, 0xFF)) {
+    if (!Supla::Crypto::fillRandom(record + 5, 32)) {
+      return false;
+    }
+    if (uniform(record + 5, 32, 0) || uniform(record + 5, 32, 0xFF) ||
+        (epoch && memcmp(record + 5, root, sizeof(root)) == 0)) {
       return false;
     }
     nextEpoch = 0;
     for (int i = 0; i < 8; ++i) {
-      Supla::fillRandom(record + 1, 4);
+      if (!Supla::Crypto::fillRandom(record + 1, 4)) {
+        return false;
+      }
       nextEpoch = get32(record + 1);
       if (nextEpoch != 0 && nextEpoch != UINT32_MAX && nextEpoch != epoch) {
         break;
@@ -262,6 +429,7 @@ bool Supla::Device::ServerIdentity::ensureRoot() {
 
 TDS_SuplaDeviceIdentitiesResult Supla::Device::ServerIdentity::accept(
     const TSD_SuplaDeviceIdentities &snapshot) {
+  identitiesAccepted = false;
   TDS_SuplaDeviceIdentitiesResult result = {};
   result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
   result.RootEpoch = rootEpoch();
@@ -269,14 +437,18 @@ TDS_SuplaDeviceIdentitiesResult Supla::Device::ServerIdentity::accept(
       !validIds(snapshot) || snapshot.ChannelCount != registrationCount) {
     return result;
   }
-  // Only the registered prefix participates; appended Channels remain unmapped.
+  // Interpret positions using the captured transmitted ChannelNumber sequence.
   bool identical = identityValid && deviceId == snapshot.DeviceId;
   bool changed = identityValid && (deviceId != snapshot.DeviceId ||
                                    identityTransition());
-  int index = 0;
-  for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next(), ++index) {
-    uint32_t newId = index < registrationCount ?
-        static_cast<uint32_t>(snapshot.ChannelId[index]) : 0;
+  for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next()) {
+    uint32_t newId = 0;
+    for (int i = 0; i < registrationCount; ++i) {
+      if (registrationNumbers[i] == ch->getChannelNumber()) {
+        newId = static_cast<uint32_t>(snapshot.ChannelId[i]);
+        break;
+      }
+    }
     if (newId != ch->serverChannelId) {
       identical = false;
       if (ch->serverChannelId) {
@@ -290,19 +462,23 @@ TDS_SuplaDeviceIdentitiesResult Supla::Device::ServerIdentity::accept(
   }
   result.RootEpoch = rootEpoch();
   if (!identical || !identityDurable) {
-    uint8_t record[kIdentityMaxSize] = {1};
+    Buffer workspace(kIdentityMaxSize);
+    auto record = workspace.data;
+    if (!record) {
+      return result;
+    }
+    record[0] = (transition || changed) ?
+        kIdentityTransition : kIdentityReady;
     record[1] = registrationCount;
     put32(record + 2, snapshot.DeviceId);
     // Canonical persistence order avoids rewrites for reordered registration.
     int outputIndex = 0;
     for (int number = 0; number < SUPLA_CHANNELMAXCOUNT; ++number) {
-      index = 0;
-      for (auto ch = Supla::Channel::Begin(); ch && index < registrationCount;
-           ch = ch->next(), ++index) {
-        if (ch->getChannelNumber() == number) {
+      for (int i = 0; i < registrationCount; ++i) {
+        if (registrationNumbers[i] == number) {
           uint8_t *entry = record + kIdentityPrefix + 5 * outputIndex++;
           entry[0] = static_cast<uint8_t>(number);
-          put32(entry + 1, snapshot.ChannelId[index]);
+          put32(entry + 1, snapshot.ChannelId[i]);
           break;
         }
       }
@@ -318,13 +494,18 @@ TDS_SuplaDeviceIdentitiesResult Supla::Device::ServerIdentity::accept(
     }
     if (identical) {
       identityDurable = true;
+      identitiesAccepted = true;
       result.Result = SUPLA_SUPLAN_RESULT_OK;
       return result;
     }
-    index = 0;
-    for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next(), ++index) {
-      ch->serverChannelId = index < registrationCount ?
-          static_cast<uint32_t>(snapshot.ChannelId[index]) : 0;
+    for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next()) {
+      ch->serverChannelId = 0;
+      for (int i = 0; i < registrationCount; ++i) {
+        if (registrationNumbers[i] == ch->getChannelNumber()) {
+          ch->serverChannelId = static_cast<uint32_t>(snapshot.ChannelId[i]);
+          break;
+        }
+      }
     }
     deviceId = snapshot.DeviceId;
     identityValid = identityDurable = true;
@@ -335,6 +516,7 @@ TDS_SuplaDeviceIdentitiesResult Supla::Device::ServerIdentity::accept(
     }
     identityGeneration = Supla::Channel::identityGeneration();
   }
+  identitiesAccepted = true;
   result.Result = SUPLA_SUPLAN_RESULT_OK;
   return result;
 }
@@ -344,7 +526,12 @@ bool Supla::Device::ServerIdentity::forgetChannel(uint8_t number) {
   if (!forgotten || !forgotten->serverChannelId || !identityValid) {
     return true;
   }
-  uint8_t record[kIdentityMaxSize] = {1};
+  Buffer workspace(kIdentityMaxSize);
+  auto record = workspace.data;
+  if (!record) {
+    return false;
+  }
+  record[0] = kIdentityTransition;
   put32(record + 2, deviceId);
   int count = 0;
   for (int n = 0; n < SUPLA_CHANNELMAXCOUNT; ++n) {
@@ -362,8 +549,15 @@ bool Supla::Device::ServerIdentity::forgetChannel(uint8_t number) {
     return false;
   }
   forgotten->serverChannelId = 0;
+  for (int i = 0; registrationPrepared && i < registrationCount; ++i) {
+    if (registrationNumbers[i] == number) {
+      contextInvalidated = true;
+      break;
+    }
+  }
   identityDurable = true;
   transition = true;
+  identitiesAccepted = false;
   syncComplete = false;
   return true;
 }
@@ -373,7 +567,8 @@ bool Supla::Device::ServerIdentity::identityAvailable() const {
 }
 Supla::Device::ServerChannelResolution Supla::Device::ServerIdentity::resolve(
     uint32_t channelId) const {
-  if (!identityAvailable()) {
+  if (!channelId || channelId > INT32_MAX ||
+      !identityAvailable() || identityTransition()) {
     return {ServerChannelLocation::kUnresolved, 0};
   }
   for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next()) {
@@ -387,7 +582,8 @@ Supla::Device::ServerChannelResolution Supla::Device::ServerIdentity::resolve(
 bool Supla::Device::ServerIdentity::reverse(uint8_t channelNumber,
                                             uint32_t *channelId) const {
   auto ch = Supla::Channel::GetByChannelNumber(channelNumber);
-  if (!channelId || !identityAvailable() || !ch || !ch->serverChannelId) {
+  if (!channelId || !identityAvailable() || identityTransition() ||
+      !ch || !ch->serverChannelId) {
     return false;
   }
   *channelId = ch->serverChannelId;

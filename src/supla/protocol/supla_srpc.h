@@ -61,6 +61,7 @@ class SuplaSrpc : public ProtocolLayer {
     return serverIdentityState;
   }
   void onDeviceIdentities(const TSD_SuplaDeviceIdentities *snapshot);
+  bool rotateServerRoot();
   void onInit() override;
   bool onLoadConfig() override;
   bool verifyConfig() override;

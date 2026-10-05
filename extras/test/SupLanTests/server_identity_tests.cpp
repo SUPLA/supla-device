@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <LittleFS.h>
+#include <crypto_test_hooks.h>
 #include <SuplaDevice.h>
 #include <gtest/gtest.h>
 #include <network_client_mock.h>
@@ -130,6 +131,9 @@ TEST_F(ServerIdentityTests, PositionalMapUsesExplicitNumbersInBothDirections) {
   EXPECT_EQ(state.resolve(501).channelNumber, 7);
   EXPECT_EQ(state.resolve(502).channelNumber, 3);
   EXPECT_EQ(state.resolve(7).location, ServerChannelLocation::kRemote);
+  EXPECT_EQ(state.resolve(0).location, ServerChannelLocation::kUnresolved);
+  EXPECT_EQ(state.resolve(UINT32_MAX).location,
+            ServerChannelLocation::kUnresolved);
   uint32_t id = 0;
   ASSERT_TRUE(state.reverse(3, &id));
   EXPECT_EQ(id, 502);
@@ -157,13 +161,14 @@ TEST_F(ServerIdentityTests, ConfigurationForgetsAssociationBeforeRenumbering) {
   ASSERT_TRUE(first->setChannelNumber(9));
   EXPECT_TRUE(state.identityAvailable());
   EXPECT_EQ(first->getServerChannelId(), 0u);
-  EXPECT_EQ(state.resolve(502).channelNumber, 3);
+  EXPECT_EQ(state.resolve(502).location, ServerChannelLocation::kUnresolved);
   EXPECT_TRUE(state.identityTransition());
   ServerIdentity restarted;
   restarted.load(&config);
   EXPECT_TRUE(restarted.identityAvailable());
   EXPECT_EQ(first->getServerChannelId(), 0u);
-  EXPECT_EQ(restarted.resolve(502).channelNumber, 3);
+  EXPECT_EQ(restarted.resolve(502).location,
+            ServerChannelLocation::kUnresolved);
 }
 TEST_F(ServerIdentityTests, IdentityDoesNotPersistTypeOrSubdevice) {
   acceptInitial();
@@ -176,6 +181,7 @@ TEST_F(ServerIdentityTests, IdentityDoesNotPersistTypeOrSubdevice) {
 }
 TEST_F(ServerIdentityTests, DifferentRebootOrderRestoresByNumber) {
   acceptInitial();
+  state.load(nullptr);  // Power off before rebuilding Channels.
   delete second;
   delete first;
   second = new Supla::Channel(3);
@@ -208,7 +214,7 @@ TEST_F(ServerIdentityTests,
       bytes.pop_back();
     }
     if (kind == 2) {
-      bytes[0] = 2;
+      bytes[0] = 99;
       seal(&bytes);
     }
     if (kind == 3) {
@@ -251,14 +257,15 @@ TEST_F(ServerIdentityTests, ChangedSnapshotIsDurableBeforeActivation) {
   auto changed = snapshot();
   changed.ChannelId[0] = 600;
   EXPECT_EQ(state.accept(changed).Result, SUPLA_SUPLAN_RESULT_OK);
-  EXPECT_EQ(state.resolve(600).channelNumber, 7);
-  EXPECT_EQ(state.resolve(501).location, ServerChannelLocation::kRemote);
+  EXPECT_EQ(first->getServerChannelId(), 600u);
+  EXPECT_EQ(state.resolve(501).location, ServerChannelLocation::kUnresolved);
   EXPECT_EQ(config.commits, 3);
   EXPECT_TRUE(state.identityTransition());
   config.reboot();
   ServerIdentity restarted;
   restarted.load(&config);
-  EXPECT_EQ(restarted.resolve(600).channelNumber, 7);
+  EXPECT_EQ(restarted.resolve(600).location,
+            ServerChannelLocation::kUnresolved);
 }
 TEST_F(ServerIdentityTests, InvalidSnapshotsNeverWriteRootOrIdentity) {
   for (int kind = 0; kind < 6; ++kind) {
@@ -381,7 +388,7 @@ TEST_F(ServerIdentityTests, InvalidRootEpochAndCorruptRootAreRegenerated) {
       bytes.pop_back();
     }
     if (kind == 4) {
-      bytes[0] = 2;
+      bytes[0] = 99;
       seal(&bytes);
     }
     config.install("sl-root", bytes);
@@ -418,6 +425,8 @@ TEST_F(ServerIdentityTests, FactoryResetRemovesBothRecords) {
   SimpleTime time;
   SuplaDeviceClass device;
   device.resetToFactorySettings();
+  EXPECT_EQ(state.rootEpoch(), 0u);
+  EXPECT_FALSE(state.identityAvailable());
   config.reboot();
   ServerIdentity restarted;
   restarted.load(&config);
@@ -427,7 +436,8 @@ TEST_F(ServerIdentityTests, FactoryResetRemovesBothRecords) {
 
 class TestSrpc : public Supla::Protocol::SuplaSrpc {
  public:
-  explicit TestSrpc(SuplaDeviceClass *sdc) : SuplaSrpc(sdc, 29) {}
+  explicit TestSrpc(SuplaDeviceClass *sdc, int version = 29)
+      : SuplaSrpc(sdc, version) {}
   void attach(void *handle) { srpc = handle; }
   void initializeForTest() { initializeSrpc(); }
   void deinitializeForTest() { deinitializeSrpc(); }
@@ -730,7 +740,7 @@ TEST_F(ServerIdentityTests,
   EXPECT_CALL(wire, srpc_ds_async_registerdevice_in_chunks_g(_, _))
       .WillOnce([](void *, TDS_SuplaRegisterDeviceHeader *header) {
         EXPECT_EQ(header->channel_count, 2);
-        EXPECT_EQ(header->Flags & SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED, 0);
+        EXPECT_NE(header->Flags & SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED, 0);
         return 1;
       });
   protocol.setNetworkClient(client);
@@ -892,7 +902,7 @@ TEST_F(ServerIdentityTests, IdentityRecordHasCanonicalExplicitPairs) {
   acceptInitial();
   auto record = config.blob("sl-identity");
   ASSERT_EQ(record.size(), 18u);
-  EXPECT_EQ(record[0], 1);
+  EXPECT_EQ(record[0], 2);
   EXPECT_EQ(record[1], 2);
   EXPECT_EQ(record[2], 101);
   EXPECT_EQ(record[6], 3);
@@ -946,15 +956,18 @@ TEST_F(ServerIdentityTests, NormalSrpcAbortsRegistrationAfterRemoval) {
   EXPECT_FALSE(protocol.iterate(1000));
   EXPECT_FALSE(protocol.serverIdentity().registrationContextValid());
 }
-TEST_F(ServerIdentityTests, MissingStoredChannelKeepsOtherMappingsUsable) {
+TEST_F(ServerIdentityTests,
+       MissingStoredChannelRequiresSynchronizationBeforeResolution) {
   acceptInitial();
   delete second;
   second = nullptr;
   ServerIdentity restarted;
   restarted.load(&config);
   EXPECT_TRUE(restarted.identityAvailable());
-  EXPECT_EQ(restarted.resolve(501).channelNumber, 7);
-  EXPECT_EQ(restarted.resolve(502).location, ServerChannelLocation::kRemote);
+  EXPECT_EQ(restarted.resolve(501).location,
+            ServerChannelLocation::kUnresolved);
+  EXPECT_EQ(restarted.resolve(502).location,
+            ServerChannelLocation::kUnresolved);
   EXPECT_TRUE(restarted.identityTransition());
   ASSERT_TRUE(restarted.registrationStarted());
   restarted.registrationSucceeded();
@@ -965,5 +978,275 @@ TEST_F(ServerIdentityTests, MissingStoredChannelKeepsOtherMappingsUsable) {
   EXPECT_TRUE(restarted.identityTransition());
   restarted.syncDone();
   EXPECT_FALSE(restarted.identityTransition());
+}
+TEST_F(ServerIdentityTests, RandomFailureNeverCreatesOrAcknowledgesRoot) {
+  ScopedCryptoTestState rng(17);
+  rng.failRandom = true;
+  EXPECT_EQ(state.accept(snapshot()).Result,
+            SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
+  EXPECT_EQ(state.rootEpoch(), 0u);
+  EXPECT_EQ(state.rootKey(), nullptr);
+  EXPECT_EQ(config.commits, 0);
+}
+TEST_F(ServerIdentityTests, RemovedMappedIdentityNeverBecomesRemoteBeforeSync) {
+  acceptInitial();
+  state.syncDone();
+  delete second;
+  second = new Supla::Channel(3);
+  EXPECT_EQ(second->getServerChannelId(), 0u);
+  EXPECT_EQ(state.resolve(502).location, ServerChannelLocation::kUnresolved);
+  EXPECT_TRUE(state.identityTransition());
+  config.reboot();
+  ServerIdentity restarted;
+  restarted.load(&config);
+  EXPECT_EQ(second->getServerChannelId(), 0u);
+  EXPECT_EQ(restarted.resolve(502).location,
+            ServerChannelLocation::kUnresolved);
+  ASSERT_TRUE(restarted.registrationStarted());
+  restarted.registrationSucceeded();
+  restarted.syncDone();  // Sync alone cannot open a locally changed map.
+  EXPECT_TRUE(restarted.identityTransition());
+  auto current = snapshot();
+  current.ChannelId[1] = 700;
+  ASSERT_EQ(restarted.accept(current).Result, SUPLA_SUPLAN_RESULT_OK);
+  restarted.disconnected();
+  EXPECT_EQ(restarted.resolve(502).location,
+            ServerChannelLocation::kUnresolved);
+  ASSERT_TRUE(restarted.registrationStarted());
+  restarted.registrationSucceeded();
+  restarted.syncDone();  // Even after reconnect, identities must be accepted.
+  EXPECT_TRUE(restarted.identityTransition());
+  ASSERT_EQ(restarted.accept(current).Result, SUPLA_SUPLAN_RESULT_OK);
+  int before = config.commits;
+  restarted.syncDone();
+  EXPECT_FALSE(restarted.identityTransition());
+  EXPECT_EQ(restarted.resolve(502).location, ServerChannelLocation::kRemote);
+  EXPECT_EQ(restarted.resolve(700).channelNumber, 3);
+  EXPECT_EQ(config.commits, before + 1);
+  config.reboot();
+  ServerIdentity offline;
+  offline.load(&config);
+  EXPECT_FALSE(offline.identityTransition());
+  EXPECT_EQ(offline.resolve(700).channelNumber, 3);
+}
+TEST_F(ServerIdentityTests, RenumberPersistenceFailureRefusesReassignment) {
+  acceptInitial();
+  state.syncDone();
+  config.failCommit = config.commits + 1;
+  EXPECT_FALSE(first->setChannelNumber(9));
+  EXPECT_EQ(first->getChannelNumber(), 7);
+  EXPECT_EQ(first->getServerChannelId(), 501u);
+  EXPECT_FALSE(state.identityTransition());
+}
+TEST_F(ServerIdentityTests, RenumberDurablyForgetsAssociationAndStartsBarrier) {
+  acceptInitial();
+  state.syncDone();
+  ASSERT_TRUE(first->setChannelNumber(9));
+  EXPECT_EQ(first->getServerChannelId(), 0u);
+  EXPECT_EQ(state.resolve(501).location, ServerChannelLocation::kUnresolved);
+  config.reboot();
+  ServerIdentity restarted;
+  restarted.load(&config);
+  EXPECT_TRUE(restarted.identityTransition());
+  EXPECT_EQ(first->getServerChannelId(), 0u);
+}
+TEST_F(ServerIdentityTests, FailedSyncMarkerWriteKeepsBarrierClosed) {
+  acceptInitial();
+  state.syncDone();
+  auto changed = snapshot();
+  changed.DeviceId = 102;
+  ASSERT_EQ(state.accept(changed).Result, SUPLA_SUPLAN_RESULT_OK);
+  config.failCommit = config.commits + 1;
+  state.syncDone();
+  EXPECT_TRUE(state.identityTransition());
+  EXPECT_FALSE(state.serverSyncComplete());
+  EXPECT_EQ(state.resolve(501).location, ServerChannelLocation::kUnresolved);
+  config.reboot();
+  ServerIdentity restarted;
+  restarted.load(&config);
+  EXPECT_TRUE(restarted.identityTransition());
+}
+TEST_F(ServerIdentityTests,
+       RemovingPostRegistrationUnmappedChannelKeepsContext) {
+  auto extra = new Supla::Channel(4);
+  delete extra;
+  EXPECT_TRUE(state.registrationContextValid());
+  acceptInitial();
+  EXPECT_EQ(state.resolve(501).channelNumber, 7);
+}
+TEST_F(ServerIdentityTests, SupportedExplicitPairRecordRestoresWithoutWrite) {
+  acceptInitial();
+  auto record = config.blob("sl-identity");
+  record[0] = 1;
+  seal(&record);
+  config.install("sl-identity", record);
+  config.reboot();
+  ServerIdentity restarted;
+  restarted.load(&config);
+  ASSERT_TRUE(restarted.registrationStarted());
+  restarted.registrationSucceeded();
+  int before = config.commits;
+  EXPECT_EQ(restarted.accept(snapshot()).Result, SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(restarted.resolve(501).channelNumber, 7);
+  EXPECT_EQ(config.commits, before);
+}
+class ReorderableChannel : public Supla::Channel {
+ public:
+  explicit ReorderableChannel(int number) : Channel(number) {}
+  static void reversePair(ReorderableChannel *a, ReorderableChannel *b) {
+    firstPtr = b;
+    b->nextPtr = a;
+    a->nextPtr = nullptr;
+  }
+};
+TEST_F(ServerIdentityTests,
+       ResponseUsesTransmittedSequenceAfterRuntimeReorder) {
+  delete second;
+  delete first;
+  auto a = new ReorderableChannel(7);
+  auto b = new ReorderableChannel(3);
+  first = a;
+  second = b;
+  registerState();
+  ReorderableChannel::reversePair(a, b);
+  ASSERT_NE(ServerIdentity::registrationChannel_E(0), nullptr);
+  EXPECT_EQ(ServerIdentity::registrationChannel_E(0)->Number, 7);
+  EXPECT_EQ(ServerIdentity::registrationChannel_E(1)->Number, 3);
+  EXPECT_EQ(ServerIdentity::registrationChannel_D(0)->Number, 7);
+  EXPECT_EQ(ServerIdentity::registrationChannel_D(1)->Number, 3);
+  EXPECT_EQ(ServerIdentity::registrationChannel_E(2), nullptr);
+  EXPECT_TRUE(state.registrationContextValid());
+  acceptInitial();
+  EXPECT_EQ(state.resolve(501).channelNumber, 7);
+  EXPECT_EQ(state.resolve(502).channelNumber, 3);
+  state.syncDone();
+  registerState();
+  auto reordered = snapshot();
+  reordered.ChannelId[0] = 502;
+  reordered.ChannelId[1] = 501;
+  int before = config.commits;
+  EXPECT_EQ(state.accept(reordered).Result, SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(config.commits, before);
+  EXPECT_FALSE(state.identityTransition());
+}
+TEST_F(ServerIdentityTests,
+       ExplicitSecurityRotationChangesPairOnlyAfterCommit) {
+  acceptInitial();
+  auto root = config.blob("sl-root");
+  auto identity = config.blob("sl-identity");
+  auto epoch = state.rootEpoch();
+  config.failCommit = config.commits + 1;
+  EXPECT_FALSE(state.rotateRoot());
+  EXPECT_EQ(state.rootEpoch(), epoch);
+  EXPECT_EQ(config.blob("sl-root"), root);
+  config.failCommit = -1;
+  ASSERT_TRUE(state.rotateRoot());
+  EXPECT_NE(state.rootEpoch(), epoch);
+  EXPECT_NE(config.blob("sl-root"), root);
+  EXPECT_EQ(config.blob("sl-identity"), identity);
+  EXPECT_EQ(state.resolve(501).channelNumber, 7);
+  EXPECT_FALSE(state.registrationContextValid());
+  EXPECT_FALSE(state.serverSyncComplete());
+  config.reboot();
+  ServerIdentity restarted;
+  restarted.load(&config);
+  EXPECT_EQ(restarted.rootEpoch(), state.rootEpoch());
+}
+TEST_F(ServerIdentityTests, RemovalWriteFailureForgetsMapBeforeNumberReuse) {
+  acceptInitial();
+  state.syncDone();
+  config.failCommit = config.commits + 1;
+  delete second;
+  second = new Supla::Channel(3);
+  EXPECT_EQ(state.resolve(502).location, ServerChannelLocation::kUnresolved);
+  EXPECT_FALSE(state.identityAvailable());
+  EXPECT_EQ(second->getServerChannelId(), 0u);
+  config.reboot();
+  ServerIdentity restarted;
+  restarted.load(&config);
+  EXPECT_TRUE(restarted.identityAvailable());
+  EXPECT_TRUE(restarted.identityTransition());
+  EXPECT_EQ(restarted.resolve(502).location,
+            ServerChannelLocation::kUnresolved);
+  EXPECT_EQ(second->getServerChannelId(), 0u);
+  ASSERT_TRUE(restarted.registrationStarted());
+  restarted.registrationSucceeded();
+  auto replacement = snapshot();
+  replacement.ChannelId[1] = 700;
+  ASSERT_EQ(restarted.accept(replacement).Result, SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(restarted.resolve(502).location,
+            ServerChannelLocation::kUnresolved);
+  restarted.syncDone();
+  EXPECT_EQ(restarted.resolve(700).channelNumber, 3);
+}
+TEST_F(ServerIdentityTests, UniformRootKeysAreRejectedEvenWithValidChecksum) {
+  acceptInitial();
+  auto original = config.blob("sl-root");
+  for (uint8_t value : {0, 255}) {
+    auto bytes = original;
+    memset(bytes.data() + 5, value, 32);
+    seal(&bytes);
+    config.install("sl-root", bytes);
+    ServerIdentity restarted;
+    restarted.load(&config);
+    EXPECT_EQ(restarted.rootKey(), nullptr);
+    EXPECT_EQ(restarted.rootEpoch(), 0u);
+    ASSERT_TRUE(restarted.registrationStarted());
+    restarted.registrationSucceeded();
+    EXPECT_EQ(restarted.accept(snapshot()).Result, SUPLA_SUPLAN_RESULT_OK);
+    EXPECT_NE(config.blob("sl-root"), bytes);
+  }
+}
+TEST_F(ServerIdentityTests, OlderProtocolCannotAdvertiseOrAcceptIdentities) {
+  Supla::RegisterDevice::setServerName("supla.example");
+  Supla::RegisterDevice::setEmail("user@example.com");
+  Supla::RegisterDevice::addFlags(SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED);
+  SimpleTime time;
+  NiceMock<SrpcMock> wire;
+  SuplaDeviceClass device;
+  TestSrpc protocol(&device, 28);
+  protocol.onInit();
+  int handle = 0;
+  auto *client = new NiceMock<NetworkClientMock>;
+  EXPECT_CALL(wire, srpc_init(_)).WillOnce(Return(&handle));
+  EXPECT_CALL(*client, connected()).WillRepeatedly(Return(1));
+  EXPECT_CALL(wire, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(wire, srpc_ds_async_registerdevice_in_chunks_g(_, _))
+      .WillOnce([](void *, TDS_SuplaRegisterDeviceHeader *header) {
+        EXPECT_EQ(header->Flags & SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED, 0);
+        return 1;
+      });
+  protocol.setNetworkClient(client);
+  protocol.initializeForTest();
+  EXPECT_FALSE(protocol.iterate(0));
+  auto data = snapshot();
+  EXPECT_CALL(wire, deviceIdentitiesResult(_, _))
+      .WillOnce([](void *, TDS_SuplaDeviceIdentitiesResult *result) {
+        EXPECT_EQ(result->Result, SUPLA_SUPLAN_RESULT_UNSUPPORTED);
+        return 1;
+      });
+  protocol.onDeviceIdentities(&data);
+  EXPECT_EQ(config.commits, 0);
+  ServerIdentity unavailable;
+  EXPECT_FALSE(unavailable.capable());
+}
+TEST_F(ServerIdentityTests, ExplicitSrpcRootRotationForcesNewBootstrap) {
+  SimpleTime time;
+  NiceMock<SrpcMock> wire;
+  SuplaDeviceClass device;
+  TestSrpc protocol(&device);
+  protocol.onInit();
+  int handle = 0;
+  protocol.attach(&handle);
+  ASSERT_TRUE(protocol.serverIdentity().registrationStarted());
+  protocol.serverIdentity().registrationSucceeded();
+  ASSERT_EQ(protocol.serverIdentity().accept(snapshot()).Result,
+            SUPLA_SUPLAN_RESULT_OK);
+  auto epoch = protocol.serverIdentity().rootEpoch();
+  EXPECT_CALL(wire, srpc_free(&handle)).Times(1);
+  ASSERT_TRUE(protocol.rotateServerRoot());
+  EXPECT_NE(protocol.serverIdentity().rootEpoch(), epoch);
+  EXPECT_FALSE(protocol.serverIdentity().registrationContextValid());
+  EXPECT_FALSE(protocol.isRegisteredAndReady());
 }
 }  // namespace

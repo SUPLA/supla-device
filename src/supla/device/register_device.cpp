@@ -145,6 +145,26 @@ TDS_SuplaDeviceChannel_E *Supla::RegisterDevice::getChannelPtr_E(int index) {
   return &deviceChannelStruct.version_E;
 }
 
+TDS_SuplaDeviceChannel_D *Supla::RegisterDevice::getChannelByNumberPtr_D(
+    uint8_t number) {
+  auto channel = Supla::Channel::GetByChannelNumber(number);
+  if (!channel) {
+    return nullptr;
+  }
+  channel->fillDeviceChannelStruct(&deviceChannelStruct.version_D);
+  return &deviceChannelStruct.version_D;
+}
+
+TDS_SuplaDeviceChannel_E *Supla::RegisterDevice::getChannelByNumberPtr_E(
+    uint8_t number) {
+  auto channel = Supla::Channel::GetByChannelNumber(number);
+  if (!channel) {
+    return nullptr;
+  }
+  channel->fillDeviceChannelStruct(&deviceChannelStruct.version_E);
+  return &deviceChannelStruct.version_E;
+}
+
 bool Supla::RegisterDevice::isGUIDEmpty() {
   return isArrayEmpty(reg_dev.GUID, SUPLA_GUID_SIZE);
 }

@@ -17,6 +17,9 @@ TDS_SuplaRegisterDeviceHeader *getRegDevHeaderPtr();
 // data from another channel, so please be careful when using this function
 TDS_SuplaDeviceChannel_D *getChannelPtr_D(int index);
 TDS_SuplaDeviceChannel_E *getChannelPtr_E(int index);
+// Same shared serialization buffer, addressed by an explicit local number.
+TDS_SuplaDeviceChannel_D *getChannelByNumberPtr_D(uint8_t number);
+TDS_SuplaDeviceChannel_E *getChannelByNumberPtr_E(uint8_t number);
 
 // Device parameters
 bool isGUIDEmpty();

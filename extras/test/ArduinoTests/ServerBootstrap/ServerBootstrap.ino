@@ -32,7 +32,7 @@ static_assert(sizeof(TSDS_SuplaSetSuplanDestinationAssociation) == 600,
               "Destination wire size");
 static_assert(sizeof(TDS_SuplaSetSuplanDestinationAssociationResult) == 32,
               "Destination result wire size");
-static_assert(sizeof(TDS_SuplaEnsureResourceAccess) == 6, "Ensure wire size");
+static_assert(sizeof(TDS_SuplaEnsureResourceAccess) == 7, "Ensure wire size");
 static_assert(sizeof(TSD_SuplaEnsureResourceAccessResult) == 2,
               "Ensure result wire size");
 static_assert(sizeof(TSDS_SuplaSetSuplanDestinationAssociation) <=

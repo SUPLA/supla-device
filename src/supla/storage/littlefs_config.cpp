@@ -104,20 +104,20 @@ bool Supla::LittleFsConfig::init() {
   return initResult;
 }
 
-void Supla::LittleFsConfig::commit() {
+bool Supla::LittleFsConfig::commit() {
   uint8_t* buf = new uint8_t[configMaxSize];
   if (buf == nullptr) {
     SUPLA_LOG_ERROR("LittleFsConfig: failed to allocate memory");
-    return;
+    return false;
   }
 
   memset(buf, 0, configMaxSize);
 
   size_t dataSize = serializeToMemory(buf, configMaxSize);
 
-  if (!initLittleFs()) {
+  if (dataSize == SIZE_MAX || !initLittleFs()) {
     delete[] buf;
-    return;
+    return false;
   }
 
   auto files = {ConfigFileName, BackupConfigFileName};
@@ -130,14 +130,51 @@ void Supla::LittleFsConfig::commit() {
           "LittleFsConfig: failed to open config file \"%s\" for write", file);
       LittleFS.end();
       delete[] buf;
-      return;
+      return false;
     }
 
-    cfg.write(buf, dataSize);
+    size_t written = cfg.write(buf, dataSize);
     cfg.close();
+    if (written != dataSize) {
+      LittleFS.end();
+      delete[] buf;
+      return false;
+    }
   }
-  delete[] buf;
   LittleFS.end();
+  bool verified = verifyFile(ConfigFileName, buf, dataSize) &&
+                  verifyFile(BackupConfigFileName, buf, dataSize);
+  delete[] buf;
+  return verified;
+}
+
+bool Supla::LittleFsConfig::verifyFile(const char* filename,
+                                       const uint8_t* data, size_t size) {
+  // Arduino File::close/flush hide backend errors. Remount before reading to
+  // verify persisted bytes, rather than accepting data still in the FS cache.
+  // A verification failure must not format the partition.
+  if (!initLittleFs(false)) {
+    return false;
+  }
+  File file = LittleFS.open(filename, "r");
+  bool verified = file && file.size() == size;
+  uint8_t buffer[64];
+  for (size_t offset = 0; verified && offset < size;) {
+    size_t chunk = size - offset;
+    if (chunk > sizeof(buffer)) {
+      chunk = sizeof(buffer);
+    }
+    verified = file.read(buffer, chunk) == static_cast<int>(chunk) &&
+               memcmp(buffer, data + offset, chunk) == 0;
+    offset += chunk;
+  }
+  file.close();
+  LittleFS.end();
+  if (!verified) {
+    SUPLA_LOG_ERROR("LittleFsConfig: persisted file verification failed: %s",
+                    filename);
+  }
+  return verified;
 }
 
 bool Supla::LittleFsConfig::getCustomCA(char* customCA, int maxSize) {
@@ -298,9 +335,16 @@ bool Supla::LittleFsConfig::setMqttCA(const char* mqttCA) {
   return bytesWritten == dataSize;
 }
 
-bool Supla::LittleFsConfig::initLittleFs() {
+bool Supla::LittleFsConfig::initLittleFs(bool allowFormat) {
+#if defined(ARDUINO_ARCH_ESP8266) || defined(SUPLA_TEST)
+  // ESP8266 enables automatic formatting by default. Keep formatting under
+  // this method's control, particularly during persistence verification.
+  if (!LittleFS.setConfig(LittleFSConfig(false))) {
+    return false;
+  }
+#endif
   bool result = LittleFS.begin();
-  if (!result) {
+  if (!result && allowFormat) {
     SUPLA_LOG_WARNING("LittleFsConfig: formatting partition");
     LittleFS.format();
     result = LittleFS.begin();
@@ -384,10 +428,13 @@ bool Supla::LittleFsConfig::setBlob(const char* key,
     return false;
   }
 
-  file.write(reinterpret_cast<const uint8_t*>(value), blobSize);
+  size_t written = file.write(
+      reinterpret_cast<const uint8_t*>(value), blobSize);
   file.close();
   LittleFS.end();
-  return true;
+  return written == blobSize &&
+         verifyFile(filename, reinterpret_cast<const uint8_t*>(value),
+                    blobSize);
 }
 
 bool Supla::LittleFsConfig::getBlob(const char* key,

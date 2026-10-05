@@ -9,6 +9,7 @@
 #include <simple_time.h>
 
 #include <gtest/gtest.h>
+#include <crypto_test_hooks.h>
 #include <gmock/gmock.h>
 
 #include <array>
@@ -105,21 +106,6 @@ class FanoutDatagramPort : public Supla::SupLan::DatagramPort {
   Endpoint self_;
 };
 
-class FanoutRandomPort : public Supla::SupLan::RandomPort {
- public:
-  explicit FanoutRandomPort(uint8_t seed) : next_(seed) {}
-
-  bool fillRandom(uint8_t *buffer, size_t length) override {
-    for (size_t i = 0; i < length; ++i) {
-      next_ = static_cast<uint8_t>(next_ + 29);
-      buffer[i] = next_;
-    }
-    return true;
-  }
-
- private:
-  uint8_t next_;
-};
 
 class FakeTransportLifecycle
     : public Supla::Protocol::SupLanTransportLifecycle {
@@ -239,10 +225,8 @@ class FanoutApplication : public Supla::SupLan::ApplicationPort {
 
 class AdapterFanoutPair {
  public:
+  ScopedCryptoTestState rng{3};
   Supla::SupLan::OpenSslCryptoPort crypto;
-  FanoutRandomPort randomA;
-  FanoutRandomPort randomB;
-  FanoutRandomPort randomC;
   FanoutNetwork network;
   Endpoint endpointA;
   Endpoint endpointB;
@@ -270,18 +254,18 @@ class AdapterFanoutPair {
   bool configured;
 
   AdapterFanoutPair()
-      : crypto(), randomA(3), randomB(71), randomC(139), network(),
+      : crypto(), network(),
         endpointA({0x0100007F, 2016}), endpointB({0x0200007F, 2016}),
         endpointC({0x0300007F, 2016}),
         datagramsA(&network, endpointA), datagramsB(&network, endpointB),
         datagramsC(&network, endpointC), appB(), appC(), peersA(), peersB(),
         peersC(), relay(), mappings(),
         protocolA(nullptr, &peersA, mappings, 2),
-        runtimeA(&crypto, &randomA, &datagramsA, &protocolA, &peersA,
+        runtimeA(&crypto, &datagramsA, &protocolA, &peersA,
                  nodeAddress(1001), 27),
-        runtimeB(&crypto, &randomB, &datagramsB, &appB, &peersB,
+        runtimeB(&crypto, &datagramsB, &appB, &peersB,
                  nodeAddress(1002), 27),
-        runtimeC(&crypto, &randomC, &datagramsC, &appC, &peersC,
+        runtimeC(&crypto, &datagramsC, &appC, &peersC,
                  nodeAddress(1003), 27),
         resourceB({Supla::SupLan::kResourceTypeChannel, 50001}),
         resourceC({Supla::SupLan::kResourceTypeChannel, 50003}),
@@ -313,7 +297,7 @@ class AdapterFanoutPair {
     context.rootEpoch = 1;
     context.peerGeneration = 1;
     Supla::SupLan::PeerMaterial material = {};
-    if (!Supla::SupLan::derivePeerMaterial(&crypto, &context, rootKey,
+    if (!Supla::SupLan::derivePeerMaterial(&context, rootKey,
                                            &material)) {
       return false;
     }
@@ -321,9 +305,9 @@ class AdapterFanoutPair {
     acl.resource = resource;
     acl.permissions = Supla::SupLan::kPermissionRead |
         Supla::SupLan::kPermissionAction;
-    return peersA.addPeerFromRoot(&crypto, &context, rootKey, 1, &acl, 1,
+    return peersA.addPeerFromRoot(&context, rootKey, 1, &acl, 1,
                                   sourcePeer) &&
-        destinationPeers->addPeer(&crypto, &context, material.peerKey, 1,
+        destinationPeers->addPeer(&context, material.peerKey, 1,
                                   &acl, 1, destinationPeer);
   }
 
@@ -448,7 +432,7 @@ TEST(SupLanAdapter, DispatchesControlToInitializedSuplaRelay) {
 
 TEST(SupLanAdapter, TransportLifecycleIsIndependentAndRestartable) {
   Supla::SupLan::OpenSslCryptoPort crypto;
-  FanoutRandomPort random(3);
+  ScopedCryptoTestState rng(3);
   FanoutNetwork network;
   const Endpoint endpoint = {0x0100007F, 2016};
   FanoutDatagramPort datagrams(&network, endpoint);
@@ -458,7 +442,7 @@ TEST(SupLanAdapter, TransportLifecycleIsIndependentAndRestartable) {
   FakeTransportLifecycle transport;
   Supla::Protocol::SupLan protocol(nullptr, &peers, &mapping, 1);
   Supla::SupLan::Runtime runtime(
-      &crypto, &random, &datagrams, &protocol, &peers,
+      &crypto, &datagrams, &protocol, &peers,
       {Supla::SupLan::kNodeIdDevice, 1001},
       Supla::SupLan::kMinimumSuplaProtoVersion);
   protocol.attachRuntime(&runtime);

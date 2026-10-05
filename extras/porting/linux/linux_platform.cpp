@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <openssl/rand.h>
+#include <supla/crypto.h>
 #include <supla/log_wrapper.h>
 #include <supla/tools.h>
 
@@ -36,7 +36,7 @@ void Supla::fillRandom(uint8_t *buffer, int size) {
     std::exit(1);
   }
 
-  if (RAND_bytes(buffer, size) != 1) {
+  if (!Supla::Crypto::fillRandom(buffer, size)) {
     SUPLA_LOG_ERROR("fillRandom: OpenSSL RAND_bytes failed");
     std::exit(1);
   }

@@ -4,6 +4,8 @@
 #include "suplan_crypto.h"
 
 #include <string.h>
+#include <supla/crypto.h>
+#include <supla/sha256.h>
 
 #include "suplan_session.h"
 #include "suplan_wire.h"
@@ -15,10 +17,10 @@ namespace {
 static const size_t kMaxHkdfInfoBytes = 100;
 }
 
-bool hkdfExtract(CryptoPort *crypto, const uint8_t *salt,
+bool hkdfExtract(const uint8_t *salt,
                  size_t saltLength, const uint8_t *input,
                  size_t inputLength, uint8_t output[32]) {
-  if (crypto == nullptr || input == nullptr || output == nullptr ||
+  if (input == nullptr || output == nullptr ||
       (salt == nullptr && saltLength != 0)) {
     return false;
   }
@@ -26,14 +28,14 @@ bool hkdfExtract(CryptoPort *crypto, const uint8_t *salt,
   const uint8_t *actualSalt = saltLength == 0 ? zeroSalt : salt;
   const size_t actualSaltLength = saltLength == 0 ? sizeof(zeroSalt) :
       saltLength;
-  return crypto->hmacSha256(actualSalt, actualSaltLength, input, inputLength,
-                            output);
+  return Supla::Crypto::hmacSha256(actualSalt, actualSaltLength, input,
+                                   inputLength, output);
 }
 
-bool hkdfExpand(CryptoPort *crypto, const uint8_t prk[32],
+bool hkdfExpand(const uint8_t prk[32],
                 const uint8_t *info, size_t infoLength,
                 uint8_t *output, size_t outputLength) {
-  if (crypto == nullptr || prk == nullptr || output == nullptr ||
+  if (prk == nullptr || output == nullptr ||
       (info == nullptr && infoLength != 0) || outputLength > 255U * 32U ||
       infoLength > kMaxHkdfInfoBytes) {
     return false;
@@ -52,7 +54,7 @@ bool hkdfExpand(CryptoPort *crypto, const uint8_t prk[32],
       memcpy(input + previousLength, info, infoLength);
     }
     input[previousLength + infoLength] = counter;
-    if (!crypto->hmacSha256(prk, 32, input,
+    if (!Supla::Crypto::hmacSha256(prk, 32, input,
                             previousLength + infoLength + 1, block)) {
       memset(input, 0, sizeof(input));
       memset(block, 0, sizeof(block));
@@ -72,7 +74,7 @@ bool hkdfExpand(CryptoPort *crypto, const uint8_t prk[32],
   return true;
 }
 
-static bool expandLabel(CryptoPort *crypto, const uint8_t prk[32],
+static bool expandLabel(const uint8_t prk[32],
                         const char *label, size_t labelLength,
                         const uint8_t *context, size_t contextLength,
                         uint8_t *output, size_t outputLength) {
@@ -84,24 +86,25 @@ static bool expandLabel(CryptoPort *crypto, const uint8_t prk[32],
   if (contextLength != 0) {
     memcpy(info + labelLength, context, contextLength);
   }
-  bool result = hkdfExpand(crypto, prk, info, labelLength + contextLength,
+  bool result = hkdfExpand(prk, info, labelLength + contextLength,
                            output, outputLength);
   memset(info, 0, sizeof(info));
   return result;
 }
 
-bool derivePeerMaterial(CryptoPort *crypto, const PeerContext *context,
+bool derivePeerMaterial(const PeerContext *context,
                         const uint8_t rootKey[32], PeerMaterial *material) {
-  if (crypto == nullptr || rootKey == nullptr || material == nullptr) {
+  if (rootKey == nullptr || material == nullptr) {
     return false;
   }
   uint8_t canonical[kPeerContextSize];
   uint8_t rootPrk[32];
   static const char peerLabel[] = "SupLAN/v1/peer-key";
   if (!encodePeerContext(context, canonical) ||
-      !crypto->sha256(canonical, sizeof(canonical), material->contextHash) ||
-      !hkdfExtract(crypto, material->contextHash, 32, rootKey, 32, rootPrk) ||
-      !hkdfExpand(crypto, rootPrk,
+      !Supla::Sha256::calculate(canonical, sizeof(canonical),
+                               material->contextHash) ||
+      !hkdfExtract(material->contextHash, 32, rootKey, 32, rootPrk) ||
+      !hkdfExpand(rootPrk,
                   reinterpret_cast<const uint8_t *>(peerLabel),
                   sizeof(peerLabel) - 1, material->peerKey, 32)) {
     memset(rootPrk, 0, sizeof(rootPrk));
@@ -109,15 +112,14 @@ bool derivePeerMaterial(CryptoPort *crypto, const PeerContext *context,
   }
   memset(rootPrk, 0, sizeof(rootPrk));
   memset(canonical, 0, sizeof(canonical));
-  return derivePeerMaterialFromKey(crypto, context, material->peerKey,
+  return derivePeerMaterialFromKey(context, material->peerKey,
                                   material);
 }
 
-bool derivePeerMaterialFromKey(CryptoPort *crypto,
-                               const PeerContext *context,
+bool derivePeerMaterialFromKey(const PeerContext *context,
                                const uint8_t peerKey[32],
                                PeerMaterial *material) {
-  if (crypto == nullptr || context == nullptr || peerKey == nullptr ||
+  if (context == nullptr || peerKey == nullptr ||
       material == nullptr) {
     return false;
   }
@@ -129,14 +131,15 @@ bool derivePeerMaterialFromKey(CryptoPort *crypto,
   static const char acceptLabel[] = "SupLAN/v1/session-accept-mac";
   memcpy(material->peerKey, peerKey, 32);
   if (!encodePeerContext(context, canonical) ||
-      !crypto->sha256(canonical, sizeof(canonical), material->contextHash) ||
-      !hkdfExtract(crypto, material->contextHash, 32, material->peerKey, 32,
+      !Supla::Sha256::calculate(canonical, sizeof(canonical),
+                               material->contextHash) ||
+      !hkdfExtract(material->contextHash, 32, material->peerKey, 32,
                    peerPrk) ||
-      !expandLabel(crypto, peerPrk, locateLabel, sizeof(locateLabel) - 1,
+      !expandLabel(peerPrk, locateLabel, sizeof(locateLabel) - 1,
                    nullptr, 0, material->locateMacKey, 32) ||
-      !expandLabel(crypto, peerPrk, initLabel, sizeof(initLabel) - 1,
+      !expandLabel(peerPrk, initLabel, sizeof(initLabel) - 1,
                    nullptr, 0, material->initMacKey, 32) ||
-      !expandLabel(crypto, peerPrk, acceptLabel, sizeof(acceptLabel) - 1,
+      !expandLabel(peerPrk, acceptLabel, sizeof(acceptLabel) - 1,
                    nullptr, 0, material->acceptMacKey, 32)) {
     memset(peerPrk, 0, sizeof(peerPrk));
     memset(canonical, 0, sizeof(canonical));
@@ -146,7 +149,7 @@ bool derivePeerMaterialFromKey(CryptoPort *crypto,
   memcpy(locatorInput, locatorLabel, sizeof(locatorLabel) - 1);
   memcpy(locatorInput + sizeof(locatorLabel) - 1, material->contextHash, 32);
   uint8_t locatorFull[32];
-  if (!crypto->hmacSha256(material->peerKey, 32, locatorInput,
+  if (!Supla::Crypto::hmacSha256(material->peerKey, 32, locatorInput,
                           sizeof(locatorInput), locatorFull)) {
     memset(peerPrk, 0, sizeof(peerPrk));
     memset(locatorInput, 0, sizeof(locatorInput));
@@ -160,11 +163,11 @@ bool derivePeerMaterialFromKey(CryptoPort *crypto,
   return true;
 }
 
-static bool locateMac(CryptoPort *crypto, const PeerMaterial *material,
+static bool locateMac(const PeerMaterial *material,
                       const char *label, size_t labelLength,
                       uint8_t version, uint8_t type,
                       const uint8_t nonce[16], uint8_t mac[16]) {
-  if (crypto == nullptr || material == nullptr || nonce == nullptr ||
+  if (material == nullptr || nonce == nullptr ||
       mac == nullptr) {
     return false;
   }
@@ -183,7 +186,8 @@ static bool locateMac(CryptoPort *crypto, const PeerMaterial *material,
   memcpy(input + offset, nonce, 16);
   offset += 16;
   uint8_t full[32];
-  if (!crypto->hmacSha256(material->locateMacKey, 32, input, offset, full)) {
+  if (!Supla::Crypto::hmacSha256(material->locateMacKey, 32, input,
+                                offset, full)) {
     memset(input, 0, sizeof(input));
     return false;
   }
@@ -193,36 +197,36 @@ static bool locateMac(CryptoPort *crypto, const PeerMaterial *material,
   return true;
 }
 
-bool locateQueryMac(CryptoPort *crypto, const PeerMaterial *material,
+bool locateQueryMac(const PeerMaterial *material,
                     const uint8_t version, const uint8_t type,
                     const uint8_t nonce[16], uint8_t mac[16]) {
   static const char label[] = "SupLAN/v1/locate-query";
   if (type != kFrameLocate) {
     return false;
   }
-  return locateMac(crypto, material, label, sizeof(label) - 1, version, type,
+  return locateMac(material, label, sizeof(label) - 1, version, type,
                    nonce, mac);
 }
 
-bool locateReplyMac(CryptoPort *crypto, const PeerMaterial *material,
+bool locateReplyMac(const PeerMaterial *material,
                     const uint8_t version, const uint8_t type,
                     const uint8_t nonce[16], uint8_t mac[16]) {
   static const char label[] = "SupLAN/v1/locate-reply";
   if (type != kFrameLocateReply) {
     return false;
   }
-  return locateMac(crypto, material, label, sizeof(label) - 1, version, type,
+  return locateMac(material, label, sizeof(label) - 1, version, type,
                    nonce, mac);
 }
 
-bool deriveSessionKeys(CryptoPort *crypto, const uint8_t peerKey[32],
+bool deriveSessionKeys(const uint8_t peerKey[32],
                        const uint8_t contextHash[32],
                        const uint8_t ni[16], const uint8_t nr[16],
                        const uint8_t *encodedInit, size_t initLength,
                        const uint8_t *encodedAccept, size_t acceptLength,
                        uint64_t sessionId, SessionKeys *keys,
                        uint8_t transcriptHash[32]) {
-  if (crypto == nullptr || peerKey == nullptr || contextHash == nullptr ||
+  if (peerKey == nullptr || contextHash == nullptr ||
       ni == nullptr || nr == nullptr || encodedInit == nullptr ||
       encodedAccept == nullptr || keys == nullptr ||
       transcriptHash == nullptr ||
@@ -237,8 +241,9 @@ bool deriveSessionKeys(CryptoPort *crypto, const uint8_t peerKey[32],
   uint8_t transcript[kSessionInitSize + kSessionAcceptSize];
   memcpy(transcript, encodedInit, initLength);
   memcpy(transcript + initLength, encodedAccept, acceptLength);
-  bool ok = hkdfExtract(crypto, salt, sizeof(salt), peerKey, 32, sessionPrk) &&
-      crypto->sha256(transcript, initLength + acceptLength, transcriptHash);
+  bool ok = hkdfExtract(salt, sizeof(salt), peerKey, 32, sessionPrk) &&
+      Supla::Sha256::calculate(transcript, initLength + acceptLength,
+                              transcriptHash);
   static const char i2rKeyLabel[] = "SupLAN/v1/i2r/traffic-key";
   static const char i2rNonceLabel[] = "SupLAN/v1/i2r/nonce-prefix";
   static const char r2iKeyLabel[] = "SupLAN/v1/r2i/traffic-key";
@@ -247,18 +252,18 @@ bool deriveSessionKeys(CryptoPort *crypto, const uint8_t peerKey[32],
     memcpy(transcript, contextHash, 32);
     memcpy(transcript + 32, transcriptHash, 32);
     putUint64(transcript + 64, sessionId);
-    ok = expandLabel(crypto, sessionPrk, i2rKeyLabel,
+    ok = expandLabel(sessionPrk, i2rKeyLabel,
                      sizeof(i2rKeyLabel) - 1, transcript, 72,
                      keys->initiatorToResponder.trafficKey,
                      16) &&
-         expandLabel(crypto, sessionPrk, i2rNonceLabel,
+         expandLabel(sessionPrk, i2rNonceLabel,
                      sizeof(i2rNonceLabel) - 1, transcript, 72,
                      keys->initiatorToResponder.noncePrefix, 8) &&
-         expandLabel(crypto, sessionPrk, r2iKeyLabel,
+         expandLabel(sessionPrk, r2iKeyLabel,
                      sizeof(r2iKeyLabel) - 1, transcript, 72,
                      keys->responderToInitiator.trafficKey,
                      16) &&
-         expandLabel(crypto, sessionPrk, r2iNonceLabel,
+         expandLabel(sessionPrk, r2iNonceLabel,
                      sizeof(r2iNonceLabel) - 1, transcript, 72,
                      keys->responderToInitiator.noncePrefix, 8);
   }

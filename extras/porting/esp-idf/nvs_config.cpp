@@ -352,9 +352,9 @@ bool NvsConfig::setUInt32(const char* key, const uint32_t value) {
   return err == ESP_OK;
 }
 
-void NvsConfig::commit() {
+bool NvsConfig::commit() {
   SUPLA_LOG_DEBUG("NvsConfig: commit");
-  nvs_commit(nvsHandle);
+  return nvs_commit(nvsHandle) == ESP_OK;
 }
 
 bool NvsConfig::generateGuidAndAuthkey() {

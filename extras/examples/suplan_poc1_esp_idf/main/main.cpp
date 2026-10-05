@@ -50,7 +50,6 @@ static const char kRole[] = "B";
 static EventGroupHandle_t wifiEvents;
 static const EventBits_t kWifiConnected = BIT0;
 static Supla::SupLan::MbedTlsCryptoPort crypto;
-static Supla::SupLan::EspIdfRandomPort randomPort;
 static Supla::SupLan::EspIdfUdpPort datagrams;
 static Supla::SupLan::PeerTable peers;
 static uint8_t primaryPeer = 0;
@@ -407,7 +406,7 @@ static void poc1Task(void *) {
     return;
   }
   if (!Supla::SupLan::Poc1::configurePeerTable(
-          &crypto, &peers, kNodeA, &primaryPeer, &actionPeer) ||
+          &peers, kNodeA, &primaryPeer, &actionPeer) ||
       !datagrams.open(2016, Supla::SupLan::kMaxDatagramPayload)) {
     printf("ERROR static profile or UDP initialization failed\n");
     vTaskDelete(nullptr);
@@ -422,7 +421,7 @@ static void poc1Task(void *) {
   protocol = new (protocolStorage) Protocol(
       &SuplaDevice, &peers, localMapping(), 1, applicationEvent, nullptr);
   runtime = new (runtimeStorage) Runtime(
-      &crypto, &randomPort, &datagrams, protocol, &peers,
+      &crypto, &datagrams, protocol, &peers,
       Supla::SupLan::Poc1::localNodeAddress(kNodeA),
       Supla::SupLan::kMinimumSuplaProtoVersion);
   protocol->attachRuntime(runtime);

@@ -135,6 +135,7 @@ set_source_files_properties(
   PROPERTIES COMPILE_OPTIONS "-Wno-unused-parameter")
 
 file(GLOB DOUBLE_SRC CONFIGURE_DEPENDS doubles/*.cpp)
+list(FILTER DOUBLE_SRC EXCLUDE REGEX "/crypto_test_hooks.cpp$")
 set(ESP_IDF_OTA_DOUBLE_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf_ota_mock.cpp)
 list(REMOVE_ITEM DOUBLE_SRC ${ESP_IDF_OTA_DOUBLE_SRC})
@@ -240,6 +241,8 @@ target_include_directories(sd4linuxtests PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/../porting/linux
 )
 
+target_link_libraries(supladevicelib PRIVATE OpenSSL::Crypto)
+
 target_link_libraries(supladevicetests
   PRIVATE
     supladevicelib
@@ -311,11 +314,53 @@ add_test(NAME suplanespudptests COMMAND suplanespudptests)
 include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/SupLanSources.cmake)
 add_executable(suplandirectionaltests
   SupLanDirectionalTests/suplan_directional_tests.cpp
-  ../porting/linux/suplan_crypto_openssl.cpp ${SUPLAN_CORE_SRCS})
+  ../porting/linux/suplan_crypto_openssl.cpp ../../src/supla/sha256.cpp
+  ../../src/supla/crypto.cpp ../../src/supla/tools.cpp
+  ${SUPLAN_CORE_SRCS})
 target_include_directories(suplandirectionaltests PRIVATE
   ../../src ../porting/linux)
 target_compile_definitions(suplandirectionaltests PRIVATE
-  SUPLAN_RX_MAX_REASSEMBLED_FRAME=2048 SUPLAN_MAX_APPLICATION_BYTES=1536)
+  SUPLA_LINUX SUPLA_DISABLE_LOGS SUPLAN_RX_MAX_REASSEMBLED_FRAME=2048
+  SUPLAN_MAX_APPLICATION_BYTES=1536)
 target_link_libraries(suplandirectionaltests PRIVATE gtest_main OpenSSL::Crypto)
 supla_apply_warnings(suplandirectionaltests)
 add_test(NAME suplandirectionaltests COMMAND suplandirectionaltests)
+
+# Exercise the actual NVS Config commit implementation with SDK API doubles.
+add_executable(nvsconfigtests
+  ${DOUBLE_SRC}
+  NvsConfigTests/nvs_config_tests.cpp
+  ../porting/esp-idf/nvs_config.cpp)
+target_include_directories(nvsconfigtests BEFORE PRIVATE
+  NvsConfigTests/fakes doubles ../porting/esp-idf ../../src)
+target_link_libraries(nvsconfigtests PRIVATE
+  supladevicelib nlohmann_json::nlohmann_json gmock gtest_main)
+target_compile_definitions(nvsconfigtests PRIVATE SUPLA_TEST)
+supla_apply_warnings(nvsconfigtests)
+add_test(NAME nvsconfigtests COMMAND nvsconfigtests)
+
+# Verify explicit Linux UDP interface selection without host socket access.
+add_executable(suplanlinuxudptests
+  SupLanLinuxUdpTests/suplan_linux_udp_tests.cpp
+  ../porting/linux/suplan_udp_linux.cpp)
+target_include_directories(suplanlinuxudptests PRIVATE
+  ../../src ../porting/linux)
+target_link_libraries(suplanlinuxudptests PRIVATE gtest_main)
+foreach(wrapper socket bind fcntl close getifaddrs freeifaddrs
+                if_nametoindex setsockopt)
+  target_link_options(suplanlinuxudptests PRIVATE "-Wl,--wrap=${wrapper}")
+endforeach()
+supla_apply_warnings(suplanlinuxudptests)
+add_test(NAME suplanlinuxudptests COMMAND suplanlinuxudptests)
+
+# Only host test builds intercept provider calls; production uses the SDK API.
+target_link_options(supladevicelib PRIVATE
+  -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=EVP_MAC_init)
+foreach(crypto_test_target supladevicetests sd4linuxtests nvsconfigtests
+                          suplandirectionaltests)
+  target_sources(${crypto_test_target} PRIVATE doubles/crypto_test_hooks.cpp)
+  target_link_libraries(${crypto_test_target} PRIVATE OpenSSL::Crypto)
+  target_link_options(${crypto_test_target} PRIVATE
+    -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=EVP_MAC_init)
+endforeach()
+target_include_directories(suplandirectionaltests PRIVATE doubles)

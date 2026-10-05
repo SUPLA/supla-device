@@ -5,7 +5,6 @@
 
 #if defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
 #include <mbedtls/error.h>
-#include <mbedtls/md.h>
 #if defined(__has_include)
 #if __has_include(<mbedtls/pkcs5.h>)
 #define SUPLA_HAVE_MBEDTLS_PKCS5 1
@@ -24,6 +23,20 @@
 #include <supla/log_wrapper.h>
 #include <supla/tools.h>
 #include <string.h>
+#include <limits.h>
+
+#if defined(ESP32) || defined(SUPLA_DEVICE_ESP32) || defined(ESP_PLATFORM)
+#include <mbedtls/md.h>
+#include <esp_random.h>
+#elif defined(ARDUINO_ARCH_ESP8266) || defined(ESP8266)
+#include <Esp.h>
+#include <bearssl/bearssl.h>
+#elif defined(SUPLA_LINUX) || defined(SUPLA_TEST)
+#include <openssl/core_names.h>
+#include <openssl/evp.h>
+#include <openssl/params.h>
+#include <openssl/rand.h>
+#endif
 
 bool Supla::Crypto::pbkdf2Sha256(const char *password,
                                  const uint8_t *salt,
@@ -134,37 +147,93 @@ bool Supla::Crypto::pbkdf2Sha256(const char *password,
 }
 
 
+bool Supla::Crypto::hmacSha256(const uint8_t *key, size_t keyLen,
+                               const uint8_t *data, size_t dataLen,
+                               uint8_t output[32]) {
+  if ((!key && keyLen) || (!data && dataLen) || !output) {
+    return false;
+  }
+  static const uint8_t empty = 0;
+  if (!key) {
+    key = &empty;
+  }
+  if (!data) {
+    data = &empty;
+  }
+#if defined(ESP32) || defined(SUPLA_DEVICE_ESP32) || defined(ESP_PLATFORM)
+  const mbedtls_md_info_t *info =
+      mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+  return info && mbedtls_md_hmac(info, key, keyLen, data, dataLen, output) == 0;
+#elif defined(ARDUINO_ARCH_ESP8266) || defined(ESP8266)
+  br_hmac_key_context keyContext;
+  br_hmac_context context;
+  br_hmac_key_init(&keyContext, &br_sha256_vtable, key, keyLen);
+  br_hmac_init(&context, &keyContext, 32);
+  if (dataLen) {
+    br_hmac_update(&context, data, dataLen);
+  }
+  bool result = br_hmac_out(&context, output) == 32;
+  memset(&keyContext, 0, sizeof(keyContext));
+  memset(&context, 0, sizeof(context));
+  return result;
+#elif defined(SUPLA_LINUX) || defined(SUPLA_TEST)
+  EVP_MAC *mac = EVP_MAC_fetch(nullptr, "HMAC", nullptr);
+  if (!mac) {
+    return false;
+  }
+  EVP_MAC_CTX *context = EVP_MAC_CTX_new(mac);
+  EVP_MAC_free(mac);
+  if (!context) {
+    return false;
+  }
+  char digestName[] = "SHA256";
+  OSSL_PARAM params[] = {
+      OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST, digestName, 0),
+      OSSL_PARAM_construct_end(),
+  };
+  size_t outputLength = 0;
+  bool result = EVP_MAC_init(context, key, keyLen, params) == 1 &&
+      EVP_MAC_update(context, data, dataLen) == 1 &&
+      EVP_MAC_final(context, output, &outputLength, 32) == 1 &&
+      outputLength == 32;
+  EVP_MAC_CTX_free(context);
+  return result;
+#else
+  return false;
+#endif
+}
+
+bool Supla::Crypto::fillRandom(uint8_t *buffer, size_t size) {
+  if ((!buffer && size) || size > INT_MAX) {
+    return false;
+  }
+  if (!size) {
+    return true;
+  }
+#if defined(ESP32) || defined(SUPLA_DEVICE_ESP32) || defined(ESP_PLATFORM)
+  esp_fill_random(buffer, size);
+  return true;
+#elif defined(ARDUINO_ARCH_ESP8266) || defined(ESP8266)
+  ESP.random(buffer, size);
+  return true;
+#elif defined(SUPLA_LINUX) || defined(SUPLA_TEST)
+  return RAND_bytes(buffer, static_cast<int>(size)) == 1;
+#else
+  return false;
+#endif
+}
+
 bool Supla::Crypto::hmacSha256Hex(const char *key, size_t keyLen,
                                   const char *data, size_t dataLen,
                                   char *output, size_t outputLen) {
-  if (outputLen < 65) {
-    SUPLA_LOG_ERROR("HMAC-SHA256 output length must be 65 bytes");
+  if (outputLen < 65 || !key || !data || !output) {
     return false;
   }
-  if (key == nullptr || data == nullptr || output == nullptr) {
+  uint8_t raw[32] = {};
+  if (!hmacSha256(reinterpret_cast<const uint8_t *>(key), keyLen,
+                  reinterpret_cast<const uint8_t *>(data), dataLen, raw)) {
     return false;
   }
-#if defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
-  uint8_t outputRaw[32] = {};
-  const mbedtls_md_info_t *mdInfo =
-      mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
-  mbedtls_md_hmac(mdInfo,
-                  reinterpret_cast<const unsigned char *>(key),
-                  keyLen,
-                  reinterpret_cast<const unsigned char *>(data),
-                  dataLen,
-                  outputRaw);
-
-  generateHexString(outputRaw, output, 32);
+  generateHexString(raw, output, sizeof(raw));
   return true;
-#else
-  (void)(key);
-  (void)(keyLen);
-  (void)(data);
-  (void)(dataLen);
-  (void)(output);
-  (void)(outputLen);
-  SUPLA_LOG_ERROR("HMAC-SHA256 not implemented for this platform");
-  return false;
-#endif
 }

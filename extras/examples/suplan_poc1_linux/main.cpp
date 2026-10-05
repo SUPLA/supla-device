@@ -6,6 +6,7 @@
 #include <supla/channels/channel.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/protocol/suplan_protocol.h>
+#include <supla/crypto.h>
 #include <suplan/suplan_runtime.h>
 #include <suplan/suplan_wire.h>
 #include <suplan_poc1_profile.h>
@@ -421,7 +422,6 @@ void setHook(uint8_t *counter, const std::string &command,
 void handleCommand(const std::string &line, Supla::SupLan::Runtime *runtime,
                    Supla::Protocol::SupLan *protocol, HarnessState *state,
                    HarnessUdpPort *datagrams,
-                   Supla::SupLan::RandomPort *random,
                    Supla::SupLan::PeerTable *peers,
                    const std::string &interfaceName,
                    const std::string &bindAddress,
@@ -445,7 +445,7 @@ void handleCommand(const std::string &line, Supla::SupLan::Runtime *runtime,
     }
     uint8_t identifier[Supla::SupLan::LinuxUdpPort::
                            kSelfTestIdentifierBytes] = {};
-    if (random == nullptr || !random->fillRandom(identifier,
+    if (!Supla::Crypto::fillRandom(identifier,
                                                  sizeof(identifier))) {
       selfTest->transmitSucceeded = false;
       selfTest->baseline = runtime->diagnostics();
@@ -774,13 +774,12 @@ int main(int argc, char **argv) {
 
   const std::string interfaceName = interfaceNameForAddress(bindAddress);
   Supla::SupLan::OpenSslCryptoPort crypto;
-  Supla::SupLan::OpenSslRandomPort random;
   Supla::SupLan::PeerTable peers;
   uint8_t primaryPeer = 0;
   uint8_t actionPeer = 0;
   const bool nodeA = role == "A";
   if (!Supla::SupLan::Poc1::configurePeerTable(
-          &crypto, &peers, nodeA, &primaryPeer, &actionPeer)) {
+          &peers, nodeA, &primaryPeer, &actionPeer)) {
     std::cerr << "failed to load static PoC profile" << std::endl;
     return 2;
   }
@@ -821,7 +820,7 @@ int main(int argc, char **argv) {
   Supla::Protocol::SupLan protocol(nullptr, &peers, &mapping, 1,
                                    onApplicationEvent, &state);
   Supla::SupLan::Runtime runtime(
-      &crypto, &random, &datagrams, &protocol, &peers,
+      &crypto, &datagrams, &protocol, &peers,
       Supla::SupLan::Poc1::localNodeAddress(nodeA),
       Supla::SupLan::kMinimumSuplaProtoVersion);
   runtime.setDataTransmitObserver(HarnessUdpPort::observeData, &datagrams);
@@ -855,7 +854,7 @@ int main(int argc, char **argv) {
           if (bytes[i] == '\n') {
             line[lineLength] = '\0';
             handleCommand(std::string(line), &runtime, &protocol, &state,
-                          &datagrams, &random, &peers, interfaceName,
+                          &datagrams, &peers, interfaceName,
                           bindAddress, &selfTest, &running);
             lineLength = 0;
           } else if (lineLength + 1 < sizeof(line)) {

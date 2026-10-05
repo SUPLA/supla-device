@@ -5,6 +5,7 @@
 #include <esp_random.h>
 #include <esp_chip_info.h>
 #include <supla/tools.h>
+#include <supla/crypto.h>
 
 void deviceSoftwareReset() {
   esp_restart();
@@ -52,5 +53,7 @@ int Supla::getPlatformId() {
 }
 
 void Supla::fillRandom(uint8_t *buffer, int size) {
-  esp_fill_random(buffer, size);
+  if (size >= 0) {
+    Supla::Crypto::fillRandom(buffer, static_cast<size_t>(size));
+  }
 }

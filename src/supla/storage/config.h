@@ -86,7 +86,8 @@ class Config {
 
   static void generateKey(char *, int, const char *);
 
-  virtual void commit();
+  // True only when the backend confirms persistence; unsupported returns false.
+  virtual bool commit();
   virtual void saveWithDelay(uint16_t delayMs);
   virtual void saveIfNeeded();
 

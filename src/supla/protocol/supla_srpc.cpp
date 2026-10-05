@@ -1350,6 +1350,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
 }
 
 void Supla::Protocol::SuplaSrpc::onInit() {
+  serverIdentityState.load(Supla::Storage::ConfigInstance());
   if (!isEnabled()) {
     return;
   }
@@ -1440,6 +1441,9 @@ void Supla::messageReceived(void *srpc,
         break;
       case SUPLA_SD_CALL_REGISTER_DEVICE_RESULT_B:
         suplaSrpc->onRegisterResultB(rd.data.sd_register_device_result_b);
+        break;
+      case SUPLA_SD_CALL_SUPLAN_DEVICE_IDENTITIES:
+        suplaSrpc->onDeviceIdentities(rd.data.sd_suplan_device_identities);
         break;
       case SUPLA_SD_CALL_DEVICE_SYNC_DONE:
         suplaSrpc->onDeviceSyncDone();
@@ -1816,6 +1820,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
     case SUPLA_RESULTCODE_IDENTIFY_REQUESTED:
       serverActivityTimeout = registerDeviceResult->activity_timeout;
       registered = 1;
+      serverIdentityState.registrationSucceeded();
       // A TCP connection alone is not enough to end the failure sequence.
       // Reset backoff only after the server accepts registration.
       reconnectAttemptCounter = 0;
@@ -1932,12 +1937,28 @@ void Supla::Protocol::SuplaSrpc::onSetActivityTimeoutResult(
   SUPLA_LOG_DEBUG("Activity timeout set to %d s", result->activity_timeout);
 }
 
+void Supla::Protocol::SuplaSrpc::onDeviceIdentities(
+    const TSD_SuplaDeviceIdentities *snapshot) {
+  if (!snapshot || !srpc) {
+    return;
+  }
+  TDS_SuplaDeviceIdentitiesResult result = {};
+  if (isRegisteredAndReady()) {
+    result = serverIdentityState.accept(*snapshot);
+  } else {
+    result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
+    result.RootEpoch = serverIdentityState.rootEpoch();
+  }
+  srpc_ds_async_suplan_device_identities_result(srpc, &result);
+}
+
 void Supla::Protocol::SuplaSrpc::onDeviceSyncDone() {
   if (!isRegisteredAndReady()) {
     SUPLA_LOG_WARNING("Received DEVICE_SYNC_DONE before registration");
     return;
   }
 
+  serverIdentityState.syncDone();
   deviceSyncDoneReceived = true;
   SUPLA_LOG_DEBUG("Received DEVICE_SYNC_DONE");
 }
@@ -2211,6 +2232,13 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     }
   }
 
+  if (serverIdentityState.registrationInvalidated()) {
+    SUPLA_LOG_WARNING("Channel removal/renumbering invalidated registration");
+    disconnect();
+    scheduleReconnect(_millis);
+    return false;
+  }
+
   char srpcIterateResult = srpc_iterate_device(srpc);
 
   if (writeFailure) {
@@ -2252,6 +2280,11 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
         static_cast<int>(registerHeader->ProductID),
         static_cast<uint32_t>(registerHeader->Flags),
         static_cast<unsigned int>(registerHeader->channel_count));
+    if (!serverIdentityState.registrationStarted()) {
+      disconnect();
+      scheduleReconnect(_millis);
+      return false;
+    }
     if (version <= 24) {
       if (!srpc_ds_async_registerdevice_in_chunks(
               srpc,
@@ -3073,6 +3106,7 @@ void Supla::Protocol::SuplaSrpc::initializeSrpc() {
 }
 
 void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
+  serverIdentityState.disconnected();
   versionErrorDisconnectPending = false;
   calCfgResultPending.clearAll();
   if (srpc) {

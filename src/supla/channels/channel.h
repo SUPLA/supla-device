@@ -23,6 +23,8 @@ enum class BatteryState : uint8_t {
   NotSet = 0xFF,
 };
 
+namespace Device { class ServerIdentity; }
+
 class Channel : public LocalAction {
  public:
   explicit Channel(int number = -1);
@@ -33,6 +35,9 @@ class Channel : public LocalAction {
   static Channel *Last();
   static Channel *GetByChannelNumber(int channelNumber);
   Channel *next();
+  uint32_t getServerChannelId() const { return serverChannelId; }
+  static uint32_t registrationGeneration() { return registrationChanges; }
+  static uint32_t identityGeneration() { return identityChanges; }
 
 #ifdef SUPLA_TEST
   static void resetToDefaults();
@@ -380,6 +385,9 @@ class Channel : public LocalAction {
   void clearSendStateInfo();
   bool isStateInfoUpdateReady() const;
 
+  friend class Device::ServerIdentity;
+  static uint32_t registrationChanges;
+  static uint32_t identityChanges;
   static Channel *firstPtr;
   static int startingChannelNumber;
   Channel *nextPtr = nullptr;
@@ -417,6 +425,8 @@ class Channel : public LocalAction {
     TActionTriggerProperties actionTriggerProperties;
     THVACValue hvacValue;
   };
+
+  uint32_t serverChannelId = 0;
 };
 
 };  // namespace Supla

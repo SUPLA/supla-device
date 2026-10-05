@@ -11,11 +11,6 @@ namespace SupLan {
 
 class OpenSslCryptoPort : public CryptoPort {
  public:
-  bool sha256(const uint8_t *data, size_t length,
-              uint8_t output[32]) override;
-  bool hmacSha256(const uint8_t *key, size_t keyLength,
-                  const uint8_t *data, size_t length,
-                  uint8_t output[32]) override;
   bool aes128CcmEncrypt(const uint8_t key[16], const uint8_t nonce[12],
                         const uint8_t *aad, size_t aadLength,
                         const uint8_t *plain, size_t plainLength,
@@ -24,11 +19,6 @@ class OpenSslCryptoPort : public CryptoPort {
                         const uint8_t *aad, size_t aadLength,
                         const uint8_t *cipher, size_t cipherLength,
                         const uint8_t tag[16], uint8_t *plain) override;
-};
-
-class OpenSslRandomPort : public RandomPort {
- public:
-  bool fillRandom(uint8_t *buffer, size_t length) override;
 };
 
 }  // namespace SupLan

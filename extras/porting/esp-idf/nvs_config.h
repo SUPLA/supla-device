@@ -50,7 +50,7 @@ class NvsConfig : public Config {
   bool setUInt32(const char* key, const uint32_t value) override;
   bool eraseKey(const char* key) override;
 
-  void commit() override;
+  bool commit() override;
 
  protected:
   int getBlobSize(const char* key) override;

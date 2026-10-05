@@ -10,6 +10,7 @@
 #include "suplan_acl.h"
 #include "suplan_data.h"
 #include "suplan_fragment.h"
+#include "suplan_ports.h"
 #include "suplan_session.h"
 
 namespace Supla {
@@ -77,7 +78,7 @@ class Runtime {
     uint32_t deadlineMs;
     uint32_t nextRefreshMs;
   };
-  Runtime(CryptoPort *crypto, RandomPort *random, DatagramPort *datagrams,
+  Runtime(CryptoPort *crypto, DatagramPort *datagrams,
           ApplicationPort *application, PeerTable *peers,
           const NodeAddress &localAddress, uint8_t suplaProtoVersion);
 
@@ -310,7 +311,6 @@ class Runtime {
                        bool duplicate);
 
   CryptoPort *crypto_;
-  RandomPort *random_;
   DatagramPort *datagrams_;
   ApplicationPort *application_;
   PeerTable *peers_;

@@ -125,7 +125,7 @@ bool LinuxSupLanRuntime::initialize() {
     return false;
   }
   if (!SupLan::Poc1::configurePeerTable(
-          &crypto_, &peers_, nodeA_, &primaryPeer_, &actionPeer_)) {
+          &peers_, nodeA_, &primaryPeer_, &actionPeer_)) {
     SUPLA_LOG_ERROR("SupLAN PoC fixture configuration failed");
     return false;
   }
@@ -151,7 +151,7 @@ bool LinuxSupLanRuntime::initialize() {
   protocol_.reset(new Protocol::SupLan(
       &SuplaDevice, &peers_, &mapping_, 1, onApplicationEvent, this));
   runtime_.reset(new SupLan::Runtime(
-      &crypto_, &random_, &datagrams_, protocol_.get(), &peers_,
+      &crypto_, &datagrams_, protocol_.get(), &peers_,
       SupLan::Poc1::localNodeAddress(nodeA_),
       SupLan::kMinimumSuplaProtoVersion));
   protocol_->attachRuntime(runtime_.get());

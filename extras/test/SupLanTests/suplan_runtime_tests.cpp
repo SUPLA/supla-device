@@ -5,6 +5,7 @@
 #include <suplan/suplan_crypto.h>
 
 #include <gtest/gtest.h>
+#include <crypto_test_hooks.h>
 
 #include <array>
 #include <cstdint>
@@ -23,32 +24,6 @@ using Supla::SupLan::Endpoint;
 using Supla::SupLan::NodeAddress;
 using Supla::SupLan::ResourceId;
 
-class CountingCryptoPort : public Supla::SupLan::OpenSslCryptoPort {
- public:
-  CountingCryptoPort() : sha256Calls(0), hmacSha256Calls(0) {}
-
-  bool sha256(const uint8_t *data, size_t length,
-              uint8_t output[32]) override {
-    ++sha256Calls;
-    return OpenSslCryptoPort::sha256(data, length, output);
-  }
-
-  bool hmacSha256(const uint8_t *key, size_t keyLength,
-                  const uint8_t *data, size_t length,
-                  uint8_t output[32]) override {
-    ++hmacSha256Calls;
-    return OpenSslCryptoPort::hmacSha256(key, keyLength, data, length,
-                                         output);
-  }
-
-  void resetCalls() {
-    sha256Calls = 0;
-    hmacSha256Calls = 0;
-  }
-
-  uint32_t sha256Calls;
-  uint32_t hmacSha256Calls;
-};
 
 struct Packet {
   Endpoint source;
@@ -148,21 +123,6 @@ class FakeDatagramPort : public Supla::SupLan::DatagramPort {
   Endpoint self_;
 };
 
-class FakeRandomPort : public Supla::SupLan::RandomPort {
- public:
-  explicit FakeRandomPort(uint8_t seed) : next_(seed) {}
-
-  bool fillRandom(uint8_t *buffer, size_t length) override {
-    for (size_t i = 0; i < length; ++i) {
-      next_ = static_cast<uint8_t>(next_ + 29);
-      buffer[i] = next_;
-    }
-    return true;
-  }
-
- private:
-  uint8_t next_;
-};
 
 class FakeApplication : public Supla::SupLan::ApplicationPort {
  public:
@@ -253,9 +213,8 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
 };
 
 struct RuntimePair {
-  CountingCryptoPort crypto;
-  FakeRandomPort randomA;
-  FakeRandomPort randomB;
+  ScopedCryptoTestState rng{5};
+  Supla::SupLan::OpenSslCryptoPort crypto;
   FakeNetwork network;
   Endpoint endpointA;
   Endpoint endpointB;
@@ -279,15 +238,15 @@ struct RuntimePair {
   }
 
   explicit RuntimePair(bool sameHost = false)
-      : crypto(), randomA(5), randomB(173), network(),
+      : crypto(), network(),
         endpointA({0x0100007F, static_cast<uint16_t>(sameHost ? 32171 : 2016)}),
         endpointB({sameHost ? 0x0100007FU : 0x0200007FU,
                    static_cast<uint16_t>(sameHost ? 32172 : 2016)}),
         datagramsA(&network, endpointA), datagramsB(&network, endpointB),
         appA(), appB(), peersA(), peersB(),
-        runtimeA(&crypto, &randomA, &datagramsA, &appA, &peersA,
+        runtimeA(&crypto, &datagramsA, &appA, &peersA,
                  nodeAddress(1001), 27),
-        runtimeB(&crypto, &randomB, &datagramsB, &appB, &peersB,
+        runtimeB(&crypto, &datagramsB, &appB, &peersB,
                  nodeAddress(1002), 27),
         resource({Supla::SupLan::kResourceTypeChannel, 50001}), peerA(0),
         peerB(0), actionPeerA(0), actionPeerB(0) {
@@ -313,10 +272,10 @@ struct RuntimePair {
         Supla::SupLan::kPermissionControl;
     Supla::SupLan::PeerMaterial material = {};
     EXPECT_TRUE(Supla::SupLan::derivePeerMaterial(
-        &crypto, &context, rootKey, &material));
-    EXPECT_TRUE(peersA.addPeerFromRoot(&crypto, &context, rootKey, 1, &acl, 1,
+        &context, rootKey, &material));
+    EXPECT_TRUE(peersA.addPeerFromRoot(&context, rootKey, 1, &acl, 1,
                                        &peerA));
-    EXPECT_TRUE(peersB.addPeer(&crypto, &context, material.peerKey, 1, &acl, 1,
+    EXPECT_TRUE(peersB.addPeer(&context, material.peerKey, 1, &acl, 1,
                                &peerB));
     const uint8_t reversePeerKey[32] = {
         0x70, 0xD1, 0x3F, 0x17, 0x8A, 0x1F, 0x93, 0xE3,
@@ -327,11 +286,11 @@ struct RuntimePair {
     actionAcl.resource.type = Supla::SupLan::kResourceTypeChannel;
     actionAcl.resource.id = 50002;
     actionAcl.permissions = Supla::SupLan::kPermissionAction;
-    EXPECT_TRUE(peersA.addPeer(&crypto, &actionContext, reversePeerKey, 1,
+    EXPECT_TRUE(peersA.addPeer(&actionContext, reversePeerKey, 1,
                                &actionAcl, 1, &actionPeerA));
-    EXPECT_TRUE(peersB.addPeerFromRoot(&crypto, &actionContext, rootKey, 1,
+    EXPECT_TRUE(peersB.addPeerFromRoot(&actionContext, rootKey, 1,
                                        &actionAcl, 1, &actionPeerB));
-    crypto.resetCalls();
+    rng.resetCalls();
     appA.runtime = &runtimeA;
   }
 
@@ -372,24 +331,32 @@ std::vector<std::vector<uint8_t>> protectedDataFromB(
   return frames;
 }
 
+TEST(SupLanRuntime, RandomFailureDoesNotTransmitLocate) {
+  RuntimePair pair;
+  pair.rng.failRandom = true;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 0U);
+  EXPECT_TRUE(pair.network.packets.empty());
+}
+
 TEST(SupLanRuntime, LocateKdfRunsOnceAndNotAgainWhileLocateIsOutstanding) {
   RuntimePair pair;
 
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
   EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 1U);
-  EXPECT_EQ(pair.crypto.sha256Calls, 1U);
-  EXPECT_EQ(pair.crypto.hmacSha256Calls, 6U);
+  EXPECT_EQ(pair.rng.sha256Calls, 1U);
+  EXPECT_EQ(pair.rng.hmacSha256Calls, 6U);
 
   pair.network.now += 5;
   pair.runtimeB.iterate();
   EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 1U);
-  EXPECT_EQ(pair.crypto.sha256Calls, 1U);
-  EXPECT_EQ(pair.crypto.hmacSha256Calls, 6U);
+  EXPECT_EQ(pair.rng.sha256Calls, 1U);
+  EXPECT_EQ(pair.rng.hmacSha256Calls, 6U);
 
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
   EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 1U);
-  EXPECT_EQ(pair.crypto.sha256Calls, 1U);
-  EXPECT_EQ(pair.crypto.hmacSha256Calls, 6U);
+  EXPECT_EQ(pair.rng.sha256Calls, 1U);
+  EXPECT_EQ(pair.rng.hmacSha256Calls, 6U);
 }
 
 TEST(SupLanRuntime, LocateSessionReadControlRetryAndDuplicateSuppression) {

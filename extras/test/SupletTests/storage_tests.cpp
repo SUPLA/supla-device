@@ -128,8 +128,9 @@ class InMemoryConfig : public Supla::Config {
     return erased;
   }
 
-  void commit() override {
+  bool commit() override {
     commitCount++;
+    return true;
   }
 
   std::map<std::string, std::vector<char>> blobs;
@@ -151,8 +152,9 @@ class KeyValueConfig : public Supla::KeyValue {
     removeAllMemory();
   }
 
-  void commit() override {
+  bool commit() override {
     commitCount++;
+    return true;
   }
 
   int commitCount = 0;

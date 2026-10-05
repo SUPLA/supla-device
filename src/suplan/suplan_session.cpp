@@ -3,6 +3,8 @@
 
 #include "suplan_session.h"
 
+#include <supla/crypto.h>
+
 #include <string.h>
 
 #include "suplan_wire.h"
@@ -26,9 +28,9 @@ static bool validNegotiation(const uint8_t maximumVersion,
       receiveLimit >= kMinimumRxMaxReassembledFrame && features == 0;
 }
 
-bool encodeSessionInit(CryptoPort *crypto, const uint8_t initMacKey[32],
+bool encodeSessionInit(const uint8_t initMacKey[32],
                        const SessionInit *init, uint8_t output[57]) {
-  if (crypto == nullptr || initMacKey == nullptr || init == nullptr ||
+  if (initMacKey == nullptr || init == nullptr ||
       output == nullptr ||
       !validNegotiation(init->suplaProtoVersionMax,
                         init->rxMaxReassembledFrame, init->featureBits)) {
@@ -42,7 +44,7 @@ bool encodeSessionInit(CryptoPort *crypto, const uint8_t initMacKey[32],
   putUint16(output + 35, init->rxMaxReassembledFrame);
   putUint32(output + 37, init->featureBits);
   uint8_t fullMac[32];
-  if (!crypto->hmacSha256(initMacKey, 32, output, 41, fullMac)) {
+  if (!Supla::Crypto::hmacSha256(initMacKey, 32, output, 41, fullMac)) {
     return false;
   }
   memcpy(output + 41, fullMac, 16);
@@ -50,10 +52,10 @@ bool encodeSessionInit(CryptoPort *crypto, const uint8_t initMacKey[32],
   return true;
 }
 
-bool decodeSessionInit(CryptoPort *crypto, const uint8_t initMacKey[32],
+bool decodeSessionInit(const uint8_t initMacKey[32],
                        const uint8_t *input, size_t length,
                        SessionInit *init) {
-  if (crypto == nullptr || initMacKey == nullptr || input == nullptr ||
+  if (initMacKey == nullptr || input == nullptr ||
       init == nullptr || length != kSessionInitSize ||
       input[0] != kVersion || input[1] != kFrameSessionInit) {
     return false;
@@ -64,7 +66,7 @@ bool decodeSessionInit(CryptoPort *crypto, const uint8_t initMacKey[32],
     return false;
   }
   uint8_t fullMac[32];
-  if (!crypto->hmacSha256(initMacKey, 32, input, 41, fullMac)) {
+  if (!Supla::Crypto::hmacSha256(initMacKey, 32, input, 41, fullMac)) {
     return false;
   }
   const bool valid = equalBytes(fullMac, input + 41, 16);
@@ -80,10 +82,10 @@ bool decodeSessionInit(CryptoPort *crypto, const uint8_t initMacKey[32],
   return true;
 }
 
-bool encodeSessionAccept(CryptoPort *crypto, const uint8_t acceptMacKey[32],
+bool encodeSessionAccept(const uint8_t acceptMacKey[32],
                          const uint8_t encodedInit[57],
                          const SessionAccept *accept, uint8_t output[65]) {
-  if (crypto == nullptr || acceptMacKey == nullptr || encodedInit == nullptr ||
+  if (acceptMacKey == nullptr || encodedInit == nullptr ||
       accept == nullptr || output == nullptr ||
       memcmp(accept->peerLocator, encodedInit + 2, 16) != 0 ||
       accept->selectedSuplaProtoVersion < kMinimumSuplaProtoVersion ||
@@ -105,7 +107,7 @@ bool encodeSessionAccept(CryptoPort *crypto, const uint8_t acceptMacKey[32],
   memcpy(transcriptPrefix, encodedInit, 57);
   memcpy(transcriptPrefix + 57, output, 49);
   uint8_t fullMac[32];
-  if (!crypto->hmacSha256(acceptMacKey, 32, transcriptPrefix,
+  if (!Supla::Crypto::hmacSha256(acceptMacKey, 32, transcriptPrefix,
                           sizeof(transcriptPrefix), fullMac)) {
     memset(transcriptPrefix, 0, sizeof(transcriptPrefix));
     return false;
@@ -116,11 +118,11 @@ bool encodeSessionAccept(CryptoPort *crypto, const uint8_t acceptMacKey[32],
   return true;
 }
 
-bool decodeSessionAccept(CryptoPort *crypto, const uint8_t acceptMacKey[32],
+bool decodeSessionAccept(const uint8_t acceptMacKey[32],
                          const uint8_t encodedInit[57],
                          const SessionInit *init, const uint8_t *input,
                          size_t length, SessionAccept *accept) {
-  if (crypto == nullptr || acceptMacKey == nullptr || encodedInit == nullptr ||
+  if (acceptMacKey == nullptr || encodedInit == nullptr ||
       init == nullptr || input == nullptr || accept == nullptr ||
       length != kSessionAcceptSize || input[0] != kVersion ||
       input[1] != kFrameSessionAccept ||
@@ -136,7 +138,7 @@ bool decodeSessionAccept(CryptoPort *crypto, const uint8_t acceptMacKey[32],
   memcpy(transcriptPrefix, encodedInit, 57);
   memcpy(transcriptPrefix + 57, input, 49);
   uint8_t fullMac[32];
-  if (!crypto->hmacSha256(acceptMacKey, 32, transcriptPrefix,
+  if (!Supla::Crypto::hmacSha256(acceptMacKey, 32, transcriptPrefix,
                           sizeof(transcriptPrefix), fullMac)) {
     memset(transcriptPrefix, 0, sizeof(transcriptPrefix));
     return false;

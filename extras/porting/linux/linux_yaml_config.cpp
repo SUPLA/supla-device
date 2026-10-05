@@ -356,20 +356,15 @@ bool Supla::LinuxYamlConfig::getUInt8(const char* key, uint8_t* result) {
   return false;
 }
 
-void Supla::LinuxYamlConfig::commit() {
-  uint8_t buf[SUPLA_LINUX_CONFIG_BUF_SIZE] = {};
-
-  size_t dataSize = serializeToMemory(buf, SUPLA_LINUX_CONFIG_BUF_SIZE);
-
-  std::ofstream rwConfigFile(
-      getStateFilesPath() + Supla::ReadWriteConfigStorage,
-      std::ofstream::out | std::ios::binary);
-
-  for (size_t i = 0; i < dataSize; i++) {
-    rwConfigFile << buf[i];
+bool Supla::LinuxYamlConfig::commit() {
+  std::vector<uint8_t> buf(SUPLA_LINUX_CONFIG_BUF_SIZE);
+  size_t dataSize = serializeToMemory(buf.data(), buf.size());
+  if (dataSize == SIZE_MAX) {
+    return false;
   }
-
-  rwConfigFile.close();
+  return Supla::Linux::writeSecureFile(
+      getStateFilesPath() + Supla::ReadWriteConfigStorage,
+      buf.data(), dataSize, false, true);
 }
 
 bool Supla::LinuxYamlConfig::setDeviceName(const char* name) {

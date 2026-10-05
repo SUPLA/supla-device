@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 #include <supla-common/proto.h>
+#include <supla/device/server_identity.h>
 
 #include "protocol_layer.h"
 
@@ -53,6 +54,13 @@ class SuplaSrpc : public ProtocolLayer {
 
   void setNetworkClient(Supla::Client *newClient);
 
+  Supla::Device::ServerIdentity &serverIdentity() {
+    return serverIdentityState;
+  }
+  const Supla::Device::ServerIdentity &serverIdentity() const {
+    return serverIdentityState;
+  }
+  void onDeviceIdentities(const TSD_SuplaDeviceIdentities *snapshot);
   void onInit() override;
   bool onLoadConfig() override;
   bool verifyConfig() override;
@@ -211,6 +219,7 @@ class SuplaSrpc : public ProtocolLayer {
   Supla::Device::ChannelConflictResolver *channelConflictResolver = nullptr;
 
  private:
+  Supla::Device::ServerIdentity serverIdentityState;
   void handlePendingCalCfgTimeouts(uint32_t _millis);
   Supla::Device::RemoteDeviceConfig *remoteDeviceConfig = nullptr;
   bool versionErrorDisconnectPending = false;

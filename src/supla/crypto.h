@@ -31,6 +31,13 @@ bool pbkdf2Sha256(const char *password,
                    const uint8_t *salt, size_t saltLen, uint32_t iterations,
                    uint8_t *derivedKey, size_t derivedKeyLen);
 
+// Binary HMAC output; nullptr input is allowed only for an empty input.
+bool hmacSha256(const uint8_t *key, size_t keyLen,
+                const uint8_t *data, size_t dataLen, uint8_t output[32]);
+
+// CSPRNG with observable failure. Empty output succeeds without using the RNG.
+bool fillRandom(uint8_t *buffer, size_t size);
+
 bool hmacSha256Hex(const char *key, size_t keyLen,
                 const char *data, size_t dataLen,
                 char *output, size_t outputLen);

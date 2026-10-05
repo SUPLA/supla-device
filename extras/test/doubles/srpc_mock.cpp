@@ -254,3 +254,9 @@ _supla_int_t srpc_dcs_async_set_channel_caption(void *,
 
 SrpcMock::SrpcMock() {}
 SrpcMock::~SrpcMock() {}
+
+_supla_int_t srpc_ds_async_suplan_device_identities_result(
+    void *srpc, TDS_SuplaDeviceIdentitiesResult *result) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->deviceIdentitiesResult(srpc, result);
+}

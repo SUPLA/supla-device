@@ -102,7 +102,7 @@ class LinuxYamlConfig : public KeyValue {
   // this method. It may be extended to other parameters in future (if needed).
   bool getUInt8(const char* key, uint8_t* result) override;
 
-  void commit() override;
+  bool commit() override;
 
   // Device generic config
   bool setGUID(const char* guid) override;

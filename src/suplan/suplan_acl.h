@@ -6,7 +6,6 @@
 
 #include <stdint.h>
 
-#include "suplan_ports.h"
 #include "suplan_types.h"
 
 namespace Supla {
@@ -46,11 +45,11 @@ struct PeerAclRecord {
 class PeerTable {
  public:
   PeerTable();
-  bool addPeer(CryptoPort *crypto, const PeerContext *context,
+  bool addPeer(const PeerContext *context,
                const uint8_t peerKey[32],
                uint32_t aclRevision, const AclEntry *entries,
                uint8_t entryCount, uint8_t *peerIndex);
-  bool addPeerFromRoot(CryptoPort *crypto, const PeerContext *context,
+  bool addPeerFromRoot(const PeerContext *context,
                        const uint8_t rootKey[32], uint32_t aclRevision,
                        const AclEntry *entries, uint8_t entryCount,
                        uint8_t *peerIndex);
@@ -62,7 +61,7 @@ class PeerTable {
                  uint8_t permission) const;
   PeerRecord *get(uint8_t peerIndex);
   const PeerRecord *get(uint8_t peerIndex) const;
-  bool materialFor(CryptoPort *crypto, uint8_t peerIndex,
+  bool materialFor(uint8_t peerIndex,
                    PeerMaterial *material) const;
   uint8_t size() const;
   uint8_t aclEntryCount() const;

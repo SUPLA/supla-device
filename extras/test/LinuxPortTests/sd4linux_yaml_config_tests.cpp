@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 #include <simple_time.h>
+#include <config_simulator.h>
 #include <supla-common/proto.h>
 #include <supla/element.h>
 #include <supla/parser/parser.h>
@@ -1009,4 +1010,25 @@ TEST(Sd4linuxYamlConfigTests, RejectsParsedIconIdOutsideAllowedRange) {
                                       0,
                                       &parser));
   deleteCreatedElement(previousElement);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests,
+       CommitReportsFailureAndWritesDurablePrivateFile) {
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = (tempDirectory / "missing").string();
+  ASSERT_TRUE(config.setUInt32("test_commit", 42));
+  EXPECT_FALSE(config.commit());
+  config.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(config.commit());
+  const auto path = tempDirectory / "config_storage.bin";
+  struct stat metadata = {};
+  ASSERT_EQ(::stat(path.c_str(), &metadata), 0);
+  EXPECT_EQ(metadata.st_mode & 0777, 0600);
+  std::ifstream file(path, std::ios::binary);
+  std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(file)), {});
+  ConfigSimulator restored;
+  ASSERT_TRUE(restored.initFromMemory(bytes.data(), bytes.size()));
+  uint32_t value = 0;
+  ASSERT_TRUE(restored.getUInt32("test_commit", &value));
+  EXPECT_EQ(value, 42u);
 }

@@ -174,3 +174,96 @@ TEST_F(LittleFsConfigTests, ValidPrimaryConfigurationStillWins) {
   EXPECT_TRUE(config.getUInt32("shared", &shared));
   EXPECT_EQ(shared, 111);
 }
+
+TEST_F(LittleFsConfigTests, CommitReportsMountOpenShortWriteAndBufferFailures) {
+  Supla::LittleFsConfig config(64);
+  ASSERT_TRUE(config.setUInt32("test", 42));
+  LittleFS.beginResult = false;
+  EXPECT_FALSE(config.commit());
+  LittleFS.beginResult = true;
+  LittleFS.failOpenPath = "/supla-dev.cfg";
+  EXPECT_FALSE(config.commit());
+  LittleFS.failOpenPath.clear();
+  LittleFS.maxWrite = 1;
+  EXPECT_FALSE(config.commit());
+  LittleFS.maxWrite = SIZE_MAX;
+  EXPECT_TRUE(config.commit());
+  Supla::LittleFsConfig tooSmall(8);
+  ASSERT_TRUE(tooSmall.setUInt32("test", 42));
+  EXPECT_FALSE(tooSmall.commit());
+}
+
+TEST_F(LittleFsConfigTests, CommitRejectsLostCloseAndSyncOnBothFiles) {
+  Supla::LittleFsConfig config(64);
+  ASSERT_TRUE(config.setUInt32("test", 42));
+  for (const char *path : {"/supla-dev.cfg", "/supla-dev.cfg.bak"}) {
+    for (bool syncFailure : {false, true}) {
+      LittleFS.reset();
+      if (syncFailure) {
+        LittleFS.failSyncPath = path;
+      } else {
+        LittleFS.failClosePath = path;
+      }
+      EXPECT_FALSE(config.commit()) << path << ": sync=" << syncFailure;
+      LittleFS.failSyncPath.clear();
+      LittleFS.failClosePath.clear();
+      EXPECT_TRUE(config.commit());
+    }
+  }
+}
+
+TEST_F(LittleFsConfigTests, BlobRejectsLostFinalizationWithSameSizeOldFile) {
+  Supla::LittleFsConfig config;
+  std::array<char, 39> old = {};
+  std::array<char, 39> changed;
+  changed.fill('x');
+  for (bool syncFailure : {false, true}) {
+    ASSERT_TRUE(config.setBlob(BlobKey, old.data(), old.size()));
+    if (syncFailure) {
+      LittleFS.failSyncPath = "/supla/blob";
+    } else {
+      LittleFS.failClosePath = "/supla/blob";
+    }
+    EXPECT_FALSE(config.setBlob(BlobKey, changed.data(), changed.size()));
+    std::array<char, 39> loaded;
+    ASSERT_TRUE(config.getBlob(BlobKey, loaded.data(), loaded.size()));
+    EXPECT_EQ(loaded, old);
+    LittleFS.failSyncPath.clear();
+    LittleFS.failClosePath.clear();
+    ASSERT_TRUE(config.setBlob(BlobKey, changed.data(), changed.size()));
+    ASSERT_TRUE(config.getBlob(BlobKey, loaded.data(), loaded.size()));
+    EXPECT_EQ(loaded, changed);
+  }
+}
+
+TEST_F(LittleFsConfigTests, VerificationRejectsMountReadAndContentFailures) {
+  Supla::LittleFsConfig config;
+  std::array<char, 100> data;
+  data.fill('x');
+  for (int failure = 0; failure < 4; ++failure) {
+    LittleFS.reset();
+    if (failure == 0) {
+      // Verification mount, after successful write.
+      LittleFS.failBeginCall = 2;
+    } else if (failure == 1) {
+      LittleFS.failReadPath = "/supla/blob";
+    } else if (failure == 2) {
+      LittleFS.maxRead = 1;
+    } else {
+      LittleFS.corruptClosePath = "/supla/blob";
+    }
+    EXPECT_FALSE(config.setBlob(BlobKey, data.data(), data.size())) << failure;
+    // No format on verification failure.
+    EXPECT_TRUE(LittleFS.exists("/supla/blob"));
+  }
+}
+
+TEST_F(LittleFsConfigTests, CommitRejectsSameSizeCorruptionAfterClose) {
+  Supla::LittleFsConfig config(64);
+  ASSERT_TRUE(config.setUInt32("test", 42));
+  for (const char *path : {"/supla-dev.cfg", "/supla-dev.cfg.bak"}) {
+    LittleFS.reset();
+    LittleFS.corruptClosePath = path;
+    EXPECT_FALSE(config.commit()) << path;
+  }
+}

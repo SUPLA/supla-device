@@ -4,6 +4,7 @@
 #include "suplan_runtime.h"
 
 #include <string.h>
+#include <supla/crypto.h>
 
 #include "suplan_crypto.h"
 #include "suplan_wire.h"
@@ -88,11 +89,11 @@ static_assert(kApplicationHeaderSize + kResourceHeaderSize + 15 +
               "Retry Action Trigger needs deadline metadata slack");
 }  // namespace
 
-Runtime::Runtime(CryptoPort *crypto, RandomPort *random,
-                 DatagramPort *datagrams, ApplicationPort *application,
+Runtime::Runtime(CryptoPort *crypto, DatagramPort *datagrams,
+                 ApplicationPort *application,
                  PeerTable *peers, const NodeAddress &localAddress,
                  uint8_t suplaProtoVersion)
-    : crypto_(crypto), random_(random), datagrams_(datagrams),
+    : crypto_(crypto), datagrams_(datagrams),
       application_(application), peers_(peers), localAddress_(localAddress),
       suplaProtoVersion_(suplaProtoVersion), processing_(false),
       nextFrameId_(UINT32_C(0xC3000000)), fragmentOrdinal_(0), sessions_(),
@@ -584,7 +585,7 @@ void Runtime::finishRecovery(uint8_t peerIndex) {
     const uint32_t base = delays[peer.backgroundStage];
     uint8_t jitter[4] = {};
     // Random failure keeps the hard minimum; it never removes the backoff.
-    (void)random_->fillRandom(jitter, sizeof(jitter));
+    (void)Supla::Crypto::fillRandom(jitter, sizeof(jitter));
     peer.nextRefreshMs = datagrams_->nowMs() + base +
         getUint32(jitter) % (base / 5 + 1);
     if (peer.backgroundStage < 3) {
@@ -737,14 +738,14 @@ void Runtime::startLocate(uint8_t peerIndex) {
   ++recovery.locateAttempts;
   recovery.lastLocateMs = now;
   PeerMaterial material = {};
-  if (!peers_->materialFor(crypto_, peerIndex, &material)) {
+  if (!peers_->materialFor(peerIndex, &material)) {
     return;
   }
   uint8_t nonce[kNonceSize];
   uint8_t mac[kPeerLocatorSize];
   uint8_t frame[50];
-  if (!random_->fillRandom(nonce, sizeof(nonce)) ||
-      !locateQueryMac(crypto_, &material, kVersion, kFrameLocate,
+  if (!Supla::Crypto::fillRandom(nonce, sizeof(nonce)) ||
+      !locateQueryMac(&material, kVersion, kFrameLocate,
                       nonce, mac) ||
       !encodeLocate(frame, material.peerLocator, nonce, mac)) {
     return;
@@ -768,7 +769,7 @@ void Runtime::startLocate(uint8_t peerIndex) {
 void Runtime::startHandshake(uint8_t peerIndex) {
   PeerRecord *peer = peers_->get(peerIndex);
   if (peer == nullptr || !peers_->hasActiveGrants(peerIndex) ||
-      datagrams_ == nullptr || random_ == nullptr || crypto_ == nullptr ||
+      datagrams_ == nullptr || crypto_ == nullptr ||
       !recovery_[peerIndex].active) {
     return;
   }
@@ -785,7 +786,7 @@ void Runtime::startHandshake(uint8_t peerIndex) {
     return;
   }
   PeerMaterial material = {};
-  if (!peers_->materialFor(crypto_, peerIndex, &material)) {
+  if (!peers_->materialFor(peerIndex, &material)) {
     return;
   }
   const Endpoint endpoint = peer->endpoint;
@@ -801,13 +802,13 @@ void Runtime::startHandshake(uint8_t peerIndex) {
   init.suplaProtoVersionMax = suplaProtoVersion_;
   init.rxMaxReassembledFrame = SUPLAN_RX_MAX_REASSEMBLED_FRAME;
   init.featureBits = 0;
-  if (!random_->fillRandom(init.ni, sizeof(init.ni))) {
+  if (!Supla::Crypto::fillRandom(init.ni, sizeof(init.ni))) {
     attempt->used = false;
     return;
   }
   memcpy(init.peerLocator, material.peerLocator,
          kPeerLocatorSize);
-  if (!encodeSessionInit(crypto_, material.initMacKey, &init,
+  if (!encodeSessionInit(material.initMacKey, &init,
                          attempt->initFrame)) {
     attempt->used = false;
     return;
@@ -1158,15 +1159,15 @@ bool Runtime::startFlood(TestFloodKind kind, uint8_t peerIndex,
   if (kind == kFloodInvalidSession && count != 0) {
     PeerMaterial material = {};
     SessionInit init = {};
-    if (!peers_->materialFor(crypto_, peerIndex, &material)) {
+    if (!peers_->materialFor(peerIndex, &material)) {
       memset(&flood_, 0, sizeof(flood_));
       return false;
     }
     memcpy(init.peerLocator, material.peerLocator, kPeerLocatorSize);
     init.suplaProtoVersionMax = suplaProtoVersion_;
     init.rxMaxReassembledFrame = SUPLAN_RX_MAX_REASSEMBLED_FRAME;
-    if (!random_->fillRandom(init.ni, sizeof(init.ni)) ||
-        !encodeSessionInit(crypto_, material.initMacKey, &init,
+    if (!Supla::Crypto::fillRandom(init.ni, sizeof(init.ni)) ||
+        !encodeSessionInit(material.initMacKey, &init,
                            flood_.invalidSessionFrame)) {
       memset(&flood_, 0, sizeof(flood_));
       return false;
@@ -1743,14 +1744,14 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
     return;
   }
   PeerMaterial material = {};
-  if (!peers_->materialFor(crypto_, static_cast<uint8_t>(peerIndex),
+  if (!peers_->materialFor(static_cast<uint8_t>(peerIndex),
                            &material)) {
     ++diagnostics_.invalidLocateDrop;
     return;
   }
   uint8_t expected[kPeerLocatorSize];
   if (peer == nullptr ||
-      !locateQueryMac(crypto_, &material, kVersion, kFrameLocate,
+      !locateQueryMac(&material, kVersion, kFrameLocate,
                       nonce, expected) ||
       !equalBytesConstantTime(expected, mac, sizeof(expected))) {
     ++diagnostics_.invalidLocateDrop;
@@ -1775,7 +1776,7 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
   }
   uint8_t replyMac[kPeerLocatorSize];
   uint8_t reply[34];
-  if (!locateReplyMac(crypto_, &material, kVersion, kFrameLocateReply,
+  if (!locateReplyMac(&material, kVersion, kFrameLocateReply,
                       nonce, replyMac) ||
       !encodeLocateReply(reply, nonce, replyMac)) {
     return;
@@ -1806,8 +1807,8 @@ void Runtime::processLocateReply(const Endpoint &source, const uint8_t *data,
     PeerMaterial material = {};
     uint8_t expected[kPeerLocatorSize];
     if (peer == nullptr ||
-        !peers_->materialFor(crypto_, locate->peerIndex, &material) ||
-        !locateReplyMac(crypto_, &material, kVersion,
+        !peers_->materialFor(locate->peerIndex, &material) ||
+        !locateReplyMac(&material, kVersion,
                         kFrameLocateReply, nonce, expected) ||
         !equalBytesConstantTime(expected, mac, sizeof(expected))) {
       ++diagnostics_.invalidLocateDrop;
@@ -1844,8 +1845,8 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
   PeerMaterial material = {};
   SessionInit init = {};
   if (peer == nullptr ||
-      !peers_->materialFor(crypto_, peerIndex, &material) ||
-      !decodeSessionInit(crypto_, material.initMacKey, data, length, &init)) {
+      !peers_->materialFor(peerIndex, &material) ||
+      !decodeSessionInit(material.initMacKey, data, length, &init)) {
     ++diagnostics_.invalidSessionDrop;
     return;
   }
@@ -1894,8 +1895,8 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
       SUPLAN_RX_MAX_REASSEMBLED_FRAME;
   accept.selectedFeatureBits = 0;
   uint8_t sessionIdBytes[8];
-  if (!random_->fillRandom(accept.nr, sizeof(accept.nr)) ||
-      !random_->fillRandom(sessionIdBytes, sizeof(sessionIdBytes))) {
+  if (!Supla::Crypto::fillRandom(accept.nr, sizeof(accept.nr)) ||
+      !Supla::Crypto::fillRandom(sessionIdBytes, sizeof(sessionIdBytes))) {
     clearPendingHandshake(response);
     return;
   }
@@ -1904,10 +1905,10 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
     accept.sessionId = 1;
   }
   response->sessionId = accept.sessionId;
-  if (!encodeSessionAccept(crypto_, material.acceptMacKey,
+  if (!encodeSessionAccept(material.acceptMacKey,
                            response->initFrame, &accept,
                            response->acceptFrame) ||
-      !deriveSessionKeys(crypto_, material.peerKey,
+      !deriveSessionKeys(material.peerKey,
                          material.contextHash, init.ni,
                          accept.nr, response->initFrame,
                          sizeof(response->initFrame), response->acceptFrame,
@@ -1955,10 +1956,10 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   SessionInit init = {};
   SessionAccept accept = {};
   if (peer == nullptr ||
-      !peers_->materialFor(crypto_, attempt->peerIndex, &material) ||
-      !decodeSessionInit(crypto_, material.initMacKey, attempt->initFrame,
+      !peers_->materialFor(attempt->peerIndex, &material) ||
+      !decodeSessionInit(material.initMacKey, attempt->initFrame,
                          sizeof(attempt->initFrame), &init) ||
-      !decodeSessionAccept(crypto_, material.acceptMacKey,
+      !decodeSessionAccept(material.acceptMacKey,
                            attempt->initFrame, &init, data, length,
                            &accept)) {
     ++diagnostics_.invalidSessionDrop;
@@ -1967,7 +1968,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   memcpy(attempt->acceptFrame, data, sizeof(attempt->acceptFrame));
   attempt->sessionId = accept.sessionId;
   attempt->peerRxMaxReassembledFrame = accept.responderRxMaxReassembledFrame;
-  if (!deriveSessionKeys(crypto_, material.peerKey,
+  if (!deriveSessionKeys(material.peerKey,
                          material.contextHash, init.ni,
                          accept.nr, attempt->initFrame,
                          sizeof(attempt->initFrame), attempt->acceptFrame,
@@ -2514,7 +2515,7 @@ void Runtime::processFlood() {
 }
 
 void Runtime::iterate() {
-  if (crypto_ == nullptr || random_ == nullptr || datagrams_ == nullptr ||
+  if (crypto_ == nullptr || datagrams_ == nullptr ||
       peers_ == nullptr || application_ == nullptr || processing_) {
     return;
   }

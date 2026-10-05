@@ -98,9 +98,10 @@ class InMemoryConfig : public Supla::Config {
     erased = (uint8Values.erase(key) > 0) || erased;
     return erased;
   }
-  void commit() override {
+  bool commit() override {
     operations.push_back("commit");
     commitCount++;
+    return true;
   }
 
   std::map<std::string, std::vector<char>> blobs;

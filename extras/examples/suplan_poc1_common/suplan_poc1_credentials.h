@@ -33,9 +33,9 @@ static const uint8_t kActionPeerKey[32] = {
     0xD9, 0xC0, 0xFA, 0x42, 0xB9, 0xC1, 0xC4, 0x62, 0x47, 0xCC,
 };
 
-inline bool configurePeerTable(CryptoPort *crypto, PeerTable *peers, bool nodeA,
+inline bool configurePeerTable(PeerTable *peers, bool nodeA,
                                uint8_t *primaryPeer, uint8_t *actionPeer) {
-  if (crypto == nullptr || peers == nullptr || primaryPeer == nullptr ||
+  if (peers == nullptr || primaryPeer == nullptr ||
       actionPeer == nullptr) {
     return false;
   }
@@ -58,14 +58,14 @@ inline bool configurePeerTable(CryptoPort *crypto, PeerTable *peers, bool nodeA,
                               kPermissionAction};
 
   const bool primaryAdded =
-      nodeA ? peers->addPeerFromRoot(crypto, &primary, kRootKey, 1, &primaryAcl,
+      nodeA ? peers->addPeerFromRoot(&primary, kRootKey, 1, &primaryAcl,
                                      1, primaryPeer)
-            : peers->addPeer(crypto, &primary, kPrimaryPeerKey, 1, &primaryAcl,
+            : peers->addPeer(&primary, kPrimaryPeerKey, 1, &primaryAcl,
                              1, primaryPeer);
   const bool actionAdded =
-      nodeA ? peers->addPeer(crypto, &action, kActionPeerKey, 1, &actionAcl, 1,
+      nodeA ? peers->addPeer(&action, kActionPeerKey, 1, &actionAcl, 1,
                              actionPeer)
-            : peers->addPeerFromRoot(crypto, &action, kRootKey, 1, &actionAcl,
+            : peers->addPeerFromRoot(&action, kRootKey, 1, &actionAcl,
                                      1, actionPeer);
   return primaryAdded && actionAdded && *primaryPeer == 0 && *actionPeer == 1;
 }

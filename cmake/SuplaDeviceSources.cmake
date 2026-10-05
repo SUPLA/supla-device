@@ -59,6 +59,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/notifications.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/enter_cfg_mode_after_power_cycle.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/register_device.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/device/server_identity.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/factory_test.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/security_logger.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/supla_ca_cert.cpp

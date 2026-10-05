@@ -650,3 +650,12 @@ TEST(KeyValueTests, addEraseAddTest) {
   EXPECT_TRUE(kvStorage.getInt32("key100", &result32));
   EXPECT_EQ(result32, 5000);
 }
+
+TEST(KeyValueTests, SerializationFailsInsteadOfSilentlyOmittingLargeElement) {
+  KeyValueTest config;
+  ASSERT_TRUE(config.setString("first", "small"));
+  std::array<char, 100> value = {};
+  ASSERT_TRUE(config.setBlob("large", value.data(), value.size()));
+  std::array<uint8_t, 64> buffer = {};
+  EXPECT_EQ(config.serializeToMemory(buffer.data(), buffer.size()), SIZE_MAX);
+}

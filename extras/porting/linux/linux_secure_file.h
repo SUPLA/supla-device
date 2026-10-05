@@ -12,7 +12,8 @@ namespace Supla::Linux {
 bool writeSecureFile(const std::string& path,
                      const void* data,
                      std::size_t size,
-                     bool append);
+                     bool append,
+                     bool durable = false);
 
 }  // namespace Supla::Linux
 

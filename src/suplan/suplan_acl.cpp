@@ -83,11 +83,11 @@ bool PeerTable::setInitialAcl(PeerRecord *peer, uint32_t revision,
   return true;
 }
 
-bool PeerTable::addPeer(CryptoPort *crypto, const PeerContext *context,
+bool PeerTable::addPeer(const PeerContext *context,
                         const uint8_t peerKey[32],
                         uint32_t aclRevision, const AclEntry *entries,
                         uint8_t entryCount, uint8_t *peerIndex) {
-  if (crypto == nullptr || context == nullptr || peerKey == nullptr ||
+  if (context == nullptr || peerKey == nullptr ||
       peerIndex == nullptr ||
       !validPeerContext(context) || peerCount_ >= SUPLAN_MAX_PERSISTENT_PEERS ||
       !validEntries(entries, entryCount) ||
@@ -109,7 +109,7 @@ bool PeerTable::addPeer(CryptoPort *crypto, const PeerContext *context,
   memset(candidate, 0, sizeof(*candidate));
   memcpy(candidate->contextBytes, candidateContext, sizeof(candidateContext));
   PeerMaterial material = {};
-  if (!derivePeerMaterialFromKey(crypto, context, peerKey, &material) ||
+  if (!derivePeerMaterialFromKey(context, peerKey, &material) ||
       findByLocator(material.peerLocator) != -1 ||
       !setInitialAcl(candidate, aclRevision, entries, entryCount)) {
     memset(candidate, 0, sizeof(*candidate));
@@ -123,13 +123,12 @@ bool PeerTable::addPeer(CryptoPort *crypto, const PeerContext *context,
   return true;
 }
 
-bool PeerTable::addPeerFromRoot(CryptoPort *crypto,
-                                const PeerContext *context,
+bool PeerTable::addPeerFromRoot(const PeerContext *context,
                                 const uint8_t rootKey[32],
                                 uint32_t aclRevision,
                                 const AclEntry *entries,
                                 uint8_t entryCount, uint8_t *peerIndex) {
-  if (crypto == nullptr || context == nullptr || rootKey == nullptr ||
+  if (context == nullptr || rootKey == nullptr ||
       peerIndex == nullptr || peerCount_ >= SUPLAN_MAX_PERSISTENT_PEERS ||
       !validPeerContext(context) || !validEntries(entries, entryCount) ||
       static_cast<uint16_t>(aclEntryCount_) + entryCount >
@@ -150,7 +149,7 @@ bool PeerTable::addPeerFromRoot(CryptoPort *crypto,
   memset(candidate, 0, sizeof(*candidate));
   memcpy(candidate->contextBytes, candidateContext, sizeof(candidateContext));
   PeerMaterial material = {};
-  if (!derivePeerMaterial(crypto, context, rootKey, &material) ||
+  if (!derivePeerMaterial(context, rootKey, &material) ||
       findByLocator(material.peerLocator) != -1 ||
       !setInitialAcl(candidate, aclRevision, entries, entryCount)) {
     memset(candidate, 0, sizeof(*candidate));
@@ -276,13 +275,13 @@ const PeerRecord *PeerTable::get(uint8_t peerIndex) const {
   return &peers_[peerIndex];
 }
 
-bool PeerTable::materialFor(CryptoPort *crypto, uint8_t peerIndex,
+bool PeerTable::materialFor(uint8_t peerIndex,
                             PeerMaterial *material) const {
   const PeerRecord *peer = get(peerIndex);
   PeerContext context = {};
-  return crypto != nullptr && peer != nullptr && material != nullptr &&
+  return peer != nullptr && material != nullptr &&
       decodePeerContext(peer->contextBytes, &context) &&
-      derivePeerMaterialFromKey(crypto, &context, peer->peerKey, material);
+      derivePeerMaterialFromKey(&context, peer->peerKey, material);
 }
 
 uint8_t PeerTable::size() const {

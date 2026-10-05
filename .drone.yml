@@ -191,6 +191,8 @@ steps:
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./ThermostatBasic/
   - cd ../..
   - python3 extras/tools/check_class_sizes.py --platform esp8266
+  - python3 extras/test/ArduinoTests/run_validation.py --platform esp8266
+  - python3 extras/test/ArduinoTests/run_validation.py --platform esp8266 --sketch SupLanD2D
 
 - name: arduino_esp32_compilation_check_part_1
   image: devel/arduino-cli
@@ -277,6 +279,8 @@ steps:
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-path /drone/arduino_cache  --export-binaries --warnings all ./RGB_CCT/
   - cd ../..
   - python3 extras/tools/check_class_sizes.py --platform esp32
+  - python3 extras/test/ArduinoTests/run_validation.py --platform esp32
+  - python3 extras/test/ArduinoTests/run_validation.py --platform esp32 --sketch SupLanD2D
 
 
 - name: arduino_mega_compilation_check

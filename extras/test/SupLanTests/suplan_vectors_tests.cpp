@@ -9,6 +9,8 @@
 #include <suplan/suplan_wire.h>
 
 #include <gtest/gtest.h>
+#include <supla/crypto.h>
+#include <supla/sha256.h>
 
 #include <array>
 #include <cstdint>
@@ -125,14 +127,13 @@ TEST(SupLanWire, ServerClientAndLocalContextsMatchFixedVectors) {
             fromHex("02010203040506070803000003e903000003ea00"
                 "00000100000001"));
 
-  VectorCryptoPort crypto;
   std::array<uint8_t, 32> root = {};
   for (uint8_t i = 0; i < root.size(); ++i) {
     root[i] = i;
   }
   PeerMaterial material = {};
   ASSERT_TRUE(Supla::SupLan::derivePeerMaterial(
-      &crypto, &client, root.data(), &material));
+      &client, root.data(), &material));
   EXPECT_EQ(std::vector<uint8_t>(
                 material.contextHash,
                 material.contextHash + sizeof(material.contextHash)),
@@ -148,7 +149,7 @@ TEST(SupLanWire, ServerClientAndLocalContextsMatchFixedVectors) {
             fromHex("0354d4eb9b964b9c3602751e46751094"));
 
   ASSERT_TRUE(Supla::SupLan::derivePeerMaterial(
-      &crypto, &local, root.data(), &material));
+      &local, root.data(), &material));
   EXPECT_EQ(std::vector<uint8_t>(
                 material.contextHash,
                 material.contextHash + sizeof(material.contextHash)),
@@ -176,7 +177,6 @@ TEST(SupLanWire, PeerContextEnforcesV1AuthorityAddressRoleMatrix) {
   local.rootEpoch = 1;
   local.peerGeneration = 1;
 
-  VectorCryptoPort crypto;
   std::array<uint8_t, 32> rootKey = {};
   std::array<uint8_t, 32> peerKey = {};
   for (uint8_t i = 0; i < rootKey.size(); ++i) {
@@ -236,18 +236,18 @@ TEST(SupLanWire, PeerContextEnforcesV1AuthorityAddressRoleMatrix) {
         Supla::SupLan::PeerTable fromRootKey;
         if (expected) {
           EXPECT_TRUE(fromPeerKey.addPeer(
-              &crypto, &context, peerKey.data(), 1, &acl, 1, &index));
+              &context, peerKey.data(), 1, &acl, 1, &index));
           EXPECT_EQ(fromPeerKey.size(), 1);
           index = 0xFF;
           EXPECT_TRUE(fromRootKey.addPeerFromRoot(
-              &crypto, &context, rootKey.data(), 1, &acl, 1, &index));
+              &context, rootKey.data(), 1, &acl, 1, &index));
           EXPECT_EQ(fromRootKey.size(), 1);
         } else {
           EXPECT_FALSE(fromPeerKey.addPeer(
-              &crypto, &context, peerKey.data(), 1, &acl, 1, &index));
+              &context, peerKey.data(), 1, &acl, 1, &index));
           EXPECT_EQ(fromPeerKey.size(), 0);
           EXPECT_FALSE(fromRootKey.addPeerFromRoot(
-              &crypto, &context, rootKey.data(), 1, &acl, 1, &index));
+              &context, rootKey.data(), 1, &acl, 1, &index));
           EXPECT_EQ(fromRootKey.size(), 0);
         }
       }
@@ -269,7 +269,6 @@ TEST(SupLanWire, PeerContextEnforcesV1AuthorityAddressRoleMatrix) {
 }
 
 TEST(SupLanWire, InvalidStoredPeerContextCannotBeFoundByLocator) {
-  VectorCryptoPort crypto;
   const PeerContext context = serverPeer();
   std::array<uint8_t, 32> rootKey = {};
   for (uint8_t i = 0; i < rootKey.size(); ++i) {
@@ -282,21 +281,20 @@ TEST(SupLanWire, InvalidStoredPeerContextCannotBeFoundByLocator) {
 
   Supla::SupLan::PeerTable peers;
   uint8_t peerIndex = 0;
-  ASSERT_TRUE(peers.addPeerFromRoot(&crypto, &context, rootKey.data(), 1,
+  ASSERT_TRUE(peers.addPeerFromRoot(&context, rootKey.data(), 1,
                                     &acl, 1, &peerIndex));
   Supla::SupLan::PeerMaterial material = {};
-  ASSERT_TRUE(peers.materialFor(&crypto, peerIndex, &material));
+  ASSERT_TRUE(peers.materialFor(peerIndex, &material));
   ASSERT_EQ(peers.findByLocator(material.peerLocator), peerIndex);
 
   Supla::SupLan::PeerRecord *peer = peers.get(peerIndex);
   ASSERT_NE(peer, nullptr);
   peer->contextBytes[9] = Supla::SupLan::kNodeIdClient;
   EXPECT_EQ(peers.findByLocator(material.peerLocator), -1);
-  EXPECT_FALSE(peers.materialFor(&crypto, peerIndex, &material));
+  EXPECT_FALSE(peers.materialFor(peerIndex, &material));
 }
 
 TEST(SupLanCrypto, ServerDevicePeerDerivationMatchesFixedVector) {
-  VectorCryptoPort crypto;
   const PeerContext context = serverPeer();
   std::array<uint8_t, 32> root = {};
   for (uint8_t i = 0; i < root.size(); ++i) {
@@ -304,14 +302,14 @@ TEST(SupLanCrypto, ServerDevicePeerDerivationMatchesFixedVector) {
   }
   PeerMaterial material = {};
   ASSERT_TRUE(Supla::SupLan::derivePeerMaterial(
-      &crypto, &context, root.data(), &material));
+      &context, root.data(), &material));
   EXPECT_EQ(std::vector<uint8_t>(material.contextHash,
                                  material.contextHash + 32),
             fromHex("d1d3ac62106e821f22fc31efc1f0a5f7045f00b0"
                 "852a9d1dae375db9b0329213"));
   uint8_t rootPrk[32];
   ASSERT_TRUE(Supla::SupLan::hkdfExtract(
-      &crypto, material.contextHash, sizeof(material.contextHash),
+      material.contextHash, sizeof(material.contextHash),
       root.data(), root.size(), rootPrk));
   EXPECT_EQ(std::vector<uint8_t>(rootPrk, rootPrk + sizeof(rootPrk)),
             fromHex("74f6ada86dd5405813d18743d03b9841141b1623"
@@ -321,7 +319,7 @@ TEST(SupLanCrypto, ServerDevicePeerDerivationMatchesFixedVector) {
                 "4a5fcee5474636357ca7e985"));
   uint8_t peerPrk[32];
   ASSERT_TRUE(Supla::SupLan::hkdfExtract(
-      &crypto, material.contextHash, sizeof(material.contextHash),
+      material.contextHash, sizeof(material.contextHash),
       material.peerKey, sizeof(material.peerKey), peerPrk));
   EXPECT_EQ(std::vector<uint8_t>(peerPrk, peerPrk + sizeof(peerPrk)),
             fromHex("4f2fc5494644d96dee08ea00927c80224e3b9ea2"
@@ -344,7 +342,6 @@ TEST(SupLanCrypto, ServerDevicePeerDerivationMatchesFixedVector) {
 }
 
 TEST(SupLanProfile, StaticPeerKeysMatchRootDerivationAndFixedVector) {
-  VectorCryptoPort crypto;
   Supla::SupLan::PeerTable nodeA;
   Supla::SupLan::PeerTable nodeB;
   uint8_t primaryA = 0;
@@ -352,14 +349,14 @@ TEST(SupLanProfile, StaticPeerKeysMatchRootDerivationAndFixedVector) {
   uint8_t primaryB = 0;
   uint8_t actionB = 0;
   ASSERT_TRUE(Supla::SupLan::Poc1::configurePeerTable(
-      &crypto, &nodeA, true, &primaryA, &actionA));
+      &nodeA, true, &primaryA, &actionA));
   ASSERT_TRUE(Supla::SupLan::Poc1::configurePeerTable(
-      &crypto, &nodeB, false, &primaryB, &actionB));
+      &nodeB, false, &primaryB, &actionB));
 
   Supla::SupLan::PeerMaterial primaryMaterialA = {};
   Supla::SupLan::PeerMaterial primaryMaterialB = {};
-  ASSERT_TRUE(nodeA.materialFor(&crypto, primaryA, &primaryMaterialA));
-  ASSERT_TRUE(nodeB.materialFor(&crypto, primaryB, &primaryMaterialB));
+  ASSERT_TRUE(nodeA.materialFor(primaryA, &primaryMaterialA));
+  ASSERT_TRUE(nodeB.materialFor(primaryB, &primaryMaterialB));
   const std::vector<uint8_t> expectedPrimaryKey = fromHex(
       "615620310e8a6abbf50536fdcb665e96341e8881"
       "4a5fcee5474636357ca7e985");
@@ -379,8 +376,8 @@ TEST(SupLanProfile, StaticPeerKeysMatchRootDerivationAndFixedVector) {
 
   Supla::SupLan::PeerMaterial actionMaterialA = {};
   Supla::SupLan::PeerMaterial actionMaterialB = {};
-  ASSERT_TRUE(nodeA.materialFor(&crypto, actionA, &actionMaterialA));
-  ASSERT_TRUE(nodeB.materialFor(&crypto, actionB, &actionMaterialB));
+  ASSERT_TRUE(nodeA.materialFor(actionA, &actionMaterialA));
+  ASSERT_TRUE(nodeB.materialFor(actionB, &actionMaterialB));
   EXPECT_EQ(std::memcmp(actionMaterialA.peerKey, actionMaterialB.peerKey, 32),
             0);
   EXPECT_EQ(std::memcmp(actionMaterialA.peerLocator,
@@ -388,7 +385,6 @@ TEST(SupLanProfile, StaticPeerKeysMatchRootDerivationAndFixedVector) {
 }
 
 TEST(SupLanCrypto, LocateMacsAndFramesMatchFixedVectors) {
-  VectorCryptoPort crypto;
   PeerMaterial material = {};
   const auto locator = fromHex("46521d2f6e26c5015da7c5748b606850");
   const auto locateKey = fromHex(
@@ -402,7 +398,7 @@ TEST(SupLanCrypto, LocateMacsAndFramesMatchFixedVectors) {
   }
   uint8_t mac[16];
   ASSERT_TRUE(Supla::SupLan::locateQueryMac(
-      &crypto, &material, 1, Supla::SupLan::kFrameLocate, nonce, mac));
+      &material, 1, Supla::SupLan::kFrameLocate, nonce, mac));
   EXPECT_EQ(std::vector<uint8_t>(mac, mac + sizeof(mac)),
             fromHex("8b1dd4da9c29ffe4d0a1c6c1895a4eb1"));
   uint8_t locate[50];
@@ -414,7 +410,7 @@ TEST(SupLanCrypto, LocateMacsAndFramesMatchFixedVectors) {
                 "ffe4d0a1c6c1895a4eb1"));
 
   ASSERT_TRUE(Supla::SupLan::locateReplyMac(
-      &crypto, &material, 1, Supla::SupLan::kFrameLocateReply, nonce, mac));
+      &material, 1, Supla::SupLan::kFrameLocateReply, nonce, mac));
   EXPECT_EQ(std::vector<uint8_t>(mac, mac + sizeof(mac)),
             fromHex("fed3613442b3459351ef93febcfa9c4b"));
   uint8_t reply[34];
@@ -430,7 +426,6 @@ TEST(SupLanCrypto, LocateMacsAndFramesMatchFixedVectors) {
 }
 
 TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
-  VectorCryptoPort crypto;
   const auto peerKey = fromHex(
       "615620310e8a6abbf50536fdcb665e96341e8881"
           "4a5fcee5474636357ca7e985");
@@ -450,7 +445,7 @@ TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
   init.rxMaxReassembledFrame = SUPLAN_RX_MAX_REASSEMBLED_FRAME;
   uint8_t encodedInit[Supla::SupLan::kSessionInitSize];
   ASSERT_TRUE(Supla::SupLan::encodeSessionInit(
-      &crypto, initKey.data(), &init, encodedInit));
+      initKey.data(), &init, encodedInit));
   EXPECT_EQ(std::vector<uint8_t>(encodedInit,
                                  encodedInit + sizeof(encodedInit)),
             fromHex("010346521d2f6e26c5015da7c5748b6068500001"
@@ -458,7 +453,7 @@ TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
                 "00a3cc88271c9a3d94afeba2db8f8ed286"));
   Supla::SupLan::SessionInit decodedInit = {};
   ASSERT_TRUE(Supla::SupLan::decodeSessionInit(
-      &crypto, initKey.data(), encodedInit, sizeof(encodedInit), &decodedInit));
+      initKey.data(), encodedInit, sizeof(encodedInit), &decodedInit));
   EXPECT_EQ(decodedInit.featureBits, 0U);
 
   Supla::SupLan::SessionAccept accept = {};
@@ -472,7 +467,7 @@ TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
       SUPLAN_RX_MAX_REASSEMBLED_FRAME;
   uint8_t encodedAccept[Supla::SupLan::kSessionAcceptSize];
   ASSERT_TRUE(Supla::SupLan::encodeSessionAccept(
-      &crypto, acceptKey.data(), encodedInit, &accept, encodedAccept));
+      acceptKey.data(), encodedInit, &accept, encodedAccept));
   EXPECT_EQ(std::vector<uint8_t>(encodedAccept,
                                  encodedAccept + sizeof(encodedAccept)),
             fromHex("010446521d2f6e26c5015da7c5748b6068501011"
@@ -481,19 +476,19 @@ TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
                 "69a5004dea"));
   Supla::SupLan::SessionAccept decodedAccept = {};
   ASSERT_TRUE(Supla::SupLan::decodeSessionAccept(
-      &crypto, acceptKey.data(), encodedInit, &decodedInit, encodedAccept,
+      acceptKey.data(), encodedInit, &decodedInit, encodedAccept,
       sizeof(encodedAccept), &decodedAccept));
 
   const auto contextBytes = fromHex(
       "01000000000000000001000003e901000003ea00"
           "00000100000001");
   uint8_t contextHash[32];
-  ASSERT_TRUE(crypto.sha256(contextBytes.data(), contextBytes.size(),
+  ASSERT_TRUE(Supla::Sha256::calculate(contextBytes.data(), contextBytes.size(),
                             contextHash));
   Supla::SupLan::SessionKeys keys = {};
   uint8_t transcriptHash[32];
   ASSERT_TRUE(Supla::SupLan::deriveSessionKeys(
-      &crypto, peerKey.data(), contextHash, init.ni, accept.nr,
+      peerKey.data(), contextHash, init.ni, accept.nr,
       encodedInit, sizeof(encodedInit), encodedAccept, sizeof(encodedAccept),
       accept.sessionId, &keys, transcriptHash));
   EXPECT_EQ(std::vector<uint8_t>(transcriptHash, transcriptHash + 32),
@@ -504,7 +499,7 @@ TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
   std::memcpy(sessionSalt, init.ni, sizeof(init.ni));
   std::memcpy(sessionSalt + sizeof(init.ni), accept.nr, sizeof(accept.nr));
   ASSERT_TRUE(Supla::SupLan::hkdfExtract(
-      &crypto, sessionSalt, sizeof(sessionSalt), peerKey.data(),
+      sessionSalt, sizeof(sessionSalt), peerKey.data(),
       peerKey.size(), sessionPrk));
   EXPECT_EQ(std::vector<uint8_t>(sessionPrk, sessionPrk + sizeof(sessionPrk)),
             fromHex("09d69c18215e0d9aaa5fc5dec9f67102ab857dc8"
@@ -527,12 +522,11 @@ TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
 
   encodedAccept[64] ^= 1;
   EXPECT_FALSE(Supla::SupLan::decodeSessionAccept(
-      &crypto, acceptKey.data(), encodedInit, &decodedInit, encodedAccept,
+      acceptKey.data(), encodedInit, &decodedInit, encodedAccept,
       sizeof(encodedAccept), &decodedAccept));
 }
 
 TEST(SupLanAcl, RevisionReplacementAndControlImpliesRead) {
-  VectorCryptoPort crypto;
   const auto peerKey = fromHex(
       "615620310e8a6abbf50536fdcb665e96341e8881"
           "4a5fcee5474636357ca7e985");
@@ -543,7 +537,7 @@ TEST(SupLanAcl, RevisionReplacementAndControlImpliesRead) {
   entry.resource.id = 50001;
   entry.permissions = Supla::SupLan::kPermissionControl;
   uint8_t index = 0;
-  ASSERT_TRUE(peers.addPeer(&crypto, &context, peerKey.data(), 1, &entry, 1,
+  ASSERT_TRUE(peers.addPeer(&context, peerKey.data(), 1, &entry, 1,
                             &index));
   EXPECT_EQ(peers.findByLocator(
                 fromHex("46521d2f6e26c5015da7c5748b606850").data()), 0);
@@ -868,11 +862,10 @@ TEST(SupLanFragmentation, RejectsMalformedRangesAndConflictingOverlap) {
   EXPECT_FALSE(receiver.active());
 }
 
-TEST(SupLanCrypto, OpenSslPrimitiveKnownAnswers) {
-  VectorCryptoPort crypto;
+TEST(SupLanCrypto, SharedPrimitiveKnownAnswers) {
   const uint8_t message[] = {'a', 'b', 'c'};
   uint8_t digest[32];
-  ASSERT_TRUE(crypto.sha256(message, sizeof(message), digest));
+  ASSERT_TRUE(Supla::Sha256::calculate(message, sizeof(message), digest));
   EXPECT_EQ(std::vector<uint8_t>(digest, digest + sizeof(digest)),
             fromHex("ba7816bf8f01cfea414140de5dae2223b00361a3"
                 "96177a9cb410ff61f20015ad"));
@@ -881,11 +874,12 @@ TEST(SupLanCrypto, OpenSslPrimitiveKnownAnswers) {
                            "0b" "0b" "0b" "0b" "0b" "0b" "0b" "0b"
                            "0b" "0b" "0b" "0b");
   const uint8_t hmacMessage[] = "Hi There";
-  ASSERT_TRUE(crypto.hmacSha256(key.data(), key.size(), hmacMessage,
+  ASSERT_TRUE(Supla::Crypto::hmacSha256(key.data(), key.size(), hmacMessage,
                                 sizeof(hmacMessage) - 1, digest));
   EXPECT_EQ(std::vector<uint8_t>(digest, digest + sizeof(digest)),
             fromHex("b0344c61d8db38535ca8afceaf0bf12b881dc200"
                 "c9833da726e9376c2e32cff7"));
 }
+
 
 }  // namespace

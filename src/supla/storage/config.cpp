@@ -454,8 +454,8 @@ int Config::getMqttCASize() {
   return size > 0 ? size - 1 : size;
 }
 
-void Config::commit() {
-  return;
+bool Config::commit() {
+  return false;
 }
 
 bool Config::generateGuidAndAuthkey() {

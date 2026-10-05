@@ -15,11 +15,6 @@ namespace SupLan {
 class CryptoPort {
  public:
   virtual ~CryptoPort() {}
-  virtual bool sha256(const uint8_t *data, size_t length,
-                      uint8_t output[32]) = 0;
-  virtual bool hmacSha256(const uint8_t *key, size_t keyLength,
-                          const uint8_t *data, size_t length,
-                          uint8_t output[32]) = 0;
   virtual bool aes128CcmEncrypt(const uint8_t key[16],
                                 const uint8_t nonce[12],
                                 const uint8_t *aad, size_t aadLength,
@@ -30,12 +25,6 @@ class CryptoPort {
                                 const uint8_t *aad, size_t aadLength,
                                 const uint8_t *cipher, size_t cipherLength,
                                 const uint8_t tag[16], uint8_t *plain) = 0;
-};
-
-class RandomPort {
- public:
-  virtual ~RandomPort() {}
-  virtual bool fillRandom(uint8_t *buffer, size_t length) = 0;
 };
 
 class DatagramPort {

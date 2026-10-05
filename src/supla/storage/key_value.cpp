@@ -174,6 +174,7 @@ size_t KeyValue::serializeToMemory(uint8_t* output, size_t outputMaxSize) {
           "sizeCount: %d",
           outputMaxSize,
           sizeCount);
+      return SIZE_MAX;
     }
     output += bytesWritten;
     sizeCount += bytesWritten;

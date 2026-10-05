@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2026 AC SOFTWARE SP. Z O.O.
 #include <gtest/gtest.h>
+#include <crypto_test_hooks.h>
 #include <suplan/suplan_crypto.h>
 #include <suplan/suplan_runtime.h>
 #include <suplan/suplan_wire.h>
@@ -55,21 +56,12 @@ using Supla::SupLan::PeerMaterial;
 using Supla::SupLan::PeerTable;
 using Supla::SupLan::putUint16;
 using Supla::SupLan::putUint32;
-using Supla::SupLan::RandomPort;
 using Supla::SupLan::ResourceId;
 using Supla::SupLan::Runtime;
 using Supla::SupLan::SessionAccept;
 using Supla::SupLan::SessionInit;
 using Supla::SupLan::SessionKeys;
 
-class Random : public RandomPort {
- public:
-  bool fillRandom(uint8_t *out, size_t length) override {
-    for (size_t i = 0; i < length; ++i) out[i] = ++next;
-    return true;
-  }
-  uint8_t next = 0;
-};
 class Transport : public DatagramPort {
  public:
   bool sendUnicast(const Endpoint &, const uint8_t *data,
@@ -117,7 +109,7 @@ class Application : public ApplicationPort {
 class DirectionalPeer : public ::testing::Test {
  protected:
   DirectionalPeer()
-      : runtime(&crypto, &random, &transport, &application, &peers,
+      : runtime(&crypto, &transport, &application, &peers,
                 NodeAddress{kNodeIdDevice, 1001}, 27) {}
   void SetUp() override {
     const PeerContext context = {
@@ -128,8 +120,8 @@ class DirectionalPeer : public ::testing::Test {
                                        kPermissionAction)};
     uint8_t root[32] = {};
     ASSERT_TRUE(
-        peers.addPeerFromRoot(&crypto, &context, root, 1, &acl, 1, &peer));
-    ASSERT_TRUE(peers.materialFor(&crypto, peer, &material));
+        peers.addPeerFromRoot(&context, root, 1, &acl, 1, &peer));
+    ASSERT_TRUE(peers.materialFor(peer, &material));
   }
   void establish(uint16_t remoteLimit, bool localInitiator) {
     SessionInit init = {};
@@ -148,7 +140,7 @@ class DirectionalPeer : public ::testing::Test {
       ASSERT_FALSE(transport.sent.empty());
       ASSERT_EQ(transport.sent.back().size(), kSessionInitSize);
       std::memcpy(initFrame, transport.sent.back().data(), sizeof(initFrame));
-      ASSERT_TRUE(decodeSessionInit(&crypto, material.initMacKey, initFrame,
+      ASSERT_TRUE(decodeSessionInit(material.initMacKey, initFrame,
                                     sizeof(initFrame), &init));
       EXPECT_EQ(init.rxMaxReassembledFrame, 2048);
     } else {
@@ -157,7 +149,7 @@ class DirectionalPeer : public ::testing::Test {
       init.suplaProtoVersionMax = 27;
       init.rxMaxReassembledFrame = remoteLimit;
       ASSERT_TRUE(
-          encodeSessionInit(&crypto, material.initMacKey, &init, initFrame));
+          encodeSessionInit(material.initMacKey, &init, initFrame));
       transport.incoming.emplace_back(initFrame, initFrame + sizeof(initFrame));
       transport.sent.clear();
       runtime.iterate();
@@ -165,7 +157,7 @@ class DirectionalPeer : public ::testing::Test {
       ASSERT_EQ(transport.sent.back().size(), kSessionAcceptSize);
       std::memcpy(acceptFrame, transport.sent.back().data(),
                   sizeof(acceptFrame));
-      ASSERT_TRUE(decodeSessionAccept(&crypto, material.acceptMacKey, initFrame,
+      ASSERT_TRUE(decodeSessionAccept(material.acceptMacKey, initFrame,
                                       &init, acceptFrame, sizeof(acceptFrame),
                                       &accept));
       EXPECT_EQ(accept.responderRxMaxReassembledFrame, 2048);
@@ -176,7 +168,7 @@ class DirectionalPeer : public ::testing::Test {
       accept.sessionId = ++sessionId;
       accept.selectedSuplaProtoVersion = 27;
       accept.responderRxMaxReassembledFrame = remoteLimit;
-      ASSERT_TRUE(encodeSessionAccept(&crypto, material.acceptMacKey, initFrame,
+      ASSERT_TRUE(encodeSessionAccept(material.acceptMacKey, initFrame,
                                       &accept, acceptFrame));
       transport.incoming.emplace_back(acceptFrame,
                                       acceptFrame + sizeof(acceptFrame));
@@ -185,7 +177,7 @@ class DirectionalPeer : public ::testing::Test {
     sessionId = accept.sessionId;
     uint8_t transcriptHash[32];
     ASSERT_TRUE(deriveSessionKeys(
-        &crypto, material.peerKey, material.contextHash, init.ni, accept.nr,
+        material.peerKey, material.contextHash, init.ni, accept.nr,
         initFrame, sizeof(initFrame), acceptFrame, sizeof(acceptFrame),
         sessionId, &keys, transcriptHash));
     remoteTransmit =
@@ -223,8 +215,8 @@ class DirectionalPeer : public ::testing::Test {
         peer, resource, kSuplaCallDeviceChannelExtendedValueChanged, prefix,
         sizeof(prefix), value.data(), value.size());
   }
+  ScopedCryptoTestState rng{1};
   OpenSslCryptoPort crypto;
-  Random random;
   Transport transport;
   Application application;
   PeerTable peers;
@@ -263,7 +255,7 @@ TEST_F(DirectionalPeer, RejectsLimitsBelowProtocolMinimum) {
   init.suplaProtoVersionMax = 27;
   init.rxMaxReassembledFrame = 1023;
   EXPECT_FALSE(
-      encodeSessionInit(&crypto, material.initMacKey, &init, initFrame));
+      encodeSessionInit(material.initMacKey, &init, initFrame));
 }
 TEST_F(DirectionalPeer, InboundReassemblyRemainsLocal) {
   uint8_t first[32] = {};

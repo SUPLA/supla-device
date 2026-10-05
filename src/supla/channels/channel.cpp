@@ -40,6 +40,9 @@ int Supla::Channel::getStartingChannelNumber() {
   return startingChannelNumber;
 }
 
+uint32_t Channel::registrationChanges = 0;
+uint32_t Channel::identityChanges = 0;
+
 Channel::Channel(int number) {
   if (firstPtr == nullptr) {
     firstPtr = this;
@@ -69,6 +72,10 @@ Channel::Channel(int number) {
 }
 
 Channel::~Channel() {
+  ++registrationChanges;
+  if (serverChannelId) {
+    ++identityChanges;
+  }
   Supla::RegisterDevice::removeChannel(channelNumber);
   if (initialCaption != nullptr) {
     delete[] initialCaption;
@@ -121,6 +128,11 @@ bool Channel::setChannelNumber(int newChannelNumber) {
   }
   if (newChannelNumber == oldChannelNumber) {
     return true;
+  }
+  ++registrationChanges;
+  if (serverChannelId) {
+    ++identityChanges;
+    serverChannelId = 0;
   }
   if (!Supla::RegisterDevice::isChannelNumberFree(newChannelNumber)) {
     channelNumber = -1;

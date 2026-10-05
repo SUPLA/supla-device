@@ -90,7 +90,6 @@ class EspIdfTransportLifecycle
 };
 
 static Supla::SupLan::MbedTlsCryptoPort crypto;
-static Supla::SupLan::EspIdfRandomPort randomPort;
 static Supla::SupLan::PeerTable peers;
 static EspIdfTransportLifecycle transport;
 static uint8_t primaryPeer = 0;
@@ -147,14 +146,14 @@ void applicationEvent(
 
 bool setupSupLan() {
   if (!Supla::SupLan::Poc1::configurePeerTable(
-          &crypto, &peers, kNodeA, &primaryPeer, &actionPeer)) {
+          &peers, kNodeA, &primaryPeer, &actionPeer)) {
     return false;
   }
   const ResourceMapping* mapping = kNodeA ? &kMappingA : &kMappingB;
   protocol = new (protocolStorage) Protocol(
       &SuplaDevice, &peers, mapping, 1, applicationEvent, nullptr);
   runtime = new (runtimeStorage) Runtime(
-      &crypto, &randomPort, &datagrams, protocol, &peers,
+      &crypto, &datagrams, protocol, &peers,
       Supla::SupLan::Poc1::localNodeAddress(kNodeA),
       Supla::SupLan::kMinimumSuplaProtoVersion);
   protocol->attachRuntime(runtime);

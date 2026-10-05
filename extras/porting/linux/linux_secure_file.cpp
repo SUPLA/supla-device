@@ -19,7 +19,8 @@ constexpr mode_t kSecureFileMode = S_IRUSR | S_IWUSR;
 bool Supla::Linux::writeSecureFile(const std::string& path,
                                    const void* data,
                                    std::size_t size,
-                                   bool append) {
+                                   bool append,
+                                   bool durable) {
   int flags = O_WRONLY | O_CREAT | O_CLOEXEC | O_NOFOLLOW;
   if (append) {
     flags |= O_APPEND;
@@ -57,9 +58,25 @@ bool Supla::Linux::writeSecureFile(const std::string& path,
     }
   }
 
+  if (success && durable && ::fsync(fd) != 0) {
+    success = false;
+  }
+
   if (::close(fd) != 0) {
     success = false;
   }
 
+  if (success && durable) {
+    const auto slash = path.find_last_of('/');
+    const std::string directory = slash == std::string::npos
+                                      ? "." : path.substr(0, slash + 1);
+    const int directoryFd = ::open(directory.c_str(), O_RDONLY | O_DIRECTORY);
+    if (directoryFd == -1) {
+      return false;
+    }
+    const bool synced = ::fsync(directoryFd) == 0;
+    const bool closed = ::close(directoryFd) == 0;
+    success = synced && closed;
+  }
   return success;
 }

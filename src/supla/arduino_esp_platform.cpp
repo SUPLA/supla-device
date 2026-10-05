@@ -12,6 +12,8 @@
 #include <supla/clock/clock.h>
 #include <SuplaDevice.h>
 
+#include <supla/crypto.h>
+
 #include "tools.h"
 #include "supla/network/client.h"
 
@@ -224,11 +226,9 @@ int Supla::getPlatformId() {
 }
 
 void Supla::fillRandom(uint8_t *buffer, int size) {
-#if defined(ARDUINO_ARCH_ESP8266)
-  ESP.random(buffer, size);
-#else
-  esp_fill_random(buffer, size);
-#endif
+  if (size >= 0) {
+    Supla::Crypto::fillRandom(buffer, static_cast<size_t>(size));
+  }
 }
 
 #endif

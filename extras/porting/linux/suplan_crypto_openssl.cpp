@@ -3,56 +3,12 @@
 
 #include "suplan_crypto_openssl.h"
 
-#include <openssl/core_names.h>
 #include <openssl/evp.h>
-#include <openssl/params.h>
-#include <openssl/rand.h>
 
 #include <climits>
 
 namespace Supla {
 namespace SupLan {
-
-bool OpenSslCryptoPort::sha256(const uint8_t *data, size_t length,
-                              uint8_t output[32]) {
-  if ((data == nullptr && length != 0) || output == nullptr) {
-    return false;
-  }
-  unsigned int outputLength = 0;
-  return EVP_Digest(data, length, output, &outputLength, EVP_sha256(),
-                    nullptr) == 1 && outputLength == 32;
-}
-
-bool OpenSslCryptoPort::hmacSha256(const uint8_t *key, size_t keyLength,
-                                  const uint8_t *data, size_t length,
-                                  uint8_t output[32]) {
-  if (key == nullptr || output == nullptr ||
-      (data == nullptr && length != 0)) {
-    return false;
-  }
-  EVP_MAC *mac = EVP_MAC_fetch(nullptr, "HMAC", nullptr);
-  if (mac == nullptr) {
-    return false;
-  }
-  EVP_MAC_CTX *context = EVP_MAC_CTX_new(mac);
-  EVP_MAC_free(mac);
-  if (context == nullptr) {
-    return false;
-  }
-  char digestName[] = "SHA256";
-  OSSL_PARAM params[] = {
-      OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST,
-                                       digestName, 0),
-      OSSL_PARAM_construct_end(),
-  };
-  size_t outputLength = 0;
-  bool result = EVP_MAC_init(context, key, keyLength, params) == 1 &&
-      EVP_MAC_update(context, data, length) == 1 &&
-      EVP_MAC_final(context, output, &outputLength, 32) == 1 &&
-      outputLength == 32;
-  EVP_MAC_CTX_free(context);
-  return result;
-}
 
 bool OpenSslCryptoPort::aes128CcmEncrypt(
     const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad,
@@ -134,13 +90,6 @@ bool OpenSslCryptoPort::aes128CcmDecrypt(
   }
   EVP_CIPHER_CTX_free(context);
   return result;
-}
-
-bool OpenSslRandomPort::fillRandom(uint8_t *buffer, size_t length) {
-  if ((buffer == nullptr && length != 0) || length > INT_MAX) {
-    return false;
-  }
-  return length == 0 || RAND_bytes(buffer, static_cast<int>(length)) == 1;
 }
 
 }  // namespace SupLan

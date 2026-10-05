@@ -62,7 +62,7 @@ class ConfigMock : public Supla::Config {
               setUInt32,
               (const char* key, const uint32_t value),
               (override));
-  MOCK_METHOD(void, commit, (), (override));
+  MOCK_METHOD(bool, commit, (), (override));
   MOCK_METHOD(void, saveWithDelay, (uint16_t delayMs), (override));
   MOCK_METHOD(void, saveIfNeeded, (), (override));
   MOCK_METHOD(bool, generateGuidAndAuthkey, (), (override));

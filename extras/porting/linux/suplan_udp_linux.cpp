@@ -82,6 +82,27 @@ bool LinuxUdpPort::open(const char *bindAddress, uint16_t port,
     close();
     return false;
   }
+  // Binding a source IP alone does not select the egress interface when
+  // Ethernet and Wi-Fi share a subnet. Keep explicit unicast selection on
+  // the same interface that enumerateMulticastInterfaces selects for LOCATE.
+  if (!automaticInterfaceSelection_) {
+    uint32_t addresses[kMaxMulticastInterfaces] = {};
+    uint32_t indexes[kMaxMulticastInterfaces] = {};
+    size_t count = 0;
+    if (!enumerateMulticastInterfaces(addresses, indexes,
+                                      kMaxMulticastInterfaces, &count)) {
+      close();
+      return false;
+    }
+    if (count != 0) {
+      const uint32_t index = htonl(indexes[0]);
+      if (setsockopt(socket_, IPPROTO_IP, IP_UNICAST_IF,
+                     &index, sizeof(index)) != 0) {
+        close();
+        return false;
+      }
+    }
+  }
   int reuse = 1;
   const bool unicastReuse = setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR,
                                        &reuse, sizeof(reuse)) == 0;

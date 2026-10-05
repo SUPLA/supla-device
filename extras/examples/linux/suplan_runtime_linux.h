@@ -47,7 +47,6 @@ class LinuxSupLanRuntime {
   uint8_t primaryPeer_ = 0;
   uint8_t actionPeer_ = 1;
   SupLan::OpenSslCryptoPort crypto_;
-  SupLan::OpenSslRandomPort random_;
   SupLan::LinuxUdpPort datagrams_;
   SupLan::PeerTable peers_;
   Protocol::SupLanResourceMapping mapping_ = {};

@@ -5,6 +5,7 @@
 #define SRC_SUPLA_SHA256_H_
 
 #include <stdint.h>
+#include <stddef.h>
 
 /*
  * Simple platform SHA256 wrapper without exposing platform-specific types.
@@ -16,16 +17,13 @@ class Sha256 {
  public:
   Sha256();
   ~Sha256();
-  void update(const uint8_t *data, const int size);
-  void digest(uint8_t *output, int length = 32);
+  bool isValid() const { return ctx != nullptr; }
+  bool update(const uint8_t *data, const int size);
+  bool digest(uint8_t *output, int length = 32);
+  static bool calculate(const uint8_t *data, size_t size, uint8_t output[32]);
 
  protected:
-#ifndef SUPLA_TEST
   void *ctx;
-#else
-  uint8_t state[32];
-  uint32_t offset;
-#endif
 };
 
 };  // namespace Supla

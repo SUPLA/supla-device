@@ -18,7 +18,7 @@ class KeyValue : public Config {
  public:
   ~KeyValue();
   bool initFromMemory(uint8_t* input, size_t inputSize);
-  // returns size of written structure
+  // Returns size of written structure, or SIZE_MAX if any element does not fit.
   size_t serializeToMemory(uint8_t* output, size_t outputMaxSize);
   void removeAllMemory();
 

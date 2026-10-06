@@ -212,6 +212,8 @@ void setup() {
     protocolOk = protocolOk && validationCalls[i] == 1280 + 10 * i &&
                  srpc_call_min_version_required(nullptr, validationCalls[i]) == 29;
   }
+  protocolOk = protocolOk && validationCalls[8] == 1380 &&
+               srpc_call_min_version_required(nullptr, validationCalls[8]) == 29;
   Serial.printf("VALIDATION PROTO ok=%d\n", protocolOk);
   Supla::Sha256 hash;
   const uint8_t input[] = {'a', 'b', 'c'};

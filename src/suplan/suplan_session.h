@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLAN_SUPLAN_SESSION_H_
 #define SRC_SUPLAN_SUPLAN_SESSION_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -47,5 +49,7 @@ bool decodeSessionAccept(const uint8_t acceptMacKey[32],
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLAN_SUPLAN_SESSION_H_

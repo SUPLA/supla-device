@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "suplan_data.h"
 
 #include <string.h>
@@ -236,3 +238,5 @@ ProtectedDataResult decodeProtectedData(
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR

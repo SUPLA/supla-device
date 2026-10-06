@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2026 AC SOFTWARE SP. Z O.O.
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <supla/protocol/suplan_protocol.h>
 
 #include <string.h>
@@ -380,3 +382,5 @@ void SupLan::sendExtendedChannelValueChanged(
 
 }  // namespace Protocol
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR

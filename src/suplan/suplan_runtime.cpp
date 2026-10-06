@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "suplan_runtime.h"
 
 #include <string.h>
@@ -2667,3 +2669,5 @@ void Runtime::iterate() {
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR

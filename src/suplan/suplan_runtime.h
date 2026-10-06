@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLAN_SUPLAN_RUNTIME_H_
 #define SRC_SUPLAN_SUPLAN_RUNTIME_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -345,5 +347,7 @@ class Runtime {
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLAN_SUPLAN_RUNTIME_H_

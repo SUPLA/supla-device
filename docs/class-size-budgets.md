@@ -3,6 +3,9 @@
 `extras/tools/check_class_sizes.py` compiles a generated probe with the AVR
 Mega, ESP8266, ESP32, or host compiler. The probe contains `static_assert`
 checks for the classes listed in `extras/tools/class_size_budgets.json`.
+A missing platform limit excludes that class from the platform probe. SupLAN
+classes are excluded on AVR, where SupLAN is not supported or compiled. Other
+AVR class-size checks remain enabled.
 
 Run the fast host check with:
 

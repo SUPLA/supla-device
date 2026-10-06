@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "suplan_crypto.h"
 
 #include <string.h>
@@ -275,3 +277,5 @@ bool deriveSessionKeys(const uint8_t peerKey[32],
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR

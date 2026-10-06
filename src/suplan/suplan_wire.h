@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLAN_SUPLAN_WIRE_H_
 #define SRC_SUPLAN_SUPLAN_WIRE_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -37,5 +39,7 @@ bool decodeLocateReply(const uint8_t *input, size_t length,
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLAN_SUPLAN_WIRE_H_

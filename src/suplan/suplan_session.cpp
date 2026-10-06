@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "suplan_session.h"
 
 #include <supla/crypto.h>
@@ -160,3 +162,5 @@ bool decodeSessionAccept(const uint8_t acceptMacKey[32],
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR

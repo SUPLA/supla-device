@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLA_SUPLAN_SUPLAN_SERVER_IDENTITY_H_
 #define SRC_SUPLA_SUPLAN_SUPLAN_SERVER_IDENTITY_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <stdint.h>
 #include <supla-common/proto.h>
 
@@ -84,4 +86,6 @@ class ServerIdentity {
 
 }  // namespace Device
 }  // namespace Supla
+#endif  // !ARDUINO_ARCH_AVR
+
 #endif  // SRC_SUPLA_SUPLAN_SUPLAN_SERVER_IDENTITY_H_

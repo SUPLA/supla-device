@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLAN_SUPLAN_CRYPTO_H_
 #define SRC_SUPLAN_SUPLAN_CRYPTO_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -39,5 +41,7 @@ bool deriveSessionKeys(const uint8_t peerKey[32],
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLAN_SUPLAN_CRYPTO_H_

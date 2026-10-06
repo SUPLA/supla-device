@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2026 AC SOFTWARE SP. Z O.O.
 
+#ifndef ARDUINO_ARCH_AVR
+
 #if defined(ESP_PLATFORM) || defined(ARDUINO_ARCH_ESP32)
 
 #include "suplan_crypto_mbedtls.h"
@@ -116,3 +118,5 @@ bool MbedTlsCryptoPort::aes128CcmDecrypt(
 }  // namespace Supla
 
 #endif  // ESP_PLATFORM || ARDUINO_ARCH_ESP32
+
+#endif  // !ARDUINO_ARCH_AVR

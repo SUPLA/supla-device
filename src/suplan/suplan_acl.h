@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLAN_SUPLAN_ACL_H_
 #define SRC_SUPLAN_SUPLAN_ACL_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <stdint.h>
 
 #include "suplan_types.h"
@@ -81,5 +83,7 @@ class PeerTable {
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLAN_SUPLAN_ACL_H_

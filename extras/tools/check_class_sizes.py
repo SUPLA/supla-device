@@ -41,9 +41,11 @@ def load_budgets(path: Path) -> list[dict]:
         limits = item.get("limits")
         if not isinstance(limits, dict):
             raise ValueError(f"{item['name']}: limits must be an object")
-        for platform in PLATFORMS:
-            if not isinstance(limits.get(platform), int) or limits[platform] <= 0:
-                raise ValueError(f"{item['name']}: missing positive {platform} limit")
+        if not limits:
+            raise ValueError(f"{item['name']}: limits must not be empty")
+        for platform, limit in limits.items():
+            if platform not in PLATFORMS or not isinstance(limit, int) or limit <= 0:
+                raise ValueError(f"{item['name']}: invalid {platform} limit")
     return classes
 
 
@@ -343,7 +345,7 @@ def main() -> int:
 
     repo_root = Path(__file__).resolve().parents[2]
     budgets_path = args.budgets or Path(__file__).with_name("class_size_budgets.json")
-    classes = load_budgets(budgets_path)
+    all_classes = load_budgets(budgets_path)
     platforms = args.platform or ["host"]
     fqbn = dict(DEFAULT_FQBN)
     for value in args.fqbn or []:
@@ -362,6 +364,7 @@ def main() -> int:
     ) as directory:
         temp_root = Path(directory)
         for platform in platforms:
+            classes = [item for item in all_classes if platform in item["limits"]]
             if args.measure and platform == "host":
                 sizes = measure_host(repo_root, classes, temp_root)
                 for item, size in zip(classes, sizes):

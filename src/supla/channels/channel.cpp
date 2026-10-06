@@ -11,7 +11,9 @@
 #include <supla/correction.h>
 #include <math.h>
 #include <supla/device/register_device.h>
+#ifndef ARDUINO_ARCH_AVR
 #include <supla/device/server_identity.h>
+#endif  // !ARDUINO_ARCH_AVR
 
 #include <string.h>
 
@@ -73,9 +75,11 @@ Channel::Channel(int number) {
 }
 
 Channel::~Channel() {
+#ifndef ARDUINO_ARCH_AVR
   if (!Supla::Device::ServerIdentity::channelChanging(channelNumber, true)) {
     SUPLA_LOG_ERROR("Cannot persist removed SERVER Channel identity");
   }
+#endif  // !ARDUINO_ARCH_AVR
   ++registrationChanges;
   if (serverChannelId) {
     ++identityChanges;
@@ -133,6 +137,7 @@ bool Channel::setChannelNumber(int newChannelNumber) {
   if (newChannelNumber == oldChannelNumber) {
     return true;
   }
+#ifndef ARDUINO_ARCH_AVR
   auto conflict = GetByChannelNumber(newChannelNumber);
   if (conflict && conflict != this && conflict->serverChannelId &&
       !Supla::Device::ServerIdentity::channelChanging(newChannelNumber)) {
@@ -141,6 +146,7 @@ bool Channel::setChannelNumber(int newChannelNumber) {
   if (!Supla::Device::ServerIdentity::channelChanging(oldChannelNumber)) {
     return false;
   }
+#endif  // !ARDUINO_ARCH_AVR
   ++registrationChanges;
   if (serverChannelId) {
     ++identityChanges;

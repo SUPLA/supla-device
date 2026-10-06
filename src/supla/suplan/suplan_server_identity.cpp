@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <supla/suplan/suplan_server_identity.h>
 
 #include <inttypes.h>
@@ -595,3 +597,5 @@ bool Supla::Device::ServerIdentity::reverse(uint8_t channelNumber,
   *channelId = ch->serverChannelId;
   return true;
 }
+
+#endif  // !ARDUINO_ARCH_AVR

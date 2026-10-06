@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLAN_SUPLAN_CRYPTO_MBEDTLS_H_
 #define SRC_SUPLAN_SUPLAN_CRYPTO_MBEDTLS_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <suplan/suplan_ports.h>
 #include <suplan/suplan_config.h>
 
@@ -29,5 +31,7 @@ class MbedTlsCryptoPort : public CryptoPort {
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLAN_SUPLAN_CRYPTO_MBEDTLS_H_

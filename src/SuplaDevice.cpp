@@ -18,7 +18,9 @@
 #include <supla/device/register_device.h>
 #include <supla/device/remote_device_config.h>
 #include <supla/device/security_logger.h>
+#ifndef ARDUINO_ARCH_AVR
 #include <supla/device/server_identity.h>
+#endif  // !ARDUINO_ARCH_AVR
 #include <supla/device/status_led.h>
 #include <supla/device/subdevice_pairing_handler.h>
 #include <supla/device/sw_update.h>
@@ -1583,7 +1585,9 @@ void SuplaDeviceClass::resetToFactorySettings() {
     cfg->commit();
   }
 
+#ifndef ARDUINO_ARCH_AVR
   Supla::Device::ServerIdentity::factoryReset();
+#endif  // !ARDUINO_ARCH_AVR
 
   // cleanup state storage data
   // TODO(klew): add handling of persistant data (like energy counters)

@@ -1370,7 +1370,9 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
 }
 
 void Supla::Protocol::SuplaSrpc::onInit() {
+#ifndef ARDUINO_ARCH_AVR
   serverIdentityState.load(Supla::Storage::ConfigInstance());
+#endif  // !ARDUINO_ARCH_AVR
   if (!isEnabled()) {
     return;
   }
@@ -1840,7 +1842,9 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
     case SUPLA_RESULTCODE_IDENTIFY_REQUESTED:
       serverActivityTimeout = registerDeviceResult->activity_timeout;
       registered = 1;
+#ifndef ARDUINO_ARCH_AVR
       serverIdentityState.registrationSucceeded();
+#endif  // !ARDUINO_ARCH_AVR
       // A TCP connection alone is not enough to end the failure sequence.
       // Reset backoff only after the server accepts registration.
       reconnectAttemptCounter = 0;
@@ -1957,6 +1961,7 @@ void Supla::Protocol::SuplaSrpc::onSetActivityTimeoutResult(
   SUPLA_LOG_DEBUG("Activity timeout set to %d s", result->activity_timeout);
 }
 
+#ifndef ARDUINO_ARCH_AVR
 bool Supla::Protocol::SuplaSrpc::rotateServerRoot() {
   if (!serverIdentityState.rotateRoot()) {
     return false;
@@ -1964,6 +1969,7 @@ bool Supla::Protocol::SuplaSrpc::rotateServerRoot() {
   disconnect();
   return true;
 }
+#endif  // !ARDUINO_ARCH_AVR
 
 void Supla::Protocol::SuplaSrpc::onDeviceIdentities(
     const TSD_SuplaDeviceIdentities *snapshot) {
@@ -1971,6 +1977,9 @@ void Supla::Protocol::SuplaSrpc::onDeviceIdentities(
     return;
   }
   TDS_SuplaDeviceIdentitiesResult result = {};
+#ifdef ARDUINO_ARCH_AVR
+  result.Result = SUPLA_SUPLAN_RESULT_UNSUPPORTED;
+#else
   if (effectiveSrpcVersion(version) < 29 || !serverIdentityState.capable()) {
     result.Result = SUPLA_SUPLAN_RESULT_UNSUPPORTED;
     result.RootEpoch = serverIdentityState.rootEpoch();
@@ -1994,6 +2003,7 @@ void Supla::Protocol::SuplaSrpc::onDeviceIdentities(
       }
     }
   }
+#endif  // ARDUINO_ARCH_AVR
   if (srpc_ds_async_suplan_device_identities_result(srpc, &result) > 0) {
     SUPLA_LOG_INFO(
         "SupLAN SERVER identity result sent: result=%u, rootEpoch=%" PRIu32,
@@ -2008,12 +2018,18 @@ void Supla::Protocol::SuplaSrpc::onDeviceSyncDone() {
     return;
   }
 
+#ifndef ARDUINO_ARCH_AVR
   serverIdentityState.syncDone();
+#endif  // !ARDUINO_ARCH_AVR
   deviceSyncDoneReceived = true;
+#ifndef ARDUINO_ARCH_AVR
   SUPLA_LOG_INFO("Received DEVICE_SYNC_DONE: identitySyncComplete=%u, "
                  "identityTransition=%u",
                  serverIdentityState.serverSyncComplete() ? 1u : 0u,
                  serverIdentityState.identityTransition() ? 1u : 0u);
+#else
+  SUPLA_LOG_INFO("Received DEVICE_SYNC_DONE");
+#endif  // !ARDUINO_ARCH_AVR
 }
 
 void Supla::Protocol::SuplaSrpc::setActivityTimeout(
@@ -2285,12 +2301,14 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     }
   }
 
+#ifndef ARDUINO_ARCH_AVR
   if (serverIdentityState.registrationInvalidated()) {
     SUPLA_LOG_WARNING("Channel removal/renumbering invalidated registration");
     disconnect();
     scheduleReconnect(_millis);
     return false;
   }
+#endif  // !ARDUINO_ARCH_AVR
 
   char srpcIterateResult = srpc_iterate_device(srpc);
 
@@ -2319,12 +2337,16 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
     auto *registerHeader = Supla::RegisterDevice::getRegDevHeaderPtr();
+#ifdef ARDUINO_ARCH_AVR
+    registerHeader->Flags &= ~SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED;
+#else
     if (effectiveSrpcVersion(version) >= 29 && serverIdentityState.capable()) {
       registerHeader->Flags |= SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED |
                                SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
     } else {
       registerHeader->Flags &= ~SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED;
     }
+#endif  // ARDUINO_ARCH_AVR
     if (Supla::RegisterDevice::isSleepingDeviceEnabled() &&
         effectiveSrpcVersion(version) >= 29) {
       registerHeader->Flags |= SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
@@ -2339,23 +2361,33 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
         static_cast<int>(registerHeader->ProductID),
         static_cast<uint32_t>(registerHeader->Flags),
         static_cast<unsigned int>(registerHeader->channel_count));
+#ifndef ARDUINO_ARCH_AVR
     if (!serverIdentityState.registrationStarted()) {
       disconnect();
       scheduleReconnect(_millis);
       return false;
     }
+#endif  // !ARDUINO_ARCH_AVR
     if (version <= 24) {
       if (!srpc_ds_async_registerdevice_in_chunks(
               srpc,
               registerHeader,
+#ifdef ARDUINO_ARCH_AVR
+              Supla::RegisterDevice::getChannelPtr_D)) {
+#else
               Supla::Device::ServerIdentity::registrationChannel_D)) {
+#endif  // ARDUINO_ARCH_AVR
         SUPLA_LOG_WARNING("Fatal SRPC failure!");
       }
     } else {
       if (!srpc_ds_async_registerdevice_in_chunks_g(
               srpc,
               registerHeader,
+#ifdef ARDUINO_ARCH_AVR
+              Supla::RegisterDevice::getChannelPtr_E)) {
+#else
               Supla::Device::ServerIdentity::registrationChannel_E)) {
+#endif  // ARDUINO_ARCH_AVR
         SUPLA_LOG_WARNING("Fatal SRPC failure!");
       }
     }
@@ -3165,7 +3197,9 @@ void Supla::Protocol::SuplaSrpc::initializeSrpc() {
 }
 
 void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
+#ifndef ARDUINO_ARCH_AVR
   serverIdentityState.disconnected();
+#endif  // !ARDUINO_ARCH_AVR
   versionErrorDisconnectPending = false;
   calCfgResultPending.clearAll();
   if (srpc) {

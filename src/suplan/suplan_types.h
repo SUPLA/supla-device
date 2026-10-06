@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLAN_SUPLAN_TYPES_H_
 #define SRC_SUPLAN_SUPLAN_TYPES_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <stdint.h>
 
 #include "suplan_config.h"
@@ -137,5 +139,7 @@ struct PoolDiagnostics {
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLAN_SUPLAN_TYPES_H_

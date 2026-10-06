@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLAN_SUPLAN_CRYPTO_BEARSSL_H_
 #define SRC_SUPLAN_SUPLAN_CRYPTO_BEARSSL_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #if defined(ARDUINO_ARCH_ESP8266)
 #include <bearssl/bearssl.h>
 #include <string.h>
@@ -72,4 +74,6 @@ class BearSslCryptoPort : public Supla::SupLan::CryptoPort {
 }  // namespace SupLan
 }  // namespace Supla
 #endif  // ARDUINO_ARCH_ESP8266
+#endif  // !ARDUINO_ARCH_AVR
+
 #endif  // SRC_SUPLAN_SUPLAN_CRYPTO_BEARSSL_H_

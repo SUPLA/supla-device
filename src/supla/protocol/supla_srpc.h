@@ -6,7 +6,9 @@
 
 #include <stddef.h>
 #include <supla-common/proto.h>
+#ifndef ARDUINO_ARCH_AVR
 #include <supla/device/server_identity.h>
+#endif  // !ARDUINO_ARCH_AVR
 
 #include "protocol_layer.h"
 
@@ -54,14 +56,18 @@ class SuplaSrpc : public ProtocolLayer {
 
   void setNetworkClient(Supla::Client *newClient);
 
+#ifndef ARDUINO_ARCH_AVR
   Supla::Device::ServerIdentity &serverIdentity() {
     return serverIdentityState;
   }
   const Supla::Device::ServerIdentity &serverIdentity() const {
     return serverIdentityState;
   }
+#endif  // !ARDUINO_ARCH_AVR
   void onDeviceIdentities(const TSD_SuplaDeviceIdentities *snapshot);
+#ifndef ARDUINO_ARCH_AVR
   bool rotateServerRoot();
+#endif  // !ARDUINO_ARCH_AVR
   void onInit() override;
   bool onLoadConfig() override;
   bool verifyConfig() override;
@@ -220,7 +226,9 @@ class SuplaSrpc : public ProtocolLayer {
   Supla::Device::ChannelConflictResolver *channelConflictResolver = nullptr;
 
  private:
+#ifndef ARDUINO_ARCH_AVR
   Supla::Device::ServerIdentity serverIdentityState;
+#endif  // !ARDUINO_ARCH_AVR
   void handlePendingCalCfgTimeouts(uint32_t _millis);
   Supla::Device::RemoteDeviceConfig *remoteDeviceConfig = nullptr;
   bool versionErrorDisconnectPending = false;

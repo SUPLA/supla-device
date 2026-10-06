@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLA_PROTOCOL_SUPLAN_PROTOCOL_H_
 #define SRC_SUPLA_PROTOCOL_SUPLAN_PROTOCOL_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -144,5 +146,7 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
 
 }  // namespace Protocol
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLA_PROTOCOL_SUPLAN_PROTOCOL_H_

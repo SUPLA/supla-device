@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLAN_SUPLAN_CONFIG_H_
 #define SRC_SUPLAN_SUPLAN_CONFIG_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <stdint.h>
 
 // PoC1 resource profile. Ports may override these at compile time, but the
@@ -118,5 +120,7 @@ static_assert(SUPLAN_RX_MAX_REASSEMBLED_FRAME % 8 == 0,
 
 }  // namespace SupLan
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLAN_SUPLAN_CONFIG_H_

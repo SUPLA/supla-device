@@ -6,7 +6,9 @@
 
 #include <supla-common/proto.h>
 #include <supla/protocol/supla_srpc.h>
+#ifndef ARDUINO_ARCH_AVR
 #include <supla/modbus/modbus_configurator.h>
+#endif
 #include <supla/device/input_activation_config.h>
 #include <supla/device/thermal_protection_config.h>
 
@@ -37,8 +39,11 @@ class RemoteDeviceConfig {
   static enum HomeScreenContent HomeScreenContentBitToEnum(uint64_t fieldBit);
   static uint64_t HomeScreenEnumToBit(enum HomeScreenContent type);
   static uint64_t HomeScreenIntToBit(int mode);
+#ifndef ARDUINO_ARCH_AVR
   static void SetModbusProperties(
       const Supla::Modbus::ConfigProperties &modbusProperties);
+#endif  // !ARDUINO_ARCH_AVR
+
   static void SetThermalProtectionProperties(
       const ThermalProtectionProperties &properties);
   static void SetInputActivationProperties(
@@ -83,7 +88,9 @@ class RemoteDeviceConfig {
       uint64_t fieldBit, TDeviceConfig_DisableUserInterface *config);
   void processHomeScreenDelayTypeConfig(
       uint64_t fieldBit, TDeviceConfig_HomeScreenOffDelayType *config);
+#ifndef ARDUINO_ARCH_AVR
   void processModbusConfig(uint64_t fieldBit, TDeviceConfig_Modbus *config);
+#endif
   void processThermalProtectionConfig(
       uint64_t fieldBit, TDeviceConfig_ThermalProtection *config);
   void processInputActivationConfig(
@@ -105,7 +112,9 @@ class RemoteDeviceConfig {
       TDeviceConfig_DisableUserInterface *config) const;
   void fillHomeScreenDelayTypeConfig(
       TDeviceConfig_HomeScreenOffDelayType *config) const;
+#ifndef ARDUINO_ARCH_AVR
   void fillModbusConfig(TDeviceConfig_Modbus *config) const;
+#endif
   void fillThermalProtectionConfig(
       TDeviceConfig_ThermalProtection *config) const;
   void fillInputActivationConfig(
@@ -120,7 +129,9 @@ class RemoteDeviceConfig {
 
   static uint64_t fieldBitsUsedByDevice;
   static uint64_t homeScreenContentAvailable;
+#ifndef ARDUINO_ARCH_AVR
   static Supla::Modbus::ConfigProperties modbusProperties;
+#endif
   static ThermalProtectionProperties thermalProtectionProperties;
   static InputActivationProperties inputActivationProperties;
   static uint8_t resendAttempts;

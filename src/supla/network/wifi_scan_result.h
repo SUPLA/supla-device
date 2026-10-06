@@ -17,7 +17,7 @@ constexpr uint8_t WifiScanMaxResults = 8;
 constexpr uint8_t WifiScanMaxResults = 16;
 #endif
 constexpr uint8_t WifiScanSsidMaxSize = 33;
-constexpr uint32_t WifiScanDefaultMaxAgeMs = 5 * 60 * 1000;
+constexpr uint32_t WifiScanDefaultMaxAgeMs = 5UL * 60 * 1000;
 
 struct WifiScanResult {
   char ssid[WifiScanSsidMaxSize] = {};

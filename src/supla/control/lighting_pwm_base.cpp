@@ -771,7 +771,7 @@ bool LightingPwmBase::calculateAndUpdate(int targetValue,
   }
 
   int currentFadeEffectTime = fadeEffect;
-  if (distance < maxHwValue / 10) {
+  if (distance < static_cast<int>(maxHwValue / 10)) {
     currentFadeEffectTime = fadeEffect / 3;
   }
 
@@ -1531,7 +1531,7 @@ int LightingPwmBase::getCurrentRGBBrightness() const {
 void LightingPwmBase::setMaxHwValue(int newMaxHwValue) {
   if (newMaxHwValue < 1) {
     newMaxHwValue = 1;
-  } else if (newMaxHwValue > UINT16_MAX) {
+  } else if (static_cast<uint32_t>(newMaxHwValue) > UINT16_MAX) {
     newMaxHwValue = UINT16_MAX;
   }
   maxHwValue = newMaxHwValue;

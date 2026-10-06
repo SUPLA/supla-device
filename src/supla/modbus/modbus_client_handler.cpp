@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "modbus_client_handler.h"
 
 #include <supla/log_wrapper.h>
@@ -291,3 +293,5 @@ bool ModbusClientHandler::inputRespondsToAddress(uint16_t address,
 }
 
 ModbusClientHandler *ModbusClientHandler::first = nullptr;
+
+#endif  // !ARDUINO_ARCH_AVR

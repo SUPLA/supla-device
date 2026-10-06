@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLA_MODBUS_MODBUS_EM_HANDLER_H_
 #define SRC_SUPLA_MODBUS_MODBUS_EM_HANDLER_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "modbus_client_handler.h"
 
 #define EM_REGISTER_BLOCK_MAX_SIZE (30)
@@ -32,5 +34,7 @@ class ModbusEMHandler : public ModbusClientHandler {
 
 }  // namespace Supla
 
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLA_MODBUS_MODBUS_EM_HANDLER_H_

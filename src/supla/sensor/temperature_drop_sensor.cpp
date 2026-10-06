@@ -48,7 +48,7 @@ void TemperatureDropSensor::iterateAlways() {
       }
 
       // maximum time for drop detection is 30 minutes
-      if (millis() - dropDetectionTimestamp > 30 * 60 * 1000) {
+      if (millis() - dropDetectionTimestamp > 30UL * 60 * 1000) {
         virtualBinary.set();
         dropDetectionTimestamp = 0;
         filteringTimestamp = 0;

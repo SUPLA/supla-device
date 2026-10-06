@@ -130,7 +130,7 @@ void initTimers() {
 
   esp_timer_handle_t slowTimer;
   ESP_ERROR_CHECK(esp_timer_create(&timerArgsSlow, &slowTimer));
-  ESP_ERROR_CHECK(esp_timer_start_periodic(slowTimer, 10'000));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(slowTimer, 10000));
 
   const esp_timer_create_args_t timerArgsFast = {
       .callback = &fasterTimerCb,
@@ -141,7 +141,7 @@ void initTimers() {
 
   esp_timer_handle_t fastTimer;
   ESP_ERROR_CHECK(esp_timer_create(&timerArgsFast, &fastTimer));
-  ESP_ERROR_CHECK(esp_timer_start_periodic(fastTimer, 1'000));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(fastTimer, 1000));
 
 #elif defined(SUPLA_LINUX)
   Supla::Linux::Timers::init();

@@ -12,7 +12,12 @@
 
 namespace Supla {
 
+// AVR GCC requires an inferred enum range for a narrower bitfield.
+#ifdef ARDUINO_ARCH_AVR
+enum ChannelConfigState {
+#else
 enum class ChannelConfigState : uint8_t {
+#endif
   None = 0,
   LocalChangePending = 1,
   SetChannelConfigSend = 2,

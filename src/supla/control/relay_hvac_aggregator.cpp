@@ -14,7 +14,7 @@ namespace {
 RelayHvacAggregator *FirstInstance = nullptr;
 
 // 15 minutes
-constexpr uint32_t IGNORE_OFFLINE_HVAC_TIMEOUT = 15 * 60 * 1000;
+constexpr uint32_t IGNORE_OFFLINE_HVAC_TIMEOUT = 15UL * 60 * 1000;
 }  // namespace
 
 RelayHvacAggregator::RelayHvacAggregator(int relayChannelNumber,

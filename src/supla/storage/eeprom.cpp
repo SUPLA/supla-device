@@ -55,7 +55,8 @@ int Eeprom::readStorage(unsigned int offset,
     char logBuffer[LogBufferSize] = {};
     int logSize = 0;
 
-    for (uint8_t i = 0; i < sizeMax && logSize < LogBufferSize - 1; i++) {
+    for (uint8_t i = 0;
+         i < sizeMax && logSize < static_cast<int>(LogBufferSize) - 1; i++) {
       logSize += snprintf(
           logBuffer + logSize, LogBufferSize - logSize, "%02X ", buf[i]);
     }

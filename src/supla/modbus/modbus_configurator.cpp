@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "modbus_configurator.h"
+
+#include <inttypes.h>
 
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
@@ -169,7 +173,7 @@ bool Supla::Modbus::Config::validateAndFix(const ConfigProperties &properties) {
       break;
     }
     default: {
-      SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid serial baudrate %d",
+      SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid serial baudrate %" PRId32,
                         serial.baudrate);
       serial.baudrate = 19200;
       changed = true;
@@ -299,7 +303,7 @@ void Configurator::setProperties(
 
 void Configurator::printConfig() const {
   SUPLA_LOG_INFO(
-      "Modbus config: %s, address: %d, serial mode: %s, baudrate: %d, "
+      "Modbus config: %s, address: %d, serial mode: %s, baudrate: %" PRId32 ", "
       "stop bits: %s, network mode: %s, port: %d",
       config.role == Supla::Modbus::Role::NotSet   ? "disabled"
       : config.role == Supla::Modbus::Role::Master ? "master"
@@ -322,3 +326,5 @@ void Configurator::printConfig() const {
                 : "UDP",
       config.network.port);
 }
+
+#endif  // !ARDUINO_ARCH_AVR

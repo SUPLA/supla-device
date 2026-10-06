@@ -347,7 +347,7 @@ bool StateWearLevelingByte::initFromStorage() {
 
   // increment writeCount (it contain writeCount value for next write)
   writeCount++;
-  if (writeCount > repeatBeforeSwitchToAnotherSlot) {
+  if (static_cast<int32_t>(writeCount) > repeatBeforeSwitchToAnotherSlot) {
     currentSlotAddress = getNextSlotAddress(currentSlotAddress);
     writeCount = 1;
   }
@@ -503,7 +503,7 @@ bool StateWearLevelingByte::finalizeSaveState() {
   }
 
   writeCount++;
-  if (writeCount > repeatBeforeSwitchToAnotherSlot) {
+  if (static_cast<int32_t>(writeCount) > repeatBeforeSwitchToAnotherSlot) {
     currentSlotAddress = getNextSlotAddress(currentSlotAddress);
     SUPLA_LOG_DEBUG("WearLevelingByte: Switching to next slot at address %d",
         currentSlotAddress);

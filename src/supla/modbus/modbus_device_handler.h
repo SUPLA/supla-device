@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLA_MODBUS_MODBUS_DEVICE_HANDLER_H_
 #define SRC_SUPLA_MODBUS_MODBUS_DEVICE_HANDLER_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "modbus_client_handler.h"
 
 #define EM_REGISTER_BLOCK_MAX_SIZE (30)
@@ -26,12 +28,14 @@ class ModbusDeviceHandler : public ModbusClientHandler {
  private:
   int fillRegBuffer(uint8_t *regBuffer,
                     char *input,
-                    int *reg,
+                    uint16_t *reg,
                     int regOffset,
-                    int nRegs,
+                    uint16_t nRegs,
                     int fieldSize);
 };
 
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLA_MODBUS_MODBUS_DEVICE_HANDLER_H_

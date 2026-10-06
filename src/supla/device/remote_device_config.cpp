@@ -10,7 +10,9 @@
 #include <supla/log_wrapper.h>
 #include <supla/clock/clock.h>
 #include <supla/storage/config_tags.h>
+#ifndef ARDUINO_ARCH_AVR
 #include <supla/modbus/modbus_configurator.h>
+#endif
 #include <supla/device/auto_update_policy.h>
 
 using Supla::Device::RemoteDeviceConfig;
@@ -53,7 +55,9 @@ size_t getDeviceConfigFieldSize(uint64_t fieldBit) {
 
 uint64_t RemoteDeviceConfig::fieldBitsUsedByDevice = 0;
 uint64_t RemoteDeviceConfig::homeScreenContentAvailable = 0;
+#ifndef ARDUINO_ARCH_AVR
 Supla::Modbus::ConfigProperties RemoteDeviceConfig::modbusProperties;
+#endif
 Supla::Device::ThermalProtectionProperties
     RemoteDeviceConfig::thermalProtectionProperties;
 Supla::Device::InputActivationProperties
@@ -114,6 +118,11 @@ void RemoteDeviceConfig::SetInputActivationPropertiesForTests(
 #endif
 
 void RemoteDeviceConfig::RegisterConfigField(uint64_t fieldBit) {
+#ifdef ARDUINO_ARCH_AVR
+  if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_MODBUS) {
+    return;
+  }
+#endif
   if (fieldBit == 0 || (fieldBit & (fieldBit - 1)) != 0) {
     // (fieldBit & (fieldBit) - 1) will evaluate to 0 only when fieldBit had
     // only one bit set to 1 (that number was power of 2)
@@ -192,11 +201,14 @@ uint64_t RemoteDeviceConfig::HomeScreenIntToBit(int mode) {
   return (1ULL << mode);
 }
 
+#ifndef ARDUINO_ARCH_AVR
 void RemoteDeviceConfig::SetModbusProperties(
     const Supla::Modbus::ConfigProperties &properties) {
   modbusProperties = properties;
   RegisterConfigField(SUPLA_DEVICE_CONFIG_FIELD_MODBUS);
 }
+
+#endif  // !ARDUINO_ARCH_AVR
 
 void RemoteDeviceConfig::SetThermalProtectionProperties(
     const ThermalProtectionProperties &properties) {
@@ -421,6 +433,7 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
           dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelayType);
           break;
         }
+#ifndef ARDUINO_ARCH_AVR
         case SUPLA_DEVICE_CONFIG_FIELD_MODBUS: {
           SUPLA_LOG_DEBUG("Processing Modbus config");
           if (dataIndex + sizeof(TDeviceConfig_Modbus) > config->ConfigSize) {
@@ -435,6 +448,7 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
           dataIndex += sizeof(TDeviceConfig_Modbus);
           break;
         }
+#endif  // !ARDUINO_ARCH_AVR
         case SUPLA_DEVICE_CONFIG_FIELD_FIRMWARE_UPDATE: {
           SUPLA_LOG_DEBUG("Processing FirmwareUpdate config");
           if (dataIndex + sizeof(TDeviceConfig_FirmwareUpdate) >
@@ -1053,6 +1067,7 @@ bool RemoteDeviceConfig::fillSetDeviceConfig(
           dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelayType);
           break;
         }
+#ifndef ARDUINO_ARCH_AVR
         case SUPLA_DEVICE_CONFIG_FIELD_MODBUS: {
           SUPLA_LOG_DEBUG("Adding Modbus config field");
           if (dataIndex + sizeof(TDeviceConfig_Modbus) >
@@ -1065,6 +1080,7 @@ bool RemoteDeviceConfig::fillSetDeviceConfig(
           dataIndex += sizeof(TDeviceConfig_Modbus);
           break;
         }
+#endif  // !ARDUINO_ARCH_AVR
         case SUPLA_DEVICE_CONFIG_FIELD_FIRMWARE_UPDATE: {
           SUPLA_LOG_DEBUG("Adding FirmwareUpdate config field");
           if (dataIndex + sizeof(TDeviceConfig_FirmwareUpdate) >
@@ -1185,6 +1201,8 @@ void RemoteDeviceConfig::fillHomeScreenDelayTypeConfig(
     config->HomeScreenOffDelayType = value;
   }
 }
+
+#ifndef ARDUINO_ARCH_AVR
 void RemoteDeviceConfig::fillModbusConfig(TDeviceConfig_Modbus *config) const {
   if (config == nullptr) {
     return;
@@ -1319,6 +1337,8 @@ void RemoteDeviceConfig::processModbusConfig(uint64_t fieldBit,
     }
   }
 }
+
+#endif  // !ARDUINO_ARCH_AVR
 
 void RemoteDeviceConfig::fillThermalProtectionConfig(
     TDeviceConfig_ThermalProtection *config) const {

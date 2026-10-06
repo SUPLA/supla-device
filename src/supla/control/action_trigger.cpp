@@ -115,8 +115,8 @@ class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
 namespace {
 // Recognize an actual directional pair, not arbitrary conditional handlers.
 bool isDirectionalHandler(const Supla::ActionHandlerClient *handler) {
-  int press = -1;
-  int release = -1;
+  uint16_t press = 0;
+  uint16_t release = 0;
   switch (handler->action) {
     case Supla::MOVE_UP:
     case Supla::UP_STOP:

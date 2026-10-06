@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "modbus_device_handler.h"
 
 #include <supla/log_wrapper.h>
@@ -42,11 +44,11 @@ Supla::Modbus::Result ModbusDeviceHandler::holdingProcessRequest(
 
   if (access == Supla::Modbus::Access::READ) {
     memset(regBuffer, 0, nRegs * 2);
-    for (int reg = 0; reg < nRegs; reg++) {
+    for (uint16_t reg = 0; reg < nRegs; reg++) {
       auto currentAddress = (localAddress + reg);
 
-      if (currentAddress >= DEVICE_NAME_REGISTER &&
-          currentAddress < DEVICE_NAME_REGISTER + DEVICE_NAME_SIZE_BYTES / 2) {
+      if (static_cast<unsigned int>(currentAddress) <
+          DEVICE_NAME_REGISTER + DEVICE_NAME_SIZE_BYTES / 2) {
         // device name
         auto name = Supla::RegisterDevice::getName();
         char buf[DEVICE_NAME_SIZE_BYTES] = {};
@@ -117,9 +119,9 @@ bool ModbusDeviceHandler::isInputSupported() {
 
 int ModbusDeviceHandler::fillRegBuffer(uint8_t *regBuffer,
                                        char *input,
-                                       int *reg,
+                                       uint16_t *reg,
                                        int regOffset,
-                                       int nRegs,
+                                       uint16_t nRegs,
                                        int fieldSize) {
   int regSize = nRegs - (*reg);
 
@@ -134,3 +136,5 @@ int ModbusDeviceHandler::fillRegBuffer(uint8_t *regBuffer,
   *reg += regSize - 1;
   return remainingBytes;
 }
+
+#endif  // !ARDUINO_ARCH_AVR

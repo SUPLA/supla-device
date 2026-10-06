@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "modbus_em_handler.h"
 
 #include <supla/log_wrapper.h>
@@ -59,7 +61,7 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
 
   if (access == Supla::Modbus::Access::READ) {
     memset(regBuffer, 0, nRegs * 2);
-    for (int reg = 0; reg < nRegs; reg++) {
+    for (uint16_t reg = 0; reg < nRegs; reg++) {
       // block 0 -> common
       // block 1 -> phase 1
       // block 2 -> phase 2
@@ -325,3 +327,4 @@ bool ModbusEMHandler::isInputSupported() {
   return true;
 }
 
+#endif  // !ARDUINO_ARCH_AVR

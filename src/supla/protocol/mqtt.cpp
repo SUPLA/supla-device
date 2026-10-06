@@ -554,7 +554,7 @@ void Supla::Protocol::Mqtt::unsubscribe(const char *topic) {
 
 void Supla::Protocol::Mqtt::publishChannelState(int channel) {
   SUPLA_LOG_DEBUG("Mqtt: publish channel %d state", channel);
-  if (channel < 0 || channel >= channelsCount) {
+  if (channel < 0 || static_cast<unsigned int>(channel) >= channelsCount) {
     SUPLA_LOG_WARNING("Mqtt: invalid channel %d for publish", channel);
     return;
   }
@@ -770,7 +770,7 @@ using Supla::Sensor::ElectricityMeter;
 
 void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
   SUPLA_LOG_DEBUG("Mqtt: publish extended channel %d state", channel);
-  if (channel < 0 || channel >= channelsCount) {
+  if (channel < 0 || static_cast<unsigned int>(channel) >= channelsCount) {
     SUPLA_LOG_WARNING("Mqtt: invalid channel %d for publish", channel);
     return;
   }
@@ -992,7 +992,7 @@ void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
 
 void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
   SUPLA_LOG_DEBUG("Mqtt: subscribe channel %d", channel);
-  if (channel < 0 || channel >= channelsCount) {
+  if (channel < 0 || static_cast<unsigned int>(channel) >= channelsCount) {
     SUPLA_LOG_WARNING("Mqtt: invalid channel %d for subscribe", channel);
     return;
   }
@@ -1070,7 +1070,7 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
 
 void Supla::Protocol::Mqtt::unsubscribeChannel(int channel) {
   SUPLA_LOG_DEBUG("Mqtt: unsubscribe channel %d", channel);
-  if (channel < 0 || channel >= channelsCount) {
+  if (channel < 0 || static_cast<unsigned int>(channel) >= channelsCount) {
     SUPLA_LOG_WARNING("Mqtt: invalid channel %d for unsubscribe", channel);
     return;
   }
@@ -1139,9 +1139,9 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
   SUPLA_LOG_DEBUG(
       "Mqtt data received, topic: \"%s\", payload: \"%s\"", topic, payload);
 
-  int topicLen = strlen(topic);
+  size_t topicLen = strlen(topic);
   char channelsString[] = "/channels/";
-  int channelsStringLen = strlen(channelsString);
+  size_t channelsStringLen = strlen(channelsString);
 
   if (topicLen <= prefixLen || strncmp(topic, prefix, prefixLen) != 0) {
     SUPLA_LOG_DEBUG("Mqtt: topic doesn't match device's prefix");
@@ -1248,7 +1248,7 @@ bool Supla::Protocol::Mqtt::isPayloadOn(const char *payload) {
 
 void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
   SUPLA_LOG_DEBUG("Mqtt: publish HA discovery for channel %d", channel);
-  if (channel < 0 || channel >= channelsCount) {
+  if (channel < 0 || static_cast<unsigned int>(channel) >= channelsCount) {
     SUPLA_LOG_WARNING("Mqtt: invalid channel %d for publish", channel);
     return;
   }
@@ -3146,7 +3146,8 @@ void Mqtt::notifyConfigChange(int channelNumber) {
   }
 }
 void Mqtt::publishChannelSetup(int channelNumber) {
-  if (channelNumber < 0 || channelNumber >= channelsCount) {
+  if (channelNumber < 0 ||
+      static_cast<unsigned int>(channelNumber) >= channelsCount) {
     return;
   }
   publishChannelAvailability(channelNumber, true);
@@ -3176,7 +3177,7 @@ void Mqtt::processConfigChanges() {
     return;
   }
 
-  for (int channel = 0; channel < channelsCount; channel++) {
+  for (uint16_t channel = 0; channel < channelsCount; channel++) {
     if (configChangedBit[channel / 8] & (1U << (channel % 8))) {
       publishChannelSetup(channel);
     }

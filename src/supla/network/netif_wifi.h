@@ -11,7 +11,7 @@
 
 namespace Supla {
 
-constexpr uint32_t WifiScanRefreshIntervalMs = 60 * 1000;
+constexpr uint32_t WifiScanRefreshIntervalMs = 60UL * 1000;
 
 class Wifi : public Supla::Network {
  public:

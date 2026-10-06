@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLA_NETWORK_HTML_MODBUS_PARAMETERS_H_
 #define SRC_SUPLA_NETWORK_HTML_MODBUS_PARAMETERS_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <supla/network/html_element.h>
 #include <supla/modbus/modbus_configurator.h>
 
@@ -32,5 +34,7 @@ class ModbusParameters : public HtmlElement {
 
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLA_NETWORK_HTML_MODBUS_PARAMETERS_H_

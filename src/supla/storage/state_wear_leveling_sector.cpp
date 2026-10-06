@@ -161,10 +161,8 @@ bool StateWearLevelingSector::tryLoadPreamblesFrom(uint32_t offset) {
 
       // read current slot id
       uint8_t bitmap = 0;
-      int i = 0;
-      for (; i < static_cast<int>(availableSize) - 2 * getSectorSize() &&
-             bitmap == 0;
-           i++) {
+      uint32_t i = 0;
+      for (; i < partitionSlotAreaBytes && bitmap == 0; i++) {
         currentOffset += readStorage(currentOffset, &bitmap, sizeof(bitmap));
       }
       int lastByteValue = 0;

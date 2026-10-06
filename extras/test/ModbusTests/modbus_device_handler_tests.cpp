@@ -159,3 +159,15 @@ TEST_F(ModbusDeviceHandlerTests,
   EXPECT_EQ(response[92], 0xCC);
   EXPECT_EQ(response[93], 0xCC);
 }
+
+TEST_F(ModbusDeviceHandlerTests, AddressBelowOffsetDoesNotReadDeviceName) {
+  Supla::ModbusDeviceHandler handler(100);
+  uint8_t response[] = {0xCC, 0xCC, 0xCC, 0xCC};
+  EXPECT_EQ(handler.holdingProcessRequest(
+                99, 1, response, Supla::Modbus::Access::READ),
+            Supla::Modbus::Result::INVALID_REGISTER_ADDRESS);
+  EXPECT_EQ(response[0], 0);
+  EXPECT_EQ(response[1], 0);
+  EXPECT_EQ(response[2], 0xCC);
+  EXPECT_EQ(response[3], 0xCC);
+}

@@ -4,6 +4,8 @@
 #ifndef SRC_SUPLA_MODBUS_MODBUS_CONFIGURATOR_H_
 #define SRC_SUPLA_MODBUS_MODBUS_CONFIGURATOR_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <supla/element.h>
 
 namespace Supla {
@@ -37,7 +39,7 @@ enum class SerialStopBits : uint8_t {
 #pragma pack(push, 1)
 struct SerialConfig {
   ModeSerial mode = ModeSerial::Disabled;
-  int baudrate = 19200;
+  int32_t baudrate = 19200;
   SerialStopBits stopBits = SerialStopBits::One;
 };
 
@@ -123,5 +125,7 @@ class Configurator : public Supla::Element {
 
 }  // namespace Modbus
 }  // namespace Supla
+
+#endif  // !ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLA_MODBUS_MODBUS_CONFIGURATOR_H_

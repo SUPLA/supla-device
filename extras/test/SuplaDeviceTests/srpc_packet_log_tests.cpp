@@ -41,6 +41,33 @@ class SrpcPacketLogTests : public ::testing::Test {
 
 }  // namespace
 
+TEST_F(SrpcPacketLogTests, SupLanIdentityReceiveLogsCallName) {
+  const uint8_t packet[] = {0x06, 0, 0, 0, 0x03, 0, 0, 0, 0x0C, 0,
+                            0, 0, 0x0D, 0, 0, 0, 0x0E, 0, 0, 0};
+  srpc->logSrpcPacket(false, SUPLA_SD_CALL_SUPLAN_DEVICE_IDENTITIES,
+                     packet, sizeof(packet));
+  std::string log = supla_test_get_last_log();
+
+  EXPECT_NE(log.find("SRPC RX call=SUPLAN_DEVICE_IDENTITIES(1280) size=20"),
+            std::string::npos);
+  EXPECT_NE(log.find("raw=[06 00 00 00 03 00 00 00 0C 00 00 00"),
+            std::string::npos);
+  EXPECT_EQ(log.find("UNKNOWN"), std::string::npos);
+}
+
+TEST_F(SrpcPacketLogTests, SupLanIdentityResultSendLogsCallName) {
+  const uint8_t packet[] = {0, 0x65, 0x93, 0x35, 0x07};
+  srpc->logSrpcPacket(true, SUPLA_DS_CALL_SUPLAN_DEVICE_IDENTITIES_RESULT,
+                     packet, sizeof(packet));
+  std::string log = supla_test_get_last_log();
+
+  EXPECT_NE(log.find("SRPC TX call=SUPLAN_DEVICE_IDENTITIES_RESULT(1290) "
+                     "size=5"),
+            std::string::npos);
+  EXPECT_NE(log.find("raw=[00 65 93 35 07 "), std::string::npos);
+  EXPECT_EQ(log.find("UNKNOWN"), std::string::npos);
+}
+
 TEST_F(SrpcPacketLogTests, CalcfgPasswordRedactionLogsRealMetadata) {
   TSD_DeviceCalCfgRequest request = {};
   request.SenderID = 123;

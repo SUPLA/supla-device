@@ -1960,7 +1960,26 @@ void Supla::Protocol::SuplaSrpc::onDeviceIdentities(
     result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
     result.RootEpoch = serverIdentityState.rootEpoch();
   }
-  srpc_ds_async_suplan_device_identities_result(srpc, &result);
+  if (result.Result == SUPLA_SUPLAN_RESULT_OK) {
+    SUPLA_LOG_INFO(
+        "SupLAN SERVER identity accepted: device=%" PRId32 ", channels=%d, "
+        "rootEpoch=%" PRIu32,
+        static_cast<int32_t>(snapshot->DeviceId), snapshot->ChannelCount,
+        static_cast<uint32_t>(result.RootEpoch));
+    for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next()) {
+      uint32_t id = 0;
+      if (serverIdentityState.reverse(ch->getChannelNumber(), &id)) {
+        SUPLA_LOG_INFO("SupLAN SERVER channel identity: number=%d, id=%" PRIu32,
+                       ch->getChannelNumber(), id);
+      }
+    }
+  }
+  if (srpc_ds_async_suplan_device_identities_result(srpc, &result) > 0) {
+    SUPLA_LOG_INFO(
+        "SupLAN SERVER identity result sent: result=%u, rootEpoch=%" PRIu32,
+        static_cast<unsigned>(result.Result),
+        static_cast<uint32_t>(result.RootEpoch));
+  }
 }
 
 void Supla::Protocol::SuplaSrpc::onDeviceSyncDone() {
@@ -1971,7 +1990,10 @@ void Supla::Protocol::SuplaSrpc::onDeviceSyncDone() {
 
   serverIdentityState.syncDone();
   deviceSyncDoneReceived = true;
-  SUPLA_LOG_DEBUG("Received DEVICE_SYNC_DONE");
+  SUPLA_LOG_INFO("Received DEVICE_SYNC_DONE: identitySyncComplete=%u, "
+                 "identityTransition=%u",
+                 serverIdentityState.serverSyncComplete() ? 1u : 0u,
+                 serverIdentityState.identityTransition() ? 1u : 0u);
 }
 
 void Supla::Protocol::SuplaSrpc::setActivityTimeout(

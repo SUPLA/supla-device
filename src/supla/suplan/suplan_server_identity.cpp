@@ -3,6 +3,7 @@
 
 #include <supla/suplan/suplan_server_identity.h>
 
+#include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
 #include <supla/crypto.h>
@@ -10,6 +11,7 @@
 #include <supla/crc16.h>
 #include <supla/device/register_device.h>
 #include <supla/storage/config.h>
+#include <supla/log_wrapper.h>
 
 namespace {
 const char kRootKey[] = "sl-root";
@@ -243,6 +245,10 @@ void Supla::Device::ServerIdentity::load(Config *cfg) {
   // Existing Channels remain usable; removed associations need cleanup/sync.
   identityDurable = !missing;
   transition = missing || record[0] == kIdentityTransition;
+  SUPLA_LOG_INFO(
+      "SupLAN SERVER identity loaded: device=%" PRId32
+      ", channels=%u, rootEpoch=%" PRIu32,
+      deviceId, static_cast<unsigned>(count), rootEpoch());
 }
 
 bool Supla::Device::ServerIdentity::registrationStarted() {

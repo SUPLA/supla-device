@@ -35,9 +35,19 @@ static_assert(sizeof(TSDS_SuplaSetSuplanDestinationAssociation) == 600,
               "Destination wire size");
 static_assert(sizeof(TDS_SuplaSetSuplanDestinationAssociationResult) == 32,
               "Destination result wire size");
-static_assert(sizeof(TDS_SuplaEnsureResourceAccess) == 7, "Ensure wire size");
-static_assert(sizeof(TSD_SuplaEnsureResourceAccessResult) == 2,
+static_assert(sizeof(TDS_SuplaEnsureResourceAccess) == 8, "Ensure wire size");
+static_assert(sizeof(TSD_SuplaEnsureResourceAccessResult) == 3,
               "Ensure result wire size");
+static_assert(offsetof(TDS_SuplaEnsureResourceAccess, DeliveryMode) == 6,
+              "Ensure delivery offset");
+static_assert(offsetof(TDS_SuplaEnsureResourceAccess, Flags) == 7,
+              "Ensure flags offset");
+static_assert(offsetof(TSD_SuplaEnsureResourceAccessResult, DeliveryMode) == 2,
+              "Ensure result delivery offset");
+static_assert(sizeof(TSD_SuplaRemoteChannelState) == 40,
+              "Remote Channel snapshot wire size");
+static_assert(offsetof(TSD_SuplaRemoteChannelState, Channel) == 4,
+              "Remote Channel snapshot offset");
 static_assert(sizeof(TSDS_SuplaSetSuplanDestinationAssociation) <=
               SUPLA_MAX_DATA_SIZE, "Device payload bound");
 const unsigned int validationCalls[] = {
@@ -48,7 +58,8 @@ const unsigned int validationCalls[] = {
     SUPLA_SD_CALL_SET_SUPLAN_DESTINATION_ASSOCIATION,
     SUPLA_DS_CALL_SET_SUPLAN_DESTINATION_ASSOCIATION_RESULT,
     SUPLA_DS_CALL_ENSURE_SUPLAN_RESOURCE_ACCESS,
-    SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_ACCESS_RESULT};
+    SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_ACCESS_RESULT,
+    SUPLA_SD_CALL_REMOTE_CHANNEL_STATE};
 
 Supla::LittleFsConfig validationConfig;
 Supla::ESPWifi validationWifi;

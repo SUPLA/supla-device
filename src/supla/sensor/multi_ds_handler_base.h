@@ -36,7 +36,7 @@ class MultiDsHandlerBase : public Element,
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   void iterateAlways() override;
   bool iterateConnected() override;
-  void onLoadConfig(SuplaDeviceClass *sdc) override;
+  void onLoadTopology(SuplaDeviceClass *sdc) override;
   void onInit() override;
 
   bool startPairing(Supla::Protocol::SuplaSrpc *srpc,
@@ -116,8 +116,8 @@ class MultiDsHandlerBase : public Element,
    *
    * When this flag is enabled, the device will attempt to detect and
    * register one DS18B20 sensor during the initialization phase
-   * (onInit), but only if no sensors were restored from configuration
-   * inside onLoadConfig().
+   * (onLoadTopology), but only if no sensors were restored from configuration
+   * inside onLoadTopology().
    *
    * This mechanism is intended for simple setups with a single
    * thermometer, where automatic pairing at startup is desired
@@ -135,7 +135,8 @@ class MultiDsHandlerBase : public Element,
   MultiDsSensor *sensors[MULTI_DS_MAX_DEVICES_COUNT] = {};
   Supla::Sensor::MultiDsSensor *addDevice(uint8_t *deviceAddress,
                                           int channelNumber = -1,
-                                          int subDeviceId = -1);
+                                          int subDeviceId = -1,
+                                          bool restoring = false);
   virtual int refreshSensorsCount() = 0;
   virtual void requestTemperatures() = 0;
   virtual bool getSensorAddress(uint8_t *address, int index) = 0;

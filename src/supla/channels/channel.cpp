@@ -128,6 +128,14 @@ Channel *Channel::next() {
 }
 
 bool Channel::setChannelNumber(int newChannelNumber) {
+  return changeChannelNumber(newChannelNumber, false);
+}
+
+bool Channel::restoreChannelNumber(int newChannelNumber) {
+  return changeChannelNumber(newChannelNumber, true);
+}
+
+bool Channel::changeChannelNumber(int newChannelNumber, bool restore) {
   int oldChannelNumber = channelNumber;
 
   if (newChannelNumber < 0 || newChannelNumber >= SUPLA_CHANNELMAXCOUNT ||
@@ -138,13 +146,15 @@ bool Channel::setChannelNumber(int newChannelNumber) {
     return true;
   }
 #ifndef ARDUINO_ARCH_AVR
-  auto conflict = GetByChannelNumber(newChannelNumber);
-  if (conflict && conflict != this && conflict->serverChannelId &&
-      !Supla::Device::ServerIdentity::channelChanging(newChannelNumber)) {
-    return false;
-  }
-  if (!Supla::Device::ServerIdentity::channelChanging(oldChannelNumber)) {
-    return false;
+  if (!restore) {
+    auto conflict = GetByChannelNumber(newChannelNumber);
+    if (conflict && conflict != this && conflict->serverChannelId &&
+        !Supla::Device::ServerIdentity::channelChanging(newChannelNumber)) {
+      return false;
+    }
+    if (!Supla::Device::ServerIdentity::channelChanging(oldChannelNumber)) {
+      return false;
+    }
   }
 #endif  // !ARDUINO_ARCH_AVR
   ++registrationChanges;
@@ -156,7 +166,7 @@ bool Channel::setChannelNumber(int newChannelNumber) {
     channelNumber = -1;
     auto conflictChannel = GetByChannelNumber(newChannelNumber);
     if (conflictChannel) {
-      conflictChannel->setChannelNumber(oldChannelNumber);
+      conflictChannel->changeChannelNumber(oldChannelNumber, restore);
     }
   }
 

@@ -42,9 +42,12 @@ MultiDsHandlerBase::~MultiDsHandlerBase() {
   }
 }
 
-void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *) {
+void MultiDsHandlerBase::onLoadTopology(SuplaDeviceClass *) {
   auto config = Supla::Storage::ConfigInstance();
   if (!config) {
+    if (searchFirstDevice) {
+      initialSensorSearch();
+    }
     return;
   }
 
@@ -69,7 +72,7 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *) {
       SUPLA_LOG_INFO("MultiDS: Adding device with address %s", addressString);
 
       auto device = addDevice(sensorConfig.address, sensorConfig.channelNumber,
-                              subDeviceId);
+                              subDeviceId, true);
       if (device == nullptr) {
         SUPLA_LOG_ERROR(
             "MultiDS: Failed to create a new device %d (address: %s)",
@@ -78,9 +81,17 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *) {
       }
     }
   }
+  if (searchFirstDevice && !anySensorLoaded) {
+    initialSensorSearch();
+  }
 }
 
 void MultiDsHandlerBase::onInit() {
+  // A sensor discovered during topology reconstruction is persisted only
+  // after reconstruction, without initializing it twice or creating Channels.
+  if (searchFirstDevice && !anySensorLoaded && sensors[0]) {
+    sensors[0]->saveSensorConfig();
+  }
   if (sdc) {
     // SuplaDevice may still be in static construction when a handler is
     // created. Register runtime callbacks only during normal element init.
@@ -88,10 +99,6 @@ void MultiDsHandlerBase::onInit() {
     sdc->addFlags(SUPLA_DEVICE_FLAG_CALCFG_SUBDEVICE_PAIRING);
     sdc->addFlags(SUPLA_DEVICE_FLAG_BLOCK_ADDING_CHANNELS_AFTER_DELETION);
     sdc->setSubdevicePairingHandler(this);
-  }
-
-  if (searchFirstDevice && !anySensorLoaded) {
-    initialSensorSearch();
   }
 }
 
@@ -223,8 +230,8 @@ bool MultiDsHandlerBase::iterateConnected() {
 }
 
 Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
-    uint8_t *deviceAddress, int channelNumber, int subDeviceId) {
-
+    uint8_t *deviceAddress, int channelNumber, int subDeviceId,
+    bool restoring) {
   bool newDevice = (subDeviceId == -1);
   int sensorSlot = findFreeSensorSlot();
   if (sensorSlot == -1) {
@@ -272,11 +279,14 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
   if (channelStateDisabled) {
     sensor->disableChannelState();
   }
-  if (!sensor->getChannel()->setChannelNumber(channelNumber)) {
+  bool numberRestored =
+      restoring ? sensor->getChannel()->restoreChannelNumber(channelNumber)
+                : sensor->getChannel()->setChannelNumber(channelNumber);
+  if (!numberRestored) {
     delete sensor;
     return nullptr;
   }
-  if (newDevice) {
+  if (newDevice && !restoring) {
     sensor->onLoadConfig(sdc);
     sensor->onInit();
     sensor->saveSensorConfig();
@@ -489,7 +499,7 @@ void MultiDsHandlerBase::initialSensorSearch() {
     return;
   }
 
-  auto newDevice = addDevice(address);
+  auto newDevice = addDevice(address, -1, -1, true);
   if (newDevice == nullptr) {
     SUPLA_LOG_ERROR("MultiDS: Adding initial device failed!");
     return;

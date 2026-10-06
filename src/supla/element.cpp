@@ -104,6 +104,8 @@ Element *Element::next() {
 
 void Element::onInit() {}
 
+void Element::onLoadTopology(SuplaDeviceClass *) {}
+
 void Element::onLoadConfig(SuplaDeviceClass *) {}
 
 void Element::purgeConfig() {}

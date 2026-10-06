@@ -108,7 +108,14 @@ class Element {
   Element *next();
 
   /**
-   * First method called on element in SuplaDevice.begin().
+   * Reconstruct startup Channels and restore their final numbers.
+   * Newly appended Elements also receive this hook exactly once.
+   * Do not activate configuration, runtime or SERVER references here.
+   */
+  virtual void onLoadTopology(SuplaDeviceClass *sdc);
+
+  /**
+   * Called after topology reconstruction and SERVER identity restoration.
    *
    * Called only if Config Storage class is configured.
    * Element should read its configration in this method.

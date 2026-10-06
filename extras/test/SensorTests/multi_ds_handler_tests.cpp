@@ -259,7 +259,7 @@ TEST_F(MultiDsHandlerTests, RestoreScansIdsAboveMaxDeviceCount) {
 
   TestMultiDsHandler handler;
   handler.setMaxDeviceCount(5);
-  handler.onLoadConfig(nullptr);
+  handler.onLoadTopology(nullptr);
 
   ASSERT_NE(handler.slot(0), nullptr);
   ASSERT_NE(handler.slot(1), nullptr);

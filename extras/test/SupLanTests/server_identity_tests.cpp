@@ -450,6 +450,7 @@ TEST_F(ServerIdentityTests,
   NiceMock<SrpcMock> wire;
   SuplaDeviceClass device;
   TestSrpc protocol(&device);
+  protocol.restoreServerIdentity();
   protocol.onInit();
   int handle = 0;
   protocol.attach(&handle);
@@ -731,6 +732,7 @@ TEST_F(ServerIdentityTests,
   NiceMock<SrpcMock> wire;
   SuplaDeviceClass device;
   TestSrpc protocol(&device);
+  protocol.restoreServerIdentity();
   protocol.onInit();
   int handle = 0;
   auto *client = new NiceMock<NetworkClientMock>;
@@ -938,6 +940,7 @@ TEST_F(ServerIdentityTests, NormalSrpcAbortsRegistrationAfterRemoval) {
   NiceMock<SrpcMock> wire;
   SuplaDeviceClass device;
   TestSrpc protocol(&device);
+  protocol.restoreServerIdentity();
   protocol.onInit();
   int handle = 0;
   auto *client = new NiceMock<NetworkClientMock>;
@@ -1205,6 +1208,7 @@ TEST_F(ServerIdentityTests, OlderProtocolCannotAdvertiseOrAcceptIdentities) {
   NiceMock<SrpcMock> wire;
   SuplaDeviceClass device;
   TestSrpc protocol(&device, 28);
+  protocol.restoreServerIdentity();
   protocol.onInit();
   int handle = 0;
   auto *client = new NiceMock<NetworkClientMock>;
@@ -1235,6 +1239,7 @@ TEST_F(ServerIdentityTests, ExplicitSrpcRootRotationForcesNewBootstrap) {
   NiceMock<SrpcMock> wire;
   SuplaDeviceClass device;
   TestSrpc protocol(&device);
+  protocol.restoreServerIdentity();
   protocol.onInit();
   int handle = 0;
   protocol.attach(&handle);

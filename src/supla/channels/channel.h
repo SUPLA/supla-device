@@ -46,6 +46,8 @@ class Channel : public LocalAction {
   void fillDeviceChannelStruct(TDS_SuplaDeviceChannel_E *deviceChannelStruct);
 
   bool setChannelNumber(int newChannelNumber);
+  // Only for cold-start reconstruction before SERVER identity restoration.
+  bool restoreChannelNumber(int newChannelNumber);
 
   void setNewValue(double dbl);
   void setNewValue(double temp, double humi);
@@ -371,6 +373,7 @@ class Channel : public LocalAction {
   void clearSendValue();
 
  protected:
+  bool changeChannelNumber(int newChannelNumber, bool restore);
   void setSendValue();
   bool isValueUpdateReady() const;
 

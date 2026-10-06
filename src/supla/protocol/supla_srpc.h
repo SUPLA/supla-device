@@ -68,6 +68,7 @@ class SuplaSrpc : public ProtocolLayer {
 #ifndef ARDUINO_ARCH_AVR
   bool rotateServerRoot();
 #endif  // !ARDUINO_ARCH_AVR
+  void restoreServerIdentity() override;
   void onInit() override;
   bool onLoadConfig() override;
   bool verifyConfig() override;

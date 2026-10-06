@@ -235,7 +235,21 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     }
 
     loadSupletRuntime();
+  }
 
+  // Elements append to the list in construction order. Read next AFTER the
+  // hook, so appended children are visited once in this same forward traversal.
+  for (auto element = Supla::Element::begin(); element != nullptr;
+       element = element->next()) {
+    element->onLoadTopology(this);
+    delay(0);
+  }
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+       proto = proto->next()) {
+    proto->restoreServerIdentity();
+  }
+
+  if (Supla::Storage::IsConfigStorageAvailable()) {
     SUPLA_LOG_INFO("");
     SUPLA_LOG_INFO(" *** Supla - Config load for elements");
     // Load elements configuration

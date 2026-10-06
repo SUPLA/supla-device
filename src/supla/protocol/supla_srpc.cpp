@@ -1369,10 +1369,13 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
   return configComplete;
 }
 
-void Supla::Protocol::SuplaSrpc::onInit() {
+void Supla::Protocol::SuplaSrpc::restoreServerIdentity() {
 #ifndef ARDUINO_ARCH_AVR
   serverIdentityState.load(Supla::Storage::ConfigInstance());
 #endif  // !ARDUINO_ARCH_AVR
+}
+
+void Supla::Protocol::SuplaSrpc::onInit() {
   if (!isEnabled()) {
     return;
   }

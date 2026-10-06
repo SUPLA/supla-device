@@ -14,8 +14,10 @@ namespace Sensor {
 
 class MultiDsHandler : public MultiDsHandlerBase {
  public:
-  explicit MultiDsHandler(SuplaDeviceClass *sdc, uint8_t pin) :
-      MultiDsHandlerBase(sdc, pin), oneWire(pin) {}
+  explicit MultiDsHandler(SuplaDeviceClass *sdc, uint8_t pin)
+      : MultiDsHandlerBase(sdc, pin), oneWire(pin) {
+    dallasTemperature.setOneWire(&oneWire);
+  }
 
   ~MultiDsHandler() {}
 

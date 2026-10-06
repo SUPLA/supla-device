@@ -26,6 +26,8 @@ class ProtocolLayer {
   SuplaDeviceClass *getSdc();
 
   void setVerboseLog(bool value);
+  // Called after all startup Channels exist, before Element::onLoadConfig.
+  virtual void restoreServerIdentity() {}
   virtual void onInit() = 0;
   virtual bool onLoadConfig() = 0;
   virtual bool verifyConfig() = 0;

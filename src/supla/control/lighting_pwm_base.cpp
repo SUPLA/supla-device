@@ -1252,7 +1252,11 @@ void LightingPwmBase::onSaveState() {
       Supla::Config::generateKey(key,
                                  getChannel()->getChannelNumber(),
                                  Supla::ConfigTag::LegacyMigrationTag);
-      cfg->setUInt8(key, 1);
+      uint8_t migrationDoneFlag = 0;
+      if ((!cfg->getUInt8(key, &migrationDoneFlag) || migrationDoneFlag != 1) &&
+          cfg->setUInt8(key, 1)) {
+        cfg->saveWithDelay(1000);
+      }
       legacyChannelFunction = LegacyChannelFunction::None;
     }
   }

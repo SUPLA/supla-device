@@ -242,6 +242,7 @@ void Supla::Sensor::ThermHygroMeter::applyCorrectionsAndStoreIt(
     setAndSaveConfigChangeFlag(true);
   } else {
     channelConfigState = Supla::ChannelConfigState::None;
+    setAndSaveConfigChangeFlag(false);
   }
 
   setTemperatureCorrection(temperatureCorrection);

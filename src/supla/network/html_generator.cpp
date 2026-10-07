@@ -479,7 +479,9 @@ void Supla::HtmlGenerator::sendDataSaved(Supla::WebSender *sender) {
 }
 
 void Supla::HtmlGenerator::sendLogo(Supla::WebSender *sender) {
+  sender->send("<a href=\"/\" aria-label=\"SUPLA\">");
   sender->sendStatic(logoSvg, sizeof(logoSvg) - 1);
+  sender->send("</a>");
 }
 
 void Supla::HtmlGenerator::sendDeviceInfo(Supla::WebSender *sender) {

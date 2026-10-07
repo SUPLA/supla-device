@@ -36,3 +36,80 @@ TEST(BlinkingLedTests, IoPinConstructorSupportsInputPolarityForLegacyInvert) {
   Supla::Control::BlinkingLed led(Supla::Io::IoPin(7, &io), true);
   led.onInit();
 }
+
+class BlinkingLedCopyTests : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    TimeInterface::instance = &timeMock;
+    EXPECT_CALL(timeMock, millis()).WillRepeatedly(Return(0));
+    EXPECT_CALL(io, customDigitalWrite(-1, testing::_, testing::_))
+        .Times(testing::AnyNumber());
+  }
+
+  SuplaIoMock io;
+  TimeInterfaceMock timeMock;
+};
+
+TEST_F(BlinkingLedCopyTests, SelfCopyIsRejectedAndKeepsExistingCopy) {
+  Supla::Control::BlinkingLed first(Supla::Io::IoPin(1, &io));
+  Supla::Control::BlinkingLed second(Supla::Io::IoPin(2, &io));
+
+  first.setCopyStateTo(&second);
+  first.setCopyStateTo(&first);
+  EXPECT_CALL(io, customDigitalWrite(-1, 2, HIGH)).Times(testing::AtLeast(1));
+
+  first.setAlwaysOnSequence();
+}
+
+TEST_F(BlinkingLedCopyTests, TwoLedCycleIsRejected) {
+  Supla::Control::BlinkingLed first(Supla::Io::IoPin(1, &io));
+  Supla::Control::BlinkingLed second(Supla::Io::IoPin(2, &io));
+
+  first.setCopyStateTo(&second);
+  second.setCopyStateTo(&first);
+  EXPECT_CALL(io, customDigitalWrite(-1, 2, HIGH)).Times(testing::AtLeast(1));
+
+  first.setAlwaysOnSequence();
+  second.setAlwaysOnSequence();
+}
+
+TEST_F(BlinkingLedCopyTests, ThreeLedCycleIsRejected) {
+  Supla::Control::BlinkingLed first(Supla::Io::IoPin(1, &io));
+  Supla::Control::BlinkingLed second(Supla::Io::IoPin(2, &io));
+  Supla::Control::BlinkingLed third(Supla::Io::IoPin(3, &io));
+
+  first.setCopyStateTo(&second);
+  second.setCopyStateTo(&third);
+  third.setCopyStateTo(&first);
+  EXPECT_CALL(io, customDigitalWrite(-1, 3, HIGH)).Times(testing::AtLeast(1));
+
+  first.setAlwaysOnSequence();
+  third.setAlwaysOnSequence();
+}
+
+TEST_F(BlinkingLedCopyTests, AcyclicChainPropagatesLedState) {
+  Supla::Control::BlinkingLed first(Supla::Io::IoPin(1, &io));
+  Supla::Control::BlinkingLed second(Supla::Io::IoPin(2, &io));
+  Supla::Control::BlinkingLed third(Supla::Io::IoPin(3, &io));
+
+  first.setCopyStateTo(&second);
+  second.setCopyStateTo(&third);
+  EXPECT_CALL(io, customDigitalWrite(-1, 2, HIGH)).Times(testing::AtLeast(1));
+  EXPECT_CALL(io, customDigitalWrite(-1, 3, HIGH)).Times(testing::AtLeast(1));
+  EXPECT_CALL(io, customDigitalWrite(-1, 2, LOW)).Times(testing::AtLeast(1));
+  EXPECT_CALL(io, customDigitalWrite(-1, 3, LOW)).Times(testing::AtLeast(1));
+
+  first.setAlwaysOnSequence();
+  first.setAlwaysOffSequence();
+}
+
+TEST_F(BlinkingLedCopyTests, NullCopyTargetStopsStatePropagation) {
+  Supla::Control::BlinkingLed first(Supla::Io::IoPin(1, &io));
+  Supla::Control::BlinkingLed second(Supla::Io::IoPin(2, &io));
+
+  first.setCopyStateTo(&second);
+  first.setCopyStateTo(nullptr);
+  EXPECT_CALL(io, customDigitalWrite(-1, 2, testing::_)).Times(0);
+
+  first.setAlwaysOnSequence();
+}

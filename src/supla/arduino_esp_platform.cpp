@@ -3,6 +3,11 @@
 
 #if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
 
+#ifdef ARDUINO_ARCH_ESP8266
+#include <stdlib.h>
+#include <string.h>
+#include <new>
+#endif
 #include <supla/log_wrapper.h>
 #if defined(ARDUINO_ARCH_ESP32)
 #include <esp_system.h>
@@ -11,22 +16,170 @@
 #include <WiFiClientSecure.h>
 #include <supla/clock/clock.h>
 #include <SuplaDevice.h>
-
 #include <supla/crypto.h>
-
 #include "tools.h"
 #include "supla/network/client.h"
 
 namespace Supla {
+#ifdef ARDUINO_ARCH_ESP8266
+class ArduinoEspCaStore : public BearSSL::CertStoreBase {
+ public:
+  void setCertificates(BearSSL::X509List *certificates,
+                       const char *sourcePem) {
+    clear();
+    this->certificates = certificates;
+    this->sourcePem = sourcePem;
+  }
+
+  void finishConnectionAttempt() {
+    // ArduinoEspClient owns and releases this list after connect() returns.
+    if (!ownsCertificates) {
+      certificates = nullptr;
+    }
+  }
+
+  void clear() {
+    if (ownsCertificates) {
+      delete certificates;
+    }
+    certificates = nullptr;
+    sourcePem = nullptr;
+    ownsCertificates = false;
+    releaseCertificatesAfterCallback = false;
+  }
+
+  void installCertStore(br_x509_minimal_context *context) override {
+    br_x509_minimal_set_dynamic(context, this, findTrustAnchor,
+                                freeTrustAnchor);
+  }
+
+  bool hasDuplicateDistinguishedNames() const {
+    if (certificates == nullptr) {
+      return false;
+    }
+
+    const br_x509_trust_anchor *anchors = certificates->getTrustAnchors();
+    const size_t count = certificates->getCount();
+    for (size_t i = 0; i < count; i++) {
+      uint8_t currentHash[32];
+      hashDistinguishedName(anchors[i], currentHash);
+      for (size_t j = 0; j < i; j++) {
+        uint8_t previousHash[32];
+        hashDistinguishedName(anchors[j], previousHash);
+        if (memcmp(currentHash, previousHash, sizeof(currentHash)) == 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+ private:
+  static void hashDistinguishedName(const br_x509_trust_anchor &anchor,
+                                   uint8_t hash[32]) {
+    br_sha256_context context;
+    br_sha256_init(&context);
+    br_sha256_update(&context, anchor.dn.data, anchor.dn.len);
+    br_sha256_out(&context, hash);
+  }
+
+  static const br_x509_trust_anchor *findTrustAnchor(
+      void *context, void *hashedDn, size_t hashedDnLength) {
+    auto *store = static_cast<ArduinoEspCaStore *>(context);
+    if (store == nullptr || hashedDn == nullptr || hashedDnLength != 32) {
+      return nullptr;
+    }
+
+    store->releaseCertificatesAfterCallback = false;
+    if (store->certificates == nullptr) {
+      if (store->sourcePem == nullptr) {
+        return nullptr;
+      }
+      store->certificates =
+          new (std::nothrow) BearSSL::X509List(store->sourcePem);
+      if (store->certificates == nullptr ||
+          store->certificates->getCount() == 0) {
+        delete store->certificates;
+        store->certificates = nullptr;
+        return nullptr;
+      }
+      store->ownsCertificates = true;
+      store->releaseCertificatesAfterCallback = true;
+    }
+
+    const br_x509_trust_anchor *anchors =
+        store->certificates->getTrustAnchors();
+    const size_t count = store->certificates->getCount();
+    for (size_t i = 0; i < count; i++) {
+      uint8_t candidateHash[32];
+      hashDistinguishedName(anchors[i], candidateHash);
+      if (memcmp(candidateHash, hashedDn, sizeof(candidateHash)) != 0) {
+        continue;
+      }
+
+      auto *result = static_cast<br_x509_trust_anchor *>(
+          calloc(1, sizeof(br_x509_trust_anchor)));
+      if (result == nullptr) {
+        store->releaseTemporaryCertificates();
+        return nullptr;
+      }
+      result->dn.data = static_cast<unsigned char *>(malloc(hashedDnLength));
+      if (result->dn.data == nullptr) {
+        free(result);
+        store->releaseTemporaryCertificates();
+        return nullptr;
+      }
+      memcpy(result->dn.data, hashedDn, hashedDnLength);
+      result->dn.len = hashedDnLength;
+      result->flags = anchors[i].flags;
+      // BearSSL uses the public key only until freeTrustAnchor() is called.
+      result->pkey = anchors[i].pkey;
+      return result;
+    }
+    store->releaseTemporaryCertificates();
+    return nullptr;
+  }
+
+  static void freeTrustAnchor(void *context,
+                              const br_x509_trust_anchor *anchor) {
+    if (anchor == nullptr) {
+      return;
+    }
+    free(anchor->dn.data);
+    free(const_cast<br_x509_trust_anchor *>(anchor));
+    auto *store = static_cast<ArduinoEspCaStore *>(context);
+    if (store != nullptr) {
+      store->releaseTemporaryCertificates();
+    }
+  }
+
+  void releaseTemporaryCertificates() {
+    if (releaseCertificatesAfterCallback && ownsCertificates) {
+      delete certificates;
+      certificates = nullptr;
+      ownsCertificates = false;
+      releaseCertificatesAfterCallback = false;
+    }
+  }
+
+  BearSSL::X509List *certificates = nullptr;
+  const char *sourcePem = nullptr;
+  bool ownsCertificates = false;
+  bool releaseCertificatesAfterCallback = false;
+};
+#endif  // ARDUINO_ARCH_ESP8266
+
 class ArduinoEspClient : public Client {
  public:
   ~ArduinoEspClient() {
+    if (clientSec) {
+      destroySecureClient();
+    }
     if (wifiClient) {
       wifiClient->stop();
       delete wifiClient;
       wifiClient = nullptr;
     }
-    clientSec = nullptr;
   }
 
   int available() override {
@@ -40,6 +193,9 @@ class ArduinoEspClient : public Client {
     if (wifiClient) {
       wifiClient->stop();
     }
+#ifdef ARDUINO_ARCH_ESP8266
+    clearSecureAuthentication();
+#endif
   }
 
   uint8_t connected() override {
@@ -56,13 +212,12 @@ class ArduinoEspClient : public Client {
 
  protected:
   int connectImp(const char *host, uint16_t port) override {
-#ifdef ARDUINO_ARCH_ESP8266
-    X509List *caCert = nullptr;
-#endif
-
     stop();
 
     if (sslEnabled) {
+#ifdef ARDUINO_ARCH_ESP8266
+      clearSecureAuthentication();
+#endif
       if (clientSec == nullptr) {
         if (wifiClient != nullptr) {
           delete wifiClient;
@@ -90,12 +245,27 @@ class ArduinoEspClient : public Client {
           }
         }
 
-        if (caCert == nullptr) {
-          caCert = new BearSSL::X509List(rootCACert);
+        caCert = new (std::nothrow) BearSSL::X509List(rootCACert);
+        if (caCert == nullptr || caCert->getCount() == 0) {
+          releaseCACert();
+          SUPLA_LOG_ERROR("Failed to parse configured CA certificate");
+          return 0;
         }
-        clientSec->setTrustAnchors(caCert);
+        caStore.setCertificates(caCert, rootCACert);
+        if (caStore.hasDuplicateDistinguishedNames()) {
+          // A dynamic lookup returns one anchor for a DN. Keep the full list
+          // for this uncommon case so same-DN keys retain existing behavior.
+          clientSec->setTrustAnchors(caCert);
+          caCertIsStatic = true;
+        } else {
+          clientSec->setTrustAnchors(nullptr);
+          clientSec->setCertStore(&caStore);
+        }
       } else if (fingerprint.length() > 0) {
-        clientSec->setFingerprint(fingerprint.c_str());
+        if (!clientSec->setFingerprint(fingerprint.c_str())) {
+          SUPLA_LOG_ERROR("Invalid TLS certificate fingerprint");
+          return 0;
+        }
       } else {
         clientSec->setInsecure();
       }
@@ -107,17 +277,21 @@ class ArduinoEspClient : public Client {
       }
 #endif
     } else {
-      if (clientSec != nullptr) {
-        delete clientSec;
-        clientSec = nullptr;
-        wifiClient = nullptr;
-      }
+      destroySecureClient();
       if (wifiClient == nullptr) {
         wifiClient = new WiFiClient();
       }
     }
 
     int result = wifiClient->connect(host, port);
+#ifdef ARDUINO_ARCH_ESP8266
+    if (caCert != nullptr && !caCertIsStatic) {
+      // BearSSL performs certificate validation synchronously in connect().
+      // The store can parse it again if a later validation callback occurs.
+      caStore.finishConnectionAttempt();
+      releaseCACert();
+    }
+#endif
     if (result == 1) {
       srcIp = wifiClient->localIP();
       uint8_t ipArr[4];
@@ -148,13 +322,55 @@ class ArduinoEspClient : public Client {
       }
     }
 #ifdef ARDUINO_ARCH_ESP8266
-    if (caCert) {
-      delete caCert;
-      caCert = nullptr;
+    if (result != 1 && caCertIsStatic) {
+      // A failed handshake can still leave the client configured with this
+      // pointer. Stop and detach before releasing the list, while keeping the
+      // secure client available to retry.
+      if (clientSec) {
+        clientSec->stop();
+      }
+      clearSecureAuthentication();
     }
 #endif
     return result;
   }
+
+  void destroySecureClient() {
+    if (clientSec) {
+      clientSec->stop();
+#ifdef ARDUINO_ARCH_ESP8266
+      clearSecureAuthentication();
+#endif
+      if (wifiClient == clientSec) {
+        wifiClient = nullptr;
+      }
+      delete clientSec;
+      clientSec = nullptr;
+    }
+#ifdef ARDUINO_ARCH_ESP8266
+    releaseCACert();
+#endif
+  }
+
+#ifdef ARDUINO_ARCH_ESP8266
+  void clearSecureAuthentication() {
+    if (clientSec) {
+      clientSec->setCertStore(nullptr);
+      clientSec->setInsecure();
+      clientSec->setTrustAnchors(nullptr);
+    }
+    caStore.clear();
+    releaseCACert();
+  }
+
+  void releaseCACert() {
+    if (caCert) {
+      delete caCert;
+      caCert = nullptr;
+    }
+    caCertIsStatic = false;
+  }
+#endif
 
   int readImp(uint8_t *buf, size_t count) override {
     if (wifiClient) {
@@ -179,6 +395,11 @@ class ArduinoEspClient : public Client {
 
   WiFiClient *wifiClient = nullptr;
   WiFiClientSecure *clientSec = nullptr;
+#ifdef ARDUINO_ARCH_ESP8266
+  BearSSL::X509List *caCert = nullptr;
+  bool caCertIsStatic = false;
+  ArduinoEspCaStore caStore;
+#endif
   String fingerprint;
   uint16_t timeoutMs = 3000;
   int lastConnErr = 0;

@@ -21,16 +21,17 @@ int ContainerParsed::readNewValue() {
   int value = 0;
 
   if (isParameterConfigured(Supla::Parser::Level)) {
-    if (refreshParserSource()) {
+    const bool sourceRefreshed = refreshParserSource();
+    if (sourceRefreshed) {
       value = getParameterValue(Supla::Parser::Level);
     }
-    if (!parser->isValid()) {
+    if (!sourceRefreshed || !parser->isValid()) {
       if (!isDataErrorLogged) {
         isDataErrorLogged = true;
         SUPLA_LOG_WARNING("ContainerParsed[%d]: source data error",
                           getChannelNumber());
       }
-      return 0;
+      return -1;
     }
     isDataErrorLogged = false;
   }

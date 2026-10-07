@@ -1,0 +1,11 @@
+// Copyright (C) AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
+#ifndef EXTRAS_TEST_ARDUINOESPPLATFORMTESTS_FAKES_SUPLADEVICE_H_
+#define EXTRAS_TEST_ARDUINOESPPLATFORMTESTS_FAKES_SUPLADEVICE_H_
+
+class SuplaDeviceClass {
+ public:
+  void addLastStateLog(const char *) {}
+};
+
+#endif  // EXTRAS_TEST_ARDUINOESPPLATFORMTESTS_FAKES_SUPLADEVICE_H_

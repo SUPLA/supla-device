@@ -28,8 +28,7 @@ def main():
     if args.cycles < 1:
         parser.error('--cycles must be positive')
     os.umask(0o077)
-    base = Path(tempfile.mkdtemp(prefix='suplan-arduino-hardware-',
-                                 dir='/tmp/codex'))
+    base = Path(tempfile.mkdtemp(prefix='suplan-arduino-hardware-'))
     print('Artifacts:', base, flush=True)
     uart = serial.Serial(port=None, baudrate=115200, timeout=0.2)
     uart.dtr = False

@@ -28,7 +28,7 @@ def main():
     if args.jobs < 1:
         parser.error("--jobs must be positive")
     repo = Path(__file__).resolve().parents[3]
-    root = Path(tempfile.mkdtemp(prefix="suplan-arduino-", dir="/tmp/codex"))
+    root = Path(tempfile.mkdtemp(prefix="suplan-arduino-"))
     (root / "tmp").mkdir()
     sketch = root / args.sketch
     shutil.copytree(Path(__file__).parent / args.sketch, sketch)

@@ -14,9 +14,13 @@
 #include <timer_mock.h>
 #include <unistd.h>
 
+#include <cerrno>
+#include <cstring>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace {
 using Location = Supla::Device::ServerChannelLocation;
@@ -82,9 +86,13 @@ class SupLanLifecycleProcessTests : public ::testing::Test {
   void SetUp() override {
     Supla::Channel::resetToDefaults();
     Supla::RegisterDevice::resetToDefaults();
-    char pattern[] = "/tmp/codex/m1b-process-XXXXXX";
-    ASSERT_NE(mkdtemp(pattern), nullptr);
-    directory = pattern;
+    const auto directoryTemplate =
+        std::filesystem::temp_directory_path() / "suplan-process-XXXXXX";
+    const std::string pattern = directoryTemplate.string();
+    std::vector<char> writablePattern(pattern.begin(), pattern.end());
+    writablePattern.push_back('\0');
+    ASSERT_NE(mkdtemp(writablePattern.data()), nullptr) << strerror(errno);
+    directory = writablePattern.data();
     yaml = directory + "/device.yaml";
     std::ofstream file(yaml);
     file << "name: M1B lifecycle process fixture\nstate_files_path: "

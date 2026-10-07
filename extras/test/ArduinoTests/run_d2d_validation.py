@@ -35,8 +35,7 @@ def main():
     args = parser.parse_args()
     binary = args.binary.resolve(strict=True)
     os.umask(0o077)
-    root = Path(tempfile.mkdtemp(prefix='suplan-arduino-d2d-test-',
-                                 dir='/tmp/codex'))
+    root = Path(tempfile.mkdtemp(prefix='suplan-arduino-d2d-test-'))
     print('Artifacts:', root, flush=True)
     (root / 'state').mkdir()
     (root / 'tmp').mkdir()

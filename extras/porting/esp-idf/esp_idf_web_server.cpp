@@ -413,11 +413,6 @@ esp_err_t getFavicon(httpd_req_t *req) {
 esp_err_t rootHandler(httpd_req_t *req) {
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
   srvInst->reloadSaltPassword();
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
-    return ESP_OK;
-  }
   char sessionCookie[256] = {};
   if (req->method == HTTP_GET) {
     SUPLA_LOG_DEBUG("SERVER: get request");
@@ -474,11 +469,6 @@ esp_err_t rootHandler(httpd_req_t *req) {
 esp_err_t loginHandler(httpd_req_t *req) {
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
   srvInst->reloadSaltPassword();
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
-    return ESP_OK;
-  }
 
   srvInst->notifyClientConnected();
   if (!srvInst->isPasswordConfigured()) {
@@ -536,11 +526,6 @@ esp_err_t logoutHandler(httpd_req_t *req) {
   SUPLA_LOG_DEBUG("SERVER: post logout request");
   srvInst->reloadSaltPassword();
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
-    return ESP_OK;
-  }
 
   char csrfToken[65] = {};
   if (!readCsrfTokenFromBody(req, csrfToken, sizeof(csrfToken)) ||
@@ -561,11 +546,6 @@ esp_err_t logoutHandler(httpd_req_t *req) {
 esp_err_t setupHandler(httpd_req_t *req) {
   srvInst->reloadSaltPassword();
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
-    return ESP_OK;
-  }
 
   char sessionCookie[256] = {};
   if (req->method == HTTP_GET) {
@@ -612,11 +592,6 @@ esp_err_t setupHandler(httpd_req_t *req) {
 esp_err_t logsHandler(httpd_req_t *req) {
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
   srvInst->reloadSaltPassword();
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
-    return ESP_OK;
-  }
   char sessionCookie[256] = {};
   if (req->method == HTTP_GET) {
     SUPLA_LOG_DEBUG("SERVER: get request");
@@ -643,11 +618,6 @@ esp_err_t logsHandler(httpd_req_t *req) {
 esp_err_t betaHandler(httpd_req_t *req) {
   srvInst->reloadSaltPassword();
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
-    return ESP_OK;
-  }
 
   char sessionCookie[256] = {};
   if (req->method == HTTP_GET) {
@@ -1062,11 +1032,6 @@ esp_err_t Supla::EspIdfWebServer::handleCustomPage(
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
   const bool httpOnly = resolveWebServerMode() == WebServerMode::HttpOnly;
   reloadSaltPassword();
-  if (!httpOnly && isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
-    return ESP_OK;
-  }
 
   const bool passwordConfigured = isPasswordConfigured();
   if (!httpOnly && !passwordConfigured &&
@@ -1178,7 +1143,6 @@ bool Supla::EspIdfWebServer::isAuthorizationBlocked() {
       return true;
     }
   }
-  lastLoginAttemptTimestamp = millis();
   return false;
 }
 
@@ -1231,11 +1195,6 @@ bool Supla::EspIdfWebServer::ensureAuthorized(httpd_req_t *req,
     return true;
   }
 
-  if (isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    return false;
-  }
-
   size_t len = sessionCookieLen;
   if (httpd_req_get_cookie_val(req, "session", sessionCookie, &len) == ESP_OK) {
     if (isSessionCookieValid(sessionCookie)) {
@@ -1245,22 +1204,15 @@ bool Supla::EspIdfWebServer::ensureAuthorized(httpd_req_t *req,
       setSessionCookie(req, sessionCookie, sessionCookieLen);
       SUPLA_LOG_DEBUG("SERVER: session cookie renewed");
 
-      failedLoginAttempts = 0;
       return true;
-    } else {
-      if (!loginFailed) {
-        failedLoginAttempt(req);
-        httpd_resp_set_hdr(req, "Auth-Status", "failed");
-      }
-      return false;
     }
-  } else {
-    if (!loginFailed) {
-      httpd_resp_set_hdr(req, "Auth-Status", "login-required");
-    }
-    return false;
   }
 
+  // Missing, expired and invalid cookies all require a new login. Only
+  // password verification failures contribute to the login throttle.
+  if (!loginFailed) {
+    httpd_resp_set_hdr(req, "Auth-Status", "login-required");
+  }
   return false;
 }
 
@@ -1882,6 +1834,10 @@ bool Supla::EspIdfWebServer::login(httpd_req_t *req,
   reloadSaltPassword();
   bool passwordIsCorrect = false;
   if (isPasswordConfigured()) {
+    if (isAuthorizationBlocked()) {
+      httpd_resp_set_hdr(req, "Auth-Status", "too-many");
+      return false;
+    }
     if (password == nullptr) {
       // check if password is send in form
       char buf[256] = {};
@@ -1924,6 +1880,7 @@ bool Supla::EspIdfWebServer::login(httpd_req_t *req,
     }
 
     if (passwordIsCorrect) {
+      failedLoginAttempts = 0;
       // save session cookie
       SUPLA_LOG_DEBUG("SERVER: setting session cookie");
       httpd_resp_set_hdr(req, "Auth-Status", "ok");
@@ -2020,11 +1977,17 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(
   urlDecodeInplace(oldPassword, sizeof(oldPassword));
 
   if (isPasswordConfigured()) {
+    if (isAuthorizationBlocked()) {
+      httpd_resp_set_hdr(req, "Auth-Status", "too-many");
+      return SetupRequestResult::INVALID_REQUEST;
+    }
     if (!isPasswordCorrect(oldPassword)) {
+      failedLoginAttempt(req);
       SUPLA_LOG_INFO("Invalid old password");
       addSecurityLog(req, "Password change failed: invalid old password");
       return SetupRequestResult::INVALID_OLD_PASSWORD;
     }
+    failedLoginAttempts = 0;
   }
 
   if (strcmp(password, confirmPassword) != 0) {
@@ -2096,6 +2059,7 @@ void Supla::EspIdfWebServer::addSecurityLog(httpd_req_t *req,
 }
 
 void Supla::EspIdfWebServer::failedLoginAttempt(httpd_req_t *req) {
+  lastLoginAttemptTimestamp = millis();
   failedLoginAttempts++;
   if (isAuthorizationBlocked()) {
     addSecurityLog(req, "Too many failed login attempts");

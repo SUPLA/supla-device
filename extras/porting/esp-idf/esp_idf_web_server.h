@@ -173,6 +173,7 @@ class EspIdfWebServer : public Supla::WebServer {
                                    int prvtKeyLen);
   bool setActivePrivateKeyBuffer(uint8_t *prvtKey, int prvtKeyLen);
   bool isSessionCookieValid(const char *sessionCookie);
+  void rotateSessionSecret();
   void setSessionCookie(httpd_req_t *req, char *buf, int bufLen);
   void failedLoginAttempt(httpd_req_t *req);
   bool loadEmbeddedHttpsCertificates(bool storeActive = true);

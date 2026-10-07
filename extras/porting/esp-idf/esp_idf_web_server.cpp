@@ -535,6 +535,12 @@ esp_err_t logoutHandler(httpd_req_t *req) {
     return ESP_OK;
   }
 
+  char sessionCookie[256] = {};
+  if (!srvInst->ensureAuthorized(req, sessionCookie, sizeof(sessionCookie))) {
+    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Valid session required");
+    return ESP_OK;
+  }
+
   if (srvInst->htmlGenerator) {
     srvInst->handleLogout(req);
     srvInst->redirect(req, 303, srvInst->loginOrSetupUrl(), "deleted");
@@ -1921,6 +1927,7 @@ void Supla::EspIdfWebServer::setSessionCookie(httpd_req_t *req,
 }
 
 void Supla::EspIdfWebServer::handleLogout(httpd_req_t *req) {
+  rotateSessionSecret();
   // delete session cookie
   httpd_resp_set_hdr(
       req,
@@ -2009,6 +2016,9 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(
     cfg->setCfgModeSaltPassword(saltPassword);
     cfg->saveWithDelay(2000);
   }
+  // Local setup already replaced saltPassword, so reload cannot detect this
+  // change. Invalidate existing sessions before issuing the new login cookie.
+  rotateSessionSecret();
   addSecurityLog(req, "Password successfully changed");
   return login(req, password, sessionCookie, sessionCookieLen)
              ? SetupRequestResult::OK
@@ -2016,13 +2026,19 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(
 }
 
 void Supla::EspIdfWebServer::reloadSaltPassword() {
+  const Supla::SaltPassword previous = saltPassword;
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     cfg->getCfgModeSaltPassword(&saltPassword);
   }
-  if (sessionSecret[0] == '\0') {
-    Supla::fillRandom(sessionSecret, sizeof(sessionSecret));
+  if (!(previous == saltPassword) || sessionSecret[0] == '\0') {
+    // A remote password change becomes visible before authorizing a request.
+    rotateSessionSecret();
   }
+}
+
+void Supla::EspIdfWebServer::rotateSessionSecret() {
+  Supla::fillRandom(sessionSecret, sizeof(sessionSecret));
 }
 
 uint32_t Supla::EspIdfWebServer::getIpFromReq(httpd_req_t *req) {

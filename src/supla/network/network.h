@@ -66,6 +66,7 @@ class Network {
   void setTestMode();
   virtual bool getMacAddr(uint8_t *);
   virtual void setHostname(const char *, int macSize);
+  const char *getHostname() const { return hostname; }
   void generateHostname(const char *prefix, int macSize, char *output);
   virtual bool isIpSetupTimeout();
   virtual uint32_t getIP();

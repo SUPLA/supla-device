@@ -9,6 +9,8 @@
 #include <supla/log_wrapper.h>
 #include <supla/network/html_element.h>
 #include <supla/network/html_generator.h>
+#include <supla/network/network.h>
+#include <supla/network/web_host.h>
 #include <supla/time.h>
 #include <supla/tools.h>
 #include <supla/storage/storage.h>
@@ -16,9 +18,48 @@
 
 #include "esp_web_server.h"
 
+#if defined(ESP8266)
+#include <ESP8266WiFi.h>
+#else
+#include <WiFi.h>
+#endif
+
 static Supla::EspWebServer *serverInstance = nullptr;
 
+static bool validateHost(::ESPWebServer *server) {
+  Supla::WebHost host;
+  IPAddress address;
+  if (!host.parse(server->hostHeader().c_str()) ||
+      ((host.ipv4 || host.ipv6) && !address.fromString(host.name))) {
+    server->send(400, "text/plain", "Invalid Host");
+    return false;
+  }
+  bool allowed = false;
+  if (!host.hasPort || host.port == 80) {
+    if (host.ipv4 || host.ipv6) {
+      allowed = address != IPAddress() &&
+                (address == server->client().localIP() ||
+                 address == WiFi.softAPIP());
+    }
+    for (auto *network = Supla::Network::FirstInstance(); network != nullptr;
+         network = Supla::Network::NextInstance(network)) {
+      if (host.matchesName(network->getHostname()) ||
+          (host.ipv4 && network->getIP() != 0 &&
+           address == IPAddress(network->getIP()))) {
+        allowed = true;
+      }
+    }
+  }
+  if (!allowed) {
+    server->send(403, "text/plain", "Host not allowed");
+  }
+  return allowed;
+}
+
 void getFavicon() {
+  if (serverInstance && !validateHost(serverInstance->getServerPtr())) {
+    return;
+  }
   SUPLA_LOG_DEBUG("SERVER: get favicon.ico");
   if (serverInstance) {
     serverInstance->notifyClientConnected();
@@ -36,6 +77,9 @@ void getFavicon() {
 }
 
 void getHandler() {
+  if (serverInstance && !validateHost(serverInstance->getServerPtr())) {
+    return;
+  }
   SUPLA_LOG_DEBUG("SERVER: get request");
 
   if (serverInstance && serverInstance->htmlGenerator) {
@@ -47,6 +91,9 @@ void getHandler() {
 }
 
 void getBetaHandler() {
+  if (serverInstance && !validateHost(serverInstance->getServerPtr())) {
+    return;
+  }
   SUPLA_LOG_DEBUG("SERVER: get beta request");
 
   if (serverInstance && serverInstance->htmlGenerator) {
@@ -59,6 +106,9 @@ void getBetaHandler() {
 }
 
 void postHandler() {
+  if (serverInstance && !validateHost(serverInstance->getServerPtr())) {
+    return;
+  }
   SUPLA_LOG_DEBUG("SERVER: post request");
   if (serverInstance) {
     if (serverInstance->handlePost()) {
@@ -76,6 +126,9 @@ void postHandler() {
 }
 
 void postBetaHandler() {
+  if (serverInstance && !validateHost(serverInstance->getServerPtr())) {
+    return;
+  }
   SUPLA_LOG_DEBUG("SERVER: beta post request");
   if (serverInstance) {
     if (serverInstance->handlePost(true)) {
@@ -210,6 +263,8 @@ Supla::EspSender::EspSender(::ESPWebServer *req)
       outputBuffer(serverInstance ? serverInstance->getSendBufPtr() : nullptr,
                    SUPLA_HTML_OUTPUT_BUFFER_SIZE) {
   reqHandler->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  reqHandler->sendHeader("X-Frame-Options", "DENY");
+  reqHandler->sendHeader("Content-Security-Policy", "frame-ancestors 'none'");
   reqHandler->send(200, "text/html", "");
 }
 

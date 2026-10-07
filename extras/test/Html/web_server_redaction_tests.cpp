@@ -3,9 +3,58 @@
 
 #include <gtest/gtest.h>
 
+#include <supla/crypto.h>
 #include <supla/network/web_server.h>
 
 #include <cstring>
+#include <string>
+
+namespace {
+class CsrfTestWebServer : public Supla::WebServer {
+ public:
+  CsrfTestWebServer() : WebServer(nullptr) {
+    memcpy(csrfToken, "0123456789abcdef0123456789abcdef", sizeof(csrfToken));
+  }
+  void start() override {}
+  void stop() override {}
+};
+}  // namespace
+
+TEST(CryptoComparisonTests, ComparesEveryByteIncludingEmbeddedZeros) {
+  unsigned char left[64] = {};
+  unsigned char right[64] = {};
+  EXPECT_TRUE(Supla::Crypto::constantTimeEqual(left, right, sizeof(left)));
+  for (size_t i = 0; i < sizeof(right); i++) {
+    right[i] = 1;
+    EXPECT_FALSE(Supla::Crypto::constantTimeEqual(left, right, sizeof(left)));
+    right[i] = 0;
+  }
+  EXPECT_FALSE(Supla::Crypto::constantTimeEqual(nullptr, right, sizeof(right)));
+  EXPECT_FALSE(Supla::Crypto::constantTimeEqual(left, nullptr, sizeof(left)));
+  EXPECT_TRUE(Supla::Crypto::constantTimeEqual(left, right, 0));
+}
+
+TEST(WebServerCsrfTests, RequiresExactCompleteToken) {
+  CsrfTestWebServer server;
+  const std::string token = server.getCsrfToken();
+  ASSERT_EQ(token.size(), 32);
+  EXPECT_TRUE(server.isCsrfTokenValid(token.c_str()));
+  EXPECT_FALSE(server.isCsrfTokenValid(nullptr));
+  EXPECT_FALSE(server.isCsrfTokenValid(""));
+  EXPECT_FALSE(server.isCsrfTokenValid(token.substr(0, 31).c_str()));
+  EXPECT_FALSE(server.isCsrfTokenValid((token + "0").c_str()));
+  for (size_t i = 0; i < token.size(); i++) {
+    auto different = token;
+    different[i] = token[i] == '0' ? '1' : '0';
+    EXPECT_FALSE(server.isCsrfTokenValid(different.c_str()));
+  }
+  auto differentCase = token;
+  differentCase[10] = 'A';
+  EXPECT_FALSE(server.isCsrfTokenValid(differentCase.c_str()));
+  char unterminated[33];
+  memset(unterminated, '0', sizeof(unterminated));
+  EXPECT_FALSE(server.isCsrfTokenValid(unterminated));
+}
 
 TEST(WebServerRedactionTests, MasksSecretFieldsWithLength) {
   char redacted[Supla::REDACTED_LOG_VALUE_BUFFER_SIZE] = {};

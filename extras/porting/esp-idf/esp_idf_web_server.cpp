@@ -1365,6 +1365,9 @@ bool Supla::EspIdfWebServer::isAuthorizationBlocked() {
 }
 
 bool Supla::EspIdfWebServer::isSessionCookieValid(const char *sessionCookie) {
+  if (sessionCookie == nullptr) {
+    return false;
+  }
   // extract timestamp:
   char timestampStr[20] = {};
   const char *separator = strchr(sessionCookie, '|');
@@ -1383,15 +1386,25 @@ bool Supla::EspIdfWebServer::isSessionCookieValid(const char *sessionCookie) {
 
   // check hmac:
   char sessionHmacHex[65] = {};
+  const char *receivedHmac = separator + 1;
+  const size_t hmacLength = sizeof(sessionHmacHex) - 1;
+  if (strnlen(receivedHmac, sizeof(sessionHmacHex)) != hmacLength) {
+    SUPLA_LOG_WARNING("SERVER: invalid session cookie: hmac length");
+    return false;
+  }
   char key[65] = {};
   generateHexString(sessionSecret, key, sizeof(sessionSecret));
-  Supla::Crypto::hmacSha256Hex(key,
+  if (!Supla::Crypto::hmacSha256Hex(key,
                                strlen(key),
                                timestampStr,
                                strlen(timestampStr),
                                sessionHmacHex,
-                               sizeof(sessionHmacHex));
-  if (strcmp(sessionHmacHex, separator + 1) == 0) {
+                               sizeof(sessionHmacHex))) {
+    SUPLA_LOG_WARNING("SERVER: session hmac calculation failed");
+    return false;
+  }
+  if (Supla::Crypto::constantTimeEqual(
+          sessionHmacHex, receivedHmac, hmacLength)) {
     return true;
   }
 

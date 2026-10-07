@@ -25,6 +25,22 @@
 #include <supla/tools.h>
 #include <string.h>
 
+bool Supla::Crypto::constantTimeEqual(const void *left,
+                                      const void *right,
+                                      size_t size) {
+  if (left == nullptr || right == nullptr) {
+    return false;
+  }
+  const auto *leftBytes = static_cast<const volatile unsigned char *>(left);
+  const auto *rightBytes = static_cast<const volatile unsigned char *>(right);
+  // Volatile accesses keep the complete loop observable to the compiler.
+  volatile unsigned char difference = 0;
+  for (size_t i = 0; i < size; i++) {
+    difference = difference | (leftBytes[i] ^ rightBytes[i]);
+  }
+  return difference == 0;
+}
+
 bool Supla::Crypto::pbkdf2Sha256(const char *password,
                                  const uint8_t *salt,
                                  size_t saltLen,

@@ -162,4 +162,15 @@ TEST_F(SrpcPacketLogTests, RegisterDeviceHeaderUsesContinuationLog) {
   EXPECT_NE(log.find("channel_count=10]"), std::string::npos);
 }
 
+
+TEST_F(SrpcPacketLogTests, ProvisioningKeysAreSensitive) {
+  uint8_t key[32] = {};
+  for (int call : {SUPLA_DS_CALL_SET_SUPLAN_SOURCE_ASSOCIATION_RESULT,
+                   SUPLA_SD_CALL_SET_SUPLAN_DESTINATION_ASSOCIATION}) {
+    EXPECT_TRUE(srpc->isSensitiveCallId(call));
+    srpc->logSrpcPacket(true, call, key, sizeof(key));
+    std::string log = supla_test_get_last_log();
+    EXPECT_EQ(log.find("raw=["), std::string::npos);
+  }
+}
 #endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS

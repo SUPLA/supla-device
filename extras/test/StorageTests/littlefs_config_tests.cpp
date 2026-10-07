@@ -267,3 +267,26 @@ TEST_F(LittleFsConfigTests, CommitRejectsSameSizeCorruptionAfterClose) {
     EXPECT_FALSE(config.commit()) << path;
   }
 }
+
+TEST_F(LittleFsConfigTests, EraseKeyConfirmsFileDeletionAcrossRemount) {
+  Supla::LittleFsConfig config;
+  std::array<char, 60> stored = {};
+  ASSERT_TRUE(config.setBlob(BlobKey, stored.data(), stored.size()));
+  LittleFS.failRemovePath = "/supla/blob";
+  EXPECT_FALSE(config.eraseKey(BlobKey));
+  EXPECT_TRUE(LittleFS.exists("/supla/blob"));
+  LittleFS.failRemovePath.clear();
+  EXPECT_TRUE(config.eraseKey(BlobKey));
+  LittleFS.end();
+  ASSERT_TRUE(LittleFS.begin());
+  EXPECT_FALSE(LittleFS.exists("/supla/blob"));
+}
+TEST_F(LittleFsConfigTests, EraseKeyVerificationFailureDoesNotAutoFormat) {
+  Supla::LittleFsConfig config;
+  std::array<char, 60> stored = {};
+  ASSERT_TRUE(config.setBlob(BlobKey, stored.data(), stored.size()));
+  ASSERT_TRUE(config.setBlob("other", stored.data(), stored.size()));
+  LittleFS.failBeginCall = LittleFS.beginCalls + 2;
+  EXPECT_FALSE(config.eraseKey(BlobKey));
+  EXPECT_TRUE(LittleFS.exists("/supla/other"));
+}

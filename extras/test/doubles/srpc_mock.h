@@ -14,6 +14,10 @@ class SrpcInterface {
  public:
   SrpcInterface();
   virtual ~SrpcInterface();
+  virtual _supla_int_t sourceAssociationResult(
+      void *, TDS_SuplaSetSuplanSourceAssociationResult *) = 0;
+  virtual _supla_int_t destinationAssociationResult(
+      void *, TDS_SuplaSetSuplanDestinationAssociationResult *) = 0;
   virtual _supla_int_t deviceIdentitiesResult(
       void *srpc, TDS_SuplaDeviceIdentitiesResult *result) = 0;
 
@@ -142,12 +146,16 @@ class SrpcMock : public SrpcInterface {
               actionTrigger,
               (unsigned char channel_number, int actionTrigger),
               (override));
-  MOCK_METHOD(_supla_int_t,
-              getChannelConfig,
+  MOCK_METHOD(_supla_int_t, getChannelConfig,
               (unsigned char channelNumber, unsigned char configType),
               (override));
-  MOCK_METHOD(_supla_int_t,
-              deviceIdentitiesResult,
+  MOCK_METHOD(_supla_int_t, sourceAssociationResult,
+              (void *, TDS_SuplaSetSuplanSourceAssociationResult *),
+              (override));
+  MOCK_METHOD(_supla_int_t, destinationAssociationResult,
+              (void *, TDS_SuplaSetSuplanDestinationAssociationResult *),
+              (override));
+  MOCK_METHOD(_supla_int_t, deviceIdentitiesResult,
               (void *srpc, TDS_SuplaDeviceIdentitiesResult *result),
               (override));
   MOCK_METHOD(_supla_int_t, setDeviceConfigResult,

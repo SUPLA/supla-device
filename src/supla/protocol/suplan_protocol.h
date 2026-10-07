@@ -15,6 +15,9 @@
 class SuplaDeviceClass;
 namespace Supla {
 class Channel;
+namespace Device {
+class ServerAssociations;
+}
 }
 
 namespace Supla {
@@ -82,6 +85,16 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
          void *eventContext = nullptr);
   ~SupLan() override;
 
+  // Production SERVER mode: caller owns one bounded manager, peers and runtime.
+  // With no PoC mappings, resource resolution uses the M1B SERVER identity.
+  void attachServerAssociations(Supla::Device::ServerAssociations *state);
+  bool setSuplanSourceAssociation(
+      const TSDS_SuplaSetSuplanSourceAssociation &request,
+      TDS_SuplaSetSuplanSourceAssociationResult *result) override;
+  bool setSuplanDestinationAssociation(
+      const TSDS_SuplaSetSuplanDestinationAssociation &request,
+      TDS_SuplaSetSuplanDestinationAssociationResult *result) override;
+  void suplanIdentityChanged() override;
   void attachRuntime(Supla::SupLan::Runtime *runtime);
   void attachTransportLifecycle(SupLanTransportLifecycle *transport);
   void setEnabled(bool enabled);
@@ -126,6 +139,7 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
       bool eventOnly) override;
 
  private:
+  bool localChannel(uint32_t id, uint8_t *number, bool *eventOnly) const;
   const SupLanResourceMapping *findResource(uint32_t resourceId) const;
   bool mapIsValid() const;
   void clearPeerTransportState();
@@ -133,6 +147,7 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   static uint32_t getSuplaUint32(const uint8_t input[4]);
   static uint8_t channelOfflineState(const Supla::Channel *channel);
 
+  Supla::Device::ServerAssociations *associations_ = nullptr;
   Supla::SupLan::PeerTable *peers_;
   Supla::SupLan::Runtime *runtime_;
   SupLanTransportLifecycle *transport_;

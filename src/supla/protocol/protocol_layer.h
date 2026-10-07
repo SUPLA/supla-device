@@ -28,6 +28,13 @@ class ProtocolLayer {
   void setVerboseLog(bool value);
   // Called after all startup Channels exist, before Element::onLoadConfig.
   virtual void restoreServerIdentity() {}
+  virtual bool setSuplanSourceAssociation(
+      const TSDS_SuplaSetSuplanSourceAssociation &,
+      TDS_SuplaSetSuplanSourceAssociationResult *) { return false; }
+  virtual bool setSuplanDestinationAssociation(
+      const TSDS_SuplaSetSuplanDestinationAssociation &,
+      TDS_SuplaSetSuplanDestinationAssociationResult *) { return false; }
+  virtual void suplanIdentityChanged() {}
   virtual void onInit() = 0;
   virtual bool onLoadConfig() = 0;
   virtual bool verifyConfig() = 0;

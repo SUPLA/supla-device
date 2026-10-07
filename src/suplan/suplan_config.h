@@ -8,16 +8,47 @@
 
 #include <stdint.h>
 
-// PoC1 resource profile. Ports may override these at compile time, but the
-// fixed bounds must remain explicit and independent of network input.
+// Build-selected public-v1 profiles. The default preserves existing constrained
+// builds. ESP32 defaults to Standard; gateways select Large. No input growth.
+#define SUPLAN_PROFILE_CONSTRAINED 1
+#define SUPLAN_PROFILE_STANDARD 2
+#define SUPLAN_PROFILE_LARGE 3
+#ifndef SUPLAN_PROFILE
+#if defined(ESP32) || defined(SUPLA_DEVICE_ESP32) || defined(ESP_PLATFORM)
+#define SUPLAN_PROFILE SUPLAN_PROFILE_STANDARD
+#else
+#define SUPLAN_PROFILE SUPLAN_PROFILE_CONSTRAINED
+#endif
+#endif
+#if SUPLAN_PROFILE == SUPLAN_PROFILE_LARGE
+#define SUPLAN_PROFILE_PEERS 128
+#define SUPLAN_PROFILE_ENTRIES 256
+#define SUPLAN_PROFILE_SESSIONS 16
+#define SUPLAN_PROFILE_INTERESTS 128
+#elif SUPLAN_PROFILE == SUPLAN_PROFILE_STANDARD
+#define SUPLAN_PROFILE_PEERS 32
+#define SUPLAN_PROFILE_ENTRIES 64
+#define SUPLAN_PROFILE_SESSIONS 8
+#define SUPLAN_PROFILE_INTERESTS 32
+#elif SUPLAN_PROFILE == SUPLAN_PROFILE_CONSTRAINED
+#define SUPLAN_PROFILE_PEERS 8
+#define SUPLAN_PROFILE_ENTRIES 16
+#define SUPLAN_PROFILE_SESSIONS 4
+#define SUPLAN_PROFILE_INTERESTS 8
+#else
+#error Invalid SUPLAN_PROFILE
+#endif
 #ifndef SUPLAN_MAX_PERSISTENT_PEERS
-#define SUPLAN_MAX_PERSISTENT_PEERS 8
+#define SUPLAN_MAX_PERSISTENT_PEERS SUPLAN_PROFILE_PEERS
 #endif
 #ifndef SUPLAN_MAX_TOTAL_ACL_ENTRIES
-#define SUPLAN_MAX_TOTAL_ACL_ENTRIES 16
+#define SUPLAN_MAX_TOTAL_ACL_ENTRIES SUPLAN_PROFILE_ENTRIES
+#endif
+#ifndef SUPLAN_MAX_TOTAL_EXPECTED_ENTRIES
+#define SUPLAN_MAX_TOTAL_EXPECTED_ENTRIES SUPLAN_MAX_TOTAL_ACL_ENTRIES
 #endif
 #ifndef SUPLAN_MAX_ACTIVE_SESSIONS
-#define SUPLAN_MAX_ACTIVE_SESSIONS 4
+#define SUPLAN_MAX_ACTIVE_SESSIONS SUPLAN_PROFILE_SESSIONS
 #endif
 #ifndef SUPLAN_MAX_PENDING_HANDSHAKES
 #define SUPLAN_MAX_PENDING_HANDSHAKES 2
@@ -26,7 +57,7 @@
 #define SUPLAN_MAX_OUTSTANDING_LOCATES 2
 #endif
 #ifndef SUPLAN_MAX_RUNTIME_INTERESTS
-#define SUPLAN_MAX_RUNTIME_INTERESTS 8
+#define SUPLAN_MAX_RUNTIME_INTERESTS SUPLAN_PROFILE_INTERESTS
 #endif
 #ifndef SUPLAN_MAX_READ_DEPENDENCIES
 #define SUPLAN_MAX_READ_DEPENDENCIES SUPLAN_MAX_TOTAL_ACL_ENTRIES
@@ -83,6 +114,7 @@ static const uint8_t kFrameData = 5;
 static const uint8_t kMessageClassSuplaCall = 1;
 static const uint8_t kMessageClassNative = 2;
 static const uint8_t kResourceTypeChannel = 1;
+static const uint8_t kResourceTypeDevice = 2;
 static const uint8_t kAckRequired = 1;
 static const uint8_t kNativeAck = 1;
 static const uint8_t kNativeSessionReject = 2;
@@ -107,6 +139,11 @@ static const uint32_t kPendingHandshakeTimeoutMs = 3000;
 static const uint32_t kRuntimeInterestTimeoutMs = 300000;
 // Action Trigger call 700 is part of the PoC payload subset from SUPLA v16.
 static const uint8_t kMinimumSuplaProtoVersion = 16;
+static_assert(SUPLAN_MAX_PERSISTENT_PEERS <= 128,
+              "Stable slots use an 8-bit index with 255 reserved");
+static_assert(SUPLAN_MAX_TOTAL_ACL_ENTRIES +
+                  SUPLAN_MAX_TOTAL_EXPECTED_ENTRIES <= UINT16_MAX,
+              "ACL and Expected totals use 16-bit counters");
 static_assert(SUPLAN_MAX_PEER_RECOVERY_STATES >= SUPLAN_MAX_PERSISTENT_PEERS,
               "Recovery uses one bounded state per persistent peer");
 // Wire requirement, independent of either endpoint's compile-time profile.

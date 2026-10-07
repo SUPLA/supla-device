@@ -195,11 +195,16 @@ int main(int argc, char *argv[]) {
     if (suplanConfig.enabled) {
       suplanRuntime.reset(new Supla::LinuxSupLanRuntime(suplanConfig));
       if (!suplanRuntime->initialize()) {
-        SUPLA_LOG_ERROR("SupLAN PoC fixture initialization failed. Exit");
+        SUPLA_LOG_ERROR("SupLAN runtime initialization failed. Exit");
         exit(1);
       }
-      SUPLA_LOG_INFO("SupLAN PoC fixture enabled role=%c port=%u",
-                     suplanConfig.role, suplanConfig.unicastPort);
+      if (suplanConfig.serverProvisioning) {
+        SUPLA_LOG_INFO("SupLAN SERVER provisioning enabled port=%u",
+                       suplanConfig.unicastPort);
+      } else {
+        SUPLA_LOG_INFO("SupLAN PoC fixture enabled role=%c port=%u",
+                       suplanConfig.role, suplanConfig.unicastPort);
+      }
     }
 
     if (!setupLinuxSupletRuntime(config.get())) {

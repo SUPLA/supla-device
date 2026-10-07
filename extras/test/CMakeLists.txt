@@ -364,3 +364,21 @@ foreach(crypto_test_target supladevicetests sd4linuxtests nvsconfigtests
     -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=EVP_MAC_init)
 endforeach()
 target_include_directories(suplandirectionaltests PRIVATE doubles)
+
+# Compile only focused provisioning coverage for alternate capacity profiles.
+# Configure a separate build with -DCMAKE_CXX_FLAGS=-DSUPLAN_PROFILE=2 (or 3).
+option(SUPLAN_ASSOCIATION_PROFILE_TESTS "Build focused M2 profile tests" OFF)
+if(SUPLAN_ASSOCIATION_PROFILE_TESTS)
+  add_executable(suplanassociationprofiletests
+    SupLanTests/server_association_tests.cpp ${DOUBLE_SRC}
+    ../porting/linux/suplan_crypto_openssl.cpp
+    doubles/crypto_test_hooks.cpp)
+  target_include_directories(suplanassociationprofiletests PRIVATE
+    ../../src doubles ../porting/linux)
+  target_compile_definitions(suplanassociationprofiletests PRIVATE SUPLA_TEST)
+  target_link_libraries(suplanassociationprofiletests PRIVATE
+    supladevicelib nlohmann_json::nlohmann_json gmock gtest_main OpenSSL::Crypto)
+  target_link_options(suplanassociationprofiletests PRIVATE
+    -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=EVP_MAC_init)
+  supla_apply_warnings(suplanassociationprofiletests)
+endif()

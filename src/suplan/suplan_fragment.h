@@ -60,6 +60,7 @@ class FragmentReassembler {
                           uint32_t timeoutMs, SessionIdKnownFn sessionKnown,
                           void *sessionContext, AdaptedFrameView *frame);
   bool expire(uint32_t nowMs, uint32_t timeoutMs);
+  void clearForEndpoint(const Endpoint &endpoint);
   bool active() const;
   uint16_t receivedBytes() const;
   uint32_t rejectedCount() const;

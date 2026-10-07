@@ -332,7 +332,8 @@ void Runtime::updatePoolHighWater() {
   }
   const PoolUsage current[] = {
       {peers_->size(), SUPLAN_MAX_PERSISTENT_PEERS, 0},
-      {peers_->aclEntryCount(), SUPLAN_MAX_TOTAL_ACL_ENTRIES, 0},
+      {peers_->aclEntryCount(),
+       SUPLAN_MAX_TOTAL_ACL_ENTRIES + SUPLAN_MAX_TOTAL_EXPECTED_ENTRIES, 0},
       {0, SUPLAN_MAX_ACTIVE_SESSIONS, 0},
       {0, SUPLAN_MAX_PENDING_HANDSHAKES, 0},
       {0, SUPLAN_MAX_OUTSTANDING_LOCATES, 0},
@@ -382,7 +383,8 @@ PoolDiagnostics Runtime::poolDiagnostics() const {
   result.peers.used = peers_ == nullptr ? 0 : peers_->size();
   result.peers.maximum = SUPLAN_MAX_PERSISTENT_PEERS;
   result.aclEntries.used = peers_ == nullptr ? 0 : peers_->aclEntryCount();
-  result.aclEntries.maximum = SUPLAN_MAX_TOTAL_ACL_ENTRIES;
+  result.aclEntries.maximum = SUPLAN_MAX_TOTAL_ACL_ENTRIES +
+      SUPLAN_MAX_TOTAL_EXPECTED_ENTRIES;
   result.sessions.used = 0;
   result.pending.used = 0;
   result.locates.used = 0;
@@ -503,7 +505,7 @@ bool Runtime::knownSession(void *context, uint64_t sessionId) {
 
 int Runtime::findReadDependency(uint8_t peerIndex,
                                 const ResourceId &resource) const {
-  for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+  for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
     const ReadDependency &entry = dependencies_[i];
     if (entry.used && entry.peerIndex == peerIndex &&
         entry.resourceType == resource.type &&
@@ -554,7 +556,7 @@ void Runtime::finishRecovery(uint8_t peerIndex) {
   PeerRecovery &peer = recovery_[peerIndex];
   peer.active = false;
   bool refresh = false;
-  for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+  for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
     ReadDependency &entry = dependencies_[i];
     if (entry.used && entry.peerIndex == peerIndex) {
       if (entry.pending) {
@@ -614,7 +616,7 @@ void Runtime::noteReachability(uint8_t peerIndex) {
 }
 
 void Runtime::pruneReadDependencies() {
-  for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+  for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
     ReadDependency &entry = dependencies_[i];
     if (!entry.used) {
       continue;
@@ -653,7 +655,7 @@ void Runtime::pruneReadDependencies() {
     entry = ReadDependency();
     cancelPeerRecoveryIfIdle(peerIndex);
     bool refresh = false;
-    for (uint8_t d = 0; d < SUPLAN_MAX_READ_DEPENDENCIES; ++d) {
+    for (uint16_t d = 0; d < SUPLAN_MAX_READ_DEPENDENCIES; ++d) {
       refresh = refresh || (dependencies_[d].used &&
           dependencies_[d].peerIndex == peerIndex &&
           dependencies_[d].needsRefresh);
@@ -666,7 +668,8 @@ void Runtime::pruneReadDependencies() {
 
 void Runtime::iterateRecovery(uint32_t now) {
   pruneReadDependencies();
-  for (uint8_t peerIndex = 0; peerIndex < peers_->size(); ++peerIndex) {
+  for (uint8_t peerIndex = 0; peerIndex < SUPLAN_MAX_PERSISTENT_PEERS;
+       ++peerIndex) {
     PeerRecovery &peer = recovery_[peerIndex];
     bool handshake = false;
     for (uint8_t i = 0; i < SUPLAN_MAX_PENDING_HANDSHAKES; ++i) {
@@ -679,6 +682,9 @@ void Runtime::iterateRecovery(uint32_t now) {
                             locates_[i].peerIndex == peerIndex);
     }
     const PeerRecord *record = peers_->get(peerIndex);
+    if (!record) {
+      continue;
+    }
     if (peer.active &&
         (static_cast<int32_t>(now - peer.deadlineMs) >= 0 ||
          (peer.locateAttempts >= 3 && !locate && !handshake &&
@@ -690,7 +696,7 @@ void Runtime::iterateRecovery(uint32_t now) {
       beginRecovery(peerIndex);
     }
     if (peer.active) {
-      for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+      for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
         ReadDependency &entry = dependencies_[i];
         if (!entry.used || entry.peerIndex != peerIndex ||
             !entry.needsRefresh || entry.pending) {
@@ -907,7 +913,7 @@ void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
     }
   }
   if (recovery_[peerIndex].active) {
-    for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+    for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
       if (dependencies_[i].used && dependencies_[i].peerIndex == peerIndex &&
           dependencies_[i].needsRefresh) {
         return;
@@ -942,7 +948,7 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
   pruneReadDependencies();
   int slot = findReadDependency(peerIndex, resource);
   if (slot < 0) {
-    for (uint8_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+    for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
       if (!dependencies_[i].used) {
         slot = i;
         dependencies_[i].used = true;
@@ -1127,6 +1133,92 @@ void Runtime::clearEndpoint(uint8_t peerIndex) {
     peer->endpoint = Endpoint();
     peer->endpointState = kPeerEndpointNone;
   }
+}
+
+void Runtime::clearPeer(uint8_t peerIndex) {
+  if (peerIndex >= SUPLAN_MAX_PERSISTENT_PEERS) {
+    return;
+  }
+  auto peer = peers_->get(peerIndex);
+  if (peer) fragmentReassembler_.clearForEndpoint(peer->endpoint);
+  clearEndpoint(peerIndex);
+  for (uint16_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
+    if (locates_[i].peerIndex == peerIndex) locates_[i] = OutstandingLocate();
+  }
+  for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
+    if (interests_[i].peerIndex == peerIndex) {
+      interests_[i] = RuntimeInterest();
+    }
+  }
+  for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+    if (dependencies_[i].peerIndex == peerIndex) {
+      dependencies_[i] = ReadDependency();
+    }
+  }
+  for (uint16_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
+    if (retries_[i].peerIndex == peerIndex) {
+      clearRetryEntry(&retries_[i]);
+    }
+  }
+  for (uint16_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
+    if (deferred_[i].peerIndex == peerIndex) {
+      deferred_[i] = DeferredApplication();
+    }
+  }
+  recovery_[peerIndex] = PeerRecovery();
+  if (flood_.peerIndex == peerIndex) {
+    flood_ = FloodJob();
+  }
+}
+
+void Runtime::setLocalAddress(const NodeAddress &address) {
+  if (!sameNode(localAddress_, address)) {
+    for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+      clearPeer(i);
+    }
+    localAddress_ = address;
+  }
+}
+
+void Runtime::authorizationChanged(uint8_t peerIndex) {
+  pruneReadDependencies();
+  pruneInterests(datagrams_->nowMs());
+  for (uint16_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
+    RetryEntry &retry = retries_[i];
+    if (!retry.isUsed() || retry.peerIndex != peerIndex) {
+      continue;
+    }
+    uint8_t permission = retry.actionDelivery ? kPermissionAction :
+        retry.controlDelivery ? kPermissionControl : kPermissionRead;
+    if (!peers_->authorize(peerIndex, retry.resource, permission) &&
+        !((retry.flags & kRetryReadRequest) &&
+          peers_->authorize(peerIndex, retry.resource, kPermissionAction))) {
+      clearRetryEntry(&retry);
+    }
+  }
+  for (uint16_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
+    DeferredApplication &entry = deferred_[i];
+    if (!entry.used || entry.peerIndex != peerIndex) {
+      continue;
+    }
+    ApplicationDataView app = {};
+    ResourceDataView body = {};
+    if (!decodeApplicationData(entry.data, entry.length, &app) ||
+        !decodeResourceData(&app, &body)) {
+      entry = DeferredApplication();
+      continue;
+    }
+    uint8_t permission = app.messageType == kSuplaCallChannelSetValue ?
+        kPermissionControl : app.messageType == kSuplaCallActionTrigger ?
+        kPermissionAction : kPermissionRead;
+    if (!peers_->authorize(peerIndex, body.resource, permission) &&
+        !(app.messageClass == kMessageClassNative &&
+          app.messageType == kNativeReadResource &&
+          peers_->authorize(peerIndex, body.resource, kPermissionAction))) {
+      entry = DeferredApplication();
+    }
+  }
+  cancelPeerRecoveryIfIdle(peerIndex);
 }
 
 bool Runtime::startFlood(TestFloodKind kind, uint8_t peerIndex,
@@ -2521,6 +2613,9 @@ void Runtime::iterate() {
       peers_ == nullptr || application_ == nullptr || processing_) {
     return;
   }
+  for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+    if (peers_->get(i) && !peers_->runtimeEligible(i)) clearPeer(i);
+  }
   const uint32_t now = datagrams_->nowMs();
   iterateRecovery(now);
   expireControls(now);
@@ -2567,6 +2662,17 @@ void Runtime::iterate() {
   pruneInterests(now);
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
+    if (retry->isUsed()) {
+      uint8_t permission = retry->actionDelivery ? kPermissionAction :
+          retry->controlDelivery ? kPermissionControl : kPermissionRead;
+      if (!peers_->authorize(retry->peerIndex, retry->resource, permission) &&
+          !((retry->flags & kRetryReadRequest) &&
+            peers_->authorize(retry->peerIndex, retry->resource,
+                              kPermissionAction))) {
+        clearRetryEntry(retry);
+        continue;
+      }
+    }
     const bool actionDelivery =
         retry->actionDelivery;
     if (retry->isUsed() && actionDelivery &&
@@ -2661,7 +2767,7 @@ void Runtime::iterate() {
     processDatagram(source, transmitFrame_, static_cast<size_t>(length));
   }
   drainDeferred();
-  for (uint8_t i = 0; i < peers_->size(); ++i) {
+  for (uint8_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     cancelPeerRecoveryIfIdle(i);
   }
   updatePoolHighWater();

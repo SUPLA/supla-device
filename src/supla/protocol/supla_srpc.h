@@ -64,6 +64,10 @@ class SuplaSrpc : public ProtocolLayer {
     return serverIdentityState;
   }
 #endif  // !ARDUINO_ARCH_AVR
+  void onSetSuplanSourceAssociation(
+      const TSDS_SuplaSetSuplanSourceAssociation *request);
+  void onSetSuplanDestinationAssociation(
+      const TSDS_SuplaSetSuplanDestinationAssociation *request);
   void onDeviceIdentities(const TSD_SuplaDeviceIdentities *snapshot);
 #ifndef ARDUINO_ARCH_AVR
   bool rotateServerRoot();

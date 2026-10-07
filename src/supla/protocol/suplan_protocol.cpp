@@ -11,6 +11,10 @@
 #include <supla/at_channel.h>
 #include <supla/channels/channel.h>
 #include <supla/element.h>
+#include <supla/protocol/supla_srpc.h>
+#include <supla/storage/storage.h>
+#include <supla/suplan/suplan_server_associations.h>
+#include <supla/suplan/suplan_server_identity.h>
 
 namespace Supla {
 namespace Protocol {
@@ -49,7 +53,37 @@ void SupLan::setEnabled(bool enabled) {
   enabled_ = enabled;
 }
 
-void SupLan::onInit() {}
+void SupLan::onInit() {
+  if (associations_ && sdc && sdc->getSrpcLayer()) {
+    associations_->load(Supla::Storage::ConfigInstance(),
+                         &sdc->getSrpcLayer()->serverIdentity());
+  }
+}
+
+void SupLan::attachServerAssociations(
+    Supla::Device::ServerAssociations *state) {
+  associations_ = state;
+}
+
+bool SupLan::setSuplanSourceAssociation(
+    const TSDS_SuplaSetSuplanSourceAssociation &request,
+    TDS_SuplaSetSuplanSourceAssociationResult *result) {
+  if (!associations_ || !enabled_) return false;
+  *result = associations_->accept(request);
+  return true;
+}
+
+bool SupLan::setSuplanDestinationAssociation(
+    const TSDS_SuplaSetSuplanDestinationAssociation &request,
+    TDS_SuplaSetSuplanDestinationAssociationResult *result) {
+  if (!associations_ || !enabled_) return false;
+  *result = associations_->accept(request);
+  return true;
+}
+
+void SupLan::suplanIdentityChanged() {
+  if (associations_) associations_->identityChanged();
+}
 
 bool SupLan::onLoadConfig() {
   return true;
@@ -78,7 +112,7 @@ void SupLan::clearPeerTransportState() {
   if (peers_ == nullptr || runtime_ == nullptr) {
     return;
   }
-  for (uint8_t i = 0; i < peers_->size(); ++i) {
+  for (uint8_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     (void)runtime_->forgetSession(i);
     runtime_->clearEndpoint(i);
   }
@@ -119,6 +153,7 @@ bool SupLan::iterate(uint32_t nowMs) {
     transportWasOpen_ = true;
   }
 
+  suplanIdentityChanged();
   runtime_->iterate();
   return true;
 }
@@ -153,6 +188,7 @@ const SupLanResourceMapping *SupLan::findResource(uint32_t resourceId) const {
 }
 
 bool SupLan::mapIsValid() const {
+  if (associations_ && !mappings_ && !mappingCount_) return true;
   if (mappings_ == nullptr || mappingCount_ == 0 ||
       mappingCount_ > kMaxResourceMappings) {
     return false;
@@ -169,6 +205,26 @@ bool SupLan::mapIsValid() const {
       }
     }
   }
+  return true;
+}
+
+bool SupLan::localChannel(uint32_t id, uint8_t *number,
+                           bool *eventOnly) const {
+  if (associations_ && associations_->identity()) {
+    auto resolved = associations_->identity()->resolve(id);
+    if (resolved.location != Supla::Device::ServerChannelLocation::kLocal) {
+      return false;
+    }
+    *number = resolved.channelNumber;
+    auto channel = Supla::Channel::GetByChannelNumber(*number);
+    *eventOnly = channel && channel->getChannelType() ==
+        SUPLA_CHANNELTYPE_ACTIONTRIGGER;
+    return channel != nullptr;
+  }
+  auto mapping = findResource(id);
+  if (!mapping) return false;
+  *number = mapping->channelNumber;
+  *eventOnly = mapping->eventOnly;
   return true;
 }
 
@@ -209,17 +265,16 @@ bool SupLan::readResource(const Supla::SupLan::ResourceId &resource,
       resource.type != Supla::SupLan::kResourceTypeChannel) {
     return false;
   }
-  const SupLanResourceMapping *mapping = findResource(resource.id);
-  if (mapping == nullptr) {
-    return false;
-  }
-  if (mapping->eventOnly) {
+  uint8_t number = 0;
+  bool onlyEvents = false;
+  if (!localChannel(resource.id, &number, &onlyEvents)) return false;
+  if (onlyEvents) {
     *eventOnly = true;
     *payloadLength = 0;
     return false;
   }
   Supla::Channel *channel =
-      Supla::Channel::GetByChannelNumber(mapping->channelNumber);
+      Supla::Channel::GetByChannelNumber(number);
   if (channel == nullptr || capacity < 14) {
     return false;
   }
@@ -242,18 +297,19 @@ uint8_t SupLan::dispatchControl(const Supla::SupLan::ResourceId &resource,
       payload[4] != Supla::SupLan::kChannelNumberUnresolved) {
     return SUPLA_RESULTCODE_UNSUPORTED;
   }
-  const SupLanResourceMapping *mapping = findResource(resource.id);
-  if (mapping == nullptr) {
+  uint8_t number = 0;
+  bool eventOnly = false;
+  if (!localChannel(resource.id, &number, &eventOnly)) {
     return SUPLA_RESULTCODE_CHANNELNOTFOUND;
   }
   Supla::Element *element =
-      Supla::Element::getElementByChannelNumber(mapping->channelNumber);
+      Supla::Element::getElementByChannelNumber(number);
   if (element == nullptr) {
     return SUPLA_RESULTCODE_CHANNELNOTFOUND;
   }
   TSD_SuplaChannelNewValue newValue = {};
   newValue.SenderID = static_cast<_supla_int_t>(getSuplaUint32(payload));
-  newValue.ChannelNumber = mapping->channelNumber;
+  newValue.ChannelNumber = number;
   newValue.DurationMS = getSuplaUint32(payload + 5);
   memcpy(newValue.value, payload + 9, SUPLA_CHANNELVALUE_SIZE);
   const int32_t result = element->handleNewValueFromServer(&newValue);
@@ -316,6 +372,16 @@ void SupLan::sendActionTrigger(uint8_t channelNumber, uint32_t actionId) {
   uint8_t payload[15] = {};
   payload[0] = Supla::SupLan::kChannelNumberUnresolved;
   putSuplaUint32(payload + 1, actionId);
+  if (associations_ && associations_->identity()) {
+    uint32_t id = 0;
+    if (!associations_->identity()->reverse(channelNumber, &id)) return;
+    const Supla::SupLan::ResourceId resource = {
+        Supla::SupLan::kResourceTypeChannel, id};
+    for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+      (void)runtime_->publishAction(i, resource, payload, sizeof(payload));
+    }
+    return;
+  }
   for (uint8_t i = 0; i < mappingCount_; ++i) {
     const SupLanResourceMapping *mapping = &mappings_[i];
     if (mapping->channelNumber != channelNumber) {
@@ -339,6 +405,18 @@ void SupLan::sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
   payload[1] = offline;
   putSuplaUint32(payload + 2, validityTimeSec);
   memcpy(payload + 6, value, SUPLA_CHANNELVALUE_SIZE);
+  if (associations_ && associations_->identity()) {
+    uint32_t id = 0;
+    if (!associations_->identity()->reverse(channelNumber, &id)) return;
+    const Supla::SupLan::ResourceId resource = {
+        Supla::SupLan::kResourceTypeChannel, id};
+    for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+      (void)runtime_->publishState(
+          i, resource, Supla::SupLan::kSuplaCallDeviceChannelValueChangedC,
+          payload, sizeof(payload));
+    }
+    return;
+  }
   for (uint8_t i = 0; i < mappingCount_; ++i) {
     const SupLanResourceMapping *mapping = &mappings_[i];
     if (mapping->channelNumber != channelNumber || mapping->eventOnly) {
@@ -365,6 +443,20 @@ void SupLan::sendExtendedChannelValueChanged(
   prefix[0] = Supla::SupLan::kChannelNumberUnresolved;
   prefix[1] = static_cast<uint8_t>(value->type);
   putSuplaUint32(prefix + 2, value->size);
+  if (associations_ && associations_->identity()) {
+    uint32_t id = 0;
+    if (!associations_->identity()->reverse(channelNumber, &id)) return;
+    const Supla::SupLan::ResourceId resource = {
+        Supla::SupLan::kResourceTypeChannel, id};
+    for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+      (void)runtime_->publishStateParts(
+          i, resource,
+          Supla::SupLan::kSuplaCallDeviceChannelExtendedValueChanged, prefix,
+          sizeof(prefix), reinterpret_cast<const uint8_t *>(value->value),
+          value->size);
+    }
+    return;
+  }
   for (uint8_t i = 0; i < mappingCount_; ++i) {
     const SupLanResourceMapping *mapping = &mappings_[i];
     if (mapping->channelNumber != channelNumber || mapping->eventOnly) {

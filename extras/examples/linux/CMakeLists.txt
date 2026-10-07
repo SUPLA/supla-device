@@ -76,3 +76,6 @@ supla_apply_warnings(supla-device-linux)
 
 # install binary
 install(TARGETS supla-device-linux)
+
+# Linux/gateway production peer/ACL capacity profile applies to every TU.
+target_compile_definitions(supladevicelib PUBLIC SUPLAN_PROFILE=3)

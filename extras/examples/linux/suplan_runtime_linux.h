@@ -7,6 +7,7 @@
 #include <supla/protocol/suplan_protocol.h>
 #include <supla/debug/command_processor.h>
 #include <suplan/suplan_runtime.h>
+#include <supla/suplan/suplan_server_associations.h>
 
 #include <linux_yaml_config.h>
 #include <suplan_crypto_openssl.h>
@@ -53,6 +54,7 @@ class LinuxSupLanRuntime {
   std::unique_ptr<TransportLifecycle> transport_;
   std::unique_ptr<Protocol::SupLan> protocol_;
   std::unique_ptr<SupLan::Runtime> runtime_;
+  std::unique_ptr<Device::ServerAssociations> associations_;
 };
 
 }  // namespace Supla

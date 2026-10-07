@@ -99,6 +99,10 @@ bool FragmentReassembler::hasPrefix(size_t length) const {
   return true;
 }
 
+void FragmentReassembler::clearForEndpoint(const Endpoint &endpoint) {
+  if (active_ && sameSource(endpoint)) clear();
+}
+
 void FragmentReassembler::clear() {
   active_ = false;
   source_ = Endpoint();

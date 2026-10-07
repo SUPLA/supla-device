@@ -98,6 +98,10 @@ class Runtime {
                      const uint8_t *suplaPayload, size_t payloadLength);
   bool forgetSession(uint8_t peerIndex);
   void clearEndpoint(uint8_t peerIndex);
+  // Must run before releasing/reusing a stable peer slot.
+  void clearPeer(uint8_t peerIndex);
+  void authorizationChanged(uint8_t peerIndex);
+  void setLocalAddress(const NodeAddress &address);
   bool startFlood(TestFloodKind kind, uint8_t peerIndex, uint16_t count);
   void resetDiagnostics();
   void iterate();

@@ -484,6 +484,14 @@ bool Supla::LinuxYamlConfig::getSupLanConfig(
     if (section["enabled"]) {
       result->enabled = section["enabled"].as<bool>();
     }
+    if (section["mode"]) {
+      const auto mode = section["mode"].as<std::string>();
+      if (mode != "server" && mode != "poc") {
+        SUPLA_LOG_ERROR("Config: suplan.mode must be server or poc");
+        return false;
+      }
+      result->serverProvisioning = mode == "server";
+    }
     if (section["role"]) {
       const std::string role = section["role"].as<std::string>();
       if (role != "A" && role != "B") {
@@ -513,7 +521,7 @@ bool Supla::LinuxYamlConfig::getSupLanConfig(
     return false;
   }
 
-  if (result->enabled && result->role == 0) {
+  if (result->enabled && !result->serverProvisioning && result->role == 0) {
     SUPLA_LOG_ERROR("Config: suplan.role is required when SupLAN is enabled");
     return false;
   }

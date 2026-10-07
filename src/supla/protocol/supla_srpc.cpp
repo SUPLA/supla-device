@@ -1212,6 +1212,8 @@ const char *Supla::Protocol::SuplaSrpc::callIdToName(int callId) {
 
 bool Supla::Protocol::SuplaSrpc::isSensitiveCallId(int callId) {
   switch (callId) {
+    case SUPLA_DS_CALL_SET_SUPLAN_SOURCE_ASSOCIATION_RESULT:
+    case SUPLA_SD_CALL_SET_SUPLAN_DESTINATION_ASSOCIATION:
     case SUPLA_DS_CALL_REGISTER_DEVICE:
     case SUPLA_DS_CALL_REGISTER_DEVICE_B:
     case SUPLA_DS_CALL_REGISTER_DEVICE_C:
@@ -1469,6 +1471,14 @@ void Supla::messageReceived(void *srpc,
         break;
       case SUPLA_SD_CALL_SUPLAN_DEVICE_IDENTITIES:
         suplaSrpc->onDeviceIdentities(rd.data.sd_suplan_device_identities);
+        break;
+      case SUPLA_SD_CALL_SET_SUPLAN_SOURCE_ASSOCIATION:
+        suplaSrpc->onSetSuplanSourceAssociation(
+            rd.data.sd_set_suplan_source_association);
+        break;
+      case SUPLA_SD_CALL_SET_SUPLAN_DESTINATION_ASSOCIATION:
+        suplaSrpc->onSetSuplanDestinationAssociation(
+            rd.data.sd_set_suplan_destination_association);
         break;
       case SUPLA_SD_CALL_DEVICE_SYNC_DONE:
         suplaSrpc->onDeviceSyncDone();
@@ -1971,10 +1981,58 @@ bool Supla::Protocol::SuplaSrpc::rotateServerRoot() {
   if (!serverIdentityState.rotateRoot()) {
     return false;
   }
+  for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
+    if (layer->getSdc() == sdc) layer->suplanIdentityChanged();
+  }
   disconnect();
   return true;
 }
 #endif  // !ARDUINO_ARCH_AVR
+
+void Supla::Protocol::SuplaSrpc::onSetSuplanSourceAssociation(
+    const TSDS_SuplaSetSuplanSourceAssociation *request) {
+  if (!request || !srpc) return;
+  TDS_SuplaSetSuplanSourceAssociationResult result = {};
+  result.PeerContext = request->PeerContext;
+  result.AclRevision = request->AclRevision;
+  result.Result = SUPLA_SUPLAN_RESULT_UNSUPPORTED;
+#ifndef ARDUINO_ARCH_AVR
+  if (effectiveSrpcVersion(version) >= 29 && serverIdentityState.capable()) {
+    if (!isRegisteredAndReady()) {
+      result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
+    } else {
+      for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
+        if (layer->getSdc() == sdc &&
+            layer->setSuplanSourceAssociation(*request, &result)) break;
+      }
+    }
+  }
+#endif  // !ARDUINO_ARCH_AVR
+  srpc_ds_async_set_suplan_source_association_result(srpc, &result);
+  memset(result.PeerKey, 0, sizeof(result.PeerKey));
+}
+
+void Supla::Protocol::SuplaSrpc::onSetSuplanDestinationAssociation(
+    const TSDS_SuplaSetSuplanDestinationAssociation *request) {
+  if (!request || !srpc) return;
+  TDS_SuplaSetSuplanDestinationAssociationResult result = {};
+  result.PeerContext = request->PeerContext;
+  result.AclRevision = request->AclRevision;
+  result.Result = SUPLA_SUPLAN_RESULT_UNSUPPORTED;
+#ifndef ARDUINO_ARCH_AVR
+  if (effectiveSrpcVersion(version) >= 29 && serverIdentityState.capable()) {
+    if (!isRegisteredAndReady()) {
+      result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
+    } else {
+      for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
+        if (layer->getSdc() == sdc &&
+            layer->setSuplanDestinationAssociation(*request, &result)) break;
+      }
+    }
+  }
+#endif  // !ARDUINO_ARCH_AVR
+  srpc_ds_async_set_suplan_destination_association_result(srpc, &result);
+}
 
 void Supla::Protocol::SuplaSrpc::onDeviceIdentities(
     const TSD_SuplaDeviceIdentities *snapshot) {
@@ -1990,6 +2048,9 @@ void Supla::Protocol::SuplaSrpc::onDeviceIdentities(
     result.RootEpoch = serverIdentityState.rootEpoch();
   } else if (isRegisteredAndReady()) {
     result = serverIdentityState.accept(*snapshot);
+    for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
+      if (layer->getSdc() == sdc) layer->suplanIdentityChanged();
+    }
   } else {
     result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
     result.RootEpoch = serverIdentityState.rootEpoch();
@@ -2025,6 +2086,9 @@ void Supla::Protocol::SuplaSrpc::onDeviceSyncDone() {
 
 #ifndef ARDUINO_ARCH_AVR
   serverIdentityState.syncDone();
+  for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
+    if (layer->getSdc() == sdc) layer->suplanIdentityChanged();
+  }
 #endif  // !ARDUINO_ARCH_AVR
   deviceSyncDoneReceived = true;
 #ifndef ARDUINO_ARCH_AVR

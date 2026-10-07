@@ -121,7 +121,23 @@ LinuxSupLanRuntime::LinuxSupLanRuntime(const LinuxSupLanConfig& config)
 LinuxSupLanRuntime::~LinuxSupLanRuntime() = default;
 
 bool LinuxSupLanRuntime::initialize() {
-  if (!config_.enabled || (config_.role != 'A' && config_.role != 'B')) {
+  if (!config_.enabled) return false;
+  if (config_.serverProvisioning) {
+    transport_.reset(new TransportLifecycle(
+        &datagrams_, config_.unicastPort, config_.bindAddress));
+    protocol_.reset(new Protocol::SupLan(
+        &SuplaDevice, &peers_, nullptr, 0, onApplicationEvent, this));
+    runtime_.reset(new SupLan::Runtime(&crypto_, &datagrams_, protocol_.get(),
+                                       &peers_, {SupLan::kNodeIdDevice, 0},
+                                       29));
+    associations_.reset(
+        new Device::ServerAssociations(&peers_, runtime_.get()));
+    protocol_->attachRuntime(runtime_.get());
+    protocol_->attachServerAssociations(associations_.get());
+    protocol_->attachTransportLifecycle(transport_.get());
+    return protocol_->verifyConfig();
+  }
+  if (config_.role != 'A' && config_.role != 'B') {
     return false;
   }
   if (!SupLan::Poc1::configurePeerTable(
@@ -259,6 +275,18 @@ bool LinuxSupLanRuntime::processDebugCommand(
   } else if (command == "show-status") {
     writeStatus(writer);
   } else if (command == "show-resources") {
+    if (config_.serverProvisioning) {
+      for (auto channel = Channel::Begin(); channel;
+           channel = channel->next()) {
+        char output[128] = {};
+        snprintf(output, sizeof(output), "RESOURCE id=%" PRIu32
+                 " channel=%d type=%" PRIu32 "\n",
+                 channel->getServerChannelId(), channel->getChannelNumber(),
+                 channel->getChannelType());
+        writeText(writer, output);
+      }
+      return true;
+    }
     const char* role = nodeA_ ? "A" : "B";
     if (nodeA_) {
       auto* relay = dynamic_cast<Control::VirtualRelay*>(
@@ -350,7 +378,8 @@ bool LinuxSupLanRuntime::processDebugCommand(
     }
   } else if (command == "forget-session" || command == "clear-endpoint") {
     uint8_t peer = 0;
-    if (!parsePeer(&input, peers_.size(), &peer)) {
+    if (!parsePeer(&input, SUPLAN_MAX_PERSISTENT_PEERS, &peer) ||
+        peers_.get(peer) == nullptr) {
       writeText(writer, "ERROR invalid peer index\n");
     } else if (command == "forget-session") {
       writeText(writer, runtime_->forgetSession(peer)
@@ -371,6 +400,12 @@ bool LinuxSupLanRuntime::debugRead(uint32_t resourceId) {
       ? actionPeer_ : primaryPeer_;
   const SupLan::ResourceId resource = {
       SupLan::kResourceTypeChannel, resourceId};
+  if (config_.serverProvisioning) {
+    for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+      if (runtime_->requestRead(i, resource)) return true;
+    }
+    return false;
+  }
   return runtime_->requestRead(peer, resource);
 }
 
@@ -386,6 +421,13 @@ bool LinuxSupLanRuntime::debugControl(uint32_t resourceId, uint32_t value) {
   payload[4] = SupLan::kChannelNumberUnresolved;
   putLe32(payload + 5, 0);
   payload[9] = static_cast<uint8_t>(value);
+  if (config_.serverProvisioning) {
+    for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+      if (runtime_->sendControl(i, resource, payload, sizeof(payload)))
+        return true;
+    }
+    return false;
+  }
   return runtime_->sendControl(peer, resource, payload, sizeof(payload));
 }
 
@@ -408,7 +450,8 @@ void LinuxSupLanRuntime::writeStatus(Debug::ResponseWriter* writer) const {
            isTransportOpen() ? "open" : "closed",
            transport_ != nullptr && transport_->isEnabled() ? 1U : 0U,
            static_cast<unsigned>(runtime_->poolDiagnostics().sessions.used),
-           config_.role, config_.unicastPort);
+           config_.serverProvisioning ? 'S' : config_.role,
+           config_.unicastPort);
   writeText(writer, output);
 }
 

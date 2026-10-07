@@ -514,9 +514,9 @@
       "name": "Supla::SupLan::PeerTable",
       "header": "suplan/suplan_acl.h",
       "limits": {
-        "host": 964,
-        "esp8266": 964,
-        "esp32": 964
+        "host": 1048,
+        "esp8266": 1036,
+        "esp32": 4108
       }
     },
     {
@@ -525,16 +525,16 @@
       "limits": {
         "host": 5040,
         "esp8266": 5008,
-        "esp32": 5008
+        "esp32": 6800
       }
     },
     {
       "name": "Supla::Protocol::SupLan",
       "header": "supla/protocol/suplan_protocol.h",
       "limits": {
-        "host": 96,
-        "esp8266": 48,
-        "esp32": 48
+        "host": 104,
+        "esp8266": 52,
+        "esp32": 52
       }
     },
     {
@@ -544,6 +544,15 @@
         "host": 72,
         "esp8266": 64,
         "esp32": 64
+      }
+    },
+    {
+      "name": "Supla::Device::ServerAssociations",
+      "header": "supla/suplan/suplan_server_associations.h",
+      "limits": {
+        "host": 672,
+        "esp8266": 656,
+        "esp32": 2144
       }
     }
   ]

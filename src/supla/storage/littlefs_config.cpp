@@ -522,17 +522,27 @@ bool Supla::LittleFsConfig::eraseKey(const char* key) {
 
   bool removed = Supla::KeyValue::eraseKey(key);
 
-  if (!initLittleFs()) {
-    return removed;
+  if (!initLittleFs(false)) {
+    return false;
   }
 
   char filename[50] = {};
   snprintf(filename, sizeof(filename), "/supla/%s", key);
-  if (LittleFS.exists(filename) && LittleFS.remove(filename)) {
+  if (LittleFS.exists(filename)) {
+    if (!LittleFS.remove(filename)) {
+      LittleFS.end();
+      return false;
+    }
     removed = true;
   }
   LittleFS.end();
-  return removed;
+  // SERVER empty replacement must not acknowledge a cached/stale blob delete.
+  if (!initLittleFs(false)) {
+    return false;
+  }
+  bool absent = !LittleFS.exists(filename);
+  LittleFS.end();
+  return removed && absent;
 }
 
 #endif  // !defined(ARDUINO_ARCH_AVR)

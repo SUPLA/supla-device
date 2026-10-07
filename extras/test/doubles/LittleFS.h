@@ -91,6 +91,7 @@ class FakeLittleFs {
     autoFormat_ = true;
     failOpenPath.clear();
     failReadPath.clear();
+    failRemovePath.clear();
     failClosePath.clear();
     failSyncPath.clear();
     corruptClosePath.clear();
@@ -103,6 +104,7 @@ class FakeLittleFs {
   bool beginResult = true;
   std::string failOpenPath;
   std::string failReadPath;
+  std::string failRemovePath;
   std::string failClosePath;
   std::string failSyncPath;
   std::string corruptClosePath;
@@ -118,7 +120,8 @@ class FakeLittleFs {
   bool mkdir(const char *) { return true; }
 
   bool remove(const char *path) {
-    return path != nullptr && files_.erase(path) != 0;
+    return path != nullptr && path != failRemovePath &&
+        files_.erase(path) != 0;
   }
 
   File open(const char *path, const char *mode) {

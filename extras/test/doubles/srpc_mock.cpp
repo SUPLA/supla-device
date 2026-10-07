@@ -260,3 +260,14 @@ _supla_int_t srpc_ds_async_suplan_device_identities_result(
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->deviceIdentitiesResult(srpc, result);
 }
+
+_supla_int_t srpc_ds_async_set_suplan_source_association_result(
+    void *srpc, TDS_SuplaSetSuplanSourceAssociationResult *result) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->sourceAssociationResult(srpc, result);
+}
+_supla_int_t srpc_ds_async_set_suplan_destination_association_result(
+    void *srpc, TDS_SuplaSetSuplanDestinationAssociationResult *result) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->destinationAssociationResult(srpc, result);
+}

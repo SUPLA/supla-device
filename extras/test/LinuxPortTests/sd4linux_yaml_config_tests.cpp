@@ -1032,3 +1032,15 @@ TEST_F(Sd4linuxYamlCredentialTests,
   ASSERT_TRUE(restored.getUInt32("test_commit", &value));
   EXPECT_EQ(value, 42u);
 }
+
+TEST(Sd4linuxYamlConfigTests, ProductionSupLanNeedsNoPocRoleOrPeerFixture) {
+  TestLinuxYamlConfig config;
+  Supla::LinuxSupLanConfig suplan;
+  config.config = YAML::Load("suplan:\n  enabled: true\n  mode: server\n");
+  ASSERT_TRUE(config.getSupLanConfig(&suplan));
+  EXPECT_TRUE(suplan.serverProvisioning);
+  EXPECT_TRUE(suplan.enabled);
+  EXPECT_EQ(suplan.role, 0);
+  config.config = YAML::Load("suplan:\n  mode: unknown\n");
+  EXPECT_FALSE(config.getSupLanConfig(&suplan));
+}

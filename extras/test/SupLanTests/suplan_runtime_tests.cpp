@@ -331,6 +331,24 @@ std::vector<std::vector<uint8_t>> protectedDataFromB(
   return frames;
 }
 
+TEST(SupLanRuntime, IterateWithoutPeerTableIsNoOp) {
+  Supla::SupLan::OpenSslCryptoPort crypto;
+  FakeNetwork network;
+  FakeDatagramPort datagrams(&network, {0x0100007F, 2017});
+  FakeApplication application;
+  Supla::SupLan::Runtime runtime(
+      &crypto, &datagrams, &application, nullptr,
+      {Supla::SupLan::kNodeIdDevice, 101}, 29);
+
+  runtime.iterate();
+  runtime.iterate();
+
+  EXPECT_TRUE(network.packets.empty());
+  EXPECT_EQ(network.multicastAttempts, 0U);
+  EXPECT_EQ(application.controlCalls, 0U);
+  EXPECT_EQ(application.stateCalls, 0U);
+}
+
 TEST(SupLanRuntime, RandomFailureDoesNotTransmitLocate) {
   RuntimePair pair;
   pair.rng.failRandom = true;

@@ -74,6 +74,7 @@ class Relay;
 
 struct LinuxSupLanConfig {
   bool enabled = false;
+  bool serverProvisioning = false;
   char role = 0;
   uint16_t unicastPort = 2016;
   std::string bindAddress = "0.0.0.0";

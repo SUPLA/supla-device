@@ -631,12 +631,20 @@ esp_err_t loginHandler(httpd_req_t *req) {
       if (!loginResult &&
           !srvInst->ensureAuthorized(
               req, sessionCookie, sizeof(sessionCookie), true)) {
-        srvInst->addSecurityLog(req, "Failed login attempt");
+        const bool loginBlocked = srvInst->isAuthorizationBlocked();
+        const char *loginLog = loginBlocked
+                                  ? "Login blocked: too many failed attempts"
+                                  : "Failed login attempt";
+        srvInst->addSecurityLog(req, loginLog);
         SUPLA_LOG_DEBUG("SERVER: login failed, send login page");
         Supla::EspIdfSender sender(req,
                                    srvInst->getSendBufPtr(),
                                    Supla::SUPLA_HTML_OUTPUT_BUFFER_SIZE);
-        srvInst->htmlGenerator->sendLoginPage(&sender, true);
+        if (loginBlocked) {
+          srvInst->htmlGenerator->sendLoginBlockedPage(&sender);
+        } else {
+          srvInst->htmlGenerator->sendLoginPage(&sender, true);
+        }
       } else {
         // redirect based on cookie value
         srvInst->addSecurityLog(req, "Successful login");
@@ -922,8 +930,14 @@ esp_err_t redirectHandler(httpd_req_t *req) {
 #if defined(CONFIG_LWIP_IPV6) && CONFIG_LWIP_IPV6
   if (addr.ss_family == AF_INET6) {
     auto *addr6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
-    converted = inet_ntop(AF_INET6, &addr6->sin6_addr, host, sizeof(host));
-    ipv6 = true;
+    if (IN6_IS_ADDR_V4MAPPED(&addr6->sin6_addr)) {
+      struct in_addr addr4 = {};
+      memcpy(&addr4, &addr6->sin6_addr.s6_addr[12], sizeof(addr4));
+      converted = inet_ntop(AF_INET, &addr4, host, sizeof(host));
+    } else {
+      converted = inet_ntop(AF_INET6, &addr6->sin6_addr, host, sizeof(host));
+      ipv6 = true;
+    }
   } else if (addr.ss_family == AF_INET) {
 #else
   if (addr.sin_family == AF_INET) {

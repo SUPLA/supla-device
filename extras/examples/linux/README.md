@@ -163,6 +163,13 @@ The application creates these persistent files with owner-only permissions
 (`0600`): `guid_auth.yaml`, `config_storage.bin`, `state.bin`, and
 `last_state.txt`.
 
+When rewriting these files, the application also restricts existing file
+permissions to `0600`.
+
+`config_storage.bin` stores runtime configuration in binary form, separately
+from the input YAML configuration file. It is rewritten when configuration
+changes are committed.
+
 Adjust "supla_user" to your user name.
 
 `last_state.txt` contains the last runtime "last state" log (similar to

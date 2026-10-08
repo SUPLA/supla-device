@@ -15,6 +15,7 @@
 #include <array>
 #include <fstream>
 #include <filesystem>  // NOLINT(build/c++17)
+#include <iterator>
 #include <string>
 #include <variant>
 #include <vector>
@@ -292,6 +293,84 @@ TEST_F(Sd4linuxYamlCredentialTests,
   std::string targetContents;
   std::getline(targetAfterSave, targetContents);
   EXPECT_EQ(targetContents, "unchanged");
+}
+
+TEST_F(Sd4linuxYamlCredentialTests,
+       SavesNewAndExistingConfigStorageWithOwnerOnlyPermissions) {
+  UmaskGuard umaskGuard(0022);
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(config.setString("test_key", "test_value"));
+  std::array<uint8_t, 256> serialized = {};
+  const auto size = config.serializeToMemory(serialized.data(),
+                                             serialized.size());
+  ASSERT_GT(size, 0U);
+  const std::string expected(reinterpret_cast<char*>(serialized.data()), size);
+
+  for (bool existing : {false, true}) {
+    if (existing) {
+      std::ofstream oldFile(storagePath, std::ios::binary);
+      ASSERT_TRUE(oldFile.is_open());
+      oldFile << std::string(1024, 'x');
+      oldFile.close();
+      ASSERT_EQ(::chmod(storagePath.c_str(), 0644), 0);
+    }
+    config.commit();
+
+    struct stat fileStat = {};
+    ASSERT_EQ(::stat(storagePath.c_str(), &fileStat), 0);
+    EXPECT_EQ(fileStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO), 0600);
+    std::ifstream saved(storagePath, std::ios::binary);
+    ASSERT_TRUE(saved.is_open());
+    const std::string actual{std::istreambuf_iterator<char>(saved),
+                             std::istreambuf_iterator<char>()};
+    EXPECT_EQ(actual, expected);
+  }
+}
+
+TEST_F(Sd4linuxYamlCredentialTests,
+       RejectsConfigStorageSymlinkWithoutModifyingItsTarget) {
+  const auto targetPath = tempDirectory / "target";
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  {
+    std::ofstream target(targetPath);
+    ASSERT_TRUE(target.is_open());
+    target << "unchanged";
+  }
+  ASSERT_EQ(::chmod(targetPath.c_str(), 0644), 0);
+  ASSERT_EQ(::symlink(targetPath.c_str(), storagePath.c_str()), 0);
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(config.setString("test_key", "test_value"));
+  supla_test_clear_last_log();
+
+  config.commit();
+
+  EXPECT_NE(std::string(supla_test_get_last_log()).find(
+                "failed to write read/write config storage file"),
+            std::string::npos);
+  struct stat fileStat = {};
+  ASSERT_EQ(::stat(targetPath.c_str(), &fileStat), 0);
+  EXPECT_EQ(fileStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO), 0644);
+  std::ifstream target(targetPath);
+  std::string content;
+  std::getline(target, content);
+  EXPECT_EQ(content, "unchanged");
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, LogsConfigStorageWriteFailure) {
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = (tempDirectory / "missing").string();
+  ASSERT_TRUE(config.setString("test_key", "test_value"));
+  supla_test_clear_last_log();
+
+  config.commit();
+
+  EXPECT_NE(std::string(supla_test_get_last_log()).find(
+                "failed to write read/write config storage file"),
+            std::string::npos);
+  EXPECT_FALSE(std::filesystem::exists(tempDirectory / "missing"));
 }
 
 TEST(Sd4linuxYamlConfigTests, AllowsRgbCctWithoutStateAndRejectsMissingParser) {

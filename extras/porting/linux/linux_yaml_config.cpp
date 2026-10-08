@@ -359,15 +359,13 @@ void Supla::LinuxYamlConfig::commit() {
 
   size_t dataSize = serializeToMemory(buf, SUPLA_LINUX_CONFIG_BUF_SIZE);
 
-  std::ofstream rwConfigFile(
-      getStateFilesPath() + Supla::ReadWriteConfigStorage,
-      std::ofstream::out | std::ios::binary);
-
-  for (size_t i = 0; i < dataSize; i++) {
-    rwConfigFile << buf[i];
+  if (!Supla::Linux::writeSecureFile(
+          getStateFilesPath() + Supla::ReadWriteConfigStorage,
+          buf,
+          dataSize,
+          false)) {
+    SUPLA_LOG_ERROR("Config: failed to write read/write config storage file");
   }
-
-  rwConfigFile.close();
 }
 
 bool Supla::LinuxYamlConfig::setDeviceName(const char* name) {

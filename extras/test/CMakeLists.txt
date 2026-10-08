@@ -113,7 +113,8 @@ file(GLOB SD4LINUX_TEST_SRC CONFIGURE_DEPENDS
 
 if(NOT SUPLA_TEST_CURL_HTTP_ENABLED)
   list(REMOVE_ITEM SD4LINUX_TEST_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/LinuxPortTests/sd4linux_http_source_tests.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/LinuxPortTests/sd4linux_http_source_tests.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/LinuxPortTests/sd4linux_http_redirect_tests.cpp)
 endif()
 
 list(APPEND TEST_SRC ../../src/supla-common/proto_check.cpp)

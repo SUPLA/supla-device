@@ -74,6 +74,15 @@ Authorization: Bearer <token>
 Inline tokens in YAML are intentionally unsupported. The token and
 `Authorization` header are not logged.
 
+Automatic redirects are followed only when the request has no configured
+headers and no bearer token. This prevents custom headers such as `X-API-Key`
+from being forwarded to another server. Any configured header, including
+`Accept`, disables redirects even within the same server. In that case, use
+the final URL directly; a redirect response is treated as a failed fetch and
+keeps the previous cached body under the normal cache expiration policy.
+Requests without these headers follow at most five redirects, with only
+HTTP and HTTPS allowed as redirect targets.
+
 ## SmartThings token and device id
 
 Create a SmartThings Personal Access Token at:

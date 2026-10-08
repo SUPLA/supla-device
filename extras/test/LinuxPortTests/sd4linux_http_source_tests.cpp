@@ -5,20 +5,46 @@
 
 #include <simple_time.h>
 #include <supla/source/http.h>
+#include <unistd.h>
 
 #include <chrono>
 #include <cstdio>
 #include <cstdint>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <stdexcept>
 #include <thread>
 #include <utility>
 #include <vector>
 
 namespace {
+
+class TemporaryHttpFile {
+ public:
+  TemporaryHttpFile() {
+    const auto nameTemplate =
+        (std::filesystem::temp_directory_path() / "sd4linux-http-XXXXXX")
+            .string();
+    std::vector<char> name(nameTemplate.begin(), nameTemplate.end());
+    name.push_back('\0');
+    const int fd = mkstemp(name.data());
+    if (fd < 0) {
+      throw std::runtime_error("Cannot create temporary HTTP test file");
+    }
+    ::close(fd);
+    path = name.data();
+  }
+
+  ~TemporaryHttpFile() {
+    std::remove(path.c_str());
+  }
+
+  std::string path;
+};
 
 class FakeHttpTransport : public Supla::Source::HttpTransport {
  public:
@@ -332,7 +358,8 @@ TEST(Sd4linuxHttpSourceTests, RetriesFromConnectionCheckAfterCacheExpires) {
 
 TEST(Sd4linuxHttpSourceTests, SendsTrimmedBearerTokenFromFile) {
   SimpleTime time;
-  const std::string tokenPath = "/tmp/sd4linux_http_source_token.txt";
+  TemporaryHttpFile token;
+  const std::string tokenPath = token.path;
   {
     std::ofstream tokenFile(tokenPath);
     tokenFile << "  test-token\n";
@@ -355,13 +382,14 @@ TEST(Sd4linuxHttpSourceTests, SendsTrimmedBearerTokenFromFile) {
 
 TEST(Sd4linuxHttpSourceTests, DoesNotCallTransportWhenTokenFileIsMissing) {
   SimpleTime time;
+  TemporaryHttpFile token;
   FakeHttpTransport* transport = nullptr;
   auto source = makeSource(
       &transport,
       1000,
       10,
       "bearer_file",
-      "/tmp/sd4linux_http_source_missing_token_file");
+      token.path + ".missing");
 
   EXPECT_EQ(source->getContent(), "");
   EXPECT_FALSE(source->isConnected());
@@ -416,7 +444,8 @@ TEST(Sd4linuxHttpSourceTests, StartsNewRequestAfterLongRunningRequestFinishes) {
 }
 
 TEST(Sd4linuxHttpSourceTests, CurlTransportRejectsBodyLargerThanLimit) {
-  const std::string bodyPath = "/tmp/sd4linux_http_source_body_limit.txt";
+  TemporaryHttpFile body;
+  const std::string bodyPath = body.path;
   {
     std::ofstream bodyFile(bodyPath);
     bodyFile << "abcdef";
@@ -439,7 +468,8 @@ TEST(Sd4linuxHttpSourceTests, CurlTransportRejectsBodyLargerThanLimit) {
 }
 
 TEST(Sd4linuxHttpSourceTests, CurlTransportAcceptsBodyWithinLimit) {
-  const std::string bodyPath = "/tmp/sd4linux_http_source_body_ok.txt";
+  TemporaryHttpFile body;
+  const std::string bodyPath = body.path;
   {
     std::ofstream bodyFile(bodyPath);
     bodyFile << "abcdef";

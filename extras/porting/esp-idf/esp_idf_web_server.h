@@ -202,6 +202,7 @@ class EspIdfWebServer : public Supla::WebServer {
   uint32_t lastLoginAttemptTimestamp = 0;
   SaltPassword saltPassword = {};
   uint8_t sessionSecret[32] = {};
+  bool sessionSecretInitialized = false;
 
   uint8_t failedLoginAttempts = 0;
   char *sendBuf = nullptr;

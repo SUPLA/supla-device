@@ -2258,7 +2258,7 @@ void Supla::EspIdfWebServer::reloadSaltPassword() {
   if (cfg) {
     cfg->getCfgModeSaltPassword(&saltPassword);
   }
-  if (!(previous == saltPassword) || sessionSecret[0] == '\0') {
+  if (!(previous == saltPassword) || !sessionSecretInitialized) {
     // A remote password change becomes visible before authorizing a request.
     rotateSessionSecret();
   }
@@ -2266,6 +2266,7 @@ void Supla::EspIdfWebServer::reloadSaltPassword() {
 
 void Supla::EspIdfWebServer::rotateSessionSecret() {
   Supla::fillRandom(sessionSecret, sizeof(sessionSecret));
+  sessionSecretInitialized = true;
 }
 
 uint32_t Supla::EspIdfWebServer::getIpFromReq(httpd_req_t *req) {

@@ -614,3 +614,90 @@ TEST(ValveTests, ValveOnChangeTests) {
   EXPECT_FALSE(channel->isValveFloodingFlagActive());
   EXPECT_FALSE(channel->isValveManuallyClosedFlagActive());
 }
+
+
+TEST(ValveTests, OnChangeIgnoresUnavailableSensorAndClosesOnWetRecovery) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  Supla::Control::VirtualValve valve;
+  valve.setDefaultCloseValveOnFloodType(
+      SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_ON_CHANGE);
+  Supla::Sensor::VirtualBinary sensor;
+  auto *sensorChannel = sensor.getChannel();
+
+  ASSERT_TRUE(valve.addSensor(sensor.getChannelNumber()));
+  sensorChannel->setStateOnline();
+  sensorChannel->setNewValue(true);
+
+  // First valid LEAK, including after a reboot, must be actionable.
+  EXPECT_TRUE(valve.isFloodDetected());
+  EXPECT_FALSE(valve.isFloodDetected());
+
+  // Continuous LEAK must not block a manual reopen.
+  valve.setValve(100);
+  EXPECT_TRUE(valve.getValueOpenStateFromDevice() == 100);
+  EXPECT_FALSE(valve.isFloodDetected());
+
+  // Offline: stale true must not count as a valid sample.
+  sensorChannel->setStateOffline();
+  EXPECT_FALSE(valve.isFloodDetected());
+  sensorChannel->setStateOnline();
+  EXPECT_TRUE(valve.isFloodDetected());
+  EXPECT_FALSE(valve.isFloodDetected());
+
+  // ONLINE_BUT_NOT_AVAILABLE is included by isStateOnline() and must be
+  // explicitly filtered, likewise FIRMWARE_UPDATE_ONGOING.
+  sensorChannel->setStateOnlineAndNotAvailable();
+  EXPECT_FALSE(valve.isFloodDetected());
+  sensorChannel->setStateOnline();
+  EXPECT_TRUE(valve.isFloodDetected());
+  EXPECT_FALSE(valve.isFloodDetected());
+
+  sensorChannel->setStateFirmwareUpdateOngoing();
+  EXPECT_FALSE(valve.isFloodDetected());
+  sensorChannel->setStateOnline();
+  EXPECT_TRUE(valve.isFloodDetected());
+  EXPECT_FALSE(valve.isFloodDetected());
+
+  sensorChannel->setStateOfflineRemoteWakeupNotSupported();
+  EXPECT_FALSE(valve.isFloodDetected());
+  sensorChannel->setStateOnline();
+  EXPECT_TRUE(valve.isFloodDetected());
+  EXPECT_FALSE(valve.isFloodDetected());
+
+  // Recovery to DRY establishes a baseline without triggering a close.
+  sensorChannel->setStateOffline();
+  EXPECT_FALSE(valve.isFloodDetected());
+  sensorChannel->setNewValue(false);
+  sensorChannel->setStateOnline();
+  EXPECT_FALSE(valve.isFloodDetected());
+  sensorChannel->setNewValue(true);
+  EXPECT_TRUE(valve.isFloodDetected());
+  EXPECT_FALSE(valve.isFloodDetected());
+}
+
+TEST(ValveTests, AlwaysIgnoresUnavailableSensorAndDetectsWetRecovery) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  Supla::Control::VirtualValve valve;
+  valve.setDefaultCloseValveOnFloodType(
+      SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_ALWAYS);
+  Supla::Sensor::VirtualBinary sensor;
+  auto *sensorChannel = sensor.getChannel();
+
+  ASSERT_TRUE(valve.addSensor(sensor.getChannelNumber()));
+  sensorChannel->setStateOnline();
+  sensorChannel->setNewValue(true);
+  EXPECT_TRUE(valve.isFloodDetected());
+  EXPECT_TRUE(valve.isFloodDetected());
+
+  sensorChannel->setStateOnlineAndNotAvailable();
+  EXPECT_FALSE(valve.isFloodDetected());
+  sensorChannel->setStateOnline();
+  EXPECT_TRUE(valve.isFloodDetected());
+
+  sensorChannel->setStateOffline();
+  EXPECT_FALSE(valve.isFloodDetected());
+  sensorChannel->setStateOnline();
+  EXPECT_TRUE(valve.isFloodDetected());
+}

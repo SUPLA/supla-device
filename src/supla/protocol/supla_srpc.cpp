@@ -2014,7 +2014,16 @@ bool Supla::Protocol::SuplaSrpc::autodiscover(uint32_t now) {
 
   if (1 == adClient->connect(server, 443)) {
     adClient->write("GET /users/");
-    adClient->write(Supla::RegisterDevice::getEmail());
+    const char *email = Supla::RegisterDevice::getEmail();
+    while (*email) {
+      char part[17] = {};
+      size_t len = strnlen(email, sizeof(part) - 1);
+      memcpy(part, email, len);
+      char encoded[3 * (sizeof(part) - 1) + 1] = {};
+      int encodedLen = urlEncode(part, encoded, sizeof(encoded));
+      adClient->write(encoded, encodedLen);
+      email += len;
+    }
     adClient->write(" HTTP/1.1\r\n");
     adClient->write("Host: ");
     adClient->write(server);

@@ -635,7 +635,7 @@ TEST(ValveTests, OnChangeIgnoresUnavailableSensorAndClosesOnWetRecovery) {
 
   // Continuous LEAK must not block a manual reopen.
   valve.setValve(100);
-  EXPECT_TRUE(valve.getValueOpenStateFromDevice() == 100);
+  EXPECT_EQ(valve.getValueOpenStateFromDevice(), 100);
   EXPECT_FALSE(valve.isFloodDetected());
 
   // Offline: stale true must not count as a valid sample.

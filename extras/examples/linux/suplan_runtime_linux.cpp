@@ -7,6 +7,7 @@
 #include <supla/at_channel.h>
 #include <supla/channels/channel.h>
 #include <supla/control/action_trigger.h>
+#include <supla/control/hvac_base.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/element.h>
 #include <supla/log_wrapper.h>
@@ -306,6 +307,60 @@ bool LinuxSupLanRuntime::processDebugCommand(
     writeCounters(writer);
   } else if (command == "show-pools") {
     writePools(writer);
+  } else if (command == "sleep-hint" || command == "wake-hint") {
+    unsigned duration = 0;
+    if (!(input >> duration) || duration == 0 || duration > UINT16_MAX) {
+      writeText(writer, "ERROR expected duration 1..65535\n");
+    } else if (command == "sleep-hint") {
+      protocol_->announceSleep(duration);
+      writeText(writer, "OK software sleep hint queued\n");
+    } else {
+      protocol_->beginWake(duration, true);
+      writeText(writer, "OK retained-interest wake queued\n");
+    }
+  } else if (command == "hvac-config" || command == "hvac-upload") {
+    unsigned number = 0;
+    unsigned mainId = 0;
+    unsigned minOn = 0;
+    auto *srpc = SuplaDevice.getSrpcLayer();
+    if (!(input >> number) || number >= SUPLA_CHANNELMAXCOUNT) {
+      writeText(writer, "ERROR expected local HVAC channel number\n");
+      return true;
+    }
+    auto *hvac = dynamic_cast<Control::HvacBase *>(
+        Element::getElementByChannelNumber(number));
+    TChannelConfig_HVAC config = {};
+    int size = 0;
+    if (hvac != nullptr) {
+      hvac->fillChannelConfig(&config, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+    }
+    if (size != sizeof(config)) {
+      writeText(writer, "ERROR HVAC serialization unavailable\n");
+    } else if (command == "hvac-config") {
+      char output[128] = {};
+      snprintf(output, sizeof(output),
+               "HVAC main=%" PRIu32 " min_on=%u temp=%d mode=%d "
+               "heat=%u setpoint=%d\n",
+               config.MainThermometerChannelId,
+               static_cast<unsigned>(config.MinOnTimeS),
+               static_cast<int>(hvac->getLastTemperature()), hvac->getMode(),
+               hvac->getChannel()->isHvacFlagHeating() ? 1U : 0U,
+               hvac->getTemperatureSetpointHeat());
+      writeText(writer, output);
+    } else if (!(input >> mainId >> minOn) || mainId > INT32_MAX ||
+               minOn > UINT16_MAX || srpc == nullptr || !srpc->isConnected()) {
+      writeText(writer, "ERROR expected main ChannelId and MinOnTimeS\n");
+    } else {
+      // Insecure Linux diagnostics only: send a full SDK-serialized request
+      // through normal SRPC. Do not activate the candidate or bypass Server
+      // protected merge; the authoritative echo remains the config source.
+      config.MainThermometerChannelId = mainId;
+      config.MinOnTimeS = minOn;
+      writeText(writer, srpc->setChannelConfig(
+          number, hvac->getChannel()->getDefaultFunction(), &config, size,
+          SUPLA_CONFIG_TYPE_DEFAULT) ? "OK HVAC upload queued\n" :
+                                      "ERROR HVAC upload rejected\n");
+    }
   } else if (command == "transport") {
     std::string state;
     if (!(input >> state) || (state != "on" && state != "off")) {

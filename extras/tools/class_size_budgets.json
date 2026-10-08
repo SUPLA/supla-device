@@ -554,6 +554,36 @@
         "esp8266": 656,
         "esp32": 2144
       }
+    },
+    {
+      "name": "Supla::Control::HvacReferenceValue",
+      "header": "supla/control/hvac_config.h",
+      "limits": {
+        "host": 4,
+        "avr": 4,
+        "esp8266": 4,
+        "esp32": 4
+      }
+    },
+    {
+      "name": "Supla::Control::HvacStoredConfigV2",
+      "header": "supla/control/hvac_config.h",
+      "limits": {
+        "host": 112,
+        "avr": 112,
+        "esp8266": 112,
+        "esp32": 112
+      }
+    },
+    {
+      "name": "Supla::Control::HvacConfiguration",
+      "header": "supla/control/hvac_config.h",
+      "limits": {
+        "host": 108,
+        "avr": 108,
+        "esp8266": 108,
+        "esp32": 108
+      }
     }
   ]
 }

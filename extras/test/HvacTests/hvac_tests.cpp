@@ -1271,9 +1271,10 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
               setUInt32(StrEq("0_cfg_chng_t"), 0))
       .Times(1).WillOnce(Return(true));
 
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillOnce(
-          [](const char *, const char *buf, int size) {
+          [this](const char *, const char *buf, int size) {
             TChannelConfig_HVAC expectedData = {};
             expectedData.MainThermometerChannelNo = 1;
             expectedData.AuxThermometerChannelNo = 2;
@@ -1341,7 +1342,12 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
                 TEMPERATURE_AUX_MAX,
                 7500);
 
-            EXPECT_EQ(0, memcmp(buf, &expectedData, size));
+            const auto expectedRecord = Supla::Control::storeHvacConfig(
+                Supla::Control::HvacConfiguration::fromLegacy(
+                    expectedData, hvac->getChannelNumber()),
+                hvac->getChannel()->getDefaultFunction());
+            EXPECT_EQ(size, sizeof(expectedRecord));
+            EXPECT_EQ(0, memcmp(buf, &expectedRecord, size));
             return 1;
           });
   EXPECT_CALL(cfg,
@@ -1412,9 +1418,10 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
               setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillOnce(
-          [](const char *, const char *buf, int size) {
+          [this](const char *, const char *buf, int size) {
             TChannelConfig_HVAC expectedData = {};
             expectedData.MainThermometerChannelNo = 1;
             expectedData.AuxThermometerChannelNo = 2;
@@ -1481,7 +1488,12 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
                 TEMPERATURE_AUX_MAX,
                 7500);
 
-            EXPECT_EQ(0, memcmp(buf, &expectedData, size));
+            const auto expectedRecord = Supla::Control::storeHvacConfig(
+                Supla::Control::HvacConfiguration::fromLegacy(
+                    expectedData, hvac->getChannelNumber()),
+                hvac->getChannel()->getDefaultFunction());
+            EXPECT_EQ(size, sizeof(expectedRecord));
+            EXPECT_EQ(0, memcmp(buf, &expectedRecord, size));
             return 1;
           });
 
@@ -1575,7 +1587,8 @@ TEST_F(HvacTestWithChannelSetupF,
       .WillOnce(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .Times(1)
       .InSequence(s1)
       .WillOnce(Return(true));
@@ -1600,10 +1613,11 @@ TEST_F(HvacTestWithChannelSetupF,
               setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .InSequence(s1)
       .WillOnce(
-          [](const char *, const char *buf, int size) {
+          [this](const char *, const char *buf, int size) {
             TChannelConfig_HVAC expectedData = {};
             expectedData.MainThermometerChannelNo = 1;
             expectedData.AuxThermometerChannelNo = 2;
@@ -1670,7 +1684,12 @@ TEST_F(HvacTestWithChannelSetupF,
                 TEMPERATURE_AUX_MAX,
                 7500);
 
-            EXPECT_EQ(0, memcmp(buf, &expectedData, size));
+            const auto expectedRecord = Supla::Control::storeHvacConfig(
+                Supla::Control::HvacConfiguration::fromLegacy(
+                    expectedData, hvac->getChannelNumber()),
+                hvac->getChannel()->getDefaultFunction());
+            EXPECT_EQ(size, sizeof(expectedRecord));
+            EXPECT_EQ(0, memcmp(buf, &expectedRecord, size));
             return 1;
           });
 
@@ -1892,7 +1911,8 @@ TEST_F(HvacTestWithChannelSetupF,
       .WillOnce(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .Times(1)
       .WillOnce(Return(true));
 

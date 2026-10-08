@@ -5,6 +5,7 @@
 #define SRC_SUPLA_PROTOCOL_PROTOCOL_LAYER_H_
 
 #include <supla/network/connection_error.h>
+#include <supla/suplan/remote_access_port.h>
 
 #include <stdint.h>
 #include <supla-common/proto.h>
@@ -13,9 +14,13 @@ class SuplaDeviceClass;
 
 namespace Supla {
 
+namespace Device {
+class RemoteResourceManager;
+}
+
 namespace Protocol {
 
-class ProtocolLayer {
+class ProtocolLayer : public Device::RemoteAccessPort {
  public:
   explicit ProtocolLayer(SuplaDeviceClass *sdc);
   virtual ~ProtocolLayer();
@@ -35,6 +40,13 @@ class ProtocolLayer {
       const TSDS_SuplaSetSuplanDestinationAssociation &,
       TDS_SuplaSetSuplanDestinationAssociationResult *) { return false; }
   virtual void suplanIdentityChanged() {}
+  virtual Device::RemoteResourceManager *remoteResources() { return nullptr; }
+  virtual bool ensureResourceAccess(const TDS_SuplaEnsureResourceAccess &) {
+    return false;
+  }
+  virtual void ensureResourceAccessResult(
+      const TSD_SuplaEnsureResourceAccessResult &) {}
+
   virtual void onInit() = 0;
   virtual bool onLoadConfig() = 0;
   virtual bool verifyConfig() = 0;

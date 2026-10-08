@@ -52,6 +52,9 @@ class GeneralPurposeChannelBase : public ChannelElement {
    * Destructor
    */
   virtual ~GeneralPurposeChannelBase();
+  GeneralPurposeChannelBase *getGeneralPurposeChannel() override {
+    return this;
+  }
 
   /**
    * Returns calculated value, which is result of the following operations:

@@ -26,6 +26,9 @@ static const uint32_t kSuplaCallActionTrigger = 700;
 class ApplicationPort {
  public:
   virtual ~ApplicationPort() {}
+  virtual bool fullChannelSnapshots() const { return false; }
+  virtual bool allowPresence(uint8_t, uint32_t) { return false; }
+  virtual void peerAwake(uint8_t, uint16_t, bool, const uint8_t *) {}
   // Returns false and sets eventOnly for resources without readable state.
   virtual bool readResource(const ResourceId &resource, bool *eventOnly,
                             uint8_t *payload, size_t capacity,
@@ -85,6 +88,7 @@ class Runtime {
           const NodeAddress &localAddress, uint8_t suplaProtoVersion);
 
   bool requestRead(uint8_t peerIndex, const ResourceId &resource);
+  void removeReadDependency(uint8_t peerIndex, const ResourceId &resource);
   bool sendControl(uint8_t peerIndex, const ResourceId &resource,
                    const uint8_t *suplaPayload, size_t payloadLength);
   bool publishState(uint8_t peerIndex, const ResourceId &resource,
@@ -93,7 +97,7 @@ class Runtime {
   bool publishStateParts(uint8_t peerIndex, const ResourceId &resource,
                          uint32_t messageType, const uint8_t *prefix,
                          size_t prefixLength, const uint8_t *payload,
-                         size_t payloadLength);
+                         size_t payloadLength, bool nativeSnapshot = false);
   bool publishAction(uint8_t peerIndex, const ResourceId &resource,
                      const uint8_t *suplaPayload, size_t payloadLength);
   bool forgetSession(uint8_t peerIndex);
@@ -105,9 +109,16 @@ class Runtime {
   bool startFlood(TestFloodKind kind, uint8_t peerIndex, uint16_t count);
   void resetDiagnostics();
   void iterate();
+  uint32_t nowMs() const { return datagrams_->nowMs(); }
   bool readNeedsRefresh(uint8_t peerIndex, const ResourceId &resource) const;
   RecoveryStatus recoveryStatus(uint8_t peerIndex) const;
   void setPeerSleeping(uint8_t peerIndex, bool sleeping);
+  bool announcePresence(uint8_t peerIndex, uint16_t awakeWindowMs,
+                         bool interestReset);
+  bool announceSleep(uint8_t peerIndex, uint32_t durationSec);
+  void refreshPeer(uint8_t peerIndex, uint16_t awakeWindowMs, bool reset);
+  void publishCurrentInterests(uint8_t peerIndex = 0xff);
+  void clearInterests();
   typedef void (*DataTransmitObserver)(void *, const Endpoint &,
                                        const uint8_t *, size_t);
   void setDataTransmitObserver(DataTransmitObserver observer, void *context);

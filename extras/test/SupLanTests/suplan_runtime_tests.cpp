@@ -199,6 +199,14 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
     lastAckResult = result;
   }
 
+  bool allowPresence(uint8_t, uint32_t) override { return presenceAllowed; }
+  void peerAwake(uint8_t index, uint16_t window, bool reset,
+                 const uint8_t *) override {
+    ++awakeHints;
+    if (runtime) runtime->refreshPeer(index, window, reset);
+  }
+  bool presenceAllowed = false;
+  int awakeHints = 0;
   bool stateAvailable = true;
   uint8_t value;
   uint32_t controlCalls;
@@ -2100,4 +2108,46 @@ TEST(SupLanRuntime, FailedAeadCannotInvalidateAnOlderCachedAck) {
   EXPECT_EQ(pair.runtimeA.diagnostics().ackTx, acks + 1);
   EXPECT_EQ(pair.runtimeA.diagnostics().controlDuplicateSuppressed, 1U);
   EXPECT_EQ(pair.appA.controlCalls, 64U);
+}
+
+TEST(SupLanSleepySource, AuthenticatedSleepWakeAndActualInterestLoss) {
+  RuntimePair pair;
+  pair.appB.runtime = &pair.runtimeB;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(30);
+  ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1u);
+  ASSERT_EQ(pair.appB.stateCalls, 1u);
+  ASSERT_TRUE(pair.runtimeA.announceSleep(pair.peerA, 30));
+  pair.pump(3);
+  EXPECT_TRUE(pair.runtimeB.recoveryStatus(pair.peerB).sleeping);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1u);
+  // Unsolicited hint without an interested consumer must have no effect.
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 200, false));
+  pair.pump(3);
+  EXPECT_EQ(pair.appB.awakeHints, 0);
+  EXPECT_TRUE(pair.runtimeB.recoveryStatus(pair.peerB).sleeping);
+  pair.appB.presenceAllowed = true;
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 200, false));
+  pair.pump(3);
+  EXPECT_EQ(pair.appB.awakeHints, 1);
+  EXPECT_FALSE(pair.runtimeB.recoveryStatus(pair.peerB).sleeping);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1u);
+  pair.runtimeA.clearInterests();
+  ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 0u);
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 0, true));
+  pair.pump(30);
+  EXPECT_EQ(pair.appB.awakeHints, 2);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1u);
+  EXPECT_EQ(pair.appB.stateCalls, 2u);
+}
+
+TEST(SupLanSleepySource, ForgedAwakeHintCannotStartRepair) {
+  RuntimePair pair;
+  pair.appB.presenceAllowed = true;
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 200, false));
+  ASSERT_FALSE(pair.network.packets.empty());
+  pair.network.packets.back().bytes.back() ^= 1;
+  pair.pump(3);
+  EXPECT_EQ(pair.appB.awakeHints, 0);
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
 }

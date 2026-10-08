@@ -125,7 +125,8 @@ TEST_F(HvacTempControlTypeF, auxControlTypeTest) {
   EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));

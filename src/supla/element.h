@@ -12,6 +12,9 @@ class SuplaDeviceClass;
 namespace Supla {
 
 class Channel;
+namespace Sensor {
+class GeneralPurposeChannelBase;
+}
 namespace Control {
 class ActionTrigger;
 }
@@ -31,8 +34,13 @@ class Element {
  public:
   explicit Element(ElementMode mode = ElementMode::Registered);
   virtual ~Element();
+  virtual bool isChannelConfigDurable() const { return true; }
+  virtual void onServerIdentityTransition() {}
   // Typed access without RTTI, including ATs whose button is not initialized.
   virtual Control::ActionTrigger *getActionTrigger() { return nullptr; }
+  virtual Sensor::GeneralPurposeChannelBase *getGeneralPurposeChannel() {
+    return nullptr;
+  }
   /**
    * Returns first Element (based on creation order)
    *

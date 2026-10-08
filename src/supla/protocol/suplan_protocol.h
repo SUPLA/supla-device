@@ -11,6 +11,7 @@
 
 #include <supla/protocol/protocol_layer.h>
 #include <suplan/suplan_runtime.h>
+#include <supla/suplan/remote_resource_manager.h>
 
 class SuplaDeviceClass;
 namespace Supla {
@@ -84,6 +85,22 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
          SupLanApplicationEventHandler eventHandler = nullptr,
          void *eventContext = nullptr);
   ~SupLan() override;
+  Device::RemoteResourceManager *remoteResources() override {
+    return resources_;
+  }
+  bool ensure(const TDS_SuplaEnsureResourceAccess &request) override;
+  void cancelEnsure() override;
+  void ensureResourceAccessResult(
+      const TSD_SuplaEnsureResourceAccessResult &result) override;
+  bool allowPresence(uint8_t peerIndex, uint32_t nowMs) override;
+  void peerAwake(uint8_t peerIndex, uint16_t windowMs, bool reset,
+                  const uint8_t *nonce) override;
+  void beginWake(uint16_t awakeWindowMs, bool retainedInterests = true);
+  bool wakeWindowComplete() const;
+  void announceSleep(uint32_t durationSec);
+  bool fullChannelSnapshots() const override {
+    return associations() != nullptr;
+  }
 
   // Production SERVER mode: caller owns one bounded manager, peers and runtime.
   // With no PoC mappings, resource resolution uses the M1B SERVER identity.
@@ -147,7 +164,10 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   static uint32_t getSuplaUint32(const uint8_t input[4]);
   static uint8_t channelOfflineState(const Supla::Channel *channel);
 
-  Supla::Device::ServerAssociations *associations_ = nullptr;
+  Device::RemoteResourceManager *resources_ = nullptr;
+  Device::ServerAssociations *associations() const {
+    return resources_ ? resources_->associations : nullptr;
+  }
   Supla::SupLan::PeerTable *peers_;
   Supla::SupLan::Runtime *runtime_;
   SupLanTransportLifecycle *transport_;
@@ -157,6 +177,7 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   uint8_t mappingCount_;
   bool enabled_;
   bool transportWasOpen_;
+  bool serverAssociationRequired_ = false;
 };
 
 }  // namespace Protocol

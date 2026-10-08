@@ -2328,7 +2328,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
     time.advance(100);
   }
 
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
@@ -2647,7 +2648,8 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(
       cfg,
@@ -2960,7 +2962,8 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(
       cfg,
@@ -3792,6 +3795,11 @@ TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {
       cfg,
       getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(0);
+  // Boot migration now writes the canonical V2 DEFAULT record once.
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                           sizeof(Supla::Control::HvacStoredConfigV2)))
+      .Times(1)
+      .WillOnce(Return(false));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _, _))
@@ -3953,7 +3961,8 @@ TEST_F(HvacIntegrationF, newValuesFromServer) {
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(
       cfg,
@@ -4159,7 +4168,8 @@ TEST_F(HvacIntegrationF, histeresisHeatingCheck) {
   EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
@@ -4314,7 +4324,8 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
   EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
@@ -4476,7 +4487,8 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
@@ -4703,7 +4715,8 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(
       cfg,

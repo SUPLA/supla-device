@@ -4,6 +4,7 @@
 #include "hvac_base.h"
 
 #include <stdint.h>
+#include <math.h>
 #include <string.h>
 #include <supla/actions.h>
 #include <supla/channels/channel.h>
@@ -13,6 +14,10 @@
 #include <supla/protocol/protocol_layer.h>
 #include <supla/sensor/thermometer.h>
 #include <supla/storage/config.h>
+#ifndef ARDUINO_ARCH_AVR
+#include <supla/suplan/suplan_server_identity.h>
+#include <supla/suplan/remote_resource_manager.h>
+#endif
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
@@ -58,6 +63,9 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
 }
 
 HvacBase::~HvacBase() {
+#ifndef ARDUINO_ARCH_AVR
+  if (auto manager = remoteManager()) manager->remove(getChannelNumber() + 1);
+#endif
   Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
 }
 
@@ -234,6 +242,11 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
   weeklyScheduleComponents.loadConfig();
   auto cfg = Supla::Storage::ConfigInstance();
+  if (referenceIdentity()) {
+#ifndef ARDUINO_ARCH_AVR
+    synchronizedConfigDurable = !referenceIdentity()->identityTransition();
+#endif
+  }
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
 
@@ -241,29 +254,39 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     loadFunctionFromConfig();
     initDefaultConfig();
 
-    // Generic HVAC configuration
-    generateKey(key, Supla::ConfigTag::HvacCfgTag);
-    TChannelConfig_HVAC storedConfig = {};
-    if (cfg->getBlob(key,
-                     reinterpret_cast<char *>(&storedConfig),
-                     sizeof(TChannelConfig_HVAC))) {
-      SUPLA_LOG_DEBUG("HVAC[%d]: config in storage:", getChannelNumber());
-      debugPrintConfigStruct(&storedConfig, getChannelNumber());
-      if (isConfigValid(&storedConfig)) {
-        fixReadonlyParameters(&storedConfig);
-        applyAdditionalValidation(&storedConfig);
-        applyConfigWithoutValidation(&storedConfig);
-        fixTemperatureSetpoints();
-        SUPLA_LOG_INFO("HVAC[%d]: config loaded successfully",
-                       getChannelNumber());
-      } else {
-        SUPLA_LOG_WARNING(
-            "HVAC[%d]: config invalid in storage. Using SW defaults",
-            getChannelNumber());
+    generateKey(key, "hvac_cfg2");
+    HvacStoredConfigV2 record;
+    const int size = cfg->getBlobSize(key);
+    if (size >= 0) {
+      HvacConfiguration loaded;
+      if (size == sizeof(record) &&
+          cfg->getBlob(key, reinterpret_cast<char *>(&record),
+                       sizeof(record)) &&
+          restoreHvacConfig(record, &loaded) &&
+          (!record.function || isFunctionSupported(record.function)) &&
+          applyFirmwareConfiguration(&loaded)) {
+        auto wire = loaded.localWire(referenceIdentity(), getChannelNumber());
+        if (isConfigValid(&wire, record.function)) {
+          if (record.function) channel.setDefault(record.function);
+          config = loaded;
+          fixTemperatureSetpoints();
+          cleanupLegacyConfig();
+        }
       }
     } else {
-      SUPLA_LOG_INFO("HVAC[%d]: config missing. Using SW defaults",
-                     getChannelNumber());
+      generateKey(key, Supla::ConfigTag::HvacCfgTag);
+      TChannelConfig_HVAC legacy = {};
+      if (cfg->getBlobSize(key) == sizeof(legacy) &&
+          cfg->getBlob(key, reinterpret_cast<char *>(&legacy),
+                       sizeof(legacy)) &&
+          isConfigValid(&legacy)) {
+        fixReadonlyParameters(&legacy);
+        applyAdditionalValidation(&legacy);
+        applyConfigWithoutValidation(&legacy);
+        fixTemperatureSetpoints();
+        if (persistConfiguration(config, channel.getDefaultFunction()))
+          cleanupLegacyConfig();
+      }
     }
 
   } else {
@@ -418,21 +441,27 @@ void HvacBase::onInit() {
   initDone = true;
 
   // validate thermometers channel numbers
-  if (!setMainThermometerChannelNo(getMainThermometerChannelNo())) {
+  if (config.reference(config.MainThermometer).kind !=
+          ChannelReferenceKind::SERVER_CHANNEL &&
+      !setMainThermometerChannelNo(getMainThermometerChannelNo())) {
     SUPLA_LOG_WARNING(
         "HVAC[%d]: main thermometer channel number %d is invalid. Clearing.",
         getChannelNumber(),
         getMainThermometerChannelNo());
     setMainThermometerChannelNo(getChannelNumber());
   }
-  if (!setAuxThermometerChannelNo(getAuxThermometerChannelNo())) {
+  if (config.reference(config.AuxThermometer).kind !=
+          ChannelReferenceKind::SERVER_CHANNEL &&
+      !setAuxThermometerChannelNo(getAuxThermometerChannelNo())) {
     SUPLA_LOG_WARNING(
         "HVAC[%d]: aux thermomter channel number %d is invalid. Clearing.",
         getChannelNumber(),
         getAuxThermometerChannelNo());
     setAuxThermometerChannelNo(getChannelNumber());
   }
-  if (!setBinarySensorChannelNo(getBinarySensorChannelNo())) {
+  if (config.reference(config.BinarySensor).kind !=
+          ChannelReferenceKind::SERVER_CHANNEL &&
+      !setBinarySensorChannelNo(getBinarySensorChannelNo())) {
     if (getBinarySensorChannelNo() == getChannelNumber()) {
       SUPLA_LOG_DEBUG("HVAC[%d]: binary sensor function disabled",
                       getChannelNumber());
@@ -444,14 +473,18 @@ void HvacBase::onInit() {
       setBinarySensorChannelNo(getChannelNumber());
     }
   }
-  if (!setPumpSwitchChannelNo(getPumpSwitchChannelNo())) {
+  if (config.reference(config.PumpSwitch).kind !=
+          ChannelReferenceKind::SERVER_CHANNEL &&
+      !setPumpSwitchChannelNo(getPumpSwitchChannelNo())) {
     SUPLA_LOG_WARNING(
         "HVAC[%d]: pump switch channel number %d is invalid. Clearing.",
         getChannelNumber(),
         getPumpSwitchChannelNo());
     clearPumpSwitchChannelNo();
   }
-  if (!setHeatOrColdSourceSwitchChannelNo(
+  if (config.reference(config.HeatOrColdSourceSwitch).kind !=
+          ChannelReferenceKind::SERVER_CHANNEL &&
+      !setHeatOrColdSourceSwitchChannelNo(
           getHeatOrColdSourceSwitchChannelNo())) {
     SUPLA_LOG_WARNING(
         "HVAC[%d]: heat or cold source switch channel number %d is invalid. "
@@ -460,7 +493,9 @@ void HvacBase::onInit() {
         getHeatOrColdSourceSwitchChannelNo());
     clearHeatOrColdSourceSwitchChannelNo();
   }
-  if (!setMasterThermostatChannelNo(getMasterThermostatChannelNo())) {
+  if (config.reference(config.MasterThermostat).kind !=
+          ChannelReferenceKind::SERVER_CHANNEL &&
+      !setMasterThermostatChannelNo(getMasterThermostatChannelNo())) {
     SUPLA_LOG_WARNING(
         "HVAC[%d]: master thermostat channel number %d is invalid. "
         "Clearing.",
@@ -524,7 +559,14 @@ void HvacBase::fillChannelConfig(void *channelConfig,
   if (configType == SUPLA_CONFIG_TYPE_DEFAULT) {
     *size = sizeof(TChannelConfig_HVAC);
     auto *hvacConfig = reinterpret_cast<TChannelConfig_HVAC *>(channelConfig);
-    memcpy(hvacConfig, &config, sizeof(TChannelConfig_HVAC));
+    *hvacConfig = config.localWire(referenceIdentity(), getChannelNumber());
+#ifndef ARDUINO_ARCH_AVR
+    if (referenceIdentity() && referenceIdentity()->capable() &&
+        !config.serverWire(referenceIdentity(), hvacConfig)) {
+      *size = 0;
+      return;
+    }
+#endif
     hvacConfig->ParameterFlags = parameterFlags;
     return;
   }
@@ -547,6 +589,11 @@ void HvacBase::fillChannelConfig(void *channelConfig,
 }
 
 void HvacBase::iterateAlways() {
+  refreshMainDependency();
+  if (legacyCleanupPending &&
+      static_cast<uint32_t>(millis() - legacyCleanupLastMs) >= 60000) {
+    cleanupLegacyConfig();
+  }
   if (getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     if (config.Subfunction == SUPLA_HVAC_SUBFUNCTION_NOT_SET) {
       setSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
@@ -900,14 +947,82 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   if (!isFunctionSupported(channelFunction)) {
     serverChannelFunctionValid = false;
     if (channelFunction == 0) {
-      // Channel function set to "none/disabled"
+      // Channel function set to "none/disabled". Retain the historical local
+      // function while durably accepting the reset configuration.
+#ifndef ARDUINO_ARCH_AVR
+      if (!local && referenceIdentity() && referenceIdentity()->capable()) {
+        synchronizedConfigDurable = false;
+        auto candidate = defaultConfiguration();
+        TChannelConfig_HVAC server;
+        if (!candidate.serverWire(referenceIdentity(), &server)) {
+          return SUPLA_CONFIG_RESULT_DATA_ERROR;
+        }
+        candidate = HvacConfiguration::fromServer(server);
+        if (!persistConfiguration(candidate, channel.getDefaultFunction())) {
+          return SUPLA_CONFIG_RESULT_DATA_ERROR;
+        }
+        config = candidate;
+      }
+#endif
       changeFunction(channelFunction, false);
+      synchronizedConfigDurable = true;
+      refreshMainDependency();
       markAllChannelConfigsReceived();
       return SUPLA_CONFIG_RESULT_TRUE;
     }
     return SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED;
   }
   serverChannelFunctionValid = true;
+
+#ifndef ARDUINO_ARCH_AVR
+  if (!local && referenceIdentity() && referenceIdentity()->capable() &&
+      newConfig->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT &&
+      newConfig->ConfigSize != 0) {
+    synchronizedConfigDurable = false;
+    if (newConfig->ConfigSize != sizeof(TChannelConfig_HVAC)) {
+      return SUPLA_CONFIG_RESULT_DATA_ERROR;
+    }
+    TChannelConfig_HVAC wire;
+    memcpy(&wire, newConfig->Config, sizeof(wire));
+    synchronizedConfigDurable = false;
+    auto candidate = HvacConfiguration::fromServer(wire);
+    if (!candidate.validReferences() ||
+        !applyFirmwareConfiguration(&candidate)) {
+      return SUPLA_CONFIG_RESULT_DATA_ERROR;
+    }
+    auto validation =
+        candidate.localWire(referenceIdentity(), getChannelNumber());
+    if (!isConfigValid(&validation, channelFunction)) {
+      return SUPLA_CONFIG_RESULT_DATA_ERROR;
+    }
+    // Canonical IDs are never copied from the local validation projection.
+    if (!persistConfiguration(candidate, channelFunction)) {
+      return SUPLA_CONFIG_RESULT_DATA_ERROR;
+    }
+    Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
+    registeredInRelayHvacAggregator = false;
+    const bool functionChanged =
+        channelFunction != channel.getDefaultFunction();
+    if (functionChanged) {
+      channel.setDefault(channelFunction);
+      channel.clearHvacState();
+      clearLastOutputValue();
+      setOutput(0, true);
+      lastIterateTimestampMs = 0;
+    }
+    config = candidate;
+    if (functionChanged) {
+      initDefaultWeeklySchedule();
+      updateWeeklyScheduleConfigTypes();
+    }
+    synchronizedConfigDurable = true;
+    refreshMainDependency();
+    fixTemperatureSetpoints();
+    cleanupLegacyConfig();
+    markChannelConfigReceived(SUPLA_CONFIG_TYPE_DEFAULT);
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
+#endif
 
   if (isLocalConfigChangePending(SUPLA_CONFIG_TYPE_DEFAULT) && !local) {
     SUPLA_LOG_INFO(
@@ -947,7 +1062,9 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     hvacConfig = reinterpret_cast<TChannelConfig_HVAC *>(newConfig->Config);
     readonlyChanged = fixReadonlyParameters(hvacConfig);
     additionalValidationChanged = applyAdditionalValidation(hvacConfig);
-    debugPrintConfigDiff(&config, hvacConfig, getChannelNumber());
+    auto currentWire =
+        config.localWire(referenceIdentity(), getChannelNumber());
+    debugPrintConfigDiff(&currentWire, hvacConfig, getChannelNumber());
   }
 
   if (applyServerConfig && !isConfigValid(hvacConfig)) {
@@ -963,17 +1080,26 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
-  TChannelConfig_HVAC configCopy;
-  memcpy(&configCopy, &config, sizeof(TChannelConfig_HVAC));
+  if (config.referenceNamespace == HvacReferenceNamespace::SERVER_CHANNEL_ID) {
+    auto decoded = HvacConfiguration::fromLegacy(*hvacConfig,
+                                                  getChannelNumber());
+    TChannelConfig_HVAC server;
+    if (!decoded.serverWire(referenceIdentity(), &server)) {
+      return SUPLA_CONFIG_RESULT_DATA_ERROR;
+    }
+  }
+  const HvacConfiguration configCopy = config;
 
   // Received config looks ok, so we apply it to channel
   if (applyServerConfig) {
-    if (config.PumpSwitchChannelNo != hvacConfig->PumpSwitchChannelNo) {
-      unregisterInAggregator(config.PumpSwitchChannelNo);
+    if (localNumber(config.reference(config.PumpSwitch)) !=
+        hvacConfig->PumpSwitchChannelNo) {
+      unregisterInAggregator(localNumber(config.reference(config.PumpSwitch)));
     }
-    if (config.HeatOrColdSourceSwitchChannelNo !=
+    if (localNumber(config.reference(config.HeatOrColdSourceSwitch)) !=
         hvacConfig->HeatOrColdSourceSwitchChannelNo) {
-      unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
+      unregisterInAggregator(
+          localNumber(config.reference(config.HeatOrColdSourceSwitch)));
     }
     registeredInRelayHvacAggregator = false;
     registerInAggregator(hvacConfig->PumpSwitchChannelNo);
@@ -998,8 +1124,8 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
               otherHvac->getMasterThermostatChannelNo() == getChannelNumber()) {
             // don't allow to configure master thermostat on channel which
             // is master to another thermostat
-            config.MasterThermostatIsSet = 0;
-            config.MasterThermostatChannelNo = 0;
+            config.setLocalReference(&config.MasterThermostat, -1,
+                                     referenceIdentity());
             break;
           }
         }
@@ -1007,7 +1133,9 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     }
   }
 
-  if (memcmp(&config, &configCopy, sizeof(TChannelConfig_HVAC)) != 0) {
+  const auto currentRecord = storeHvacConfig(config);
+  const auto previousRecord = storeHvacConfig(configCopy);
+  if (memcmp(&currentRecord, &previousRecord, sizeof(currentRecord)) != 0) {
     saveConfig(local && initDone);
   }
 
@@ -1032,12 +1160,19 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   if (hvacConfig == nullptr) {
     return;
   }
-  // We don't use setters here, because they run validation against current
-  // configuration, which may fail. However new config was already validated
-  // so we assign them directly.
-  config.MainThermometerChannelNo = hvacConfig->MainThermometerChannelNo;
-  config.AuxThermometerChannelNo = hvacConfig->AuxThermometerChannelNo;
-  config.BinarySensorChannelNo = hvacConfig->BinarySensorChannelNo;
+  auto decoded = HvacConfiguration::fromLegacy(*hvacConfig, getChannelNumber());
+  if (config.referenceNamespace == HvacReferenceNamespace::SERVER_CHANNEL_ID) {
+    TChannelConfig_HVAC server;
+    if (!decoded.serverWire(referenceIdentity(), &server)) return;
+    decoded = HvacConfiguration::fromServer(server);
+  }
+  config.MainThermometer = decoded.MainThermometer;
+  config.AuxThermometer = decoded.AuxThermometer;
+  config.BinarySensor = decoded.BinarySensor;
+  config.MasterThermostat = decoded.MasterThermostat;
+  config.PumpSwitch = decoded.PumpSwitch;
+  config.HeatOrColdSourceSwitch = decoded.HeatOrColdSourceSwitch;
+  refreshMainDependency();
   config.AuxThermometerType = hvacConfig->AuxThermometerType;
   config.AntiFreezeAndOverheatProtectionEnabled =
       hvacConfig->AntiFreezeAndOverheatProtectionEnabled;
@@ -1050,13 +1185,6 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
       hvacConfig->TemperatureSetpointChangeSwitchesToManualMode;
   config.AuxMinMaxSetpointEnabled = hvacConfig->AuxMinMaxSetpointEnabled;
   config.UseSeparateHeatCoolOutputs = hvacConfig->UseSeparateHeatCoolOutputs;
-  config.PumpSwitchIsSet = hvacConfig->PumpSwitchIsSet;
-  config.PumpSwitchChannelNo = hvacConfig->PumpSwitchChannelNo;
-  config.HeatOrColdSourceSwitchIsSet = hvacConfig->HeatOrColdSourceSwitchIsSet;
-  config.HeatOrColdSourceSwitchChannelNo =
-      hvacConfig->HeatOrColdSourceSwitchChannelNo;
-  config.MasterThermostatIsSet = hvacConfig->MasterThermostatIsSet;
-  config.MasterThermostatChannelNo = hvacConfig->MasterThermostatChannelNo;
   config.LocalUILock = hvacConfig->LocalUILock;
   config.MinAllowedTemperatureSetpointFromLocalUI =
       hvacConfig->MinAllowedTemperatureSetpointFromLocalUI;
@@ -1166,7 +1294,9 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   }
 }
 
-bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
+bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig,
+                             uint32_t function) const {
+  if (!function) function = channel.getDefaultFunction();
   if (newConfig == nullptr) {
     return false;
   }
@@ -1244,7 +1374,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
     return false;
   }
 
-  if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
+  if (function == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     switch (newConfig->Subfunction) {
       case SUPLA_HVAC_SUBFUNCTION_NOT_SET:
       case SUPLA_HVAC_SUBFUNCTION_COOL:
@@ -2273,95 +2403,67 @@ unsigned _supla_int16_t HvacBase::getUsedAlgorithm(bool forAux) const {
 }
 
 bool HvacBase::setMainThermometerChannelNo(int16_t newChannelNo) {
-  SUPLA_LOG_DEBUG("Hvac[%d]: setMainThermometerChannelNo %d",
-                  getChannelNumber(),
-                  newChannelNo);
-  uint8_t channelNo = getChannelNumber();
-  if (newChannelNo >= 0 && newChannelNo <= 255) {
-    channelNo = newChannelNo;
-  }
-  if (initialConfig && !initDone) {
-    initialConfig->MainThermometerChannelNo = channelNo;
-  }
+  const int16_t number = newChannelNo == getChannelNumber() ? -1 : newChannelNo;
+  if (number < -1 || number >= 255) return false;
+  if (initDone && number >= 0 && !isChannelThermometer(number)) return false;
+  if (initDone && number >= 0 &&
+      getAuxThermometerType() != SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET &&
+      number == getAuxThermometerChannelNo()) return false;
+  auto replacement = config.MainThermometer;
+  if (!config.setLocalReference(&replacement, number, referenceIdentity()))
+    return false;
+  if (initialConfig && !initDone &&
+      !initialConfig->setLocalReference(&initialConfig->MainThermometer, number,
+                                       referenceIdentity())) return false;
   if (!initDone) {
-    config.MainThermometerChannelNo = channelNo;
+    config.MainThermometer = replacement;
+    rememberReadonlyLocalReferences();
     defaultMainThermometer = newChannelNo;
     return true;
   }
-  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
-    if (config.MainThermometerChannelNo != channelNo) {
-      config.MainThermometerChannelNo = channelNo;
-      saveConfig(true);
-    }
+  if (memcmp(&replacement, &config.MainThermometer, sizeof(replacement)) == 0)
     return true;
-  } else if (isChannelThermometer(newChannelNo)) {
-    if (getAuxThermometerType() != SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
-      if (channelNo == getAuxThermometerChannelNo()) {
-        return false;
-      }
-    }
-    if (config.MainThermometerChannelNo != channelNo) {
-      config.MainThermometerChannelNo = channelNo;
-      saveConfig(true);
-    }
-    return true;
-  }
-  return false;
+  config.MainThermometer = replacement;
+  refreshMainDependency();
+  saveConfig(true);
+  return true;
 }
 
 int16_t HvacBase::getMainThermometerChannelNo() const {
-  if (config.MainThermometerChannelNo == getChannelNumber()) {
-    return -1;
-  }
-  return config.MainThermometerChannelNo;
+  return localNumber(config.reference(config.MainThermometer));
 }
 
 bool HvacBase::setAuxThermometerChannelNo(int16_t newChannelNo) {
-  uint8_t channelNo = getChannelNumber();
-  if (newChannelNo >= 0 && newChannelNo <= 255) {
-    channelNo = newChannelNo;
-  }
-  if (initialConfig && !initDone) {
-    initialConfig->AuxThermometerChannelNo = channelNo;
-  }
+  const int16_t number = newChannelNo == getChannelNumber() ? -1 : newChannelNo;
+  if (number < -1 || number >= 255) return false;
+  if (initDone && number >= 0 && !isChannelThermometer(number)) return false;
+  if (initDone && number >= 0 &&
+      number == getMainThermometerChannelNo()) return false;
+  auto replacement = config.AuxThermometer;
+  if (!config.setLocalReference(&replacement, number, referenceIdentity()))
+    return false;
+  if (initialConfig && !initDone &&
+      !initialConfig->setLocalReference(&initialConfig->AuxThermometer, number,
+                                       referenceIdentity())) return false;
   if (!initDone) {
-    config.AuxThermometerChannelNo = channelNo;
+    config.AuxThermometer = replacement;
+    rememberReadonlyLocalReferences();
     defaultAuxThermometer = newChannelNo;
     return true;
   }
-  if (isChannelThermometer(newChannelNo)) {
-    if (getMainThermometerChannelNo() == channelNo) {
-      return false;
-    }
-    if (config.AuxThermometerChannelNo != channelNo) {
-      config.AuxThermometerChannelNo = channelNo;
-      if (getAuxThermometerType() ==
-          SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
-        setAuxThermometerType(
-            SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED);
-        saveConfig(true);
-      }
-    }
+  if (memcmp(&replacement, &config.AuxThermometer, sizeof(replacement)) == 0)
     return true;
-  }
-
-  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
-    if (config.AuxThermometerChannelNo != channelNo) {
-      config.AuxThermometerChannelNo = channelNo;
-      setAuxThermometerType(
-          SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
-      saveConfig(true);
-    }
-    return true;
-  }
-  return false;
+  config.AuxThermometer = replacement;
+  rememberReadonlyLocalReferences();
+  setAuxThermometerType(number < 0 ? SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET
+      : getAuxThermometerType() == SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET
+          ? SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED : getAuxThermometerType());
+  saveConfig(true);
+  return true;
 }
 
 int16_t HvacBase::getAuxThermometerChannelNo() const {
-  if (config.AuxThermometerChannelNo == getChannelNumber()) {
-    return -1;
-  }
-  return config.AuxThermometerChannelNo;
+  return localNumber(config.reference(config.AuxThermometer));
 }
 
 void HvacBase::setAuxThermometerType(uint8_t type) {
@@ -2542,15 +2644,10 @@ void HvacBase::saveConfig(bool localChange) {
     triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
   }
   if (cfg) {
-    // Generic HVAC configuration
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, Supla::ConfigTag::HvacCfgTag);
-    if (cfg->setBlob(key,
-                     reinterpret_cast<char *>(&config),
-                     sizeof(TChannelConfig_HVAC))) {
-      SUPLA_LOG_INFO("HVAC[%d]: config saved successfully", getChannelNumber());
+    if (!persistConfiguration(config, channel.getDefaultFunction())) {
+      SUPLA_LOG_WARNING("HVAC[%d]: failed V2 persistence", getChannelNumber());
     } else {
-      SUPLA_LOG_WARNING("HVAC[%d]: failed to save config", getChannelNumber());
+      cleanupLegacyConfig();
     }
 
     saveConfigChangeFlag();
@@ -2768,7 +2865,14 @@ TWeeklyScheduleProgram HvacBase::getProgramById(
 }
 
 _supla_int16_t HvacBase::getPrimaryTemp() {
-  return getTemperature(config.MainThermometerChannelNo);
+  const double temperature = mainThermometerState().temperature();
+  if (!isfinite(temperature) || temperature <= TEMPERATURE_NOT_AVAILABLE) {
+    return INT16_MIN;
+  }
+  const double scaled = temperature * 100;
+  if (scaled > INT16_MAX) return INT16_MAX;
+  if (scaled <= INT16_MIN) return INT16_MIN + 1;
+  return scaled;
 }
 
 _supla_int16_t HvacBase::getSecondaryTemp() {
@@ -3147,7 +3251,7 @@ void HvacBase::copyFullChannelConfigTo(TChannelConfig_HVAC *hvac) const {
     return;
   }
 
-  memcpy(hvac, &config, sizeof(TChannelConfig_HVAC));
+  *hvac = config.localWire(referenceIdentity(), getChannelNumber());
   hvac->ParameterFlags = parameterFlags;
 }
 
@@ -4342,18 +4446,17 @@ _supla_int16_t HvacBase::getDefaultTemperatureRoomMax() const {
 // assignement is not modified here, while in factory default config it is
 // set to predefined values.
 void HvacBase::initDefaultConfig() {
-  if (initialConfig) {
-    memcpy(&config, initialConfig, sizeof(config));
-    return;
+  if (!initialConfig) {
+    Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
+    registeredInRelayHvacAggregator = false;
   }
+  config = defaultConfiguration();
+}
 
-  // unregister in all aggregators
-  Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
-  registeredInRelayHvacAggregator = false;
-
+Supla::Control::HvacConfiguration HvacBase::defaultConfiguration() {
   TChannelConfig_HVAC newConfig = {};
   // init new config with current configuration values
-  memcpy(&newConfig, &config, sizeof(newConfig));
+  newConfig = config.localWire(referenceIdentity(), getChannelNumber());
 
   newConfig.AntiFreezeAndOverheatProtectionEnabled = 0;
   newConfig.AuxMinMaxSetpointEnabled = 0;
@@ -4470,7 +4573,20 @@ void HvacBase::initDefaultConfig() {
     newConfig.MasterThermostatIsSet = 0;
   }
 
-  memcpy(&config, &newConfig, sizeof(config));
+  auto defaults = initialConfig ? *initialConfig :
+      HvacConfiguration::fromLegacy(newConfig, getChannelNumber());
+  if (config.referenceNamespace == HvacReferenceNamespace::SERVER_CHANNEL_ID) {
+    TChannelConfig_HVAC server;
+    if (defaults.serverWire(referenceIdentity(), &server)) {
+      return HvacConfiguration::fromServer(server);
+    }
+    // A defaults reset cannot change namespace or discard an unresolved
+    // SERVER dependency. Defer reference changes until identities are usable.
+    auto preserved = config;
+    static_cast<HvacScalars &>(preserved) = defaults;
+    return preserved;
+  }
+  return defaults;
 }
 
 void HvacBase::initDefaultWeeklySchedule() {
@@ -4593,13 +4709,13 @@ void HvacBase::setDefaultSubfunction(uint8_t subfunction) {
 }
 
 bool HvacBase::getForcedOffSensorState() {
-  if (config.BinarySensorChannelNo != getChannelNumber()) {
-    auto element =
-        Supla::Element::getElementByChannelNumber(config.BinarySensorChannelNo);
+  if (getBinarySensorChannelNo() >= 0) {
+    auto element = Supla::Element::getElementByChannelNumber(
+        localNumber(config.reference(config.BinarySensor)));
     if (element == nullptr) {
       SUPLA_LOG_WARNING("HVAC[%d]: sensor not found for channel %d",
                         getChannelNumber(),
-                        config.BinarySensorChannelNo);
+                        localNumber(config.reference(config.BinarySensor)));
       return false;
     }
     if (element->getChannel()->isStateOnline() == false) {
@@ -4617,34 +4733,31 @@ bool HvacBase::getForcedOffSensorState() {
 }
 
 bool HvacBase::setBinarySensorChannelNo(int16_t newChannelNo) {
-  uint8_t channelNo = getChannelNumber();
-  if (newChannelNo >= 0 && newChannelNo <= 255) {
-    channelNo = newChannelNo;
-  }
-  if (initialConfig && !initDone) {
-    initialConfig->BinarySensorChannelNo = channelNo;
-  }
+  const int16_t number = newChannelNo == getChannelNumber() ? -1 : newChannelNo;
+  if (number < -1 || number >= 255) return false;
+  if (initDone && number >= 0 && !isChannelBinarySensor(number)) return false;
+  auto replacement = config.BinarySensor;
+  if (!config.setLocalReference(&replacement, number, referenceIdentity()))
+    return false;
+  if (initialConfig && !initDone &&
+      !initialConfig->setLocalReference(&initialConfig->BinarySensor, number,
+                                       referenceIdentity())) return false;
   if (!initDone) {
-    config.BinarySensorChannelNo = channelNo;
+    config.BinarySensor = replacement;
+    rememberReadonlyLocalReferences();
     defaultBinarySensor = newChannelNo;
     return true;
   }
-  if (newChannelNo == -1 || newChannelNo == getChannelNumber() ||
-      isChannelBinarySensor(newChannelNo)) {
-    if (config.BinarySensorChannelNo != channelNo) {
-      config.BinarySensorChannelNo = channelNo;
-      saveConfig(true);
-    }
+  if (memcmp(&replacement, &config.BinarySensor, sizeof(replacement)) == 0)
     return true;
-  }
-  return false;
+  config.BinarySensor = replacement;
+  rememberReadonlyLocalReferences();
+  saveConfig(true);
+  return true;
 }
 
 int16_t HvacBase::getBinarySensorChannelNo() const {
-  if (config.BinarySensorChannelNo == getChannelNumber()) {
-    return -1;
-  }
-  return config.BinarySensorChannelNo;
+  return localNumber(config.reference(config.BinarySensor));
 }
 
 bool HvacBase::isWeelkySchedulManualOverrideMode() const {
@@ -4852,10 +4965,10 @@ void HvacBase::allowWrapAroundTemperatureSetpoints() {
 
 void HvacBase::enableInitialConfig() {
   if (initialConfig == nullptr) {
-    initialConfig = new TChannelConfig_HVAC;
+    initialConfig = new HvacConfiguration;
   }
   if (initialConfig != nullptr) {
-    memset(initialConfig, 0, sizeof(TChannelConfig_HVAC));
+    *initialConfig = {};
     setTemperatureInStruct(&initialConfig->Temperatures,
                            TEMPERATURE_ROOM_MIN,
                            getDefaultTemperatureRoomMin());
@@ -4863,27 +4976,33 @@ void HvacBase::enableInitialConfig() {
                            TEMPERATURE_ROOM_MAX,
                            getDefaultTemperatureRoomMax());
 
-    initialConfig->MainThermometerChannelNo = defaultMainThermometer;
-    initialConfig->AuxThermometerChannelNo = defaultAuxThermometer;
-    initialConfig->BinarySensorChannelNo = defaultBinarySensor;
+    initialConfig->setLocalReference(
+        &initialConfig->MainThermometer,
+        defaultMainThermometer == getChannelNumber() ? -1
+                                                     : defaultMainThermometer);
+    initialConfig->setLocalReference(&initialConfig->AuxThermometer,
+                                     defaultAuxThermometer == getChannelNumber()
+                                         ? -1
+                                         : defaultAuxThermometer);
+    initialConfig->setLocalReference(&initialConfig->BinarySensor,
+        defaultBinarySensor == getChannelNumber() ? -1 : defaultBinarySensor);
     if (defaultPumpSwitch >= 0) {
-      initialConfig->PumpSwitchChannelNo = defaultPumpSwitch;
-      if (defaultPumpSwitch != getChannelNumber()) {
-        initialConfig->PumpSwitchIsSet = 1;
-      }
+      initialConfig->setLocalReference(&initialConfig->PumpSwitch,
+        defaultPumpSwitch == getChannelNumber() ? -1 : defaultPumpSwitch);
     }
     if (defaultHeatOrColdSourceSwitch >= 0) {
-      initialConfig->HeatOrColdSourceSwitchChannelNo =
-          defaultHeatOrColdSourceSwitch;
-      if (defaultHeatOrColdSourceSwitch != getChannelNumber()) {
-        initialConfig->HeatOrColdSourceSwitchIsSet = 1;
-      }
+      initialConfig->setLocalReference(
+          &initialConfig->HeatOrColdSourceSwitch,
+          defaultHeatOrColdSourceSwitch == getChannelNumber()
+              ? -1
+              : defaultHeatOrColdSourceSwitch);
     }
     if (defaultMasterThermostat >= 0) {
-      initialConfig->MasterThermostatChannelNo = defaultMasterThermostat;
-      if (defaultMasterThermostat != getChannelNumber()) {
-        initialConfig->MasterThermostatIsSet = 1;
-      }
+      initialConfig->setLocalReference(
+          &initialConfig->MasterThermostat,
+          defaultMasterThermostat == getChannelNumber()
+              ? -1
+              : defaultMasterThermostat);
     }
   }
 }
@@ -5059,6 +5178,8 @@ void HvacBase::updateChannelState() {
 
 // returns true if readonly params were modified and fixed
 bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
+  const auto current =
+      config.localWire(referenceIdentity(), getChannelNumber());
   if (hvacConfig == nullptr) {
     return false;
   }
@@ -5070,91 +5191,94 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   };
 
   if (parameterFlags.MainThermometerChannelNoReadonly) {
-    if (config.MainThermometerChannelNo !=
+    if (current.MainThermometerChannelNo !=
         hvacConfig->MainThermometerChannelNo) {
       SUPLA_LOG_DEBUG(
           "HVAC[%d] MainThermometerChannelNo change from %d to %d not allowed "
           "(readonly)",
           getChannelNumber(),
-          config.MainThermometerChannelNo,
+          current.MainThermometerChannelNo,
           hvacConfig->MainThermometerChannelNo);
-      hvacConfig->MainThermometerChannelNo = config.MainThermometerChannelNo;
+      hvacConfig->MainThermometerChannelNo =
+          current.MainThermometerChannelNo;
       readonlyViolation = true;
     }
   }
 
   if (parameterFlags.AuxThermometerChannelNoReadonly) {
-    if (config.AuxThermometerChannelNo != hvacConfig->AuxThermometerChannelNo) {
+    if (current.AuxThermometerChannelNo !=
+        hvacConfig->AuxThermometerChannelNo) {
       SUPLA_LOG_DEBUG(
           "HVAC[%d] AuxThermometerChannelNo change from %d to %d not allowed "
           "(readonly)",
           getChannelNumber(),
-          config.AuxThermometerChannelNo,
+          current.AuxThermometerChannelNo,
           hvacConfig->AuxThermometerChannelNo);
-      hvacConfig->AuxThermometerChannelNo = config.AuxThermometerChannelNo;
+      hvacConfig->AuxThermometerChannelNo = current.AuxThermometerChannelNo;
       readonlyViolation = true;
     }
   }
 
   if (parameterFlags.BinarySensorChannelNoReadonly) {
-    if (config.BinarySensorChannelNo != hvacConfig->BinarySensorChannelNo) {
+    if (current.BinarySensorChannelNo != hvacConfig->BinarySensorChannelNo) {
       SUPLA_LOG_DEBUG(
           "HVAC[%d] BinarySensorChannelNo change from %d to %d not allowed "
           "(readonly)",
           getChannelNumber(),
-          config.BinarySensorChannelNo,
+          current.BinarySensorChannelNo,
           hvacConfig->BinarySensorChannelNo);
-      hvacConfig->BinarySensorChannelNo = config.BinarySensorChannelNo;
+      hvacConfig->BinarySensorChannelNo = current.BinarySensorChannelNo;
       readonlyViolation = true;
     }
   }
 
   if (parameterFlags.PumpSwitchReadonly) {
-    if (config.PumpSwitchChannelNo != hvacConfig->PumpSwitchChannelNo ||
-        config.PumpSwitchIsSet != hvacConfig->PumpSwitchIsSet) {
+    if (current.PumpSwitchChannelNo != hvacConfig->PumpSwitchChannelNo ||
+        current.PumpSwitchIsSet != hvacConfig->PumpSwitchIsSet) {
       SUPLA_LOG_DEBUG(
           "HVAC[%d] PumpSwitch change from %d to %d not allowed (readonly)",
           getChannelNumber(),
-          config.PumpSwitchChannelNo,
+          current.PumpSwitchChannelNo,
           hvacConfig->PumpSwitchChannelNo);
-      hvacConfig->PumpSwitchChannelNo = config.PumpSwitchChannelNo;
-      hvacConfig->PumpSwitchIsSet = config.PumpSwitchIsSet;
+      hvacConfig->PumpSwitchChannelNo = current.PumpSwitchChannelNo;
+      hvacConfig->PumpSwitchIsSet = current.PumpSwitchIsSet;
       readonlyViolation = true;
     }
   }
 
   if (parameterFlags.HeatOrColdSourceSwitchReadonly) {
-    if (config.HeatOrColdSourceSwitchChannelNo !=
+    if (current.HeatOrColdSourceSwitchChannelNo !=
             hvacConfig->HeatOrColdSourceSwitchChannelNo ||
-        config.HeatOrColdSourceSwitchIsSet !=
+        current.HeatOrColdSourceSwitchIsSet !=
             hvacConfig->HeatOrColdSourceSwitchIsSet) {
       SUPLA_LOG_DEBUG(
           "HVAC[%d] HeatOrColdSourceSwitch change from %d to %d not allowed "
           "(readonly)",
           getChannelNumber(),
-          config.HeatOrColdSourceSwitchChannelNo,
+          current.HeatOrColdSourceSwitchChannelNo,
           hvacConfig->HeatOrColdSourceSwitchChannelNo);
       hvacConfig->HeatOrColdSourceSwitchChannelNo =
-          config.HeatOrColdSourceSwitchChannelNo;
+          current.HeatOrColdSourceSwitchChannelNo;
       hvacConfig->HeatOrColdSourceSwitchIsSet =
-          config.HeatOrColdSourceSwitchIsSet;
+          current.HeatOrColdSourceSwitchIsSet;
       readonlyViolation = true;
     }
   }
 
   if (parameterFlags.MasterThermostatChannelNoReadonly) {
-    if (config.MasterThermostatChannelNo !=
+    if (current.MasterThermostatChannelNo !=
             hvacConfig->MasterThermostatChannelNo ||
-        config.MasterThermostatIsSet != hvacConfig->MasterThermostatIsSet) {
+        current.MasterThermostatIsSet != hvacConfig->MasterThermostatIsSet) {
       SUPLA_LOG_DEBUG(
           "HVAC[%d] MasterThermostatChannelNo change from %d to %d not "
           "allowed "
           "(readonly)",
           getChannelNumber(),
-          config.MasterThermostatChannelNo,
+          current.MasterThermostatChannelNo,
           hvacConfig->MasterThermostatChannelNo);
-      hvacConfig->MasterThermostatChannelNo = config.MasterThermostatChannelNo;
-      hvacConfig->MasterThermostatIsSet = config.MasterThermostatIsSet;
+      hvacConfig->MasterThermostatChannelNo =
+          current.MasterThermostatChannelNo;
+      hvacConfig->MasterThermostatIsSet = current.MasterThermostatIsSet;
       readonlyViolation = true;
     }
   }
@@ -5406,7 +5530,7 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
         getChannelNumber(),
         currentFlagsHex,
         expectedFlagsHex);
-    config.ParameterFlags = parameterFlags;
+    hvacConfig->ParameterFlags = parameterFlags;
     readonlyViolation = true;
   }
 
@@ -5468,179 +5592,111 @@ int32_t HvacBase::getRemainingCountDownTimeSec() const {
 }
 
 bool HvacBase::setPumpSwitchChannelNo(int16_t newChannelNo) {
-  uint8_t channelNo = getChannelNumber();
-  if (newChannelNo >= 0 && newChannelNo <= 255) {
-    channelNo = newChannelNo;
-  }
-  if (initialConfig && !initDone) {
-    initialConfig->PumpSwitchChannelNo = channelNo;
-    if (newChannelNo == -1 || channelNo == getChannelNumber()) {
-      initialConfig->PumpSwitchIsSet = 0;
-    } else {
-      initialConfig->PumpSwitchIsSet = 1;
-    }
-  }
+  const int16_t number = newChannelNo == getChannelNumber() ? -1 : newChannelNo;
+  if (number < -1 || number >= 255) return false;
+  if (initDone && number >= 0 && !isChannelRelay(number)) return false;
+  auto replacement = config.PumpSwitch;
+  if (!config.setLocalReference(&replacement, number, referenceIdentity()))
+    return false;
+  if (initialConfig && !initDone &&
+      !initialConfig->setLocalReference(&initialConfig->PumpSwitch, number,
+                                       referenceIdentity())) return false;
   if (!initDone) {
-    config.PumpSwitchChannelNo = channelNo;
-    config.PumpSwitchIsSet =
-        newChannelNo == -1 || channelNo == getChannelNumber() ? 0 : 1;
+    config.PumpSwitch = replacement;
+    rememberReadonlyLocalReferences();
     defaultPumpSwitch = newChannelNo;
     return true;
   }
-
-  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
-    if (config.PumpSwitchChannelNo != channelNo ||
-        config.PumpSwitchIsSet != 0) {
-      unregisterInAggregator(config.PumpSwitchChannelNo);
-      registeredInRelayHvacAggregator = false;
-      config.PumpSwitchChannelNo = channelNo;
-      config.PumpSwitchIsSet = 0;
-      saveConfig(true);
-    }
+  if (memcmp(&replacement, &config.PumpSwitch, sizeof(replacement)) == 0)
     return true;
-  }
-
-  if (!isChannelRelay(newChannelNo)) {
-    return false;
-  }
-
-  if (config.PumpSwitchChannelNo != channelNo ||
-      config.PumpSwitchIsSet == 0) {
-    unregisterInAggregator(config.PumpSwitchChannelNo);
-    registeredInRelayHvacAggregator = false;
-    config.PumpSwitchChannelNo = channelNo;
-    config.PumpSwitchIsSet = 1;
-    registerInAggregator(channelNo);
-    saveConfig(true);
-  }
+  unregisterInAggregator(getPumpSwitchChannelNo());
+  registeredInRelayHvacAggregator = false;
+  config.PumpSwitch = replacement;
+  rememberReadonlyLocalReferences();
+  if (number >= 0) registerInAggregator(number);
+  saveConfig(true);
   return true;
 }
 
 int16_t HvacBase::getPumpSwitchChannelNo() const {
-  if (config.PumpSwitchIsSet == 0) {
-    return -1;
-  }
-  return config.PumpSwitchChannelNo;
+  return localNumber(config.reference(config.PumpSwitch));
 }
 
 bool HvacBase::isPumpSwitchSet() const {
-  return config.PumpSwitchIsSet != 0;
+  return (config.reference(config.PumpSwitch).kind !=
+          ChannelReferenceKind::NONE) != 0;
 }
 
 bool HvacBase::setHeatOrColdSourceSwitchChannelNo(int16_t newChannelNo) {
-  uint8_t channelNo = getChannelNumber();
-  if (newChannelNo >= 0 && newChannelNo <= 255) {
-    channelNo = newChannelNo;
-  }
-  if (initialConfig && !initDone) {
-    initialConfig->HeatOrColdSourceSwitchChannelNo = channelNo;
-    if (newChannelNo == -1 || channelNo == getChannelNumber()) {
-      initialConfig->HeatOrColdSourceSwitchIsSet = 0;
-    } else {
-      initialConfig->HeatOrColdSourceSwitchIsSet = 1;
-    }
-  }
+  const int16_t number = newChannelNo == getChannelNumber() ? -1 : newChannelNo;
+  if (number < -1 || number >= 255) return false;
+  if (initDone && number >= 0 && !isChannelRelay(number)) return false;
+  auto replacement = config.HeatOrColdSourceSwitch;
+  if (!config.setLocalReference(&replacement, number, referenceIdentity()))
+    return false;
+  if (initialConfig && !initDone &&
+      !initialConfig->setLocalReference(&initialConfig->HeatOrColdSourceSwitch,
+                                        number, referenceIdentity()))
+    return false;
   if (!initDone) {
-    config.HeatOrColdSourceSwitchChannelNo = channelNo;
-    config.HeatOrColdSourceSwitchIsSet =
-        newChannelNo == -1 || channelNo == getChannelNumber() ? 0 : 1;
+    config.HeatOrColdSourceSwitch = replacement;
+    rememberReadonlyLocalReferences();
     defaultHeatOrColdSourceSwitch = newChannelNo;
     return true;
   }
-
-  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
-    if (config.HeatOrColdSourceSwitchChannelNo != channelNo ||
-        config.HeatOrColdSourceSwitchIsSet != 0) {
-      unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
-      registeredInRelayHvacAggregator = false;
-      config.HeatOrColdSourceSwitchChannelNo = channelNo;
-      config.HeatOrColdSourceSwitchIsSet = 0;
-      saveConfig(true);
-    }
+  if (memcmp(&replacement, &config.HeatOrColdSourceSwitch,
+             sizeof(replacement)) == 0)
     return true;
-  }
-
-  if (!isChannelRelay(newChannelNo)) {
-    return false;
-  }
-
-  if (config.HeatOrColdSourceSwitchChannelNo != channelNo ||
-      config.HeatOrColdSourceSwitchIsSet == 0) {
-    unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
-    registeredInRelayHvacAggregator = false;
-    config.HeatOrColdSourceSwitchChannelNo = channelNo;
-    config.HeatOrColdSourceSwitchIsSet = 1;
-    registerInAggregator(channelNo);
-    saveConfig(true);
-  }
+  unregisterInAggregator(getHeatOrColdSourceSwitchChannelNo());
+  registeredInRelayHvacAggregator = false;
+  config.HeatOrColdSourceSwitch = replacement;
+  rememberReadonlyLocalReferences();
+  if (number >= 0) registerInAggregator(number);
+  saveConfig(true);
   return true;
 }
 
 int16_t HvacBase::getHeatOrColdSourceSwitchChannelNo() const {
-  if (config.HeatOrColdSourceSwitchIsSet == 0) {
-    return -1;
-  }
-  return config.HeatOrColdSourceSwitchChannelNo;
+  return localNumber(config.reference(config.HeatOrColdSourceSwitch));
 }
 
 bool HvacBase::isHeatOrColdSourceSwitchSet() const {
-  return config.HeatOrColdSourceSwitchIsSet != 0;
+  return (config.reference(config.HeatOrColdSourceSwitch).kind !=
+          ChannelReferenceKind::NONE) != 0;
 }
 
 bool HvacBase::setMasterThermostatChannelNo(int16_t newChannelNo) {
-  uint8_t channelNo = getChannelNumber();
-  if (newChannelNo >= 0 && newChannelNo <= 255) {
-    channelNo = newChannelNo;
-  }
-  if (initialConfig && !initDone) {
-    initialConfig->MasterThermostatChannelNo = channelNo;
-    if (newChannelNo == -1 || channelNo == getChannelNumber()) {
-      initialConfig->MasterThermostatIsSet = 0;
-    } else {
-      initialConfig->MasterThermostatIsSet = 1;
-    }
-  }
+  const int16_t number = newChannelNo == getChannelNumber() ? -1 : newChannelNo;
+  if (number < -1 || number >= 255) return false;
+  if (initDone && number >= 0 && !isChannelHvac(number)) return false;
+  auto replacement = config.MasterThermostat;
+  if (!config.setLocalReference(&replacement, number, referenceIdentity()))
+    return false;
+  if (initialConfig && !initDone &&
+      !initialConfig->setLocalReference(&initialConfig->MasterThermostat,
+                                        number, referenceIdentity()))
+    return false;
   if (!initDone) {
-    config.MasterThermostatChannelNo = channelNo;
-    config.MasterThermostatIsSet =
-        newChannelNo == -1 || channelNo == getChannelNumber() ? 0 : 1;
+    config.MasterThermostat = replacement;
+    rememberReadonlyLocalReferences();
     defaultMasterThermostat = newChannelNo;
     return true;
   }
-
-  if (newChannelNo != -1 && newChannelNo != getChannelNumber() &&
-      !isChannelHvac(newChannelNo)) {
-    return false;
-  }
-
-  if (newChannelNo == -1 || newChannelNo == getChannelNumber()) {
-    if (config.MasterThermostatChannelNo != channelNo ||
-        config.MasterThermostatIsSet != 0) {
-      config.MasterThermostatChannelNo = channelNo;
-      config.MasterThermostatIsSet = 0;
-      saveConfig(true);
-    }
+  if (memcmp(&replacement, &config.MasterThermostat, sizeof(replacement)) == 0)
     return true;
-  }
-
-  if (config.MasterThermostatChannelNo != channelNo ||
-      config.MasterThermostatIsSet != 1) {
-    config.MasterThermostatChannelNo = channelNo;
-    config.MasterThermostatIsSet = 1;
-    saveConfig(true);
-  }
+  config.MasterThermostat = replacement;
+  rememberReadonlyLocalReferences();
+  saveConfig(true);
   return true;
 }
 
 int16_t HvacBase::getMasterThermostatChannelNo() const {
-  if (config.MasterThermostatIsSet == 0) {
-    return -1;
-  }
-  return config.MasterThermostatChannelNo;
+  return localNumber(config.reference(config.MasterThermostat));
 }
 
 bool HvacBase::isMasterThermostatSet() const {
-  return config.MasterThermostatIsSet != 0;
+  return (config.reference(config.MasterThermostat).kind !=
+          ChannelReferenceKind::NONE) != 0;
 }
 
 void HvacBase::clearPumpSwitchChannelNo() {
@@ -5723,6 +5779,8 @@ void HvacBase::purgeConfig() {
     return;
   }
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, "hvac_cfg2");
+  cfg->eraseKey(key);
   generateKey(key, Supla::ConfigTag::HvacCfgTag);
   cfg->eraseKey(key);
   generateKey(key, Supla::ConfigTag::HvacWeeklyCfgTag);
@@ -5938,4 +5996,217 @@ int16_t HvacBase::getClosestValidTemperature(int16_t temperature) const {
 
 bool HvacBase::isHvacFlagForcedOffBySensor() const {
   return channel.isHvacFlagForcedOffBySensor();
+}
+
+const Supla::Device::ServerIdentity *HvacBase::referenceIdentity() const {
+#ifndef ARDUINO_ARCH_AVR
+  return Supla::Device::ServerIdentity::current();
+#else
+  return nullptr;
+#endif
+}
+
+int16_t HvacBase::localNumber(const ChannelReference &reference) const {
+  if (reference.kind == ChannelReferenceKind::LOCAL_CHANNEL_NUMBER) {
+    return reference.id;
+  }
+  const auto resolved = resolveChannelReference(reference, referenceIdentity());
+  return resolved.channel ? resolved.channel->getChannelNumber()
+                          : -1;
+}
+
+void HvacBase::rememberReadonlyLocalReferences() {
+  const HvacReferenceValue *values[] = {
+      &config.MainThermometer, &config.AuxThermometer, &config.BinarySensor,
+      &config.MasterThermostat, &config.PumpSwitch,
+      &config.HeatOrColdSourceSwitch};
+  const bool readonly[] = {parameterFlags.MainThermometerChannelNoReadonly != 0,
+      parameterFlags.AuxThermometerChannelNoReadonly != 0,
+      parameterFlags.BinarySensorChannelNoReadonly != 0,
+      parameterFlags.MasterThermostatChannelNoReadonly != 0,
+      parameterFlags.PumpSwitchReadonly != 0,
+      parameterFlags.HeatOrColdSourceSwitchReadonly != 0};
+  for (int i = 0; i < 6; ++i) {
+    const auto ref = config.reference(*values[i]);
+    if (!readonly[i] || ref.kind == ChannelReferenceKind::NONE) {
+      readonlyLocalChannels[i] = 0xff;
+    } else if (ref.kind == ChannelReferenceKind::LOCAL_CHANNEL_NUMBER) {
+      readonlyLocalChannels[i] = ref.id;
+    } else {
+#ifndef ARDUINO_ARCH_AVR
+      auto identity = referenceIdentity();
+      // The accepted map may have changed already. Retain only a binding
+      // proven before the transition, without resolving an old ID in the new
+      // map or guessing that a remote ID identifies a firmware-local channel.
+      if (identity && identity->identityTransition()) continue;
+#endif
+      const auto local = localNumber(ref);
+      readonlyLocalChannels[i] = local >= 0 ? local : 0xff;
+    }
+  }
+}
+
+bool HvacBase::applyFirmwareConfiguration(HvacConfiguration *candidate) {
+  rememberReadonlyLocalReferences();
+  auto wire = candidate->localWire(referenceIdentity(), getChannelNumber());
+  const uint8_t before[] = {wire.MainThermometerChannelNo,
+      wire.AuxThermometerChannelNo, wire.BinarySensorChannelNo,
+      wire.MasterThermostatChannelNo, wire.PumpSwitchChannelNo,
+      wire.HeatOrColdSourceSwitchChannelNo};
+  const bool beforeSet[] = {true, true, true, wire.MasterThermostatIsSet != 0,
+      wire.PumpSwitchIsSet != 0, wire.HeatOrColdSourceSwitchIsSet != 0};
+  fixReadonlyParameters(&wire);
+  applyAdditionalValidation(&wire);
+  const uint8_t after[] = {wire.MainThermometerChannelNo,
+      wire.AuxThermometerChannelNo, wire.BinarySensorChannelNo,
+      wire.MasterThermostatChannelNo, wire.PumpSwitchChannelNo,
+      wire.HeatOrColdSourceSwitchChannelNo};
+  const bool afterSet[] = {after[0] != getChannelNumber(),
+      after[1] != getChannelNumber(), after[2] != getChannelNumber(),
+      wire.MasterThermostatIsSet != 0, wire.PumpSwitchIsSet != 0,
+      wire.HeatOrColdSourceSwitchIsSet != 0};
+  HvacReferenceValue *references[] = {
+      &candidate->MainThermometer, &candidate->AuxThermometer,
+      &candidate->BinarySensor, &candidate->MasterThermostat,
+      &candidate->PumpSwitch, &candidate->HeatOrColdSourceSwitch};
+  const HvacReferenceValue *firmware[] = {
+      &config.MainThermometer, &config.AuxThermometer, &config.BinarySensor,
+      &config.MasterThermostat, &config.PumpSwitch,
+      &config.HeatOrColdSourceSwitch};
+  const bool readonly[] = {parameterFlags.MainThermometerChannelNoReadonly != 0,
+      parameterFlags.AuxThermometerChannelNoReadonly != 0,
+      parameterFlags.BinarySensorChannelNoReadonly != 0,
+      parameterFlags.MasterThermostatChannelNoReadonly != 0,
+      parameterFlags.PumpSwitchReadonly != 0,
+      parameterFlags.HeatOrColdSourceSwitchReadonly != 0};
+  const auto assign = [this, candidate](HvacReferenceValue *value,
+                                        ChannelReference ref) {
+#ifndef ARDUINO_ARCH_AVR
+    const auto identity = referenceIdentity();
+    if (candidate->referenceNamespace ==
+            HvacReferenceNamespace::SERVER_CHANNEL_ID &&
+        ref.kind == ChannelReferenceKind::LOCAL_CHANNEL_NUMBER && identity &&
+        identity->identityTransition()) {
+      // An authoritative sync may encode firmware-local references using the
+      // accepted map. Runtime resolution and local setters remain barred.
+      auto local = Channel::GetByChannelNumber(ref.id);
+      if (!identity->identityAvailable() ||
+          !identity->registrationContextValid() || !local ||
+          !local->getServerChannelId()) return false;
+      ref = ChannelReference::server(local->getServerChannelId());
+    }
+#endif
+    return candidate->setReference(value, ref, referenceIdentity());
+  };
+  for (int i = 0; i < 6; ++i) {
+    if (readonly[i]) {
+      const auto ref = readonlyLocalChannels[i] != 0xff
+          ? ChannelReference::local(readonlyLocalChannels[i])
+          : config.reference(*firmware[i]);
+      if (!assign(references[i], ref)) return false;
+    } else if (before[i] != after[i] ||
+               (i >= 3 && beforeSet[i] != afterSet[i])) {
+      if (!assign(references[i], afterSet[i] ? ChannelReference::local(after[i])
+                                           : ChannelReference{})) return false;
+    }
+  }
+  static_cast<HvacScalars &>(*candidate) =
+      HvacConfiguration::fromLegacy(wire, getChannelNumber());
+  return true;
+}
+
+bool HvacBase::persistConfiguration(const HvacConfiguration &candidate,
+                                   uint32_t function) {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg || !candidate.validReferences()) return false;
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, "hvac_cfg2");
+  const auto record = storeHvacConfig(candidate, function);
+  HvacStoredConfigV2 previous;
+  const bool hadPrevious = cfg->getBlobSize(key) == sizeof(previous) &&
+      cfg->getBlob(key, reinterpret_cast<char *>(&previous), sizeof(previous));
+  if (!configurationPersistenceUncertain && hadPrevious &&
+      memcmp(&record, &previous, sizeof(record)) == 0) {
+    return true;
+  }
+  if (cfg->setBlob(key, reinterpret_cast<const char *>(&record),
+                   sizeof(record)) &&
+      cfg->commit()) {
+    HvacStoredConfigV2 confirmed;
+    if (cfg->getBlobSize(key) == sizeof(confirmed) &&
+        cfg->getBlob(key, reinterpret_cast<char *>(&confirmed),
+                     sizeof(confirmed)) &&
+        memcmp(&record, &confirmed, sizeof(record)) == 0) {
+      configurationPersistenceUncertain = false;
+      return true;
+    }
+  }
+  // A failed commit/readback can leave the new complete record on flash.
+  // Rolling staging back does not confirm durability of the previous record.
+  configurationPersistenceUncertain = true;
+  if (hadPrevious) {
+    cfg->setBlob(key, reinterpret_cast<const char *>(&previous),
+                 sizeof(previous));
+  } else {
+    cfg->eraseKey(key);
+  }
+  return false;
+}
+
+void HvacBase::cleanupLegacyConfig() {
+  legacyCleanupLastMs = millis();
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) return;
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, Supla::ConfigTag::HvacCfgTag);
+  const bool present = cfg->getBlobSize(key) >= 0;
+  legacyCleanupPending = legacyCleanupPending || present;
+  if (legacyCleanupPending && (!present || cfg->eraseKey(key)) &&
+      cfg->commit()) {
+    legacyCleanupPending = false;
+  }
+}
+
+#ifndef ARDUINO_ARCH_AVR
+Supla::Device::RemoteResourceManager *HvacBase::remoteManager() const {
+  for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
+       layer = layer->next()) {
+    if (auto manager = layer->remoteResources()) return manager;
+  }
+  return nullptr;
+}
+#endif
+
+void HvacBase::refreshMainDependency() {
+  rememberReadonlyLocalReferences();
+#ifndef ARDUINO_ARCH_AVR
+  auto *manager = remoteManager();
+  if (!manager) return;
+  const auto resolved = resolveChannelReference(
+      config.reference(config.MainThermometer), referenceIdentity());
+  if (resolved.kind == ChannelResolutionKind::kRemote) {
+    manager->consume({static_cast<uint32_t>(getChannelNumber() + 1),
+        {Supla::SupLan::kResourceTypeChannel, resolved.resourceId},
+        Supla::SupLan::kPermissionRead});
+  } else {
+    manager->remove(getChannelNumber() + 1);
+  }
+#endif
+}
+
+Supla::ChannelState HvacBase::mainThermometerState() {
+  refreshMainDependency();
+  const auto resolved = resolveChannelReference(
+      config.reference(config.MainThermometer), referenceIdentity());
+  if (resolved.kind == ChannelResolutionKind::kLocal &&
+      resolved.channel != getChannel()) return ChannelState(resolved.channel);
+#ifndef ARDUINO_ARCH_AVR
+  if (resolved.kind == ChannelResolutionKind::kRemote) {
+    if (auto manager = remoteManager()) {
+      return manager->state({Supla::SupLan::kResourceTypeChannel,
+                             resolved.resourceId}, millis());
+    }
+  }
+#endif
+  return ChannelState();
 }

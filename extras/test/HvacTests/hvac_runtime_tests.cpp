@@ -142,7 +142,8 @@ TEST_F(HvacRuntimeF, antifreezeCheck) {
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
@@ -406,7 +407,8 @@ TEST_F(HvacRuntimeF, antifreezeCheckInCoolMode) {
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
@@ -698,7 +700,8 @@ TEST_F(HvacRuntimeF, antifreezeCheckWithProgramAndOffMode) {
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));

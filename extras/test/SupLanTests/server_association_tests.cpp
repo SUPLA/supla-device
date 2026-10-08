@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SuplaDevice.h>
+#include <output_mock.h>
+#include <supla/control/hvac_base.h>
 #include <fcntl.h>
 #include <gtest/gtest.h>
 #include <simple_time.h>
@@ -22,6 +24,7 @@
 
 #include <array>
 #include <cstring>
+#include <memory>
 #include <vector>
 
 namespace {
@@ -660,6 +663,14 @@ class ProcessDatagrams : public DatagramPort {
     *endpoint = {0x0100007f, 2017};
     int result = recv(socket_, buffer, capacity, MSG_DONTWAIT);
     // Harness barrier: finish READ delivery before testing credential cleanup.
+    if (result == 1 && buffer[0] == 0xfc) {
+      wakeRequested = true;
+      return 0;
+    }
+    if (result == 1 && buffer[0] == 0xfd) {
+      notificationRequested = true;
+      return 0;
+    }
     if (result == 1 && buffer[0] == 0xfe) {
       readReceived = true;
       return 0;
@@ -670,6 +681,8 @@ class ProcessDatagrams : public DatagramPort {
   uint32_t nowMs() const override { return now; }
   uint32_t now = 0;
   bool readReceived = false;
+  bool notificationRequested = false;
+  bool wakeRequested = false;
 
  private:
   int socket_;
@@ -678,16 +691,44 @@ void countState(void *context, Supla::Protocol::SupLanApplicationEvent event,
                 uint8_t, const ResourceId &resource, uint32_t,
                 const uint8_t *payload, size_t size) {
   if (event == Supla::Protocol::kSupLanRemoteState && resource.id == 501 &&
-      size == 14 && payload[6] == 1)
-    ++*static_cast<int *>(context);
+      size == sizeof(TDS_SuplaDeviceChannel_E)) {
+    TDS_SuplaDeviceChannel_E snapshot;
+    std::memcpy(&snapshot, payload, sizeof(snapshot));
+    double temperature = 0;
+    std::memcpy(&temperature, snapshot.value, sizeof(temperature));
+    if (snapshot.Number == 0xff &&
+        ((snapshot.Type == SUPLA_CHANNELTYPE_RELAY && snapshot.value[0] == 1) ||
+         (snapshot.Type == SUPLA_CHANNELTYPE_THERMOMETER &&
+          temperature == 21.75))) ++*static_cast<int *>(context);
+  }
 }
-int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint) {
+int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
+                           bool hvacConsumer = false) {
   Supla::Channel::resetToDefaults();
   Supla::RegisterDevice::resetToDefaults();
-  Supla::Channel channel(7);
-  channel.setType(SUPLA_CHANNELTYPE_RELAY);
-  channel.setNewValue(true);
+  SimpleTime clock;
+  OutputSimulator output;
+  std::unique_ptr<Supla::Channel> channel;
+  std::unique_ptr<Supla::Control::HvacBase> hvac;
+  if (hvacConsumer && !isSource) {
+    hvac.reset(new Supla::Control::HvacBase(&output));
+    hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+    hvac->onInit();
+  } else {
+    channel.reset(new Supla::Channel(7));
+    channel->setType(hvacConsumer ? SUPLA_CHANNELTYPE_THERMOMETER
+                                  : SUPLA_CHANNELTYPE_RELAY);
+    if (hvacConsumer) {
+      channel->setDefault(SUPLA_CHANNELFNC_THERMOMETER);
+      channel->setNewValue(21.75);
+    }
+    else channel->setNewValue(true);
+  }
   AssociationConfig config;
+  if (hvac) {
+    hvac->onLoadConfig(nullptr);
+    hvac->setWeeklyScheduleStartupDelay(false);
+  }
   ServerIdentity identity;
   identity.load(&config);
   if (!identity.registrationStarted()) return 1;
@@ -733,18 +774,120 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint) {
     request.Resources[0] = {1, 501, 1};
     if (associations.accept(request).Result) return 6;
   }
+  if (hvac) {
+    TChannelConfig_HVAC wire;
+    hvac->copyFullChannelConfigTo(&wire);
+    wire.MainThermometerChannelId = 501;
+    wire.AuxThermometerChannelId = 0;
+    wire.BinarySensorChannelId = 0;
+    wire.MasterThermostatChannelId = 0;
+    wire.PumpSwitchChannelId = 0;
+    wire.HeatOrColdSourceSwitchChannelId = 0;
+    TSD_ChannelConfig request = {};
+    request.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+    request.ConfigSize = sizeof(wire);
+    std::memcpy(request.Config, &wire, sizeof(wire));
+    if (hvac->handleChannelConfig(&request, false) != SUPLA_CONFIG_RESULT_TRUE)
+      return 15;
+    hvac->iterateAlways();
+    hvac->setTemperatureSetpointHeat(2500);
+    hvac->setTargetMode(SUPLA_HVAC_MODE_HEAT);
+  }
   if (rebootEndpoint) {
     associations.load(nullptr, nullptr);
     identity.load(nullptr);
+    if (hvac) {
+      hvac.reset();
+      if (adapter.remoteResources()->consumerCount() ||
+          adapter.remoteResources()->resourceCount()) return 23;
+      Supla::Channel::resetToDefaults();
+      Supla::RegisterDevice::resetToDefaults();
+      hvac.reset(new Supla::Control::HvacBase(&output));
+    }
     config.reboot();
     identity.load(&config);
     associations.load(&config, &identity);
+    if (hvac) {
+      hvac->onLoadConfig(nullptr);
+      hvac->onInit();
+      hvac->setWeeklyScheduleStartupDelay(false);
+      hvac->iterateAlways();
+      hvac->setTemperatureSetpointHeat(2500);
+      hvac->setTargetMode(SUPLA_HVAC_MODE_HEAT);
+    }
   }
-  if (!isSource && !runtime.requestRead(0, {1, 501})) return 7;
+  if (!isSource && !hvac && !runtime.requestRead(0, {1, 501})) return 7;
+  bool requestedNotification = false;
+  bool publishedNotification = false;
+  bool requestedWake = false;
+  bool publishedWake = false;
   for (int step = 0; step < 800; ++step) {
+    usleep(1000);
     datagrams.now += 5;
+    clock.advance(5);
+    if (hvac) hvac->iterateAlways();
     adapter.iterate(datagrams.now);
+    if (isSource && hvacConsumer && datagrams.notificationRequested &&
+        !publishedNotification) {
+      channel->setNewValue(22.5);
+      const bool pending = channel->isUpdateReady();
+      uint8_t raw[8];
+      channel->fillRawValue(raw);
+      adapter.sendChannelValueChanged(7, reinterpret_cast<int8_t *>(raw), 0, 0);
+      if (channel->isUpdateReady() != pending) return 16;
+      publishedNotification = true;
+    }
+    if (isSource && hvacConsumer && datagrams.wakeRequested && !publishedWake) {
+      channel->setNewValue(24.0);
+      adapter.beginWake(200);
+      publishedWake = true;
+    }
     if (!isSource && states && runtime.poolDiagnostics().sessions.used) {
+      if (hvac) {
+        if (!requestedNotification) {
+          if (hvac->getPrimaryTemp() != 2175 ||
+              !hvac->getChannel()->isHvacFlagHeating()) continue;
+          if (!adapter.remoteResources()->consume({1000, {1, 501}, 1}))
+            return 17;
+          uint8_t publish = 0xfd;
+          if (send(socket, &publish, sizeof(publish), 0) != sizeof(publish))
+            return 18;
+          requestedNotification = true;
+          continue;
+        }
+        if (!requestedWake) {
+          if (hvac->getPrimaryTemp() != 2250) continue;
+          uint8_t wake = 0xfc;
+          if (send(socket, &wake, sizeof(wake), 0) != sizeof(wake)) return 24;
+          requestedWake = true;
+          continue;
+        }
+        if (hvac->getPrimaryTemp() != 2400) continue;
+        adapter.remoteResources()->remove(1000);
+        TChannelConfig_HVAC wire;
+        int wireSize = 0;
+        hvac->fillChannelConfig(&wire, &wireSize, SUPLA_CONFIG_TYPE_DEFAULT);
+        if (wireSize != sizeof(wire)) return 19;
+        wire.MainThermometerChannelId = 502;
+        TSD_ChannelConfig update = {};
+        update.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+        update.ConfigSize = sizeof(wire);
+        std::memcpy(update.Config, &wire, sizeof(wire));
+        if (hvac->handleChannelConfig(&update, false) !=
+                SUPLA_CONFIG_RESULT_TRUE ||
+            hvac->getPrimaryTemp() != INT16_MIN ||
+            adapter.remoteResources()->resourceCount() != 1 ||
+            adapter.remoteResources()->access({1, 502}) !=
+                Supla::Device::RemoteAccess::PENDING)
+          return 20;
+        wire.MainThermometerChannelId = 0;
+        std::memcpy(update.Config, &wire, sizeof(wire));
+        if (hvac->handleChannelConfig(&update, false) !=
+                SUPLA_CONFIG_RESULT_TRUE ||
+            hvac->getPrimaryTemp() != INT16_MIN ||
+            adapter.remoteResources()->consumerCount() != 0)
+          return 21;
+      }
       uint8_t complete = 0xfe;
       if (send(socket, &complete, sizeof(complete), 0) != sizeof(complete))
         return 14;
@@ -755,6 +898,8 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint) {
       if (!runtime.poolDiagnostics().sessions.used ||
           !runtime.poolDiagnostics().interests.used)
         return 8;
+      if (hvacConsumer && runtime.diagnostics().readDispatched != 1)
+        return 22;
       source.Flags = 0;
       source.AclRevision = 2;
       source.Acl[0].Permissions = 2;
@@ -780,7 +925,6 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint) {
         return 10;
       return 0;
     }
-    usleep(1000);
   }
   return 11;
 }
@@ -806,6 +950,42 @@ TEST(SupLanProvisionedRead,
     if (destination == 0) {
       close(sockets[0]);
       _exit(runProvisionedEndpoint(sockets[1], false, rebootMode == 2));
+    }
+    close(sockets[0]);
+    close(sockets[1]);
+    int sourceStatus = 0;
+    int destinationStatus = 0;
+    ASSERT_EQ(waitpid(source, &sourceStatus, 0), source);
+    ASSERT_EQ(waitpid(destination, &destinationStatus, 0), destination);
+    ASSERT_TRUE(WIFEXITED(sourceStatus));
+    ASSERT_TRUE(WIFEXITED(destinationStatus));
+    EXPECT_EQ(WEXITSTATUS(sourceStatus), 0) << "reboot mode " << rebootMode;
+    EXPECT_EQ(WEXITSTATUS(destinationStatus), 0)
+        << "reboot mode " << rebootMode;
+  }
+}
+TEST(SupLanProvisionedRead,
+     RemoteMainThermometerFeedsHvacAndReconstructsAfterRestart) {
+  for (int rebootMode = 0; rebootMode < 3; ++rebootMode) {
+    int sockets[2];
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets), 0);
+    timeval timeout = {2, 0};
+    for (int socket : sockets) {
+      ASSERT_EQ(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+                           sizeof(timeout)),
+                0);
+    }
+    pid_t source = fork();
+    ASSERT_GE(source, 0);
+    if (source == 0) {
+      close(sockets[1]);
+      _exit(runProvisionedEndpoint(sockets[0], true, rebootMode == 1, true));
+    }
+    pid_t destination = fork();
+    ASSERT_GE(destination, 0);
+    if (destination == 0) {
+      close(sockets[0]);
+      _exit(runProvisionedEndpoint(sockets[1], false, rebootMode == 2, true));
     }
     close(sockets[0]);
     close(sockets[1]);

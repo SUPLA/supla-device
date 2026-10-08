@@ -387,12 +387,13 @@ foreach(crypto_test_target supladevicetests sd4linuxtests nvsconfigtests
 endforeach()
 target_include_directories(suplandirectionaltests PRIVATE doubles)
 
-# Compile only focused provisioning coverage for alternate capacity profiles.
+# Focused provisioning/dependency coverage for alternate capacity profiles.
 # Configure a separate build with -DCMAKE_CXX_FLAGS=-DSUPLAN_PROFILE=2 (or 3).
-option(SUPLAN_ASSOCIATION_PROFILE_TESTS "Build focused M2 profile tests" OFF)
+option(SUPLAN_ASSOCIATION_PROFILE_TESTS "Build focused M2/M3 profile tests" OFF)
 if(SUPLAN_ASSOCIATION_PROFILE_TESTS)
   add_executable(suplanassociationprofiletests
-    SupLanTests/server_association_tests.cpp ${DOUBLE_SRC}
+    SupLanTests/server_association_tests.cpp
+    SupLanTests/channel_dependency_tests.cpp ${DOUBLE_SRC}
     ../porting/linux/suplan_crypto_openssl.cpp
     doubles/crypto_test_hooks.cpp)
   target_include_directories(suplanassociationprofiletests PRIVATE

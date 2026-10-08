@@ -1178,7 +1178,8 @@ TEST_F(HvacWeeklyScheduleTestsF,
   receiveCurrentConfigsFromDevice();
   hvac->handleChannelConfigFinished();
 
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .Times(1)
       .WillOnce(Return(true));
   EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 1))

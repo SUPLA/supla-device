@@ -30,6 +30,7 @@ class ServerIdentity {
   ServerIdentity &operator=(const ServerIdentity &) = delete;
   void load(Config *config);
   bool capable() const;
+  static const ServerIdentity *current() { return active; }
   bool rotateRoot();
   static void factoryReset();
   // Thin local lifecycle hook. Configuration must honor failure before reuse.

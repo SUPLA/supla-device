@@ -126,6 +126,10 @@ class SuplaSrpc : public ProtocolLayer {
   void onRegisterResultB(
       TSD_SuplaRegisterDeviceResult_B *registerDeviceResultB);
   void onDeviceSyncDone();
+  bool acceptEnsureResult(unsigned int rrId);
+  void cancelEnsureResourceAccess() { ensureRequestId = 0; }
+  bool ensureResourceAccess(
+      const TDS_SuplaEnsureResourceAccess &request) override;
   void onSetActivityTimeoutResult(TSDC_SuplaSetActivityTimeoutResult *result);
   void setActivityTimeout(uint32_t activityTimeoutSec);
   uint32_t getActivityTimeout();
@@ -216,6 +220,7 @@ class SuplaSrpc : public ProtocolLayer {
   uint16_t connectionFailCounter = 0;
   uint8_t reconnectAttemptCounter = 0;
 
+  unsigned int ensureRequestId = 0;
   uint32_t lastPingTimeMs = 0;
   uint32_t waitForIterate = 0;
   uint32_t lastIterateTime = 0;

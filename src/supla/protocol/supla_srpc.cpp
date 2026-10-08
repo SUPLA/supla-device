@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <supla-common/srpc.h>
+#include <supla/suplan/remote_resource_manager.h>
 #include <supla/channels/channel.h>
 #include <supla/clock/clock.h>
 #include <supla/device/channel_conflict_resolver.h>
@@ -1469,6 +1470,19 @@ void Supla::messageReceived(void *srpc,
       case SUPLA_SD_CALL_REGISTER_DEVICE_RESULT_B:
         suplaSrpc->onRegisterResultB(rd.data.sd_register_device_result_b);
         break;
+      case SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_ACCESS_RESULT:
+        if (rd.data.sd_ensure_suplan_resource_access_result &&
+            suplaSrpc->acceptEnsureResult(rrId)) {
+          for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
+               layer = layer->next()) {
+            if (layer->getSdc() == suplaSrpc->getSdc()) {
+              layer->ensureResourceAccessResult(
+                  *rd.data.sd_ensure_suplan_resource_access_result);
+            }
+          }
+        }
+        break;
+
       case SUPLA_SD_CALL_SUPLAN_DEVICE_IDENTITIES:
         suplaSrpc->onDeviceIdentities(rd.data.sd_suplan_device_identities);
         break;
@@ -1858,7 +1872,14 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
       serverActivityTimeout = registerDeviceResult->activity_timeout;
       registered = 1;
 #ifndef ARDUINO_ARCH_AVR
+      ensureRequestId = 0;
       serverIdentityState.registrationSucceeded();
+      for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
+           layer = layer->next()) {
+        if (layer->getSdc() == sdc && layer->remoteResources()) {
+          layer->remoteResources()->serverReconnected();
+        }
+      }
 #endif  // !ARDUINO_ARCH_AVR
       // A TCP connection alone is not enough to end the failure sequence.
       // Reset backoff only after the server accepts registration.
@@ -2047,7 +2068,12 @@ void Supla::Protocol::SuplaSrpc::onDeviceIdentities(
     result.Result = SUPLA_SUPLAN_RESULT_UNSUPPORTED;
     result.RootEpoch = serverIdentityState.rootEpoch();
   } else if (isRegisteredAndReady()) {
+    const bool wasTransition = serverIdentityState.identityTransition();
     result = serverIdentityState.accept(*snapshot);
+    if (!wasTransition && serverIdentityState.identityTransition()) {
+      for (auto element = Supla::Element::begin(); element;
+           element = element->next()) element->onServerIdentityTransition();
+    }
     for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
       if (layer->getSdc() == sdc) layer->suplanIdentityChanged();
     }
@@ -2085,6 +2111,13 @@ void Supla::Protocol::SuplaSrpc::onDeviceSyncDone() {
   }
 
 #ifndef ARDUINO_ARCH_AVR
+  for (auto element = Supla::Element::begin(); element;
+       element = element->next()) {
+    if (!element->isChannelConfigDurable()) {
+      SUPLA_LOG_WARNING("DEVICE_SYNC_DONE blocked by config persistence");
+      return;
+    }
+  }
   serverIdentityState.syncDone();
   for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
     if (layer->getSdc() == sdc) layer->suplanIdentityChanged();
@@ -3282,4 +3315,28 @@ void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
 void Supla::Protocol::SuplaSrpc::setChannelConflictResolver(
     Supla::Device::ChannelConflictResolver *resolver) {
   channelConflictResolver = resolver;
+}
+
+bool Supla::Protocol::SuplaSrpc::ensureResourceAccess(
+    const TDS_SuplaEnsureResourceAccess &request) {
+#ifndef ARDUINO_ARCH_AVR
+  if (effectiveSrpcVersion(version) < 29 || !serverIdentityState.capable() ||
+      !isRegisteredAndReady() || !serverIdentityState.serverSyncComplete() ||
+      request.DeliveryMode != SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER ||
+      request.Flags != 0) return false;
+  auto wire = request;
+  const auto requestId =
+      srpc_ds_async_ensure_suplan_resource_access(srpc, &wire);
+  ensureRequestId = requestId > 0 ? requestId : 0;
+  return requestId > 0;
+#else
+  (void)request;
+  return false;
+#endif
+}
+
+bool Supla::Protocol::SuplaSrpc::acceptEnsureResult(unsigned int rrId) {
+  if (!ensureRequestId || ensureRequestId != rrId) return false;
+  ensureRequestId = 0;
+  return true;
 }

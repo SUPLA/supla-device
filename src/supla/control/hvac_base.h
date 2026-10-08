@@ -8,6 +8,8 @@
 #include <supla/channel_element.h>
 #include <time.h>
 
+#include <supla/channels/channel_state.h>
+#include "hvac_config.h"
 #include "weekly_schedule_common.h"
 #include "weekly_schedule_component.h"
 
@@ -15,6 +17,9 @@
 #define HVAC_BASE_FLAG_IGNORE_DEFAULT_HEAT_OR_COLD (1 << 1)
 
 namespace Supla {
+namespace Device {
+class RemoteResourceManager;
+}
 
 enum class LocalUILock : uint8_t {
   None = 0,
@@ -39,6 +44,13 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onInit() override;
+  bool isChannelConfigDurable() const override {
+    return synchronizedConfigDurable;
+  }
+  void onServerIdentityTransition() override {
+    synchronizedConfigDurable = false;
+    refreshMainDependency();
+  }
   void onSaveState() override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   void iterateAlways() override;
@@ -299,7 +311,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isCoolingSubfunction() const;
 
   bool isFunctionSupported(_supla_int_t channelFunction) const;
-  bool isConfigValid(TChannelConfig_HVAC *config) const;
+  bool isConfigValid(TChannelConfig_HVAC *config,
+                     uint32_t function = 0) const;
   bool isWeeklyScheduleValid(TChannelConfig_WeeklySchedule *newSchedule,
                              bool isAltWeeklySchedule = false) const;
   bool isChannelThermometer(int16_t channelNo) const;
@@ -523,6 +536,26 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void fixTemperatureSetpoints();
   void storeLastWorkingMode();
   void applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig);
+  bool applyFirmwareConfiguration(HvacConfiguration *candidate);
+  void rememberReadonlyLocalReferences();
+  int16_t localNumber(const ChannelReference &reference) const;
+  HvacConfiguration defaultConfiguration();
+  bool persistConfiguration(const HvacConfiguration &candidate,
+                            uint32_t function);
+  void cleanupLegacyConfig();
+  bool legacyCleanupPending = false;
+  uint32_t legacyCleanupLastMs = 0;
+  bool synchronizedConfigDurable = true;
+  bool configurationPersistenceUncertain = false;
+  // Volatile firmware readonly bindings, not canonical config references.
+  // 0xff means no proven local binding; remote IDs are never rebound.
+  uint8_t readonlyLocalChannels[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+  ChannelState mainThermometerState();
+  void refreshMainDependency();
+#ifndef ARDUINO_ARCH_AVR
+  Device::RemoteResourceManager *remoteManager() const;
+#endif
+  const Device::ServerIdentity *referenceIdentity() const;
   int32_t channelFunctionToIndex(int32_t channelFunction) const;
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
@@ -539,8 +572,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   int16_t getClosestValidTemperature(int16_t temperature) const;
 
-  TChannelConfig_HVAC config = {};
-  TChannelConfig_HVAC *initialConfig = nullptr;
+  HvacConfiguration config;
+  HvacConfiguration *initialConfig = nullptr;
   HvacWeeklySchedule *weeklyScheduleHelper = nullptr;
   // primaryOutput can be used for heating or cooling (cooling is supported
   // when secondaryOutput is not used, in such case "AUTO" mode is not

@@ -201,6 +201,10 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/simple_button.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/virtual_relay.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/hvac_base.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/control/hvac_config.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplan/remote_resource_manager.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel_reference.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel_state.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/group_button_control_rgbw.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/blinking_led.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/valve_base.cpp

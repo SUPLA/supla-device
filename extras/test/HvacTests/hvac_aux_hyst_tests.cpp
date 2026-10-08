@@ -136,7 +136,8 @@ TEST_F(HvacAuxTestsF, auxHysteresisMaxCheck) {
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
@@ -413,7 +414,8 @@ TEST_F(HvacAuxTestsF, auxHysteresisMinCheck) {
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
@@ -617,7 +619,8 @@ TEST_F(HvacAuxTestsF, auxHysteresisMaxCoolinCheck) {
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
@@ -869,7 +872,8 @@ TEST_F(HvacAuxTestsF, auxHysteresisMinCoolinCheck) {
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg2"), _,
+                      sizeof(Supla::Control::HvacStoredConfigV2)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));

@@ -539,6 +539,7 @@ Runtime::RecoveryStatus Runtime::recoveryStatus(uint8_t peerIndex) const {
 void Runtime::setPeerSleeping(uint8_t peerIndex, bool sleeping) {
   if (peerIndex < SUPLAN_MAX_PERSISTENT_PEERS) {
     recovery_[peerIndex].sleeping = sleeping;
+    if (sleeping) recovery_[peerIndex].nextRefreshMs = 0;
   }
 }
 
@@ -609,6 +610,7 @@ void Runtime::completeRead(uint8_t peerIndex, const ResourceId &resource) {
 
 void Runtime::noteReachability(uint8_t peerIndex) {
   PeerRecovery &peer = recovery_[peerIndex];
+  peer.sleeping = false;
   peer.backgroundStage = 0;
   if (!peer.active && peer.scheduled) {
     peer.nextRefreshMs = datagrams_->nowMs();
@@ -671,6 +673,10 @@ void Runtime::iterateRecovery(uint32_t now) {
   for (uint8_t peerIndex = 0; peerIndex < SUPLAN_MAX_PERSISTENT_PEERS;
        ++peerIndex) {
     PeerRecovery &peer = recovery_[peerIndex];
+    if (peer.sleeping && peer.nextRefreshMs != 0 &&
+        static_cast<int32_t>(now - peer.nextRefreshMs) >= 0) {
+      peer.sleeping = false;
+    }
     bool handshake = false;
     for (uint8_t i = 0; i < SUPLAN_MAX_PENDING_HANDSHAKES; ++i) {
       handshake = handshake || (pending_[i].used && pending_[i].initiator &&
@@ -1024,7 +1030,7 @@ bool Runtime::publishState(uint8_t peerIndex, const ResourceId &resource,
 bool Runtime::publishStateParts(uint8_t peerIndex, const ResourceId &resource,
                                 uint32_t messageType, const uint8_t *prefix,
                                 size_t prefixLength, const uint8_t *payload,
-                                size_t payloadLength) {
+                                size_t payloadLength, bool nativeSnapshot) {
   const PeerRecord *peer = peers_->get(peerIndex);
   if (!isLocalSource(peer) || !interested(peerIndex, resource) ||
       !peers_->authorize(peerIndex, resource, kPermissionRead)) {
@@ -1037,7 +1043,8 @@ bool Runtime::publishStateParts(uint8_t peerIndex, const ResourceId &resource,
       totalLength > sizeof(applicationBuffer_)) {
     return false;
   }
-  applicationBuffer_[0] = kMessageClassSuplaCall;
+  applicationBuffer_[0] = nativeSnapshot ? kMessageClassNative
+                                        : kMessageClassSuplaCall;
   putUint32(applicationBuffer_ + 1, messageType);
   applicationBuffer_[5] = 0;
   if (!encodeResourceId(resource.type, resource.id,
@@ -1052,7 +1059,7 @@ bool Runtime::publishStateParts(uint8_t peerIndex, const ResourceId &resource,
   if (payloadLength != 0) {
     memmove(body + prefixLength, payload, payloadLength);
   }
-  if (totalLength <= sizeof(deferred_[0].data)) {
+  if (nativeSnapshot || totalLength <= sizeof(deferred_[0].data)) {
     return enqueueApplication(peerIndex, applicationBuffer_, totalLength, true);
   }
   if (processing_) {
@@ -1278,17 +1285,26 @@ void Runtime::resetDiagnostics() {
 bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
                                  size_t length, bool mayEstablishSession,
                                  bool actionDelivery) {
+  // Native current-state updates retain only their resource identity. Build
+  // the side-effect-free current snapshot when draining, keeping M1 RAM bounds.
+  const bool snapshot = data && length ==
+      kApplicationHeaderSize + kResourceHeaderSize + 36 &&
+      data[0] == kMessageClassNative && getUint32(data + 1) == 6 &&
+      data[5] == 0 && application_ && application_->fullChannelSnapshots();
+  if (snapshot) length = kApplicationHeaderSize + kResourceHeaderSize;
   if (data == nullptr || length == 0 || length > sizeof(deferred_[0].data) ||
       peers_->get(peerIndex) == nullptr) {
     ++diagnostics_.deferredQueueOverflow;
     return false;
   }
   if (length >= kApplicationHeaderSize + kResourceHeaderSize &&
-      data[0] == kMessageClassSuplaCall && data[5] == 0) {
+      (data[0] == kMessageClassSuplaCall || snapshot) && data[5] == 0) {
     for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
       DeferredApplication *queued = &deferred_[i];
       if (queued->used && queued->peerIndex == peerIndex &&
-          queued->data[0] == kMessageClassSuplaCall && queued->data[5] == 0 &&
+          queued->data[0] == data[0] &&
+          getUint32(queued->data + 1) == getUint32(data + 1) &&
+          queued->data[5] == 0 &&
           memcmp(queued->data + kApplicationHeaderSize,
                  data + kApplicationHeaderSize, kResourceHeaderSize) == 0) {
         memcpy(queued->data, data, length);
@@ -1432,8 +1448,9 @@ void Runtime::drainDeferred() {
         isActionApplication(queued->data, queued->length);
     const uint32_t actionExpiresAtMs = actionDelivery
         ? getActionDeadline(queued->data, sizeof(queued->data)) : 0;
-    if (queued->data[0] == kMessageClassSuplaCall &&
-        queued->data[5] == 0) {
+    if ((queued->data[0] == kMessageClassSuplaCall ||
+         (queued->data[0] == kMessageClassNative &&
+          getUint32(queued->data + 1) == 6)) && queued->data[5] == 0) {
       const ResourceId stateResource = {
           queued->data[kApplicationHeaderSize],
           getUint32(queued->data + kApplicationHeaderSize + 1)};
@@ -1501,7 +1518,8 @@ void Runtime::drainDeferred() {
           (void)payloadLength;
         }
       } else if (app.messageClass == kMessageClassNative &&
-                 app.messageType == kNativeReadResource &&
+                 (app.messageType == kNativeReadResource ||
+                  app.messageType == 6) &&
                  app.bodyLength == kResourceHeaderSize) {
         resource.type = app.body[0];
         resource.id = getUint32(app.body + 1);
@@ -1517,10 +1535,28 @@ void Runtime::drainDeferred() {
       cancelPeerRecoveryIfIdle(queued->peerIndex);
       continue;
     }
+    const uint8_t *sendData = queued->data;
+    size_t sendLength = queued->length;
+    if (parsed && app.messageClass == kMessageClassNative &&
+        app.messageType == 6 && app.bodyLength == kResourceHeaderSize) {
+      const size_t offset = kApplicationHeaderSize + kResourceHeaderSize;
+      size_t snapshotLength = 0;
+      bool eventOnly = false;
+      memcpy(applicationBuffer_, queued->data, offset);
+      if (!application_ ||
+          !application_->readResource(resource, &eventOnly,
+              applicationBuffer_ + offset, sizeof(applicationBuffer_) - offset,
+              &snapshotLength) || eventOnly || snapshotLength != 36) {
+        queued->used = false;
+        continue;
+      }
+      sendData = applicationBuffer_;
+      sendLength = offset + snapshotLength;
+    }
     const uint32_t sequence = session->nextTransmitSequence;
     if (sendProtected(queued->peerIndex, &session->transmit,
                       session->sessionId, &session->nextTransmitSequence,
-                      &session->lastActivityMs, queued->data, queued->length,
+                      &session->lastActivityMs, sendData, sendLength,
                       parsed && app.flags == kAckRequired, resource,
                       actionDelivery, actionExpiresAtMs)) {
       const int retryIndex = findRetry(queued->peerIndex, session->sessionId,
@@ -1674,6 +1710,10 @@ bool Runtime::sendProtectedToEndpoint(
   if (sent) {
     ++diagnostics_.dataTx;
   }
+  if (applicationData[0] == kMessageClassNative &&
+      getUint32(applicationData + 1) == 6) {
+    ++diagnostics_.stateNotificationTx;
+  }
   if (applicationData[0] == kMessageClassSuplaCall) {
     const uint32_t messageType = getUint32(applicationData + 1);
     if (messageType == kSuplaCallDeviceChannelValueChangedC ||
@@ -1759,6 +1799,34 @@ void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
                               size_t length) {
   if (data == nullptr || length < 2) {
     ++diagnostics_.invalidDataDrop;
+    return;
+  }
+  if (data[0] == kVersion &&
+      ((data[1] == 6 && length == 50) || (data[1] == 7 && length == 52))) {
+    const int index = peers_->findByLocator(data + 2);
+    if (index < 0 || !isLocalDestination(peers_->get(index)) ||
+        !peers_->hasActiveGrants(index) || !application_ ||
+        !application_->allowPresence(index, datagrams_->nowMs())) return;
+    const bool reset = data[1] == 6;
+    const char *label = reset ? "SupLAN/v1/interest-reset"
+                             : "SupLAN/v1/peer-awake";
+    uint8_t input[64];
+    const size_t labelLength = strlen(label);
+    const size_t bodyLength = length - 16;
+    memcpy(input, label, labelLength);
+    memcpy(input + labelLength, data, bodyLength);
+    PeerMaterial material = {};
+    uint8_t mac[32];
+    if (!peers_->materialFor(index, &material) ||
+        !Supla::Crypto::hmacSha256(material.locateMacKey, 32, input,
+                                   labelLength + bodyLength, mac) ||
+        !equalBytesConstantTime(mac, data + bodyLength, 16)) {
+      ++diagnostics_.invalidLocateDrop;
+      return;
+    }
+    const uint16_t window = reset ? 0 : getUint16(data + 34);
+    if (!reset && !window) return;
+    application_->peerAwake(index, window, reset, data + 18);
     return;
   }
   if (data[0] == kVersion && data[1] == kFrameLocate && length == 50) {
@@ -2294,6 +2362,45 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
                            uint32_t sequence,
                            const ApplicationDataView &application,
                            bool duplicate) {
+  if (application.messageType == 7) {
+    if (application.flags != kAckRequired || application.bodyLength != 4 ||
+        !isLocalDestination(peers_->get(peerIndex)) ||
+        !peers_->hasActiveGrants(peerIndex)) return;
+    const uint32_t duration = getUint32(application.body);
+    if (!duration || duration > INT32_MAX / 1000) return;
+    if (!duplicate) {
+      if (recovery_[peerIndex].active) finishRecovery(peerIndex);
+      recovery_[peerIndex].sleeping = true;
+      recovery_[peerIndex].nextRefreshMs =
+          datagrams_->nowMs() + duration * 1000;
+      if (!recovery_[peerIndex].nextRefreshMs) {
+        recovery_[peerIndex].nextRefreshMs = 1;
+      }
+      session->ackResults[static_cast<uint8_t>(sequence & 63U)] = kResultTrue;
+    }
+    sendAck(peerIndex, session, sequence, kResultTrue);
+    return;
+  }
+  if (application.messageType == 6) {
+    ResourceId resource = {};
+    const uint8_t *payload = nullptr;
+    size_t length = 0;
+    if (duplicate || application.flags != 0 ||
+        !resourceFromApplication(application, &resource, &payload, &length) ||
+        resource.type != kResourceTypeChannel || length != 36 ||
+        payload[0] != kChannelNumberUnresolved ||
+        !isLocalDestination(peers_->get(peerIndex)) ||
+        !peers_->authorize(peerIndex, resource, kPermissionRead)) {
+      ++diagnostics_.invalidDataDrop;
+      return;
+    }
+    noteReadState(peerIndex, resource);
+    if (application_) {
+      application_->receiveState(peerIndex, resource, 6, payload, length);
+    }
+    ++diagnostics_.stateNotificationRx;
+    return;
+  }
   if (application.messageType == 1) {
     if (duplicate || application.flags != 0 || application.bodyLength != 5) {
       ++diagnostics_.invalidDataDrop;
@@ -2403,8 +2510,11 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
   }
   session->ackResults[static_cast<uint8_t>(sequence & 63U)] = kResultTrue;
   size_t responseLength = 0;
-  if (buildResourceApplication(kMessageClassSuplaCall,
-                               kSuplaCallDeviceChannelValueChangedC, 0,
+  if (buildResourceApplication(
+          application_->fullChannelSnapshots() ? kMessageClassNative
+                                               : kMessageClassSuplaCall,
+          application_->fullChannelSnapshots() ? 6
+              : kSuplaCallDeviceChannelValueChangedC, 0,
                                resource, applicationBuffer_ + payloadOffset,
                                payloadLength, &responseLength)) {
     (void)enqueueApplication(peerIndex, applicationBuffer_, responseLength,
@@ -2771,6 +2881,117 @@ void Runtime::iterate() {
     cancelPeerRecoveryIfIdle(i);
   }
   updatePoolHighWater();
+}
+
+void Runtime::removeReadDependency(uint8_t peerIndex,
+                                    const ResourceId &resource) {
+  const int index = findReadDependency(peerIndex, resource);
+  if (index >= 0) dependencies_[index] = {};
+  for (auto &retry : retries_) {
+    if (retry.isUsed() && retry.peerIndex == peerIndex &&
+        retry.resource.type == resource.type &&
+        retry.resource.id == resource.id && (retry.flags & kRetryReadRequest))
+      clearRetryEntry(&retry);
+  }
+  for (auto &queued : deferred_) {
+    if (!queued.used || queued.peerIndex != peerIndex) continue;
+    ApplicationDataView application = {};
+    if (decodeApplicationData(queued.data, queued.length, &application) &&
+        application.messageClass == kMessageClassNative &&
+        application.messageType == kNativeReadResource &&
+        application.bodyLength == kResourceHeaderSize &&
+        application.body[0] == resource.type &&
+        getUint32(application.body + 1) == resource.id) queued.used = false;
+  }
+  cancelPeerRecoveryIfIdle(peerIndex);
+}
+
+bool Runtime::announcePresence(uint8_t peerIndex, uint16_t window,
+                                bool reset) {
+  if (!isLocalSource(peers_->get(peerIndex)) ||
+      !peers_->hasActiveGrants(peerIndex) || (!reset && !window)) return false;
+  PeerMaterial material = {};
+  uint8_t frame[52] = {kVersion, static_cast<uint8_t>(reset ? 6 : 7)};
+  if (!peers_->materialFor(peerIndex, &material) ||
+      !Supla::Crypto::fillRandom(frame + 18, 16)) return false;
+  memcpy(frame + 2, material.peerLocator, 16);
+  const size_t bodyLength = reset ? 34 : 36;
+  if (!reset) putUint16(frame + 34, window);
+  const char *label = reset ? "SupLAN/v1/interest-reset"
+                           : "SupLAN/v1/peer-awake";
+  const size_t labelLength = strlen(label);
+  uint8_t input[64];
+  uint8_t mac[32];
+  memcpy(input, label, labelLength);
+  memcpy(input + labelLength, frame, bodyLength);
+  if (!Supla::Crypto::hmacSha256(material.locateMacKey, 32, input,
+                                 labelLength + bodyLength, mac)) return false;
+  memcpy(frame + bodyLength, mac, 16);
+  return datagrams_->sendLocateMulticast(frame, bodyLength + 16);
+}
+
+void Runtime::refreshPeer(uint8_t peerIndex, uint16_t window, bool reset) {
+  if (peerIndex >= SUPLAN_MAX_PERSISTENT_PEERS ||
+      !isLocalDestination(peers_->get(peerIndex))) return;
+  noteReachability(peerIndex);
+  bool pending = false;
+  for (auto &dependency : dependencies_) {
+    if (!dependency.used || dependency.peerIndex != peerIndex) continue;
+    if (reset) dependency.needsRefresh = true;
+    pending = pending || dependency.needsRefresh;
+  }
+  if (pending) {
+    beginRecovery(peerIndex);
+    if (window && window < kControlLifetimeMs) {
+      const uint32_t deadline = datagrams_->nowMs() + window;
+      if (static_cast<int32_t>(deadline - recovery_[peerIndex].deadlineMs) <
+          0) {
+        recovery_[peerIndex].deadlineMs = deadline;
+      }
+    }
+  }
+}
+
+bool Runtime::announceSleep(uint8_t peerIndex, uint32_t duration) {
+  if (!duration || duration > INT32_MAX / 1000 ||
+      !isLocalSource(peers_->get(peerIndex)) ||
+      !peers_->hasActiveGrants(peerIndex)) return false;
+  for (auto &session : sessions_) {
+    if (!session.used || session.peerIndex != peerIndex) continue;
+    uint8_t body[4];
+    putUint32(body, duration);
+    size_t length = 0;
+    if (!encodeApplicationData(kMessageClassNative, 7, kAckRequired, body,
+                               sizeof(body), applicationBuffer_,
+                               sizeof(applicationBuffer_), &length))
+      return false;
+    return sendProtected(peerIndex, &session.transmit, session.sessionId,
+        &session.nextTransmitSequence, &session.lastActivityMs,
+        applicationBuffer_, length, true, ResourceId());
+  }
+  return false;
+}
+
+void Runtime::clearInterests() {
+  for (auto &interest : interests_) interest = {};
+}
+void Runtime::publishCurrentInterests(uint8_t peerIndex) {
+  if (!application_ || !application_->fullChannelSnapshots()) return;
+  for (const auto &interest : interests_) {
+    if (!interest.used ||
+        (peerIndex != 0xff && interest.peerIndex != peerIndex) ||
+        !isLocalSource(peers_->get(interest.peerIndex)) ||
+        !peers_->authorize(interest.peerIndex, interest.resource,
+                            kPermissionRead)) continue;
+    uint8_t snapshot[36];
+    size_t size = 0;
+    bool eventOnly = false;
+    if (application_->readResource(interest.resource, &eventOnly, snapshot,
+                                   sizeof(snapshot), &size) && !eventOnly) {
+      publishStateParts(interest.peerIndex, interest.resource, 6, nullptr, 0,
+                         snapshot, size, true);
+    }
+  }
 }
 
 }  // namespace SupLan

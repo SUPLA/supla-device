@@ -94,6 +94,9 @@ class FullStartupWithConfig : public ::testing::Test {
       delete SuplaDevice.getClock();
     }
     Supla::Channel::resetToDefaults();
+    if (client && sd.getSrpcLayer() && sd.getSrpcLayer()->client == client) {
+      client->expectStopOnDestruction();
+    }
     client = nullptr;
   }
 };

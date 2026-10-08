@@ -90,6 +90,7 @@ TEST_F(SrpcWriteFailureTests, ClosedConnectionMarksFailureWithoutWriting) {
 
   EXPECT_EQ(Supla::dataWrite(buffer.data(), buffer.size(), &protocol), 0);
   EXPECT_TRUE(protocol.hasWriteFailure());
+  client->expectStopOnDestruction();
 }
 
 TEST_F(SrpcWriteFailureTests, PartialWriteStopsClientAndLatchesFailure) {
@@ -110,6 +111,7 @@ TEST_F(SrpcWriteFailureTests, PartialWriteStopsClientAndLatchesFailure) {
   EXPECT_TRUE(protocol.hasWriteFailure());
 
   EXPECT_EQ(Supla::dataWrite(buffer.data(), buffer.size(), &protocol), 0);
+  client->expectStopOnDestruction();
 }
 
 #if SUPLA_SRPC_PACKET_LOG_ENABLED && !defined(SUPLA_DISABLE_LOGS)
@@ -154,6 +156,7 @@ TEST_F(SrpcWriteFailureTests,
   EXPECT_FALSE(protocol.iterate(1000));
   EXPECT_EQ(protocol.waitForIterateForTest(), 1000U);
   protocol.deinitializeSrpc();
+  client->expectStopOnDestruction();
 }
 
 TEST_F(SrpcWriteFailureTests, ReconnectDelayIncreasesAndIsCappedAtOneMinute) {

@@ -55,6 +55,9 @@ class SwUpdateTests : public ::testing::Test {
     if (SuplaDevice.getClock()) {
       delete SuplaDevice.getClock();
     }
+    if (client && sd.getSrpcLayer() && sd.getSrpcLayer()->client == client) {
+      client->expectStopOnDestruction();
+    }
     client = nullptr;
   }
 

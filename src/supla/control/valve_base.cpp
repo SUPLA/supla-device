@@ -94,6 +94,15 @@ bool ValveBase::isFloodDetected() {
       continue;
     }
 
+    // isStateOnline() also includes ONLINE_BUT_NOT_AVAILABLE and
+    // FIRMWARE_UPDATE_ONGOING. Neither state provides a usable flood sample.
+    // Invalidate ON_CHANGE history so the next valid LEAK closes the valve.
+    if (!ch->isStateOnline() || ch->isStateOnlineAndNotAvailable() ||
+        ch->isStateFirmwareUpdateOngoing()) {
+      previousSensorState[i] = false;
+      continue;
+    }
+
     if (config.closeValveOnFloodType <= 1) {
       if (ch->getValueBool() == true) {
         previousSensorState[i] = true;

@@ -3,6 +3,7 @@
 
 #include "relay_weekly_schedule.h"
 
+#include <inttypes.h>
 #include <string.h>
 #include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
@@ -138,6 +139,9 @@ void RelayWeeklySchedule::onManualAction() {
   int programId = -1;
   if (time.state != WeeklyScheduleClockState::Ready ||
       !resolveWeeklyScheduleProgram(time, &program, &programId)) {
+    SUPLA_LOG_INFO(
+        "Relay[%d] weekly manual override pending: clock/program unavailable",
+        owner_->getChannelNumber());
     pendingManualAction_ = true;
     return;
   }
@@ -166,6 +170,9 @@ bool RelayWeeklySchedule::processProgramAt(
     const TWeeklyScheduleProgram &program, int programId, bool programChanged,
     bool manualAction) {
   if (programId > 0 && !isProgramValid(program)) {
+    SUPLA_LOG_WARNING(
+        "Relay[%d] weekly program=%d mode=%u invalid; switching to manual",
+        owner_->getChannelNumber(), programId, program.Mode);
     switchToManualMode();
     scheduleWeeklyScheduleStateSave();
     return false;
@@ -200,6 +207,23 @@ bool RelayWeeklySchedule::processProgramAt(
   if (!timed_ || hasTiming) {
     pendingManualAction_ = false;
   }
+  if (changed) {
+    SUPLA_LOG_INFO(
+        "Relay[%d] weekly program=%d mode=%u day=%d time=%02d:%02d "
+        "duration=%u s opposite=%u s timing=%d suppressed=%d",
+        owner_->getChannelNumber(), programId, program.Mode,
+        static_cast<int>(time.dayOfWeek), time.hour,
+        time.quarter * 15 + time.secondOfQuarter / 60,
+        program.RelayModeDurationS, program.RelayOppositeModeDurationS,
+        hasTiming, suppressed_);
+  }
+  if (manualAction) {
+    SUPLA_LOG_INFO(
+        "Relay[%d] weekly manual override: program=%d timed=%d "
+        "suppressed=%d pending=%d",
+        owner_->getChannelNumber(), programId, timed_, suppressed_,
+        pendingManualAction_);
+  }
   if (!timed_) {
     occurrence_ = -1;
     lastTimingQuarter_ = -1;
@@ -224,6 +248,11 @@ bool RelayWeeklySchedule::processProgramAt(
   if (phase != phase_) {
     const bool on = (program.Mode == SUPLA_RELAY_MODE_START_ON) !=
                     ((phase & 1) != 0);
+    SUPLA_LOG_INFO(
+        "Relay[%d] weekly program=%d phase=%" PRIu32 " elapsed=%" PRIu32
+        " s requests %s",
+        owner_->getChannelNumber(), programId, phase, elapsed,
+        on ? "ON" : "OFF");
     if (!owner_->applyWeeklyScheduleState(on)) {
       return false;
     }
@@ -276,6 +305,10 @@ bool RelayWeeklySchedule::isWeeklyScheduleValid(
 
 void RelayWeeklySchedule::onNativeScheduleApplied(
     bool alt, bool local, bool changed) {
+  SUPLA_LOG_INFO(
+      "Relay[%d] weekly config applied: source=%s changed=%d active=%d",
+      owner_->getChannelNumber(), local ? "local" : "server", changed,
+      isActive());
   if (changed) {
     resetRuntimeOverride();
   }

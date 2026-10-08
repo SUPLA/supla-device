@@ -8,6 +8,8 @@
 
 #include "relay.h"
 
+#include <inttypes.h>
+
 #include <supla/actions.h>
 #include <supla/condition.h>
 #include <supla/condition_getter.h>
@@ -32,6 +34,20 @@ uint16_t Relay::relayStorageSaveDelay = 5000;
 namespace {
 
 constexpr uint32_t POSTPONED_TIME = 500;
+
+const char *relayModeName(uint8_t mode) {
+  switch (mode) {
+    case SUPLA_RELAY_MODE_NOT_SET: return "NOT_SET";
+    case SUPLA_RELAY_MODE_START_ON: return "START_ON";
+    case SUPLA_RELAY_MODE_START_OFF: return "START_OFF";
+    case SUPLA_RELAY_MODE_FORCED_ON: return "FORCED_ON";
+    case SUPLA_RELAY_MODE_FORCED_OFF: return "FORCED_OFF";
+    case SUPLA_RELAY_MODE_AUTOMATIC: return "AUTOMATIC";
+    case SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE: return "WEEKLY_SCHEDULE";
+    case SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL: return "SWITCH_TO_MANUAL";
+    default: return "UNKNOWN";
+  }
+}
 
 Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io, int pin, bool highIsOn) {
   Supla::Io::IoPin outputPin(pin, io);
@@ -651,12 +667,34 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   bool zeroDurationAllowed = false;
   auto *relayValue = reinterpret_cast<TRelayChannel_Value *>(newValue->value);
   auto *weeklySchedule = weeklyScheduleComponents.getController();
+  SUPLA_LOG_INFO(
+      "Relay[%d] server command: sender=%d value=%u mode=%s(%u) "
+      "flags=0x%04X duration=%" PRIu32 " ms function=%d; "
+      "current mode=%s(%u) weekly=%d",
+      getChannelNumber(), newValue->SenderID,
+      static_cast<unsigned char>(relayValue->hi),
+      relayModeName(relayValue->RelayMode), relayValue->RelayMode,
+      relayValue->flags, newValue->DurationMS, channelFunction,
+      relayModeName(channel.getRelayMode()), channel.getRelayMode(),
+      weeklySchedule != nullptr && weeklySchedule->isActive());
+  const auto finish = [this, weeklySchedule](int32_t result,
+                                            const char *reason) {
+    SUPLA_LOG_INFO(
+        "Relay[%d] server command result=%d: %s; mode=%s(%u) weekly=%d "
+        "channel_state=%s initialized=%d overcurrent_cutoff=%d",
+        getChannelNumber(), result, reason,
+        relayModeName(channel.getRelayMode()), channel.getRelayMode(),
+        weeklySchedule != nullptr && weeklySchedule->isActive(),
+        channel.getValueBool() ? "ON" : "OFF", runtimeFlags.initDone,
+        channel.isRelayOvercurrentCutOff());
+    return result;
+  };
   switch (channelFunction) {
     case SUPLA_CHANNELFNC_PUMPSWITCH:
     case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
       SUPLA_LOG_WARNING("Relay[%d] ignoring server request (pump/heatorcold)",
                         getChannelNumber());
-      return 0;
+      return finish(0, "server control disabled for pump/heat source");
     }
     case SUPLA_CHANNELFNC_POWERSWITCH:
     case SUPLA_CHANNELFNC_LIGHTSWITCH: {
@@ -669,10 +707,10 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
 
   if (relayValue->RelayMode == SUPLA_RELAY_MODE_AUTOMATIC) {
     if (!setAutomaticMode(true)) {
-      return 0;
+      return finish(0, "automatic mode unsupported");
     }
     Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
-    return 1;
+    return finish(1, "automatic mode activated");
   }
 
   const bool forcedModeCommand =
@@ -685,17 +723,17 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
       relayValue->RelayMode == channel.getRelayMode();
   if (forcedModeCommand && !repeatsActiveWeeklyMode) {
     if (!setManualForcedMode(relayValue->RelayMode)) {
-      return 0;
+      return finish(0, "manual forced mode unsupported");
     }
     Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
-    return 1;
+    return finish(1, "manual forced mode activated");
   }
 
   if (relayValue->RelayMode == SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL) {
     disableWeeklySchedule();
     channel.setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
     Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
-    return 1;
+    return finish(1, "switched to manual mode");
   }
 
   if (weeklySchedule != nullptr && isWeeklyScheduleSupported()) {
@@ -710,13 +748,24 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
                                      : SUPLA_RELAY_MODE_NOT_SET);
           }
           Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
-          return 1;
+          return finish(1, "weekly schedule activated");
         }
-        return 0;
+        return finish(0, "weekly schedule cannot activate (config/function)");
       }
       default: {
       }
     }
+  }
+
+  if (repeatsActiveWeeklyMode) {
+    SUPLA_LOG_INFO(
+        "Relay[%d] server repeats active weekly forced mode; "
+        "keeping weekly schedule, checking requested ON/OFF",
+        getChannelNumber());
+  } else if (relayValue->RelayMode == SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE) {
+    SUPLA_LOG_INFO(
+        "Relay[%d] weekly schedule unavailable; checking requested ON/OFF",
+        getChannelNumber());
   }
 
   int result = -1;
@@ -725,12 +774,15 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
       SUPLA_LOG_DEBUG(
           "Relay[%d] ignoring server turn ON due to operating mode",
           channel.getChannelNumber());
-      return 0;
+      return finish(0, "ON blocked by operating mode");
     }
     if (!zeroDurationAllowed &&
         newValue->DurationMS < minimumAllowedDurationMs) {
-      SUPLA_LOG_DEBUG("Relay[%d] override duration with min value",
-                      channel.getChannelNumber());
+      SUPLA_LOG_INFO(
+          "Relay[%d] server ON duration raised from %" PRIu32 " to "
+          "%" PRIu32 " ms (function minimum)",
+          getChannelNumber(), newValue->DurationMS,
+          static_cast<uint32_t>(minimumAllowedDurationMs));
       newValue->DurationMS = minimumAllowedDurationMs;
     }
     if ((isImpulseFunction() || isCyclicMode()) && newValue->DurationMS > 0) {
@@ -753,7 +805,7 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
       SUPLA_LOG_DEBUG(
           "Relay[%d] ignoring server turn OFF due to operating mode",
           channel.getChannelNumber());
-      return 0;
+      return finish(0, "OFF blocked by operating mode");
     }
     notifyWeeklyScheduleManualAction();
     if (runtimeFlags.keepTurnOnDurationMs || isStaircaseFunction() ||
@@ -776,7 +828,8 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
     result = 1;
   }
 
-  return result;
+  return finish(result, result == 1 ? "ON/OFF dispatched"
+                                    : "unsupported ON/OFF value");
 }
 
 void Relay::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
@@ -1629,6 +1682,14 @@ bool Relay::applyWeeklyScheduleState(bool on) {
 
 void Relay::applyWeeklyScheduleProgram(uint8_t programMode,
                                        bool programChanged) {
+  if (programChanged) {
+    SUPLA_LOG_INFO(
+        "Relay[%d] applying operating program mode=%s(%u) "
+        "channel_state=%s initialized=%d overcurrent_cutoff=%d",
+        getChannelNumber(), relayModeName(programMode), programMode,
+        channel.getValueBool() ? "ON" : "OFF", runtimeFlags.initDone,
+        channel.isRelayOvercurrentCutOff());
+  }
   switch (programMode) {
     case SUPLA_RELAY_MODE_START_ON: {
       if (programChanged && !isOn() &&

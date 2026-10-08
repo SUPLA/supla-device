@@ -962,6 +962,7 @@ esp_err_t redirectHandler(httpd_req_t *req) {
   SUPLA_LOG_DEBUG("SERVER: redirect to %s (uri: %s)", httpsUrl, req->uri);
 
   httpd_resp_set_status(req, "301 Moved Permanently");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
   httpd_resp_set_hdr(req, "Location", httpsUrl);
   httpd_resp_send(req, NULL, 0);

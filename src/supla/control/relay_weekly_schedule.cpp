@@ -144,11 +144,15 @@ bool RelayWeeklySchedule::isProgramValid(
   }
   if (program.RelayModeDurationS == 0 ||
       (program.Mode != SUPLA_RELAY_MODE_START_ON &&
-       program.Mode != SUPLA_RELAY_MODE_START_OFF)) {
+       program.Mode != SUPLA_RELAY_MODE_START_OFF) ||
+      owner_->isImpulseFunction()) {
     return false;
   }
-  return program.RelayOppositeModeDurationS == 0 ||
-         (!owner_->isStaircaseFunction() && !owner_->isImpulseFunction());
+  if (owner_->isStaircaseFunction()) {
+    return program.Mode == SUPLA_RELAY_MODE_START_ON &&
+           program.RelayOppositeModeDurationS == 0;
+  }
+  return true;
 }
 
 void RelayWeeklySchedule::resetRuntimeOverride() {

@@ -25,6 +25,9 @@
 #include <supla/io.h>
 #include <supla_io_mock.h>
 
+#include <tuple>
+#include <utility>
+
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::DoAll;
@@ -352,9 +355,9 @@ class ImpulseForcedOffFixture : public RelayFixture,
     EXPECT_FALSE(relayValue(relay)->flags &
                  SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
     EXPECT_EQ(saved.Program[0].Mode, SUPLA_RELAY_MODE_START_ON);
-    EXPECT_EQ(saved.Program[1].Mode, SUPLA_RELAY_MODE_START_OFF);
+    EXPECT_EQ(saved.Program[1].Mode, SUPLA_RELAY_MODE_FORCED_OFF);
     EXPECT_EQ(saved.Program[2].Mode, SUPLA_RELAY_MODE_NOT_SET);
-    EXPECT_EQ(saved.Program[3].Mode, SUPLA_RELAY_MODE_FORCED_OFF);
+    EXPECT_EQ(saved.Program[3].Mode, SUPLA_RELAY_MODE_NOT_SET);
     for (auto quarter : saved.Quarters) {
       EXPECT_EQ(quarter, 0);
     }
@@ -542,6 +545,187 @@ TEST_P(ImpulseForcedOffFixture, FunctionChangePreservesCompatibleSchedule) {
   checkBlockedCommands(&relay);
 }
 
+struct RelayWeeklyFunctionCase {
+  uint32_t function;
+  unsigned startOnVariants;
+  unsigned startOffVariants;
+};
+
+using RelayWeeklyProgramParam =
+    std::tuple<RelayWeeklyFunctionCase, uint8_t, std::pair<int, int>, bool>;
+
+class RelayWeeklyProgramValidationTests
+    : public RelayFixture,
+      public testing::WithParamInterface<RelayWeeklyProgramParam> {};
+
+INSTANTIATE_TEST_SUITE_P(
+    FunctionMatrix, RelayWeeklyProgramValidationTests,
+    testing::Combine(
+        testing::Values(
+            RelayWeeklyFunctionCase{SUPLA_CHANNELFNC_POWERSWITCH, 7, 7},
+            RelayWeeklyFunctionCase{SUPLA_CHANNELFNC_LIGHTSWITCH, 7, 7},
+            RelayWeeklyFunctionCase{SUPLA_CHANNELFNC_STAIRCASETIMER, 3, 1},
+            RelayWeeklyFunctionCase{SUPLA_CHANNELFNC_CONTROLLINGTHEGATE, 1, 0},
+            RelayWeeklyFunctionCase{
+                SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR, 1, 0},
+            RelayWeeklyFunctionCase{
+                SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK, 1, 0},
+            RelayWeeklyFunctionCase{
+                SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK, 1, 0}),
+        testing::Values(SUPLA_RELAY_MODE_START_ON, SUPLA_RELAY_MODE_START_OFF,
+                        SUPLA_RELAY_MODE_NOT_SET, SUPLA_RELAY_MODE_AUTOMATIC,
+                        SUPLA_RELAY_MODE_FORCED_ON,
+                        SUPLA_RELAY_MODE_FORCED_OFF),
+        testing::Values(std::make_pair(0, 0), std::make_pair(2, 0),
+                        std::make_pair(2, 3), std::make_pair(0, 3)),
+        testing::Bool()));
+
+TEST_P(RelayWeeklyProgramValidationTests,
+       RejectsInvalidServerAndLocalPrograms) {
+  const auto &[function, mode, durations, local] = GetParam();
+  TimedWeeklyRelay relay(0);
+  relay.setDefaultFunction(function.function);
+  relay.setAutomaticModeSupported();
+  initializeRelayForCommunicationTest(&relay);
+  auto config = makeSingleProgramWeeklySchedule(function.function, mode);
+  auto *schedule =
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
+  schedule->Program[0].RelayModeDurationS = durations.first;
+  schedule->Program[0].RelayOppositeModeDurationS = durations.second;
+  const unsigned variant = durations.first == 0
+                               ? (durations.second == 0 ? 1 : 0)
+                               : (durations.second == 0 ? 2 : 4);
+  bool valid = false;
+  if (mode == SUPLA_RELAY_MODE_START_ON) {
+    valid = (function.startOnVariants & variant) != 0;
+  } else if (mode == SUPLA_RELAY_MODE_START_OFF) {
+    valid = (function.startOffVariants & variant) != 0;
+  } else {
+    valid = variant == 1 &&
+            (mode != SUPLA_RELAY_MODE_FORCED_ON || !relay.isImpulseFunction());
+  }
+  EXPECT_EQ(relay.handleWeeklySchedule(&config, false, local),
+            valid ? SUPLA_CONFIG_RESULT_TRUE : SUPLA_CONFIG_RESULT_DATA_ERROR);
+}
+
+TEST_F(RelayFixture, WeeklyAutomaticRequiresExplicitSupport) {
+  TimedWeeklyRelay relay(0);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+  initializeRelayForCommunicationTest(&relay);
+  auto config = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_POWERSWITCH, SUPLA_RELAY_MODE_AUTOMATIC);
+  EXPECT_EQ(relay.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_EQ(relay.handleWeeklySchedule(&config, false, true),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+}
+
+TEST_F(RelayFixture, PowerAndLightWeeklyCyclesKeepBothDirections) {
+  ClockStub clock;
+  for (auto function : {SUPLA_CHANNELFNC_POWERSWITCH,
+                        SUPLA_CHANNELFNC_LIGHTSWITCH}) {
+    for (auto mode : {SUPLA_RELAY_MODE_START_ON, SUPLA_RELAY_MODE_START_OFF}) {
+      time.advance(1);
+      TimedWeeklyRelay relay(0);
+      relay.setDefaultFunction(function);
+      initializeRelayForCommunicationTest(&relay);
+      auto config = makeSingleProgramWeeklySchedule(function, mode);
+      config.ChannelNumber = relay.getChannelNumber();
+      auto *schedule =
+          reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config);
+      schedule->Program[0].RelayModeDurationS = 2;
+      schedule->Program[0].RelayOppositeModeDurationS = 3;
+      ASSERT_EQ(relay.handleWeeklySchedule(&config, false, false),
+                SUPLA_CONFIG_RESULT_TRUE);
+      enableWeeklySchedule(&relay);
+      const bool firstOn = mode == SUPLA_RELAY_MODE_START_ON;
+      EXPECT_EQ(relay.isOn(), firstOn);
+      time.advance(2000);
+      relay.iterateAlways();
+      EXPECT_EQ(relay.isOn(), !firstOn);
+      time.advance(3000);
+      relay.iterateAlways();
+      EXPECT_EQ(relay.isOn(), firstOn);
+      time.advance(5000);
+      relay.iterateAlways();
+      EXPECT_EQ(relay.isOn(), firstOn);
+    }
+  }
+}
+
+TEST_P(ImpulseForcedOffFixture, WeeklyPulseUsesOnlyConfiguredDuration) {
+  ClockStub clock;
+  TimedWeeklyRelay relay(0);
+  relay.setDefaultImpulseDurationMs(731);
+  initialize(&relay);
+  ASSERT_EQ(relay.storedDuration(), 731);
+  auto config = makeSingleProgramWeeklySchedule(
+      GetParam(), SUPLA_RELAY_MODE_START_ON);
+  ASSERT_EQ(relay.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  enableWeeklySchedule(&relay);
+  EXPECT_TRUE(relay.isOn());
+  EXPECT_EQ(relay.timer(), 731);
+  time.advance(730);
+  relay.iterateAlways();
+  EXPECT_TRUE(relay.isOn());
+  time.advance(2);
+  relay.iterateAlways();
+  EXPECT_FALSE(relay.isOn());
+  EXPECT_EQ(relay.storedDuration(), 731);
+  time.advance(1000);
+  relay.iterateAlways();
+  EXPECT_FALSE(relay.isOn());
+  EXPECT_EQ(relay.storedDuration(), 731);
+}
+
+TEST_P(ImpulseForcedOffFixture, DefaultsContainOnlyApplicableModes) {
+  TimedWeeklyRelay relay(0);
+  initialize(&relay);
+  TChannelConfig_WeeklySchedule defaults = {};
+  int size = 0;
+  relay.fillChannelConfig(&defaults, &size, SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  EXPECT_EQ(defaults.Program[0].Mode, SUPLA_RELAY_MODE_START_ON);
+  EXPECT_EQ(defaults.Program[1].Mode, SUPLA_RELAY_MODE_FORCED_OFF);
+  EXPECT_EQ(defaults.Program[2].Mode, SUPLA_RELAY_MODE_NOT_SET);
+  EXPECT_EQ(defaults.Program[3].Mode, SUPLA_RELAY_MODE_NOT_SET);
+  auto config = makeSingleProgramWeeklySchedule(GetParam(), 0);
+  memcpy(config.Config, &defaults, sizeof(defaults));
+  EXPECT_EQ(relay.handleWeeklySchedule(&config, false, true),
+            SUPLA_CONFIG_RESULT_TRUE);
+}
+
+TEST_F(RelayFixture, FunctionChangeReplacesNewlyForbiddenPrograms) {
+  for (auto source : {SUPLA_CHANNELFNC_LIGHTSWITCH,
+                      SUPLA_CHANNELFNC_POWERSWITCH}) {
+    for (auto target : {SUPLA_CHANNELFNC_STAIRCASETIMER,
+                        SUPLA_CHANNELFNC_CONTROLLINGTHEGATE}) {
+      TimedWeeklyRelay relay(0);
+      relay.setDefaultFunction(source);
+      initializeRelayForCommunicationTest(&relay);
+      auto config = makeSingleProgramWeeklySchedule(
+          source, SUPLA_RELAY_MODE_START_OFF);
+      config.ChannelNumber = relay.getChannelNumber();
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(config.Config)
+          ->Program[0].RelayModeDurationS = 2;
+      ASSERT_EQ(relay.handleWeeklySchedule(&config, false, false),
+                SUPLA_CONFIG_RESULT_TRUE);
+      ASSERT_TRUE(relay.setAndSaveFunction(target));
+      EXPECT_TRUE(relay.weeklyChangePending());
+      TChannelConfig_WeeklySchedule defaults = {};
+      int size = 0;
+      relay.fillChannelConfig(&defaults, &size,
+                              SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+      EXPECT_EQ(defaults.Program[0].RelayModeDurationS, 0);
+      EXPECT_EQ(defaults.Program[1].RelayModeDurationS, 0);
+      EXPECT_EQ(defaults.Program[1].Mode,
+                target == SUPLA_CHANNELFNC_STAIRCASETIMER
+                    ? SUPLA_RELAY_MODE_START_OFF : SUPLA_RELAY_MODE_FORCED_OFF);
+      EXPECT_FALSE(relay.isOn());
+    }
+  }
+}
+
 TEST_P(ImpulseForcedOffFixture, ManualLockCancelsPulseAndBlocksAllCommands) {
   TimedWeeklyRelay relay(0);
   initialize(&relay);
@@ -710,10 +894,9 @@ TEST_P(ImpulseForcedOffFixture, StartModesAndImpulseTimerRemainAvailable) {
   EXPECT_FALSE(relay.isOn());
   config = makeSingleProgramWeeklySchedule(
       GetParam(), SUPLA_RELAY_MODE_START_OFF);
-  ASSERT_EQ(relay.handleChannelConfig(&config, false),
-            SUPLA_CONFIG_RESULT_TRUE);
-  enableWeeklySchedule(&relay);
-  EXPECT_FALSE(relay.isOn());
+  ASSERT_EQ(relay.handleChannelConfig(&config, true),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  ASSERT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL), 1);
   relay.handleAction(0, Supla::TURN_ON);
   EXPECT_TRUE(relay.isOn());
   ASSERT_EQ(sendRelayMode(&relay, SUPLA_RELAY_MODE_START_OFF), 1);
@@ -1206,7 +1389,7 @@ TEST_F(RelayFixture, weeklyDurationCachesOccurrenceTiming) {
 TEST_F(RelayFixture,
        weeklyDurationOverridesTimedFunctionWithoutChangingConfig) {
   for (auto function :
-       {SUPLA_CHANNELFNC_STAIRCASETIMER, SUPLA_CHANNELFNC_CONTROLLINGTHEGATE}) {
+       {SUPLA_CHANNELFNC_STAIRCASETIMER}) {
     AdjustableWeeklyClock clock;
     int pin = 0;
     ON_CALL(ioMock, digitalRead(1))
@@ -1926,6 +2109,10 @@ TEST_F(RelayFixture, weeklyModeGroupsRejectUnpairedModes) {
 TEST_F(RelayFixture, impulseWeeklyScheduleSupportsStartAndForcedOff) {
   Supla::Control::Relay relay(1);
   relay.setWeeklyScheduleAvailable();
+  ASSERT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_POWERSWITCH));
+  const auto startCapability = relay.getChannel()->getFlags() &
+                               SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED;
+  ASSERT_NE(startCapability, 0);
 
   const uint32_t impulseFunctions[] = {
       SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK,
@@ -1937,7 +2124,8 @@ TEST_F(RelayFixture, impulseWeeklyScheduleSupportsStartAndForcedOff) {
     ASSERT_TRUE(relay.setAndSaveFunction(function));
     const auto flags = relay.getChannel()->getFlags();
     EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE, 0);
-    EXPECT_NE(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED, 0);
+    EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED,
+              startCapability);
     EXPECT_EQ(flags & SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED, 0);
 
     auto startConfig = makeSingleProgramWeeklySchedule(
@@ -1956,6 +2144,9 @@ TEST_F(RelayFixture, impulseWeeklyScheduleSupportsStartAndForcedOff) {
   }
 
   ASSERT_TRUE(relay.setAndSaveFunction(SUPLA_CHANNELFNC_STAIRCASETIMER));
+  EXPECT_EQ(relay.getChannel()->getFlags() &
+                SUPLA_CHANNEL_FLAG_RELAY_MODE_START_SUPPORTED,
+            startCapability);
   EXPECT_NE(relay.getChannel()->getFlags() &
                 SUPLA_CHANNEL_FLAG_RELAY_MODE_FORCED_SUPPORTED,
             0);
@@ -2577,6 +2768,31 @@ TEST_F(RelayFixture,
   EXPECT_EQ(schedule.Program[3].Mode, SUPLA_RELAY_MODE_FORCED_OFF);
   for (auto quarter : schedule.Quarters) {
     EXPECT_EQ(quarter, 0);
+  }
+}
+
+TEST_F(RelayFixture, defaultWeeklySchedulePutsUnavailableModesAtEnd) {
+  for (auto function : {SUPLA_CHANNELFNC_POWERSWITCH,
+                        SUPLA_CHANNELFNC_LIGHTSWITCH,
+                        SUPLA_CHANNELFNC_STAIRCASETIMER}) {
+    RestrictedWeeklyModesRelay relay(
+        1, (1 << SUPLA_RELAY_MODE_NOT_SET) |
+               (1 << SUPLA_RELAY_MODE_FORCED_ON) |
+               (1 << SUPLA_RELAY_MODE_FORCED_OFF));
+    relay.setDefaultFunction(function);
+    relay.setWeeklyScheduleAvailable();
+    TChannelConfig_WeeklySchedule schedule = {};
+    int size = 0;
+    relay.fillChannelConfig(&schedule, &size,
+                            SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+    ASSERT_EQ(size, sizeof(schedule));
+    EXPECT_EQ(schedule.Program[0].Mode, SUPLA_RELAY_MODE_FORCED_ON);
+    EXPECT_EQ(schedule.Program[1].Mode, SUPLA_RELAY_MODE_FORCED_OFF);
+    EXPECT_EQ(schedule.Program[2].Mode, SUPLA_RELAY_MODE_NOT_SET);
+    EXPECT_EQ(schedule.Program[3].Mode, SUPLA_RELAY_MODE_NOT_SET);
+    for (auto quarter : schedule.Quarters) {
+      EXPECT_EQ(quarter, 0);
+    }
   }
 }
 

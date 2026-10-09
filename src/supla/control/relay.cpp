@@ -80,9 +80,10 @@ void Relay::fillDefaultWeeklySchedule(
   if (isWeeklyScheduleProgramModeAvailable(SUPLA_RELAY_MODE_NOT_SET)) {
     // Define the standard programs but leave every quarter unassigned, so
     // the default schedule remains inactive until configured by the user.
-    for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE; i++) {
-      if (isWeeklyScheduleProgramModeApplicable(defaultModes[i])) {
-        schedule->Program[i].Mode = defaultModes[i];
+    int nextProgram = 0;
+    for (const auto mode : defaultModes) {
+      if (isWeeklyScheduleProgramModeApplicable(mode)) {
+        schedule->Program[nextProgram++].Mode = mode;
       }
     }
     return;
@@ -1650,6 +1651,10 @@ bool Relay::isWeeklyScheduleProgramModeAvailable(uint8_t mode) const {
     }
     case SUPLA_RELAY_MODE_START_ON:
     case SUPLA_RELAY_MODE_START_OFF: {
+      if (isImpulseFunction()) {
+        return mode == SUPLA_RELAY_MODE_START_ON &&
+               isWeeklyScheduleProgramModeSupported(mode);
+      }
       return isWeeklyScheduleProgramModeSupported(SUPLA_RELAY_MODE_START_ON) &&
              isWeeklyScheduleProgramModeSupported(SUPLA_RELAY_MODE_START_OFF);
     }

@@ -266,6 +266,29 @@ static_assert(sizeof(TAction_AT_Parameters) <=
               (unsigned int)SUPLA_ACTION_PARAM_MAXSIZE);
 static_assert(sizeof(TAction_Relay_Parameters) <=
               (unsigned int)SUPLA_ACTION_PARAM_MAXSIZE);
+
+// SupLAN CONTROL_ACTION has a fixed 32-byte deferred application slot.
+// 6-byte application header + 5-byte resource + 4-byte ActionId +
+// 1-byte ParamSize leave at most 16 bytes of ACTION parameters.
+// If an ACTION parameter structure grows past 16 bytes, review the SupLAN
+// CONTROL_ACTION wire format, resource/queue budgets and codecs before
+// changing the protocol. TCS_Action (Client -> Server) still allows 500 B.
+constexpr unsigned int kSuplanControlActionParamMaxSize = 16;
+static_assert(sizeof(TAction_ShadingSystem_Parameters) <=
+                  kSuplanControlActionParamMaxSize,
+              "SupLAN CONTROL_ACTION supports at most 16-byte ACTION params");
+static_assert(sizeof(TAction_RGBW_Parameters) <=
+                  kSuplanControlActionParamMaxSize,
+              "SupLAN CONTROL_ACTION supports at most 16-byte ACTION params");
+static_assert(sizeof(TAction_HVAC_Parameters) <=
+                  kSuplanControlActionParamMaxSize,
+              "SupLAN CONTROL_ACTION supports at most 16-byte ACTION params");
+static_assert(sizeof(TAction_AT_Parameters) <=
+                  kSuplanControlActionParamMaxSize,
+              "SupLAN CONTROL_ACTION supports at most 16-byte ACTION params");
+static_assert(sizeof(TAction_Relay_Parameters) <=
+                  kSuplanControlActionParamMaxSize,
+              "SupLAN CONTROL_ACTION supports at most 16-byte ACTION params");
 static_assert(sizeof(TCS_GetChannelValueWithAuth) == 394);
 static_assert(sizeof(TDS_RegisterPushNotification) == 11);
 static_assert(sizeof(TDS_PushNotification) == 399);

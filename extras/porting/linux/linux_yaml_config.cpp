@@ -1357,12 +1357,10 @@ bool Supla::LinuxYamlConfig::addAfore(const YAML::Node& ch, int channelNumber) {
   if (auto ipParameter = getAndMarkChannelParameter(ch, "ip")) {
     std::string ip = ipParameter.as<std::string>();
     SUPLA_LOG_INFO(
-        "Channel[%d] config: adding Afore with IP %s, port: %d,"
-        " login_and_password: %s",
+        "Channel[%d] config: adding Afore with IP %s, port: %d",
         channelNumber,
         ip.c_str(),
-        port,
-        loginAndPassword.c_str());
+        port);
 
     IPAddress ipAddr(ip);
     auto afore = new Supla::PV::Afore(ipAddr, port, loginAndPassword.c_str());

@@ -25,6 +25,7 @@ class RelayWeeklySchedule : public NativeWeeklyScheduleController {
   bool iterateAlways();
 
   bool canActivate() const override;
+  bool onFunctionChanged() override;
   bool switchToWeeklySchedule() override;
   void restoreWeeklyScheduleMode(bool enabled) override;
   bool isWeeklyScheduleEnabled() const;

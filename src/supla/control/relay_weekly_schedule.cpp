@@ -36,6 +36,30 @@ bool RelayWeeklySchedule::canActivate() const {
   return schedule != nullptr && isWeeklyScheduleValid(schedule);
 }
 
+bool RelayWeeklySchedule::onFunctionChanged() {
+  if (!isConfigured()) {
+    return false;
+  }
+  auto *schedule = getSchedule(false, true);
+  if (schedule != nullptr && isWeeklyScheduleValid(schedule)) {
+    return false;
+  }
+
+  TChannelConfig_WeeklySchedule defaults = {};
+  fillDefaultSchedule(&defaults, false);
+  if (!isWeeklyScheduleValid(&defaults)) {
+    return false;
+  }
+  // Disable execution before replacing the program so even custom defaults
+  // cannot trigger an impulse as a side effect of changing the function.
+  switchToManualMode();
+  resetRuntimeOverride();
+  updateSchedule(false, defaults);
+  saveSchedule(false);
+  scheduleWeeklyScheduleStateSave();
+  return true;
+}
+
 bool RelayWeeklySchedule::switchToWeeklySchedule() {
   if (!canActivate()) {
     return false;
@@ -98,6 +122,10 @@ bool RelayWeeklySchedule::isManualActionAllowed(bool turnOn) const {
     return true;
   }
   auto currentProgramMode = getCurrentProgramMode();
+  if (owner_ != nullptr && owner_->isImpulseFunction() &&
+      currentProgramMode == SUPLA_RELAY_MODE_FORCED_OFF) {
+    return false;
+  }
   if (turnOn) {
     return currentProgramMode != SUPLA_RELAY_MODE_FORCED_OFF;
   }

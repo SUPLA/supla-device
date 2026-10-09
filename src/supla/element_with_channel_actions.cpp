@@ -84,7 +84,10 @@ Supla::ElementWithChannelActions::ElementWithChannelActions(ElementMode mode)
       channelConfigState(Supla::ChannelConfigState::None),
       setChannelConfigAttempts(0),
       configFinishedReceived(0),
-      reserved(0) {
+      reserved(0),
+      weeklyConfigFailures(0),
+      altWeeklyConfigFailures(0),
+      sentWeeklyConfigType(0) {
 }
 
 Supla::ElementWithChannelActions::~ElementWithChannelActions() {
@@ -438,6 +441,9 @@ bool Supla::ElementWithChannelActions::isLocalChannelConfigChangePending(
 void Supla::ElementWithChannelActions::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
   receivedConfigTypes.clearAll();
+  weeklyConfigFailures = 0;
+  altWeeklyConfigFailures = 0;
+  sentWeeklyConfigType = 0;
   setChannelConfigAttempts = 0;
   configFinishedReceived = 0;
   Supla::Element::onRegistered(suplaSrpc);
@@ -477,6 +483,9 @@ void Supla::ElementWithChannelActions::handleChannelConfigFinished() {
     channelConfigState = Supla::ChannelConfigState::None;
   }
   if (receivedConfigTypes != usedConfigTypes &&
+      !(sentWeeklyConfigType != 0 &&
+        channelConfigState ==
+            Supla::ChannelConfigState::SetChannelConfigSend) &&
       channelConfigState !=
           Supla::ChannelConfigState::LocalChangePending &&
       channelConfigState !=
@@ -562,7 +571,7 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     }
   }
 
-  return finishChannelConfig(result, applyChannelConfig(result, local));
+  return finishChannelConfig(result, applyChannelConfig(result, local), local);
 }
 
 uint8_t Supla::ElementWithChannelActions::handleWeeklySchedule(
@@ -583,11 +592,11 @@ uint8_t Supla::ElementWithChannelActions::handleWeeklySchedule(
         getChannelNumber());
     return SUPLA_CONFIG_RESULT_TRUE;
   }
-  return finishChannelConfig(result, applyChannelConfig(result, local));
+  return finishChannelConfig(result, applyChannelConfig(result, local), local);
 }
 
 uint8_t Supla::ElementWithChannelActions::finishChannelConfig(
-    TSD_ChannelConfig *result, ApplyConfigResult applyResult) {
+    TSD_ChannelConfig *result, ApplyConfigResult applyResult, bool local) {
   switch (applyResult) {
     case ApplyConfigResult::Success: {
       SUPLA_LOG_INFO("Channel[%d] ConfigType %d applied",
@@ -614,6 +623,11 @@ uint8_t Supla::ElementWithChannelActions::finishChannelConfig(
       SUPLA_LOG_WARNING("Channel[%d] ConfigType %d data error",
                         getChannelNumber(),
                         result->ConfigType);
+      if (!local &&
+          (result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE ||
+           result->ConfigType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE)) {
+        triggerSetChannelConfig(result->ConfigType);
+      }
       return SUPLA_CONFIG_RESULT_DATA_ERROR;
     }
   }
@@ -655,6 +669,23 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
                  configTypeToString(result->ConfigType),
                  result->ConfigType);
 
+  const bool weeklyReply = sentWeeklyConfigType != 0 &&
+      sentWeeklyConfigType == result->ConfigType &&
+      (channelConfigState == Supla::ChannelConfigState::SetChannelConfigSend ||
+       channelConfigState == Supla::ChannelConfigState::LocalChangeSent);
+  if (weeklyReply) {
+    sentWeeklyConfigType = 0;
+    if (success) {
+      resetWeeklyConfigFailures(result->ConfigType);
+    } else if (result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
+      if (weeklyConfigFailures < 3) {
+        weeklyConfigFailures++;
+      }
+    } else if (altWeeklyConfigFailures < 3) {
+      altWeeklyConfigFailures++;
+    }
+  }
+
   receivedConfigTypes.set(result->ConfigType);
   bool sentLocalConfig =
       channelConfigState ==
@@ -683,7 +714,14 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
     }
   }
 
-  if (!success) {
+  if (!success && weeklyReply &&
+      getWeeklyConfigFailures(result->ConfigType) < 3) {
+    receivedConfigTypes.clear(result->ConfigType);
+    setChannelConfigAttempts = 0;
+    channelConfigState = locallyChangedConfigTypes.getAll()
+                            ? Supla::ChannelConfigState::LocalChangePending
+                            : Supla::ChannelConfigState::ResendConfig;
+  } else if (!success) {
     if (locallyChangedConfigTypes.getAll() != 0) {
       channelConfigState =
           Supla::ChannelConfigState::LocalChangePending;
@@ -710,20 +748,49 @@ void Supla::ElementWithChannelActions::purgeConfig() {
   }
 }
 
+uint8_t Supla::ElementWithChannelActions::getWeeklyConfigFailures(
+    int configType) const {
+  if (configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
+    return weeklyConfigFailures;
+  }
+  if (configType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE) {
+    return altWeeklyConfigFailures;
+  }
+  return 0;
+}
+
+void Supla::ElementWithChannelActions::resetWeeklyConfigFailures(
+    int configType) {
+  if (configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
+    weeklyConfigFailures = 0;
+  } else if (configType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE) {
+    altWeeklyConfigFailures = 0;
+  }
+}
+
 void Supla::ElementWithChannelActions::triggerSetChannelConfig(
     int configType, bool localChange) {
-  // Do not retry rejected data automatically. A new local edit starts a new
-  // exchange and must still be protected from incoming server configuration.
-  if (channelConfigState ==
-          Supla::ChannelConfigState::SetChannelConfigFailed &&
-      !localChange) {
+  const bool weekly = configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE ||
+                      configType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE;
+  if (!localChange &&
+      (weekly ? getWeeklyConfigFailures(configType) >= 3
+              : channelConfigState ==
+                    Supla::ChannelConfigState::SetChannelConfigFailed)) {
     return;
   }
   if (localChange) {
     if (!setLocalConfigChange(configType)) {
       return;
     }
+    resetWeeklyConfigFailures(configType);
     setChannelConfigAttempts = 0;
+  }
+  receivedConfigTypes.clear(configType);
+  // Queue other missing types, but never restart an exchange awaiting a reply.
+  if (!localChange && weekly &&
+      (channelConfigState == Supla::ChannelConfigState::SetChannelConfigSend ||
+       channelConfigState == Supla::ChannelConfigState::LocalChangeSent)) {
+    return;
   }
   if (localChange ||
       (channelConfigState !=
@@ -734,7 +801,6 @@ void Supla::ElementWithChannelActions::triggerSetChannelConfig(
                               ? Supla::ChannelConfigState::LocalChangePending
                               : Supla::ChannelConfigState::ResendConfig;
   }
-  receivedConfigTypes.clear(configType);
 }
 
 bool Supla::ElementWithChannelActions::iterateConfigExchange() {
@@ -777,6 +843,15 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
       return true;
     }
 
+    if (!isLocalChannelConfigChangePending(nextConfigType) &&
+        getWeeklyConfigFailures(nextConfigType) >= 3) {
+      receivedConfigTypes.set(nextConfigType);
+      SUPLA_LOG_WARNING("Channel[%d] weekly correction rejected 3 times for "
+                        "ConfigType %d, giving up",
+                        getChannelNumber(), nextConfigType);
+      return true;
+    }
+
     // Do not raise this limit above 3: the counter is 2 bits, so incrementing
     // it at 3 would wrap to 0 and could cause unbounded retries.
     if (setChannelConfigAttempts < 3) {
@@ -813,6 +888,11 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
               channelConfigState =
                   Supla::ChannelConfigState::SetChannelConfigSend;
             }
+            sentWeeklyConfigType =
+                nextConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE ||
+                        nextConfigType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE
+                    ? nextConfigType
+                    : 0;
             sendResult = true;
           }
         }

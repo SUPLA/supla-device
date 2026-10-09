@@ -155,13 +155,20 @@ class ElementWithChannelActions : public Element, public LocalAction {
   uint8_t setChannelConfigAttempts : 2;
   uint8_t configFinishedReceived : 1;
   uint8_t reserved : 1;
+  // Server rejections, independent of incoming invalid data and send attempts.
+  uint8_t weeklyConfigFailures : 2;
+  uint8_t altWeeklyConfigFailures : 2;
+  uint8_t sentWeeklyConfigType : 2;
   ConfigTypesBitmap locallyChangedConfigTypes;
   ConfigTypesBitmap usedConfigTypes;
   ConfigTypesBitmap receivedConfigTypes;
 
  private:
   uint8_t finishChannelConfig(
-      TSD_ChannelConfig *result, Supla::ApplyConfigResult applyResult);
+      TSD_ChannelConfig *result, Supla::ApplyConfigResult applyResult,
+      bool local);
+  uint8_t getWeeklyConfigFailures(int configType) const;
+  void resetWeeklyConfigFailures(int configType);
 };
 
 };  // namespace Supla

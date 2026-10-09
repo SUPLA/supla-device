@@ -9,7 +9,13 @@
 #include <supla/actions.h>
 #include <supla/channel_element.h>
 #include <supla/condition.h>
+#include <supla/control/action_trigger.h>
+#include <supla/control/hvac_base.h>
+#include <supla/control/relay.h>
+#include <output_mock.h>
+#include <string.h>
 #include <supla/events.h>
+#include <supla/device/register_device.h>
 #include <supla_srpc_layer_mock.h>
 
 #include "supla/element_with_channel_actions.h"
@@ -166,6 +172,8 @@ class TestingChannelElement : public Supla::ChannelElement {
   void markChannelConfigReceivedForTesting(int configType) {
     markChannelConfigReceived(configType);
   }
+
+  bool exchangeConfigForTesting() { return iterateConfigExchange(); }
 
   int getAppliedConfigCount() const {
     return appliedConfigCount;
@@ -899,6 +907,16 @@ TEST(ChannelElementTests, NewLocalConfigAfterRejectionStartsFreshAttempts) {
       result.ConfigType = configType;
       result.Result = SUPLA_CONFIG_RESULT_FALSE;
       element.handleSetChannelConfigResult(&result);
+      if (configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE ||
+          configType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE) {
+        for (int retry = 0; retry < 2; retry++) {
+          EXPECT_CALL(srpc, setChannelConfig(0, SUPLA_CHANNELFNC_POWERSWITCH,
+                                             _, 4, configType))
+              .WillOnce(Return(true));
+          EXPECT_FALSE(element.iterateConnected());
+          element.handleSetChannelConfigResult(&result);
+        }
+      }
       EXPECT_FALSE(element.isLocalConfigChangePending(configType));
       EXPECT_EQ(element.getChannelConfigState(),
                 Supla::ChannelConfigState::SetChannelConfigFailed);
@@ -910,4 +928,250 @@ TEST(ChannelElementTests, NewLocalConfigAfterRejectionStartsFreshAttempts) {
       ASSERT_TRUE(::testing::Mock::VerifyAndClearExpectations(&srpc));
     }
   }
+}
+
+class WeeklyCorrectionTests : public testing::TestWithParam<uint8_t> {
+ protected:
+  SuplaSrpcLayerMock srpc;
+  TestingChannelElement *element = nullptr;
+
+  void SetUp() override {
+    Supla::Channel::resetToDefaults();
+    element = new TestingChannelElement;
+    element->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+    Supla::ConfigTypesBitmap types;
+    types.set(GetParam());
+    element->setUsedConfigTypes(types);
+    element->onRegistered(&srpc);
+    element->markChannelConfigReceivedForTesting(GetParam());
+    element->handleChannelConfigFinished();
+  }
+  void TearDown() override {
+    delete element;
+    Supla::Channel::resetToDefaults();
+  }
+  uint8_t invalid(bool local = false) {
+    TSD_ChannelConfig config = {};
+    config.Func = SUPLA_CHANNELFNC_POWERSWITCH;
+    config.ConfigType = GetParam();
+    config.ConfigSize = 5;
+    return element->handleWeeklySchedule(
+        &config, GetParam() == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE, local);
+  }
+  void send() {
+    EXPECT_CALL(srpc, setChannelConfig(0, SUPLA_CHANNELFNC_POWERSWITCH,
+                                       _, 4, GetParam()))
+        .WillOnce(Return(true));
+    EXPECT_FALSE(element->exchangeConfigForTesting());
+    ASSERT_TRUE(testing::Mock::VerifyAndClearExpectations(&srpc));
+  }
+  void reply(bool success) {
+    TSDS_SetChannelConfigResult result = {};
+    result.ConfigType = GetParam();
+    result.Result = success ? SUPLA_CONFIG_RESULT_TRUE
+                            : SUPLA_CONFIG_RESULT_DATA_ERROR;
+    element->handleSetChannelConfigResult(&result);
+  }
+  void expectNoSend() {
+    EXPECT_CALL(srpc, setChannelConfig(_, _, _, _, _)).Times(0);
+    EXPECT_TRUE(element->exchangeConfigForTesting());
+    ASSERT_TRUE(testing::Mock::VerifyAndClearExpectations(&srpc));
+  }
+  void exhaust() {
+    ASSERT_EQ(invalid(), SUPLA_CONFIG_RESULT_DATA_ERROR);
+    for (int attempt = 0; attempt < 3; attempt++) {
+      send();
+      reply(false);
+    }
+    EXPECT_EQ(element->getChannelConfigState(),
+              Supla::ChannelConfigState::SetChannelConfigFailed);
+  }
+};
+
+INSTANTIATE_TEST_SUITE_P(
+    WeeklyTypes, WeeklyCorrectionTests,
+    testing::Values(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
+                    SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE));
+
+TEST_P(WeeklyCorrectionTests, IncomingErrorsDoNotConsumeRejectionBudget) {
+  for (int i = 0; i < 10; i++) {
+    ASSERT_EQ(invalid(), SUPLA_CONFIG_RESULT_DATA_ERROR);
+  }
+  EXPECT_FALSE(element->isLocalConfigChangePending(GetParam()));
+  for (int attempt = 0; attempt < 3; attempt++) {
+    send();
+    for (int i = 0; i < 5; i++) {
+      ASSERT_EQ(invalid(), SUPLA_CONFIG_RESULT_DATA_ERROR);
+      element->handleChannelConfigFinished();
+      expectNoSend();
+    }
+    reply(false);
+  }
+  for (int i = 0; i < 5; i++) {
+    ASSERT_EQ(invalid(), SUPLA_CONFIG_RESULT_DATA_ERROR);
+    element->handleChannelConfigFinished();
+    expectNoSend();
+  }
+}
+
+TEST_P(WeeklyCorrectionTests, SuccessRenewsRejectionBudget) {
+  ASSERT_EQ(invalid(), SUPLA_CONFIG_RESULT_DATA_ERROR);
+  for (int cycle = 0; cycle < 5; cycle++) {
+    send();
+    reply(false);
+    send();
+    reply(false);
+    send();
+    reply(true);
+    ASSERT_EQ(invalid(), SUPLA_CONFIG_RESULT_DATA_ERROR);
+  }
+}
+
+TEST_P(WeeklyCorrectionTests, RegistrationRenewsRejectionBudget) {
+  exhaust();
+  element->onRegistered(&srpc);
+  element->handleChannelConfigFinished();
+  send();
+  reply(false);
+  send();
+  reply(false);
+  send();
+  reply(false);
+  expectNoSend();
+}
+
+TEST_P(WeeklyCorrectionTests, LocalEditRenewsRejectionBudget) {
+  exhaust();
+  element->triggerSetChannelConfig(GetParam(), true);
+  ASSERT_TRUE(element->isLocalConfigChangePending(GetParam()));
+  send();
+  reply(true);
+  ASSERT_EQ(invalid(), SUPLA_CONFIG_RESULT_DATA_ERROR);
+  send();
+}
+
+TEST_P(WeeklyCorrectionTests, InvalidLocalEditDoesNotStartCorrection) {
+  ASSERT_EQ(invalid(true), SUPLA_CONFIG_RESULT_DATA_ERROR);
+  expectNoSend();
+}
+
+TEST_P(WeeklyCorrectionTests, OtherWeeklyTypeHasIndependentBudget) {
+  exhaust();
+  uint8_t other = GetParam() == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE
+                      ? SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE
+                      : SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  Supla::ConfigTypesBitmap types;
+  types.set(GetParam());
+  types.set(other);
+  element->setUsedConfigTypes(types);
+  element->triggerSetChannelConfig(other);
+  EXPECT_CALL(srpc, setChannelConfig(0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4,
+                                     other)).WillOnce(Return(true));
+  EXPECT_FALSE(element->exchangeConfigForTesting());
+}
+
+namespace {
+
+template <class T>
+class WeeklyCorrectionElement : public T {
+ public:
+  using T::T;
+  void prepareExchange(SuplaSrpcLayerMock *srpc) {
+    this->onRegistered(srpc);
+    this->receivedConfigTypes = this->usedConfigTypes;
+    this->handleChannelConfigFinished();
+  }
+  bool exchange() { return this->iterateConfigExchange(); }
+};
+
+template <class T>
+void checkNativeWeeklyCorrection(WeeklyCorrectionElement<T> *element,
+                                 bool configured, bool alt = false) {
+  SuplaSrpcLayerMock srpc;
+  const uint8_t type = alt ? SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE
+                           : SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  TSD_ChannelConfig good = {};
+  good.Func = element->getChannel()->getDefaultFunction();
+  good.ConfigType = type;
+  int size = 0;
+  element->fillChannelConfig(good.Config, &size, type);
+  ASSERT_EQ(size, sizeof(TChannelConfig_WeeklySchedule));
+  good.ConfigSize = size;
+  if (configured) {
+    // Use a different, valid quarter assignment to distinguish saved data
+    // from defaults. Program 1 is defined by each native default generator.
+    reinterpret_cast<TChannelConfig_WeeklySchedule *>(good.Config)
+        ->Quarters[0] = 0x11;
+    ASSERT_EQ(element->handleWeeklySchedule(&good, alt, false),
+              SUPLA_CONFIG_RESULT_TRUE);
+  }
+  element->prepareExchange(&srpc);
+  char previousValue[8] = {};
+  auto *value = Supla::RegisterDevice::getChannelValuePtr(
+      element->getChannelNumber());
+  memcpy(previousValue, value, sizeof(previousValue));
+  TSD_ChannelConfig bad = good;
+  reinterpret_cast<TChannelConfig_WeeklySchedule *>(bad.Config)
+      ->Program[0].Mode = 0xFF;
+  EXPECT_EQ(element->handleWeeklySchedule(&bad, alt, false),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_CALL(srpc, setChannelConfig(element->getChannelNumber(), good.Func,
+                                     _, size, type))
+      .WillOnce([&](uint8_t, _supla_int_t, void *data, int length, uint8_t) {
+        EXPECT_EQ(memcmp(data, good.Config, length), 0);
+        return true;
+      });
+  EXPECT_FALSE(element->exchange());
+  EXPECT_EQ(memcmp(previousValue, value, sizeof(previousValue)), 0);
+}
+
+}  // namespace
+
+class NativeWeeklyCorrectionTests : public testing::TestWithParam<bool> {
+ protected:
+  SimpleTime time;
+  void SetUp() override { Supla::Channel::resetToDefaults(); }
+  void TearDown() override { Supla::Channel::resetToDefaults(); }
+};
+
+INSTANTIATE_TEST_SUITE_P(ConfiguredAndMissing, NativeWeeklyCorrectionTests,
+                         testing::Bool());
+
+TEST_P(NativeWeeklyCorrectionTests, RelayReturnsCurrentScheduleOrDefaults) {
+  WeeklyCorrectionElement<Supla::Control::Relay> relay(-1);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  relay.setWeeklyScheduleAvailable();
+  relay.onLoadConfig(nullptr);
+  checkNativeWeeklyCorrection(&relay, GetParam());
+}
+
+TEST_P(NativeWeeklyCorrectionTests, ActionTriggerReturnsScheduleOrDefaults) {
+  WeeklyCorrectionElement<Supla::Control::ActionTrigger> at;
+  at.setWeeklyScheduleAvailable();
+  at.onLoadConfig(nullptr);
+  checkNativeWeeklyCorrection(&at, GetParam());
+}
+
+TEST_P(NativeWeeklyCorrectionTests, HvacReturnsCurrentScheduleOrDefaults) {
+  testing::NiceMock<OutputSimulatorWithCheck> heating;
+  testing::NiceMock<OutputSimulatorWithCheck> cooling;
+  WeeklyCorrectionElement<Supla::Control::HvacBase> hvac(&heating, &cooling);
+  hvac.setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac.onLoadConfig(nullptr);
+  hvac.setHeatingAndCoolingSupported(true);
+  hvac.setTemperatureRoomMin(500);
+  hvac.setTemperatureRoomMax(5000);
+  checkNativeWeeklyCorrection(&hvac, GetParam());
+}
+
+TEST_P(NativeWeeklyCorrectionTests, HvacReturnsAltScheduleOrDefaults) {
+  testing::NiceMock<OutputSimulatorWithCheck> heating;
+  testing::NiceMock<OutputSimulatorWithCheck> cooling;
+  WeeklyCorrectionElement<Supla::Control::HvacBase> hvac(&heating, &cooling);
+  hvac.setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac.onLoadConfig(nullptr);
+  hvac.setHeatingAndCoolingSupported(true);
+  hvac.setTemperatureRoomMin(500);
+  hvac.setTemperatureRoomMax(5000);
+  checkNativeWeeklyCorrection(&hvac, GetParam(), true);
 }

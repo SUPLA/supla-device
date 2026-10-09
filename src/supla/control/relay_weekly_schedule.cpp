@@ -156,6 +156,9 @@ bool RelayWeeklySchedule::isProgramValid(
 }
 
 void RelayWeeklySchedule::resetRuntimeOverride() {
+  currentProgram_.Mode = 0xFF;
+  occurrence_ = -1;
+  lastTimingQuarter_ = -1;
   phase_ = UINT32_MAX;
   timed_ = false;
   suppressed_ = false;
@@ -201,6 +204,9 @@ bool RelayWeeklySchedule::processProgramAt(
     const WeeklyScheduleTimeSnapshot &time,
     const TWeeklyScheduleProgram &program, int programId, bool programChanged,
     bool manualAction) {
+  // Configuration writes reset the base controller's ID. Relay execution is
+  // identified by the effective definition and its continuous occurrence.
+  (void)(programChanged);
   if (programId > 0 && !isProgramValid(program)) {
     SUPLA_LOG_WARNING(
         "Relay[%d] weekly program=%d mode=%u invalid; switching to manual",
@@ -209,27 +215,43 @@ bool RelayWeeklySchedule::processProgramAt(
     scheduleWeeklyScheduleStateSave();
     return false;
   }
-  timed_ = programId > 0 && program.RelayModeDurationS > 0;
+  const TWeeklyScheduleProgram effectiveProgram =
+      programId > 0 ? program : TWeeklyScheduleProgram{};
+  if (!manualAction && !owner_->isFullyInitialized()) {
+    // Announce the mode, but do not consume its entry action before the output
+    // can execute it. The first initialized iteration must still apply it.
+    syncWeeklyScheduleMode(effectiveProgram.Mode);
+    return false;
+  }
+  const bool semanticChange =
+      effectiveProgram.Mode != currentProgram_.Mode ||
+      effectiveProgram.RelayModeDurationS !=
+          currentProgram_.RelayModeDurationS ||
+      effectiveProgram.RelayOppositeModeDurationS !=
+          currentProgram_.RelayOppositeModeDurationS;
+  timed_ = effectiveProgram.RelayModeDurationS > 0;
   const int32_t absoluteQuarter =
       time.dayNumber * 96 + time.hour * 4 + time.quarter;
   int32_t occurrence = occurrence_;
   uint32_t elapsed = 0;
   bool hasTiming = false;
-  if (timed_ && !programChanged && occurrence >= 0 &&
+  if (!semanticChange && occurrence >= 0 &&
       (absoluteQuarter == lastTimingQuarter_ ||
        absoluteQuarter == lastTimingQuarter_ + 1)) {
     elapsed = static_cast<uint32_t>(absoluteQuarter - occurrence) * 900 +
               time.secondOfQuarter;
     hasTiming = true;
-  } else if (timed_) {
+  } else {
     hasTiming = WeeklyScheduleController::resolveProgramTiming(
         time, programId, &occurrence, &elapsed);
   }
-  const bool changed = programChanged || (timed_ && occurrence != occurrence_);
+  const bool changed = semanticChange ||
+                       (hasTiming && occurrence != occurrence_);
   if (manualAction) {
     pendingManualAction_ = true;
   }
   if (changed) {
+    currentProgram_ = effectiveProgram;
     occurrence_ = occurrence;
     phase_ = UINT32_MAX;
     suppressed_ = timed_ && hasTiming && pendingManualAction_;
@@ -256,14 +278,12 @@ bool RelayWeeklySchedule::processProgramAt(
         owner_->getChannelNumber(), programId, timed_, suppressed_,
         pendingManualAction_);
   }
-  if (!timed_) {
-    occurrence_ = -1;
-    lastTimingQuarter_ = -1;
-    return !manualAction &&
-        applyWeeklyScheduleMode(programId > 0 ? program.Mode : 0, changed);
-  }
   if (hasTiming) {
     lastTimingQuarter_ = absoluteQuarter;
+  }
+  if (!timed_) {
+    return !manualAction &&
+        applyWeeklyScheduleMode(effectiveProgram.Mode, changed);
   }
   if (manualAction) {
     return false;
@@ -341,11 +361,13 @@ void RelayWeeklySchedule::onNativeScheduleApplied(
       "Relay[%d] weekly config applied: source=%s changed=%d active=%d",
       owner_->getChannelNumber(), local ? "local" : "server", changed,
       isActive());
-  if (changed) {
-    resetRuntimeOverride();
-  }
   NativeWeeklyScheduleController::onNativeScheduleApplied(
       alt, local, changed);
+}
+
+void RelayWeeklySchedule::onNativeScheduleLoaded() {
+  resetRuntimeOverride();
+  NativeWeeklyScheduleController::onNativeScheduleLoaded();
 }
 
 bool RelayWeeklySchedule::iterateAlways() {

@@ -54,12 +54,15 @@ class RelayWeeklySchedule : public NativeWeeklyScheduleController {
   void fillDefaultSchedule(TChannelConfig_WeeklySchedule *schedule,
                            bool alt) override;
   void onNativeScheduleApplied(bool alt, bool local, bool changed) override;
+  void onNativeScheduleLoaded() override;
   void resetRuntimeOverride();
   bool processProgramAt(const WeeklyScheduleTimeSnapshot &time,
                         const TWeeklyScheduleProgram &program,
                         int programId, bool programChanged, bool manualAction);
 
   Relay *owner_ = nullptr;
+  // Only the last effective definition is cached, not the schedule or its ID.
+  TWeeklyScheduleProgram currentProgram_ = {0xFF, {0}, {0}};
   int32_t occurrence_ = -1;
   int32_t lastTimingQuarter_ = -1;
   uint32_t phase_ = UINT32_MAX;

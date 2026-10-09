@@ -410,7 +410,8 @@ void NativeWeeklyScheduleConfigHandler::touchCache(bool active,
 bool NativeWeeklyScheduleConfigHandler::resolveProgramTiming(
     const WeeklyScheduleTimeSnapshot &time, bool alt, int programId,
     int32_t *occurrence, uint32_t *elapsedSeconds) {
-  if (time.state != WeeklyScheduleClockState::Ready || programId <= 0 ||
+  if (time.state != WeeklyScheduleClockState::Ready || programId < 0 ||
+      programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE ||
       occurrence == nullptr || elapsedSeconds == nullptr) {
     return false;
   }
@@ -422,12 +423,18 @@ bool NativeWeeklyScheduleConfigHandler::resolveProgramTiming(
   if (index < 0 || getProgramId(schedule, index) != programId) {
     return false;
   }
+  const auto program = getProgramById(schedule, programId);
+  const auto sameProgram = [&](int quarter) {
+    const auto other =
+        getProgramById(schedule, getProgramId(schedule, quarter));
+    return program.Mode == other.Mode && program.Value1 == other.Value1 &&
+           program.Value2 == other.Value2;
+  };
   int preceding = 0;
   while (
       preceding < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE - 1 &&
-      getProgramId(schedule,
-                   (index - preceding - 1 + SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) %
-                       SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) == programId) {
+      sameProgram((index - preceding - 1 + SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) %
+                  SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE)) {
     preceding++;
   }
   // A uniform week has no transition; anchor it at Sunday midnight.

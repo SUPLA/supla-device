@@ -134,11 +134,12 @@
       "name": "Supla::Control::ValveBase",
       "header": "supla/control/valve_base.h",
       "limits": {
-        "host": 232,
-        "avr": 154,
-        "esp8266": 184,
-        "esp32": 184
-      }
+        "host": 320,
+        "avr": 241,
+        "esp8266": 272,
+        "esp32": 272
+      },
+      "reason": "M4 canonical 20 x 5-byte references replace 20 x 1-byte local numbers; durability lifecycle adds 8 bytes (7 on AVR)."
     },
     {
       "name": "Supla::Control::RollerShutterInterface",
@@ -414,11 +415,12 @@
       "name": "Supla::Sensor::Container",
       "header": "supla/sensor/container.h",
       "limits": {
-        "host": 176,
-        "avr": 102,
-        "esp8266": 136,
-        "esp32": 136
-      }
+        "host": 256,
+        "avr": 181,
+        "esp8266": 216,
+        "esp32": 216
+      },
+      "reason": "M4 canonical references add 40 bytes, full wire reserved scalar block 32 bytes, durability lifecycle 8 bytes (7 on AVR)."
     },
     {
       "name": "Supla::Sensor::TemperatureDropSensor",
@@ -569,10 +571,10 @@
       "name": "Supla::Control::HvacStoredConfigV2",
       "header": "supla/control/hvac_config.h",
       "limits": {
-        "host": 112,
-        "avr": 112,
-        "esp8266": 112,
-        "esp32": 112
+        "host": 124,
+        "avr": 124,
+        "esp8266": 124,
+        "esp32": 124
       }
     },
     {
@@ -583,6 +585,83 @@
         "avr": 108,
         "esp8266": 108,
         "esp32": 108
+      }
+    },
+    {
+      "name": "Supla::StoredChannelReference",
+      "header": "supla/channels/channel_reference.h",
+      "limits": {
+        "host": 5,
+        "avr": 5,
+        "esp8266": 5,
+        "esp32": 5
+      }
+    },
+    {
+      "name": "Supla::Sensor::ContainerConfiguration",
+      "header": "supla/sensor/container.h",
+      "limits": {
+        "host": 97,
+        "avr": 97,
+        "esp8266": 97,
+        "esp32": 97
+      }
+    },
+    {
+      "name": "Supla::Sensor::ContainerStoredConfigV2",
+      "header": "supla/sensor/container.h",
+      "limits": {
+        "host": 102,
+        "avr": 102,
+        "esp8266": 102,
+        "esp32": 102
+      }
+    },
+    {
+      "name": "Supla::Control::ValveConfiguration",
+      "header": "supla/control/valve_base.h",
+      "limits": {
+        "host": 132,
+        "avr": 132,
+        "esp8266": 132,
+        "esp32": 132
+      }
+    },
+    {
+      "name": "Supla::Control::ValveStoredConfigV2",
+      "header": "supla/control/valve_base.h",
+      "limits": {
+        "host": 137,
+        "avr": 137,
+        "esp8266": 137,
+        "esp32": 137
+      }
+    },
+    {
+      "name": "Supla::Device::RemoteResourceManager",
+      "header": "supla/suplan/remote_resource_manager.h",
+      "limits": {
+        "host": 1992,
+        "esp8266": 1972,
+        "esp32": 7732
+      }
+    },
+    {
+      "name": "Supla::Device::ResourceBindingManager",
+      "header": "supla/suplan/resource_binding_manager.h",
+      "limits": {
+        "host": 1088,
+        "esp8266": 1064,
+        "esp32": 4928
+      }
+    },
+    {
+      "name": "Supla::SupLan::BindingRetry",
+      "header": "suplan/suplan_runtime.h",
+      "limits": {
+        "host": 160,
+        "esp8266": 160,
+        "esp32": 448
       }
     }
   ]

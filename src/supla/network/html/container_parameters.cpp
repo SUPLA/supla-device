@@ -231,7 +231,8 @@ void ContainerParameters::send(Supla::WebSender* sender) {
           "</script>");
 
       for (int i = 0; i < 10; i++) {
-        if (i >= countSensors && config.sensorData[i].channelNumber == 255) {
+        if (i >= countSensors &&
+            container->config.sensorData[i].source.kind == 0) {
           continue;
         }
         if (i > 0) {
@@ -244,11 +245,10 @@ void ContainerParameters::send(Supla::WebSender* sender) {
         sender->tag("h3").body(buffer);
         generateSensorKey(sensorIdKey, SensorIdKey, i);
         generateSensorKey(sensorLevelKey, SensorLevelKey, i);
-        emitSensorSelectField(
-            sensorIdKey,
-            "Sensor channel",
-            containerClassId,
-            container->config.sensorData[i].channelNumber);
+        emitSensorSelectField(sensorIdKey, "Sensor channel", containerClassId,
+                              container->sensorChannelNumber(i) < 0
+                                  ? 255
+                                  : container->sensorChannelNumber(i));
         emitSensorLevelField(sensorLevelKey,
                              container->config.sensorData[i].fillLevel);
       }
@@ -340,13 +340,10 @@ bool ContainerParameters::handleResponse(const char* key, const char* value) {
         } else if (val > 255) {
           val = 255;
         }
-        if (container->config.sensorData[i].channelNumber != val) {
-          container->config.sensorData[i].channelNumber = val;
-          if (val == 255) {
-            container->config.sensorData[i].fillLevel = 0;
-          }
+        if (container->sensorChannelNumber(i) != (val == 255 ? -1 : val) &&
+            container->setSensorSlot(i, val,
+                                    container->config.sensorData[i].fillLevel))
           configChanged = true;
-        }
         return true;
       }
 

@@ -35,11 +35,16 @@ SupLan::SupLan(SuplaDeviceClass *sdc, Supla::SupLan::PeerTable *peers,
   configEmpty = false;
 }
 
-SupLan::~SupLan() { delete resources_; }
+SupLan::~SupLan() {
+  if (resources_) delete resources_->bindings;
+  delete resources_;
+}
 
 void SupLan::attachRuntime(Supla::SupLan::Runtime *runtime) {
   runtime_ = runtime;
   if (resources_) resources_->attachRuntime(runtime);
+  if (resources_ && resources_->bindings)
+    resources_->bindings->attachRuntime(runtime);
 }
 
 void SupLan::attachTransportLifecycle(
@@ -81,6 +86,12 @@ void SupLan::attachServerAssociations(
         peers_, runtime_, this);
   }
   if (resources_) resources_->associations = state;
+  if (state && resources_ && !resources_->bindings) {
+    resources_->bindings = new (std::nothrow)
+        Device::ResourceBindingManager(peers_, runtime_, resources_, this);
+  }
+  if (resources_ && resources_->bindings)
+    resources_->bindings->attachAssociations(state);
 }
 
 bool SupLan::setSuplanSourceAssociation(
@@ -177,6 +188,7 @@ bool SupLan::iterate(uint32_t nowMs) {
 
   suplanIdentityChanged();
   if (resources_) resources_->iterate(nowMs);
+  if (resources_ && resources_->bindings) resources_->bindings->iterate(nowMs);
   if (resources_ &&
       (resources_->presence().resetPending_ ||
        resources_->presence().awakePending_) &&
@@ -402,9 +414,35 @@ void SupLan::receiveAction(uint8_t peerIndex,
   }
 }
 
-void SupLan::operationAcknowledged(
-    uint8_t peerIndex, const Supla::SupLan::ResourceId &resource,
-    uint32_t sequence, uint8_t result) {
+uint8_t SupLan::receiveBindings(uint8_t peer, const uint8_t *body,
+                                size_t length) {
+  return resources_ && resources_->bindings
+             ? resources_->bindings->accept(peer, body, length)
+             : 24;
+}
+bool SupLan::bindingSessionNeeded(uint8_t peer) {
+  return resources_ && resources_->bindings &&
+      resources_->bindings->sessionNeeded(peer);
+}
+bool SupLan::share(const TDS_SuplaEnsureResourceShare &request) {
+  return sdc && sdc->getSrpcLayer() &&
+         sdc->getSrpcLayer()->ensureResourceShare(request);
+}
+void SupLan::cancelShare() {
+  if (sdc && sdc->getSrpcLayer())
+    sdc->getSrpcLayer()->cancelEnsureResourceShare();
+}
+void SupLan::ensureResourceShareResult(
+    const TSD_SuplaEnsureResourceShareResult &result) {
+  if (resources_ && resources_->bindings)
+    resources_->bindings->ensureShareResult(result);
+}
+
+void SupLan::operationAcknowledged(uint8_t peerIndex,
+                                   const Supla::SupLan::ResourceId &resource,
+                                   uint32_t sequence, uint8_t result) {
+  if (resources_ && resources_->bindings && !resource.id)
+    resources_->bindings->acknowledged(peerIndex, result);
   uint8_t payload[5];
   putSuplaUint32(payload, sequence);
   payload[4] = result;
@@ -543,6 +581,12 @@ void SupLan::sendExtendedChannelValueChanged(
         prefix, sizeof(prefix),
         reinterpret_cast<const uint8_t *>(value->value), value->size);
   }
+}
+
+void SupLan::sendChannelMetadataChanged(uint8_t number) {
+  if (!fullChannelSnapshots()) return;
+  int8_t ignored[8] = {};
+  sendChannelValueChanged(number, ignored, 0, 0);
 }
 
 bool SupLan::ensure(const TDS_SuplaEnsureResourceAccess &request) {

@@ -16,6 +16,7 @@ namespace Supla {
 
 namespace Device {
 class RemoteResourceManager;
+class ResourceBindingManager;
 }
 
 namespace Protocol {
@@ -39,7 +40,14 @@ class ProtocolLayer : public Device::RemoteAccessPort {
   virtual bool setSuplanDestinationAssociation(
       const TSDS_SuplaSetSuplanDestinationAssociation &,
       TDS_SuplaSetSuplanDestinationAssociationResult *) { return false; }
+  virtual void sendChannelMetadataChanged(uint8_t) {}
   virtual void suplanIdentityChanged() {}
+  virtual Device::ResourceBindingManager *resourceBindings() { return nullptr; }
+  virtual bool ensureResourceShare(const TDS_SuplaEnsureResourceShare &) {
+    return false;
+  }
+  virtual void ensureResourceShareResult(
+      const TSD_SuplaEnsureResourceShareResult &) {}
   virtual Device::RemoteResourceManager *remoteResources() { return nullptr; }
   virtual bool ensureResourceAccess(const TDS_SuplaEnsureResourceAccess &) {
     return false;

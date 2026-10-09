@@ -255,6 +255,12 @@ _supla_int_t srpc_dcs_async_set_channel_caption(void *,
 SrpcMock::SrpcMock() {}
 SrpcMock::~SrpcMock() {}
 
+_supla_int_t srpc_ds_async_ensure_suplan_resource_share(
+    void *srpc, TDS_SuplaEnsureResourceShare *request) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->ensureResourceShare(srpc, request);
+}
+
 _supla_int_t srpc_ds_async_ensure_suplan_resource_access(
     void *srpc, TDS_SuplaEnsureResourceAccess *request) {
   assert(SrpcInterface::instance);

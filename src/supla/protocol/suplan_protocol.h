@@ -12,6 +12,7 @@
 #include <supla/protocol/protocol_layer.h>
 #include <suplan/suplan_runtime.h>
 #include <supla/suplan/remote_resource_manager.h>
+#include <supla/suplan/resource_binding_manager.h>
 
 class SuplaDeviceClass;
 namespace Supla {
@@ -88,6 +89,26 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   Device::RemoteResourceManager *remoteResources() override {
     return resources_;
   }
+  void sendChannelMetadataChanged(uint8_t number) override;
+  Device::ResourceBindingManager *resourceBindings() override {
+    return resources_ ? resources_->bindings : nullptr;
+  }
+  bool authorizationReplacing(const Supla::SupLan::PeerContext &context,
+      const Supla::SupLan::AclEntry *expected, uint16_t count) override {
+    return !resources_ || !resources_->bindings ||
+        resources_->bindings->authorizationReplacing(context, expected, count);
+  }
+  Supla::SupLan::BindingRetry *bindingRetry() override {
+    return resources_ && resources_->bindings
+        ? resources_->bindings->retryStorage() : nullptr;
+  }
+  bool bindingSessionNeeded(uint8_t peer) override;
+  uint8_t receiveBindings(uint8_t peer, const uint8_t *body,
+                         size_t length) override;
+  bool share(const TDS_SuplaEnsureResourceShare &request) override;
+  void cancelShare() override;
+  void ensureResourceShareResult(
+      const TSD_SuplaEnsureResourceShareResult &result) override;
   bool ensure(const TDS_SuplaEnsureResourceAccess &request) override;
   void cancelEnsure() override;
   void ensureResourceAccessResult(

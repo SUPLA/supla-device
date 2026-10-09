@@ -348,7 +348,11 @@ bool Channel::setNewValue(const char *newValue) {
 }
 
 void Channel::setType(uint32_t type) {
-  channelType = protoTypeToChannelType(type);
+  const auto replacement = protoTypeToChannelType(type);
+  if (channelType == replacement) return;
+  channelType = replacement;
+  for (auto p = Protocol::ProtocolLayer::first(); p; p = p->next())
+    p->sendChannelMetadataChanged(channelNumber);
 }
 
 void Channel::setDefault(uint32_t value) {
@@ -365,6 +369,8 @@ void Channel::setDefault(uint32_t value) {
 
   defaultFunction = value;
   runAction(ON_CHANNEL_FUNCTION_CHANGE);
+  for (auto p = Protocol::ProtocolLayer::first(); p; p = p->next())
+    p->sendChannelMetadataChanged(channelNumber);
 }
 
 void Channel::setDefaultFunction(uint32_t function) {

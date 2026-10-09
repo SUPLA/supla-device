@@ -127,6 +127,10 @@ class SuplaSrpc : public ProtocolLayer {
       TSD_SuplaRegisterDeviceResult_B *registerDeviceResultB);
   void onDeviceSyncDone();
   bool acceptEnsureResult(unsigned int rrId);
+  void cancelEnsureResourceShare() { shareRequestId = 0; }
+  bool ensureResourceShare(
+      const TDS_SuplaEnsureResourceShare &request) override;
+  bool acceptShareResult(unsigned int rrId);
   void cancelEnsureResourceAccess() { ensureRequestId = 0; }
   bool ensureResourceAccess(
       const TDS_SuplaEnsureResourceAccess &request) override;
@@ -220,6 +224,7 @@ class SuplaSrpc : public ProtocolLayer {
   uint16_t connectionFailCounter = 0;
   uint8_t reconnectAttemptCounter = 0;
 
+  unsigned int shareRequestId = 0;
   unsigned int ensureRequestId = 0;
   uint32_t lastPingTimeMs = 0;
   uint32_t waitForIterate = 0;

@@ -3,7 +3,13 @@
 
 #include <SuplaDevice.h>
 #include <output_mock.h>
+#include <arduino_mock.h>
 #include <supla/control/hvac_base.h>
+#include <supla/control/relay.h>
+#include <supla/control/relay_hvac_aggregator.h>
+#include <supla/sensor/virtual_thermometer.h>
+#include <supla/storage/storage.h>
+#include <supla/suplan/resource_binding_manager.h>
 #include <fcntl.h>
 #include <gtest/gtest.h>
 #include <simple_time.h>
@@ -23,6 +29,7 @@
 #include <unistd.h>
 
 #include <array>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <vector>
@@ -662,6 +669,14 @@ class ProcessDatagrams : public DatagramPort {
                   Endpoint *endpoint) override {
     *endpoint = {0x0100007f, 2017};
     int result = recv(socket_, buffer, capacity, MSG_DONTWAIT);
+    if (result == 1 && buffer[0] == 0xfb) {
+      metadataRequested = true;
+      return 0;
+    }
+    if (result == 1 && buffer[0] == 0xfa) {
+      metadataRestoreRequested = true;
+      return 0;
+    }
     // Harness barrier: finish READ delivery before testing credential cleanup.
     if (result == 1 && buffer[0] == 0xfc) {
       wakeRequested = true;
@@ -683,6 +698,8 @@ class ProcessDatagrams : public DatagramPort {
   bool readReceived = false;
   bool notificationRequested = false;
   bool wakeRequested = false;
+  bool metadataRequested = false;
+  bool metadataRestoreRequested = false;
 
  private:
   int socket_;
@@ -821,6 +838,10 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
   bool publishedNotification = false;
   bool requestedWake = false;
   bool publishedWake = false;
+  bool requestedMetadata = false;
+  bool requestedMetadataRestore = false;
+  bool publishedMetadata = false;
+  bool publishedMetadataRestore = false;
   for (int step = 0; step < 800; ++step) {
     usleep(1000);
     datagrams.now += 5;
@@ -842,6 +863,16 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
       adapter.beginWake(200);
       publishedWake = true;
     }
+    if (isSource && hvacConsumer && datagrams.metadataRequested &&
+        !publishedMetadata) {
+      channel->setDefaultFunction(SUPLA_CHANNELFNC_BINARY_SENSOR);
+      publishedMetadata = true;
+    }
+    if (isSource && hvacConsumer && datagrams.metadataRestoreRequested &&
+        !publishedMetadataRestore) {
+      channel->setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
+      publishedMetadataRestore = true;
+    }
     if (!isSource && states && runtime.poolDiagnostics().sessions.used) {
       if (hvac) {
         if (!requestedNotification) {
@@ -860,6 +891,20 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
           uint8_t wake = 0xfc;
           if (send(socket, &wake, sizeof(wake), 0) != sizeof(wake)) return 24;
           requestedWake = true;
+          continue;
+        }
+        if (!requestedMetadata) {
+          if (hvac->getPrimaryTemp() != 2400) continue;
+          uint8_t metadata = 0xfb;
+          if (send(socket, &metadata, 1, 0) != 1) return 25;
+          requestedMetadata = true;
+          continue;
+        }
+        if (!requestedMetadataRestore) {
+          if (hvac->getPrimaryTemp() != INT16_MIN) continue;
+          uint8_t metadata = 0xfa;
+          if (send(socket, &metadata, 1, 0) != 1) return 26;
+          requestedMetadataRestore = true;
           continue;
         }
         if (hvac->getPrimaryTemp() != 2400) continue;
@@ -998,6 +1043,193 @@ TEST(SupLanProvisionedRead,
     EXPECT_EQ(WEXITSTATUS(sourceStatus), 0) << "reboot mode " << rebootMode;
     EXPECT_EQ(WEXITSTATUS(destinationStatus), 0)
         << "reboot mode " << rebootMode;
+  }
+}
+
+// SRPC business authorization belongs to Core. This double supplies only the
+// existing ENSURE routing response; binding, persistence, crypto, READ and the
+// actual relay are production Device code in separate address spaces.
+class BindingProcessAdapter : public Supla::Protocol::SupLan {
+ public:
+  using Supla::Protocol::SupLan::SupLan;
+  bool share(const TDS_SuplaEnsureResourceShare &request) override {
+    requested = request.SourceResource.ResourceId == 501 &&
+                request.DestinationResource.ResourceId == 601 &&
+                request.Permissions == SUPLA_SUPLAN_PERMISSION_READ;
+    return requested;
+  }
+  bool requested = false;
+};
+int runBindingEndpoint(int socket, bool source, bool restartDestination) {
+  ::testing::NiceMock<DigitalInterfaceMock> io;
+  Supla::Channel::resetToDefaults();
+  Supla::RegisterDevice::resetToDefaults();
+  SimpleTime clock;
+  AssociationConfig config;
+  Supla::Storage::SetConfigInstance(&config);
+  OutputSimulator output;
+  std::unique_ptr<Supla::Control::HvacBase> hvac;
+  std::unique_ptr<Supla::Sensor::VirtualThermometer> thermometer;
+  std::unique_ptr<Supla::Control::Relay> relay;
+  if (source) {
+    hvac.reset(new Supla::Control::HvacBase(&output));
+    thermometer.reset(new Supla::Sensor::VirtualThermometer);
+    hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+    hvac->onLoadConfig(nullptr);
+    hvac->onInit();
+    hvac->setWeeklyScheduleStartupDelay(false);
+    thermometer->setValue(21.75);
+  } else {
+    relay.reset(new Supla::Control::Relay(1));
+    relay->getChannel()->setDefault(SUPLA_CHANNELFNC_PUMPSWITCH);
+    relay->onLoadConfig(nullptr);
+    relay->onInit();
+  }
+  ServerIdentity identity;
+  identity.load(&config);
+  if (!identity.registrationStarted()) return 1;
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = source ? 101 : 202;
+  ids.ChannelCount = source ? 2 : 1;
+  ids.ChannelId[0] = source ? 501 : 601;
+  ids.ChannelId[1] = 502;
+  if (identity.accept(ids).Result) return 2;
+  identity.syncDone();
+  PeerTable peers;
+  OpenSslCryptoPort crypto;
+  ProcessDatagrams datagrams(socket);
+  BindingProcessAdapter adapter(nullptr, &peers, nullptr, 0);
+  Runtime runtime(&crypto, &datagrams, &adapter, &peers,
+                  {kNodeIdDevice, static_cast<uint32_t>(ids.DeviceId)}, 29);
+  ServerAssociations associations(&peers, &runtime);
+  adapter.attachRuntime(&runtime);
+  adapter.attachServerAssociations(&associations);
+  associations.load(&config, &identity);
+  TDS_SuplaSetSuplanSourceAssociationResult key = {};
+  if (source) {
+    TSDS_SuplaSetSuplanSourceAssociation request = {};
+    request.PeerContext = {1, 0, 1, 101, 1, 202, identity.rootEpoch(), 1};
+    request.AclRevision = request.Flags = request.AclEntryCount = 1;
+    request.Acl[0] = {1, 501, 1};
+    key = associations.accept(request);
+    if (key.Result || key.PeerKeySize != 32) return 3;
+    if (send(socket, &key, sizeof(key), 0) != sizeof(key)) return 4;
+    TChannelConfig_HVAC wire;
+    hvac->copyFullChannelConfigTo(&wire);
+    wire.MainThermometerChannelId = 502;
+    wire.AuxThermometerChannelId = wire.BinarySensorChannelId = 0;
+    wire.MasterThermostatChannelId = wire.HeatOrColdSourceSwitchChannelId = 0;
+    wire.PumpSwitchChannelId = 601;
+    TSD_ChannelConfig requestConfig = {};
+    requestConfig.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+    requestConfig.ConfigSize = sizeof(wire);
+    std::memcpy(requestConfig.Config, &wire, sizeof(wire));
+    if (hvac->handleChannelConfig(&requestConfig, false) !=
+        SUPLA_CONFIG_RESULT_TRUE) return 5;
+    hvac->iterateAlways();
+    hvac->setTemperatureSetpointHeat(2500);
+    hvac->setTargetMode(SUPLA_HVAC_MODE_HEAT);
+  } else {
+    if (recv(socket, &key, sizeof(key), 0) != sizeof(key)) return 6;
+    TSDS_SuplaSetSuplanDestinationAssociation request = {};
+    request.PeerContext = key.PeerContext;
+    request.AclRevision = request.ResourceCount = 1;
+    request.PeerKeySize = 32;
+    std::memcpy(request.PeerKey, key.PeerKey, 32);
+    request.Resources[0] = {1, 501, 1};
+    if (associations.accept(request).Result) return 7;
+  }
+  bool restarted = false;
+  for (int step = 0; step < 2400; ++step) {
+    usleep(1000);
+    datagrams.now += 25;
+    clock.advance(25);
+    if (hvac) hvac->iterateAlways();
+    adapter.iterate(datagrams.now);
+    if (source && adapter.requested) {
+      TSD_SuplaEnsureResourceShareResult result = {};
+      result.Result = SUPLA_SUPLAN_RESULT_OK;
+      result.DestinationDeviceId = 202;
+      adapter.ensureResourceShareResult(result);
+      adapter.requested = false;
+    }
+    if (relay) {
+      Supla::Control::RelayHvacAggregator::GetInstance(0)->iterateAlways();
+      relay->iterateAlways();
+      if (relay->getChannel()->getValueBool()) {
+        if (!adapter.resourceBindings()->bindingCount() ||
+            !runtime.poolDiagnostics().sessions.used ||
+            !adapter.remoteResources()->consumerCount()) return 8;
+        if (restartDestination && !restarted) {
+          // No ENSURE or Server on restart: reconstruct identity, association
+          // and durable binding, then rebuild SESSION/READ and the real relay.
+          associations.load(nullptr, nullptr);
+          identity.load(nullptr);
+          delete adapter.remoteResources()->bindings;
+          adapter.remoteResources()->bindings = nullptr;
+          relay.reset();
+          Supla::Channel::resetToDefaults();
+          Supla::RegisterDevice::resetToDefaults();
+          config.reboot();
+          relay.reset(new Supla::Control::Relay(1));
+          relay->getChannel()->setDefault(SUPLA_CHANNELFNC_PUMPSWITCH);
+          relay->onLoadConfig(nullptr);
+          relay->onInit();
+          identity.load(&config);
+          associations.load(&config, &identity);
+          adapter.attachServerAssociations(&associations);
+          restarted = true;
+          continue;
+        }
+        uint8_t complete = 0xfe;
+        if (send(socket, &complete, 1, 0) != 1) return 9;
+        return 0;
+      }
+    }
+    if (source && datagrams.readReceived) {
+      if (!runtime.diagnostics().readDispatched ||
+          !runtime.poolDiagnostics().interests.used) return 10;
+      return 0;
+    }
+  }
+  fprintf(stderr, "binding endpoint source=%d restarted=%d bindings=%d "
+      "sessions=%u reads=%u sync=%d demand=%d\n", source, restarted,
+      adapter.resourceBindings()->bindingCount(),
+      runtime.poolDiagnostics().sessions.used,
+      runtime.diagnostics().readDispatched, identity.serverSyncComplete(),
+      hvac ? hvac->getChannel()->isHvacFlagHeating() : relay->isOn());
+  return 11;
+}
+TEST(SupLanProvisionedRead, SourceFirstBindingFeedsRealRelayAndOfflineRestart) {
+  for (bool restart : {false, true}) {
+    int sockets[2];
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets), 0);
+    timeval timeout = {2, 0};
+    for (int socket : sockets)
+      ASSERT_EQ(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+                           sizeof(timeout)), 0);
+    const auto source = fork();
+    ASSERT_GE(source, 0);
+    if (!source) {
+      close(sockets[1]);
+      _exit(runBindingEndpoint(sockets[0], true, restart));
+    }
+    const auto destination = fork();
+    ASSERT_GE(destination, 0);
+    if (!destination) {
+      close(sockets[0]);
+      _exit(runBindingEndpoint(sockets[1], false, restart));
+    }
+    close(sockets[0]);
+    close(sockets[1]);
+    int a = 0, b = 0;
+    ASSERT_EQ(waitpid(source, &a, 0), source);
+    ASSERT_EQ(waitpid(destination, &b, 0), destination);
+    ASSERT_TRUE(WIFEXITED(a));
+    ASSERT_TRUE(WIFEXITED(b));
+    EXPECT_EQ(WEXITSTATUS(a), 0) << "restart " << restart;
+    EXPECT_EQ(WEXITSTATUS(b), 0) << "restart " << restart;
   }
 }
 }  // namespace

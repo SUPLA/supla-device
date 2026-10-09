@@ -135,6 +135,8 @@ void Runtime::clearSessionEntry(SessionEntry *session) {
   session->nextTransmitSequence = 0;
   session->receiveReplay.reset();
   session->lastActivityMs = 0;
+  session->lastBindingSequence = 0;
+  session->bindingSeen = false;
   memset(session->ackResults, 0, sizeof(session->ackResults));
 }
 
@@ -556,7 +558,7 @@ void Runtime::beginRecovery(uint8_t peerIndex) {
 void Runtime::finishRecovery(uint8_t peerIndex) {
   PeerRecovery &peer = recovery_[peerIndex];
   peer.active = false;
-  bool refresh = false;
+  bool refresh = application_ && application_->bindingSessionNeeded(peerIndex);
   for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
     ReadDependency &entry = dependencies_[i];
     if (entry.used && entry.peerIndex == peerIndex) {
@@ -908,6 +910,8 @@ void Runtime::recoverSession(uint8_t peerIndex, uint64_t sessionId) {
 }
 
 void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
+  if (recovery_[peerIndex].active && application_ &&
+      application_->bindingSessionNeeded(peerIndex)) return;
   for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
     if (deferred_[i].used && deferred_[i].peerIndex == peerIndex) {
       return;
@@ -1143,6 +1147,9 @@ void Runtime::clearEndpoint(uint8_t peerIndex) {
 }
 
 void Runtime::clearPeer(uint8_t peerIndex) {
+  auto bindingRetry = application_ ? application_->bindingRetry() : nullptr;
+  if (bindingRetry && bindingRetry->peerIndex == peerIndex)
+    bindingRetry->length = 0;
   if (peerIndex >= SUPLAN_MAX_PERSISTENT_PEERS) {
     return;
   }
@@ -1188,6 +1195,11 @@ void Runtime::setLocalAddress(const NodeAddress &address) {
 }
 
 void Runtime::authorizationChanged(uint8_t peerIndex) {
+  // A complete binding frame may contain several independently revoked
+  // resources. Reconcile current desired topology before transmitting again.
+  auto bindingRetry = application_ ? application_->bindingRetry() : nullptr;
+  if (bindingRetry && bindingRetry->peerIndex == peerIndex)
+    bindingRetry->length = 0;
   pruneReadDependencies();
   pruneInterests(datagrams_->nowMs());
   for (uint16_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
@@ -1574,6 +1586,80 @@ void Runtime::drainDeferred() {
   }
 }
 
+bool Runtime::sendBindings(uint8_t peerIndex, const uint8_t *body,
+                            size_t length) {
+  auto bindingRetry = application_ ? application_->bindingRetry() : nullptr;
+  if (!bindingRetry || bindingRetry->length || !body || !length ||
+      length + 38 > sizeof(bindingRetry->frame) ||
+      !isLocalSource(peers_->get(peerIndex)) ||
+      !peers_->hasActiveGrants(peerIndex)) return false;
+  if (length != 1U + 12U * body[0]) return false;
+  for (int i = 0; i < body[0]; ++i) {
+    const auto entry = body + 1 + 12 * i;
+    if (entry[0] != 1 || entry[11] != 0 ||
+        entry[1] != kResourceTypeChannel ||
+        entry[6] != kResourceTypeChannel || !getUint32(entry + 7) ||
+        !peers_->authorize(peerIndex, {entry[1], getUint32(entry + 2)},
+                           kPermissionRead)) return false;
+  }
+  for (auto &session : sessions_) {
+    if (session.used && session.peerIndex == peerIndex) {
+      applicationBuffer_[0] = kMessageClassNative;
+      putUint32(applicationBuffer_ + 1, 8);
+      applicationBuffer_[5] = kAckRequired;
+      memcpy(applicationBuffer_ + 6, body, length);
+      const bool sent = sendProtected(
+          peerIndex, &session.transmit, session.sessionId,
+          &session.nextTransmitSequence, &session.lastActivityMs,
+          applicationBuffer_, length + 6, true, ResourceId{});
+      if (sent) {
+        recovery_[peerIndex].active = false;
+        recovery_[peerIndex].scheduled = false;
+      }
+      return sent;
+    }
+  }
+  auto &recovery = recovery_[peerIndex];
+  const auto now = datagrams_->nowMs();
+  if (!recovery.active && !recovery.sleeping &&
+      (!recovery.scheduled ||
+       static_cast<int32_t>(now - recovery.nextRefreshMs) >= 0))
+    beginRecovery(peerIndex);
+  startHandshake(peerIndex);
+  return false;
+}
+
+void Runtime::iterateBindingRetry(uint32_t now) {
+  auto bindingRetry = application_ ? application_->bindingRetry() : nullptr;
+  if (!bindingRetry || !bindingRetry->length) return;
+  auto &retry = *bindingRetry;
+  bool sessionValid = false;
+  for (const auto &session : sessions_)
+    sessionValid = sessionValid || (session.used &&
+        session.peerIndex == retry.peerIndex &&
+        session.sessionId == retry.sessionId);
+  if (!sessionValid || !peers_->hasActiveGrants(retry.peerIndex)) {
+    retry.length = 0;
+    return;
+  }
+  if (now - retry.lastTransmitMs < kAckRetryMs) return;
+  if (retry.attempts >= kAckMaxAttempts) {
+    retry.length = 0;
+    return;
+  }
+  const auto peer = peers_->get(retry.peerIndex);
+  if (!peer || peer->endpointState != kPeerEndpointAuthenticated) {
+    retry.length = 0;
+    return;
+  }
+  fragmentEndpoint_ = peer->endpoint;
+  fragmentOrdinal_ = 0;
+  fragmentSender_.send(retry.frame, retry.length,
+      datagrams_->maxDatagramPayload(), nextFrameId_++, fragmentDatagram, this);
+  retry.lastTransmitMs = now;
+  ++retry.attempts;
+}
+
 bool Runtime::sendProtected(uint8_t peerIndex,
                             const DirectionalKeys *transmitKeys,
                             uint64_t sessionId,
@@ -1602,6 +1688,7 @@ bool Runtime::sendProtectedToEndpoint(
     const uint8_t *applicationData, size_t applicationLength,
     bool ackRequired, const ResourceId &resource, bool actionDelivery,
     uint32_t actionExpiresAtMs) {
+  auto bindingRetry = application_ ? application_->bindingRetry() : nullptr;
   if (transmitKeys == nullptr || nextTransmitSequence == nullptr ||
       *nextTransmitSequence == UINT32_MAX ||
       applicationLength > SUPLAN_MAX_APPLICATION_BYTES) {
@@ -1636,8 +1723,13 @@ bool Runtime::sendProtectedToEndpoint(
        static_cast<int32_t>(datagrams_->nowMs() - actionExpiresAtMs) >= 0)) {
     return false;
   }
+  const bool binding = applicationLength >= 7 && ackRequired &&
+      applicationData[0] == kMessageClassNative &&
+      getUint32(applicationData + 1) == 8;
+  if (binding && (!bindingRetry || bindingRetry->length ||
+      applicationLength + 32 > sizeof(bindingRetry->frame))) return false;
   int retryIndex = -1;
-  if (ackRequired) {
+  if (ackRequired && !binding) {
     retryIndex = findFreeRetry();
     if (retryIndex < 0) {
       ++diagnostics_.poolReject;
@@ -1655,7 +1747,7 @@ bool Runtime::sendProtectedToEndpoint(
   if (peers_->get(peerIndex) == nullptr) {
     return false;
   }
-  if (ackRequired && frameLength > sizeof(retries_[0].frame)) {
+  if (ackRequired && !binding && frameLength > sizeof(retries_[0].frame)) {
     ++diagnostics_.poolReject;
     return false;
   }
@@ -1677,6 +1769,16 @@ bool Runtime::sendProtectedToEndpoint(
       frameLength != 0) {
     transmitFrame_[frameLength - 1] ^= 1;
     --hooks_.corruptNextDataTagTx;
+  }
+  if (binding) {
+    auto &retry = *bindingRetry;
+    retry.peerIndex = peerIndex;
+    retry.sessionId = sessionId;
+    retry.sequence = sequence;
+    retry.lastTransmitMs = datagrams_->nowMs();
+    retry.attempts = 1;
+    retry.length = frameLength;
+    memcpy(retry.frame, transmitFrame_, frameLength);
   }
   fragmentEndpoint_ = endpoint;
   const size_t maxPayload = hooks_.maxDatagramPayload <
@@ -1726,7 +1828,7 @@ bool Runtime::sendProtectedToEndpoint(
   if (sent && lastActivityMs != nullptr) {
     *lastActivityMs = datagrams_->nowMs();
   }
-  if (ackRequired) {
+  if (ackRequired && !binding) {
     RetryEntry *retry = &retries_[retryIndex];
     retry->peerIndex = peerIndex;
     retry->resource = resource;
@@ -2198,12 +2300,15 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
         : &pendingSession->keys.initiatorToResponder;
     replay = &pendingSession->receiveReplay;
   }
+  // Authentication accepts the full negotiated receive envelope independently
+  // of the smaller outbound scratch. Bounded stack storage is not retained.
+  uint8_t plaintext[SUPLAN_RX_MAX_REASSEMBLED_FRAME - 32];
   size_t plaintextLength = 0;
   uint64_t decodedSessionId = 0;
   uint32_t decodedSequence = 0;
   const ProtectedDataResult result = decodeProtectedData(
-      crypto_, receiveKeys, frame, frameLength, replay, applicationBuffer_,
-      sizeof(applicationBuffer_), &decodedSessionId, &decodedSequence,
+      crypto_, receiveKeys, frame, frameLength, replay, plaintext,
+      sizeof(plaintext), &decodedSessionId, &decodedSequence,
       &plaintextLength);
   if (result == kProtectedDataAuthenticationFailed) {
     ++diagnostics_.dataAuthFail;
@@ -2247,7 +2352,7 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
         }
         clearPendingHandshake(pendingSession);
       }
-      memset(applicationBuffer_, 0, plaintextLength);
+      memset(plaintext, 0, plaintextLength);
       return;
     }
     SessionEntry *session = &sessions_[admitted];
@@ -2277,7 +2382,7 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
     ++diagnostics_.dataRx;
   }
   processing_ = true;
-  processApplication(session, sequence, applicationBuffer_, plaintextLength,
+  processApplication(session, sequence, plaintext, plaintextLength,
                      result == kProtectedDataDuplicate);
   processing_ = false;
   drainDeferred();
@@ -2362,6 +2467,29 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
                            uint32_t sequence,
                            const ApplicationDataView &application,
                            bool duplicate) {
+  auto bindingRetry = application_ ? application_->bindingRetry() : nullptr;
+  if (application.messageType == 8) {
+    if (application.flags != kAckRequired ||
+        !application_ ||
+        !isLocalDestination(peers_->get(peerIndex)) ||
+        !peers_->hasActiveGrants(peerIndex)) return;
+    const auto slot = static_cast<uint8_t>(sequence & 63U);
+    uint8_t result = session->ackResults[slot];
+    if (!duplicate) {
+      if (session->bindingSeen && sequence < session->lastBindingSequence) {
+        // First arrival can still be superseded inside the replay window.
+        result = 24;
+      } else {
+        session->lastBindingSequence = sequence;
+        session->bindingSeen = true;
+        result = application_->receiveBindings(peerIndex, application.body,
+                                               application.bodyLength);
+      }
+      session->ackResults[slot] = result;
+    }
+    if (result) sendAck(peerIndex, session, sequence, result);
+    return;
+  }
   if (application.messageType == 7) {
     if (application.flags != kAckRequired || application.bodyLength != 4 ||
         !isLocalDestination(peers_->get(peerIndex)) ||
@@ -2408,6 +2536,16 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
     }
     const uint32_t ackedSequence = getUint32(application.body);
     const uint8_t result = application.body[4];
+    if (bindingRetry && bindingRetry->length &&
+        bindingRetry->peerIndex == peerIndex &&
+        bindingRetry->sessionId == session->sessionId &&
+        bindingRetry->sequence == ackedSequence) {
+      bindingRetry->length = 0;
+      ++diagnostics_.ackRx;
+      application_->operationAcknowledged(peerIndex, ResourceId{},
+                                           ackedSequence, result);
+      return;
+    }
     const int retryIndex = findRetry(peerIndex, session->sessionId,
                                      ackedSequence);
     if (retryIndex >= 0) {
@@ -2727,6 +2865,7 @@ void Runtime::iterate() {
     if (peers_->get(i) && !peers_->runtimeEligible(i)) clearPeer(i);
   }
   const uint32_t now = datagrams_->nowMs();
+  iterateBindingRetry(now);
   iterateRecovery(now);
   expireControls(now);
   processFlood();

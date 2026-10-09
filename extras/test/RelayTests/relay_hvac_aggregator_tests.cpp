@@ -452,7 +452,7 @@ TEST_F(RelayHvacFixture, turnOffWhenHvacIsOffline) {
   EXPECT_EQ(gpio1Value, 1);
 }
 
-TEST_F(RelayHvacFixture, firstOnlineHvacKeepsDemandAfterGoingOffline) {
+TEST_F(RelayHvacFixture, observedDemandSurvivesUnavailableStates) {
   int gpio1 = 1;
   Supla::Control::Relay r1(gpio1);
 
@@ -473,19 +473,49 @@ TEST_F(RelayHvacFixture, firstOnlineHvacKeepsDemandAfterGoingOffline) {
   auto aggregator = Supla::Control::RelayHvacAggregator::Add(number1, &r1);
   ASSERT_NE(aggregator, nullptr);
 
-  time.advance(16 * 60 * 1000);
-  hvac1.getChannel()->setStateOnline();
   aggregator->registerHvac(&hvac1);
-  hvac1.getChannel()->setHvacFlagHeating(true);
-  hvac1.getChannel()->setStateOffline();
+  using StateSetter = void (Supla::Channel::*)();
+  const StateSetter unavailableStates[] = {
+      &Supla::Channel::setStateOffline,
+      &Supla::Channel::setStateOfflineRemoteWakeupNotSupported,
+      &Supla::Channel::setStateOnlineAndNotAvailable,
+      &Supla::Channel::setStateFirmwareUpdateOngoing};
+  for (unsigned int i = 0; i < 4; ++i) {
+    SCOPED_TRACE(i);
+    auto channel = hvac1.getChannel();
+    channel->setStateOnline();
+    channel->setHvacFlagHeating(true);
+    time.advance(2000);
+    aggregator->iterateAlways();
+    ASSERT_EQ(gpio1Value, 1);
 
-  time.advance(2000);
-  aggregator->iterateAlways();
-  EXPECT_EQ(gpio1Value, 1);
+    (channel->*unavailableStates[i])();
+    // Unusable live values must not replace the last observed demand.
+    channel->setHvacFlagHeating(false);
+    time.advance(2000);
+    aggregator->iterateAlways();
+    EXPECT_EQ(gpio1Value, 1);
 
-  time.advance(15 * 60 * 1000);
-  aggregator->iterateAlways();
-  EXPECT_EQ(gpio1Value, 0);
+    time.advance(14 * 60 * 1000);
+    aggregator->iterateAlways();
+    EXPECT_EQ(gpio1Value, 1);
+    // Repeated unavailability must not extend the grace period.
+    (channel->*unavailableStates[i])();
+    time.advance(60 * 1000);
+    aggregator->iterateAlways();
+    EXPECT_EQ(gpio1Value, 0);
+
+    channel->setStateOnline();
+    time.advance(2000);
+    aggregator->iterateAlways();
+    EXPECT_EQ(gpio1Value, 0);
+    // A demand never sampled while usable does not start a fallback.
+    channel->setHvacFlagHeating(true);
+    (channel->*unavailableStates[i])();
+    time.advance(2000);
+    aggregator->iterateAlways();
+    EXPECT_EQ(gpio1Value, 0);
+  }
 
   EXPECT_TRUE(Supla::Control::RelayHvacAggregator::Remove(number1));
 }

@@ -393,6 +393,7 @@ option(SUPLAN_ASSOCIATION_PROFILE_TESTS "Build focused M2/M3 profile tests" OFF)
 if(SUPLAN_ASSOCIATION_PROFILE_TESTS)
   add_executable(suplanassociationprofiletests
     SupLanTests/server_association_tests.cpp
+    SupLanTests/m4b_device_tests.cpp
     SupLanTests/channel_dependency_tests.cpp ${DOUBLE_SRC}
     ../porting/linux/suplan_crypto_openssl.cpp
     doubles/crypto_test_hooks.cpp)

@@ -27,7 +27,6 @@ class ContainerParameters : public HtmlElement {
   int parseValue(const char *value) const;
   void generateSensorKey(char *key, const char *prefix, int index);
   Supla::Sensor::Container *container = nullptr;
-  Supla::Sensor::ContainerConfig config;
   bool muteSet = false;
   bool configChanged = false;
   bool allowSensors = false;

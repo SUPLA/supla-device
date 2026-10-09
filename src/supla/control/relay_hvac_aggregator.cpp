@@ -7,6 +7,11 @@
 #include <supla/control/relay.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
+#include <supla/channels/channel_state.h>
+#include <supla/protocol/protocol_layer.h>
+#ifndef ARDUINO_ARCH_AVR
+#include <supla/suplan/resource_binding_manager.h>
+#endif
 
 using Supla::Control::RelayHvacAggregator;
 
@@ -97,8 +102,11 @@ void RelayHvacAggregator::registerHvac(HvacBase *hvac) {
   }
   auto newHvac = new HvacPtr;
   newHvac->hvac = hvac;
-  if (hvac->getChannel()->isStateOnline()) {
+  THVACValue value;
+  if (ChannelState(hvac->getChannel()).hvac(&value)) {
     newHvac->lastSeenTimestamp = millis();
+    newHvac->activeDemand = value.Flags & (SUPLA_HVAC_VALUE_FLAG_HEATING |
+                                         SUPLA_HVAC_VALUE_FLAG_COOLING);
   }
 
   if (firstHvacPtr == nullptr) {
@@ -151,22 +159,35 @@ void RelayHvacAggregator::iterateAlways() {
   auto *ptr = firstHvacPtr;
   while (ptr != nullptr) {
     if (ptr->hvac != nullptr && ptr->hvac->getChannel()) {
-      if (ptr->hvac->getChannel()->isStateOnline()) {
+      const ChannelState channelState(ptr->hvac->getChannel());
+      THVACValue value;
+      if (channelState.hvac(&value)) {
         ptr->lastSeenTimestamp = millis();
+        ptr->activeDemand = value.Flags & (SUPLA_HVAC_VALUE_FLAG_HEATING |
+                                          SUPLA_HVAC_VALUE_FLAG_COOLING);
       }
       if (!ptr->hvac->ignoreAggregatorForRelay(relayChannelNumber)) {
         ignore = false;
-        if (ptr->hvac->getChannel()->isHvacFlagHeating() ||
-            ptr->hvac->getChannel()->isHvacFlagCooling()) {
+        if (ptr->activeDemand) {
           if (millis() - ptr->lastSeenTimestamp < IGNORE_OFFLINE_HVAC_TIMEOUT) {
             state = true;
-            break;
           }
         }
       }
     }
     ptr = ptr->nextPtr;
   }
+
+#ifndef ARDUINO_ARCH_AVR
+  for (auto layer = Protocol::ProtocolLayer::first(); layer;
+       layer = layer->next()) {
+    if (auto bindings = layer->resourceBindings()) {
+      bool configured = false;
+      state = bindings->relayDemand(relayChannelNumber, &configured) || state;
+      if (configured) ignore = false;
+    }
+  }
+#endif
 
   if (millis() - lastStateUpdateTimestamp > relayInternalStateCheckIntervalMs ||
       lastRelayState == -1) {

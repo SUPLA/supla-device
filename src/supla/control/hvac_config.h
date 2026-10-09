@@ -73,6 +73,12 @@ struct HvacConfiguration : HvacScalars {
 };
 
 #pragma pack(push, 1)
+// All zero means no accepted SERVER NONE; otherwise all IDs must be set.
+struct HvacServerNoneScope {
+  uint32_t rootEpoch = 0;
+  uint32_t deviceId = 0;
+  uint32_t channelId = 0;
+};
 struct HvacStoredConfigV2 {
   uint8_t version = 2;
   HvacReferenceNamespace referenceNamespace =
@@ -80,10 +86,12 @@ struct HvacStoredConfigV2 {
   uint32_t function = 0;
   HvacScalars scalars;
   HvacReferenceValue references[6] = {};
+  HvacServerNoneScope serverNone;
 };
 #pragma pack(pop)
+static_assert(sizeof(HvacServerNoneScope) == 12, "HVAC NONE scope size");
 static_assert(sizeof(HvacScalars) == 82, "HVAC scalar format changed");
-static_assert(sizeof(HvacStoredConfigV2) == 112, "HVAC V2 format changed");
+static_assert(sizeof(HvacStoredConfigV2) == 124, "HVAC V2 format changed");
 static_assert(alignof(HvacStoredConfigV2) == 1, "HVAC V2 must be packed");
 static_assert(offsetof(HvacStoredConfigV2, function) == 2,
               "HVAC V2 function offset changed");
@@ -91,6 +99,8 @@ static_assert(offsetof(HvacStoredConfigV2, scalars) == 6,
               "HVAC V2 scalar offset changed");
 static_assert(offsetof(HvacStoredConfigV2, references) == 88,
               "HVAC V2 reference offset changed");
+static_assert(offsetof(HvacStoredConfigV2, serverNone) == 112,
+              "HVAC V2 NONE scope offset changed");
 
 HvacStoredConfigV2 storeHvacConfig(const HvacConfiguration &config,
                                    uint32_t function = 0);

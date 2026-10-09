@@ -4,8 +4,10 @@
 #ifndef SRC_SUPLA_SENSOR_CONTAINER_H_
 #define SRC_SUPLA_SENSOR_CONTAINER_H_
 
+#include <stddef.h>
 #include <supla/channel_element.h>
 #include <supla/action_handler.h>
+#include <supla/channels/channel_reference.h>
 
 namespace Supla {
 namespace Html {
@@ -15,22 +17,43 @@ class ContainerParameters;
 namespace Sensor {
 
 #pragma pack(push, 1)
+struct ContainerConfig {
+  uint8_t warningAboveLevel = 0;
+  uint8_t alarmAboveLevel = 0;
+  uint8_t warningBelowLevel = 0;
+  uint8_t alarmBelowLevel = 0;
+  uint8_t muteAlarmSoundWithoutAdditionalAuth = 0;
+  struct {
+    uint8_t fillLevel = 0;
+    uint8_t channelNumber = 255;
+  } sensorData[10];
+};
+using LegacyContainerConfig = ContainerConfig;
 struct SensorData {
   uint8_t fillLevel = 0;
-  uint8_t channelNumber = 255;  // not used
+  StoredChannelReference source;
 };
-
-struct ContainerConfig {
-  uint8_t warningAboveLevel = 0;  // 0 - not set, 1-101 for 0-100%
-  uint8_t alarmAboveLevel = 0;    // 0 - not set, 1-101 for 0-100%
-  uint8_t warningBelowLevel = 0;  // 0 - not set, 1-101 for 0-100%
-  uint8_t alarmBelowLevel = 0;    // 0 - not set, 1-101 for 0-100%
-
-  uint8_t muteAlarmSoundWithoutAdditionalAuth = 0;  // 0 - admin login is
-                                                 // required, 1 - regular
-                                                 // user is allowed
+struct ContainerConfiguration {
+  uint8_t warningAboveLevel = 0;
+  uint8_t alarmAboveLevel = 0;
+  uint8_t warningBelowLevel = 0;
+  uint8_t alarmBelowLevel = 0;
+  uint8_t muteAlarmSoundWithoutAdditionalAuth = 0;
   SensorData sensorData[10] = {};
+  uint8_t reserved[32] = {};
+  bool valid() const;
 };
+struct ContainerStoredConfigV2 {
+  uint8_t version = 2;
+  uint32_t function = SUPLA_CHANNELFNC_CONTAINER;
+  ContainerConfiguration config;
+};
+static_assert(sizeof(LegacyContainerConfig) == 25, "Legacy Container size");
+static_assert(sizeof(ContainerStoredConfigV2) == 102, "Container V2 size");
+static_assert(offsetof(ContainerStoredConfigV2, function) == 1,
+              "V2 function marker offset changed");
+static_assert(offsetof(ContainerStoredConfigV2, config) == 5,
+              "V2 config offset changed");
 #pragma pack(pop)
 
 enum class SensorState {
@@ -44,6 +67,13 @@ class Container : public ChannelElement, public ActionHandler {
  public:
   friend class Supla::Html::ContainerParameters;
   Container();
+  ~Container() override;
+  bool isChannelConfigDurable() const override { return configDurable; }
+  void onServerIdentityTransition() override { configDurable = false; }
+  void reconcileChannelDependencies() override;
+  int sensorChannelNumber(uint8_t slot) const;
+  bool setSensorSlot(uint8_t slot, int number, uint8_t level);
+  ChannelReference sensorReference(uint8_t slot) const;
 
   /**
    * Sets the internal level reporting flag. When enabled, the container will
@@ -64,6 +94,7 @@ class Container : public ChannelElement, public ActionHandler {
 
   void iterateAlways() override;
   void onLoadConfig(SuplaDeviceClass *) override;
+  void purgeConfig() override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
                                               bool local = false) override;
   void fillChannelConfig(void *channelConfig,
@@ -184,6 +215,13 @@ class Container : public ChannelElement, public ActionHandler {
   void setExternalSoundAlarmOff();
 
  protected:
+  void onFunctionChange(uint32_t, uint32_t) override {
+    // Local UI can stage ChannelFunction before the owning V2 is saved.
+    persistenceUncertain = true;
+  }
+  bool shouldProcessChannelFunctionFromConfig() const override {
+    return false;
+  }
   void updateConfigField(uint8_t *configField, int8_t value);
   int8_t getHighestSensorValueAndUpdateState();
   void setAlarmActive(bool alarmActive);
@@ -209,6 +247,10 @@ class Container : public ChannelElement, public ActionHandler {
   // returns 0 when sensor is not active
   // returns 1 when sensor is active
   enum SensorState getSensorState(const uint8_t channelNumber) const;
+  enum SensorState sensorState(uint8_t slot) const;
+  bool persistConfig(const ContainerConfiguration &candidate,
+                     uint32_t function);
+  void cleanupLegacy();
   uint32_t lastReadTime = 0;
   uint32_t readIntervalMs = 1000;
   int8_t fillLevel = -1;
@@ -217,10 +259,15 @@ class Container : public ChannelElement, public ActionHandler {
   bool externalSoundAlarm = false;
   bool sensorOfflineReported = false;
 
-  ContainerConfig config = {};
+  ContainerConfiguration config = {};
+  uint32_t lastCleanupMs = 0;
+  bool cleanupPending = false;
+  bool persistenceUncertain = false;
+  bool configDurable = true;
 };
 
-static_assert(sizeof(ContainerConfig().sensorData) / sizeof(SensorData) ==
+static_assert(sizeof(ContainerConfiguration().sensorData) /
+                  sizeof(SensorData) ==
               sizeof(TChannelConfig_Container().SensorInfo) /
                   sizeof(TContainer_SensorInfo));
 

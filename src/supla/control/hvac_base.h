@@ -40,6 +40,13 @@ class HvacBase : public ChannelElement, public ActionHandler {
   explicit HvacBase(Supla::Control::OutputInterface *primaryOutput = nullptr,
                     Supla::Control::OutputInterface *secondaryOutput = nullptr);
   virtual ~HvacBase();
+  HvacBase *getHvacBase() override { return this; }
+  // Outgoing SupLAN metadata; internal/local HVAC function stays unchanged.
+  uint32_t supLanFunction() const;
+  ChannelReference bindingTarget(uint8_t field) const {
+    return config.reference(field == 0 ? config.PumpSwitch
+                                       : config.HeatOrColdSourceSwitch);
+  }
 
   void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
@@ -539,9 +546,17 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool applyFirmwareConfiguration(HvacConfiguration *candidate);
   void rememberReadonlyLocalReferences();
   int16_t localNumber(const ChannelReference &reference) const;
-  HvacConfiguration defaultConfiguration();
+  void onFunctionChange(uint32_t, uint32_t) override {
+    // Local UI can stage ChannelFunction before the owning V2 is saved.
+    configurationPersistenceUncertain = true;
+  }
+  void initDefaultFunction();
+  HvacConfiguration defaultConfiguration(uint32_t function = 0);
   bool persistConfiguration(const HvacConfiguration &candidate,
-                            uint32_t function);
+                            uint32_t function, int8_t serverNone = -1);
+#ifndef ARDUINO_ARCH_AVR
+  HvacServerNoneScope serverNoneProjection;
+#endif
   void cleanupLegacyConfig();
   bool legacyCleanupPending = false;
   uint32_t legacyCleanupLastMs = 0;
@@ -550,7 +565,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // Volatile firmware readonly bindings, not canonical config references.
   // 0xff means no proven local binding; remote IDs are never rebound.
   uint8_t readonlyLocalChannels[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+  void reconcileChannelDependencies() override { refreshMainDependency(); }
   ChannelState mainThermometerState();
+  ChannelState dependencyState(ChannelReference reference, uint8_t field);
   void refreshMainDependency();
 #ifndef ARDUINO_ARCH_AVR
   Device::RemoteResourceManager *remoteManager() const;

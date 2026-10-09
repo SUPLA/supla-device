@@ -390,6 +390,14 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
     entry[5] = entries[i].Permissions;
   }
   seal(record_, size);
+  // Delete/invalidate dependent topology first. A crash or later association
+  // write failure may leave less topology, never unauthorized mixed state.
+  if (destination &&
+      !runtime_->authorizationReplacing(context, entries_, count)) {
+    memset(record_, 0, sizeof(record_));
+    memset(&material, 0, sizeof(material));
+    return SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR;
+  }
   busy_ = true;
   bool saved = persist(slot, record_, count ? size : 0);
   memset(record_, 0, sizeof(record_));

@@ -247,6 +247,9 @@ HvacStoredConfigV2 storeHvacConfig(const HvacConfiguration &config,
 bool restoreHvacConfig(const HvacStoredConfigV2 &record,
                        HvacConfiguration *config) {
   if (!config || record.version != 2) return false;
+  const auto &scope = record.serverNone;
+  if (scope.rootEpoch ? !scope.deviceId || !scope.channelId
+                      : scope.deviceId || scope.channelId) return false;
   HvacConfiguration result;
   static_cast<HvacScalars &>(result) = record.scalars;
   result.referenceNamespace = record.referenceNamespace;

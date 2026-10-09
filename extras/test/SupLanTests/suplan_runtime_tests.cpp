@@ -3,6 +3,7 @@
 
 #include <suplan/suplan_runtime.h>
 #include <suplan/suplan_crypto.h>
+#include <suplan/suplan_wire.h>
 
 #include <gtest/gtest.h>
 #include <crypto_test_hooks.h>
@@ -129,6 +130,22 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
   FakeApplication() : value(0), controlCalls(0), stateCalls(0), actionCalls(0),
       acknowledged(0), lastAckResult(0), lastStateType(0), lastStateLength(0),
       runtime(nullptr) {}
+
+  Supla::SupLan::BindingRetry *bindingRetry() override {
+    return bindingPoolEnabled ? &largeRetry : nullptr;
+  }
+  uint8_t receiveBindings(uint8_t, const uint8_t *body,
+                          size_t length) override {
+    ++bindingCalls;
+    lastBindings.assign(body, body + length);
+    return bindingResult;
+  }
+  Supla::SupLan::BindingRetry largeRetry;
+  bool bindingSessionNeeded(uint8_t) override { return bindingPoolEnabled; }
+  bool bindingPoolEnabled = false;
+  int bindingCalls = 0;
+  uint8_t bindingResult = 3;
+  std::vector<uint8_t> lastBindings;
 
   bool readResource(const ResourceId &resource, bool *eventOnly,
                     uint8_t *payload,
@@ -1339,6 +1356,240 @@ TEST(SupLanDiscoveryAudit, SourceLocatesInterestedDestinationAfterIpLoss) {
             locateReplyTxBefore + 1U);
   EXPECT_EQ(pair.appB.stateCalls, statesBefore + 1U);
   EXPECT_EQ(pair.runtimeA.poolDiagnostics().deferredEvents.used, 0U);
+}
+
+TEST(SupLanRuntime, BindingReceiveEnvelopeExceedsLocalOutboundCapacity) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pumpMs(200);
+  PeerMaterial material;
+  ASSERT_TRUE(pair.peersA.materialFor(pair.peerA, &material));
+  std::vector<uint8_t> initFrame, acceptFrame;
+  for (const auto &packet : pair.network.history) {
+    if (packet.bytes.size() == kSessionInitSize)
+      initFrame = packet.bytes;
+    if (packet.bytes.size() == kSessionAcceptSize)
+      acceptFrame = packet.bytes;
+  }
+  ASSERT_EQ(initFrame.size(), kSessionInitSize);
+  ASSERT_EQ(acceptFrame.size(), kSessionAcceptSize);
+  SessionInit init;
+  SessionAccept accept;
+  ASSERT_TRUE(decodeSessionInit(material.initMacKey, initFrame.data(),
+                                initFrame.size(), &init));
+  ASSERT_TRUE(decodeSessionAccept(material.acceptMacKey, initFrame.data(),
+      &init, acceptFrame.data(), acceptFrame.size(), &accept));
+  SessionKeys keys;
+  uint8_t transcriptHash[32];
+  ASSERT_TRUE(deriveSessionKeys(material.peerKey, material.contextHash,
+      init.ni, accept.nr, initFrame.data(), initFrame.size(),
+      acceptFrame.data(), acceptFrame.size(), accept.sessionId,
+      &keys, transcriptHash));
+  // Eighty-two entries fit the public 1024-byte RX envelope, independently
+  // of this Device's smaller local outbound/persistent binding capacity.
+  std::vector<uint8_t> body(1 + 82 * 12, 0);
+  body[0] = 82;
+  std::vector<uint8_t> application(6 + body.size(), 0);
+  application[0] = kMessageClassNative;
+  putUint32(application.data() + 1, 8);
+  application[5] = kAckRequired;
+  std::memcpy(application.data() + 6, body.data(), body.size());
+  EXPECT_GT(application.size(), SUPLAN_MAX_APPLICATION_BYTES);
+  std::vector<uint8_t> frame(application.size() + 32);
+  const auto length = frame.size();
+  frame[0] = kVersion;
+  frame[1] = kFrameData;
+  putUint64(frame.data() + 2, accept.sessionId);
+  putUint32(frame.data() + 10, 100);
+  putUint16(frame.data() + 14, application.size());
+  uint8_t nonce[kAeadNonceSize];
+  std::memcpy(nonce, keys.responderToInitiator.noncePrefix, kNoncePrefixSize);
+  putUint32(nonce + kNoncePrefixSize, 100);
+  ASSERT_TRUE(pair.crypto.aes128CcmEncrypt(keys.responderToInitiator.trafficKey,
+      nonce, frame.data(), kProtectedHeaderSize, application.data(),
+      application.size(), frame.data() + kProtectedHeaderSize,
+      frame.data() + kProtectedHeaderSize + application.size()));
+  FragmentSender sender;
+  const auto transmit = [](void *context, const uint8_t *data, size_t size) {
+    auto pair = static_cast<RuntimePair *>(context);
+    return pair->network.send(pair->endpointA, pair->endpointB, false,
+                               data, size);
+  };
+  ASSERT_TRUE(sender.send(frame.data(), length, 250, 100,
+                          transmit, &pair));
+  pair.pumpMs(100);
+  EXPECT_EQ(pair.appB.bindingCalls, 1);
+  EXPECT_EQ(pair.appB.lastBindings, body);
+}
+
+TEST(SupLanRuntime, SourceFirstBindingDiscoveryUsesBoundedRecoveryBackoff) {
+  RuntimePair pair;
+  pair.appA.bindingPoolEnabled = true;
+  pair.datagramsB.available = false;
+  uint8_t body[13] = {1, 1, 1};
+  body[7] = 1;
+  Supla::SupLan::putUint32(body + 3, pair.resource.id);
+  Supla::SupLan::putUint32(body + 8, 60001);
+  for (int i = 0; i < 1200; ++i) {
+    EXPECT_FALSE(pair.runtimeA.sendBindings(pair.peerA, body, sizeof(body)));
+    ++pair.network.now;
+    pair.runtimeA.iterate();
+    pair.runtimeB.iterate();
+  }
+  EXPECT_LE(pair.network.multicastAttempts, 3u);
+  EXPECT_FALSE(pair.runtimeA.recoveryStatus(pair.peerA).active);
+  const auto attempts = pair.network.multicastAttempts;
+  for (int i = 0; i < 4000; ++i) {
+    EXPECT_FALSE(pair.runtimeA.sendBindings(pair.peerA, body, sizeof(body)));
+    ++pair.network.now;
+    pair.runtimeA.iterate();
+    pair.runtimeB.iterate();
+  }
+  EXPECT_EQ(pair.network.multicastAttempts, attempts);
+  pair.datagramsB.available = true;
+  for (int i = 0; i < 7000 && !pair.runtimeA.bindingsInFlight(); ++i) {
+    pair.runtimeA.sendBindings(pair.peerA, body, sizeof(body));
+    ++pair.network.now;
+    pair.runtimeA.iterate();
+    pair.runtimeB.iterate();
+  }
+  EXPECT_GT(pair.network.multicastAttempts, attempts);
+  pair.pumpMs(300);
+  EXPECT_GE(pair.appB.bindingCalls, 1);
+}
+
+TEST(SupLanRuntime, DelayedOlderBindingsCannotRestoreRemovedTopology) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pumpMs(200);
+  pair.appA.bindingPoolEnabled = true;
+  uint8_t body[13] = {1, 1, 1};
+  Supla::SupLan::putUint32(body + 3, pair.resource.id);
+  body[7] = 1;
+  Supla::SupLan::putUint32(body + 8, 60001);
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, body, sizeof(body)));
+  ASSERT_FALSE(pair.network.packets.empty());
+  const Packet delayed = pair.network.packets.back();
+  pair.network.packets.clear();
+  // Let all protected retries expire before the first packet reaches B.
+  for (int i = 0; i < 60; ++i) {
+    pair.network.now += 10;
+    pair.runtimeA.iterate();
+    pair.network.packets.clear();
+  }
+  ASSERT_FALSE(pair.runtimeA.bindingsInFlight());
+  const uint8_t empty = 0;
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  pair.pumpMs(50);
+  ASSERT_EQ(pair.appB.lastBindings, std::vector<uint8_t>{0});
+  const int calls = pair.appB.bindingCalls;
+  pair.network.packets.push_back(delayed);
+  pair.pumpMs(50);
+  EXPECT_EQ(pair.appB.bindingCalls, calls);
+  EXPECT_EQ(pair.appB.lastBindings, std::vector<uint8_t>{0});
+}
+
+TEST(SupLanRuntime, InterleavedStateDoesNotSupersedeBinding) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pumpMs(200);
+  pair.appA.bindingPoolEnabled = true;
+  uint8_t body[13] = {1, 1, 1};
+  Supla::SupLan::putUint32(body + 3, pair.resource.id);
+  body[7] = 1;
+  Supla::SupLan::putUint32(body + 8, 60001);
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, body, sizeof(body)));
+  ASSERT_FALSE(pair.network.packets.empty());
+  const Packet delayed = pair.network.packets.back();
+  pair.network.packets.clear();
+  uint8_t state[14] = {0xff};
+  ASSERT_TRUE(pair.runtimeA.publishState(pair.peerA, pair.resource,
+      Supla::SupLan::kSuplaCallDeviceChannelValueChangedC,
+      state, sizeof(state)));
+  pair.pumpMs(50);
+  const int states = pair.appB.stateCalls;
+  EXPECT_GT(states, 0);
+  EXPECT_EQ(pair.appB.bindingCalls, 0);
+  pair.network.packets.push_back(delayed);
+  pair.pumpMs(50);
+  EXPECT_EQ(pair.appB.bindingCalls, 1);
+  EXPECT_FALSE(pair.runtimeA.bindingsInFlight());
+}
+
+TEST(SupLanRuntime, BindingPersistenceFailureNeedsNewOperation) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pumpMs(200);
+  pair.appA.bindingPoolEnabled = true;
+  pair.appB.bindingResult = 0;
+  const uint8_t empty = 0;
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  pair.pumpMs(50);
+  ASSERT_EQ(pair.appB.bindingCalls, 1);
+  EXPECT_TRUE(pair.runtimeA.bindingsInFlight());
+  pair.appB.bindingResult = 3;
+  pair.pumpMs(500);
+  // Frozen replay semantics never redeliver even an unacknowledged duplicate.
+  EXPECT_EQ(pair.appB.bindingCalls, 1);
+  EXPECT_FALSE(pair.runtimeA.bindingsInFlight());
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  pair.pumpMs(50);
+  EXPECT_EQ(pair.appB.bindingCalls, 2);
+  EXPECT_FALSE(pair.runtimeA.bindingsInFlight());
+  EXPECT_EQ(pair.appA.lastAckResult, 3);
+}
+
+TEST(SupLanRuntime, ResourceBindingsReserveLargeRetryAndRetransmitExactBytes) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pumpMs(200);
+  std::vector<uint8_t> body(1 + 12 * 8, 0);
+  body[0] = 8;
+  for (int i = 0; i < 8; ++i) {
+    auto entry = body.data() + 1 + 12 * i;
+    entry[0] = entry[1] = entry[6] = 1;
+    Supla::SupLan::putUint32(entry + 2, pair.resource.id);
+    Supla::SupLan::putUint32(entry + 7, 60001 + i);
+  }
+  const auto before = pair.network.history.size();
+  EXPECT_FALSE(
+      pair.runtimeA.sendBindings(pair.peerA, body.data(), body.size()));
+  EXPECT_EQ(pair.network.history.size(), before);
+  pair.appA.bindingPoolEnabled = true;
+  pair.runtimeB.testHooks()->dropNextAckTx = 1;
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, body.data(), body.size()));
+  EXPECT_TRUE(pair.appA.largeRetry.length > SUPLAN_MAX_RETRY_FRAME_BYTES);
+  EXPECT_FALSE(
+      pair.runtimeA.sendBindings(pair.peerA, body.data(), body.size()));
+  pair.pumpMs(400);
+  EXPECT_EQ(pair.appB.bindingCalls, 1);
+  EXPECT_EQ(pair.appB.lastBindings, body);
+  EXPECT_FALSE(pair.runtimeA.bindingsInFlight());
+  std::vector<std::vector<uint8_t>> sent;
+  for (size_t i = before; i < pair.network.history.size(); ++i) {
+    const auto &packet = pair.network.history[i];
+    if (packet.source.address == pair.endpointA.address &&
+        packet.bytes.size() > 100 &&
+        packet.bytes[0] == Supla::SupLan::kAdaptationFull)
+      sent.push_back(packet.bytes);
+  }
+  ASSERT_GE(sent.size(), 2u);
+  EXPECT_EQ(sent[0], sent[1]);
+  const auto after = pair.network.history.size();
+  std::vector<uint8_t> overflow(1 + 12 * (SUPLAN_MAX_BINDINGS_PER_PEER + 1), 0);
+  overflow[0] = SUPLAN_MAX_BINDINGS_PER_PEER + 1;
+  EXPECT_FALSE(pair.runtimeA.sendBindings(pair.peerA, overflow.data(),
+                                         overflow.size()));
+  EXPECT_EQ(pair.network.history.size(), after);
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, body.data(), body.size()));
+  pair.runtimeA.authorizationChanged(pair.peerA);
+  EXPECT_FALSE(pair.runtimeA.bindingsInFlight());
+  // Session replacement drops protected retry; no replay into a new SESSION.
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, body.data(), body.size()));
+  ASSERT_TRUE(pair.runtimeA.forgetSession(pair.peerA));
+  pair.runtimeA.iterate();
+  EXPECT_FALSE(pair.runtimeA.bindingsInFlight());
 }
 
 }  // namespace

@@ -17,6 +17,7 @@ class GeneralPurposeChannelBase;
 }
 namespace Control {
 class ActionTrigger;
+class HvacBase;
 }
 namespace Protocol {
 class SuplaSrpc;
@@ -36,6 +37,8 @@ class Element {
   virtual ~Element();
   virtual bool isChannelConfigDurable() const { return true; }
   virtual void onServerIdentityTransition() {}
+  virtual void reconcileChannelDependencies() {}
+  virtual Control::HvacBase *getHvacBase() { return nullptr; }
   // Typed access without RTTI, including ATs whose button is not initialized.
   virtual Control::ActionTrigger *getActionTrigger() { return nullptr; }
   virtual Sensor::GeneralPurposeChannelBase *getGeneralPurposeChannel() {

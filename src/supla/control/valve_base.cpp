@@ -4,6 +4,8 @@
 #include "valve_base.h"
 
 #include <string.h>
+#include <supla/channels/channel_state.h>
+#include <supla/storage/canonical_config.h>
 #include <supla/actions.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/network.h>
@@ -16,6 +18,52 @@ using Supla::Control::ValveBase;
 
 Supla::Control::ValveConfig::ValveConfig() {
   memset(sensorData, 255, sizeof(sensorData));
+  closeValveOnFloodType = 0;
+  memset(reserved, 0, sizeof(reserved));
+}
+
+bool Supla::Control::ValveConfiguration::valid() const {
+  if (closeValveOnFloodType > SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_ON_CHANGE)
+    return false;
+  for (const auto &sensor : sensorData)
+    if (!sensor.reference().valid()) return false;
+  return true;
+}
+
+ValveBase::~ValveBase() {
+  for (uint8_t i = 0; i < SUPLA_VALVE_SENSOR_MAX; ++i)
+    releaseChannelConsumer(0x30000 + (getChannelNumber() + 1) * 32 + i);
+}
+
+Supla::ChannelReference ValveBase::sensorReference(uint8_t slot) const {
+  return slot < SUPLA_VALVE_SENSOR_MAX ? config.sensorData[slot].reference()
+                                      : ChannelReference{};
+}
+
+void ValveBase::reconcileChannelDependencies() {
+  for (uint8_t i = 0; i < SUPLA_VALVE_SENSOR_MAX; ++i)
+    consumeChannelState(sensorReference(i),
+                        0x30000 + (getChannelNumber() + 1) * 32 + i);
+}
+
+void ValveBase::cleanupLegacy() {
+  lastCleanupMs = millis();
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, Supla::ConfigTag::ValveCfgTag);
+  cleanupPending =
+      !Supla::StorageDetail::cleanupLegacyConfig(key, cleanupPending);
+}
+
+bool ValveBase::persistConfig(const ValveConfiguration &candidate,
+                              uint32_t function) {
+  if (!candidate.valid()) return false;
+  ValveStoredConfigV2 record;
+  record.function = function;
+  record.config = candidate;
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, "valve_cfg2");
+  return Supla::StorageDetail::persistCanonicalConfig(
+      key, record, &persistenceUncertain, getChannelNumber());
 }
 
 ValveBase::ValveBase(bool openClose) {
@@ -36,6 +84,8 @@ void ValveBase::onInit() {
 }
 
 void ValveBase::iterateAlways() {
+  reconcileChannelDependencies();
+  if (cleanupPending && millis() - lastCleanupMs >= 60000) cleanupLegacy();
   if (millis() - lastUpdateTimestamp > 200) {
     lastUpdateTimestamp = millis();
     auto currentState = getValueOpenStateFromDevice();
@@ -70,57 +120,21 @@ void ValveBase::iterateAlways() {
 }
 
 bool ValveBase::isFloodDetected() {
-  bool floodDedected = false;
-  for (int i = 0; i < SUPLA_VALVE_SENSOR_MAX; i++) {
-    if (config.sensorData[i] == 255) {
+  bool floodDetected = false;
+  for (uint8_t i = 0; i < SUPLA_VALVE_SENSOR_MAX; ++i) {
+    const auto state = consumeChannelState(sensorReference(i),
+        0x30000 + (getChannelNumber() + 1) * 32 + i);
+    bool value;
+    if (!state.availableFor(ChannelCapability::FloodDetection) ||
+        !state.binary(&value)) {
       previousSensorState[i] = false;
       continue;
     }
-
-    auto ch = Supla::Channel::GetByChannelNumber(config.sensorData[i]);
-    if (ch == nullptr) {
-      SUPLA_LOG_WARNING("Valve[%d] channel %d not found",
-                        getChannelNumber(),
-                        config.sensorData[i]);
-      previousSensorState[i] = false;
-      continue;
-    }
-
-    if (ch->getChannelType() != SUPLA_CHANNELTYPE_BINARYSENSOR) {
-      SUPLA_LOG_WARNING("Valve[%d] channel %d is not a binary sensor",
-                        getChannelNumber(),
-                        config.sensorData[i]);
-      previousSensorState[i] = false;
-      continue;
-    }
-
-    // isStateOnline() also includes ONLINE_BUT_NOT_AVAILABLE and
-    // FIRMWARE_UPDATE_ONGOING. Neither state provides a usable flood sample.
-    // Invalidate ON_CHANGE history so the next valid LEAK closes the valve.
-    if (!ch->isStateOnline() || ch->isStateOnlineAndNotAvailable() ||
-        ch->isStateFirmwareUpdateOngoing()) {
-      previousSensorState[i] = false;
-      continue;
-    }
-
-    if (config.closeValveOnFloodType <= 1) {
-      if (ch->getValueBool() == true) {
-        previousSensorState[i] = true;
-        floodDedected = true;
-      } else {
-        previousSensorState[i] = false;
-      }
-    } else if (config.closeValveOnFloodType == 2) {
-      bool value = ch->getValueBool();
-      if (value && previousSensorState[i] == false) {
-        previousSensorState[i] = true;
-        floodDedected = true;
-      } else {
-        previousSensorState[i] = value;
-      }
-    }
+    if (value && (config.closeValveOnFloodType <= 1 ||
+                  !previousSensorState[i])) floodDetected = true;
+    previousSensorState[i] = value;
   }
-  return floodDedected;
+  return floodDetected;
 }
 
 int32_t ValveBase::handleNewValueFromServer(
@@ -149,46 +163,76 @@ int32_t ValveBase::handleNewValueFromServer(
 
 void ValveBase::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    loadFunctionFromConfig();
-    // load internal ValveConfig from Config
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, Supla::ConfigTag::ValveCfgTag);
-    cfg->getBlob(key, reinterpret_cast<char *>(&config), sizeof(config));
-
-    loadConfigChangeFlag();
-
-    if (defaultCloseValveOnFloodType != 0 &&
-        config.closeValveOnFloodType == 0) {
+  if (!cfg) return;
+  const bool wasUncertain = persistenceUncertain;
+  const int32_t storedFunction = cfg->getChannelFunction(getChannelNumber());
+  if ((storedFunction == 0 ||
+      storedFunction == SUPLA_CHANNELFNC_VALVE_OPENCLOSE ||
+      storedFunction == SUPLA_CHANNELFNC_VALVE_PERCENTAGE) &&
+      channel.isFunctionValid(storedFunction)) setFunction(storedFunction);
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, "valve_cfg2");
+  if (cfg->getBlobSize(key) >= 0) {
+    ValveStoredConfigV2 record;
+    if (cfg->getBlobSize(key) != sizeof(record) ||
+        !cfg->getBlob(key, reinterpret_cast<char *>(&record), sizeof(record)) ||
+        record.version != 2 || !record.config.valid() ||
+        record.function != channel.getDefaultFunction() ||
+        (record.function != 0 &&
+         record.function != SUPLA_CHANNELFNC_VALVE_OPENCLOSE &&
+         record.function != SUPLA_CHANNELFNC_VALVE_PERCENTAGE)) {
+      config = {};
       config.closeValveOnFloodType = defaultCloseValveOnFloodType;
-      triggerSetChannelConfig();
+      configDurable = false;
+      reconcileChannelDependencies();
+      return;
     }
-    printConfig();
+    config = record.config;
+    persistenceUncertain = wasUncertain ||
+        storedFunction != static_cast<int32_t>(record.function);
+    configDurable = true;
+    cleanupLegacy();
+  } else {
+    generateKey(key, Supla::ConfigTag::ValveCfgTag);
+    LegacyValveConfig legacy;
+    if (cfg->getBlobSize(key) == sizeof(legacy) &&
+        cfg->getBlob(key, reinterpret_cast<char *>(&legacy), sizeof(legacy))) {
+      ValveConfiguration candidate;
+      candidate.closeValveOnFloodType = legacy.closeValveOnFloodType;
+      memcpy(candidate.reserved, legacy.reserved, sizeof(candidate.reserved));
+      for (uint8_t i = 0; i < SUPLA_VALVE_SENSOR_MAX; ++i) {
+        if (legacy.sensorData[i] != 255)
+          candidate.sensorData[i].assign(
+              ChannelReference::local(legacy.sensorData[i]));
+      }
+      if (candidate.valid()) {
+        config = candidate;
+        configDurable = persistConfig(candidate, channel.getDefaultFunction());
+        if (configDurable) cleanupLegacy();
+      }
+    }
   }
+  loadConfigChangeFlag();
+  if (defaultCloseValveOnFloodType && !config.closeValveOnFloodType) {
+    config.closeValveOnFloodType = defaultCloseValveOnFloodType;
+    triggerSetChannelConfig();
+  }
+  reconcileChannelDependencies();
 }
 
 void ValveBase::purgeConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, Supla::ConfigTag::ValveCfgTag);
-    cfg->eraseKey(key);
-  }
+  if (!cfg) return;
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, Supla::ConfigTag::ValveCfgTag);
+  cfg->eraseKey(key);
+  generateKey(key, "valve_cfg2");
+  cfg->eraseKey(key);
 }
 
 void ValveBase::printConfig() const {
-  SUPLA_LOG_DEBUG("Valve[%d]: close on flood type: %s (%d)",
-                  getChannelNumber(),
-                  config.closeValveOnFloodType == 0   ? "N/A"
-                  : config.closeValveOnFloodType == 1 ? "always"
-                                                      : "on change",
-                  config.closeValveOnFloodType);
-  for (auto const &sensor : config.sensorData) {
-    if (sensor == 255) {
-      continue;
-    }
-    SUPLA_LOG_DEBUG("Valve[%d]: sensor channel %d", getChannelNumber(), sensor);
-  }
+  SUPLA_LOG_DEBUG("Valve[%d]: close on flood type %d", getChannelNumber(),
+                   config.closeValveOnFloodType);
 }
 
 void ValveBase::onLoadState() {
@@ -233,111 +277,104 @@ void ValveBase::onSaveState() {
 }
 
 Supla::ApplyConfigResult ValveBase::applyChannelConfig(
-    TSD_ChannelConfig *result, bool) {
-  SUPLA_LOG_DEBUG(
-      "Valve[%d]:applyChannelConfig, func %d, configtype %d, configsize "
-      "%d",
-      getChannelNumber(),
-      result->Func,
-      result->ConfigType,
-      result->ConfigSize);
-
-  if (result->ConfigSize == 0) {
+    TSD_ChannelConfig *result, bool local) {
+  if (!result || result->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT ||
+      !channel.isFunctionValid(result->Func) ||
+      (result->Func != 0 &&
+       result->Func != SUPLA_CHANNELFNC_VALVE_OPENCLOSE &&
+       result->Func != SUPLA_CHANNELFNC_VALVE_PERCENTAGE))
+    return Supla::ApplyConfigResult::DataError;
+  if (!result->ConfigSize || result->Func == 0) {
+    if (result->Func == 0 && result->ConfigSize != 0)
+      return Supla::ApplyConfigResult::DataError;
+    auto candidate = config;
+    if (static_cast<uint32_t>(result->Func) !=
+            channel.getDefaultFunction() || result->Func == 0)
+      candidate = {};
+    if (defaultCloseValveOnFloodType)
+      candidate.closeValveOnFloodType = defaultCloseValveOnFloodType;
+    configDurable = persistConfig(candidate, result->Func);
+    if (!configDurable) return Supla::ApplyConfigResult::DataError;
+    config = candidate;
+    channel.setDefaultFunction(result->Func);
+    reconcileChannelDependencies();
+    if (!result->Func) {
+      markAllChannelConfigsReceived();
+      return Supla::ApplyConfigResult::Success;
+    }
     return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
-
-  bool readonlyViolation = false;
-
-  switch (result->Func) {
-    case SUPLA_CHANNELFNC_VALVE_OPENCLOSE:
-    case SUPLA_CHANNELFNC_VALVE_PERCENTAGE: {
-      if (result->ConfigType == 0 &&
-          result->ConfigSize == sizeof(TChannelConfig_Valve)) {
-        auto cfg = reinterpret_cast<TChannelConfig_Valve *>(result->Config);
-        for (unsigned int i = 0;
-             i < sizeof(cfg->SensorInfo) / sizeof(cfg->SensorInfo[0]);
-             i++) {
-          if (cfg->SensorInfo[i].IsSet == 0) {
-            config.sensorData[i] = 255;
-          } else {
-            config.sensorData[i] = cfg->SensorInfo[i].ChannelNo;
-          }
-        }
-
-        if (defaultCloseValveOnFloodType != 0 &&
-            cfg->CloseValveOnFloodType == 0) {
-          SUPLA_LOG_DEBUG(
-              "Valve[%d]: close on flood type missing on server: %d",
-              getChannelNumber(),
-              defaultCloseValveOnFloodType);
-          if (config.closeValveOnFloodType == 0) {
-            config.closeValveOnFloodType = defaultCloseValveOnFloodType;
-          }
-          readonlyViolation = true;
-          triggerSetChannelConfig();
-        } else {
-          if (cfg->CloseValveOnFloodType >= 1 &&
-              cfg->CloseValveOnFloodType <= 2) {
-            config.closeValveOnFloodType = cfg->CloseValveOnFloodType;
-          }
-        }
-      }
-      printConfig();
-      saveConfig(false);
-      break;
-    }
-    default: {
-      SUPLA_LOG_WARNING("Valve[%d]: unsupported func %d", getChannelNumber(),
-                        result->Func);
-      break;
+  if (result->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT ||
+      result->ConfigSize != sizeof(TChannelConfig_Valve) ||
+      (result->Func != SUPLA_CHANNELFNC_VALVE_OPENCLOSE &&
+       result->Func != SUPLA_CHANNELFNC_VALVE_PERCENTAGE))
+    return Supla::ApplyConfigResult::DataError;
+  const auto wire = reinterpret_cast<TChannelConfig_Valve *>(result->Config);
+  ValveConfiguration candidate;
+  candidate.closeValveOnFloodType = wire->CloseValveOnFloodType;
+  const bool readonlyViolation = defaultCloseValveOnFloodType &&
+                                 !candidate.closeValveOnFloodType;
+  if (readonlyViolation)
+    candidate.closeValveOnFloodType = config.closeValveOnFloodType
+        ? config.closeValveOnFloodType : defaultCloseValveOnFloodType;
+  memcpy(candidate.reserved, wire->Reserved, sizeof(candidate.reserved));
+  const bool server = !local && usesServerReferences();
+  for (uint8_t i = 0; i < SUPLA_VALVE_SENSOR_MAX; ++i) {
+    const auto &field = wire->SensorInfo[i];
+    if (server) {
+      candidate.sensorData[i].assign(field.ChannelId ?
+          ChannelReference::server(field.ChannelId) : ChannelReference{});
+    } else {
+      if (field.IsSet > 1 || (field.IsSet && field.ChannelNo == 255))
+        return Supla::ApplyConfigResult::DataError;
+      candidate.sensorData[i].assign(field.IsSet ?
+          ChannelReference::local(field.ChannelNo) : ChannelReference{});
+      const auto old = sensorReference(i);
+      if (local && old.kind == ChannelReferenceKind::SERVER_CHANNEL &&
+          localReferenceNumber(old) < 0) candidate.sensorData[i].assign(old);
     }
   }
-  return (readonlyViolation) ? Supla::ApplyConfigResult::SetChannelConfigNeeded
-                             : Supla::ApplyConfigResult::Success;
+  if (!candidate.valid()) return Supla::ApplyConfigResult::DataError;
+  if (!persistConfig(candidate, result->Func)) {
+    configDurable = false;
+    return Supla::ApplyConfigResult::DataError;
+  }
+  for (uint8_t i = 0; i < SUPLA_VALVE_SENSOR_MAX; ++i) {
+    if (sensorReference(i) != candidate.sensorData[i].reference())
+      previousSensorState[i] = false;
+  }
+  config = candidate;
+  configDurable = true;
+  channel.setDefaultFunction(result->Func);
+  cleanupLegacy();
+  reconcileChannelDependencies();
+  if (readonlyViolation) triggerSetChannelConfig();
+  return readonlyViolation ? Supla::ApplyConfigResult::SetChannelConfigNeeded
+                           : Supla::ApplyConfigResult::Success;
 }
 
-void ValveBase::fillChannelConfig(void *channelConfig,
-                                  int *size,
+void ValveBase::fillChannelConfig(void *channelConfig, int *size,
                                   uint8_t configType) {
-  if (size) {
-    *size = 0;
-  } else {
-    return;
-  }
-
-  if (channelConfig == nullptr) {
-    return;
-  }
-
-  if (configType != SUPLA_CONFIG_TYPE_DEFAULT) {
-    return;
-  }
-
-  switch (channel.getDefaultFunction()) {
-    case SUPLA_CHANNELFNC_VALVE_OPENCLOSE:
-    case SUPLA_CHANNELFNC_VALVE_PERCENTAGE: {
-      auto cfg = reinterpret_cast<TChannelConfig_Valve *>(channelConfig);
-      *size = sizeof(TChannelConfig_Valve);
-      int i = 0;
-      for (const auto &sensor : config.sensorData) {
-        if (sensor == 255) {
-          continue;
-        }
-        cfg->SensorInfo[i].IsSet = 1;
-        cfg->SensorInfo[i].ChannelNo = sensor;
-        i++;
-      }
-      cfg->CloseValveOnFloodType = config.closeValveOnFloodType;
-
-      break;
+  if (!size) return;
+  *size = 0;
+  if (!channelConfig || configType != SUPLA_CONFIG_TYPE_DEFAULT) return;
+  TChannelConfig_Valve wire = {};
+  wire.CloseValveOnFloodType = config.closeValveOnFloodType;
+  memcpy(wire.Reserved, config.reserved, sizeof(wire.Reserved));
+  for (uint8_t i = 0; i < SUPLA_VALVE_SENSOR_MAX; ++i) {
+    const auto ref = sensorReference(i);
+    uint32_t id;
+    if (!referenceWireId(ref, &id)) return;
+    if (usesServerReferences()) {
+      wire.SensorInfo[i].ChannelId = id;
+    } else {
+      if (ref.kind == ChannelReferenceKind::SERVER_CHANNEL) return;
+      wire.SensorInfo[i].IsSet = ref.kind != ChannelReferenceKind::NONE;
+      wire.SensorInfo[i].ChannelNo = id;
     }
-    default:
-      SUPLA_LOG_WARNING(
-          "Valve[%d]: fill channel config for unknown function %d",
-          channel.getChannelNumber(),
-          channel.getDefaultFunction());
-      return;
   }
+  memcpy(channelConfig, &wire, sizeof(wire));
+  *size = sizeof(wire);
 }
 
 void ValveBase::closeValve() {
@@ -370,87 +407,43 @@ void ValveBase::setValve(uint8_t openLevel) {
 }
 
 void ValveBase::saveConfig(bool local) {
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, Supla::ConfigTag::ValveCfgTag);
-    if (cfg->setBlob(key,
-                     reinterpret_cast<const char *>(&config),
-                     sizeof(ValveConfig))) {
-      SUPLA_LOG_INFO("Valve[%d]: config saved successfully",
-                     getChannelNumber());
-    } else {
-      SUPLA_LOG_WARNING("Valve[%d]: failed to save config", getChannelNumber());
-    }
-
-    if (local) {
-      triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
-    } else {
-      clearChannelConfigChangedFlag();
-    }
-    saveConfigChangeFlag();
-    cfg->saveWithDelay(5000);
-  }
-  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-       proto = proto->next()) {
-    proto->notifyConfigChange(getChannelNumber());
-  }
+  configDurable = persistConfig(config, channel.getDefaultFunction());
+  if (!configDurable) return;
+  cleanupLegacy();
+  if (local) triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+  else clearChannelConfigChangedFlag();
+  saveConfigChangeFlag();
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto;
+       proto = proto->next()) proto->notifyConfigChange(getChannelNumber());
 }
 
 bool ValveBase::addSensor(uint8_t channelNumber) {
-  if (channelNumber == 255) {
-    SUPLA_LOG_WARNING("Valve[%d] channel number %d is invalid",
-                      getChannelNumber(),
-                      channelNumber);
+  if (channelNumber == 255) return false;
+  auto ch = Channel::GetByChannelNumber(channelNumber);
+  if (!ch || ch->getChannelType() != SUPLA_CHANNELTYPE_BINARYSENSOR)
     return false;
+  for (const auto &sensor : config.sensorData) {
+    if (localReferenceNumber(sensor.reference()) == channelNumber) return true;
   }
-
-  auto ch = Supla::Channel::GetByChannelNumber(channelNumber);
-  if (ch == nullptr) {
-    SUPLA_LOG_WARNING(
-        "Valve[%d] channel %d not found", getChannelNumber(), channelNumber);
-    return false;
-  }
-  if (ch->getChannelType() != SUPLA_CHANNELTYPE_BINARYSENSOR) {
-    SUPLA_LOG_WARNING("Valve[%d] channel %d is not a binary sensor",
-                      getChannelNumber(),
-                      channelNumber);
-    return false;
-  }
-
-  for (auto &sensor : config.sensorData) {
-    if (sensor == channelNumber) {
-      SUPLA_LOG_DEBUG("Valve[%d] channel %d already on a list",
-                      getChannelNumber(),
-                      channelNumber);
-      return true;
-    }
-    if (sensor == 255) {
-      sensor = channelNumber;
+  for (uint8_t i = 0; i < SUPLA_VALVE_SENSOR_MAX; ++i) {
+    if (sensorReference(i).kind == ChannelReferenceKind::NONE) {
+      config.sensorData[i].assign(ChannelReference::local(channelNumber));
+      previousSensorState[i] = false;
+      reconcileChannelDependencies();
       saveConfig();
       return true;
     }
   }
-  SUPLA_LOG_WARNING("Valve[%d] sensor list is full. Channel %d not added",
-                    getChannelNumber(),
-                    channelNumber);
   return false;
 }
 
 bool ValveBase::removeSensor(uint8_t channelNumber) {
-  if (channelNumber == 255) {
-    SUPLA_LOG_WARNING("Valve[%d] channel number %d is invalid",
-                      getChannelNumber(),
-                      channelNumber);
-    return false;
-  }
-
-  for (auto &sensor : config.sensorData) {
-    if (sensor == channelNumber) {
-      sensor = 255;
-      SUPLA_LOG_DEBUG("Valve[%d] channel %d removed from list",
-                      getChannelNumber(),
-                      channelNumber);
+  if (channelNumber == 255) return false;
+  for (uint8_t i = 0; i < SUPLA_VALVE_SENSOR_MAX; ++i) {
+    if (localReferenceNumber(sensorReference(i)) == channelNumber) {
+      config.sensorData[i].assign(ChannelReference{});
+      previousSensorState[i] = false;
+      reconcileChannelDependencies();
       saveConfig();
       return true;
     }

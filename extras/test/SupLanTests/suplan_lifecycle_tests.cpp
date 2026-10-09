@@ -238,8 +238,19 @@ TEST_F(SupLanLifecycleTests, LegacyContainerAndValveStayExplicitlyLocal) {
   TChannelConfig_Valve outgoing = {};
   int size;
   valve.fillChannelConfig(&outgoing, &size, SUPLA_CONFIG_TYPE_DEFAULT);
-  EXPECT_EQ(outgoing.SensorInfo[0].ChannelNo, 7);
+  // Canonical migration stays LOCAL, but SupLAN outbound needs an accepted ID.
+  EXPECT_EQ(size, 0);
+  Supla::Control::ValveStoredConfigV2 migrated;
+  ASSERT_TRUE(config.getBlob("1_valve_cfg2",
+      reinterpret_cast<char *>(&migrated), sizeof(migrated)));
+  EXPECT_EQ(migrated.config.sensorData[0].reference(),
+            Supla::ChannelReference::local(7));
+  EXPECT_EQ(config.getBlobSize("1_valve_cfg"), -1);
   identity.load(nullptr);
+  valve.fillChannelConfig(&outgoing, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(size, sizeof(outgoing));
+  EXPECT_EQ(outgoing.SensorInfo[0].IsSet, 1);
+  EXPECT_EQ(outgoing.SensorInfo[0].ChannelNo, 7);
 }
 
 TEST_F(SupLanLifecycleTests, IntrinsicRelatedMeterRemainsLocalWithIdentity) {

@@ -11,6 +11,7 @@
 namespace Supla {
 namespace Device {
 class ServerAssociations;
+class ResourceBindingManager;
 enum class RemoteAccess : uint8_t { PENDING, READY, BLOCKED };
 struct ConsumeIntent {
   uint32_t consumerId;
@@ -31,6 +32,7 @@ class RemoteResourceManager {
   };
   Presence &presence() { return presence_; }
   ServerAssociations *associations = nullptr;
+  ResourceBindingManager *bindings = nullptr;
   RemoteResourceManager(SupLan::PeerTable *peers, SupLan::Runtime *runtime,
                         RemoteAccessPort *access);
   void attachRuntime(SupLan::Runtime *runtime) { runtime_ = runtime; }
@@ -48,27 +50,29 @@ class RemoteResourceManager {
   void peerAwake(uint8_t peerIndex, uint16_t windowMs, bool reset,
                  const uint8_t nonce[16], uint32_t nowMs);
   int consumerCount() const;
+  bool hasConsumer(uint32_t consumer) const;
   int resourceCount() const;
+  bool resourceExhausted() const { return admissionExhausted_; }
 
  private:
   struct Resource {
-    bool used = false;
     SupLan::ResourceId id = {};
-    RemoteAccess access = RemoteAccess::PENDING;
-    uint8_t peerIndex = 0xff;
-    uint8_t locator[16] = {};
-    bool hasSnapshot = false;
-    bool ensureAttempted = false;
-    bool readAttempted = false;
-    uint8_t permissions = 0;
     uint32_t receivedMs = 0;
     uint32_t lastReadMs = 0;
     uint32_t wakeUntilMs = 0;
     uint32_t hintEpochMs = 0;
-    uint8_t hintCount = 0;
-    uint8_t lastHintNonce[16] = {};
-    bool hasHintNonce = false;
     TDS_SuplaDeviceChannel_E snapshot = {};
+    uint8_t locator[16] = {};
+    uint8_t lastHintNonce[16] = {};
+    RemoteAccess access = RemoteAccess::PENDING;
+    uint8_t peerIndex = 0xff;
+    uint8_t permissions = 0;
+    uint8_t hintCount = 0;
+    bool used = false;
+    bool hasSnapshot = false;
+    bool ensureAttempted = false;
+    bool readAttempted = false;
+    bool hasHintNonce = false;
   };
   Resource *find(const SupLan::ResourceId &resource);
   int readyPeer(const Resource &resource) const;
@@ -80,6 +84,7 @@ class RemoteResourceManager {
   RemoteAccessPort *access_;
   ConsumeIntent intents_[kCapacity] = {};
   Resource resources_[kCapacity];
+  bool admissionExhausted_ = false;
   bool ensurePending_ = false;
   SupLan::ResourceId ensureResource_ = {};
   // Response deadline while pending; enqueue/retry cooldown otherwise.

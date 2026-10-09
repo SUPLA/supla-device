@@ -719,7 +719,7 @@ TEST(SupLanData, ReplayWindowAcceptsReorderingAndRejectsOldSequence) {
   EXPECT_EQ(replay.classify(2), Supla::SupLan::kReplayTooOld);
 }
 
-TEST(SupLanData, ProtectedFramesRespectPoCApplicationBound) {
+TEST(SupLanData, ProtectedFramesRespectIndependentTxAndRxBounds) {
   VectorCryptoPort crypto;
   Supla::SupLan::DirectionalKeys keys = {};
   uint8_t oversizedApplication[SUPLAN_MAX_APPLICATION_BYTES + 1] = {};
@@ -749,7 +749,18 @@ TEST(SupLanData, ProtectedFramesRespectPoCApplicationBound) {
                 &crypto, &keys, oversizedFrame, sizeof(oversizedFrame),
                 &replay, plaintext, sizeof(plaintext), &sessionId, &sequence,
                 &plaintextLength),
-            Supla::SupLan::kProtectedDataMalformed);
+            Supla::SupLan::kProtectedDataCapacityExceeded);
+  // The public RX envelope is mandatory; a smaller caller-owned plaintext
+  // workspace rejects admission above its capacity. Frames above RX itself
+  // remain malformed regardless of the caller's workspace.
+  std::vector<uint8_t> beyondRx(SUPLAN_RX_MAX_REASSEMBLED_FRAME + 1, 0);
+  std::memcpy(beyondRx.data(), oversizedFrame,
+              Supla::SupLan::kProtectedHeaderSize);
+  Supla::SupLan::putUint16(beyondRx.data() + 14, beyondRx.size() - 32);
+  EXPECT_EQ(Supla::SupLan::decodeProtectedData(
+      &crypto, &keys, beyondRx.data(), beyondRx.size(), &replay,
+      plaintext, sizeof(plaintext), &sessionId, &sequence, &plaintextLength),
+      Supla::SupLan::kProtectedDataMalformed);
 }
 
 TEST(SupLanFragmentation, FullAndFragmentFramesUseAssignedTypeBytes) {

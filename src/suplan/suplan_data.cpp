@@ -191,7 +191,6 @@ ProtectedDataResult decodeProtectedData(
   const size_t expectedLength = kProtectedHeaderSize +
       static_cast<size_t>(cipherLength) + kAeadTagSize;
   if (cipherLength < kApplicationHeaderSize ||
-      cipherLength > SUPLAN_MAX_APPLICATION_BYTES ||
       expectedLength > SUPLAN_RX_MAX_REASSEMBLED_FRAME ||
       frameLength != expectedLength) {
     return kProtectedDataMalformed;

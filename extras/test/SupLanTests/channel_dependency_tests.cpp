@@ -61,6 +61,7 @@ TEST(ChannelDependency, CommonStateDecodesTemperatureHumidityAndAvailability) {
   Channel::resetToDefaults();
   Channel channel(7);
   channel.setType(SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_HUMIDITYANDTEMPERATURE);
   channel.setNewValue(-12.125, 45.0);
   TDS_SuplaDeviceChannel_E snapshot;
   ASSERT_TRUE(buildChannelSnapshot(&channel, &snapshot));
@@ -283,6 +284,7 @@ TEST(ChannelDependency, AuthorizationLossOverridesTtlButEndpointLossDoesNot) {
   TDS_SuplaDeviceChannel_E snapshot = {};
   snapshot.Number = 0xff;
   snapshot.Type = SUPLA_CHANNELTYPE_THERMOMETER;
+  snapshot.Default = SUPLA_CHANNELFNC_THERMOMETER;
   snapshot.ValueValidityTimeSec = 60;
   double temperature = 21.75;
   std::memcpy(snapshot.value, &temperature, 8);

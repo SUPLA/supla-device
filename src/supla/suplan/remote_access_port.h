@@ -10,6 +10,8 @@ class RemoteAccessPort {
   virtual ~RemoteAccessPort() = default;
   virtual bool ensure(const TDS_SuplaEnsureResourceAccess &) { return false; }
   virtual void cancelEnsure() {}
+  virtual bool share(const TDS_SuplaEnsureResourceShare &) { return false; }
+  virtual void cancelShare() {}
 };
 }  // namespace Device
 }  // namespace Supla

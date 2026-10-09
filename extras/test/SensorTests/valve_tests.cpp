@@ -32,6 +32,10 @@ TEST(ValveTests, LoadConfigUsesInternalValveConfigSize) {
   Supla::Channel::resetToDefaults();
   Supla::Control::ValveBase valve;
 
+  EXPECT_CALL(config, getBlobSize(StrEq("0_valve_cfg2")))
+      .WillRepeatedly(::testing::Return(-1));
+  EXPECT_CALL(config, getBlobSize(StrEq("0_valve_cfg")))
+      .WillOnce(::testing::Return(sizeof(Supla::Control::ValveConfig)));
   EXPECT_CALL(config, getBlob(StrEq("0_valve_cfg"), _,
                               sizeof(Supla::Control::ValveConfig)))
       .Times(1)

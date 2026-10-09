@@ -14,6 +14,7 @@
 #include <string.h>
 #include <supla-common/srpc.h>
 #include <supla/suplan/remote_resource_manager.h>
+#include <supla/suplan/resource_binding_manager.h>
 #include <supla/channels/channel.h>
 #include <supla/clock/clock.h>
 #include <supla/device/channel_conflict_resolver.h>
@@ -1483,6 +1484,18 @@ void Supla::messageReceived(void *srpc,
         }
         break;
 
+      case SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_SHARE_RESULT:
+        if (rd.data.sd_ensure_suplan_resource_share_result &&
+            suplaSrpc->acceptShareResult(rrId)) {
+          for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
+               layer = layer->next()) {
+            if (layer->getSdc() == suplaSrpc->getSdc())
+              layer->ensureResourceShareResult(
+                  *rd.data.sd_ensure_suplan_resource_share_result);
+          }
+        }
+        break;
+
       case SUPLA_SD_CALL_SUPLAN_DEVICE_IDENTITIES:
         suplaSrpc->onDeviceIdentities(rd.data.sd_suplan_device_identities);
         break;
@@ -1873,11 +1886,14 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
       registered = 1;
 #ifndef ARDUINO_ARCH_AVR
       ensureRequestId = 0;
+      shareRequestId = 0;
       serverIdentityState.registrationSucceeded();
       for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
            layer = layer->next()) {
         if (layer->getSdc() == sdc && layer->remoteResources()) {
           layer->remoteResources()->serverReconnected();
+          if (layer->resourceBindings())
+            layer->resourceBindings()->serverReconnected();
         }
       }
 #endif  // !ARDUINO_ARCH_AVR
@@ -2002,7 +2018,8 @@ bool Supla::Protocol::SuplaSrpc::rotateServerRoot() {
   if (!serverIdentityState.rotateRoot()) {
     return false;
   }
-  for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
+  for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
+               layer = layer->next()) {
     if (layer->getSdc() == sdc) layer->suplanIdentityChanged();
   }
   disconnect();
@@ -2022,7 +2039,8 @@ void Supla::Protocol::SuplaSrpc::onSetSuplanSourceAssociation(
     if (!isRegisteredAndReady()) {
       result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
     } else {
-      for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
+      for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
+               layer = layer->next()) {
         if (layer->getSdc() == sdc &&
             layer->setSuplanSourceAssociation(*request, &result)) break;
       }
@@ -2045,7 +2063,8 @@ void Supla::Protocol::SuplaSrpc::onSetSuplanDestinationAssociation(
     if (!isRegisteredAndReady()) {
       result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
     } else {
-      for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
+      for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
+               layer = layer->next()) {
         if (layer->getSdc() == sdc &&
             layer->setSuplanDestinationAssociation(*request, &result)) break;
       }
@@ -2074,7 +2093,8 @@ void Supla::Protocol::SuplaSrpc::onDeviceIdentities(
       for (auto element = Supla::Element::begin(); element;
            element = element->next()) element->onServerIdentityTransition();
     }
-    for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
+    for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
+               layer = layer->next()) {
       if (layer->getSdc() == sdc) layer->suplanIdentityChanged();
     }
   } else {
@@ -2119,7 +2139,8 @@ void Supla::Protocol::SuplaSrpc::onDeviceSyncDone() {
     }
   }
   serverIdentityState.syncDone();
-  for (auto layer = ProtocolLayer::first(); layer; layer = layer->next()) {
+  for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
+               layer = layer->next()) {
     if (layer->getSdc() == sdc) layer->suplanIdentityChanged();
   }
 #endif  // !ARDUINO_ARCH_AVR
@@ -3300,6 +3321,7 @@ void Supla::Protocol::SuplaSrpc::initializeSrpc() {
 
 void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
 #ifndef ARDUINO_ARCH_AVR
+  shareRequestId = 0;
   serverIdentityState.disconnected();
 #endif  // !ARDUINO_ARCH_AVR
   versionErrorDisconnectPending = false;
@@ -3315,6 +3337,27 @@ void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
 void Supla::Protocol::SuplaSrpc::setChannelConflictResolver(
     Supla::Device::ChannelConflictResolver *resolver) {
   channelConflictResolver = resolver;
+}
+
+bool Supla::Protocol::SuplaSrpc::ensureResourceShare(
+    const TDS_SuplaEnsureResourceShare &request) {
+#ifndef ARDUINO_ARCH_AVR
+  if (effectiveSrpcVersion(version) < 29 || !serverIdentityState.capable() ||
+      !isRegisteredAndReady() || !serverIdentityState.serverSyncComplete() ||
+      shareRequestId) return false;
+  auto wire = request;
+  const auto id = srpc_ds_async_ensure_suplan_resource_share(srpc, &wire);
+  shareRequestId = id > 0 ? id : 0;
+  return id > 0;
+#else
+  (void)request;
+  return false;
+#endif
+}
+bool Supla::Protocol::SuplaSrpc::acceptShareResult(unsigned int rrId) {
+  if (!shareRequestId || shareRequestId != rrId) return false;
+  shareRequestId = 0;
+  return true;
 }
 
 bool Supla::Protocol::SuplaSrpc::ensureResourceAccess(

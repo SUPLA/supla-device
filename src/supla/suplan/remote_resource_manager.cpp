@@ -4,6 +4,7 @@
 
 #ifndef ARDUINO_ARCH_AVR
 #include <string.h>
+#include <supla/element.h>
 
 namespace Supla {
 namespace Device {
@@ -45,7 +46,10 @@ bool RemoteResourceManager::consume(const ConsumeIntent &intent) {
     }
     if (!entry.consumerId) slot = &entry;
   }
-  if (!slot) return false;
+  if (!slot) {
+    admissionExhausted_ = true;
+    return false;
+  }
   auto *resource = find(intent.resource);
   if (!resource) {
     for (auto &entry : resources_) {
@@ -58,7 +62,10 @@ bool RemoteResourceManager::consume(const ConsumeIntent &intent) {
       }
     }
   }
-  if (!resource) return false;
+  if (!resource) {
+    admissionExhausted_ = true;
+    return false;
+  }
   *slot = intent;
   resource->permissions |= intent.permissions;
   reconcile(resource);
@@ -139,6 +146,12 @@ bool RemoteResourceManager::usable(const Resource &resource,
 }
 
 void RemoteResourceManager::iterate(uint32_t nowMs) {
+  admissionExhausted_ = false;
+  // Stable sequential admission; existing allocations are never preempted.
+  for (int number = 0; number < 255; ++number) {
+    if (auto element = Element::getElementByChannelNumber(number))
+      element->reconcileChannelDependencies();
+  }
   if (ensurePending_ &&
       static_cast<int32_t>(nowMs - ensureNextMs_) >= 0) {
     if (access_) access_->cancelEnsure();
@@ -197,7 +210,8 @@ ChannelState RemoteResourceManager::state(const SupLan::ResourceId &id,
   auto *resource = find(id);
   if (!resource) return ChannelState();
   reconcile(resource);
-  return ChannelState(&resource->snapshot, usable(*resource, nowMs));
+  return ChannelState(&resource->snapshot, usable(*resource, nowMs),
+                      resource->receivedMs);
 }
 RemoteAccess RemoteResourceManager::access(const SupLan::ResourceId &id) {
   auto *resource = find(id);
@@ -258,6 +272,11 @@ int RemoteResourceManager::consumerCount() const {
   int count = 0;
   for (const auto &entry : intents_) count += entry.consumerId != 0;
   return count;
+}
+bool RemoteResourceManager::hasConsumer(uint32_t consumer) const {
+  for (const auto &intent : intents_)
+    if (intent.consumerId == consumer) return true;
+  return false;
 }
 int RemoteResourceManager::resourceCount() const {
   int count = 0;

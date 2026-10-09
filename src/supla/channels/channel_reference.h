@@ -8,6 +8,7 @@
 
 namespace Supla {
 class Channel;
+class ChannelState;
 namespace Device {
 class ServerIdentity;
 }
@@ -47,6 +48,30 @@ struct ChannelResolution {
   Channel *channel = nullptr;
   uint32_t resourceId = 0;
 };
+
+// Fixed private storage encoding, independent of host ABI padding.
+#pragma pack(push, 1)
+struct StoredChannelReference {
+  uint8_t kind = 0;
+  uint32_t id = 0;
+  ChannelReference reference() const {
+    return {id, static_cast<ChannelReferenceKind>(kind)};
+  }
+  void assign(ChannelReference ref) {
+    kind = static_cast<uint8_t>(ref.kind);
+    id = ref.id;
+  }
+};
+#pragma pack(pop)
+static_assert(sizeof(StoredChannelReference) == 5,
+              "Stored references must be exactly five bytes");
+
+const Device::ServerIdentity *acceptedReferenceIdentity();
+ChannelState consumeChannelState(ChannelReference reference, uint32_t consumer);
+void releaseChannelConsumer(uint32_t consumer);
+int localReferenceNumber(ChannelReference reference);
+bool referenceWireId(ChannelReference reference, uint32_t *id);
+bool usesServerReferences();
 
 ChannelResolution resolveChannelReference(
     const ChannelReference &reference,

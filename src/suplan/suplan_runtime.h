@@ -23,9 +23,26 @@ static const uint32_t kSuplaCallDeviceChannelExtendedValueChanged = 105;
 static const uint32_t kSuplaCallChannelSetValue = 110;
 static const uint32_t kSuplaCallActionTrigger = 700;
 
+struct BindingRetry {
+    uint64_t sessionId = 0;
+    uint32_t sequence = 0;
+    uint32_t lastTransmitMs = 0;
+    uint16_t length = 0;
+    uint8_t peerIndex = 0xff;
+    uint8_t attempts = 0;
+    uint8_t frame[39 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER] = {};
+};
+
 class ApplicationPort {
  public:
   virtual ~ApplicationPort() {}
+  virtual bool authorizationReplacing(const PeerContext &, const AclEntry *,
+                                      uint16_t) { return true; }
+  virtual BindingRetry *bindingRetry() { return nullptr; }
+  virtual bool bindingSessionNeeded(uint8_t) { return false; }
+  virtual uint8_t receiveBindings(uint8_t, const uint8_t *, size_t) {
+    return 24;
+  }
   virtual bool fullChannelSnapshots() const { return false; }
   virtual bool allowPresence(uint8_t, uint32_t) { return false; }
   virtual void peerAwake(uint8_t, uint16_t, bool, const uint8_t *) {}
@@ -87,6 +104,16 @@ class Runtime {
           ApplicationPort *application, PeerTable *peers,
           const NodeAddress &localAddress, uint8_t suplaProtoVersion);
 
+  bool sendBindings(uint8_t peerIndex, const uint8_t *body, size_t length);
+  bool authorizationReplacing(const PeerContext &context,
+                              const AclEntry *expected, uint16_t count) {
+    return !application_ ||
+           application_->authorizationReplacing(context, expected, count);
+  }
+  bool bindingsInFlight() const {
+    const auto retry = application_ ? application_->bindingRetry() : nullptr;
+    return retry && retry->length;
+  }
   bool requestRead(uint8_t peerIndex, const ResourceId &resource);
   void removeReadDependency(uint8_t peerIndex, const ResourceId &resource);
   bool sendControl(uint8_t peerIndex, const ResourceId &resource,
@@ -128,6 +155,7 @@ class Runtime {
   RuntimeTestHooks *testHooks();
 
  private:
+  void iterateBindingRetry(uint32_t now);
   struct PeerRecovery {
     uint32_t deadlineMs;
     uint32_t lastLocateMs;
@@ -151,15 +179,19 @@ class Runtime {
   };
 
   struct SessionEntry {
-    bool used;
-    uint8_t peerIndex;
     uint64_t sessionId;
-    uint16_t peerRxMaxReassembledFrame;
     DirectionalKeys transmit;
     DirectionalKeys receive;
-    uint32_t nextTransmitSequence;
     ReplayWindow receiveReplay;
+    uint32_t nextTransmitSequence;
     uint32_t lastActivityMs;
+    // Transport ordering for complete snapshots, independent of other DATA.
+    // Both zero and UINT32_MAX are valid, so use an explicit discriminator.
+    uint32_t lastBindingSequence;
+    uint16_t peerRxMaxReassembledFrame;
+    uint8_t peerIndex;
+    bool used;
+    bool bindingSeen;
     // ReplayWindow accepts duplicates only inside its 64-packet window. The
     // sequence modulo 64 therefore uniquely selects the cached result while
     // the duplicate remains admissible.

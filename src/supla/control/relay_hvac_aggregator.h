@@ -18,6 +18,7 @@ class RelayHvacAggregator : public Element {
     HvacBase *hvac = nullptr;
     HvacPtr *nextPtr = nullptr;
     uint32_t lastSeenTimestamp = 0;
+    bool activeDemand = false;
   };
 
   static RelayHvacAggregator *GetInstance(int relayChannelNumber);

@@ -4,9 +4,11 @@
 #ifndef SRC_SUPLA_CONTROL_VALVE_BASE_H_
 #define SRC_SUPLA_CONTROL_VALVE_BASE_H_
 
+#include <stddef.h>
 #include <supla/channel_element.h>
 #include <supla-common/proto.h>
 #include <supla/action_handler.h>
+#include <supla/channels/channel_reference.h>
 
 namespace Supla {
 namespace Control {
@@ -17,9 +19,27 @@ namespace Control {
 struct ValveConfig {
   ValveConfig();
   uint8_t sensorData[SUPLA_VALVE_SENSOR_MAX];
-  uint8_t closeValveOnFloodType = 0;  // SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_*
-  uint8_t reserved[31] = {};
+  uint8_t closeValveOnFloodType;
+  uint8_t reserved[31];
 };
+using LegacyValveConfig = ValveConfig;
+struct ValveConfiguration {
+  StoredChannelReference sensorData[SUPLA_VALVE_SENSOR_MAX];
+  uint8_t closeValveOnFloodType = 0;
+  uint8_t reserved[31] = {};
+  bool valid() const;
+};
+struct ValveStoredConfigV2 {
+  uint8_t version = 2;
+  uint32_t function = SUPLA_CHANNELFNC_VALVE_OPENCLOSE;
+  ValveConfiguration config;
+};
+static_assert(sizeof(LegacyValveConfig) == 52, "Legacy Valve size");
+static_assert(sizeof(ValveStoredConfigV2) == 137, "Valve V2 size");
+static_assert(offsetof(ValveStoredConfigV2, function) == 1,
+              "V2 function marker offset changed");
+static_assert(offsetof(ValveStoredConfigV2, config) == 5,
+              "V2 config offset changed");
 #pragma pack(pop)
 
 /**
@@ -35,6 +55,11 @@ class ValveBase : public ChannelElement, public ActionHandler {
    * 0-100 range
    */
   explicit ValveBase(bool openClose = true);
+  ~ValveBase() override;
+  bool isChannelConfigDurable() const override { return configDurable; }
+  void onServerIdentityTransition() override { configDurable = false; }
+  void reconcileChannelDependencies() override;
+  ChannelReference sensorReference(uint8_t slot) const;
 
   void onInit() override;
   void iterateAlways() override;
@@ -159,7 +184,20 @@ class ValveBase : public ChannelElement, public ActionHandler {
   void setDefaultCloseValveOnFloodType(uint8_t type);
 
  protected:
-  ValveConfig config = {};
+  void onFunctionChange(uint32_t, uint32_t) override {
+    // Local UI can stage ChannelFunction before the owning V2 is saved.
+    persistenceUncertain = true;
+  }
+  bool shouldProcessChannelFunctionFromConfig() const override {
+    return false;
+  }
+  bool persistConfig(const ValveConfiguration &candidate, uint32_t function);
+  void cleanupLegacy();
+  ValveConfiguration config = {};
+  uint32_t lastCleanupMs = 0;
+  bool cleanupPending = false;
+  bool persistenceUncertain = false;
+  bool configDurable = true;
   uint32_t lastSensorsCheckTimestamp = 0;
   uint32_t lastUpdateTimestamp = 0;
   uint32_t lastCmdTimestamp = 0;

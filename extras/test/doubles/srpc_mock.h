@@ -12,6 +12,8 @@
 
 class SrpcInterface {
  public:
+  virtual _supla_int_t ensureResourceShare(
+      void *, TDS_SuplaEnsureResourceShare *) { return 0; }
   virtual _supla_int_t ensureResourceAccess(
       void *, TDS_SuplaEnsureResourceAccess *) { return 0; }
   SrpcInterface();
@@ -92,6 +94,8 @@ class SrpcInterface {
 
 class SrpcMock : public SrpcInterface {
  public:
+  MOCK_METHOD(_supla_int_t, ensureResourceShare,
+              (void *, TDS_SuplaEnsureResourceShare *), (override));
   MOCK_METHOD(_supla_int_t, ensureResourceAccess,
               (void *, TDS_SuplaEnsureResourceAccess *), (override));
   SrpcMock();

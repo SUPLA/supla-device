@@ -142,16 +142,26 @@ void SolarEdge::iterateAlways() {
               headerFound = true;
             }
           } else {
-            int commaCount = 0;
-            for (unsigned int i = 0; i < strlen(buf); i++) {
-              if (buf[i] == ',') commaCount++;
+            constexpr int columnCount = 35;
+            char *fields[columnCount] = {buf};
+            int fieldCount = 1;
+            for (char *cursor = buf; *cursor != '\0'; cursor++) {
+              if (*cursor == ',') {
+                if (fieldCount == columnCount) {
+                  fieldCount++;
+                  break;
+                }
+                *cursor = '\0';
+                fields[fieldCount++] = cursor + 1;
+              }
             }
-            // proper line of data should contain at least 34 commas
-            if (commaCount >= 34) {
-              strtok(buf, ",");
+            // Validate the entire row before updating any measurements.
+            // Empty optional measurements retain their positions and convert
+            // to zero through atof, e.g. unused phases of a single-phase unit.
+            if (fieldCount == columnCount &&
+                strncmp(fields[1], "MPPT", 4) == 0) {
               for (int i = 1; i < 34; i++) {
-                char *value =
-                    strtok(nullptr, ",");  // NOLINT(runtime/threadsafe_fn)
+                const char *value = fields[i];
                 /*
 0 date,
 1 inverterMode,
@@ -190,13 +200,6 @@ void SolarEdge::iterateAlways() {
 34 L3-cosPhi
 */
                 switch (i) {
-                  case 1: {  // inverterMode
-                    if (strncmp(value, "MPPT", 4) != 0) {
-                      // ignoring data for inverter in mode other than MPPT
-                      i = commaCount;
-                    }
-                    break;
-                  }
                   case 2: {  // temperature
                     temperature = atof(value);
                     break;

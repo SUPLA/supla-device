@@ -47,6 +47,7 @@ class HtmlGenerator {
   virtual void sendJavascript(Supla::WebSender*);
 
   virtual void sendLoginPage(Supla::WebSender*, bool loginError = false);
+  virtual void sendLoginBlockedPage(Supla::WebSender*);
   virtual void sendSetupPage(
       Supla::WebSender*,
       bool changePassword,
@@ -54,6 +55,9 @@ class HtmlGenerator {
   virtual void sendLogsPage(Supla::WebSender *sender, bool includeSessionLinks);
 
   virtual void sendSessionLinks(Supla::WebSender*);
+
+ protected:
+  void sendLoginPageWithError(Supla::WebSender*, const char *error);
 };
 
 };  // namespace Supla

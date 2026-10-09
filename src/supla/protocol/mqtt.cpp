@@ -1136,10 +1136,16 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
     return false;
   }
 
+  size_t topicLen = strnlen(topic, MAX_TOPIC_LEN);
+  if (topicLen >= MAX_TOPIC_LEN ||
+      strnlen(payload, MQTT_MAX_PAYLOAD_LEN) >= MQTT_MAX_PAYLOAD_LEN) {
+    SUPLA_LOG_WARNING("Mqtt: ignoring oversized topic or payload");
+    return false;
+  }
+
   SUPLA_LOG_DEBUG(
       "Mqtt data received, topic: \"%s\", payload: \"%s\"", topic, payload);
 
-  size_t topicLen = strlen(topic);
   char channelsString[] = "/channels/";
   size_t channelsStringLen = strlen(channelsString);
 
@@ -1155,7 +1161,8 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
   }
 
   char topicCopy[MAX_TOPIC_LEN] = {};
-  strncpy(topicCopy, topic, MAX_TOPIC_LEN);
+  memcpy(topicCopy, topic, topicLen);
+  topicCopy[topicLen] = '\0';
 
   char *savePtr;
   char *part =

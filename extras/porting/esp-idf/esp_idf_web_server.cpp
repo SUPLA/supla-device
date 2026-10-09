@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <esp_tls.h>
+#include <esp_netif.h>
 #include <limits.h>
 #include <mbedtls/pk.h>
 #include <mbedtls/x509_crt.h>
@@ -16,6 +17,8 @@
 #include <supla/device/register_device.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/html_generator.h>
+#include <supla/network/network.h>
+#include <supla/network/web_host.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
@@ -56,8 +59,123 @@ static constexpr size_t HTTPS_RSA_KEY_BITS = 2048;
 static constexpr uint16_t HTTP_STANDARD_URI_HANDLER_COUNT = 3;
 static constexpr uint16_t HTTPS_STANDARD_URI_HANDLER_COUNT = 7;
 static constexpr size_t CUSTOM_POST_BODY_MAX_SIZE = 8192;
+// Setup can add authentication and cookie headers before its final redirect.
+static constexpr uint16_t WEB_RESPONSE_HEADER_COUNT = 12;
 
 static Supla::EspIdfWebServer *srvInst = nullptr;
+
+static void setFrameProtectionHeaders(httpd_req_t *req) {
+  httpd_resp_set_hdr(req, "X-Frame-Options", "DENY");
+  httpd_resp_set_hdr(req, "Content-Security-Policy", "frame-ancestors 'none'");
+}
+
+static bool matchesHostAddress(esp_netif_t *netif, void *context) {
+  const auto *host = static_cast<const Supla::WebHost *>(context);
+  if (!esp_netif_is_netif_up(netif)) {
+    return false;
+  }
+  if (host->ipv4) {
+    esp_netif_ip_info_t info = {};
+    return esp_netif_get_ip_info(netif, &info) == ESP_OK &&
+           info.ip.addr != 0 &&
+           memcmp(&info.ip.addr, host->address, sizeof(host->address)) == 0;
+  }
+#if CONFIG_LWIP_IPV6
+  if (host->ipv6) {
+    struct in6_addr address = {};
+    if (inet_pton(AF_INET6, host->name, &address) != 1) {
+      return false;
+    }
+    esp_ip6_addr_t addresses[LWIP_IPV6_NUM_ADDRESSES] = {};
+    const int count =
+        esp_netif_get_all_preferred_ip6(netif, addresses);
+    for (int i = 0; i < count; i++) {
+      if (memcmp(addresses[i].addr, &address, sizeof(address)) == 0) {
+        return true;
+      }
+    }
+  }
+#endif
+  return false;
+}
+
+static bool validateHost(httpd_req_t *req) {
+  char value[262] = {};
+  Supla::WebHost host;
+  const size_t length = httpd_req_get_hdr_value_len(req, "Host");
+  if (length == 0 || length >= sizeof(value) ||
+      httpd_req_get_hdr_value_str(
+          req, "Host", value, sizeof(value)) != ESP_OK ||
+      !host.parse(value)) {
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid Host");
+    return false;
+  }
+  struct in_addr ipv4 = {};
+#if CONFIG_LWIP_IPV6
+  struct in6_addr ipv6 = {};
+#endif
+  if ((host.ipv4 && inet_pton(AF_INET, host.name, &ipv4) != 1) ||
+#if CONFIG_LWIP_IPV6
+      (host.ipv6 && inet_pton(AF_INET6, host.name, &ipv6) != 1)) {
+#else
+      host.ipv6) {
+#endif
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid Host");
+    return false;
+  }
+#if CONFIG_LWIP_IPV6
+  struct sockaddr_storage local = {};
+#else
+  struct sockaddr_in local = {};
+#endif
+  socklen_t localSize = sizeof(local);
+  if (getsockname(httpd_req_to_sockfd(req),
+                 reinterpret_cast<struct sockaddr *>(&local),
+                 &localSize) != 0) {
+    httpd_resp_send_err(
+        req, HTTPD_500_INTERNAL_SERVER_ERROR, "Local address unavailable");
+    return false;
+  }
+  uint16_t port = 0;
+  bool allowed = false;
+#if CONFIG_LWIP_IPV6
+  if (local.ss_family == AF_INET6) {
+    const auto *addr = reinterpret_cast<const struct sockaddr_in6 *>(&local);
+    port = ntohs(addr->sin6_port);
+    allowed = host.ipv6 &&
+              memcmp(&ipv6, &addr->sin6_addr, sizeof(ipv6)) == 0;
+  } else if (local.ss_family == AF_INET) {
+    const auto *addr = reinterpret_cast<const struct sockaddr_in *>(&local);
+#else
+  if (local.sin_family == AF_INET) {
+    const auto *addr = &local;
+#endif
+    port = ntohs(addr->sin_port);
+    allowed = host.ipv4 && ipv4.s_addr != 0 &&
+              ipv4.s_addr == addr->sin_addr.s_addr;
+  }
+  if (port == 0) {
+    httpd_resp_send_err(
+        req, HTTPD_500_INTERNAL_SERVER_ERROR, "Local address unavailable");
+    return false;
+  }
+  for (auto *network = Supla::Network::FirstInstance(); network != nullptr;
+       network = Supla::Network::NextInstance(network)) {
+    if (host.matchesName(network->getHostname())) {
+      allowed = true;
+    }
+  }
+  // The predicate runs on the TCP/IP task, avoiding unsafe netif iteration.
+  if ((host.ipv4 || host.ipv6) &&
+      esp_netif_find_if(matchesHostAddress, &host) != nullptr) {
+    allowed = true;
+  }
+  if (!allowed || (host.hasPort && host.port != port)) {
+    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Host not allowed");
+    return false;
+  }
+  return true;
+}
 
 #ifndef SUPLA_CSRF_LOGIN_SETUP_PROTECTION
 // Temporary workaround for missing CSRF protection handling in mobile
@@ -398,6 +516,9 @@ static bool generateHttpsCertificates(char *serverCert,
 // request: GET /favicon.ico
 // no auth required, just send the icon
 esp_err_t getFavicon(httpd_req_t *req) {
+  if (!validateHost(req)) {
+    return ESP_OK;
+  }
   SUPLA_LOG_DEBUG("SERVER: get favicon.ico");
   if (srvInst) {
     srvInst->notifyClientConnected();
@@ -411,13 +532,12 @@ esp_err_t getFavicon(httpd_req_t *req) {
 // request: GET/POST /
 // - if not authorized, redirect to /login or /setup
 esp_err_t rootHandler(httpd_req_t *req) {
-  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
-  srvInst->reloadSaltPassword();
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
+  if (!validateHost(req)) {
     return ESP_OK;
   }
+  setFrameProtectionHeaders(req);
+  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
+  srvInst->reloadSaltPassword();
   char sessionCookie[256] = {};
   if (req->method == HTTP_GET) {
     SUPLA_LOG_DEBUG("SERVER: get request");
@@ -472,13 +592,12 @@ esp_err_t rootHandler(httpd_req_t *req) {
 
 // request: GET/POST /login
 esp_err_t loginHandler(httpd_req_t *req) {
-  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
-  srvInst->reloadSaltPassword();
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
+  if (!validateHost(req)) {
     return ESP_OK;
   }
+  setFrameProtectionHeaders(req);
+  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
+  srvInst->reloadSaltPassword();
 
   srvInst->notifyClientConnected();
   if (!srvInst->isPasswordConfigured()) {
@@ -512,12 +631,20 @@ esp_err_t loginHandler(httpd_req_t *req) {
       if (!loginResult &&
           !srvInst->ensureAuthorized(
               req, sessionCookie, sizeof(sessionCookie), true)) {
-        srvInst->addSecurityLog(req, "Failed login attempt");
+        const bool loginBlocked = srvInst->isAuthorizationBlocked();
+        const char *loginLog = loginBlocked
+                                  ? "Login blocked: too many failed attempts"
+                                  : "Failed login attempt";
+        srvInst->addSecurityLog(req, loginLog);
         SUPLA_LOG_DEBUG("SERVER: login failed, send login page");
         Supla::EspIdfSender sender(req,
                                    srvInst->getSendBufPtr(),
                                    Supla::SUPLA_HTML_OUTPUT_BUFFER_SIZE);
-        srvInst->htmlGenerator->sendLoginPage(&sender, true);
+        if (loginBlocked) {
+          srvInst->htmlGenerator->sendLoginBlockedPage(&sender);
+        } else {
+          srvInst->htmlGenerator->sendLoginPage(&sender, true);
+        }
       } else {
         // redirect based on cookie value
         srvInst->addSecurityLog(req, "Successful login");
@@ -533,20 +660,25 @@ esp_err_t loginHandler(httpd_req_t *req) {
 
 // request: POST /logout
 esp_err_t logoutHandler(httpd_req_t *req) {
+  if (!validateHost(req)) {
+    return ESP_OK;
+  }
+  setFrameProtectionHeaders(req);
   SUPLA_LOG_DEBUG("SERVER: post logout request");
   srvInst->reloadSaltPassword();
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
-    return ESP_OK;
-  }
 
   char csrfToken[65] = {};
   if (!readCsrfTokenFromBody(req, csrfToken, sizeof(csrfToken)) ||
       !srvInst->isCsrfTokenValid(csrfToken)) {
     SUPLA_LOG_WARNING("Invalid CSRF token on logout request");
     httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Invalid CSRF token");
+    return ESP_OK;
+  }
+
+  char sessionCookie[256] = {};
+  if (!srvInst->ensureAuthorized(req, sessionCookie, sizeof(sessionCookie))) {
+    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Valid session required");
     return ESP_OK;
   }
 
@@ -559,13 +691,12 @@ esp_err_t logoutHandler(httpd_req_t *req) {
 
 // request: GET/POST /setup
 esp_err_t setupHandler(httpd_req_t *req) {
-  srvInst->reloadSaltPassword();
-  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
+  if (!validateHost(req)) {
     return ESP_OK;
   }
+  setFrameProtectionHeaders(req);
+  srvInst->reloadSaltPassword();
+  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
 
   char sessionCookie[256] = {};
   if (req->method == HTTP_GET) {
@@ -610,13 +741,12 @@ esp_err_t setupHandler(httpd_req_t *req) {
 // request: GET /logs
 // - if not authorized, redirect to /login or /setup
 esp_err_t logsHandler(httpd_req_t *req) {
-  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
-  srvInst->reloadSaltPassword();
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
+  if (!validateHost(req)) {
     return ESP_OK;
   }
+  setFrameProtectionHeaders(req);
+  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
+  srvInst->reloadSaltPassword();
   char sessionCookie[256] = {};
   if (req->method == HTTP_GET) {
     SUPLA_LOG_DEBUG("SERVER: get request");
@@ -641,13 +771,12 @@ esp_err_t logsHandler(httpd_req_t *req) {
 
 // request: GET/POST /beta
 esp_err_t betaHandler(httpd_req_t *req) {
-  srvInst->reloadSaltPassword();
-  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
-  if (srvInst->isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
+  if (!validateHost(req)) {
     return ESP_OK;
   }
+  setFrameProtectionHeaders(req);
+  srvInst->reloadSaltPassword();
+  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
 
   char sessionCookie[256] = {};
   if (req->method == HTTP_GET) {
@@ -770,16 +899,70 @@ bool uriMatchAll(const char *reference_uri,
 }
 
 esp_err_t redirectHandler(httpd_req_t *req) {
-  char host[64] = {0};
-  if (httpd_req_get_hdr_value_str(req, "Host", host, sizeof(host)) != ESP_OK) {
-    strncpy(host, "192.168.4.1", sizeof(host));
+  if (req->uri[0] != '/' || req->uri[1] == '/') {
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid redirect path");
+    return ESP_OK;
+  }
+  for (const char *p = req->uri; *p; p++) {
+    if (*p == '\\' || static_cast<unsigned char>(*p) < 0x20 || *p == 0x7f) {
+      httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid redirect path");
+      return ESP_OK;
+    }
+  }
+
+#if defined(CONFIG_LWIP_IPV6) && CONFIG_LWIP_IPV6
+  struct sockaddr_storage addr = {};
+#else
+  struct sockaddr_in addr = {};
+#endif
+  socklen_t addrLen = sizeof(addr);
+  int sockfd = httpd_req_to_sockfd(req);
+  if (getsockname(sockfd, reinterpret_cast<struct sockaddr *>(&addr),
+                  &addrLen) != 0) {
+    httpd_resp_send_err(
+        req, HTTPD_500_INTERNAL_SERVER_ERROR, "Local address unavailable");
+    return ESP_OK;
+  }
+
+  char host[48] = {};
+  bool ipv6 = false;
+  const char *converted = nullptr;
+#if defined(CONFIG_LWIP_IPV6) && CONFIG_LWIP_IPV6
+  if (addr.ss_family == AF_INET6) {
+    auto *addr6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
+    if (IN6_IS_ADDR_V4MAPPED(&addr6->sin6_addr)) {
+      struct in_addr addr4 = {};
+      memcpy(&addr4, &addr6->sin6_addr.s6_addr[12], sizeof(addr4));
+      converted = inet_ntop(AF_INET, &addr4, host, sizeof(host));
+    } else {
+      converted = inet_ntop(AF_INET6, &addr6->sin6_addr, host, sizeof(host));
+      ipv6 = true;
+    }
+  } else if (addr.ss_family == AF_INET) {
+#else
+  if (addr.sin_family == AF_INET) {
+#endif
+    auto *addr4 = reinterpret_cast<struct sockaddr_in *>(&addr);
+    converted = inet_ntop(AF_INET, &addr4->sin_addr, host, sizeof(host));
+  }
+  if (converted == nullptr) {
+    httpd_resp_send_err(
+        req, HTTPD_500_INTERNAL_SERVER_ERROR, "Local address unavailable");
+    return ESP_OK;
   }
 
   char httpsUrl[600];
-  snprintf(httpsUrl, sizeof(httpsUrl), "https://%s%s", host, req->uri);
+  int length = snprintf(httpsUrl, sizeof(httpsUrl),
+                         ipv6 ? "https://[%s]%s" : "https://%s%s",
+                         host, req->uri);
+  if (length < 0 || static_cast<size_t>(length) >= sizeof(httpsUrl)) {
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Redirect URL too long");
+    return ESP_OK;
+  }
   SUPLA_LOG_DEBUG("SERVER: redirect to %s (uri: %s)", httpsUrl, req->uri);
 
   httpd_resp_set_status(req, "301 Moved Permanently");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
   httpd_resp_set_hdr(req, "Location", httpsUrl);
   httpd_resp_send(req, NULL, 0);
@@ -1036,6 +1219,12 @@ bool Supla::EspIdfWebServer::readCustomPostBody(httpd_req_t *req,
 
 esp_err_t Supla::EspIdfWebServer::handleCustomPage(
     httpd_req_t *req, const CustomPage *page) {
+  if (req != nullptr && !validateHost(req)) {
+    return ESP_OK;
+  }
+  if (req != nullptr) {
+    setFrameProtectionHeaders(req);
+  }
   if (req == nullptr || page == nullptr) {
     if (req != nullptr) {
       httpd_resp_send_err(
@@ -1062,11 +1251,6 @@ esp_err_t Supla::EspIdfWebServer::handleCustomPage(
   httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
   const bool httpOnly = resolveWebServerMode() == WebServerMode::HttpOnly;
   reloadSaltPassword();
-  if (!httpOnly && isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
-    return ESP_OK;
-  }
 
   const bool passwordConfigured = isPasswordConfigured();
   if (!httpOnly && !passwordConfigured &&
@@ -1178,11 +1362,13 @@ bool Supla::EspIdfWebServer::isAuthorizationBlocked() {
       return true;
     }
   }
-  lastLoginAttemptTimestamp = millis();
   return false;
 }
 
 bool Supla::EspIdfWebServer::isSessionCookieValid(const char *sessionCookie) {
+  if (sessionCookie == nullptr) {
+    return false;
+  }
   // extract timestamp:
   char timestampStr[20] = {};
   const char *separator = strchr(sessionCookie, '|');
@@ -1201,15 +1387,25 @@ bool Supla::EspIdfWebServer::isSessionCookieValid(const char *sessionCookie) {
 
   // check hmac:
   char sessionHmacHex[65] = {};
+  const char *receivedHmac = separator + 1;
+  const size_t hmacLength = sizeof(sessionHmacHex) - 1;
+  if (strnlen(receivedHmac, sizeof(sessionHmacHex)) != hmacLength) {
+    SUPLA_LOG_WARNING("SERVER: invalid session cookie: hmac length");
+    return false;
+  }
   char key[65] = {};
   generateHexString(sessionSecret, key, sizeof(sessionSecret));
-  Supla::Crypto::hmacSha256Hex(key,
+  if (!Supla::Crypto::hmacSha256Hex(key,
                                strlen(key),
                                timestampStr,
                                strlen(timestampStr),
                                sessionHmacHex,
-                               sizeof(sessionHmacHex));
-  if (strcmp(sessionHmacHex, separator + 1) == 0) {
+                               sizeof(sessionHmacHex))) {
+    SUPLA_LOG_WARNING("SERVER: session hmac calculation failed");
+    return false;
+  }
+  if (Supla::Crypto::constantTimeEqual(
+          sessionHmacHex, receivedHmac, hmacLength)) {
     return true;
   }
 
@@ -1231,11 +1427,6 @@ bool Supla::EspIdfWebServer::ensureAuthorized(httpd_req_t *req,
     return true;
   }
 
-  if (isAuthorizationBlocked()) {
-    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
-    return false;
-  }
-
   size_t len = sessionCookieLen;
   if (httpd_req_get_cookie_val(req, "session", sessionCookie, &len) == ESP_OK) {
     if (isSessionCookieValid(sessionCookie)) {
@@ -1245,22 +1436,15 @@ bool Supla::EspIdfWebServer::ensureAuthorized(httpd_req_t *req,
       setSessionCookie(req, sessionCookie, sessionCookieLen);
       SUPLA_LOG_DEBUG("SERVER: session cookie renewed");
 
-      failedLoginAttempts = 0;
       return true;
-    } else {
-      if (!loginFailed) {
-        failedLoginAttempt(req);
-        httpd_resp_set_hdr(req, "Auth-Status", "failed");
-      }
-      return false;
     }
-  } else {
-    if (!loginFailed) {
-      httpd_resp_set_hdr(req, "Auth-Status", "login-required");
-    }
-    return false;
   }
 
+  // Missing, expired and invalid cookies all require a new login. Only
+  // password verification failures contribute to the login throttle.
+  if (!loginFailed) {
+    httpd_resp_set_hdr(req, "Auth-Status", "login-required");
+  }
   return false;
 }
 
@@ -1627,6 +1811,7 @@ void Supla::EspIdfWebServer::start() {
   WebServerMode activeMode = resolveWebServerMode();
 
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+  config.max_resp_headers = WEB_RESPONSE_HEADER_COUNT;
   config.lru_purge_enable = true;
   config.max_open_sockets = 2;
   config.stack_size = 6144;
@@ -1670,6 +1855,7 @@ void Supla::EspIdfWebServer::start() {
         SUPLA_LOG_ERROR("Failed to select HTTPS certificates for startup");
       } else {
         httpd_ssl_config_t configHttps = HTTPD_SSL_CONFIG_DEFAULT();
+        configHttps.httpd.max_resp_headers = WEB_RESPONSE_HEADER_COUNT;
         configHttps.httpd.lru_purge_enable = true;
         configHttps.httpd.max_open_sockets = 5;
         configHttps.httpd.max_uri_handlers = static_cast<uint16_t>(
@@ -1882,6 +2068,10 @@ bool Supla::EspIdfWebServer::login(httpd_req_t *req,
   reloadSaltPassword();
   bool passwordIsCorrect = false;
   if (isPasswordConfigured()) {
+    if (isAuthorizationBlocked()) {
+      httpd_resp_set_hdr(req, "Auth-Status", "too-many");
+      return false;
+    }
     if (password == nullptr) {
       // check if password is send in form
       char buf[256] = {};
@@ -1924,6 +2114,7 @@ bool Supla::EspIdfWebServer::login(httpd_req_t *req,
     }
 
     if (passwordIsCorrect) {
+      failedLoginAttempts = 0;
       // save session cookie
       SUPLA_LOG_DEBUG("SERVER: setting session cookie");
       httpd_resp_set_hdr(req, "Auth-Status", "ok");
@@ -1964,6 +2155,7 @@ void Supla::EspIdfWebServer::setSessionCookie(httpd_req_t *req,
 }
 
 void Supla::EspIdfWebServer::handleLogout(httpd_req_t *req) {
+  rotateSessionSecret();
   // delete session cookie
   httpd_resp_set_hdr(
       req,
@@ -2020,11 +2212,17 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(
   urlDecodeInplace(oldPassword, sizeof(oldPassword));
 
   if (isPasswordConfigured()) {
+    if (isAuthorizationBlocked()) {
+      httpd_resp_set_hdr(req, "Auth-Status", "too-many");
+      return SetupRequestResult::INVALID_REQUEST;
+    }
     if (!isPasswordCorrect(oldPassword)) {
+      failedLoginAttempt(req);
       SUPLA_LOG_INFO("Invalid old password");
       addSecurityLog(req, "Password change failed: invalid old password");
       return SetupRequestResult::INVALID_OLD_PASSWORD;
     }
+    failedLoginAttempts = 0;
   }
 
   if (strcmp(password, confirmPassword) != 0) {
@@ -2046,6 +2244,9 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(
     cfg->setCfgModeSaltPassword(saltPassword);
     cfg->saveWithDelay(2000);
   }
+  // Local setup already replaced saltPassword, so reload cannot detect this
+  // change. Invalidate existing sessions before issuing the new login cookie.
+  rotateSessionSecret();
   addSecurityLog(req, "Password successfully changed");
   return login(req, password, sessionCookie, sessionCookieLen)
              ? SetupRequestResult::OK
@@ -2053,13 +2254,20 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(
 }
 
 void Supla::EspIdfWebServer::reloadSaltPassword() {
+  const Supla::SaltPassword previous = saltPassword;
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     cfg->getCfgModeSaltPassword(&saltPassword);
   }
-  if (sessionSecret[0] == '\0') {
-    Supla::fillRandom(sessionSecret, sizeof(sessionSecret));
+  if (!(previous == saltPassword) || !sessionSecretInitialized) {
+    // A remote password change becomes visible before authorizing a request.
+    rotateSessionSecret();
   }
+}
+
+void Supla::EspIdfWebServer::rotateSessionSecret() {
+  Supla::fillRandom(sessionSecret, sizeof(sessionSecret));
+  sessionSecretInitialized = true;
 }
 
 uint32_t Supla::EspIdfWebServer::getIpFromReq(httpd_req_t *req) {
@@ -2096,6 +2304,7 @@ void Supla::EspIdfWebServer::addSecurityLog(httpd_req_t *req,
 }
 
 void Supla::EspIdfWebServer::failedLoginAttempt(httpd_req_t *req) {
+  lastLoginAttemptTimestamp = millis();
   failedLoginAttempts++;
   if (isAuthorizationBlocked()) {
     addSecurityLog(req, "Too many failed login attempts");

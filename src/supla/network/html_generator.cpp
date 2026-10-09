@@ -316,6 +316,18 @@ void Supla::HtmlGenerator::sendBetaPage(Supla::WebSender *sender,
 
 void Supla::HtmlGenerator::sendLoginPage(Supla::WebSender *sender,
                                          bool loginError) {
+  sendLoginPageWithError(
+      sender, loginError ? "Entered password is incorrect. Please try again."
+                         : nullptr);
+}
+
+void Supla::HtmlGenerator::sendLoginBlockedPage(Supla::WebSender *sender) {
+  sendLoginPageWithError(
+      sender, "Too many failed login attempts. Please try again later.");
+}
+
+void Supla::HtmlGenerator::sendLoginPageWithError(Supla::WebSender *sender,
+                                                  const char *error) {
   sendHeaderBegin(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
@@ -327,12 +339,13 @@ void Supla::HtmlGenerator::sendLoginPage(Supla::WebSender *sender,
   sender->send("<h1>");
   sender->send(Supla::RegisterDevice::getName());
   sender->send("</h1>");
-  if (loginError) {
+  if (error != nullptr) {
     sender->send(
         "<div class=\"box\">"
         "<h3>Login failed</h3>"
-        "<p>Entered password is incorrect. Please try again.</p>"
-        "</div>");
+        "<p>");
+    sender->send(error);
+    sender->send("</p></div>");
   }
   sender->send("<form method=\"post\">");
   sender->send("<div class=\"box\">");

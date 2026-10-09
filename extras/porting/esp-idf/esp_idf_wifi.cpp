@@ -279,7 +279,7 @@ void Supla::EspIdfWifi::setup() {
     SUPLA_LOG_INFO(
         "[%s] establishing connection with SSID: \"%s\"", getIntfName(), ssid);
     wifi_config_t wifi_config = {};
-    memcpy(wifi_config.sta.ssid, ssid, MAX_SSID_SIZE);
+    memcpy(wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
     memcpy(wifi_config.sta.password, password, MAX_WIFI_PASSWORD_SIZE);
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
     if (testMode) {

@@ -6,6 +6,7 @@
 #include <SuplaDevice.h>
 #include <stdio.h>
 #include <string.h>
+#include <supla/crypto.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/html_element.h>
 #include <supla/storage/storage.h>
@@ -203,11 +204,12 @@ const char *Supla::WebServer::getCsrfToken() {
 #endif  // ARDUINO_ARCH_AVR
 
 bool Supla::WebServer::isCsrfTokenValid(const char *token) {
-  if (token == nullptr || token[0] == '\0') {
+  const size_t tokenLength = sizeof(csrfToken) - 1;
+  if (token == nullptr || strnlen(token, sizeof(csrfToken)) != tokenLength) {
     return false;
   }
 
-  return strcmp(getCsrfToken(), token) == 0;
+  return Supla::Crypto::constantTimeEqual(getCsrfToken(), token, tokenLength);
 }
 
 void Supla::WebServer::addSecurityLog(Supla::SecurityLogSource source,

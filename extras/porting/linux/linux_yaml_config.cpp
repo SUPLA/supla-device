@@ -362,9 +362,13 @@ bool Supla::LinuxYamlConfig::commit() {
   if (dataSize == SIZE_MAX) {
     return false;
   }
-  return Supla::Linux::writeSecureFile(
+  const bool saved = Supla::Linux::writeSecureFile(
       getStateFilesPath() + Supla::ReadWriteConfigStorage,
       buf.data(), dataSize, false, true);
+  if (!saved) {
+    SUPLA_LOG_ERROR("Config: failed to write read/write config storage file");
+  }
+  return saved;
 }
 
 bool Supla::LinuxYamlConfig::setDeviceName(const char* name) {

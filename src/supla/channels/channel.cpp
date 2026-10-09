@@ -27,6 +27,24 @@ using Supla::Channel;
 Channel *Channel::firstPtr = nullptr;
 int Channel::startingChannelNumber = 0;
 
+namespace {
+
+void logRelayChannelValue(int channelNumber, const char *reason,
+                          const TRelayChannel_Value *relay) {
+  SUPLA_LOG_INFO(
+      "Channel[%d] relay %s: value=%u mode=%u flags=0x%04X "
+      "forced_on=%d forced_off=%d weekly=%d overcurrent_cutoff=%d",
+      channelNumber, reason, static_cast<unsigned char>(relay->hi),
+      relay->RelayMode, relay->flags,
+      relay->RelayMode == SUPLA_RELAY_MODE_FORCED_ON,
+      relay->RelayMode == SUPLA_RELAY_MODE_FORCED_OFF,
+      (relay->flags & SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED) != 0,
+      (relay->flags & SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF) != 0);
+}
+
+}  // namespace
+
+
 #ifdef SUPLA_TEST
 // Method used in tests to restore default values for static members
 void Supla::Channel::resetToDefaults() {
@@ -341,6 +359,10 @@ void Channel::setNewValue(
 bool Channel::setNewValue(const char *newValue) {
   if (memcmp(value, newValue, SUPLA_CHANNELVALUE_SIZE) != 0) {
     memcpy(value, newValue, SUPLA_CHANNELVALUE_SIZE);
+    if (channelType == ChannelType::RELAY) {
+      logRelayChannelValue(channelNumber, "value changed",
+          reinterpret_cast<const TRelayChannel_Value *>(value));
+    }
     setSendValue();
     return true;
   }
@@ -472,6 +494,10 @@ bool Channel::isStateInfoUpdateReady() const {
 
 void Channel::sendUpdate() {
   if (isValueUpdateReady()) {
+    if (channelType == ChannelType::RELAY) {
+      logRelayChannelValue(channelNumber, "sending update",
+          reinterpret_cast<const TRelayChannel_Value *>(value));
+    }
     clearSendValue();
     for (auto proto = Supla::Protocol::ProtocolLayer::first();
         proto != nullptr; proto = proto->next()) {
@@ -2080,6 +2106,7 @@ void Channel::setRelayOvercurrentCutOff(bool overcurrent) {
         overcurrent) {
       relay->flags = (relay->flags & ~SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF) |
                      (overcurrent ? SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF : 0);
+      logRelayChannelValue(channelNumber, "overcurrent flag changed", relay);
       setSendValue();
     }
   }
@@ -2102,6 +2129,7 @@ void Channel::setRelayMode(uint8_t mode) {
     return;
   }
   relay->RelayMode = mode;
+  logRelayChannelValue(channelNumber, "mode changed", relay);
   setSendValue();
 }
 
@@ -2124,6 +2152,7 @@ void Channel::setRelayWeeklyScheduleEnabled(bool enabled) {
   }
   relay->flags = (relay->flags & ~SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED) |
                  (enabled ? SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED : 0);
+  logRelayChannelValue(channelNumber, "weekly flag changed", relay);
   setSendValue();
 }
 

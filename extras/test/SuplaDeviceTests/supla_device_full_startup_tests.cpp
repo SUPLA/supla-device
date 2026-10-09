@@ -74,6 +74,9 @@ class SuplaDeviceTestsFullStartupNoClient : public SuplaDeviceFullStartupTests {
 
   virtual void TearDown() {
     SuplaDeviceFullStartupTests::TearDown();
+    if (client && sd.getSrpcLayer() && sd.getSrpcLayer()->client == client) {
+      client->expectStopOnDestruction();
+    }
     client = nullptr;
   }
 };
@@ -107,6 +110,9 @@ class SuplaDeviceTestsFullStartupManual : public SuplaDeviceFullStartupTests {
 
   virtual void TearDown() {
     SuplaDeviceFullStartupTests::TearDown();
+    if (client && sd.getSrpcLayer() && sd.getSrpcLayer()->client == client) {
+      client->expectStopOnDestruction();
+    }
   }
 };
 

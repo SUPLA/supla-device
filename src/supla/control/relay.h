@@ -289,7 +289,7 @@ class Relay : public ChannelElement, public ActionHandler {
   void emitCountdownTimerActionIfNeeded();
   void updateRelayHvacAggregator();
   bool isManualActionAllowed(bool turnOn) const;
-  bool isManualForcedModeSupported() const;
+  bool isManualForcedModeSupported(uint8_t mode) const;
   bool setManualForcedMode(uint8_t mode);
   void disableWeeklySchedule();
   void applyWeeklyScheduleProgram(uint8_t programMode, bool programChanged);

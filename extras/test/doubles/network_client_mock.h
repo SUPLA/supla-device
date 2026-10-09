@@ -25,6 +25,11 @@ class NetworkClientMock : public Supla::Client {
   const char *getRootCACert() {
     return rootCACert;
   }
+
+  void expectStopOnDestruction() {
+    EXPECT_TRUE(::testing::Mock::VerifyAndClearExpectations(this));
+    EXPECT_CALL(*this, stop()).Times(1);
+  }
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_NETWORK_CLIENT_MOCK_H_

@@ -93,23 +93,29 @@ Supla::ConnectionError mapMqttTransportError(
 }  // namespace
 
 void mqttEventDataProcess(esp_mqtt_event_handle_t event) {
-  if (event == nullptr) {
+  if (event == nullptr || espMqtt == nullptr) {
+    return;
+  }
+
+  if (event->topic == nullptr || event->topic_len <= 0 ||
+      event->topic_len >= MAX_TOPIC_LEN || event->data_len < 0 ||
+      event->data_len >= MQTT_MAX_PAYLOAD_LEN ||
+      (event->data_len > 0 && event->data == nullptr) ||
+      event->current_data_offset != 0 ||
+      event->total_data_len != event->data_len) {
+    SUPLA_LOG_WARNING(
+        "MQTT: ignoring invalid, oversized or fragmented message");
     return;
   }
 
   char topic[MAX_TOPIC_LEN] = {};
   char payload[MQTT_MAX_PAYLOAD_LEN] = {};
-  int topicLen = MAX_TOPIC_LEN;
-  if (event->topic_len < topicLen) {
-    topicLen = event->topic_len;
+  memcpy(topic, event->topic, event->topic_len);
+  topic[event->topic_len] = '\0';
+  if (event->data_len > 0) {
+    memcpy(payload, event->data, event->data_len);
   }
-  int payloadLen = MQTT_MAX_PAYLOAD_LEN - 1;
-  if (event->data_len < payloadLen) {
-    payloadLen = event->data_len;
-  }
-
-  strncpy(topic, event->topic, topicLen);
-  strncpy(payload, event->data, payloadLen);
+  payload[event->data_len] = '\0';
 
   espMqtt->processData(topic, payload);
 }

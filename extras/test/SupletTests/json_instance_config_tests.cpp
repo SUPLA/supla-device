@@ -14,7 +14,18 @@
 #include <supla/suplet/thermometer_group.h>
 #include <supla/suplet/virtual_channel.h>
 
+#include <string>
+
 namespace {
+
+std::string nestedJson(int depth, const std::string &pattern) {
+  std::string value = "null";
+  for (int i = 0; i < depth; i++) {
+    value = pattern[i % pattern.size()] == '[' ?
+        "[" + value + "]" : "{\"x\":" + value + "}";
+  }
+  return value;
+}
 
 class NoopConfig : public Supla::Config {
  public:
@@ -107,6 +118,41 @@ const char thermometerGroupDefinitionJson[] =
 "}";
 
 }  // namespace
+
+TEST(SupletJsonInstanceConfigTests, BoundsUnknownValueNesting) {
+  Supla::Suplet::JsonDefinition definition;
+  ASSERT_TRUE(Supla::Suplet::JsonDefinitionParser::parse(
+      thermometerGroupDefinitionJson, &definition));
+  for (const char *pattern : {"[", "{", "[{"}) {
+    for (int depth : {0, 1, 16, 17, 1000}) {
+      for (bool insideConfig : {false, true}) {
+        SCOPED_TRACE(std::string(pattern) + ":" + std::to_string(depth));
+        const std::string unknown = "\"future\":" + nestedJson(depth, pattern);
+        const std::string config = "\"mode\":\"avg\",\"sourceChannels\":[1]";
+        const std::string json = "{\"instanceId\":1,\"config\":{" + config +
+            (insideConfig ? "," + unknown + "}}" : "}," + unknown + "}");
+        Supla::Suplet::InstanceRecord record = {};
+        EXPECT_EQ(Supla::Suplet::JsonInstanceConfigParser::parse(
+                      json.c_str(), *definition.getDefinition(), &record),
+                  depth <= 16);
+      }
+    }
+  }
+}
+
+TEST(SupletJsonInstanceConfigTests, RejectsMalformedUnknownValues) {
+  Supla::Suplet::JsonDefinition definition;
+  ASSERT_TRUE(Supla::Suplet::JsonDefinitionParser::parse(
+      thermometerGroupDefinitionJson, &definition));
+  for (const char *value : {"", "[", "{", "[null,]", "{\"x\":}", "[{]}"}) {
+    const std::string json =
+        std::string("{\"instanceId\":1,\"config\":{\"sourceChannels\":[1]},") +
+        "\"future\":" + value + "}";
+    Supla::Suplet::InstanceRecord record = {};
+    EXPECT_FALSE(Supla::Suplet::JsonInstanceConfigParser::parse(
+        json.c_str(), *definition.getDefinition(), &record)) << value;
+  }
+}
 
 TEST(SupletJsonInstanceConfigTests, ParsesThermometerGroupInstanceConfig) {
   Supla::Suplet::JsonDefinition jsonDefinition;

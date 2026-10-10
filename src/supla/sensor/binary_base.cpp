@@ -28,6 +28,7 @@ BinaryBase::~BinaryBase() {
 void BinaryBase::beginInitialChannelValueRead() {
   localActionState = LocalActionState::Initializing;
   initialStateCandidatePending = false;
+  inputStateCandidatePending = false;
 }
 
 void BinaryBase::setChannelValueQuietly(bool value) {
@@ -47,6 +48,7 @@ void BinaryBase::setInitialChannelValue(bool value) {
 }
 
 void BinaryBase::notifyInputStateChangeCandidate() {
+  inputStateCandidatePending = true;
   if (localActionState == LocalActionState::Initializing) {
     initialStateCandidatePending = true;
   } else if (localActionState == LocalActionState::StartupSync) {
@@ -236,6 +238,7 @@ void BinaryBase::iterateAlways() {
 
     const uint32_t now = millis();
     if (localActionState == LocalActionState::StartupSync &&
+        !inputStateCandidatePending &&
         now - startupSyncStartTimeMs >= config.filteringTimeMs) {
       runAction(channel.getValueBool() ? Supla::ON_TURN_ON
                                        : Supla::ON_TURN_OFF);

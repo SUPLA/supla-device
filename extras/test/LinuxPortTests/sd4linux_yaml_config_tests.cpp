@@ -35,22 +35,6 @@ void initExtensions() {
 }
 }  // namespace Supla::Linux
 
-Supla::Source::Mqtt::Mqtt(const Supla::LinuxYamlConfig&,
-                          const std::vector<std::string>& topics)
-    : topics(topics) {
-}
-
-Supla::Source::Mqtt::~Mqtt() {
-}
-
-std::string Supla::Source::Mqtt::getContent() {
-  return latestMessage;
-}
-
-bool Supla::Source::Mqtt::isConnected() {
-  return false;
-}
-
 Supla::Output::Mqtt::Mqtt(const Supla::LinuxYamlConfig&,
                           const char* topic,
                           int qos)

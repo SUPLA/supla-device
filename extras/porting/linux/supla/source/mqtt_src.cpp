@@ -38,8 +38,8 @@ bool Supla::Source::Mqtt::isConnected() {
 std::string Supla::Source::Mqtt::getContent() {
   std::string combinedMessages;
   for (const auto& topic : topics) {
-    if (client->topics.find(topic) != client->topics.end()) {
-      std::string currentMessage = client->topics[topic];
+    std::string currentMessage;
+    if (client->getMessage(topic, currentMessage)) {
       if (combinedMessages.empty()) {
         combinedMessages = currentMessage;
       } else {

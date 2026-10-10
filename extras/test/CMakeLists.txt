@@ -55,6 +55,13 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(json googletest cjson)
 
+FetchContent_Declare(mqttc
+  GIT_REPOSITORY https://github.com/LiamBindle/MQTT-C.git
+  GIT_TAG v1.1.6
+  GIT_SHALLOW TRUE)
+set(MQTT_C_EXAMPLES OFF CACHE BOOL "Build MQTT-C examples?" FORCE)
+FetchContent_MakeAvailable(mqttc)
+
 option(SUPLA_TEST_ENABLE_CURL_HTTP
   "Enable sd4linux HTTP source tests when CURL is available" ON)
 option(SUPLA_TEST_REQUIRE_CURL
@@ -141,6 +148,8 @@ list(REMOVE_ITEM DOUBLE_SRC ${ESP_IDF_SPI_DOUBLE_SRC})
 set(SD4LINUX_PORT_SRC
   ../porting/linux/linux_process.cpp
   ../porting/linux/linux_yaml_config.cpp
+  ../porting/linux/linux_mqtt_client.cpp
+  ../porting/linux/supla/source/mqtt_src.cpp
   ../porting/linux/linux_secure_file.cpp
   ../porting/linux/linux_file_state_logger.cpp
   ../porting/linux/linux_file_storage.cpp
@@ -267,6 +276,7 @@ target_link_libraries(sd4linuxtests
     supladevicelib
     nlohmann_json::nlohmann_json
     yaml-cpp
+    mqttc
     gtest
     gmock
     gtest_main

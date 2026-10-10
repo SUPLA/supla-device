@@ -11,10 +11,12 @@
 #include <string>
 #include <cstdio>
 
+// Destroy the client (and stop its thread) before the topic cache and mutex.
+std::mutex Supla::LinuxMqttClient::topicsMutex;
+std::unordered_map<std::string, std::string> Supla::LinuxMqttClient::topics;
+
 std::shared_ptr<Supla::LinuxMqttClient> Supla::LinuxMqttClient::instance =
     nullptr;
-
-std::unordered_map<std::string, std::string> Supla::LinuxMqttClient::topics;
 
 Supla::LinuxMqttClient::LinuxMqttClient(
     const Supla::LinuxYamlConfig& yamlConfig)
@@ -71,11 +73,26 @@ std::shared_ptr<Supla::LinuxMqttClient>& Supla::LinuxMqttClient::getInstance(
 }
 
 void Supla::LinuxMqttClient::subscribeTopic(const std::string& topic) {
+  std::lock_guard<std::mutex> lock(topicsMutex);
   topics[topic] = "";
 }
 
+bool Supla::LinuxMqttClient::getMessage(const std::string& topic,
+                                       std::string& message) const {
+  std::lock_guard<std::mutex> lock(topicsMutex);
+  const auto found = topics.find(topic);
+  if (found == topics.end()) {
+    return false;
+  }
+  message = found->second;
+  return true;
+}
+
 void Supla::LinuxMqttClient::unsubscribeTopic(const std::string& topic) {
-  topics.erase(topic);
+  {
+    std::lock_guard<std::mutex> lock(topicsMutex);
+    topics.erase(topic);
+  }
   if (mq_client == nullptr || mq_client->reconnect_state == nullptr) {
     return;
   }
@@ -89,8 +106,14 @@ void Supla::LinuxMqttClient::unsubscribeTopic(const std::string& topic) {
 
 int Supla::LinuxMqttClient::mqttClientInit() {
   SUPLA_LOG_DEBUG("Linux MQTT client init.");
+  std::unordered_map<std::string, std::string> subscribedTopics;
+  {
+    std::lock_guard<std::mutex> lock(topicsMutex);
+    subscribedTopics = topics;
+  }
   return mqtt_client_init(
-      host, port, username, password, clientName, topics, publishCallback);
+      host, port, username, password, clientName,
+      subscribedTopics, publishCallback);
 }
 
 void Supla::LinuxMqttClient::publishCallback(void**,
@@ -102,7 +125,10 @@ void Supla::LinuxMqttClient::publishCallback(void**,
   std::string application_message_string(application_message,
                                          published->application_message_size);
 
-  topics[topic_name_string] = application_message_string;
+  {
+    std::lock_guard<std::mutex> lock(topicsMutex);
+    topics[topic_name_string] = application_message_string;
+  }
 
   SUPLA_LOG_DEBUG("Linux MQTT client received message from %s: %s",
                   topic_name_string.c_str(),

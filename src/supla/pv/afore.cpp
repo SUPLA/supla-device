@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include "afore.h"
+#include "inverter_parser.h"
 
 namespace Supla {
 namespace PV {
@@ -56,21 +57,21 @@ void Afore::iterateAlways() {
       char c;
       c = client->read();
       if (c == '\n') {
-        if (varFound) {
-          if (bytesCounter > 79) bytesCounter = 79;
+        if (varFound && bytesCounter < static_cast<int>(sizeof(buf))) {
           buf[bytesCounter] = '\0';
-          char varName[80];
-          char varValue[80];
-          sscanf(buf, "%s = \"%s\";", varName, varValue);
-          if (strncmp(varName, "webdata_now_p", strlen("webdata_now_p")) == 0) {
-            float curPower = atof(varValue);
-            currentPower = curPower * 100000;
-          }
-          if (strncmp(varName, "webdata_total_e", strlen("webdata_total_e")) ==
-              0) {
-            float totalProd = atof(varValue);
-
-            totalGeneratedEnergy = totalProd * 100000;
+          char varName[80] = {};
+          char varValue[80] = {};
+          int end = -1;
+          if (sscanf(buf, "%79s = \"%79[^\"]\"; %n",
+                     varName, varValue, &end) == 2 &&
+              end >= 0 && detail::onlyWhitespace(buf + end)) {
+            if (strcmp(varName, "webdata_now_p") == 0) {
+              detail::parseInverterValue<float>(
+                  varValue, 100000, &currentPower);
+            } else if (strcmp(varName, "webdata_total_e") == 0) {
+              detail::parseInverterValue<float>(
+                  varValue, 100000, &totalGeneratedEnergy);
+            }
           }
         }
         bytesCounter = 0;
@@ -80,8 +81,8 @@ void Afore::iterateAlways() {
         vFound = true;
         if (bytesCounter < 80) {
           buf[bytesCounter] = c;
+          bytesCounter++;
         }
-        bytesCounter++;
         if (bytesCounter == 4 && !varFound) {
           if (strncmp(buf, "var ", 4) == 0) {
             varFound = true;

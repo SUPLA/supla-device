@@ -12,6 +12,8 @@
 #include <supla/storage/config.h>
 #include <vector>
 
+#include "web_login_limiter.h"
+
 namespace Supla {
 
 class EspIdfSender : public Supla::WebSender {
@@ -146,7 +148,7 @@ class EspIdfWebServer : public Supla::WebServer {
   bool isPasswordConfigured() const;
   bool isPasswordCorrect(const char *password) const;
   bool isHttpsEnalbled() const;
-  bool isAuthorizationBlocked();
+  bool isAuthorizationBlocked(httpd_req_t *req);
   void reloadSaltPassword();
   void addSecurityLog(httpd_req_t *req, const char *log) const;
 
@@ -163,6 +165,8 @@ class EspIdfWebServer : public Supla::WebServer {
   bool registerCustomPageHandlers(httpd_handle_t server);
 
   static uint32_t getIpFromReq(httpd_req_t *req);
+  static bool getLoginAddressFromReq(httpd_req_t *req,
+                                    WebLoginLimiter::Address *address);
   // Clears only the runtime HTTPS cert copy owned by the web server. The
   // embedded source pointers passed from board code are borrowed and must stay
   // untouched.
@@ -176,6 +180,7 @@ class EspIdfWebServer : public Supla::WebServer {
   void rotateSessionSecret();
   void setSessionCookie(httpd_req_t *req, char *buf, int bufLen);
   void failedLoginAttempt(httpd_req_t *req);
+  void resetLoginAttempts(httpd_req_t *req);
   bool loadEmbeddedHttpsCertificates(bool storeActive = true);
   bool ensureHttpsCertificates();
   bool loadHttpsCertificatesFromStorage();
@@ -199,12 +204,11 @@ class EspIdfWebServer : public Supla::WebServer {
 
   std::vector<const CustomPage *> customPages;
 
-  uint32_t lastLoginAttemptTimestamp = 0;
+  WebLoginLimiter loginLimiter;
   SaltPassword saltPassword = {};
   uint8_t sessionSecret[32] = {};
   bool sessionSecretInitialized = false;
 
-  uint8_t failedLoginAttempts = 0;
   char *sendBuf = nullptr;
 };
 

@@ -45,8 +45,6 @@
 #include "esp_idf_web_server.h"
 
 #define IV_SIZE                      16  // AES block size
-#define MAX_FAILED_LOGIN_ATTEMPTS    4
-#define FAILED_LOGIN_ATTEMPT_TIMEOUT 60000   // 1 minute
 #define SESSION_EXPIRATION_MS        600000  // 10 minutes
 
 static constexpr const char *HTTPS_CERT_KEY = "https_cert";
@@ -631,7 +629,7 @@ esp_err_t loginHandler(httpd_req_t *req) {
       if (!loginResult &&
           !srvInst->ensureAuthorized(
               req, sessionCookie, sizeof(sessionCookie), true)) {
-        const bool loginBlocked = srvInst->isAuthorizationBlocked();
+        const bool loginBlocked = srvInst->isAuthorizationBlocked(req);
         const char *loginLog = loginBlocked
                                   ? "Login blocked: too many failed attempts"
                                   : "Failed login attempt";
@@ -1353,14 +1351,12 @@ esp_err_t Supla::EspIdfWebServer::redirect(httpd_req_t *req,
   return ESP_OK;
 }
 
-bool Supla::EspIdfWebServer::isAuthorizationBlocked() {
-  if (failedLoginAttempts > MAX_FAILED_LOGIN_ATTEMPTS) {
-    if (millis() - lastLoginAttemptTimestamp > FAILED_LOGIN_ATTEMPT_TIMEOUT) {
-      failedLoginAttempts = 0;
-    } else {
-      SUPLA_LOG_WARNING("SERVER: too many failed login attempts");
-      return true;
-    }
+bool Supla::EspIdfWebServer::isAuthorizationBlocked(httpd_req_t *req) {
+  WebLoginLimiter::Address address;
+  if (!getLoginAddressFromReq(req, &address) ||
+      loginLimiter.isBlocked(address, millis())) {
+    SUPLA_LOG_WARNING("SERVER: login source blocked or no source slot");
+    return true;
   }
   return false;
 }
@@ -2068,7 +2064,7 @@ bool Supla::EspIdfWebServer::login(httpd_req_t *req,
   reloadSaltPassword();
   bool passwordIsCorrect = false;
   if (isPasswordConfigured()) {
-    if (isAuthorizationBlocked()) {
+    if (isAuthorizationBlocked(req)) {
       httpd_resp_set_hdr(req, "Auth-Status", "too-many");
       return false;
     }
@@ -2114,7 +2110,7 @@ bool Supla::EspIdfWebServer::login(httpd_req_t *req,
     }
 
     if (passwordIsCorrect) {
-      failedLoginAttempts = 0;
+      resetLoginAttempts(req);
       // save session cookie
       SUPLA_LOG_DEBUG("SERVER: setting session cookie");
       httpd_resp_set_hdr(req, "Auth-Status", "ok");
@@ -2125,7 +2121,7 @@ bool Supla::EspIdfWebServer::login(httpd_req_t *req,
     httpd_resp_set_hdr(req, "Auth-Status", "failed");
     failedLoginAttempt(req);
   }
-  SUPLA_LOG_INFO("Login failed (%d)", failedLoginAttempts);
+  SUPLA_LOG_INFO("Login failed");
   return false;
 }
 
@@ -2212,7 +2208,7 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(
   urlDecodeInplace(oldPassword, sizeof(oldPassword));
 
   if (isPasswordConfigured()) {
-    if (isAuthorizationBlocked()) {
+    if (isAuthorizationBlocked(req)) {
       httpd_resp_set_hdr(req, "Auth-Status", "too-many");
       return SetupRequestResult::INVALID_REQUEST;
     }
@@ -2222,7 +2218,7 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(
       addSecurityLog(req, "Password change failed: invalid old password");
       return SetupRequestResult::INVALID_OLD_PASSWORD;
     }
-    failedLoginAttempts = 0;
+    resetLoginAttempts(req);
   }
 
   if (strcmp(password, confirmPassword) != 0) {
@@ -2270,32 +2266,51 @@ void Supla::EspIdfWebServer::rotateSessionSecret() {
   sessionSecretInitialized = true;
 }
 
-uint32_t Supla::EspIdfWebServer::getIpFromReq(httpd_req_t *req) {
-  uint32_t ip = 0;
-  int sockfd = httpd_req_to_sockfd(req);
+bool Supla::EspIdfWebServer::getLoginAddressFromReq(
+    httpd_req_t *req, WebLoginLimiter::Address *address) {
+  *address = {};
+  const int sockfd = httpd_req_to_sockfd(req);
 #if defined(CONFIG_LWIP_IPV6) && CONFIG_LWIP_IPV6
-  struct sockaddr_storage addr = {};
-  socklen_t addr_len = sizeof(addr);
-  if (getpeername(
-          sockfd, reinterpret_cast<struct sockaddr *>(&addr), &addr_len) == 0) {
-    if (addr.ss_family == AF_INET6) {
-      auto *addr6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
-      ip = ntohl(addr6->sin6_addr.un.u32_addr[3]);
-    } else if (addr.ss_family == AF_INET) {
-      auto *addr4 = reinterpret_cast<struct sockaddr_in *>(&addr);
-      ip = ntohl(addr4->sin_addr.s_addr);
-    }
-  }
+  struct sockaddr_storage peer = {};
 #else
-  struct sockaddr_in addr = {};
-  socklen_t addr_len = sizeof(addr);
-  if (getpeername(
-          sockfd, reinterpret_cast<struct sockaddr *>(&addr), &addr_len) == 0) {
-    ip = ntohl(addr.sin_addr.s_addr);
+  struct sockaddr_in peer = {};
+#endif
+  socklen_t length = sizeof(peer);
+  if (getpeername(sockfd, reinterpret_cast<struct sockaddr *>(&peer),
+                  &length) != 0) {
+    return false;
+  }
+  const auto *socketAddress = reinterpret_cast<const struct sockaddr *>(&peer);
+  if (socketAddress->sa_family == AF_INET &&
+      length >= sizeof(struct sockaddr_in)) {
+    const auto *ipv4 = reinterpret_cast<const struct sockaddr_in *>(&peer);
+    address->bytes[10] = 0xff;
+    address->bytes[11] = 0xff;
+    memcpy(address->bytes + 12, &ipv4->sin_addr.s_addr, 4);
+    return true;
+  }
+#if defined(CONFIG_LWIP_IPV6) && CONFIG_LWIP_IPV6
+  if (socketAddress->sa_family == AF_INET6 &&
+      length >= sizeof(struct sockaddr_in6)) {
+    const auto *ipv6 = reinterpret_cast<const struct sockaddr_in6 *>(&peer);
+    memcpy(address->bytes, &ipv6->sin6_addr, sizeof(address->bytes));
+    address->scope = ipv6->sin6_scope_id;
+    return true;
   }
 #endif
+  return false;
+}
 
-  return ip;
+uint32_t Supla::EspIdfWebServer::getIpFromReq(httpd_req_t *req) {
+  WebLoginLimiter::Address address;
+  if (!getLoginAddressFromReq(req, &address)) {
+    return 0;
+  }
+  // The existing security log stores only 32 bits. The limiter above always
+  // uses the full address, independently of this legacy log representation.
+  uint32_t ip = 0;
+  memcpy(&ip, address.bytes + 12, sizeof(ip));
+  return ntohl(ip);
 }
 
 void Supla::EspIdfWebServer::addSecurityLog(httpd_req_t *req,
@@ -2304,10 +2319,21 @@ void Supla::EspIdfWebServer::addSecurityLog(httpd_req_t *req,
 }
 
 void Supla::EspIdfWebServer::failedLoginAttempt(httpd_req_t *req) {
-  lastLoginAttemptTimestamp = millis();
-  failedLoginAttempts++;
-  if (isAuthorizationBlocked()) {
+  WebLoginLimiter::Address address;
+  if (!getLoginAddressFromReq(req, &address)) {
+    return;
+  }
+  const uint8_t attempts = loginLimiter.failedAttempt(address, millis());
+  SUPLA_LOG_INFO("Failed login attempts from source: %u", attempts);
+  if (attempts >= WebLoginLimiter::MAX_ATTEMPTS) {
     addSecurityLog(req, "Too many failed login attempts");
+  }
+}
+
+void Supla::EspIdfWebServer::resetLoginAttempts(httpd_req_t *req) {
+  WebLoginLimiter::Address address;
+  if (getLoginAddressFromReq(req, &address)) {
+    loginLimiter.reset(address);
   }
 }
 

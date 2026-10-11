@@ -1038,7 +1038,11 @@ Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
       adErrorLogged(false),
       writeFailure(false),
       ownsSelectedCertificate(false),
-      versionErrorDisconnectPending(false) {
+      versionErrorDisconnectPending(false),
+      shareResponsePending(false),
+      ensureResponsePending(false),
+      discardShareResponse(false),
+      discardEnsureResponse(false) {
   setSuplaCACert(::suplaCACert);
   setSupla3rdPartyCACert(::supla3rdCACert);
 }
@@ -1508,7 +1512,7 @@ void Supla::messageReceived(void *srpc,
         break;
       case SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_ACCESS_RESULT:
         if (rd.data.sd_ensure_suplan_resource_access_result &&
-            suplaSrpc->acceptEnsureResult(rrId)) {
+            suplaSrpc->acceptEnsureResult()) {
           for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
                layer = layer->next()) {
             if (layer->getSdc() == suplaSrpc->getSdc()) {
@@ -1521,7 +1525,7 @@ void Supla::messageReceived(void *srpc,
 
       case SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_SHARE_RESULT:
         if (rd.data.sd_ensure_suplan_resource_share_result &&
-            suplaSrpc->acceptShareResult(rrId)) {
+            suplaSrpc->acceptShareResult()) {
           for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
                layer = layer->next()) {
             if (layer->getSdc() == suplaSrpc->getSdc())
@@ -1920,8 +1924,10 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
       serverActivityTimeout = registerDeviceResult->activity_timeout;
       registered = 1;
 #ifndef ARDUINO_ARCH_AVR
-      ensureRequestId = 0;
-      shareRequestId = 0;
+      ensureResponsePending = false;
+      discardEnsureResponse = false;
+      shareResponsePending = false;
+      discardShareResponse = false;
       serverIdentityState.registrationSucceeded();
       for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
            layer = layer->next()) {
@@ -2082,6 +2088,8 @@ void Supla::Protocol::SuplaSrpc::onSetSuplanSourceAssociation(
     }
   }
 #endif  // !ARDUINO_ARCH_AVR
+  SUPLA_LOG_DEBUG("SupLAN SourceAssociation result=%u revision=%" PRIu32,
+                  static_cast<unsigned>(result.Result), result.AclRevision);
   srpc_ds_async_set_suplan_source_association_result(srpc, &result);
   memset(result.PeerKey, 0, sizeof(result.PeerKey));
 }
@@ -2376,6 +2384,20 @@ bool Supla::Protocol::SuplaSrpc::autodiscover(uint32_t now) {
 
 bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   if (!isEnabled()) {
+    return false;
+  }
+
+  // rr_id is sender-local. A timed-out anonymous reply cannot safely be
+  // assigned to another request on this connection. Close outside callbacks;
+  // normal bootstrap reevaluates demand, leaving LAN authorization intact.
+  // Another layer can enqueue after the loop's _millis was sampled.
+  const uint32_t ensureNow =
+      (ensureResponsePending || shareResponsePending) ? millis() : _millis;
+  if ((ensureResponsePending && ensureNow - ensureRequestStartedMs >= 10000) ||
+      (shareResponsePending && ensureNow - shareRequestStartedMs >= 10000)) {
+    SUPLA_LOG_WARNING("ENSURE response timeout; reconnecting SRPC");
+    disconnect();
+    scheduleReconnect(ensureNow);
     return false;
   }
 
@@ -3365,7 +3387,10 @@ void Supla::Protocol::SuplaSrpc::initializeSrpc() {
 
 void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
 #ifndef ARDUINO_ARCH_AVR
-  shareRequestId = 0;
+  shareResponsePending = false;
+  ensureResponsePending = false;
+  discardShareResponse = false;
+  discardEnsureResponse = false;
   serverIdentityState.disconnected();
 #endif  // !ARDUINO_ARCH_AVR
   versionErrorDisconnectPending = false;
@@ -3388,20 +3413,27 @@ bool Supla::Protocol::SuplaSrpc::ensureResourceShare(
 #ifndef ARDUINO_ARCH_AVR
   if (effectiveSrpcVersion(version) < 29 || !serverIdentityState.capable() ||
       !isRegisteredAndReady() || !serverIdentityState.serverSyncComplete() ||
-      shareRequestId) return false;
+      shareResponsePending) return false;
   auto wire = request;
   const auto id = srpc_ds_async_ensure_suplan_resource_share(srpc, &wire);
-  shareRequestId = id > 0 ? id : 0;
+  if (id > 0) {
+    shareResponsePending = true;
+    discardShareResponse = false;
+    shareRequestStartedMs = millis();
+  }
   return id > 0;
 #else
   (void)request;
   return false;
 #endif
 }
-bool Supla::Protocol::SuplaSrpc::acceptShareResult(unsigned int rrId) {
-  if (!shareRequestId || shareRequestId != rrId) return false;
-  shareRequestId = 0;
-  return true;
+bool Supla::Protocol::SuplaSrpc::acceptShareResult() {
+  if (!shareResponsePending) return false;
+  const bool accept = !discardShareResponse &&
+      millis() - shareRequestStartedMs < 10000;
+  shareResponsePending = false;
+  discardShareResponse = false;
+  return accept;
 }
 
 bool Supla::Protocol::SuplaSrpc::ensureResourceAccess(
@@ -3410,11 +3442,15 @@ bool Supla::Protocol::SuplaSrpc::ensureResourceAccess(
   if (effectiveSrpcVersion(version) < 29 || !serverIdentityState.capable() ||
       !isRegisteredAndReady() || !serverIdentityState.serverSyncComplete() ||
       request.DeliveryMode != SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER ||
-      request.Flags != 0) return false;
+      request.Flags != 0 || ensureResponsePending) return false;
   auto wire = request;
   const auto requestId =
       srpc_ds_async_ensure_suplan_resource_access(srpc, &wire);
-  ensureRequestId = requestId > 0 ? requestId : 0;
+  if (requestId > 0) {
+    ensureResponsePending = true;
+    discardEnsureResponse = false;
+    ensureRequestStartedMs = millis();
+  }
   return requestId > 0;
 #else
   (void)request;
@@ -3422,8 +3458,11 @@ bool Supla::Protocol::SuplaSrpc::ensureResourceAccess(
 #endif
 }
 
-bool Supla::Protocol::SuplaSrpc::acceptEnsureResult(unsigned int rrId) {
-  if (!ensureRequestId || ensureRequestId != rrId) return false;
-  ensureRequestId = 0;
-  return true;
+bool Supla::Protocol::SuplaSrpc::acceptEnsureResult() {
+  if (!ensureResponsePending) return false;
+  const bool accept = !discardEnsureResponse &&
+      millis() - ensureRequestStartedMs < 10000;
+  ensureResponsePending = false;
+  discardEnsureResponse = false;
+  return accept;
 }

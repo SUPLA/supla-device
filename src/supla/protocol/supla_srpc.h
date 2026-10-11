@@ -126,12 +126,16 @@ class SuplaSrpc : public ProtocolLayer {
   void onRegisterResultB(
       TSD_SuplaRegisterDeviceResult_B *registerDeviceResultB);
   void onDeviceSyncDone();
-  bool acceptEnsureResult(unsigned int rrId);
-  void cancelEnsureResourceShare() { shareRequestId = 0; }
+  bool acceptEnsureResult();
+  void cancelEnsureResourceShare() {
+    if (shareResponsePending) discardShareResponse = true;
+  }
   bool ensureResourceShare(
       const TDS_SuplaEnsureResourceShare &request) override;
-  bool acceptShareResult(unsigned int rrId);
-  void cancelEnsureResourceAccess() { ensureRequestId = 0; }
+  bool acceptShareResult();
+  void cancelEnsureResourceAccess() {
+    if (ensureResponsePending) discardEnsureResponse = true;
+  }
   bool ensureResourceAccess(
       const TDS_SuplaEnsureResourceAccess &request) override;
   void onSetActivityTimeoutResult(TSDC_SuplaSetActivityTimeoutResult *result);
@@ -224,14 +228,19 @@ class SuplaSrpc : public ProtocolLayer {
 
  private:
   bool versionErrorDisconnectPending : 1;
+  bool shareResponsePending : 1;
+  bool ensureResponsePending : 1;
+  bool discardShareResponse : 1;
+  bool discardEnsureResponse : 1;
 
  protected:
   uint8_t autodiscoverRetryCounter = 0;
   uint16_t connectionFailCounter = 0;
   uint8_t reconnectAttemptCounter = 0;
 
-  unsigned int shareRequestId = 0;
-  unsigned int ensureRequestId = 0;
+  // Reuse the former request-ID slots; ENSURE is excluded on AVR.
+  unsigned int shareRequestStartedMs = 0;
+  unsigned int ensureRequestStartedMs = 0;
   uint32_t lastPingTimeMs = 0;
   uint32_t waitForIterate = 0;
   uint32_t lastIterateTime = 0;

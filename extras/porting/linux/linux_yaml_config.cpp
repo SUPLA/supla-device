@@ -1135,6 +1135,20 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
   SUPLA_LOG_INFO("Channel[%d] config: adding CmdValve", channelNumber);
   auto cv = new Supla::Control::CmdValve(parser);
 
+  if (auto closeType = getAndMarkChannelParameter(ch, "close_on_flood")) {
+    auto value = closeType.as<std::string>();
+    if (value == "always") {
+      cv->setDefaultCloseValveOnFloodType(
+          SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_ALWAYS);
+    } else if (value == "on_change") {
+      cv->setDefaultCloseValveOnFloodType(
+          SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_ON_CHANGE);
+    } else {
+      SUPLA_LOG_ERROR("CmdValve[%d]: invalid close_on_flood", channelNumber);
+      return false;
+    }
+  }
+
   if (auto cmdOpenParameter = getAndMarkChannelParameter(ch, "cmd_open")) {
     auto cmdOpen = cmdOpenParameter.as<std::string>();
     cv->setCmdOpen(cmdOpen);

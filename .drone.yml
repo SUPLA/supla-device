@@ -70,6 +70,15 @@ steps:
   depends_on:
   - tests_compilation
 
+- name: additional_native_tests
+  image: devel/freertos
+  pull: never
+  commands:
+  - cd extras/test/build
+  - ctest --output-on-failure --no-tests=error -E '^(supladevicetests|sd4linuxtests)$'
+  depends_on:
+  - tests_compilation
+
 - name: tests_with_valgrind
   image: devel/freertos
   pull: never
@@ -332,7 +341,7 @@ steps:
     event:
       exclude:
         - pull_request
-  depends_on: [tests, esp_idf_compilation_check,
+  depends_on: [tests, additional_native_tests, esp_idf_compilation_check,
                freertos_linux_compilation_check,
                sd4linux_compilation_check,
                arduino_esp32_compilation_check_part_1,

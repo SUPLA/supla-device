@@ -27,6 +27,7 @@
 #include "supla/control/custom_relay.h"
 #include "supla/control/rgbcct_parsed.h"
 #include "supla/control/virtual_relay.h"
+#include "supla/control/valve_base.h"
 
 extern "C" const char *supla_test_get_last_log();
 extern "C" void supla_test_clear_last_log();
@@ -1018,6 +1019,30 @@ TEST(Sd4linuxYamlConfigTests, RejectsCmdValveWithoutRequiredCommand) {
                                      "state: state\n"),
                                  0,
                                  &parser));
+  deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, CmdValveFloodPolicyUsesProductionConfig) {
+  TestLinuxYamlConfig config;
+  FakeYamlSource source;
+  FakeYamlParser parser(&source);
+  auto previousElement = Supla::Element::last();
+  ASSERT_TRUE(config.addCmdValve(YAML::Load(
+      "cmd_open: true\ncmd_close: true\nstate: state\n"
+      "close_on_flood: on_change\n"), 0, &parser));
+  auto valve = dynamic_cast<Supla::Control::ValveBase *>(
+      Supla::Element::last());
+  ASSERT_NE(nullptr, valve);
+  TChannelConfig_Valve wire = {};
+  int size = 0;
+  valve->fillChannelConfig(&wire, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(sizeof(wire), size);
+  EXPECT_EQ(SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_ON_CHANGE,
+            wire.CloseValveOnFloodType);
+  deleteCreatedElement(previousElement);
+  EXPECT_FALSE(config.addCmdValve(YAML::Load(
+      "cmd_open: true\ncmd_close: true\nstate: state\n"
+      "close_on_flood: invalid\n"), 0, &parser));
   deleteCreatedElement(previousElement);
 }
 

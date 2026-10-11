@@ -664,8 +664,9 @@ TEST(ChannelDependency, CorruptLocalValuesAndNamespaceAreRejected) {
             ChannelReference::server(record.references[0].channelId));
 }
 
-TEST(ChannelDependency, EnsureEnqueueFailureAndReplyCorrelation) {
+TEST(ChannelDependency, EnsureEnqueueFailureAndCancelledReplyDrain) {
   resetChannels();
+  SimpleTime time;
   Channel hvac(0);
   Channel thermometer(1);
   DurableHvacConfig storage;
@@ -681,24 +682,122 @@ TEST(ChannelDependency, EnsureEnqueueFailureAndReplyCorrelation) {
   request.DeliveryMode = SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER;
   EXPECT_CALL(wire, ensureResourceAccess(&handle, testing::_))
       .WillOnce(testing::Return(-1))
-      .WillOnce(testing::Return(91));
+      .WillOnce(testing::Return(91))
+      .WillOnce(testing::Return(92));
   EXPECT_FALSE(srpc.ensureResourceAccess(request));
-  EXPECT_FALSE(srpc.acceptEnsureResult(UINT32_MAX));
-  EXPECT_TRUE(srpc.ensureResourceAccess(request));
-  EXPECT_FALSE(srpc.acceptEnsureResult(90));
-  EXPECT_TRUE(srpc.acceptEnsureResult(91));
-  EXPECT_FALSE(srpc.acceptEnsureResult(91));
-  EXPECT_CALL(wire, ensureResourceAccess(&handle, testing::_))
-      .WillOnce(testing::Return(92))
-      .WillOnce(testing::Return(93));
+  EXPECT_FALSE(srpc.acceptEnsureResult());
   ASSERT_TRUE(srpc.ensureResourceAccess(request));
+  EXPECT_FALSE(srpc.ensureResourceAccess(request));
   srpc.cancelEnsureResourceAccess();
-  EXPECT_FALSE(srpc.acceptEnsureResult(92));
+  request.Resource.ResourceId = 502;
+  EXPECT_FALSE(srpc.ensureResourceAccess(request));
+  // Drain the cancelled operation before allowing a different resource.
+  EXPECT_FALSE(srpc.acceptEnsureResult());
   ASSERT_TRUE(srpc.ensureResourceAccess(request));
-  EXPECT_FALSE(srpc.acceptEnsureResult(92));
-  EXPECT_TRUE(srpc.acceptEnsureResult(93));
+  EXPECT_TRUE(srpc.acceptEnsureResult());
+  EXPECT_FALSE(srpc.acceptEnsureResult());
   request.Flags = 1;
   EXPECT_FALSE(srpc.ensureResourceAccess(request));
+}
+
+TEST(ChannelDependency, IndependentServerSequenceDispatchesAccessAndShare) {
+  resetChannels();
+  SimpleTime time;
+  Channel hvac(0);
+  Channel thermometer(1);
+  DurableHvacConfig storage;
+  testing::NiceMock<SrpcMock> wire;
+  SuplaDeviceClass device;
+  DependencySrpc srpc(&device);
+  class Results : public DependencySrpc {
+   public:
+    explicit Results(SuplaDeviceClass *device) : DependencySrpc(device) {}
+    void ensureResourceAccessResult(
+        const TSD_SuplaEnsureResourceAccessResult &) override { ++access; }
+    void ensureResourceShareResult(
+        const TSD_SuplaEnsureResourceShareResult &) override { ++share; }
+    int access = 0;
+    int share = 0;
+  } results(&device);
+  int handle = 0;
+  srpc.prepare(&handle);
+  bootstrapIdentity(&srpc.serverIdentity(), &storage);
+  TDS_SuplaEnsureResourceAccess access = {};
+  access.DeliveryMode = SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER;
+  TDS_SuplaEnsureResourceShare share = {};
+  EXPECT_CALL(wire, ensureResourceAccess(&handle, testing::_))
+      .WillOnce(testing::Return(91));
+  EXPECT_CALL(wire, ensureResourceShare(&handle, testing::_))
+      .WillOnce(testing::Return(92));
+  ASSERT_TRUE(srpc.ensureResourceAccess(access));
+  ASSERT_TRUE(srpc.ensureResourceShare(share));
+  TSD_SuplaEnsureResourceAccessResult accessResult = {};
+  TSD_SuplaEnsureResourceShareResult shareResult = {};
+  EXPECT_CALL(wire, srpc_getdata(&handle, testing::_, 0))
+      .WillOnce([&](void *, TsrpcReceivedData *rd, unsigned int) {
+        *rd = {};
+        rd->rr_id = 701;
+        rd->call_id = SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_ACCESS_RESULT;
+        rd->data.sd_ensure_suplan_resource_access_result = &accessResult;
+        return SUPLA_RESULT_TRUE;
+      })
+      .WillOnce([&](void *, TsrpcReceivedData *rd, unsigned int) {
+        *rd = {};
+        rd->rr_id = 702;
+        rd->call_id = SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_SHARE_RESULT;
+        rd->data.sd_ensure_suplan_resource_share_result = &shareResult;
+        return SUPLA_RESULT_TRUE;
+      });
+  Supla::messageReceived(&handle, 701, 0, &srpc, 29);
+  Supla::messageReceived(&handle, 702, 0, &srpc, 29);
+  EXPECT_EQ(1, results.access);
+  EXPECT_EQ(1, results.share);
+}
+
+TEST(ChannelDependency, AnonymousShareCancellationAndTimeoutCloseConnection) {
+  resetChannels();
+  SimpleTime time;
+  time.value = UINT32_MAX - 5000;
+  Channel hvac(0);
+  Channel thermometer(1);
+  DurableHvacConfig storage;
+  testing::NiceMock<SrpcMock> wire;
+  SuplaDeviceClass device;
+  DependencySrpc srpc(&device);
+  int handle = 0;
+  srpc.prepare(&handle);
+  bootstrapIdentity(&srpc.serverIdentity(), &storage);
+  TDS_SuplaEnsureResourceShare request = {};
+  EXPECT_CALL(wire, ensureResourceShare(&handle, testing::_))
+      .WillOnce(testing::Return(31))
+      .WillOnce(testing::Return(32));
+  const uint32_t loopMillis = time.value;
+  time.advance(1);
+  ASSERT_TRUE(srpc.ensureResourceShare(request));
+  // A previous layer may enqueue after the device sampled this loop's time.
+  // Keep the ordinary transport path idle, but run its production deadline.
+  RegisterDevice::setEmail("");
+  RegisterDevice::setServerName("");
+  EXPECT_CALL(wire, srpc_free(&handle)).Times(0);
+  EXPECT_FALSE(srpc.iterate(loopMillis));
+  EXPECT_FALSE(srpc.ensureResourceShare(request));
+  srpc.cancelEnsureResourceShare();
+  EXPECT_FALSE(srpc.ensureResourceShare(request));
+  EXPECT_FALSE(srpc.acceptShareResult());
+  ASSERT_TRUE(srpc.ensureResourceShare(request));
+  time.advance(10000);
+  EXPECT_CALL(wire, srpc_free(&handle)).Times(1);
+  // Production iterate closes the old transport before it can read/reassign
+  // a late reply; timeout arithmetic also covers millis wraparound.
+  EXPECT_FALSE(srpc.iterate(time.value));
+  EXPECT_FALSE(srpc.acceptShareResult());
+  EXPECT_FALSE(srpc.ensureResourceShare(request));
+  srpc.prepare(&handle);
+  bootstrapIdentity(&srpc.serverIdentity(), &storage);
+  EXPECT_CALL(wire, ensureResourceShare(&handle, testing::_))
+      .WillOnce(testing::Return(1));
+  ASSERT_TRUE(srpc.ensureResourceShare(request));
+  EXPECT_TRUE(srpc.acceptShareResult());
 }
 
 TEST(ChannelDependency, FailedDurableConfigCannotReleaseIdentityBarrier) {

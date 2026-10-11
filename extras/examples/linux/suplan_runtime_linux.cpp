@@ -4,15 +4,19 @@
 #include "suplan_runtime_linux.h"
 
 #include <SuplaDevice.h>
+#include <supla/actions.h>
 #include <supla/at_channel.h>
 #include <supla/channels/channel.h>
+#include <supla/channels/channel_state.h>
 #include <supla/control/action_trigger.h>
 #include <supla/control/hvac_base.h>
+#include <supla/control/valve_base.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/element.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/network.h>
 #include <supla/protocol/supla_srpc.h>
+#include <supla/suplan/remote_resource_manager.h>
 #include <suplan/suplan_config.h>
 #include <suplan_poc1_profile.h>
 
@@ -303,6 +307,84 @@ bool LinuxSupLanRuntime::processDebugCommand(
                "RESOURCES role=%s 50002=action-trigger channel=0\n", role);
       writeText(writer, output);
     }
+  } else if (command == "local-valve-open") {
+    unsigned number = 0;
+    if (!(input >> number) || number > UINT8_MAX) {
+      writeText(writer, "ERROR expected valve channel number\n");
+      return true;
+    }
+    auto *valve = dynamic_cast<Control::ValveBase *>(
+        Element::getElementByChannelNumber(number));
+    if (!valve) {
+      writeText(writer, "ERROR missing valve\n");
+    } else {
+      // The same local action as a button; no remote CONTROL or injected state.
+      valve->handleAction(0, Supla::OPEN);
+      writeText(writer, "OK local valve open action\n");
+    }
+  } else if (command == "local-channel-function") {
+    unsigned number = 0;
+    uint32_t function = 0;
+    if (!(input >> number >> function) || number > UINT8_MAX) {
+      writeText(writer, "ERROR expected channel number and function\n");
+      return true;
+    }
+    auto *element = Element::getElementByChannelNumber(number);
+    // Exercise the real local setter, never fabricate a received snapshot.
+    writeText(writer, element && element->setFunction(function)
+                          ? "OK local function applied\n"
+                          : "ERROR local function rejected\n");
+  } else if (command == "remote-state") {
+    uint32_t id = 0;
+    if (!(input >> id) || !id || !protocol_->remoteResources()) {
+      writeText(writer, "ERROR expected remote resource id\n");
+      return true;
+    }
+    auto *resources = protocol_->remoteResources();
+    auto state = resources->state({SUPLA_SUPLAN_RESOURCE_TYPE_CHANNEL, id},
+                                  datagrams_.nowMs());
+    uint8_t value[8] = {};
+    const bool usable = state.value(value);
+    char output[192] = {};
+    snprintf(output, sizeof(output),
+             "REMOTE id=%" PRIu32 " type=%" PRIu32 " function=%" PRIu32
+             " usable=%u received_ms=%" PRIu32
+             " resources=%d consumers=%d "
+             "value=%02x%02x%02x%02x%02x%02x%02x%02x\n",
+             id, state.type(), state.function(), usable ? 1U : 0U,
+             state.receivedMs(), resources->resourceCount(),
+             resources->consumerCount(), value[0], value[1], value[2], value[3],
+             value[4], value[5], value[6], value[7]);
+    writeText(writer, output);
+  } else if (command == "channel-state") {
+    unsigned number = 0;
+    if (!(input >> number) || number >= SUPLA_CHANNELMAXCOUNT) {
+      writeText(writer, "ERROR expected local channel number\n");
+      return true;
+    }
+    auto *element = Element::getElementByChannelNumber(number);
+    auto *channel = element ? element->getChannel() : nullptr;
+    if (channel == nullptr) {
+      writeText(writer, "ERROR missing channel\n");
+      return true;
+    }
+    TDS_SuplaDeviceChannel_E snapshot = {};
+    if (!buildChannelSnapshot(channel, &snapshot)) {
+      writeText(writer, "ERROR snapshot unavailable\n");
+      return true;
+    }
+    const auto *value = reinterpret_cast<const uint8_t *>(snapshot.value);
+    char output[160] = {};
+    snprintf(output, sizeof(output),
+             "CHANNEL id=%" PRIu32 " type=%" PRIu32 " function=%" PRIu32
+             " online=%u durable=%u value=%02x%02x%02x%02x%02x%02x%02x%02x\n",
+             channel->getServerChannelId(), channel->getChannelType(),
+             static_cast<uint32_t>(snapshot.Default),
+             channel->isStateOnline() ? 1U : 0U,
+             element->isChannelConfigDurable() ? 1U : 0U,
+             value[0], value[1], value[2], value[3], value[4], value[5],
+             value[6], value[7]);
+    writeText(writer, output);
   } else if (command == "show-counters") {
     writeCounters(writer);
   } else if (command == "show-pools") {
@@ -337,15 +419,22 @@ bool LinuxSupLanRuntime::processDebugCommand(
     if (size != sizeof(config)) {
       writeText(writer, "ERROR HVAC serialization unavailable\n");
     } else if (command == "hvac-config") {
-      char output[128] = {};
+      char output[320] = {};
       snprintf(output, sizeof(output),
                "HVAC main=%" PRIu32 " min_on=%u temp=%d mode=%d "
-               "heat=%u setpoint=%d\n",
+               "heat=%u setpoint=%d aux=%" PRIu32 " binary=%" PRIu32
+               " master=%" PRIu32 " pump=%" PRIu32 " hocs=%" PRIu32
+               " function=%" PRIu32 " durable=%u\n",
                config.MainThermometerChannelId,
                static_cast<unsigned>(config.MinOnTimeS),
                static_cast<int>(hvac->getLastTemperature()), hvac->getMode(),
                hvac->getChannel()->isHvacFlagHeating() ? 1U : 0U,
-               hvac->getTemperatureSetpointHeat());
+               hvac->getTemperatureSetpointHeat(),
+               config.AuxThermometerChannelId, config.BinarySensorChannelId,
+               config.MasterThermostatChannelId, config.PumpSwitchChannelId,
+               config.HeatOrColdSourceSwitchChannelId,
+               hvac->getChannel()->getDefaultFunction(),
+               hvac->isChannelConfigDurable() ? 1U : 0U);
       writeText(writer, output);
     } else if (!(input >> mainId >> minOn) || mainId > INT32_MAX ||
                minOn > UINT16_MAX || srpc == nullptr || !srpc->isConnected()) {

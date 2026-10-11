@@ -46,18 +46,18 @@ class Clock : public Element {
   /**
   * Returns day of week from Clock (if is set and ready).
   * Example:
-  * 1 - Sunday, 2 - Monday
+  * 1 - Sunday, 7 - Saturday
   *
-  * @return the day of week (1..2)
+  * @return the day of week (1..7)
   */
   static int GetDayOfWeek();
 
   /**
   * Returns day of week from Clock to HVAC (if is set and ready).
   * Example:
-  * 1 - Sunday, 2 - Monday
+  * 0 - Sunday, 6 - Saturday
   *
-  * @return the day of week (1..2)
+  * @return the day of week as enum (0..6)
   */
   static enum DayOfWeek GetHvacDayOfWeek();
 

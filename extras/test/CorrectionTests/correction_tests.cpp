@@ -56,7 +56,7 @@ class InspectableVirtualThermHygroMeter
   }
 
   Supla::ChannelConfigState getConfigState() const {
-    return channelConfigState;
+    return getChannelConfigState();
   }
 };
 

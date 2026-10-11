@@ -194,7 +194,7 @@ Supla::ApplyConfigResult Supla::Sensor::ThermHygroMeter::applyChannelConfig(
         reinterpret_cast<TChannelConfig_TemperatureAndHumidity *>(
             result->Config);
 
-    if (channelConfigState !=
+    if (getChannelConfigState() !=
         Supla::ChannelConfigState::LocalChangePending) {
       if (configFromServer->MinTemperatureAdjustment !=
               -minMaxAllowedTemperatureAdjustment * 10 ||
@@ -241,7 +241,7 @@ void Supla::Sensor::ThermHygroMeter::applyCorrectionsAndStoreIt(
   if (local) {
     setAndSaveConfigChangeFlag(true);
   } else {
-    channelConfigState = Supla::ChannelConfigState::None;
+    setChannelConfigState(Supla::ChannelConfigState::None);
     setAndSaveConfigChangeFlag(false);
   }
 

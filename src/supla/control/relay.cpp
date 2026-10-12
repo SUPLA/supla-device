@@ -7,6 +7,7 @@
  */
 
 #include "relay.h"
+#include <supla/control/remote_action.h>
 
 #include <inttypes.h>
 
@@ -673,6 +674,54 @@ bool Relay::iterateConnected() {
   }
 
   return ChannelElement::iterateConnected();
+}
+
+uint8_t Relay::handleRemoteAction(uint32_t actionId, const uint8_t *params,
+                                  size_t length) {
+  const auto function = channel.getDefaultFunction();
+  const bool impulse = isImpulseFunction();
+  const bool ordinary = function == SUPLA_CHANNELFNC_POWERSWITCH ||
+      function == SUPLA_CHANNELFNC_LIGHTSWITCH ||
+      function == SUPLA_CHANNELFNC_STAIRCASETIMER;
+  if (!ordinary && !impulse) return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+  TSD_SuplaChannelNewValue command = {};
+  command.ChannelNumber = getChannelNumber();
+  switch (actionId) {
+    case ACTION_SET_RELAY_PARAMETERS:
+      if (length != 16 || !params || !actionReservedZero(params + 1, 15) ||
+          params[0] > SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL ||
+          params[0] == SUPLA_RELAY_MODE_START_ON ||
+          params[0] == SUPLA_RELAY_MODE_START_OFF)
+        return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+      command.value[0] = isOn() ? 1 : 0;
+      reinterpret_cast<TRelayChannel_Value *>(command.value)->RelayMode =
+          params[0];
+      break;
+    case ACTION_OPEN_CLOSE:
+      if (!impulse) return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+      if (length) return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+      command.value[0] = 1;
+      break;
+    case ACTION_TURN_ON:
+    case ACTION_TURN_OFF:
+    case ACTION_TOGGLE:
+      if (!ordinary) return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+      if (length) return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+      command.value[0] = actionId == ACTION_TOGGLE ? !isOn()
+          : actionId == ACTION_TURN_ON;
+      break;
+    case ACTION_TURN_ON_WITH_DURATION:
+    case ACTION_TURN_OFF_WITH_DURATION:
+      if (length != 4 || !params) return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+      command.DurationMS = actionUint32(params);
+      if (actionId == ACTION_TURN_OFF_WITH_DURATION &&
+          command.DurationMS && !isCyclicMode())
+        return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+      command.value[0] = actionId == ACTION_TURN_ON_WITH_DURATION;
+      break;
+    default: return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+  }
+  return actionValueResult(handleRemoteNewValue(&command));
 }
 
 int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {

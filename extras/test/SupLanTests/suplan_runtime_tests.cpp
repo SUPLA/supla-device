@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright 2026 AC SOFTWARE SP. Z O.O.
 
+#include <supla-common/proto.h>
 #include <suplan/suplan_runtime.h>
 #include <suplan/suplan_crypto.h>
 #include <suplan/suplan_wire.h>
 
 #include <gtest/gtest.h>
+#include <simple_time.h>
+#include <supla/control/virtual_relay.h>
+#include <supla/suplan/remote_resource_manager.h>
 #include <crypto_test_hooks.h>
 
 #include <array>
@@ -15,9 +19,18 @@
 
 #include "suplan_crypto_openssl.h"
 
+// The 6 KiB gate belongs to the constrained profile. Larger profiles reserve
+// additional peers/sessions/interests; retain an independent bound for each.
+#if SUPLAN_PROFILE == SUPLAN_PROFILE_CONSTRAINED
+constexpr size_t kCoreWorkspaceBudget = 6 * 1024;
+#elif SUPLAN_PROFILE == SUPLAN_PROFILE_STANDARD
+constexpr size_t kCoreWorkspaceBudget = 12 * 1024;
+#else
+constexpr size_t kCoreWorkspaceBudget = 32 * 1024;
+#endif
 static_assert(sizeof(Supla::SupLan::Runtime) +
-                  sizeof(Supla::SupLan::PeerTable) <= 6 * 1024,
-              "SupLAN core workspace exceeds its 6 KiB target");
+                  sizeof(Supla::SupLan::PeerTable) <= kCoreWorkspaceBudget,
+              "SupLAN core workspace exceeds its profile budget");
 
 namespace {
 
@@ -155,6 +168,20 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
       *payloadLength = 0;
       return false;
     }
+    ++readCalls;
+    if (fullSnapshots && stateAvailable && capacity >=
+        sizeof(TDS_SuplaDeviceChannel_E)) {
+      TDS_SuplaDeviceChannel_E snapshot = {};
+      snapshot.Number = 0xff;
+      snapshot.Type = SUPLA_CHANNELTYPE_RELAY;
+      snapshot.Default = SUPLA_CHANNELFNC_POWERSWITCH;
+      snapshot.ValueValidityTimeSec = 60;
+      snapshot.value[0] = value;
+      memcpy(payload, &snapshot, sizeof(snapshot));
+      *eventOnly = false;
+      *payloadLength = sizeof(snapshot);
+      return true;
+    }
     if (!stateAvailable || capacity < 14) {
       *eventOnly = false;
       *payloadLength = 0;
@@ -189,9 +216,28 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
     return 3;
   }
 
-  void receiveState(uint8_t, const ResourceId &, uint32_t messageType,
+  uint8_t dispatchControlAction(const ResourceId &, uint32_t actionId,
+                                const uint8_t *params, size_t length) override {
+    if (nativeElement) {
+      ++nativeControlCalls;
+      return nativeElement->handleRemoteAction(actionId, params, length);
+    }
+    if (actionId != ACTION_TOGGLE && actionId != ACTION_SET_RELAY_PARAMETERS)
+      return 33;
+    ++nativeControlCalls;
+    nativeParams.assign(params, params + length);
+    value = !value;
+    return 3;
+  }
+  uint32_t nativeControlCalls = 0;
+  std::vector<uint8_t> nativeParams;
+
+  void receiveState(uint8_t peerIndex, const ResourceId &resource,
+                    uint32_t messageType,
                     const uint8_t *payload, size_t payloadLength) override {
     ++stateCalls;
+    if (remoteResources)
+      remoteResources->receive(peerIndex, resource, payload, payloadLength, 0);
     lastStateType = messageType;
     lastStateLength = payloadLength;
     if (payloadLength == 14) {
@@ -224,6 +270,14 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
   }
   bool presenceAllowed = false;
   int awakeHints = 0;
+  void sessionChanged(uint8_t peerIndex) override {
+    if (remoteResources) remoteResources->sessionChanged(peerIndex);
+  }
+  bool fullChannelSnapshots() const override { return fullSnapshots; }
+  bool fullSnapshots = false;
+  uint32_t readCalls = 0;
+  Supla::Element *nativeElement = nullptr;
+  Supla::Device::RemoteResourceManager *remoteResources = nullptr;
   bool stateAvailable = true;
   uint8_t value;
   uint32_t controlCalls;
@@ -910,7 +964,7 @@ TEST(SupLanRuntime, ReplayedSessionInitDoesNotMoveActiveEndpoint) {
   EXPECT_EQ(pair.appA.controlCalls, 1U);
 }
 
-TEST(SupLanRuntime, LostRemoteSessionRetriesControlAfterNewHandshake) {
+TEST(SupLanRuntime, TransmittedControlNeverReplaysInReplacementSession) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
   pair.pump(20);
@@ -922,12 +976,15 @@ TEST(SupLanRuntime, LostRemoteSessionRetriesControlAfterNewHandshake) {
   ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
                                         sizeof(control)));
   pair.pump(60);
+  EXPECT_EQ(pair.appA.controlCalls, 0U);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(30);
   EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 2U);
   EXPECT_EQ(pair.runtimeB.diagnostics().sessionEstablished, 2U);
   EXPECT_EQ(pair.runtimeA.diagnostics().sessionEstablished, 2U);
-  EXPECT_EQ(pair.appA.controlCalls, 1U);
+  EXPECT_EQ(pair.appA.controlCalls, 0U);
   EXPECT_EQ(pair.appB.acknowledged, 2U);
-  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 2U);
   EXPECT_EQ(pair.runtimeA.poolDiagnostics().sessions.used, 1U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().sessions.used, 1U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
@@ -2401,4 +2458,340 @@ TEST(SupLanSleepySource, ForgedAwakeHintCannotStartRepair) {
   pair.pump(3);
   EXPECT_EQ(pair.appB.awakeHints, 0);
   EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+}
+
+TEST(SupLanRuntime, NativeControlMaximumParamsUsesProtectedRetryAndDedupe) {
+  RuntimePair pair;
+  pair.runtimeA.testHooks()->dropNextAckTx = 1;
+  uint8_t params[16] = {1};
+  ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+      ACTION_SET_RELAY_PARAMETERS, params, sizeof(params)));
+  pair.pumpMs(400);
+  ASSERT_EQ(pair.appA.nativeControlCalls, 1U);
+  EXPECT_EQ(pair.appA.nativeParams.size(), 16U);
+  EXPECT_EQ(pair.appB.lastAckResult, 3);
+  auto frames = protectedDataFromB(pair, 0);
+  ASSERT_GE(frames.size(), 2U);
+  EXPECT_EQ(frames[0], frames[1]);
+  EXPECT_EQ(frames[0].size(), 65U);
+  pair.network.send(pair.endpointB, pair.endpointA, false,
+                     frames[0].data(), frames[0].size());
+  pair.pump(5);
+  EXPECT_EQ(pair.appA.nativeControlCalls, 1U);
+  EXPECT_GT(pair.runtimeA.diagnostics().controlDuplicateSuppressed, 0U);
+}
+TEST(SupLanRuntime, NativeControlWithoutSessionExpiresAtOriginalDeadline) {
+  RuntimePair pair;
+  pair.datagramsA.available = false;
+  ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                             ACTION_TOGGLE, nullptr, 0));
+  pair.pumpMs(5000);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+  pair.network.packets.clear();
+  pair.datagramsA.available = true;
+  pair.pumpMs(1000);
+  EXPECT_EQ(pair.appA.nativeControlCalls, 0U);
+}
+TEST(SupLanRuntime, NativeControlUnsupportedHasExplicitAck) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                             999999, nullptr, 0));
+  pair.pump(20);
+  EXPECT_EQ(pair.appB.lastAckResult, 33);
+  EXPECT_EQ(pair.appA.nativeControlCalls, 0U);
+}
+TEST(SupLanRuntime, OwnedControlCancellationDoesNotCancelAnotherHandle) {
+  RuntimePair pair;
+  pair.datagramsA.available = false;
+  ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                             ACTION_TOGGLE, nullptr, 0, 1));
+  ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                             ACTION_TOGGLE, nullptr, 0, 2));
+  pair.runtimeB.cancelOwnedControls(1);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
+  pair.datagramsA.available = true;
+  pair.pump(30);
+  EXPECT_EQ(pair.appA.nativeControlCalls, 1U);
+}
+TEST(SupLanRuntime, ActionGrantPublishesWithoutAnyReadInterest) {
+  RuntimePair pair;
+  const ResourceId actionResource = {Supla::SupLan::kResourceTypeChannel,
+                                      50002};
+  uint8_t event[15] = {0xff, 4};
+  ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, actionResource,
+                                        event, sizeof(event)));
+  pair.pump(30);
+  EXPECT_EQ(pair.appA.actionCalls, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().interests.used, 0U);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 0U);
+}
+
+TEST(SupLanRuntime, NativeControlCodecGoldenEnvelopeAndRejectsLengths) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  uint8_t payload[21] = {};
+  size_t length = 0;
+  uint8_t params[16] = {1};
+  ASSERT_TRUE(encodeControlAction(237, params, 16, payload, sizeof(payload),
+                                 &length));
+  EXPECT_EQ(length, 21U);
+  const uint8_t expected[5] = {0, 0, 0, 237, 16};
+  EXPECT_EQ(memcmp(payload, expected, 5), 0);
+  uint8_t body[26] = {};
+  ASSERT_TRUE(encodeResourceId(kResourceTypeChannel, 0x01020304, body));
+  memcpy(body + 5, payload, length);
+  uint8_t application[32];
+  ASSERT_TRUE(encodeApplicationData(kMessageClassNative, kNativeControlAction,
+      kAckRequired, body, sizeof(body), application, sizeof(application),
+      &length));
+  EXPECT_EQ(length, 32U);
+  const uint8_t header[16] = {2, 0, 0, 0, 9, 1, 1, 1, 2, 3, 4,
+                             0, 0, 0, 237, 16};
+  EXPECT_EQ(memcmp(application, header, sizeof(header)), 0);
+  ControlActionView view = {};
+  ASSERT_TRUE(decodeControlAction(payload, 21, &view));
+  EXPECT_EQ(view.actionId, 237U);
+  EXPECT_FALSE(decodeControlAction(payload, 20, &view));
+  EXPECT_FALSE(encodeControlAction(237, params, 17, payload, sizeof(payload),
+                                  &length));
+  payload[4] = 17;
+  EXPECT_FALSE(decodeControlAction(payload, 21, &view));
+  ASSERT_TRUE(encodeControlAction(10, nullptr, 0, payload, sizeof(payload),
+                                 &length));
+  ASSERT_EQ(length, 5U);
+  ASSERT_TRUE(encodeResourceId(kResourceTypeChannel, 0x01020304, body));
+  memcpy(body + 5, payload, length);
+  ASSERT_TRUE(encodeApplicationData(kMessageClassNative, kNativeControlAction,
+      kAckRequired, body, 10, application, sizeof(application), &length));
+  const uint8_t emptyParams[16] = {2, 0, 0, 0, 9, 1, 1, 1, 2, 3, 4,
+                                 0, 0, 0, 10, 0};
+  EXPECT_EQ(length, sizeof(emptyParams));
+  EXPECT_EQ(memcmp(application, emptyParams, sizeof(emptyParams)), 0);
+}
+
+TEST(SupLanRuntime, NativeControlLostAckRetriesIdenticalCiphertextOnce) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  pair.runtimeA.testHooks()->dropNextAckTx = 1;
+  const auto start = pair.network.history.size();
+  ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                             ACTION_TOGGLE, nullptr, 0));
+  pair.pumpMs(400);
+  EXPECT_EQ(pair.appA.nativeControlCalls, 1U);
+  EXPECT_EQ(pair.appB.lastAckResult, 3);
+  auto frames = protectedDataFromB(pair, start);
+  ASSERT_GE(frames.size(), 2U);
+  EXPECT_EQ(frames[0], frames[1]);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+}
+TEST(SupLanRuntime, NativeControlSessionSwitchDropsAlreadyTransmittedCommand) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  pair.runtimeA.testHooks()->dropNextAckTx = 10;
+  ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                             ACTION_TOGGLE, nullptr, 0));
+  pair.pump(3);
+  ASSERT_EQ(pair.appA.nativeControlCalls, 1U);
+  ASSERT_TRUE(pair.runtimeB.forgetSession(pair.peerB));
+  pair.network.packets.clear();
+  pair.runtimeA.testHooks()->dropNextAckTx = 0;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pumpMs(700);
+  EXPECT_EQ(pair.appA.nativeControlCalls, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+}
+
+TEST(SupLanRuntime, NativeControlCapacityFailureDoesNotEvictAdmittedCommands) {
+  RuntimePair pair;
+  pair.datagramsA.available = false;
+  for (int i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i)
+    ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                               ACTION_TOGGLE, nullptr, 0));
+  EXPECT_FALSE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                              ACTION_TOGGLE, nullptr, 0));
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used,
+            SUPLAN_MAX_DEFERRED_APP_EVENTS);
+  pair.pumpMs(5000);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+  EXPECT_EQ(pair.appB.acknowledged, 0U);
+}
+
+TEST(SupLanRuntime, NativeControlQueuedBehindRetriesExpiresBeforeSlotReuse) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  pair.runtimeA.testHooks()->dropNextAckTx = 100;
+  const uint32_t admitted = pair.network.now;
+  for (int i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i)
+    ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                               ACTION_TOGGLE, nullptr, 0));
+  ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                             ACTION_TOGGLE, nullptr, 0));
+  pair.runtimeA.iterate();
+  ASSERT_EQ(pair.appA.nativeControlCalls,
+            static_cast<unsigned>(SUPLAN_MAX_RETRY_SLOTS));
+  ASSERT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
+  pair.network.now = admitted + 5000;
+  // Admission itself drains work before iterateRecovery runs. An expired
+  // Native/9 must not be sent when the newly admitted command frees retries.
+  ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                             ACTION_TOGGLE, nullptr, 0));
+  pair.runtimeA.iterate();
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 1U);
+  EXPECT_EQ(pair.appA.nativeControlCalls,
+            static_cast<unsigned>(SUPLAN_MAX_RETRY_SLOTS + 1));
+}
+
+TEST(SupLanRuntime, NativeToggleAndGateSbsDeduplicateRealSourceRelayDispatch) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime clock;
+  for (const uint32_t action : {ACTION_TOGGLE, ACTION_OPEN_CLOSE}) {
+    RuntimePair pair;
+    class CountingRelay : public Supla::Control::VirtualRelay {
+     public:
+      int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *value)
+          override {
+        ++dispatches;
+        return VirtualRelay::handleNewValueFromServer(value);
+      }
+      int dispatches = 0;
+    } relay;
+    relay.setDefaultFunction(action == ACTION_TOGGLE
+        ? SUPLA_CHANNELFNC_POWERSWITCH : SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+    relay.onInit();
+    pair.appA.nativeElement = &relay;
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.pump(20);
+    pair.runtimeA.testHooks()->dropNextAckTx = 1;
+    ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                               action, nullptr, 0));
+    pair.pumpMs(400);
+    EXPECT_EQ(relay.dispatches, 1);
+    EXPECT_TRUE(relay.isOn());
+    EXPECT_EQ(pair.appA.nativeControlCalls, 1U);
+    EXPECT_EQ(pair.appB.lastAckResult, 3);
+  }
+}
+
+TEST(SupLanRuntime, ControlDemandAutomaticallyReadsAndSharesHealthySnapshot) {
+  RuntimePair pair;
+  pair.peersB.get(pair.peerB)->destination = true;
+  pair.appA.fullSnapshots = true;
+  pair.appA.value = 1;
+  Supla::Device::RemoteResourceManager manager(&pair.peersB, &pair.runtimeB,
+                                               nullptr);
+  pair.appB.remoteResources = &manager;
+  ASSERT_TRUE(manager.consume({1, pair.resource,
+                              Supla::SupLan::kPermissionControl, true}));
+  manager.iterate(0);  // The application has not polled state().
+  pair.pump(30);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+  EXPECT_TRUE(manager.state(pair.resource, pair.network.now).available());
+  const auto snapshotBuilds = pair.appA.readCalls;
+  ASSERT_TRUE(manager.consume({2, pair.resource,
+                              Supla::SupLan::kPermissionControl, true}));
+  manager.iterate(pair.network.now);
+  pair.pump(30);
+  EXPECT_EQ(pair.appA.readCalls, snapshotBuilds);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+  EXPECT_EQ(manager.resourceCount(), 1);
+  EXPECT_EQ(manager.consumerCount(), 2);
+  ASSERT_TRUE(pair.runtimeB.forgetSession(pair.peerB));
+  EXPECT_TRUE(manager.state(pair.resource, pair.network.now).available());
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, nullptr, 0));
+  EXPECT_FALSE(manager.state(pair.resource, pair.network.now).available());
+  EXPECT_EQ(manager.effectivePermissions(pair.resource), 0);
+}
+
+TEST(SupLanRuntime, ScopedActionGrantNeedsNoReadAndRevocationStopsPublication) {
+  RuntimePair pair;
+  const ResourceId resource = {Supla::SupLan::kResourceTypeChannel, 50002};
+  Supla::SupLan::AclEntry scope = {
+      {Supla::SupLan::kResourceTypeDevice, 1002},
+      Supla::SupLan::kPermissionAction};
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.actionPeerB, 2, &scope, 1));
+  ASSERT_TRUE(pair.peersA.replaceAcl(pair.actionPeerA, 2, &scope, 1));
+  uint8_t event[15] = {0xff, 4};
+  ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, resource, event,
+                                         sizeof(event)));
+  pair.pump(30);
+  EXPECT_EQ(pair.appA.actionCalls, 1U);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().interests.used, 0U);
+  scope.permissions = Supla::SupLan::kPermissionRead;
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.actionPeerB, 3, &scope, 1));
+  EXPECT_FALSE(pair.runtimeB.publishAction(pair.actionPeerB, resource, event,
+                                          sizeof(event)));
+  pair.pump(30);
+  EXPECT_EQ(pair.appA.actionCalls, 1U);
+}
+
+TEST(SupLanRuntime, ActionOnlySessionEvictionRepairsWithoutReadInterests) {
+  RuntimePair pair;
+  const ResourceId resource = {Supla::SupLan::kResourceTypeChannel, 50002};
+  uint8_t event[15] = {0xff, 4};
+  ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, resource, event,
+                                         sizeof(event)));
+  pair.pump(30);
+  ASSERT_EQ(pair.appA.actionCalls, 1U);
+  ASSERT_TRUE(pair.runtimeA.forgetSession(pair.actionPeerA));
+  pair.runtimeB.clearEndpoint(pair.actionPeerB);
+  const auto locateBefore = pair.runtimeB.diagnostics().locateTx;
+  ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, resource, event,
+                                         sizeof(event)));
+  pair.pump(30);
+  EXPECT_EQ(pair.appA.actionCalls, 2U);
+  EXPECT_GT(pair.runtimeB.diagnostics().locateTx, locateBefore);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().interests.used, 0U);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 0U);
+}
+
+TEST(SupLanRuntime, UnreachableActionPeerCannotBlockHealthyRecipientOrReplay) {
+  RuntimePair pair;
+  const ResourceId resource = {Supla::SupLan::kResourceTypeChannel, 50002};
+  Supla::SupLan::PeerTable peersC;
+  FakeApplication appC;
+  FakeDatagramPort portC(&pair.network, {0x0300007f, 2016});
+  Supla::SupLan::Runtime runtimeC(&pair.crypto, &portC, &appC, &peersC,
+                                  RuntimePair::nodeAddress(1003), 29);
+  Supla::SupLan::PeerContext context = {
+      Supla::SupLan::kAuthorityServer, 0,
+      {Supla::SupLan::kNodeIdDevice, 1002},
+      {Supla::SupLan::kNodeIdDevice, 1003}, 1, 1};
+  uint8_t key[32] = {2};
+  Supla::SupLan::AclEntry acl = {resource, Supla::SupLan::kPermissionAction};
+  uint8_t offlinePeer, destinationPeer;
+  ASSERT_TRUE(pair.peersB.addPeer(&context, key, 1, &acl, 1, &offlinePeer));
+  ASSERT_TRUE(peersC.addPeer(&context, key, 1, &acl, 1,
+                            &destinationPeer, true));
+  portC.available = false;
+  uint8_t event[15] = {0xff, 4};
+  // Attempt the unreachable recipient first, then the healthy one.
+  ASSERT_TRUE(pair.runtimeB.publishAction(offlinePeer, resource, event,
+                                         sizeof(event)));
+  ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, resource, event,
+                                         sizeof(event)));
+  pair.pumpMs(500);
+  EXPECT_EQ(pair.appA.actionCalls, 1U);
+  EXPECT_EQ(appC.actionCalls, 0U);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().interests.used, 0U);
+  pair.pumpMs(3000);
+  portC.available = true;
+  for (int i = 0; i < 100; ++i) {
+    pair.network.now += 10;
+    runtimeC.iterate();
+    pair.runtimeA.iterate();
+    pair.runtimeB.iterate();
+  }
+  EXPECT_EQ(appC.actionCalls, 0U);
+  EXPECT_EQ(pair.appA.actionCalls, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+  EXPECT_TRUE(pair.peersB.authorize(offlinePeer, resource,
+                                   Supla::SupLan::kPermissionAction));
 }

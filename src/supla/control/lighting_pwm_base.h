@@ -94,6 +94,8 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
                          bool toggle = false,
                          bool instant = false);
 
+  uint8_t handleRemoteAction(uint32_t actionId, const uint8_t *params,
+                             size_t length) override;
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   virtual void turnOn();
   virtual void turnOff();

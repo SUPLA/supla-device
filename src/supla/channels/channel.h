@@ -4,6 +4,7 @@
 #ifndef SRC_SUPLA_CHANNELS_CHANNEL_H_
 #define SRC_SUPLA_CHANNELS_CHANNEL_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include <supla-common/proto.h>
@@ -25,9 +26,14 @@ enum class BatteryState : uint8_t {
 
 namespace Device { class ServerIdentity; }
 
+class ChannelState;
 class Channel : public LocalAction {
  public:
   explicit Channel(int number = -1);
+  ChannelState channelState();
+  bool setValue(const uint8_t value[8], uint32_t durationMs = 0);
+  bool executeAction(uint32_t actionId, const uint8_t *params = nullptr,
+                     size_t length = 0);
   virtual ~Channel();
   static void setStartingChannelNumber(int channelNumber);
   static int getStartingChannelNumber();
@@ -35,7 +41,13 @@ class Channel : public LocalAction {
   static Channel *Last();
   static Channel *GetByChannelNumber(int channelNumber);
   Channel *next();
-  uint32_t getServerChannelId() const { return serverChannelId; }
+  uint32_t getServerChannelId() const {
+#ifndef ARDUINO_ARCH_AVR
+    return serverChannelId;
+#else
+    return 0;
+#endif
+  }
   static uint32_t registrationGeneration() { return registrationChanges; }
   static uint32_t identityGeneration() { return identityChanges; }
 
@@ -429,7 +441,9 @@ class Channel : public LocalAction {
     THVACValue hvacValue;
   };
 
+#ifndef ARDUINO_ARCH_AVR
   uint32_t serverChannelId = 0;
+#endif
 };
 
 };  // namespace Supla

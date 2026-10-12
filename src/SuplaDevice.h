@@ -7,6 +7,7 @@
 #include <supla-common/log.h>
 #include <supla-common/proto.h>
 #include <supla/action_handler.h>
+#include <supla/channels/channel_handle.h>
 #include <supla/device/device_mode.h>
 #include <supla/local_action.h>
 #include <supla/suplet/config.h>
@@ -180,6 +181,11 @@ class SuplaDeviceClass : public Supla::ActionHandler,
              unsigned char protoVersion = 23);
 
   bool begin(unsigned char protoVersion = 23);
+
+  // Opt-in before begin(29). True records intent (idempotent); begin confirms
+  // initialization. Late calls/unsupported platforms return false with a log.
+  // A complete manual SERVER stack takes precedence and remains caller-owned.
+  bool enableSupLan();
 
   // Use ASCII only in name
   void setName(const char *Name);

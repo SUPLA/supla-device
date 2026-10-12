@@ -12,6 +12,7 @@ class ActionHandler {
   virtual void activateAction(int action);
   virtual bool deleteClient();
   virtual ActionHandler *getRealClient();
+  virtual void baselineState() {}
 };
 
 }  // namespace Supla

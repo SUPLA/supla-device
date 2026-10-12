@@ -9,6 +9,7 @@
 #include <mqtt_mock.h>
 #include <network_client_mock.h>
 #include <srpc_mock.h>
+#include <simple_time.h>
 #include <supla/channel.h>
 #include <supla/channel_element.h>
 #include <supla/control/action_trigger.h>
@@ -3371,4 +3372,193 @@ TEST_F(ActionTriggerTests,
   at.handleAction(0, Supla::SEND_AT_SHORT_PRESS_x1);
   at.iterateConnected();
   at.iterateConnected();
+}
+
+class SupLanActionProbe : public SuplaSrpcStub {
+ public:
+  explicit SupLanActionProbe(SuplaDeviceClass *device)
+      : SuplaSrpcStub(device) {}
+  bool hasSupLanActionPeer(uint8_t) const override { return grant; }
+  bool usesSupLanActionFanout() const override { return true; }
+  void publishSupLanAction(uint8_t, uint32_t capability) override {
+    last = capability;
+    ++events;
+  }
+  bool grant = true;
+  uint32_t last = 0;
+  int events = 0;
+};
+TEST_F(ActionTriggerTests,
+     ActionGrantRecognizesFullPhysicalCapsWithoutChangingServerMask) {
+  SimpleTime time;
+  SupLanActionProbe peers(&sd);
+  Supla::Control::Button button(1, false, true);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  at.onInit();
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  at.iterateAlways();
+  auto handler = button.getHandlerForClient(&at, Supla::ON_CLICK_2);
+  ASSERT_NE(handler, nullptr);
+  EXPECT_TRUE(handler->isEnabled());
+  EXPECT_TRUE(at.isAnyActionEnabledOnServer());
+  at.handleAction(0, Supla::SEND_AT_SHORT_PRESS_x2);
+  EXPECT_EQ(peers.events, 1);
+  EXPECT_EQ(peers.last, SUPLA_ACTION_CAP_SHORT_PRESS_x2);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0U);
+  at.handleAction(0, Supla::SEND_AT_SHORT_PRESS_x1);
+  EXPECT_EQ(peers.events, 2);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(),
+            SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  at.handleAction(0, Supla::SEND_AT_SHORT_PRESS_x4);
+  EXPECT_EQ(peers.events, 3);
+  EXPECT_EQ(peers.last, SUPLA_ACTION_CAP_SHORT_PRESS_x4);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0U);
+  peers.grant = false;
+  at.iterateAlways();
+  EXPECT_FALSE(handler->isEnabled());
+  EXPECT_TRUE(at.isAnyActionEnabledOnServer());
+}
+
+TEST_F(ActionTriggerTests,
+       ActionGrantDetectsPhysicalMulticlickWithoutChangingLocalEdges) {
+  SimpleTime time;
+  DigitalInterfaceMock io;
+  SupLanActionProbe peers(&sd);
+  ActionHandlerMock local;
+  int pinState = 0;
+  EXPECT_CALL(io, pinMode(5, INPUT));
+  EXPECT_CALL(io, digitalRead(5))
+      .WillRepeatedly([&pinState](int) { return pinState; });
+  Supla::Control::Button button(5, false, false);
+  button.setMulticlickTime(300);
+  button.setHoldTime(1000);
+  button.addAction(Supla::TOGGLE, local, Supla::ON_PRESS);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  button.onInit();
+  at.onInit();
+  applyActionTriggerServerConfig(&at, 0);
+  at.iterateAlways();
+  EXPECT_FALSE(at.isAnyActionEnabledOnServer());
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  EXPECT_CALL(local, handleAction(Supla::ON_PRESS, Supla::TOGGLE)).Times(6);
+  auto edge = [&](int value) {
+    pinState = value;
+    time.advance(70);
+    button.onTimer();
+    time.advance(30);
+    button.onTimer();
+  };
+  auto clicks = [&](int count, uint32_t capability) {
+    for (int i = 0; i < count; ++i) {
+      edge(1);
+      edge(0);
+    }
+    time.advance(350);
+    button.onTimer();
+    EXPECT_EQ(peers.last, capability);
+    EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(),
+              0U);
+  };
+  clicks(2, SUPLA_ACTION_CAP_SHORT_PRESS_x2);
+  clicks(4, SUPLA_ACTION_CAP_SHORT_PRESS_x4);
+}
+
+TEST_F(ActionTriggerTests, SupLanRecognitionPreservesFastDirectionalEdges) {
+  SimpleTime time;
+  DigitalInterfaceMock io;
+  SupLanActionProbe peers(&sd);
+  int pinState = 0;
+  EXPECT_CALL(io, pinMode(5, INPUT));
+  EXPECT_CALL(io, digitalRead(5))
+      .WillRepeatedly([&pinState](int) { return pinState; });
+  Supla::Control::Button button(5, false, false);
+  button.setMulticlickTime(300, true);
+  class Motor : public Supla::ActionHandler {
+   public:
+    void handleAction(int event, int) override {
+      if (event == Supla::CONDITIONAL_ON_PRESS) ++starts;
+      if (event == Supla::CONDITIONAL_ON_RELEASE) ++stops;
+    }
+    int starts = 0, stops = 0;
+  } motor;
+  button.addAction(Supla::MOVE_UP, motor, Supla::CONDITIONAL_ON_PRESS);
+  button.addAction(Supla::UP_STOP, motor, Supla::CONDITIONAL_ON_RELEASE);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  button.onInit();
+  at.onInit();
+  applyActionTriggerServerConfig(&at, 0);
+  at.iterateAlways();
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  motor.starts = motor.stops = 0;
+  for (int value : {1, 0, 1, 0}) {
+    pinState = value;
+    time.advance(70);
+    button.onTimer();
+    time.advance(30);
+    button.onTimer();
+  }
+  EXPECT_EQ(motor.starts, 2);
+  EXPECT_EQ(motor.stops, 2);
+  time.advance(350);
+  button.onTimer();
+  EXPECT_EQ(peers.last, SUPLA_ACTION_CAP_TOGGLE_x4);
+  peers.grant = false;
+  at.iterateAlways();
+  for (int value : {1, 0}) {
+    pinState = value;
+    time.advance(70);
+    button.onTimer();
+    time.advance(30);
+    button.onTimer();
+  }
+  EXPECT_EQ(motor.starts, 3);
+  EXPECT_EQ(motor.stops, 3);
+}
+
+TEST_F(ActionTriggerTests, SupLanObserverKeepsConditionalPressAndHoldPolicy) {
+  SimpleTime time;
+  DigitalInterfaceMock io;
+  SupLanActionProbe peers(&sd);
+  int pinState = 0;
+  EXPECT_CALL(io, pinMode(5, INPUT));
+  EXPECT_CALL(io, digitalRead(5))
+      .WillRepeatedly([&pinState](int) { return pinState; });
+  Supla::Control::Button button(5, false, false);
+  button.setMulticlickTime(300);
+  button.setHoldTime(200);
+  ActionHandlerMock local;
+  button.addAction(Supla::TOGGLE, local, Supla::CONDITIONAL_ON_PRESS);
+  button.addAction(Supla::TURN_ON, local, Supla::ON_HOLD);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  button.onInit();
+  at.onInit();
+  applyActionTriggerServerConfig(&at, 0);
+  at.iterateAlways();
+  EXPECT_CALL(local, handleAction(Supla::CONDITIONAL_ON_PRESS,
+                                Supla::TOGGLE)).Times(2);
+  EXPECT_CALL(local, handleAction(Supla::ON_HOLD, Supla::TURN_ON)).Times(1);
+  time.advance(100);
+  button.onTimer();
+  time.advance(30);
+  button.onTimer();
+  for (int value : {1, 0, 1}) {
+    pinState = value;
+    time.advance(70);
+    button.onTimer();
+    time.advance(30);
+    button.onTimer();
+  }
+  time.advance(250);
+  button.onTimer();
+  EXPECT_EQ(peers.last, SUPLA_ACTION_CAP_HOLD);
 }

@@ -23,7 +23,7 @@ RemoteResourceManager::RemoteResourceManager(SupLan::PeerTable *peers,
 RemoteResourceManager::Resource *RemoteResourceManager::find(
     const SupLan::ResourceId &resource) {
   for (auto &entry : resources_) {
-    if (entry.used && sameResource(entry.id, resource)) return &entry;
+    if (entry.used() && sameResource(entry.id, resource)) return &entry;
   }
   return nullptr;
 }
@@ -38,8 +38,25 @@ bool RemoteResourceManager::consume(const ConsumeIntent &intent) {
   for (auto &entry : intents_) {
     if (entry.consumerId == intent.consumerId) {
       if (sameResource(entry.resource, intent.resource) &&
-          entry.permissions == intent.permissions)
+          entry.permissions == intent.permissions &&
+          entry.approvalEligible == intent.approvalEligible)
         return true;
+      if (sameResource(entry.resource, intent.resource)) {
+        if (runtime_ && (entry.permissions & SupLan::kPermissionControl) &&
+            !(intent.permissions & SupLan::kPermissionControl))
+          runtime_->cancelOwnedControls(intent.consumerId);
+        entry = intent;
+        auto *resource = find(intent.resource);
+        if (!resource) return false;
+        const uint8_t previous = resource->manualPermissions;
+        demand(resource);
+        if (previous != resource->manualPermissions) {
+          resource->manualAttempted = false;
+          resource->approval = SUPLA_SUPLAN_ACCESS_STATUS_INVALID;
+        }
+        reconcile(resource);
+        return true;
+      }
       remove(intent.consumerId);
       slot = &entry;
       break;
@@ -53,10 +70,11 @@ bool RemoteResourceManager::consume(const ConsumeIntent &intent) {
   auto *resource = find(intent.resource);
   if (!resource) {
     for (auto &entry : resources_) {
-      if (!entry.used) {
+      if (!entry.used()) {
         resource = &entry;
         *resource = {};
-        resource->used = true;
+        if (nextGeneration_ == UINT32_MAX) return false;
+        resource->generation = ++nextGeneration_;
         resource->id = intent.resource;
         break;
       }
@@ -67,17 +85,24 @@ bool RemoteResourceManager::consume(const ConsumeIntent &intent) {
     return false;
   }
   *slot = intent;
-  resource->permissions |= intent.permissions;
+  const uint8_t previous = resource->manualPermissions;
+  demand(resource);
+  if (previous != resource->manualPermissions)
+    resource->manualAttempted = false;
   reconcile(resource);
   return true;
 }
 
 void RemoteResourceManager::remove(uint32_t consumerId) {
+  if (runtime_) runtime_->cancelOwnedControls(consumerId);
   for (auto &intent : intents_) {
-    if (intent.consumerId == consumerId) intent = {};
+    if (intent.consumerId == consumerId) {
+      intent = {};
+      if (nextGeneration_ != UINT32_MAX) ++nextGeneration_;
+    }
   }
   for (auto &resource : resources_) {
-    if (!resource.used) continue;
+    if (!resource.used()) continue;
     uint8_t permissions = 0;
     for (const auto &intent : intents_) {
       if (intent.consumerId && sameResource(intent.resource, resource.id)) {
@@ -95,8 +120,22 @@ void RemoteResourceManager::remove(uint32_t consumerId) {
       }
       resource = {};
     } else {
-      resource.permissions = permissions;
+      demand(&resource);
+      reconcile(&resource);
     }
+  }
+}
+
+void RemoteResourceManager::demand(Resource *resource) {
+  resource->permissions = 0;
+  resource->manualPermissions = 0;
+  for (const auto &intent : intents_) {
+    if (!intent.consumerId || !sameResource(intent.resource, resource->id))
+      continue;
+    uint8_t rights = intent.permissions;
+    if (rights & SupLan::kPermissionControl) rights |= SupLan::kPermissionRead;
+    resource->permissions |= rights;
+    if (intent.approvalEligible) resource->manualPermissions |= rights;
   }
 }
 
@@ -106,39 +145,68 @@ int RemoteResourceManager::readyPeer(const Resource &resource) const {
     const auto *peer = peers_->get(i);
     if (peer && peer->destination &&
         peer->contextBytes[0] == SupLan::kAuthorityServer &&
-        peers_->runtimeEligible(i) &&
-        peers_->authorize(i, resource.id, resource.permissions))
-      return i;
+        peers_->runtimeEligible(i)) {
+      for (uint8_t right = 1; right <= 4; right <<= 1) {
+        if (peers_->authorize(i, resource.id, right)) return i;
+      }
+    }
   }
   return -1;
+}
+
+void RemoteResourceManager::invalidate(Resource *resource) {
+  resource->hasSnapshot = false;
+  resource->generation = nextGeneration_ == UINT32_MAX
+                             ? 0 : ++nextGeneration_;
 }
 
 void RemoteResourceManager::reconcile(Resource *resource) {
   const int peerIndex = readyPeer(*resource);
   if (peerIndex < 0) {
-    if (resource->access == RemoteAccess::READY) {
-      resource->hasSnapshot = false;
+    if (resource->effective || resource->peerIndex != 0xff) {
+      if (runtime_ && resource->peerIndex != 0xff)
+        runtime_->removeReadDependency(resource->peerIndex, resource->id);
+      invalidate(resource);
       resource->readAttempted = false;
       resource->ensureAttempted = false;
       resource->access = RemoteAccess::PENDING;
     }
     resource->peerIndex = 0xff;
+    resource->effective = 0;
     return;
   }
   const auto *peer = peers_->get(peerIndex);
   if (resource->peerIndex != peerIndex ||
       memcmp(resource->locator, peer->peerLocator, 16) != 0) {
-    resource->hasSnapshot = false;
+    invalidate(resource);
     resource->readAttempted = false;
     memcpy(resource->locator, peer->peerLocator, 16);
   }
+  const uint8_t previous = resource->effective;
+  resource->effective = 0;
+  for (uint8_t right = 1; right <= 4; right <<= 1) {
+    if (peers_->authorize(peerIndex, resource->id, right))
+      resource->effective |= right;
+  }
+  if ((previous & SupLan::kPermissionRead) &&
+      !(resource->effective & resource->permissions &
+        SupLan::kPermissionRead)) {
+    invalidate(resource);
+    resource->readAttempted = false;
+    if (runtime_) runtime_->removeReadDependency(peerIndex, resource->id);
+  }
   resource->peerIndex = peerIndex;
-  resource->access = RemoteAccess::READY;
+  resource->access = (resource->effective & resource->permissions) ==
+                            resource->permissions
+                        ? RemoteAccess::READY : RemoteAccess::PENDING;
 }
 
 bool RemoteResourceManager::usable(const Resource &resource,
                                    uint32_t nowMs) const {
-  if (resource.access != RemoteAccess::READY || !resource.hasSnapshot) {
+  if (!(resource.effective & resource.permissions &
+        SupLan::kPermissionRead) || !resource.hasSnapshot ||
+      resource.snapshot.Default == SUPLA_CHANNELFNC_NONE ||
+      !resource.generation) {
     return false;
   }
   const uint32_t ttl = resource.snapshot.ValueValidityTimeSec;
@@ -166,9 +234,9 @@ void RemoteResourceManager::iterate(uint32_t nowMs) {
   const int start = previous ? (previous - resources_ + 1) % kCapacity : 0;
   for (int i = 0; i < kCapacity; ++i) {
     auto &resource = resources_[(start + i) % kCapacity];
-    if (!resource.used) continue;
+    if (!resource.used()) continue;
     reconcile(&resource);
-    if (resource.access == RemoteAccess::READY) {
+    if (resource.effective & resource.permissions & SupLan::kPermissionRead) {
       const uint32_t ttl = resource.snapshot.ValueValidityTimeSec;
       const uint32_t refreshMs =
           resource.hasSnapshot && ttl && ttl < 60 ? ttl * 1000 : 60000;
@@ -185,19 +253,31 @@ void RemoteResourceManager::iterate(uint32_t nowMs) {
           resource.readAttempted = true;
         }
       }
-    } else if (!ensurePending_ && !resource.ensureAttempted && access_ &&
+    }
+    const bool manual = resource.manualPermissions && !resource.manualAttempted;
+    const bool missing = (resource.effective & resource.permissions) !=
+                         resource.permissions;
+    if (!ensurePending_ && (manual || (missing && !resource.ensureAttempted)) &&
+        access_ &&
                (!ensureNextMs_ ||
                 static_cast<int32_t>(nowMs - ensureNextMs_) >= 0)) {
       TDS_SuplaEnsureResourceAccess request = {};
       request.Resource.ResourceType = resource.id.type;
       request.Resource.ResourceId = resource.id.id;
-      request.Permissions = resource.permissions;
+      request.Permissions = manual ? resource.manualPermissions
+                                   : resource.permissions;
+      if (manual) request.Flags =
+        SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL;
       request.DeliveryMode = SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER;
       if (access_->ensure(request)) {
         ensurePending_ = true;
         ensureNextMs_ = nowMs + kEnsureTimeoutMs;
         ensureResource_ = resource.id;
-        resource.ensureAttempted = true;
+        ensurePermissions_ = request.Permissions;
+        if (manual) resource.manualAttempted = true;
+        // Config-only rights are never promoted to manual approval.
+        resource.ensureAttempted = !manual ||
+            request.Permissions == resource.permissions;
       } else {
         ensureNextMs_ = nowMs + 1000;
       }
@@ -219,6 +299,58 @@ RemoteAccess RemoteResourceManager::access(const SupLan::ResourceId &id) {
   reconcile(resource);
   return resource->access;
 }
+uint32_t RemoteResourceManager::continuity(const SupLan::ResourceId &id) {
+  auto *resource = find(id);
+  return resource && !resource->continuityPending ? resource->generation : 0;
+}
+uint8_t RemoteResourceManager::effectivePermissions(
+    const SupLan::ResourceId &id) {
+  auto *resource = find(id);
+  if (!resource) return 0;
+  reconcile(resource);
+  return resource->effective;
+}
+bool RemoteResourceManager::peerAvailable(const SupLan::ResourceId &id) {
+  auto *resource = find(id);
+  if (!resource || !runtime_) return false;
+  reconcile(resource);
+  return resource->peerIndex != 0xff &&
+         runtime_->hasSession(resource->peerIndex) &&
+         !runtime_->recoveryStatus(resource->peerIndex).sleeping;
+}
+uint8_t RemoteResourceManager::approvalStatus(const SupLan::ResourceId &id,
+                                              uint8_t permissions) {
+  auto *resource = find(id);
+  if (resource && permissions) {
+    reconcile(resource);
+    // An aggregate ENSURE answer cannot identify the rejected subset.
+    // Do not attribute another consumer's decision to this handle.
+    if ((permissions & ~resource->effective) !=
+        (resource->approvalPermissions & ~resource->effective))
+      return SUPLA_SUPLAN_ACCESS_STATUS_INVALID;
+  }
+  return resource ? resource->approval : SUPLA_SUPLAN_ACCESS_STATUS_INVALID;
+}
+bool RemoteResourceManager::control(const SupLan::ResourceId &id,
+                                    const uint8_t *value, size_t length,
+                                    uint32_t owner) {
+  auto *resource = find(id);
+  if (!resource || !runtime_) return false;
+  reconcile(resource);
+  return (resource->effective & SupLan::kPermissionControl) &&
+         runtime_->sendControl(resource->peerIndex, id, value, length, owner);
+}
+bool RemoteResourceManager::action(const SupLan::ResourceId &id,
+    uint32_t actionId,
+                                   const uint8_t *params, size_t length,
+                                   uint32_t owner) {
+  auto *resource = find(id);
+  if (!resource || !runtime_) return false;
+  reconcile(resource);
+  return (resource->effective & SupLan::kPermissionControl) &&
+         runtime_->sendControlAction(resource->peerIndex, id, actionId,
+                                     params, length, owner);
+}
 void RemoteResourceManager::receive(uint8_t peerIndex,
                                     const SupLan::ResourceId &id,
                                     const uint8_t *payload, size_t length,
@@ -226,14 +358,17 @@ void RemoteResourceManager::receive(uint8_t peerIndex,
   auto *resource = find(id);
   if (!resource || !payload || length != sizeof(resource->snapshot)) return;
   reconcile(resource);
-  if (resource->access != RemoteAccess::READY ||
-      resource->peerIndex != peerIndex)
+  if (!(resource->effective & resource->permissions &
+        SupLan::kPermissionRead) || resource->peerIndex != peerIndex)
     return;
   TDS_SuplaDeviceChannel_E snapshot;
   memcpy(&snapshot, payload, sizeof(snapshot));
   if (snapshot.Number != 0xff) return;
+  if (snapshot.Offline != SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE &&
+      resource->hasSnapshot) invalidate(resource);
   resource->snapshot = snapshot;
   resource->receivedMs = nowMs;
+  resource->continuityPending = false;
   resource->hasSnapshot = true;
 }
 void RemoteResourceManager::ensureResult(
@@ -244,6 +379,8 @@ void RemoteResourceManager::ensureResult(
   auto *resource = find(ensureResource_);
   if (!resource) return;
   reconcile(resource);
+  resource->approval = result.AccessStatus;
+  resource->approvalPermissions = ensurePermissions_;
   if (resource->access == RemoteAccess::READY) return;
   if (result.Result != SUPLA_SUPLAN_RESULT_OK ||
       result.AccessStatus != SUPLA_SUPLAN_ACCESS_STATUS_GRANTED ||
@@ -255,16 +392,27 @@ void RemoteResourceManager::serverReconnected() {
   ensurePending_ = false;
   ensureNextMs_ = 0;
   for (auto &resource : resources_) {
-    if (!resource.used) continue;
+    if (!resource.used()) continue;
     resource.ensureAttempted = false;
+    resource.manualAttempted = false;
     if (resource.access == RemoteAccess::BLOCKED) {
       resource.access = RemoteAccess::PENDING;
     }
   }
 }
+void RemoteResourceManager::sessionChanged(uint8_t peerIndex) {
+  for (auto &resource : resources_) {
+    if (resource.used() && resource.peerIndex == peerIndex &&
+        resource.hasSnapshot) {
+      resource.continuityPending = true;
+      resource.generation = nextGeneration_ == UINT32_MAX
+                                ? 0 : ++nextGeneration_;
+    }
+  }
+}
 void RemoteResourceManager::authorizationChanged() {
   for (auto &resource : resources_) {
-    if (!resource.used) continue;
+    if (!resource.used()) continue;
     reconcile(&resource);
   }
 }
@@ -280,14 +428,16 @@ bool RemoteResourceManager::hasConsumer(uint32_t consumer) const {
 }
 int RemoteResourceManager::resourceCount() const {
   int count = 0;
-  for (const auto &entry : resources_) count += entry.used;
+  for (const auto &entry : resources_) count += entry.used();
   return count;
 }
 bool RemoteResourceManager::allowPresence(uint8_t index, uint32_t nowMs) {
   for (auto &resource : resources_) {
-    if (!resource.used) continue;
+    if (!resource.used()) continue;
     reconcile(&resource);
-    if (resource.access != RemoteAccess::READY || resource.peerIndex != index) {
+    if (!(resource.effective & resource.permissions &
+        SupLan::kPermissionRead) ||
+        resource.peerIndex != index) {
       continue;
     }
     if (static_cast<uint32_t>(nowMs - resource.hintEpochMs) >= 1000) {
@@ -306,9 +456,11 @@ void RemoteResourceManager::peerAwake(uint8_t index, uint16_t window,
   bool refresh = false;
   bool accepted = false;
   for (auto &resource : resources_) {
-    if (!resource.used) continue;
+    if (!resource.used()) continue;
     reconcile(&resource);
-    if (resource.access != RemoteAccess::READY || resource.peerIndex != index ||
+    if (!(resource.effective & resource.permissions &
+        SupLan::kPermissionRead) ||
+        resource.peerIndex != index ||
         (resource.hasHintNonce &&
          memcmp(nonce, resource.lastHintNonce, 16) == 0))
       continue;

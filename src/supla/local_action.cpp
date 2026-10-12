@@ -7,6 +7,45 @@
 #include <supla/actions.h>
 
 namespace Supla {
+namespace {
+uint16_t actionDispatchDepth = 0;
+void retire(ActionHandlerClient *entry) {
+  if (actionDispatchDepth) {
+    entry->deletePending = true;
+    entry->disable();
+  } else {
+    delete entry;
+  }
+}
+void collectRetired() {
+  auto entry = ActionHandlerClient::begin;
+  while (entry) {
+    if (entry->deletePending) {
+      delete entry;
+      entry = ActionHandlerClient::begin;
+    } else {
+      entry = entry->next;
+    }
+  }
+}
+struct DispatchFrame;
+DispatchFrame *activeDispatch = nullptr;
+struct DispatchFrame {
+  explicit DispatchFrame(const LocalAction *source)
+      : trigger(source), previous(activeDispatch) {
+    activeDispatch = this;
+    ++actionDispatchDepth;
+  }
+  ~DispatchFrame() {
+    activeDispatch = previous;
+    if (--actionDispatchDepth == 0) collectRetired();
+  }
+  const LocalAction *trigger;
+  DispatchFrame *previous;
+  bool canceled = false;
+};
+}  // namespace
+
 
 ActionHandlerClient::ActionHandlerClient() {
   if (begin == nullptr) {
@@ -40,7 +79,7 @@ ActionHandlerClient::~ActionHandlerClient() {
 }
 
 bool ActionHandlerClient::isEnabled() {
-  return enabled;
+  return enabled && !deletePending;
 }
 
 void ActionHandlerClient::enable() {
@@ -106,6 +145,15 @@ void LocalAction::addAction(uint16_t action,
   LocalAction::addAction(action, *client, event, alwaysEnabled);
 }
 
+void LocalAction::baselineActions() const {
+  DispatchFrame dispatch(this);
+  for (auto entry = ActionHandlerClient::begin; entry && !dispatch.canceled;
+       entry = entry->next) {
+    if (entry->trigger == this && entry->client && entry->isEnabled())
+      entry->client->baselineState();
+  }
+}
+
 void LocalAction::runAction(uint16_t event) const {
   runActionInternal(event, nullptr);
 }
@@ -117,8 +165,9 @@ void LocalAction::runAction(
 
 void LocalAction::runActionInternal(
     uint16_t event, const ActionAllowList *allowOnlyActions) const {
+  DispatchFrame dispatch(this);
   auto ptr = ActionHandlerClient::begin;
-  while (ptr) {
+  while (ptr && !dispatch.canceled) {
     bool actionAllowed = allowOnlyActions == nullptr ||
                          allowOnlyActions->contains(ptr->action);
     bool duplicateLockAction = false;
@@ -293,20 +342,27 @@ void LocalAction::DeleteActionsHandledByExcept(
     auto next = ptr->next;
     bool preserve = false;
     preserve = preservedActions.contains(ptr->action);
-    if (!preserve && ptr->client && ptr->client->getRealClient() == client) {
-      delete ptr;
+    if (!ptr->deletePending && !preserve && ptr->client &&
+        ptr->client->getRealClient() == client) {
+      retire(ptr);
       next = ActionHandlerClient::begin;
     }
     ptr = next;
   }
 }
 
+void LocalAction::CancelDispatch(const LocalAction *trigger) {
+  for (auto frame = activeDispatch; frame; frame = frame->previous) {
+    if (frame->trigger == trigger) frame->canceled = true;
+  }
+}
 void LocalAction::DeleteActionsTriggeredBy(const LocalAction *trigger) {
+  CancelDispatch(trigger);
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {
     auto next = ptr->next;
-    if (ptr->trigger == trigger) {
-      delete ptr;
+    if (!ptr->deletePending && ptr->trigger == trigger) {
+      retire(ptr);
       next = ActionHandlerClient::begin;
     }
     ptr = next;
@@ -320,9 +376,10 @@ void LocalAction::DeleteAction(const LocalAction *trigger,
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {
     auto next = ptr->next;
-    if (ptr->trigger == trigger && ptr->client == client &&
+    if (!ptr->deletePending && ptr->trigger == trigger &&
+        ptr->client == client &&
         ptr->onEvent == event && ptr->action == action) {
-      delete ptr;
+      retire(ptr);
       next = ActionHandlerClient::begin;
     }
     ptr = next;
@@ -332,10 +389,17 @@ void LocalAction::DeleteAction(const LocalAction *trigger,
 void LocalAction::NullifyActionsHandledBy(const ActionHandler *client) {
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {
-    if (ptr->client && ptr->client->getRealClient() == client) {
-      ptr->client = nullptr;
+    auto next = ptr->next;
+    if (!ptr->deletePending && ptr->client &&
+        ptr->client->getRealClient() == client) {
+      if (ptr->client != client && ptr->client->deleteClient()) {
+        if (!ptr->deletePending) retire(ptr);
+        next = ActionHandlerClient::begin;
+      } else {
+        ptr->client = nullptr;
+      }
     }
-    ptr = ptr->next;
+    ptr = next;
   }
 }
-};  // namespace Supla
+}  // namespace Supla

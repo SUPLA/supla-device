@@ -162,6 +162,13 @@ void Element::onTimer() {}
 
 void Element::onFastTimer() {}
 
+int32_t Element::handleRemoteNewValue(TSD_SuplaChannelNewValue *newValue) {
+  return handleNewValueFromServer(newValue);
+}
+uint8_t Element::handleRemoteAction(uint32_t, const uint8_t *, size_t) {
+  return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+}
+
 int32_t Element::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   (void)(newValue);
   return -1;

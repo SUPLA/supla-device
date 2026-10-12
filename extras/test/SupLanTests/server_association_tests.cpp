@@ -6,9 +6,13 @@
 #include <arduino_mock.h>
 #include <supla/control/hvac_base.h>
 #include <supla/control/relay.h>
+#include <supla/control/virtual_relay.h>
 #include <supla/control/relay_hvac_aggregator.h>
 #include <supla/sensor/virtual_thermometer.h>
 #include <supla/storage/storage.h>
+#include <supla/suplan/owned_stack.h>
+#include <network_with_mac_mock.h>
+#include <timer_mock.h>
 #include <supla/suplan/resource_binding_manager.h>
 #include <fcntl.h>
 #include <gtest/gtest.h>
@@ -1043,6 +1047,159 @@ TEST(SupLanProvisionedRead,
     EXPECT_EQ(WEXITSTATUS(sourceStatus), 0) << "reboot mode " << rebootMode;
     EXPECT_EQ(WEXITSTATUS(destinationStatus), 0)
         << "reboot mode " << rebootMode;
+  }
+}
+
+// Automatic SDK bootstrap uses the same isolated process transport; all
+// identity/credential records are provisioned through production acceptance.
+int bootstrapSocket;
+class BootstrapProcessUdp : public ProcessDatagrams,
+                            public Supla::Protocol::SupLanTransportLifecycle {
+ public:
+  BootstrapProcessUdp() : ProcessDatagrams(bootstrapSocket) { latest = this; }
+  bool networkReady(uint32_t) override { return true; }
+  bool isOpen() const override { return opened; }
+  bool open() override { opened = true; return true; }
+  void close() override { opened = false; }
+  static BootstrapProcessUdp *latest;
+  bool opened = false;
+};
+BootstrapProcessUdp *BootstrapProcessUdp::latest = nullptr;
+Supla::Device::SupLanStack *makeProcessBootstrap(SuplaDeviceClass *device,
+                                                uint8_t version) {
+  using Stack = Supla::Device::OwnedSupLanStack<OpenSslCryptoPort,
+                                               BootstrapProcessUdp>;
+  auto stack = Supla::Device::allocateSupLan<Stack>(device, version);
+  if (stack && !stack->initialize()) {
+    delete stack;
+    return nullptr;
+  }
+  return stack;
+}
+int runAutomaticEndpoint(int socket, bool source, bool reboot) {
+  Supla::Channel::resetToDefaults();
+  Supla::RegisterDevice::resetToDefaults();
+  SimpleTime time;
+  testing::NiceMock<TimerMock> timer;
+  testing::NiceMock<NetworkMockWithMac> network;
+  EXPECT_CALL(network, isReady()).WillRepeatedly(testing::Return(true));
+  AssociationConfig config;
+  char guid[SUPLA_GUID_SIZE] = {1};
+  char auth[SUPLA_AUTHKEY_SIZE] = {2};
+  config.setGUID(guid);
+  config.setAuthKey(auth);
+  config.setSuplaServer("supla.example");
+  config.setEmail("user@example.com");
+  config.setSuplaCommProtocolEnabled(false);  // No Server/WAN in this harness.
+  std::unique_ptr<Supla::Element> element;
+  if (source) {
+    auto thermometer = new Supla::Sensor::VirtualThermometer;
+    thermometer->setValue(21.75);
+    element.reset(thermometer);
+  } else {
+    element.reset(new Supla::Control::VirtualRelay);
+  }
+  bootstrapSocket = socket;
+  Supla::Device::setSupLanFactoryForTest(makeProcessBootstrap);
+  std::unique_ptr<SuplaDeviceClass> device;
+  auto boot = [&]() {
+    device.reset(new SuplaDeviceClass);
+    return device->enableSupLan() && device->begin(29);
+  };
+  if (!boot()) return 30;
+  auto identity = &device->getSrpcLayer()->serverIdentity();
+  if (!identity->registrationStarted()) return 31;
+  identity->registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = source ? 101 : 202;
+  ids.ChannelCount = 1;
+  ids.ChannelId[0] = source ? 501 : 601;
+  if (identity->accept(ids).Result) return 32;
+  identity->syncDone();
+  auto adapter = [&]() -> Supla::Protocol::SupLan * {
+    for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto;
+         proto = proto->next())
+      if (proto->getSdc() == device.get() && proto->isSupLan())
+        return static_cast<Supla::Protocol::SupLan *>(proto);
+    return nullptr;
+  };
+  TDS_SuplaSetSuplanSourceAssociationResult key = {};
+  if (source) {
+    TSDS_SuplaSetSuplanSourceAssociation request = {};
+    request.PeerContext = {1, 0, 1, 101, 1, 202, identity->rootEpoch(), 1};
+    request.AclRevision = 1;
+    request.Flags = SUPLA_SUPLAN_SOURCE_FLAG_RETURN_PEER_KEY;
+    request.AclEntryCount = 1;
+    request.Acl[0] = {1, 501, 1};
+    if (!adapter()->setSuplanSourceAssociation(request, &key) || key.Result)
+      return 33;
+    if (send(socket, &key, sizeof(key), 0) != sizeof(key)) return 34;
+  } else {
+    if (recv(socket, &key, sizeof(key), 0) != sizeof(key)) return 35;
+    TSDS_SuplaSetSuplanDestinationAssociation request = {};
+    request.PeerContext = key.PeerContext;
+    request.AclRevision = 1;
+    request.PeerKeySize = 32;
+    std::memcpy(request.PeerKey, key.PeerKey, 32);
+    request.ResourceCount = 1;
+    request.Resources[0] = {1, 501, 1};
+    TDS_SuplaSetSuplanDestinationAssociationResult result = {};
+    if (!adapter()->setSuplanDestinationAssociation(request, &result) ||
+        result.Result) return 36;
+  }
+  if (reboot) {
+    device.reset();  // Fully tear down owned stack, retaining durable records.
+    config.reboot();
+    if (!boot()) return 37;
+    identity = &device->getSrpcLayer()->serverIdentity();
+    if (!identity->identityAvailable() || identity->serverDeviceId() !=
+        ids.DeviceId) return 38;
+  }
+  Supla::RemoteChannel thermometer(501, Supla::READ);
+  for (int step = 0; step < 1000; ++step) {
+    usleep(1000);
+    time.advance(5);
+    BootstrapProcessUdp::latest->now = time.value;
+    device->iterate();  // No second SupLAN runtime loop.
+    if (source && BootstrapProcessUdp::latest->readReceived) return 0;
+    if (!source && thermometer.state().temperature() == 21.75) {
+      uint8_t complete = 0xfe;
+      if (send(socket, &complete, 1, 0) != 1) return 39;
+      return 0;
+    }
+  }
+  return 40;
+}
+TEST(SupLanProvisionedRead, AutomaticBootstrapReadsAndRestartsWithoutServer) {
+  for (int mode = 0; mode < 3; ++mode) {
+    int sockets[2];
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets), 0);
+    timeval timeout = {2, 0};
+    for (int socket : sockets)
+      ASSERT_EQ(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+                           sizeof(timeout)), 0);
+    auto source = fork();
+    ASSERT_GE(source, 0);
+    if (!source) {
+      close(sockets[1]);
+      _exit(runAutomaticEndpoint(sockets[0], true, mode == 1));
+    }
+    auto destination = fork();
+    ASSERT_GE(destination, 0);
+    if (!destination) {
+      close(sockets[0]);
+      _exit(runAutomaticEndpoint(sockets[1], false, mode == 2));
+    }
+    close(sockets[0]);
+    close(sockets[1]);
+    int sourceStatus = 0;
+    int destinationStatus = 0;
+    ASSERT_EQ(waitpid(source, &sourceStatus, 0), source);
+    ASSERT_EQ(waitpid(destination, &destinationStatus, 0), destination);
+    ASSERT_TRUE(WIFEXITED(sourceStatus));
+    ASSERT_TRUE(WIFEXITED(destinationStatus));
+    EXPECT_EQ(WEXITSTATUS(sourceStatus), 0) << "mode " << mode;
+    EXPECT_EQ(WEXITSTATUS(destinationStatus), 0) << "mode " << mode;
   }
 }
 

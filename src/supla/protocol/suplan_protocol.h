@@ -133,6 +133,9 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
       const TSDS_SuplaSetSuplanDestinationAssociation &request,
       TDS_SuplaSetSuplanDestinationAssociationResult *result) override;
   void suplanIdentityChanged() override;
+  bool isSupLan() const override { return true; }
+  bool isSupLanServerCapable() const override;
+  void onFactoryReset() override;
   void attachRuntime(Supla::SupLan::Runtime *runtime);
   void attachTransportLifecycle(SupLanTransportLifecycle *transport);
   void setEnabled(bool enabled);
@@ -148,6 +151,11 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   uint32_t getConnectionFailTime() override;
   bool isRegisteredAndReady() override;
   bool isTransportOpen() const;
+  bool hasSupLanActionPeer(uint8_t number) const override;
+  bool usesSupLanActionFanout() const override { return true; }
+  void publishSupLanAction(uint8_t number, uint32_t capability) override {
+    sendActionTrigger(number, capability);
+  }
   void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) override;
   void sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
                               uint8_t offline,
@@ -158,6 +166,12 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   bool readResource(const Supla::SupLan::ResourceId &resource,
                     bool *eventOnly, uint8_t *payload, size_t capacity,
                     size_t *payloadLength) override;
+  void sessionChanged(uint8_t peer) override {
+    if (resources_) resources_->sessionChanged(peer);
+  }
+  uint8_t dispatchControlAction(const Supla::SupLan::ResourceId &resource,
+                                uint32_t actionId, const uint8_t *params,
+                                size_t length) override;
   uint8_t dispatchControl(const Supla::SupLan::ResourceId &resource,
                           uint32_t messageType, const uint8_t *payload,
                           size_t payloadLength) override;

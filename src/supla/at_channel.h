@@ -13,6 +13,7 @@ class AtChannel : public Channel {
  public:
   void sendUpdate() override;
   void pushAction(uint32_t action);
+  void emitAction(uint32_t action, bool publishToServer);
   void activateAction(uint32_t action);
   uint32_t popAction();
   void setRelatedChannel(uint8_t channelNumber);

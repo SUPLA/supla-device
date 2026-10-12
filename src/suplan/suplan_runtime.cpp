@@ -64,8 +64,10 @@ static bool isActionApplication(const uint8_t *data, size_t length) {
 static bool isControlApplication(const uint8_t *data, size_t length) {
   ApplicationDataView application = {};
   return decodeApplicationData(data, length, &application) &&
-      application.messageClass == kMessageClassSuplaCall &&
-      application.messageType == kSuplaCallChannelSetValue &&
+      ((application.messageClass == kMessageClassSuplaCall &&
+        application.messageType == kSuplaCallChannelSetValue) ||
+       (application.messageClass == kMessageClassNative &&
+        application.messageType == kNativeControlAction)) &&
       application.flags == kAckRequired;
 }
 
@@ -291,6 +293,8 @@ int Runtime::allocateSession(uint8_t peerIndex) {
       }
     }
   }
+  if (sessions_[selected].used && application_)
+    application_->sessionChanged(sessions_[selected].peerIndex);
   clearSessionEntry(&sessions_[selected]);
   sessions_[selected].used = true;
   sessions_[selected].peerIndex = peerIndex;
@@ -848,9 +852,9 @@ void Runtime::recoverSession(uint8_t peerIndex, uint64_t sessionId) {
         retry->sessionId != sessionId) {
       continue;
     }
-    if (retry->actionDelivery) {
-      // An Action Trigger that has made its first protected DATA attempt is
-      // scoped to this SESSION and must never cross into a replacement one.
+    if (retry->actionDelivery || retry->controlDelivery) {
+      // After the first protected DATA attempt a non-idempotent operation
+      // is scoped to this SESSION; never re-encode it after transmission.
       clearRetryEntry(retry);
       continue;
     }
@@ -900,6 +904,7 @@ void Runtime::recoverSession(uint8_t peerIndex, uint64_t sessionId) {
   for (uint8_t i = 0; i < SUPLAN_MAX_ACTIVE_SESSIONS; ++i) {
     if (sessions_[i].used && sessions_[i].peerIndex == peerIndex &&
         sessions_[i].sessionId == sessionId) {
+      if (application_) application_->sessionChanged(sessions_[i].peerIndex);
       clearSessionEntry(&sessions_[i]);
     }
   }
@@ -1004,7 +1009,7 @@ bool Runtime::queueRead(uint8_t peerIndex, const ResourceId &resource) {
 
 bool Runtime::sendControl(uint8_t peerIndex, const ResourceId &resource,
                           const uint8_t *suplaPayload,
-                          size_t payloadLength) {
+                          size_t payloadLength, uint32_t owner) {
   const PeerRecord *peer = peers_->get(peerIndex);
   if (!isLocalDestination(peer) ||
       !peers_->authorize(peerIndex, resource, kPermissionControl)) {
@@ -1020,7 +1025,43 @@ bool Runtime::sendControl(uint8_t peerIndex, const ResourceId &resource,
   }
   return enqueueApplication(peerIndex, applicationBuffer_,
                             kApplicationHeaderSize + kResourceHeaderSize +
-                                payloadLength, true);
+                                payloadLength, true, false, owner);
+}
+
+bool Runtime::sendControlAction(uint8_t peerIndex, const ResourceId &resource,
+                                 uint32_t actionId, const uint8_t *params,
+                                 size_t length, uint32_t owner) {
+  if (!isLocalDestination(peers_->get(peerIndex)) ||
+      !peers_->authorize(peerIndex, resource, kPermissionControl)) return false;
+  uint8_t payload[5 + kControlActionMaxParams];
+  size_t payloadLength = 0;
+  if (!encodeControlAction(actionId, params, length, payload, sizeof(payload),
+                           &payloadLength) ||
+      !buildResourceApplication(kMessageClassNative, kNativeControlAction,
+                                kAckRequired, resource, payload, payloadLength,
+                                nullptr)) return false;
+  return enqueueApplication(peerIndex, applicationBuffer_,
+                            kApplicationHeaderSize + kResourceHeaderSize +
+                                payloadLength, true, false, owner);
+}
+
+void Runtime::cancelOwnedControls(uint32_t owner) {
+  if (!owner) return;
+  for (auto &queued : deferred_) {
+    if (queued.used && queued.owner == owner &&
+        isControlApplication(queued.data, queued.length)) {
+      const auto peer = queued.peerIndex;
+      queued = DeferredApplication();
+      cancelPeerRecoveryIfIdle(peer);
+    }
+  }
+  for (auto &retry : retries_) {
+    if (retry.isUsed() && retry.controlDelivery && retry.owner == owner) {
+      const auto peer = retry.peerIndex;
+      clearRetryEntry(&retry);
+      cancelPeerRecoveryIfIdle(peer);
+    }
+  }
 }
 
 bool Runtime::publishState(uint8_t peerIndex, const ResourceId &resource,
@@ -1086,7 +1127,7 @@ bool Runtime::publishAction(uint8_t peerIndex, const ResourceId &resource,
                             const uint8_t *suplaPayload,
                             size_t payloadLength) {
   const PeerRecord *peer = peers_->get(peerIndex);
-  if (!isLocalSource(peer) || !interested(peerIndex, resource) ||
+  if (!isLocalSource(peer) ||
       !peers_->authorize(peerIndex, resource, kPermissionAction) ||
       suplaPayload == nullptr || payloadLength != 15) {
     return false;
@@ -1101,11 +1142,18 @@ bool Runtime::publishAction(uint8_t peerIndex, const ResourceId &resource,
                                 payloadLength, true, true);
 }
 
+bool Runtime::hasSession(uint8_t peerIndex) const {
+  for (const auto &session : sessions_)
+    if (session.used && session.peerIndex == peerIndex) return true;
+  return false;
+}
+
 bool Runtime::forgetSession(uint8_t peerIndex) {
   bool removed = false;
   for (uint8_t i = 0; i < SUPLAN_MAX_ACTIVE_SESSIONS; ++i) {
     if (sessions_[i].used && sessions_[i].peerIndex == peerIndex) {
       const uint64_t sessionId = sessions_[i].sessionId;
+      if (application_) application_->sessionChanged(sessions_[i].peerIndex);
       clearSessionEntry(&sessions_[i]);
       for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
         if (retries_[r].isUsed() && retries_[r].sessionId == sessionId) {
@@ -1227,7 +1275,7 @@ void Runtime::authorizationChanged(uint8_t peerIndex) {
       entry = DeferredApplication();
       continue;
     }
-    uint8_t permission = app.messageType == kSuplaCallChannelSetValue ?
+    uint8_t permission = isControlApplication(entry.data, entry.length) ?
         kPermissionControl : app.messageType == kSuplaCallActionTrigger ?
         kPermissionAction : kPermissionRead;
     if (!peers_->authorize(peerIndex, body.resource, permission) &&
@@ -1296,7 +1344,7 @@ void Runtime::resetDiagnostics() {
 
 bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
                                  size_t length, bool mayEstablishSession,
-                                 bool actionDelivery) {
+                                 bool actionDelivery, uint32_t owner) {
   // Native current-state updates retain only their resource identity. Build
   // the side-effect-free current snapshot when draining, keeping M1 RAM bounds.
   const bool snapshot = data && length ==
@@ -1342,6 +1390,7 @@ bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
   queued->peerIndex = peerIndex;
   queued->length = static_cast<uint8_t>(length);
   memcpy(queued->data, data, length);
+  queued->owner = owner;
   queued->controlExpiresAtMs = datagrams_->nowMs() + kControlLifetimeMs;
   if (actionDelivery && isActionApplication(queued->data, length)) {
     // Action Trigger applications are 26 bytes; keep the absolute deadline in
@@ -1361,8 +1410,7 @@ void Runtime::expireControls(uint32_t now) {
   // Cancel recovery only after its last queued operation has gone away.
   for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
     DeferredApplication *queued = &deferred_[i];
-    if (queued->used && !isActionApplication(queued->data, queued->length) &&
-        queued->data[0] == kMessageClassSuplaCall &&
+    if (queued->used && isControlApplication(queued->data, queued->length) &&
         static_cast<int32_t>(now - queued->controlExpiresAtMs) >= 0) {
       queued->used = false;
       cancelPeerRecoveryIfIdle(queued->peerIndex);
@@ -1491,7 +1539,6 @@ void Runtime::drainDeferred() {
       (void)actionPayloadLength;
       if (!validAction ||
           static_cast<int32_t>(now - actionExpiresAtMs) >= 0 ||
-          !interested(queued->peerIndex, actionResource) ||
           !isLocalSource(peers_->get(queued->peerIndex)) ||
           !peers_->authorize(queued->peerIndex, actionResource,
                              kPermissionAction)) {
@@ -1521,7 +1568,9 @@ void Runtime::drainDeferred() {
     const bool parsed = decodeApplicationData(queued->data, queued->length,
                                               &app);
     if (parsed) {
-      if (app.messageClass == kMessageClassSuplaCall) {
+      if (app.messageClass == kMessageClassSuplaCall ||
+          (app.messageClass == kMessageClassNative &&
+           app.messageType == kNativeControlAction)) {
         const uint8_t *payload = nullptr;
         size_t payloadLength = 0;
         if (resourceFromApplication(app, &resource, &payload,
@@ -1576,6 +1625,7 @@ void Runtime::drainDeferred() {
       if (retryIndex >= 0 &&
           isControlApplication(queued->data, queued->length)) {
         retries_[retryIndex].controlDelivery = true;
+        retries_[retryIndex].owner = queued->owner;
         retries_[retryIndex].controlExpiresAtMs = queued->controlExpiresAtMs;
       }
       queued->used = false;
@@ -2261,6 +2311,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   session->nextTransmitSequence = 0;
   session->lastActivityMs = datagrams_->nowMs();
   clearPendingHandshake(attempt);
+  if (application_) application_->sessionChanged(peerIndex);
   ++diagnostics_.sessionEstablished;
   drainDeferred();
 }
@@ -2368,6 +2419,7 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
     peer->endpointState = kPeerEndpointAuthenticated;
     clearPendingHandshake(pendingSession);
     sessionIndex = admitted;
+    if (application_) application_->sessionChanged(peerIndex);
     ++diagnostics_.sessionEstablished;
   }
   noteReachability(peerIndex);
@@ -2467,6 +2519,36 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
                            uint32_t sequence,
                            const ApplicationDataView &application,
                            bool duplicate) {
+  if (application.messageType == kNativeControlAction) {
+    ResourceDataView body = {};
+    ControlActionView action = {};
+    if (application.flags != kAckRequired ||
+        !decodeResourceData(&application, &body) ||
+        body.resource.type != kResourceTypeChannel ||
+        !decodeControlAction(body.payload, body.payloadLength, &action)) {
+      ++diagnostics_.invalidDataDrop;
+      return;
+    }
+    const uint8_t slot = static_cast<uint8_t>(sequence & 63U);
+    if (duplicate) {
+      ++diagnostics_.controlDuplicateSuppressed;
+      sendAck(peerIndex, session, sequence, session->ackResults[slot]);
+      return;
+    }
+    uint8_t result = kResultNotAllowed;
+    if (isLocalSource(peers_->get(peerIndex)) &&
+        peers_->authorize(peerIndex, body.resource, kPermissionControl)) {
+      result = application_ ? application_->dispatchControlAction(
+          body.resource, action.actionId, action.params, action.paramSize)
+                            : kResultChannelNotFound;
+      ++diagnostics_.controlDispatched;
+    } else {
+      ++diagnostics_.aclReject;
+    }
+    session->ackResults[slot] = result;
+    sendAck(peerIndex, session, sequence, result);
+    return;
+  }
   auto bindingRetry = application_ ? application_->bindingRetry() : nullptr;
   if (application.messageType == 8) {
     if (application.flags != kAckRequired ||

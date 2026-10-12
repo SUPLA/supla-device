@@ -9,6 +9,7 @@
 #include <supla/time.h>
 #include <supla/crypto.h>
 #include <supla/channels/channel_state.h>
+#include <supla/channels/channel_handle.h>
 
 #include <SuplaDevice.h>
 #include <supla/at_channel.h>
@@ -17,12 +18,20 @@
 #include <supla/protocol/supla_srpc.h>
 #include <supla/storage/storage.h>
 #include <supla/suplan/suplan_server_associations.h>
+#include <supla/suplan/bootstrap.h>
 #include <supla/suplan/suplan_server_identity.h>
 
 #include <new>
 
 namespace Supla {
 namespace Protocol {
+namespace {
+bool sourceControlAvailable(Element *element) {
+  TDS_SuplaDeviceChannel_E snapshot = {};
+  return element && buildChannelSnapshot(element->getChannel(), &snapshot) &&
+         snapshot.Default != SUPLA_CHANNELFNC_NONE;
+}
+}  // namespace
 
 SupLan::SupLan(SuplaDeviceClass *sdc, Supla::SupLan::PeerTable *peers,
                const SupLanResourceMapping *mappings, uint8_t mappingCount,
@@ -82,13 +91,13 @@ void SupLan::attachServerAssociations(
     Supla::Device::ServerAssociations *state) {
   serverAssociationRequired_ = state != nullptr;
   if (state && !resources_) {
-    resources_ = new (std::nothrow) Device::RemoteResourceManager(
+    resources_ = Device::allocateSupLan<Device::RemoteResourceManager>(
         peers_, runtime_, this);
   }
   if (resources_) resources_->associations = state;
   if (state && resources_ && !resources_->bindings) {
-    resources_->bindings = new (std::nothrow)
-        Device::ResourceBindingManager(peers_, runtime_, resources_, this);
+    resources_->bindings = Device::allocateSupLan<
+        Device::ResourceBindingManager>(peers_, runtime_, resources_, this);
   }
   if (resources_ && resources_->bindings)
     resources_->bindings->attachAssociations(state);
@@ -115,6 +124,22 @@ bool SupLan::setSuplanDestinationAssociation(
 
 void SupLan::suplanIdentityChanged() {
   if (associations()) associations()->identityChanged();
+}
+
+bool SupLan::isSupLanServerCapable() const {
+  return enabled_ && peers_ && runtime_ && runtime_->initialized() &&
+      associations() && resources_->bindings && mapIsValid();
+}
+
+void SupLan::onFactoryReset() {
+  disconnect();
+  if (!associations() || !sdc || !sdc->getSrpcLayer()) return;
+  if (resources_->bindings) resources_->bindings->attachAssociations(nullptr);
+  associations()->load(Supla::Storage::ConfigInstance(),
+                       &sdc->getSrpcLayer()->serverIdentity());
+  if (resources_->bindings)
+    resources_->bindings->attachAssociations(associations());
+  resources_->authorizationChanged();
 }
 
 bool SupLan::onLoadConfig() {
@@ -353,6 +378,21 @@ bool SupLan::readResource(const Supla::SupLan::ResourceId &resource,
   return true;
 }
 
+uint8_t SupLan::dispatchControlAction(
+    const Supla::SupLan::ResourceId &resource, uint32_t actionId,
+    const uint8_t *params, size_t length) {
+  uint8_t number = 0;
+  bool eventOnly = false;
+  if (resource.type != Supla::SupLan::kResourceTypeChannel ||
+      !localChannel(resource.id, &number, &eventOnly))
+    return SUPLA_RESULTCODE_CHANNELNOTFOUND;
+  auto element = Supla::Element::getElementByChannelNumber(number);
+  if (element && !sourceControlAvailable(element))
+    return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+  return element ? element->handleRemoteAction(actionId, params, length)
+                 : SUPLA_RESULTCODE_CHANNELNOTFOUND;
+}
+
 uint8_t SupLan::dispatchControl(const Supla::SupLan::ResourceId &resource,
                                 uint32_t messageType,
                                 const uint8_t *payload,
@@ -378,7 +418,7 @@ uint8_t SupLan::dispatchControl(const Supla::SupLan::ResourceId &resource,
   newValue.ChannelNumber = number;
   newValue.DurationMS = getSuplaUint32(payload + 5);
   memcpy(newValue.value, payload + 9, SUPLA_CHANNELVALUE_SIZE);
-  const int32_t result = element->handleNewValueFromServer(&newValue);
+  const int32_t result = element->handleRemoteNewValue(&newValue);
   if (result > 0) {
     return SUPLA_RESULTCODE_TRUE;
   }
@@ -407,6 +447,11 @@ void SupLan::receiveAction(uint8_t peerIndex,
                            const Supla::SupLan::ResourceId &resource,
                            uint32_t messageType, const uint8_t *payload,
                            size_t payloadLength) {
+  if (messageType == Supla::SupLan::kSuplaCallActionTrigger &&
+      payload && payloadLength == 15 &&
+      resource.type == Supla::SupLan::kResourceTypeChannel)
+    Supla::ChannelHandle::receiveAction(resource.id,
+                                       getSuplaUint32(payload + 1));
   if (eventHandler_ != nullptr) {
     eventHandler_(eventContext_, kSupLanRemoteAction, peerIndex, resource,
                   messageType,
@@ -461,8 +506,24 @@ void SupLan::readInterestRefreshed(
   }
 }
 
+bool SupLan::hasSupLanActionPeer(uint8_t number) const {
+  auto state = associations();
+  uint32_t id = 0;
+  if (!state || !state->identity() ||
+      !state->identity()->reverse(number, &id)) return false;
+  const Supla::SupLan::ResourceId resource = {
+      Supla::SupLan::kResourceTypeChannel, id};
+  for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+    const auto peer = peers_->get(i);
+    if (peer && !peer->destination && peers_->runtimeEligible(i) &&
+        peers_->authorize(i, resource, Supla::SupLan::kPermissionAction))
+      return true;
+  }
+  return false;
+}
+
 void SupLan::sendActionTrigger(uint8_t channelNumber, uint32_t actionId) {
-  if (!isRegisteredAndReady()) {
+  if (!isEnabled() || !mapIsValid()) {
     return;
   }
   uint8_t payload[15] = {};

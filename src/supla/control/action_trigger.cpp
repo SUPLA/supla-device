@@ -163,6 +163,10 @@ bool isDirectionalHandler(const Supla::ActionHandlerClient *handler) {
 }  // namespace
 
 Supla::Control::ActionTrigger::ActionTrigger() {
+  actionHandlingType = ActionHandlingType_RelayOnSuplaServer;
+#ifndef ARDUINO_ARCH_AVR
+  suplanRecognitionActive = false;
+#endif
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_ACTIONTRIGGER);
   channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
@@ -221,10 +225,8 @@ void Supla::Control::ActionTrigger::handleAction(int, int action) {
   }
   uint32_t actionCap = getActionTriggerCap(action);
 
-  if (actionCap & activeActionsFromServer ||
-      actionHandlingType != ActionHandlingType_RelayOnSuplaServer) {
-    channel.pushAction(actionCap);
-  }
+  channel.emitAction(actionCap, (actionCap & activeActionsFromServer) ||
+      actionHandlingType != ActionHandlingType_RelayOnSuplaServer);
 }
 
 Supla::Channel *Supla::Control::ActionTrigger::getChannel() {
@@ -424,7 +426,9 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
       if (eventId == -1 || actionId == -1) {
         continue;
       }
-      if (actionCap & activeActionsFromServer ||
+      if ((suplanRecognitionActive &&
+           (actionCap & channel.getActionTriggerCaps())) ||
+          (actionCap & activeActionsFromServer) ||
           actionHandlingType == ActionHandlingType_PublishAllDisableNone) {
         attachedButton->enableAction(actionId, this, eventId);
       } else {
@@ -559,6 +563,35 @@ void Supla::Control::ActionTrigger::synchronizeDirectionalButtonModes() {
       }
     }
     at->attachedButton->setConditionalActionsOnClick1(useClicks);
+    // SupLAN-only observers may count higher clicks, while an input with no
+    // legacy click consumers must keep its original raw local edge/HOLD policy.
+    bool rawEdges = !useClicks;
+    bool observer = false;
+    for (auto candidate = Supla::Element::begin(); candidate;
+         candidate = candidate->next()) {
+      auto peer = candidate->getActionTrigger();
+      if (!peer || peer->attachedButton != at->attachedButton) continue;
+      observer |= peer->suplanRecognitionActive;
+      if (peer->requiresClickMode()) rawEdges = false;
+    }
+    rawEdges = rawEdges && observer;
+    for (auto handler = Supla::ActionHandlerClient::begin;
+         rawEdges && handler; handler = handler->next) {
+      if (handler->trigger != at->attachedButton || !handler->isEnabled())
+        continue;
+      const auto event = handler->onEvent;
+      const bool click = (event >= Supla::ON_CLICK_1 &&
+                          event <= Supla::ON_CLICK_10) ||
+          (event >= Supla::ON_LONG_CLICK_1 &&
+           event <= Supla::ON_LONG_CLICK_10) ||
+          event == Supla::ON_CRAZY_CLICKER;
+      const bool atObserver = handler->action >= Supla::SEND_AT_TURN_ON &&
+          handler->action <= Supla::SEND_AT_SHORT_PRESS_x5;
+      if (click && !atObserver) rawEdges = false;
+    }
+    if (at->attachedButton->runtimeFlags.actionTriggerRawEdges && !rawEdges)
+      at->attachedButton->clickCounter = 0;  // Discard observer-only counting.
+    at->attachedButton->runtimeFlags.actionTriggerRawEdges = rawEdges;
   }
 }
 
@@ -885,6 +918,7 @@ void Supla::Control::ActionTrigger::rebuildForAttachedButton() {
 
   channel.setDisablesLocalOperation(disablesLocalOperation);
   parseActiveActionsFromServer();
+  refreshSupLanRecognition();
 }
 
 void Supla::Control::ActionTrigger::disableATCapability(uint32_t capToDisable) {
@@ -1173,7 +1207,21 @@ bool Supla::Control::ActionTrigger::isWeeklyScheduleProgramModeSupported(
          mode == SUPLA_BUTTON_MODE_LOCKED;
 }
 
+void Supla::Control::ActionTrigger::refreshSupLanRecognition() {
+#ifndef ARDUINO_ARCH_AVR
+  bool active = false;
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto;
+       proto = proto->next())
+    active |= proto->hasSupLanActionPeer(getChannelNumber());
+  if (active != suplanRecognitionActive) {
+    suplanRecognitionActive = active;
+    parseActiveActionsFromServer();
+  }
+#endif
+}
+
 void Supla::Control::ActionTrigger::iterateAlways() {
+  refreshSupLanRecognition();
   auto *weeklySchedule = weeklyScheduleComponents.getController();
   if (weeklySchedule != nullptr && isWeeklyScheduleSupported()) {
     weeklySchedule->processWeeklySchedule();

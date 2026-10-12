@@ -15,12 +15,16 @@
 #include <supla/protocol/supla_srpc.h>
 #include <supla/storage/key_value.h>
 #include <supla/storage/littlefs_config.h>
+#include <supla/suplan/owned_stack.h>
+#include <suplan_bootstrap_port.h>
 
 #include <array>
 #include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "suplan_crypto_openssl.h"
 
 namespace {
 using Supla::Device::ServerChannelLocation;
@@ -732,6 +736,9 @@ TEST_F(ServerIdentityTests,
   NiceMock<SrpcMock> wire;
   SuplaDeviceClass device;
   TestSrpc protocol(&device);
+  Supla::Device::OwnedSupLanStack<Supla::SupLan::OpenSslCryptoPort,
+                                 BootstrapUdp> stack(&device, 29);
+  ASSERT_TRUE(stack.initialize());
   protocol.restoreServerIdentity();
   protocol.onInit();
   int handle = 0;
@@ -1200,6 +1207,51 @@ TEST_F(ServerIdentityTests, UniformRootKeysAreRejectedEvenWithValidChecksum) {
     EXPECT_NE(config.blob("sl-root"), bytes);
   }
 }
+TEST_F(ServerIdentityTests, MissingDisabledOrForeignStackCannotAdvertise) {
+  for (int variant = 0; variant < 4; ++variant) {
+    Supla::RegisterDevice::setServerName("supla.example");
+    Supla::RegisterDevice::setEmail("user@example.com");
+    Supla::RegisterDevice::addFlags(SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED);
+    SimpleTime time;
+    NiceMock<SrpcMock> wire;
+    SuplaDeviceClass device;
+    SuplaDeviceClass other;
+    TestSrpc protocol(&device);
+    protocol.restoreServerIdentity();
+    protocol.onInit();
+    using Stack = Supla::Device::OwnedSupLanStack<
+        Supla::SupLan::OpenSslCryptoPort, BootstrapUdp>;
+    std::unique_ptr<Stack> stack;
+    if (variant) {
+      stack.reset(new Stack(variant == 3 ? &other : &device, 29));
+      if (variant != 1) {
+        ASSERT_TRUE(stack->initialize());
+      }
+      if (variant == 2) {
+        for (auto peer = Supla::Protocol::ProtocolLayer::first(); peer;
+             peer = peer->next())
+          if (peer->isSupLan())
+            static_cast<Supla::Protocol::SupLan *>(peer)->setEnabled(false);
+      }
+    }
+    int handle = 0;
+    auto client = new NiceMock<NetworkClientMock>;
+    EXPECT_CALL(wire, srpc_init(_)).WillOnce(Return(&handle));
+    EXPECT_CALL(*client, connected()).WillRepeatedly(Return(1));
+    EXPECT_CALL(wire, srpc_iterate(_))
+        .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+    EXPECT_CALL(wire, srpc_ds_async_registerdevice_in_chunks_g(_, _))
+        .WillOnce([](void *, TDS_SuplaRegisterDeviceHeader *header) {
+          EXPECT_EQ(header->Flags & SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED, 0);
+          EXPECT_NE(header->Flags & SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED, 0);
+          return 1;
+        });
+    protocol.setNetworkClient(client);
+    protocol.initializeForTest();
+    EXPECT_FALSE(protocol.iterate(0));
+  }
+}
+
 TEST_F(ServerIdentityTests, OlderProtocolCannotAdvertiseOrAcceptIdentities) {
   Supla::RegisterDevice::setServerName("supla.example");
   Supla::RegisterDevice::setEmail("user@example.com");

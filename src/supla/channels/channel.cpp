@@ -3,6 +3,8 @@
 
 #include "channel.h"
 
+#include <supla/channels/channel_state.h>
+#include <supla/element.h>
 #include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
 #include <supla-common/srpc.h>
@@ -64,6 +66,27 @@ int Supla::Channel::getStartingChannelNumber() {
 uint32_t Channel::registrationChanges = 0;
 uint32_t Channel::identityChanges = 0;
 
+Supla::ChannelState Channel::channelState() {
+  return Supla::ChannelState(this);
+}
+bool Channel::setValue(const uint8_t input[8], uint32_t durationMs) {
+  if (!input) return false;
+  auto element = Supla::Element::getElementByChannelNumber(channelNumber);
+  if (!element) return false;
+  TSD_SuplaChannelNewValue command = {};
+  command.ChannelNumber = channelNumber;
+  command.DurationMS = durationMs;
+  memcpy(command.value, input, 8);
+  return element->handleRemoteNewValue(&command) > 0;
+}
+bool Channel::executeAction(uint32_t actionId, const uint8_t *params,
+                            size_t length) {
+  if (length > 16 || (length && !params)) return false;
+  auto element = Supla::Element::getElementByChannelNumber(channelNumber);
+  return element && element->handleRemoteAction(actionId, params, length) ==
+                        SUPLA_RESULTCODE_TRUE;
+}
+
 Channel::Channel(int number) {
   if (firstPtr == nullptr) {
     firstPtr = this;
@@ -99,9 +122,11 @@ Channel::~Channel() {
   }
 #endif  // !ARDUINO_ARCH_AVR
   ++registrationChanges;
+#ifndef ARDUINO_ARCH_AVR
   if (serverChannelId) {
     ++identityChanges;
   }
+#endif
   Supla::RegisterDevice::removeChannel(channelNumber);
   if (initialCaption != nullptr) {
     delete[] initialCaption;
@@ -176,10 +201,12 @@ bool Channel::changeChannelNumber(int newChannelNumber, bool restore) {
   }
 #endif  // !ARDUINO_ARCH_AVR
   ++registrationChanges;
+#ifndef ARDUINO_ARCH_AVR
   if (serverChannelId) {
     ++identityChanges;
     serverChannelId = 0;
   }
+#endif
   if (!Supla::RegisterDevice::isChannelNumberFree(newChannelNumber)) {
     channelNumber = -1;
     auto conflictChannel = GetByChannelNumber(newChannelNumber);

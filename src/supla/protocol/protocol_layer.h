@@ -42,6 +42,9 @@ class ProtocolLayer : public Device::RemoteAccessPort {
       TDS_SuplaSetSuplanDestinationAssociationResult *) { return false; }
   virtual void sendChannelMetadataChanged(uint8_t) {}
   virtual void suplanIdentityChanged() {}
+  virtual bool isSupLan() const { return false; }
+  virtual bool isSupLanServerCapable() const { return false; }
+  virtual void onFactoryReset() {}
   virtual Device::ResourceBindingManager *resourceBindings() { return nullptr; }
   virtual bool ensureResourceShare(const TDS_SuplaEnsureResourceShare &) {
     return false;
@@ -78,6 +81,9 @@ class ProtocolLayer : public Device::RemoteAccessPort {
   virtual bool isUpdatePending();
   virtual bool isRegisteredAndReady() = 0;
   virtual void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) = 0;
+  virtual bool hasSupLanActionPeer(uint8_t) const { return false; }
+  virtual bool usesSupLanActionFanout() const { return false; }
+  virtual void publishSupLanAction(uint8_t, uint32_t) {}
   virtual void sendRemainingTimeValue(uint8_t channelNumber,
                                       uint32_t timeMs,
                                       uint8_t state,

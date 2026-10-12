@@ -15,6 +15,19 @@
 namespace Supla {
 namespace SupLan {
 
+static const uint32_t kNativeControlAction = 9;
+static const size_t kControlActionMaxParams = 16;
+struct ControlActionView {
+  uint32_t actionId;
+  const uint8_t *params;
+  uint8_t paramSize;
+};
+bool encodeControlAction(uint32_t actionId, const uint8_t *params,
+                         size_t paramSize, uint8_t *output, size_t capacity,
+                         size_t *length);
+bool decodeControlAction(const uint8_t *payload, size_t length,
+                         ControlActionView *view);
+
 struct ApplicationDataView {
   uint8_t messageClass;
   uint32_t messageType;

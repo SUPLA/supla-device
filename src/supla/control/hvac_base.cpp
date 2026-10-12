@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "hvac_base.h"
+#include <supla/control/remote_action.h>
 
 #include <stdint.h>
 #include <math.h>
@@ -604,7 +605,7 @@ void HvacBase::fillChannelConfig(void *channelConfig,
     auto *hvacConfig = reinterpret_cast<TChannelConfig_HVAC *>(channelConfig);
     *hvacConfig = config.localWire(referenceIdentity(), getChannelNumber());
 #ifndef ARDUINO_ARCH_AVR
-    if (referenceIdentity() && referenceIdentity()->capable() &&
+    if (usesServerReferences() &&
         !config.serverWire(referenceIdentity(), hvacConfig)) {
       *size = 0;
       return;
@@ -997,7 +998,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
       // Channel function set to "none/disabled". Retain the historical local
       // function while durably accepting the reset configuration.
 #ifndef ARDUINO_ARCH_AVR
-      if (!local && referenceIdentity() && referenceIdentity()->capable()) {
+      if (!local && usesServerReferences()) {
         if (newConfig->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT ||
             (newConfig->ConfigSize != 0 &&
              newConfig->ConfigSize != sizeof(TChannelConfig_HVAC)))
@@ -1029,7 +1030,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   }
 
 #ifndef ARDUINO_ARCH_AVR
-  if (!local && referenceIdentity() && referenceIdentity()->capable() &&
+  if (!local && usesServerReferences() &&
       newConfig->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT) {
     synchronizedConfigDurable = false;
     if (newConfig->ConfigSize != 0 &&
@@ -3441,6 +3442,29 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
   }
 
   return true;
+}
+
+uint8_t HvacBase::handleRemoteAction(uint32_t actionId, const uint8_t *params,
+                                     size_t length) {
+  if (!isFunctionSupported(channel.getDefaultFunction()) ||
+      actionId != ACTION_HVAC_SET_PARAMETERS)
+    return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+  if (length != 11 || !params) return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+  TSD_SuplaChannelNewValue command = {};
+  command.ChannelNumber = getChannelNumber();
+  command.DurationSec = actionUint32(params);
+  THVACValue value = {};
+  value.Mode = params[4];
+  value.SetpointTemperatureHeat = actionInt16(params + 5);
+  value.SetpointTemperatureCool = actionInt16(params + 7);
+  value.Flags = static_cast<uint16_t>(params[9]) |
+                (static_cast<uint16_t>(params[10]) << 8);
+  if (value.Mode > SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL || value.Mode == 5 ||
+      (value.Flags & ~(SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                       SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET)))
+    return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+  memcpy(command.value, &value, sizeof(value));
+  return actionValueResult(handleRemoteNewValue(&command));
 }
 
 int32_t HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {

@@ -127,6 +127,8 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
    */
   bool isBottomReached() const;
 
+  uint8_t handleRemoteAction(uint32_t actionId, const uint8_t *params,
+                             size_t length) override;
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void handleAction(int event, int action) override;
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;

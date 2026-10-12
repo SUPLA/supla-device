@@ -73,6 +73,7 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   void onLoadState() override;
   void onSaveState() override;
   void iterateAlways() override;
+  void refreshSupLanRecognition();
   int32_t handleNewValueFromServer(
       TSD_SuplaChannelNewValue *newValue) override;
   void fillChannelConfig(void *channelConfig,
@@ -147,7 +148,12 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   Supla::AtChannel channel;
 
   uint16_t localHandlerAction = 0;
-  ActionHandlingType actionHandlingType = ActionHandlingType_RelayOnSuplaServer;
+  ActionHandlingType actionHandlingType : 2;
+#ifndef ARDUINO_ARCH_AVR
+  uint8_t suplanRecognitionActive : 1;
+#else
+  static constexpr bool suplanRecognitionActive = false;
+#endif
   // Runtime-only flags; state storage uses a separate representation.
   struct RuntimeFlags {
     RuntimeFlags()

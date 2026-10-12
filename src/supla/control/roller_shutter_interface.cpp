@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "roller_shutter_interface.h"
+#include <supla/control/remote_action.h>
 
 #include <supla/actions.h>
 #include <supla/control/button.h>
@@ -189,6 +190,64 @@ void RollerShutterInterface::onInit() {
  * time * 100 = gives time in ms
  *
  */
+
+uint8_t RollerShutterInterface::handleRemoteAction(
+    uint32_t actionId, const uint8_t *params, size_t length) {
+  if (!isFunctionSupported(channel.getDefaultFunction()))
+    return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+  int action = -1;
+  switch (actionId) {
+    case ACTION_SHUT: action = Supla::CLOSE; break;
+    case ACTION_REVEAL: action = Supla::OPEN; break;
+    case ACTION_UP: action = Supla::MOVE_UP; break;
+    case ACTION_DOWN: action = Supla::MOVE_DOWN; break;
+    case ACTION_STOP: action = Supla::STOP; break;
+    case ACTION_UP_OR_STOP: action = Supla::OPEN_OR_STOP; break;
+    case ACTION_DOWN_OR_STOP: action = Supla::CLOSE_OR_STOP; break;
+    case ACTION_STEP_BY_STEP: action = Supla::STEP_BY_STEP; break;
+    case ACTION_SHUT_PARTIALLY:
+    case ACTION_REVEAL_PARTIALLY: {
+      if (length != 16 || !params || !actionReservedZero(params + 3, 13) ||
+          (params[1] & ~(SSP_FLAG_PERCENTAGE_AS_DELTA |
+                         SSP_FLAG_TILT_AS_DELTA)))
+        return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+      int position = static_cast<int8_t>(params[0]);
+      int tilt = static_cast<int8_t>(params[2]);
+      const bool delta = params[1] & SSP_FLAG_PERCENTAGE_AS_DELTA;
+      const bool tiltDelta = params[1] & SSP_FLAG_TILT_AS_DELTA;
+      if ((!delta && (position < -1 || position > 100)) ||
+          (!tiltDelta && (tilt < -1 || tilt > 100)) ||
+          (tiltDelta && !isTiltFunctionEnabled()))
+        return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+      if (actionId == ACTION_REVEAL_PARTIALLY && position >= 0 &&
+          position <= 100) position = 100 - position;
+      if (delta) {
+        if (getCurrentPosition() < 0) return SUPLA_RESULTCODE_NOT_ALLOWED;
+        position += getCurrentPosition();
+        position = position < 0 ? 0 : position > 100 ? 100 : position;
+      }
+      if (tiltDelta) {
+        if (getCurrentTilt() < 0) return SUPLA_RESULTCODE_NOT_ALLOWED;
+        tilt += getCurrentTilt();
+        tilt = tilt < 0 ? 0 : tilt > 100 ? 100 : tilt;
+      }
+      if (!isTiltFunctionEnabled() && tilt != -1)
+        return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+      if (position == UNKNOWN_POSITION && !canExecuteTiltOnlyCommand(tilt))
+        return SUPLA_RESULTCODE_NOT_ALLOWED;
+      setTargetPosition(position, tilt);
+      return SUPLA_RESULTCODE_TRUE;
+    }
+    default: return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+  }
+  if (length) return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+  if ((actionId == ACTION_STOP || actionId == ACTION_UP_OR_STOP ||
+       actionId == ACTION_DOWN_OR_STOP || actionId == ACTION_STEP_BY_STEP) &&
+      !(channel.getFlags() & SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS))
+    return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+  handleAction(0, action);
+  return SUPLA_RESULTCODE_TRUE;
+}
 
 int32_t RollerShutterInterface::handleNewValueFromServer(
     TSD_SuplaChannelNewValue *newValue) {

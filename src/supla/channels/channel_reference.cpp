@@ -10,6 +10,9 @@
 #ifndef ARDUINO_ARCH_AVR
 #include <supla/suplan/suplan_server_identity.h>
 #include <supla/suplan/remote_resource_manager.h>
+#include <SuplaDevice.h>
+#include <supla/protocol/supla_srpc.h>
+#include <supla/suplan/bootstrap.h>
 #endif
 
 namespace Supla {
@@ -23,7 +26,17 @@ const Device::ServerIdentity *acceptedReferenceIdentity() {
 bool usesServerReferences() {
 #ifndef ARDUINO_ARCH_AVR
   const auto identity = acceptedReferenceIdentity();
-  return identity && identity->capable();
+  if (!identity || !identity->capable()) return false;
+  for (auto layer = Protocol::ProtocolLayer::first(); layer;
+       layer = layer->next()) {
+    auto device = layer->getSdc();
+    auto srpc = device ? device->getSrpcLayer() : nullptr;
+    if (srpc && &srpc->serverIdentity() == identity)
+      return Device::hasSupLanServerStack(device);
+  }
+  // Detached identities are also used by expert/manual component adapters.
+  // SDK-owned identities must follow the actual registered stack capability.
+  return true;
 #else
   return false;
 #endif
@@ -79,6 +92,12 @@ bool referenceWireId(ChannelReference reference, uint32_t *id) {
   *id = 0;
   if (reference.kind == ChannelReferenceKind::NONE) return true;
   if (reference.kind == ChannelReferenceKind::SERVER_CHANNEL) {
+    if (!usesServerReferences()) {
+      const int number = localReferenceNumber(reference);
+      if (number < 0) return false;
+      *id = static_cast<uint32_t>(number);
+      return true;
+    }
     *id = reference.id;
     return true;
   }

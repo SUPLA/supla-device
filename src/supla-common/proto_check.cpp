@@ -256,6 +256,7 @@ static_assert((unsigned int)901 == sizeof(TCS_ActionWithAuth));
 static_assert((unsigned int)13 == sizeof(TSC_ActionExecutionResult));
 static_assert((unsigned int)16 == sizeof(TAction_ShadingSystem_Parameters));
 static_assert((unsigned int)16 == sizeof(TAction_RGBW_Parameters));
+static_assert(sizeof(TAction_HVAC_Parameters) == 11);
 static_assert((unsigned int)16 == sizeof(TAction_AT_Parameters));
 static_assert((unsigned int)16 == sizeof(TAction_Relay_Parameters));
 static_assert(sizeof(TAction_ShadingSystem_Parameters) <=

@@ -103,7 +103,8 @@ class Button : public SimpleButton, public ActionHandler {
     uint16_t allowHoldOnPowerOn : 1;
     uint16_t waitingForRelease : 1;
     uint16_t conditionalActionsOnClick1 : 1;
-    uint16_t reserved : 4;
+    uint16_t actionTriggerRawEdges : 1;
+    uint16_t reserved : 3;
   };
 
   static_assert(sizeof(RuntimeFlags) == sizeof(uint16_t),

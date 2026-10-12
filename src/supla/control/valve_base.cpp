@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "valve_base.h"
+#include <supla/control/remote_action.h>
 
 #include <string.h>
 #include <supla/channels/channel_state.h>
@@ -135,6 +136,28 @@ bool ValveBase::isFloodDetected() {
     previousSensorState[i] = value;
   }
   return floodDetected;
+}
+
+uint8_t ValveBase::handleRemoteAction(uint32_t actionId, const uint8_t *,
+                                      size_t length) {
+  if (channel.getDefaultFunction() != SUPLA_CHANNELFNC_VALVE_OPENCLOSE ||
+      (actionId != ACTION_OPEN && actionId != ACTION_CLOSE))
+    return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+  if (length) return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+  TSD_SuplaChannelNewValue command = {};
+  command.ChannelNumber = getChannelNumber();
+  command.value[0] = actionId == ACTION_OPEN;
+  return actionValueResult(handleRemoteNewValue(&command));
+}
+
+int32_t ValveBase::handleRemoteNewValue(TSD_SuplaChannelNewValue *command) {
+  if (!command) return SUPLA_RESULT_FALSE;
+  // Preserve legacy virtual dispatch and its return contract. The new command
+  // boundary additionally reports the existing Source flood-policy refusal.
+  const int32_t result = Element::handleRemoteNewValue(command);
+  return result > 0 && command->value[0] == 1 &&
+                 channel.isValveFloodingFlagActive()
+             ? SUPLA_RESULT_FALSE : result;
 }
 
 int32_t ValveBase::handleNewValueFromServer(

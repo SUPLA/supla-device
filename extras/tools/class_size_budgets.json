@@ -56,9 +56,10 @@
       "limits": {
         "host": 192,
         "avr": 97,
-        "esp8266": 128,
-        "esp32": 128
-      }
+        "esp8266": 136,
+        "esp32": 136
+      },
+      "reason": "Includes the accepted main 2fbd72a3 layout correction; SupLAN recognition adds no object bytes."
     },
     {
       "name": "Supla::Control::Relay",
@@ -237,9 +238,10 @@
       "limits": {
         "host": 736,
         "avr": 662,
-        "esp8266": 696,
-        "esp32": 696
-      }
+        "esp8266": 704,
+        "esp32": 704
+      },
+      "reason": "Combines main 2fbd72a3 (+8 bytes) with the existing SupLAN ChannelExtended identity layout (+8 bytes relative to main)."
     },
     {
       "name": "Supla::Sensor::OnePhaseElectricityMeter",
@@ -247,9 +249,10 @@
       "limits": {
         "host": 736,
         "avr": 662,
-        "esp8266": 696,
-        "esp32": 696
-      }
+        "esp8266": 704,
+        "esp32": 704
+      },
+      "reason": "Combines main 2fbd72a3 (+8 bytes) with the existing SupLAN ChannelExtended identity layout (+8 bytes relative to main)."
     },
     {
       "name": "Supla::Sensor::BinaryBase",

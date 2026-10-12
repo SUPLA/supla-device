@@ -12,6 +12,28 @@
 namespace Supla {
 namespace SupLan {
 
+bool encodeControlAction(uint32_t actionId, const uint8_t *params,
+                         size_t paramSize, uint8_t *output, size_t capacity,
+                         size_t *length) {
+  if (!output || !length || paramSize > kControlActionMaxParams ||
+      (paramSize && !params) || capacity < 5 + paramSize) return false;
+  putUint32(output, actionId);
+  output[4] = static_cast<uint8_t>(paramSize);
+  if (paramSize) memcpy(output + 5, params, paramSize);
+  *length = 5 + paramSize;
+  return true;
+}
+bool decodeControlAction(const uint8_t *payload, size_t length,
+                         ControlActionView *view) {
+  if (!payload || !view || length < 5 ||
+      payload[4] > kControlActionMaxParams || length != 5U + payload[4])
+    return false;
+  view->actionId = getUint32(payload);
+  view->paramSize = payload[4];
+  view->params = payload + 5;
+  return true;
+}
+
 ReplayWindow::ReplayWindow()
     : initialized_(false), highestSequence_(0), receivedBitmap_(0) {}
 

@@ -104,6 +104,8 @@ class Relay : public ChannelElement, public ActionHandler {
   void onSaveState() override;
   void iterateAlways() override;
   bool iterateConnected() override;
+  uint8_t handleRemoteAction(uint32_t actionId, const uint8_t *params,
+                             size_t length) override;
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,

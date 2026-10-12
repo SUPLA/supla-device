@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "lighting_pwm_base.h"
+#include <supla/control/remote_action.h>
+#include <supla/crypto.h>
 
 #include <math.h>
 #include <stdint.h>
@@ -235,6 +237,57 @@ void LightingPwmBase::setChannelSuspended(bool suspended) {
 
 bool LightingPwmBase::isChannelSuspended() const {
   return manuallySuspended;
+}
+
+uint8_t LightingPwmBase::handleRemoteAction(
+    uint32_t actionId, const uint8_t *params, size_t length) {
+  if (!channel.getDefaultFunction() ||
+      !channel.isFunctionValid(channel.getDefaultFunction()) ||
+      actionId != ACTION_SET_RGBW_PARAMETERS)
+    return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
+  if (length != 16 || !params || !actionReservedZero(params + 10, 6))
+    return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+  const int brightness = static_cast<int8_t>(params[0]);
+  const int colorBrightness = static_cast<int8_t>(params[1]);
+  const int white = static_cast<int8_t>(params[9]);
+  if (brightness < -1 || brightness > 100 || colorBrightness < -1 ||
+      colorBrightness > 100 || white < -1 || white > 100 || params[6] > 1 ||
+      (params[7] != 0xff && params[7] > 1) ||
+      (params[8] != 0xff &&
+       params[8] > RGBW_COMMAND_SET_WHITE_TEMPERATURE_WITHOUT_TURN_ON))
+    return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+  if (manuallySuspended) return SUPLA_RESULTCODE_NOT_ALLOWED;
+  uint32_t color = actionUint32(params + 2);
+  if (color > 0xffffffU) return SUPLA_RESULTCODE_INCORRECT_PARAMETERS;
+  if (params[6] && !color) {
+    uint8_t random[3];
+    if (!Supla::Crypto::fillRandom(random, sizeof(random)))
+      return SUPLA_RESULTCODE_NOT_ALLOWED;
+    color = static_cast<uint32_t>(random[0]) << 16 |
+            static_cast<uint32_t>(random[1]) << 8 | random[2];
+    if (!color) color = 1;
+  }
+  if (params[8] != 0xff && params[8] != RGBW_COMMAND_NOT_SET) {
+    TSD_SuplaChannelNewValue command = {};
+    channel.fillRawValue(command.value);
+    command.ChannelNumber = getChannelNumber();
+    if (brightness >= 0) command.value[0] = brightness;
+    if (colorBrightness >= 0) command.value[1] = colorBrightness;
+    if (color) {
+      command.value[2] = color & 255;
+      command.value[3] = (color >> 8) & 255;
+      command.value[4] = (color >> 16) & 255;
+    }
+    if (white >= 0) command.value[7] = white;
+    command.value[6] = params[8];
+    return actionValueResult(handleRemoteNewValue(&command));
+  }
+  setRGBCCT(color ? (color >> 16) & 255 : -1,
+            color ? (color >> 8) & 255 : -1, color ? color & 255 : -1,
+            colorBrightness, brightness, white);
+  if (params[7] == 0) turnOff();
+  else if (params[7] == 1) turnOn();
+  return SUPLA_RESULTCODE_TRUE;
 }
 
 int32_t LightingPwmBase::handleNewValueFromServer(

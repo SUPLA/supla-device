@@ -155,6 +155,89 @@ bool ChannelState::value(uint8_t output[8]) const {
   }
   return true;
 }
+double ChannelState::getValueDouble() const {
+  bool valid = false;
+  const double result = numeric(false, &valid);
+  return valid ? result : NAN;
+}
+double ChannelState::getValueDoubleSecond() const {
+  bool valid = false;
+  const double result = numeric(true, &valid);
+  return valid ? result : NAN;
+}
+bool ChannelState::getValueInt64(uint64_t *result) const {
+  uint8_t bytes[8];
+  if (!result || type() != SUPLA_CHANNELTYPE_IMPULSE_COUNTER || !value(bytes))
+    return false;
+  memcpy(result, bytes, 8);
+  return true;
+}
+bool ChannelState::getValueBool(bool *result) const {
+  uint8_t bytes[8];
+  if (!result || !value(bytes)) return false;
+  if (type() != SUPLA_CHANNELTYPE_BINARYSENSOR &&
+      type() != SUPLA_CHANNELTYPE_RELAY) return false;
+  *result = bytes[0] != 0;
+  return true;
+}
+
+double ChannelState::numeric(bool secondary, bool *valid) const {
+  if (!valid) return 0;
+  *valid = false;
+  uint8_t bytes[8];
+  if ((!local_ && function() == 0) || !value(bytes)) return 0;
+  double result = 0;
+  switch (type()) {
+    case SUPLA_CHANNELTYPE_THERMOMETER:
+    case SUPLA_CHANNELTYPE_DISTANCESENSOR:
+    case SUPLA_CHANNELTYPE_WINDSENSOR:
+    case SUPLA_CHANNELTYPE_PRESSURESENSOR:
+    case SUPLA_CHANNELTYPE_RAINSENSOR:
+    case SUPLA_CHANNELTYPE_WEIGHTSENSOR:
+    case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_METER:
+    case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT:
+      if (sizeof(result) == 8) memcpy(&result, bytes, sizeof(result));
+      else result = doublePacked2float(bytes);
+      break;
+    case SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR:
+    case SUPLA_CHANNELTYPE_HUMIDITYSENSOR: {
+      int32_t number = 0;
+      memcpy(&number, bytes + (secondary ? 4 : 0), sizeof(number));
+      result = number / 1000.0;
+      break;
+    }
+    case SUPLA_CHANNELTYPE_IMPULSE_COUNTER: {
+      uint64_t number = 0;
+      memcpy(&number, bytes, sizeof(number));
+      result = number;
+      break;
+    }
+    case SUPLA_CHANNELTYPE_BINARYSENSOR:
+    case SUPLA_CHANNELTYPE_RELAY:
+      result = bytes[0] != 0; break;
+    case SUPLA_CHANNELTYPE_DIMMER:
+      result = bytes[0]; break;
+    case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER:
+      result = bytes[1]; break;
+    case SUPLA_CHANNELTYPE_DIMMERANDRGBLED:
+      result = bytes[secondary ? 1 : 0]; break;
+    case SUPLA_CHANNELTYPE_CONTAINER:
+      result = bytes[0] > 0 && bytes[0] <= 101 ? bytes[0] - 1 : -1; break;
+    default: return 0;
+  }
+  *valid = isfinite(result);
+  if (type() == SUPLA_CHANNELTYPE_THERMOMETER ||
+      ((type() == SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR ||
+        type() == SUPLA_CHANNELTYPE_HUMIDITYSENSOR) && !secondary))
+    *valid = *valid && result >= -273;
+  else if (type() == SUPLA_CHANNELTYPE_CONTAINER)
+    *valid = *valid && result >= 0 && result <= 100;
+  else if (type() != SUPLA_CHANNELTYPE_GENERAL_PURPOSE_METER &&
+           type() != SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT)
+    *valid = *valid && result >= 0;
+  return result;
+}
+
 double ChannelState::temperature() const {
   if (!availableFor(ChannelCapability::Temperature))
     return TEMPERATURE_NOT_AVAILABLE;

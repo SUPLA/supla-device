@@ -4,6 +4,7 @@
 #ifndef SRC_SUPLA_ELEMENT_H_
 #define SRC_SUPLA_ELEMENT_H_
 
+#include <stddef.h>
 #include <stdint.h>
 #include <supla-common/proto.h>
 
@@ -242,6 +243,11 @@ class Element {
    *         1 - success==true
    */
   virtual int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue);
+  // Result-bearing protected/local SDK command boundary. Legacy overrides
+  // remain the default implementation for value commands.
+  virtual int32_t handleRemoteNewValue(TSD_SuplaChannelNewValue *newValue);
+  virtual uint8_t handleRemoteAction(uint32_t actionId, const uint8_t *params,
+                                     size_t length);
 
   /**
    * Fills TSD_SuplaChannelNewValue based on current state.

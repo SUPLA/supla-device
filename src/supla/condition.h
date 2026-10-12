@@ -10,6 +10,7 @@
 namespace Supla {
 
 class ElementWithChannelActions;
+class ChannelStateProvider;
 
 class Condition : public ActionHandler {
  public:
@@ -18,6 +19,9 @@ class Condition : public ActionHandler {
 
   virtual ~Condition();
   void setSource(ElementWithChannelActions *src);
+  void setStateSource(ChannelStateProvider *src);
+  void baseline();
+  void baselineState() override { baseline(); }
   void setClient(ActionHandler *clientPtr);
   void setSource(ElementWithChannelActions &src);  // NOLINT(runtime/references)
   void setClient(ActionHandler &clientPtr);  // NOLINT(runtime/references)
@@ -32,12 +36,14 @@ class Condition : public ActionHandler {
   void setThreshold(double val);
 
  protected:
+  double readStateValue(bool *valid);
   virtual bool condition(double val, bool isValid = true) = 0;
 
   double threshold = 0;
   bool useAlternativeValue = false;
   bool alreadyFired = false;
   Supla::ElementWithChannelActions *source = nullptr;
+  ChannelStateProvider *stateSource = nullptr;
   Supla::ActionHandler *client = nullptr;
   Supla::ConditionGetter *getter = nullptr;
 };

@@ -70,6 +70,7 @@ class ActionHandlerClient {
   static ActionHandlerClient *begin;
 
   bool isEnabled();
+  bool deletePending = false;
 
   virtual void setAlwaysEnabled();
   virtual void enable();
@@ -94,6 +95,8 @@ class LocalAction {
   virtual void addAction(uint16_t action, ActionHandler *client, uint16_t event,
       bool alwaysEnabled = false);
 
+  void baselineActions() const;
+  static void CancelDispatch(const LocalAction *trigger);
   virtual void runAction(uint16_t event) const;
   // The allow-list is an additional restriction.  An empty list deliberately
   // blocks every action, while the one-argument overload keeps the historic,

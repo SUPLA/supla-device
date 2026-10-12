@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <math.h>
 #include <gtest/gtest.h>
 #include <SuplaDevice.h>
 #include <output_mock.h>
@@ -8,6 +9,10 @@
 #include <simple_time.h>
 #include <supla/channels/binary_sensor_channel.h>
 #include <supla/channels/channel_reference.h>
+#include <supla/channels/channel_handle.h>
+#include <supla/condition.h>
+#include <supla/events.h>
+#include <supla/control/relay.h>
 #include <supla/channels/channel_state.h>
 #include <supla/control/hvac_base.h>
 #include <supla/control/hvac_config.h>
@@ -23,6 +28,7 @@
 #include <supla/suplan/suplan_server_identity.h>
 
 #include <array>
+#include <new>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -356,6 +362,8 @@ void bootstrapIdentity(ServerIdentity *identity, DurableHvacConfig *config) {
 class DependencySrpc : public Protocol::SuplaSrpc {
  public:
   explicit DependencySrpc(SuplaDeviceClass *device) : SuplaSrpc(device, 29) {}
+  RemoteResourceManager *remoteResources() override { return resources; }
+  RemoteResourceManager *resources = nullptr;
   void prepare(void *handle) {
     srpc = handle;
     registered = 1;
@@ -696,7 +704,7 @@ TEST(ChannelDependency, EnsureEnqueueFailureAndCancelledReplyDrain) {
   ASSERT_TRUE(srpc.ensureResourceAccess(request));
   EXPECT_TRUE(srpc.acceptEnsureResult());
   EXPECT_FALSE(srpc.acceptEnsureResult());
-  request.Flags = 1;
+  request.Flags = 2;
   EXPECT_FALSE(srpc.ensureResourceAccess(request));
 }
 
@@ -1405,3 +1413,641 @@ TEST(ChannelDependency,
   EXPECT_EQ(storage.commits, commits);
 }
 }  // namespace
+
+TEST(ChannelDependency, ManualPermissionExtensionKeepsExistingReadCache) {
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager manager(&peers, nullptr, &port);
+  const ResourceId id = {kResourceTypeChannel, 501};
+  PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
+                         {kNodeIdDevice, 202}, 7, 1};
+  uint8_t key[32] = {1};
+  AclEntry acl = {id, kPermissionRead};
+  uint8_t index;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &acl, 1, &index, true));
+  ASSERT_TRUE(manager.consume({1, id, kPermissionRead, true}));
+  TDS_SuplaDeviceChannel_E snapshot = {};
+  snapshot.Number = 0xff;
+  snapshot.Type = SUPLA_CHANNELTYPE_THERMOMETER;
+  snapshot.Default = SUPLA_CHANNELFNC_THERMOMETER;
+  snapshot.ValueValidityTimeSec = 60;
+  double temperature = 22;
+  memcpy(snapshot.value, &temperature, 8);
+  manager.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                  sizeof(snapshot), 0);
+  ASSERT_TRUE(manager.consume({1, id, kPermissionControl, true}));
+  manager.iterate(1);
+  EXPECT_TRUE(manager.state(id, 1).available());
+  EXPECT_EQ(manager.effectivePermissions(id), kPermissionRead);
+  ASSERT_EQ(port.requests, 1);
+  EXPECT_EQ(port.last.Flags, SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL);
+  EXPECT_EQ(port.last.Permissions, kPermissionRead | kPermissionControl);
+  manager.ensureResult({SUPLA_SUPLAN_RESULT_OK,
+                        SUPLA_SUPLAN_ACCESS_STATUS_REJECTED,
+                        SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER});
+  EXPECT_TRUE(manager.state(id, 1).available());
+  EXPECT_EQ(manager.approvalStatus(id), SUPLA_SUPLAN_ACCESS_STATUS_REJECTED);
+  manager.iterate(1000);
+  EXPECT_EQ(port.requests, 1);
+}
+TEST(ChannelDependency, StartupManualEnsureAlsoReconcilesGrantedResource) {
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager manager(&peers, nullptr, &port);
+  const ResourceId id = {kResourceTypeChannel, 501};
+  PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
+                         {kNodeIdDevice, 202}, 7, 1};
+  uint8_t key[32] = {1};
+  AclEntry acl = {id, kPermissionRead};
+  uint8_t index;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &acl, 1, &index, true));
+  ASSERT_TRUE(manager.consume({1, id, kPermissionRead, true}));
+  manager.iterate(0);
+  EXPECT_EQ(port.requests, 1);
+  manager.ensureResult({SUPLA_SUPLAN_RESULT_OK,
+                        SUPLA_SUPLAN_ACCESS_STATUS_GRANTED,
+                        SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER});
+  manager.iterate(1000);
+  EXPECT_EQ(port.requests, 1);
+  manager.remove(1);
+  EXPECT_TRUE(peers.authorize(index, id, kPermissionRead));
+}
+TEST(ChannelDependency, ManualApprovalDoesNotPromoteConfigOnlyRights) {
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager manager(&peers, nullptr, &port);
+  const ResourceId id = {kResourceTypeChannel, 501};
+  ASSERT_TRUE(manager.consume({1, id, kPermissionRead, true}));
+  ASSERT_TRUE(manager.consume({2, id, kPermissionAction}));
+  manager.iterate(0);
+  ASSERT_EQ(port.requests, 1);
+  EXPECT_EQ(port.last.Permissions, kPermissionRead);
+  EXPECT_EQ(port.last.Flags, SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL);
+  manager.ensureResult({SUPLA_SUPLAN_RESULT_OK,
+                        SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL,
+                        SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER});
+  manager.iterate(1);
+  ASSERT_EQ(port.requests, 2);
+  EXPECT_EQ(port.last.Flags, 0);
+}
+
+class HandleCounter : public ActionHandler {
+ public:
+  void handleAction(int event, int action) override {
+    ++count;
+    lastEvent = event;
+    lastAction = action;
+  }
+  int count = 0;
+  int lastEvent = -1;
+  int lastAction = -1;
+};
+TEST(ChannelHandle, BeforeIdentityNoSlotsOrSpeculativeLocalChannel) {
+  resetChannels();
+  SuplaDeviceClass device;
+  DependencySrpc protocol(&device);
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager resources(&peers, nullptr, &port);
+  protocol.resources = &resources;
+  ChannelHandle handle(601, kPermissionRead);
+  EXPECT_EQ(handle.accessStatus(), ChannelAccessStatus::IDENTITY_UNRESOLVED);
+  EXPECT_FALSE(handle.canRead());
+  EXPECT_FALSE(handle.state().available());
+  EXPECT_EQ(resources.consumerCount(), 0);
+  EXPECT_EQ(port.requests, 0);
+}
+TEST(ChannelHandle, LocalFacadeOwnsOnlyItsTrampolineAndNeverEnsures) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualThermometer first, second;
+  first.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
+  second.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
+  ServerIdentity identity;
+  bootstrapIdentity(&identity, &storage);
+  HandleCounter direct, throughHandle;
+  first.getChannel()->addAction(1, direct, ON_CHANGE);
+  first.getChannel()->setNewValue(20.0);
+  const int before = direct.count;
+  {
+    ChannelHandle handle(601, kPermissionRead);
+    handle.addAction(2, throughHandle, ON_CHANGE);
+    ChannelHandle::iterateAll();
+    EXPECT_EQ(handle.accessStatus(), ChannelAccessStatus::LOCAL_CHANNEL);
+    EXPECT_TRUE(handle.canRead());
+    EXPECT_DOUBLE_EQ(handle.state().temperature(), 20.0);
+    first.getChannel()->setNewValue(21.0);
+    EXPECT_EQ(throughHandle.count, 1);
+  }
+  first.getChannel()->setNewValue(22.0);
+  EXPECT_EQ(throughHandle.count, 1);
+  EXPECT_EQ(direct.count, before + 2);
+  EXPECT_EQ(Channel::GetByChannelNumber(0), first.getChannel());
+}
+TEST(ChannelHandle, SharedRemoteLifetimeReconfigureAndConditionBaseline) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualThermometer first, second;
+  first.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
+  second.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
+  SuplaDeviceClass device;
+  DependencySrpc protocol(&device);
+  bootstrapIdentity(&protocol.serverIdentity(), &storage);
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager resources(&peers, nullptr, &port);
+  protocol.resources = &resources;
+  const ResourceId id = {kResourceTypeChannel, 1001};
+  PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
+                         {kNodeIdDevice, 202}, 7, 1};
+  uint8_t key[32] = {1};
+  AclEntry acl = {id, kPermissionRead};
+  uint8_t index;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &acl, 1, &index, true));
+  ChannelHandle shared(1001, kPermissionRead);
+  HandleCounter invalid;
+  shared.addAction(6, invalid, ON_CHANGE, OnInvalid());
+  auto handle = new ChannelHandle(1001, kPermissionRead);
+  HandleCounter counter;
+  handle->addAction(9, counter, ON_CHANGE, OnGreater(20));
+  ChannelHandle::iterateAll();
+  ASSERT_EQ(resources.consumerCount(), 2);
+  ASSERT_EQ(resources.resourceCount(), 1);
+  TDS_SuplaDeviceChannel_E snapshot = {};
+  snapshot.Number = 0xff;
+  snapshot.Type = SUPLA_CHANNELTYPE_THERMOMETER;
+  snapshot.Default = SUPLA_CHANNELFNC_THERMOMETER;
+  const auto publish = [&](double temperature) {
+    memcpy(snapshot.value, &temperature, 8);
+    resources.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                       sizeof(snapshot), 0);
+    ChannelHandle::iterateAll();
+  };
+  publish(22);
+  EXPECT_EQ(counter.count, 0);
+  publish(23);
+  EXPECT_EQ(counter.count, 0);
+  publish(NAN);
+  EXPECT_EQ(invalid.count, 1);
+  publish(NAN);
+  EXPECT_EQ(invalid.count, 1);
+  snapshot.Offline = SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE;
+  publish(25);
+  EXPECT_EQ(invalid.count, 1);
+  snapshot.Offline = SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
+  publish(NAN);
+  EXPECT_EQ(invalid.count, 1);
+  publish(19);
+  publish(21);
+  EXPECT_EQ(counter.count, 1);
+  ASSERT_TRUE(handle->configure(601, kPermissionRead));
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(handle->accessStatus(), ChannelAccessStatus::LOCAL_CHANNEL);
+  EXPECT_EQ(resources.consumerCount(), 1);
+  publish(19);
+  EXPECT_EQ(counter.count, 1);
+  delete handle;
+  EXPECT_EQ(resources.consumerCount(), 1);
+  for (int i = 0; i < 300; ++i) {
+    auto temporary = new RemoteChannel(1001, kPermissionRead);
+    EXPECT_TRUE(temporary->canRead());
+    delete temporary;
+  }
+  EXPECT_EQ(resources.consumerCount(), 1);
+  EXPECT_EQ(resources.resourceCount(), 1);
+  EXPECT_TRUE(peers.authorize(index, id, kPermissionRead));
+}
+TEST(ChannelHandle, ActionOnlyReceivesGrantDrivenEventWithoutReadDemand) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualThermometer first, second;
+  SuplaDeviceClass device;
+  DependencySrpc protocol(&device);
+  bootstrapIdentity(&protocol.serverIdentity(), &storage);
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager resources(&peers, nullptr, &port);
+  protocol.resources = &resources;
+  const ResourceId id = {kResourceTypeChannel, 1001};
+  PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
+                         {kNodeIdDevice, 202}, 7, 1};
+  uint8_t key[32] = {1};
+  AclEntry acl = {id, kPermissionAction};
+  uint8_t index;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &acl, 1, &index, true));
+  ChannelHandle handle(1001, kPermissionAction);
+  HandleCounter counter;
+  handle.addAction(7, counter, ON_CLICK_2);
+  ChannelHandle::iterateAll();
+  EXPECT_FALSE(handle.canRead());
+  ChannelHandle::receiveAction(1001, SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  EXPECT_EQ(counter.count, 0);
+  ChannelHandle::receiveAction(1001, SUPLA_ACTION_CAP_SHORT_PRESS_x2);
+  EXPECT_EQ(counter.count, 1);
+  ASSERT_TRUE(peers.replaceAcl(index, 2, nullptr, 0));
+  ChannelHandle::receiveAction(1001, SUPLA_ACTION_CAP_SHORT_PRESS_x2);
+  EXPECT_EQ(counter.count, 1);
+}
+
+TEST(ChannelHandle, CapacityDeferredHandleAutomaticallyAdmitsWhenSlotFrees) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualThermometer first, second;
+  SuplaDeviceClass device;
+  DependencySrpc protocol(&device);
+  bootstrapIdentity(&protocol.serverIdentity(), &storage);
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager resources(&peers, nullptr, &port);
+  protocol.resources = &resources;
+  std::vector<ChannelHandle *> handles;
+  for (int i = 0; i <= RemoteResourceManager::kCapacity; ++i)
+    handles.push_back(new ChannelHandle(1000 + i, kPermissionRead));
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(handles.back()->accessStatus(),
+            ChannelAccessStatus::RESOURCE_LIMIT);
+  EXPECT_EQ(resources.resourceCount(),
+            static_cast<unsigned>(RemoteResourceManager::kCapacity));
+  delete handles.front();
+  handles.front() = nullptr;
+  ChannelHandle::iterateAll();
+  EXPECT_NE(handles.back()->accessStatus(),
+            ChannelAccessStatus::RESOURCE_LIMIT);
+  EXPECT_EQ(resources.resourceCount(),
+            static_cast<unsigned>(RemoteResourceManager::kCapacity));
+  for (auto handle : handles) delete handle;
+  EXPECT_EQ(resources.consumerCount(), 0);
+  EXPECT_EQ(resources.resourceCount(), 0);
+}
+namespace {
+struct GlobalDiyFixture {
+  GlobalDiyFixture() { handle.deactivate(); }
+  ChannelHandle handle{601, kPermissionRead};
+} globalDiyFixture;
+ChannelHandle &globalDiyHandle = globalDiyFixture.handle;
+}
+TEST(ChannelHandle, GlobalDeclarationIsResolvedAfterIdentityBootstrap) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualThermometer first, second;
+  SuplaDeviceClass device;
+  DependencySrpc protocol(&device);
+  ASSERT_TRUE(globalDiyHandle.configure(601, kPermissionRead));
+  EXPECT_EQ(globalDiyHandle.accessStatus(),
+            ChannelAccessStatus::IDENTITY_UNRESOLVED);
+  bootstrapIdentity(&protocol.serverIdentity(), &storage);
+  EXPECT_EQ(globalDiyHandle.localChannel(), first.getChannel());
+  EXPECT_TRUE(globalDiyHandle.canRead());
+  globalDiyHandle.deactivate();
+}
+TEST(ChannelHandle, SessionLossKeepsValidCacheButRecoveryRebuildsBaseline) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualThermometer first, second;
+  SuplaDeviceClass device;
+  DependencySrpc protocol(&device);
+  bootstrapIdentity(&protocol.serverIdentity(), &storage);
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager resources(&peers, nullptr, &port);
+  protocol.resources = &resources;
+  const ResourceId id = {kResourceTypeChannel, 1001};
+  PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
+                         {kNodeIdDevice, 202}, 7, 1};
+  uint8_t key[32] = {1};
+  AclEntry acl = {id, kPermissionRead};
+  uint8_t index;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &acl, 1, &index, true));
+  ChannelHandle handle(1001, kPermissionRead);
+  HandleCounter counter;
+  handle.addAction(1, counter, ON_CHANGE);
+  ChannelHandle::iterateAll();
+  TDS_SuplaDeviceChannel_E snapshot = {};
+  snapshot.Number = 0xff;
+  snapshot.Type = SUPLA_CHANNELTYPE_THERMOMETER;
+  snapshot.Default = SUPLA_CHANNELFNC_THERMOMETER;
+  snapshot.ValueValidityTimeSec = 60;
+  double value = 20;
+  memcpy(snapshot.value, &value, 8);
+  resources.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                     sizeof(snapshot), 0);
+  ChannelHandle::iterateAll();
+  resources.sessionChanged(index);
+  EXPECT_TRUE(handle.state().available());
+  ChannelHandle::iterateAll();
+  value = 21;
+  time.advance(1);
+  memcpy(snapshot.value, &value, 8);
+  resources.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                     sizeof(snapshot), 1);
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(counter.count, 0);
+  value = 22;
+  time.advance(1);
+  memcpy(snapshot.value, &value, 8);
+  resources.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                     sizeof(snapshot), 2);
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(counter.count, 1);
+  ASSERT_TRUE(handle.configure(601, kPermissionRead));
+  ChannelHandle::iterateAll();
+  ASSERT_TRUE(handle.configure(1001, kPermissionRead));
+  time.value = UINT32_MAX - 999;
+  snapshot.ValueValidityTimeSec = 1;
+  resources.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                     sizeof(snapshot), time.value);
+  ChannelHandle::iterateAll();  // TTL deadline is exactly zero after wrap.
+  time.advance(1001);
+  value = 23;
+  memcpy(snapshot.value, &value, 8);
+  resources.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                     sizeof(snapshot), time.value);
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(counter.count, 1);  // Expired baseline must not fire a transition.
+  time.advance(1);
+  value = 24;
+  memcpy(snapshot.value, &value, 8);
+  resources.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                     sizeof(snapshot), time.value);
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(counter.count, 2);
+}
+
+// Only test setup storage owns these objects; handles remain caller-owned.
+struct HandleLifecycleEnvironment {
+  struct Reset { Reset() { resetChannels(); } } reset;
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualThermometer first, second;
+  SuplaDeviceClass device;
+  DependencySrpc protocol{&device};
+  PeerTable peers;
+  Access access;
+  RemoteResourceManager resources{&peers, nullptr, &access};
+  uint8_t peer = 0xff;
+  HandleLifecycleEnvironment() {
+    first.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
+    second.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
+    bootstrapIdentity(&protocol.serverIdentity(), &storage);
+    protocol.resources = &resources;
+    PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
+                           {kNodeIdDevice, 202}, 7, 1};
+    uint8_t key[32] = {1};
+    AclEntry acl[] = {{{kResourceTypeChannel, 1001}, kPermissionRead},
+                     {{kResourceTypeChannel, 1002}, kPermissionRead},
+                     {{kResourceTypeChannel, 1003}, kPermissionAction},
+                     {{kResourceTypeChannel, 1004}, kPermissionAction}};
+    EXPECT_TRUE(peers.addPeer(&context, key, 1, acl, 4, &peer, true));
+  }
+  void publish(uint32_t id, double value) {
+    TDS_SuplaDeviceChannel_E snapshot = {};
+    snapshot.Number = 0xff;
+    snapshot.Type = SUPLA_CHANNELTYPE_THERMOMETER;
+    snapshot.Default = SUPLA_CHANNELFNC_THERMOMETER;
+    memcpy(snapshot.value, &value, 8);
+    resources.receive(peer, {kResourceTypeChannel, id},
+                      reinterpret_cast<const uint8_t *>(&snapshot),
+                      sizeof(snapshot), time.value);
+    ChannelHandle::iterateAll();
+  }
+};
+
+TEST(ChannelHandle, LocalRemoteLocalDropsBothOldTrampolinesAndLateSnapshots) {
+  HandleLifecycleEnvironment env;
+  env.first.getChannel()->setNewValue(20.0);
+  ChannelHandle handle(601, kPermissionRead);
+  HandleCounter counter;
+  handle.addAction(1, counter, ON_CHANGE);
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(counter.count, 0);
+  ASSERT_TRUE(handle.configure(1001, kPermissionRead));
+  ChannelHandle::iterateAll();
+  env.first.getChannel()->setNewValue(21.0);
+  EXPECT_EQ(counter.count, 0);
+  EXPECT_FALSE(handle.state().available());
+  env.publish(1001, 24);
+  EXPECT_EQ(counter.count, 0);
+  env.publish(1001, 25);
+  EXPECT_EQ(counter.count, 1);
+  ASSERT_TRUE(handle.configure(601, kPermissionRead));
+  ChannelHandle::iterateAll();
+  env.publish(1001, 99);  // Late READ from the abandoned remote Source.
+  EXPECT_EQ(counter.count, 1);
+  EXPECT_DOUBLE_EQ(handle.state().temperature(), 21);
+  env.first.getChannel()->setNewValue(22.0);
+  EXPECT_EQ(counter.count, 2);
+  EXPECT_DOUBLE_EQ(handle.state().temperature(), 22);
+  EXPECT_EQ(env.resources.consumerCount(), 0);
+}
+
+TEST(ChannelHandle, RemoteSourceSwitchNeverUsesOrFiresFromAbandonedCache) {
+  HandleLifecycleEnvironment env;
+  ChannelHandle handle(1001, kPermissionRead);
+  HandleCounter counter;
+  handle.addAction(1, counter, ON_CHANGE);
+  ChannelHandle::iterateAll();
+  env.publish(1001, 40);
+  ASSERT_TRUE(handle.state().available());
+  ASSERT_TRUE(handle.configure(1002, kPermissionRead));
+  EXPECT_FALSE(handle.state().available());
+  env.publish(1001, 99);
+  EXPECT_FALSE(handle.state().available());
+  EXPECT_EQ(counter.count, 0);
+  env.publish(1002, 20);
+  EXPECT_EQ(counter.count, 0);
+  env.publish(1002, 21);
+  EXPECT_EQ(counter.count, 1);
+  EXPECT_DOUBLE_EQ(handle.state().temperature(), 21);
+}
+
+struct InPlaceHandle {
+  alignas(ChannelHandle) uint8_t bytes[sizeof(ChannelHandle)];
+  ChannelHandle *handle = nullptr;
+  ~InPlaceHandle() { if (handle) handle->~ChannelHandle(); }
+  void replace(uint32_t id, uint8_t rights) {
+    if (handle) handle->~ChannelHandle();
+    handle = new (bytes) ChannelHandle(id, rights);
+  }
+};
+
+TEST(ChannelHandle, ReusedAddressCannotReceivePreviousReadOrActionCallbacks) {
+  HandleLifecycleEnvironment env;
+  HandleCounter old, current, other;
+  InPlaceHandle slot;
+  slot.replace(1001, kPermissionRead);
+  slot.handle->addAction(1, old, ON_CHANGE);
+  ChannelHandle::iterateAll();
+  env.publish(1001, 20);
+  env.publish(1001, 21);
+  EXPECT_EQ(old.count, 1);
+  const auto address = slot.handle;
+  slot.replace(1002, kPermissionRead);
+  EXPECT_EQ(slot.handle, address);
+  slot.handle->addAction(2, current, ON_CHANGE);
+  ChannelHandle::iterateAll();
+  env.publish(1001, 99);
+  EXPECT_FALSE(slot.handle->state().available());
+  env.publish(1002, 30);
+  EXPECT_EQ(current.count, 0);
+  env.publish(1002, 31);
+  EXPECT_EQ(current.count, 1);
+  EXPECT_EQ(old.count, 1);
+
+  ChannelHandle shared(1003, kPermissionAction);
+  shared.addAction(3, other, ON_CLICK_2);
+  slot.replace(1003, kPermissionAction);
+  slot.handle->addAction(4, old, ON_CLICK_2);
+  ChannelHandle::iterateAll();
+  slot.replace(1004, kPermissionAction);
+  slot.handle->addAction(5, current, ON_CLICK_2);
+  ChannelHandle::iterateAll();
+  ChannelHandle::receiveAction(1003, SUPLA_ACTION_CAP_SHORT_PRESS_x2);
+  EXPECT_EQ(other.count, 1);  // The other live consumer still gets the event.
+  EXPECT_EQ(old.count, 1);
+  EXPECT_EQ(current.count, 1);
+  ChannelHandle::receiveAction(1004, SUPLA_ACTION_CAP_SHORT_PRESS_x2);
+  EXPECT_EQ(current.count, 2);
+  EXPECT_TRUE(env.peers.authorize(env.peer, {kResourceTypeChannel, 1003},
+                                  kPermissionAction));
+}
+
+TEST(ChannelHandle, IdentityReplacementBarrierPreventsOldLocalCallbacks) {
+  HandleLifecycleEnvironment env;
+  ChannelHandle old(601, kPermissionRead), replacement(801, kPermissionRead);
+  HandleCounter counter;
+  old.addAction(1, counter, ON_CHANGE);
+  env.first.getChannel()->setNewValue(20.0);
+  ChannelHandle::iterateAll();
+  auto &identity = env.protocol.serverIdentity();
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities update = {};
+  update.DeviceId = 303;  // Removal and registration under a new Server ID.
+  update.ChannelCount = 2;
+  update.ChannelId[0] = 801;
+  update.ChannelId[1] = 802;
+  ASSERT_EQ(identity.accept(update).Result, SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_TRUE(identity.identityTransition());
+  EXPECT_EQ(old.accessStatus(), ChannelAccessStatus::IDENTITY_UNRESOLVED);
+  EXPECT_EQ(replacement.accessStatus(),
+            ChannelAccessStatus::IDENTITY_UNRESOLVED);
+  env.first.getChannel()->setNewValue(21.0);
+  EXPECT_EQ(counter.count, 0);
+  EXPECT_EQ(env.resources.consumerCount(), 0);
+  identity.syncDone();
+  EXPECT_EQ(replacement.localChannel(), env.first.getChannel());
+  EXPECT_EQ(old.localChannel(), nullptr);
+  EXPECT_FALSE(old.canRead());
+  env.first.getChannel()->setNewValue(22.0);
+  EXPECT_EQ(counter.count, 0);
+}
+
+TEST(ChannelHandle, CancelledEnsureReplyCannotRejectReconfiguredResource) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualThermometer first, second;
+  SuplaDeviceClass device;
+  class ForwardSrpc : public DependencySrpc {
+   public:
+    explicit ForwardSrpc(SuplaDeviceClass *device) : DependencySrpc(device) {}
+    void ensureResourceAccessResult(
+        const TSD_SuplaEnsureResourceAccessResult &result) override {
+      if (resources) resources->ensureResult(result);
+    }
+  } protocol(&device);
+  PeerTable peers;
+  class ProtocolAccess : public RemoteAccessPort {
+   public:
+    explicit ProtocolAccess(DependencySrpc *protocol) : protocol(protocol) {}
+    bool ensure(const TDS_SuplaEnsureResourceAccess &request) override {
+      return protocol->ensureResourceAccess(request);
+    }
+    void cancelEnsure() override { protocol->cancelEnsureResourceAccess(); }
+    DependencySrpc *protocol;
+  } access(&protocol);
+  RemoteResourceManager resources(&peers, nullptr, &access);
+  protocol.resources = &resources;
+  testing::NiceMock<SrpcMock> wire;
+  int transport = 0;
+  protocol.prepare(&transport);
+  bootstrapIdentity(&protocol.serverIdentity(), &storage);
+  EXPECT_CALL(wire, ensureResourceAccess(&transport, testing::_))
+      .WillOnce(testing::Return(91)).WillOnce(testing::Return(92));
+  ChannelHandle handle(1001, kPermissionRead);
+  ChannelHandle::iterateAll();
+  resources.iterate(0);
+  ASSERT_TRUE(handle.configure(1002, kPermissionRead));
+  ChannelHandle::iterateAll();
+  time.advance(1);
+  resources.iterate(time.value);  // Cannot overtake cancelled A on SRPC.
+  TSD_SuplaEnsureResourceAccessResult result = {};
+  result.Result = SUPLA_SUPLAN_RESULT_OK;
+  result.DeliveryMode = SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER;
+  result.AccessStatus = SUPLA_SUPLAN_ACCESS_STATUS_REJECTED;
+  auto reply = [&](unsigned int senderSequence) {
+    EXPECT_CALL(wire, srpc_getdata(&transport, testing::_, 0))
+        .WillOnce([&](void *, TsrpcReceivedData *rd, unsigned int) {
+          *rd = {};
+          rd->rr_id = senderSequence;
+          rd->call_id = SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_ACCESS_RESULT;
+          rd->data.sd_ensure_suplan_resource_access_result = &result;
+          return SUPLA_RESULT_TRUE;
+        });
+    Supla::messageReceived(&transport, senderSequence, 0, &protocol, 29);
+  };
+  reply(901);  // Late rejection for A must be drained, not assigned to B.
+  EXPECT_EQ(resources.approvalStatus({kResourceTypeChannel, 1002}),
+            SUPLA_SUPLAN_ACCESS_STATUS_INVALID);
+  time.advance(1000);
+  resources.iterate(time.value);
+  result.AccessStatus = SUPLA_SUPLAN_ACCESS_STATUS_GRANTED;
+  reply(902);
+  EXPECT_EQ(handle.accessStatus(), ChannelAccessStatus::PROVISIONING);
+  EXPECT_FALSE(handle.canRead());  // GRANTED alone is not provisioned access.
+}
+
+TEST(ChannelHandle, ReconfigureInsideCallbackStopsRemainingOldSourceEvents) {
+  HandleLifecycleEnvironment env;
+  ChannelHandle handle(1001, kPermissionRead);
+  class SwitchSource : public ActionHandler {
+   public:
+    explicit SwitchSource(ChannelHandle *handle) : handle(handle) {}
+    void handleAction(int, int) override {
+      ++calls;
+      EXPECT_TRUE(handle->configure(1002, kPermissionRead));
+    }
+    ChannelHandle *handle;
+    int calls = 0;
+  } change(&handle);
+  HandleCounter on;
+  handle.addAction(1, change, ON_CHANGE);
+  handle.addAction(2, on, ON_TURN_ON);
+  ChannelHandle::iterateAll();
+  auto publish = [&](uint32_t id, uint8_t value) {
+    TDS_SuplaDeviceChannel_E snapshot = {};
+    snapshot.Number = 0xff;
+    snapshot.Type = SUPLA_CHANNELTYPE_RELAY;
+    snapshot.Default = SUPLA_CHANNELFNC_POWERSWITCH;
+    snapshot.value[0] = value;
+    env.resources.receive(env.peer, {kResourceTypeChannel, id},
+                          reinterpret_cast<const uint8_t *>(&snapshot),
+                          sizeof(snapshot), 0);
+    ChannelHandle::iterateAll();
+  };
+  publish(1001, 0);
+  publish(1001, 1);
+  EXPECT_EQ(change.calls, 1);
+  EXPECT_EQ(on.count, 0);  // ON_TURN_ON belonged to abandoned Source A.
+  EXPECT_FALSE(handle.state().available());
+  publish(1002, 0);
+  publish(1002, 1);
+  EXPECT_EQ(change.calls, 2);
+  EXPECT_EQ(on.count, 1);  // Same-ID configure inside B's callback is a no-op.
+}

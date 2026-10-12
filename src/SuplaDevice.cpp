@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "SuplaDevice.h"
+#include <supla/channels/channel_handle.h>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -20,6 +21,7 @@
 #include <supla/device/security_logger.h>
 #ifndef ARDUINO_ARCH_AVR
 #include <supla/device/server_identity.h>
+#include <supla/suplan/bootstrap.h>
 #endif  // !ARDUINO_ARCH_AVR
 #include <supla/device/status_led.h>
 #include <supla/device/subdevice_pairing_handler.h>
@@ -113,6 +115,9 @@ SuplaDeviceClass::SuplaDeviceClass() {
 }
 
 SuplaDeviceClass::~SuplaDeviceClass() {
+#ifndef ARDUINO_ARCH_AVR
+  Supla::Device::releaseSupLan(this);
+#endif
   if (srpcLayer) {
     delete srpcLayer;
     srpcLayer = nullptr;
@@ -186,6 +191,13 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   // Initialize protocol layers
   createSrpcLayerIfNeeded();
   srpcLayer->setVersion(protoVersion);
+
+#ifndef ARDUINO_ARCH_AVR
+  if (!Supla::Device::startSupLan(this, protoVersion)) {
+    status(STATUS_UNKNOWN_ERROR, F("SupLAN initialization failed"));
+    return false;
+  }
+#endif
 
   storageInitResult = Supla::Storage::Init();
 
@@ -978,6 +990,9 @@ void SuplaDeviceClass::iterateAlwaysElements(uint32_t _millis) {
     delay(0);
   }
 
+#ifndef ARDUINO_ARCH_AVR
+  Supla::ChannelHandle::iterateAll();
+#endif
   // Iterate all elements and saves state
   if (Supla::Storage::SaveStateAllowed(_millis)) {
     saveStateToStorage();
@@ -1601,6 +1616,10 @@ void SuplaDeviceClass::resetToFactorySettings() {
 
 #ifndef ARDUINO_ARCH_AVR
   Supla::Device::ServerIdentity::factoryReset();
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto;
+       proto = proto->next()) {
+    if (proto->getSdc() == this) proto->onFactoryReset();
+  }
 #endif  // !ARDUINO_ARCH_AVR
 
   // cleanup state storage data

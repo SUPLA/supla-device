@@ -71,6 +71,8 @@ class ValveBase : public ChannelElement, public ActionHandler {
   void fillChannelConfig(void *channelConfig,
                          int *size,
                          uint8_t configType) override;
+  uint8_t handleRemoteAction(uint32_t actionId, const uint8_t *params,
+                             size_t length) override;
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void purgeConfig() override;
 
@@ -111,6 +113,7 @@ class ValveBase : public ChannelElement, public ActionHandler {
    * @return true if flood is detected
    */
   bool isFloodDetected();
+  int32_t handleRemoteNewValue(TSD_SuplaChannelNewValue *command) override;
 
   /**
    * Print current configuration in logs (for debug purpose)

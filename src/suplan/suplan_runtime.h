@@ -53,6 +53,8 @@ class ApplicationPort {
   virtual uint8_t dispatchControl(
       const ResourceId &resource, uint32_t messageType,
       const uint8_t *payload, size_t payloadLength) = 0;
+  virtual uint8_t dispatchControlAction(const ResourceId &, uint32_t,
+                                       const uint8_t *, size_t) { return 33; }
   virtual void receiveState(uint8_t peerIndex, const ResourceId &resource,
                             uint32_t messageType, const uint8_t *payload,
                             size_t payloadLength) = 0;
@@ -62,6 +64,7 @@ class ApplicationPort {
   virtual void operationAcknowledged(uint8_t peerIndex,
                                      const ResourceId &resource,
                                      uint32_t sequence, uint8_t result) = 0;
+  virtual void sessionChanged(uint8_t) {}
   virtual void readInterestRefreshed(uint8_t, const ResourceId &, bool) {}
 };
 
@@ -117,7 +120,12 @@ class Runtime {
   bool requestRead(uint8_t peerIndex, const ResourceId &resource);
   void removeReadDependency(uint8_t peerIndex, const ResourceId &resource);
   bool sendControl(uint8_t peerIndex, const ResourceId &resource,
-                   const uint8_t *suplaPayload, size_t payloadLength);
+                   const uint8_t *suplaPayload, size_t payloadLength,
+                   uint32_t owner = 0);
+  void cancelOwnedControls(uint32_t owner);
+  bool sendControlAction(uint8_t peerIndex, const ResourceId &resource,
+                         uint32_t actionId, const uint8_t *params,
+                         size_t length, uint32_t owner = 0);
   bool publishState(uint8_t peerIndex, const ResourceId &resource,
                     uint32_t messageType, const uint8_t *suplaPayload,
                     size_t payloadLength);
@@ -128,6 +136,7 @@ class Runtime {
   bool publishAction(uint8_t peerIndex, const ResourceId &resource,
                      const uint8_t *suplaPayload, size_t payloadLength);
   bool forgetSession(uint8_t peerIndex);
+  bool hasSession(uint8_t peerIndex) const;
   void clearEndpoint(uint8_t peerIndex);
   // Must run before releasing/reusing a stable peer slot.
   void clearPeer(uint8_t peerIndex);
@@ -137,6 +146,10 @@ class Runtime {
   void resetDiagnostics();
   void iterate();
   uint32_t nowMs() const { return datagrams_->nowMs(); }
+  bool initialized() const {
+    return crypto_ && datagrams_ && application_ && peers_ &&
+           suplaProtoVersion_ == 29;
+  }
   bool readNeedsRefresh(uint8_t peerIndex, const ResourceId &resource) const;
   RecoveryStatus recoveryStatus(uint8_t peerIndex) const;
   void setPeerSleeping(uint8_t peerIndex, bool sleeping);
@@ -199,19 +212,21 @@ class Runtime {
   };
 
   struct PendingHandshake {
-    bool used;
-    bool initiator;
-    uint8_t peerIndex;
-    Endpoint endpoint;
-    uint8_t initFrame[kSessionInitSize];
-    uint8_t acceptFrame[kSessionAcceptSize];
-    SessionKeys keys;
-    ReplayWindow receiveReplay;
+    // Keep aligned members together: ownership tokens must fit the existing
+    // runtime RAM budget without reducing crypto or queue capacities.
     uint64_t sessionId;
-    uint16_t peerRxMaxReassembledFrame;
+    ReplayWindow receiveReplay;
+    SessionKeys keys;
+    Endpoint endpoint;
     uint32_t lastTransmitMs;
     uint32_t expiresAtMs;
+    uint16_t peerRxMaxReassembledFrame;
+    uint8_t initFrame[kSessionInitSize];
+    uint8_t acceptFrame[kSessionAcceptSize];
+    uint8_t peerIndex;
     uint8_t attempts;
+    bool used;
+    bool initiator;
   };
 
   struct OutstandingLocate {
@@ -231,6 +246,7 @@ class Runtime {
   struct RetryEntry {
     uint8_t peerIndex;
     ResourceId resource;
+    uint32_t owner;
     uint64_t sessionId;
     uint32_t sequence;
     uint32_t lastTransmitMs;
@@ -257,7 +273,16 @@ class Runtime {
     uint8_t length;
     uint8_t data[32];
     uint32_t controlExpiresAtMs;
+    uint32_t owner;
   };
+  static_assert(kApplicationHeaderSize + kResourceHeaderSize + 5 +
+                    kControlActionMaxParams == 32,
+                "Native/9 maximum application size changed");
+  static_assert(sizeof(DeferredApplication::data) >= 32,
+                "Native/9 must fit the deferred command queue");
+  static_assert(SUPLAN_MAX_RETRY_FRAME_BYTES >=
+                    kProtectedHeaderSize + 32 + kAeadTagSize,
+                "Native/9 must fit the protected retry queue");
 
   struct FloodJob {
     bool active;
@@ -318,7 +343,7 @@ class Runtime {
       bool actionDelivery = false, uint32_t actionExpiresAtMs = 0);
   bool enqueueApplication(uint8_t peerIndex, const uint8_t *data,
                           size_t length, bool mayEstablishSession,
-                          bool actionDelivery = false);
+                          bool actionDelivery = false, uint32_t owner = 0);
   void drainDeferred();
   void expireControls(uint32_t now);
   void processDatagram(const Endpoint &source, const uint8_t *data,

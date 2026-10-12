@@ -36,12 +36,24 @@ class ChannelState {
   uint32_t validityTimeSec() const;
   bool value(uint8_t output[8]) const;
   double temperature() const;
+  double numeric(bool secondary, bool *valid) const;
+  double getValueDouble() const;
+  double getValueDoubleFirst() const { return getValueDouble(); }
+  double getValueDoubleSecond() const;
+  bool getValueInt64(uint64_t *result) const;
+  bool getValueBool(bool *result) const;
 
  private:
   Channel *local_ = nullptr;
   const TDS_SuplaDeviceChannel_E *snapshot_ = nullptr;
   bool usable_ = false;
   uint32_t receivedMs_ = 0;
+};
+class ChannelStateProvider {
+ public:
+  virtual ~ChannelStateProvider() = default;
+  virtual ChannelState state() = 0;
+  virtual Channel *localChannel() = 0;
 };
 }  // namespace Supla
 #endif  // SRC_SUPLA_CHANNELS_CHANNEL_STATE_H_

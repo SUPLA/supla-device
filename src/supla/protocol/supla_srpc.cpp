@@ -14,6 +14,7 @@
 #include <string.h>
 #include <supla-common/srpc.h>
 #include <supla/suplan/remote_resource_manager.h>
+#include <supla/suplan/bootstrap.h>
 #include <supla/suplan/resource_binding_manager.h>
 #include <supla/channels/channel.h>
 #include <supla/clock/clock.h>
@@ -1554,7 +1555,7 @@ void Supla::messageReceived(void *srpc,
             rd.data.sd_channel_new_value->ChannelNumber);
         if (element) {
           int actionResult =
-              element->handleNewValueFromServer(rd.data.sd_channel_new_value);
+              element->handleRemoteNewValue(rd.data.sd_channel_new_value);
           if (actionResult != -1) {
             srpc_ds_async_set_channel_result(
                 srpc,
@@ -1785,7 +1786,7 @@ void Supla::messageReceived(void *srpc,
             newValue.DurationMS = groupNewValue->DurationMS;
             memcpy(
                 newValue.value, groupNewValue->value, SUPLA_CHANNELVALUE_SIZE);
-            element->handleNewValueFromServer(&newValue);
+            element->handleRemoteNewValue(&newValue);
           } else {
             SUPLA_LOG_WARNING(
                 "Error: couldn't find element for a requested channel [%d]",
@@ -2529,12 +2530,16 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
 #ifdef ARDUINO_ARCH_AVR
     registerHeader->Flags &= ~SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED;
 #else
-    if (effectiveSrpcVersion(version) >= 29 && serverIdentityState.capable()) {
+    if (effectiveSrpcVersion(version) >= 29 && serverIdentityState.capable() &&
+        Supla::Device::hasSupLanServerStack(sdc)) {
       registerHeader->Flags |= SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED |
                                SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
     } else {
       registerHeader->Flags &= ~SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED;
     }
+    // Identity/config synchronization support does not require a D2D stack.
+    if (effectiveSrpcVersion(version) >= 29 && serverIdentityState.capable())
+      registerHeader->Flags |= SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
 #endif  // ARDUINO_ARCH_AVR
     if (Supla::RegisterDevice::isSleepingDeviceEnabled() &&
         effectiveSrpcVersion(version) >= 29) {
@@ -3442,7 +3447,8 @@ bool Supla::Protocol::SuplaSrpc::ensureResourceAccess(
   if (effectiveSrpcVersion(version) < 29 || !serverIdentityState.capable() ||
       !isRegisteredAndReady() || !serverIdentityState.serverSyncComplete() ||
       request.DeliveryMode != SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER ||
-      request.Flags != 0 || ensureResponsePending) return false;
+      (request.Flags & ~SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL) ||
+      ensureResponsePending) return false;
   auto wire = request;
   const auto requestId =
       srpc_ds_async_ensure_suplan_resource_access(srpc, &wire);

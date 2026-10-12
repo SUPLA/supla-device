@@ -407,3 +407,20 @@ if(SUPLAN_ASSOCIATION_PROFILE_TESTS)
     -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=EVP_MAC_init)
   supla_apply_warnings(suplanassociationprofiletests)
 endif()
+
+# Exercise both real Arduino UDP adapter branches without radio/network access.
+foreach(arduino_platform IN ITEMS ESP8266 ESP32)
+  string(TOLOWER ${arduino_platform} arduino_target)
+  set(arduino_target "suplan${arduino_target}arduinoudptests")
+  add_executable(${arduino_target}
+    SupLanArduinoUdpTests/arduino_udp_tests.cpp
+    ../../src/supla/suplan/arduino_udp.cpp
+    ../../src/supla/suplan/network_transport.cpp)
+  target_include_directories(${arduino_target} BEFORE PRIVATE
+    SupLanArduinoUdpTests/fakes ../../src)
+  target_compile_definitions(${arduino_target} PRIVATE
+    ARDUINO_ARCH_${arduino_platform})
+  target_link_libraries(${arduino_target} PRIVATE gtest_main)
+  supla_apply_warnings(${arduino_target})
+  add_test(NAME ${arduino_target} COMMAND ${arduino_target})
+endforeach()

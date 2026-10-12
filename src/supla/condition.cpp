@@ -6,6 +6,7 @@
 #include <math.h>
 #include <supla/element_with_channel_actions.h>
 #include <supla/channels/channel.h>
+#include <supla/channels/channel_state.h>
 
 #include "events.h"
 
@@ -25,7 +26,42 @@ Supla::Condition::~Condition() {
   }
 }
 
+void Supla::Condition::setStateSource(ChannelStateProvider *src) {
+  stateSource = src;
+  source = nullptr;
+  alreadyFired = false;
+}
+double Supla::Condition::readStateValue(bool *valid) {
+  *valid = false;
+  if (!stateSource) return 0;
+  const auto view = stateSource->state();
+  if (!view.available()) return 0;
+  if (!getter) return view.numeric(useAlternativeValue, valid);
+  auto channel = stateSource->localChannel();
+  auto element = channel ? Element::getElementByChannelNumber(
+                              channel->getChannelNumber()) : nullptr;
+  return element ? getter->getValue(element, valid) : 0;
+}
+void Supla::Condition::baseline() {
+  alreadyFired = false;
+  if (!stateSource || !stateSource->state().available()) return;
+  bool valid = false;
+  const double value = readStateValue(&valid);
+  alreadyFired = condition(value, valid);
+}
 void Supla::Condition::handleAction(int event, int action) {
+  if (stateSource) {
+    if (event != ON_CHANGE && event != ON_SECONDARY_CHANNEL_CHANGE &&
+        (event != ON_COUNTDOWN_TIMER || !stateSource->localChannel())) return;
+    const auto view = stateSource->state();
+    if (!view.available()) return;
+    bool valid = false;
+    const double value = readStateValue(&valid);
+    if (client && checkConditionFor(value, valid))
+      client->handleAction(event, action);
+    return;
+  }
+  if (!source) return;
   if (event == Supla::ON_CHANGE ||
       event == Supla::ON_SECONDARY_CHANNEL_CHANGE ||
       event == Supla::ON_COUNTDOWN_TIMER) {
@@ -147,6 +183,7 @@ bool Supla::Condition::checkConditionFor(double val, bool isValid) {
 
 void Supla::Condition::setSource(Supla::ElementWithChannelActions *src) {
   source = src;
+  stateSource = nullptr;
 }
 
 void Supla::Condition::setClient(Supla::ActionHandler *clientPtr) {
@@ -169,6 +206,19 @@ void Supla::Condition::activateAction(int action) {
 
 void Supla::Condition::setThreshold(double val) {
   threshold = val;
+  if (stateSource) {
+    bool valid = false;
+    readStateValue(&valid);
+    if (!valid) return;
+    for (auto entry = ActionHandlerClient::begin; entry; entry = entry->next) {
+      if (entry->client == this && entry->isEnabled() &&
+          entry->onEvent == ON_CHANGE) {
+        handleAction(ON_CHANGE, entry->action);
+        break;
+      }
+    }
+    return;
+  }
   if (source) {
     auto channel = source->getChannel();
     if (!channel) {

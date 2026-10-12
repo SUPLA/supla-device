@@ -72,6 +72,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool getRemainingCountdownTimerSec(uint32_t *remainingSec) const override;
   void purgeConfig() override;
 
+  uint8_t handleRemoteAction(uint32_t actionId, const uint8_t *params,
+                             size_t length) override;
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *config,
                               bool local = false) override;

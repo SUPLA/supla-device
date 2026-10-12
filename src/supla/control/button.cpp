@@ -155,7 +155,8 @@ void Button::onTimer() {
     stateChanged = true;
     if (runActionWithActionTriggerPolicy(ON_PRESS)) return;
     if (runActionWithActionTriggerPolicy(ON_CHANGE)) return;
-    if (clickCounter <= 1 && holdSend == 0) {
+    if ((clickCounter <= 1 || runtimeFlags.actionTriggerRawEdges) &&
+        holdSend == 0) {
       if (!deferConditionalEdges) {
         if (runActionWithActionTriggerPolicy(CONDITIONAL_ON_PRESS)) return;
       }
@@ -166,13 +167,15 @@ void Button::onTimer() {
     stateChanged = true;
     if (runActionWithActionTriggerPolicy(ON_RELEASE)) return;
     if (runActionWithActionTriggerPolicy(ON_CHANGE)) return;
-    if (clickCounter <= 1 && holdSend == 0) {
+    if ((clickCounter <= 1 || runtimeFlags.actionTriggerRawEdges) &&
+        holdSend == 0) {
       if (!deferConditionalEdges) {
         if (runActionWithActionTriggerPolicy(CONDITIONAL_ON_RELEASE)) return;
       }
       if (runActionWithActionTriggerPolicy(CONDITIONAL_ON_CHANGE)) return;
     }
-    if (clickCounter <= 1 && holdSend > 0) {
+    if ((clickCounter <= 1 || runtimeFlags.actionTriggerRawEdges) &&
+        holdSend > 0) {
       if (runActionWithActionTriggerPolicy(ON_HOLD_RELEASE)) return;
     }
   }
@@ -202,7 +205,8 @@ void Button::onTimer() {
   if (!stateChanged) {
     if (lastStateChangeMs) {
       if (isMonostable() && stateResult == PRESSED) {
-        if (clickCounter <= 1 && holdTimeMs > 0 &&
+        if ((clickCounter <= 1 || runtimeFlags.actionTriggerRawEdges) &&
+            holdTimeMs > 0 &&
             timeDelta > (holdTimeMs +
                          static_cast<uint32_t>(holdSend) * repeatOnHoldMs) &&
             (runtimeFlags.repeatOnHoldEnabled || holdSend == 0)) {
@@ -316,7 +320,8 @@ void Button::onTimer() {
       }
     } else if (runtimeFlags.allowHoldOnPowerOn) {
       if (isMonostable() && stateResult == PRESSED) {
-        if (clickCounter <= 1 && holdTimeMs > 0 &&
+        if ((clickCounter <= 1 || runtimeFlags.actionTriggerRawEdges) &&
+            holdTimeMs > 0 &&
             timeDelta > (holdTimeMs +
                          static_cast<uint32_t>(holdSend) * repeatOnHoldMs) &&
             (runtimeFlags.repeatOnHoldEnabled || holdSend == 0)) {

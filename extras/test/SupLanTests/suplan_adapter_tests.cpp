@@ -498,3 +498,33 @@ TEST(SupLanAdapter, LocalChannelUpdateFansOutToBothProtocolLayers) {
 }
 
 }  // namespace
+
+TEST(SupLanAdapter, NativeActionUsesFunctionGuardAndRealSourceRelay) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  Supla::Control::VirtualRelay relay;
+  Supla::SupLan::Poc1::initializeRelay(&relay);
+  const Supla::Protocol::SupLanResourceMapping mapping = {
+      50001, static_cast<uint8_t>(relay.getChannelNumber()), 0, false};
+  Supla::Protocol::SupLan protocol(nullptr, nullptr, &mapping, 1);
+  const ResourceId resource = {Supla::SupLan::kResourceTypeChannel, 50001};
+  EXPECT_EQ(protocol.dispatchControlAction(resource, ACTION_TOGGLE,
+                                           nullptr, 0), 33);
+  EXPECT_FALSE(relay.isOn());
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_EQ(protocol.dispatchControlAction(resource, ACTION_TOGGLE,
+                                           nullptr, 0), 3);
+  EXPECT_TRUE(relay.isOn());
+  EXPECT_EQ(protocol.dispatchControlAction(resource, ACTION_TOGGLE,
+                                           nullptr, 0), 3);
+  EXPECT_FALSE(relay.isOn());
+  uint8_t malformed = 1;
+  EXPECT_EQ(protocol.dispatchControlAction(resource, ACTION_TOGGLE,
+                                           &malformed, 1), 35);
+  EXPECT_EQ(protocol.dispatchControlAction(resource, ACTION_OPEN,
+                                           nullptr, 0), 33);
+  const ResourceId foreign = {Supla::SupLan::kResourceTypeChannel, 50002};
+  EXPECT_EQ(protocol.dispatchControlAction(foreign, ACTION_TOGGLE,
+      nullptr, 0), SUPLA_RESULTCODE_CHANNELNOTFOUND);
+  EXPECT_FALSE(relay.isOn());
+}

@@ -20,7 +20,9 @@ void AtChannel::sendUpdate() {
       for (auto proto = Supla::Protocol::ProtocolLayer::first();
            proto != nullptr;
            proto = proto->next()) {
-        proto->sendActionTrigger(static_cast<uint8_t>(channelNumber), actionId);
+        if (!proto->usesSupLanActionFanout())
+          proto->sendActionTrigger(static_cast<uint8_t>(channelNumber),
+                                   actionId);
       }
       if (actionToSend || valueUpdatePending) {
         setSendValue();
@@ -48,8 +50,22 @@ uint32_t AtChannel::popAction() {
 }
 
 void AtChannel::pushAction(uint32_t action) {
-  actionToSend |= action;
-  setSendValue();
+  emitAction(action, true);
+}
+void AtChannel::emitAction(uint32_t action, bool publishToServer) {
+  for (auto proto = Protocol::ProtocolLayer::first(); proto;
+       proto = proto->next()) {
+    for (uint8_t bit = 0; bit < 32; ++bit) {
+      const uint32_t capability = UINT32_C(1) << bit;
+      if (action & getActionTriggerCaps() & capability)
+        proto->publishSupLanAction(channelNumber,
+                                                         capability);
+    }
+  }
+  if (publishToServer) {
+    actionToSend |= action;
+    setSendValue();
+  }
 }
 
 void AtChannel::activateAction(uint32_t action) {

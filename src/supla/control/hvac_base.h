@@ -33,7 +33,8 @@ class HvacBase;
 class HvacBase : public ChannelElement, public ActionHandler {
  public:
   explicit HvacBase(Supla::Control::OutputInterface *primaryOutput = nullptr,
-                    Supla::Control::OutputInterface *secondaryOutput = nullptr);
+                    Supla::Control::OutputInterface *secondaryOutput = nullptr,
+                    int channelNumber = -1);
   virtual ~HvacBase();
 
   void onLoadConfig(SuplaDeviceClass *) override;
@@ -299,7 +300,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isCoolingSubfunction() const;
 
   bool isFunctionSupported(_supla_int_t channelFunction) const;
-  bool isConfigValid(TChannelConfig_HVAC *config) const;
+  bool isConfigValid(const TChannelConfig_HVAC *config) const;
   bool isWeeklyScheduleValid(TChannelConfig_WeeklySchedule *newSchedule,
                              bool isAltWeeklySchedule = false) const;
   bool isChannelThermometer(int16_t channelNo) const;
@@ -490,6 +491,21 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // to HVAC configuration. Return true when correction was done and it will
   // be shared with server.
   virtual bool applyAdditionalValidation(TChannelConfig_HVAC *hvacConfig);
+  // Runs after validation, before accepting/saving a server configuration.
+  // Remote regulators may submit device writes and retain confirmed fields
+  // in the snapshot while waiting for readback. The default accepts it.
+  // Set changed to true when modifying the snapshot; retain an existing true.
+  virtual ApplyConfigResult prepareChannelConfig(TChannelConfig_HVAC *config,
+                                                 bool local, bool &changed);
+  // Import an observed remote configuration using native validation/storage.
+  bool importRemoteConfig(const TChannelConfig_HVAC &config, bool persist);
+  // Remote regulators drive expiry themselves, reusing native timer reports.
+  void setExternalCountdownTimer(time_t ends, const THVACValue &restore) {
+    countdownTimerEnds = ends;
+    lastWorkingMode = restore;
+  }
+  THVACValue getCountdownRestoreValue() const { return lastWorkingMode; }
+  void emitCountdownTimerActionIfNeeded();
   virtual void fillDefaultWeeklySchedule(
       TChannelConfig_WeeklySchedule *schedule, bool isAltWeeklySchedule);
   void clearLastOutputValue();
@@ -522,14 +538,13 @@ class HvacBase : public ChannelElement, public ActionHandler {
                               bool forAux = false);
   void fixTemperatureSetpoints();
   void storeLastWorkingMode();
-  void applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig);
+  void applyConfigWithoutValidation(const TChannelConfig_HVAC *hvacConfig);
   int32_t channelFunctionToIndex(int32_t channelFunction) const;
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
   void updateWeeklyScheduleConfigTypes();
   bool isLocalConfigChangePending(int configType) const;
   void persistChannelConfigChangeState();
-  void emitCountdownTimerActionIfNeeded();
   bool fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig);
   bool fixReadonlyTemperature(int32_t temperatureIndex,
                               THVACTemperatureCfg *newTemp);

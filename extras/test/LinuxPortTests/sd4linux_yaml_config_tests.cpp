@@ -150,6 +150,7 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
   using Supla::LinuxYamlConfig::config;
+  bool hasPendingSave() const { return saveDelayMs != 0; }
 };
 
 class UmaskGuard {
@@ -277,6 +278,29 @@ TEST_F(Sd4linuxYamlCredentialTests,
   std::string targetContents;
   std::getline(targetAfterSave, targetContents);
   EXPECT_EQ(targetContents, "unchanged");
+}
+
+TEST_F(Sd4linuxYamlCredentialTests,
+       RetriesFailedDelayedSaveAfterPathRecovery) {
+  SimpleTime time;
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  ASSERT_TRUE(std::filesystem::create_directory(storagePath));
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(config.setString("test_key", "test_value"));
+  config.saveWithDelay(1);
+  time.advance(2);
+  config.saveIfNeeded();
+  EXPECT_TRUE(config.hasPendingSave());
+
+  ASSERT_TRUE(std::filesystem::remove(storagePath));
+  time.advance(4999);
+  config.saveIfNeeded();
+  EXPECT_FALSE(std::filesystem::exists(storagePath));
+  time.advance(2);
+  config.saveIfNeeded();
+  EXPECT_FALSE(config.hasPendingSave());
+  EXPECT_TRUE(std::filesystem::is_regular_file(storagePath));
 }
 
 TEST_F(Sd4linuxYamlCredentialTests,

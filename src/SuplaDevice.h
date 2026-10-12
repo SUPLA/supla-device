@@ -227,6 +227,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void scheduleSoftRestart(int timeout = 0);
   void scheduleProtocolsRestart(int timeout = 0);
   void softRestart();
+  // Shared reset/stop preparation; the caller selects the platform action.
+  bool prepareForShutdown();
   void saveStateToStorage();
   void restartCfgModeTimeout(bool requireRestart);
   void resetToFactorySettings();

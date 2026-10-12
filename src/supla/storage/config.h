@@ -87,6 +87,9 @@ class Config {
   static void generateKey(char *, int, const char *);
 
   virtual void commit();
+  // Legacy backends retain commit(); backends with error reporting override
+  // this method so delayed saves can be retried.
+  virtual bool commitWithResult();
   virtual void saveWithDelay(uint16_t delayMs);
   virtual void saveIfNeeded();
 

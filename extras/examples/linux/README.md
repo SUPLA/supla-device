@@ -170,6 +170,15 @@ permissions to `0600`.
 from the input YAML configuration file. It is rewritten when configuration
 changes are committed.
 
+Failed delayed configuration saves are retried every five seconds. SIGINT,
+SIGTERM, SIGHUP and SIGQUIT request termination even when delivered to a worker
+thread. Shutdown uses the SDK's shared reset/stop preparation: element reset
+callbacks, state storage, configuration commit and network teardown. A normal
+stop exits with status 0; a failed final configuration commit exits with status 1.
+Software reset retains its existing status 1 exit. Legacy configuration backends
+can keep overriding `commit()`; backends that report write errors override
+`commitWithResult()`.
+
 Adjust "supla_user" to your user name.
 
 `last_state.txt` contains the last runtime "last state" log (similar to

@@ -60,6 +60,7 @@ uint8_t localConfigTypeBit(int configType) {
   return configTypeBit(configType);
 }
 
+#ifndef SUPLA_DISABLE_LOGS
 const char *configTypeToString(int configType) {
   switch (configType) {
     case SUPLA_CONFIG_TYPE_DEFAULT:
@@ -76,6 +77,7 @@ const char *configTypeToString(int configType) {
       return "UNKNOWN";
   }
 }
+#endif
 
 }  // namespace
 

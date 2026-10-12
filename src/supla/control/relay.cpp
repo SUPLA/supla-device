@@ -35,6 +35,7 @@ namespace {
 
 constexpr uint32_t POSTPONED_TIME = 500;
 
+#ifndef SUPLA_DISABLE_LOGS
 const char *relayModeName(uint8_t mode) {
   switch (mode) {
     case SUPLA_RELAY_MODE_NOT_SET: return "NOT_SET";
@@ -48,6 +49,7 @@ const char *relayModeName(uint8_t mode) {
     default: return "UNKNOWN";
   }
 }
+#endif
 
 Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io, int pin, bool highIsOn) {
   Supla::Io::IoPin outputPin(pin, io);

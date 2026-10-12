@@ -2577,10 +2577,10 @@ void HvacBase::handleSetChannelConfigResult(
   Supla::ElementWithChannelActions::handleSetChannelConfigResult(result);
 
   if (result->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT) {
-    bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
     SUPLA_LOG_INFO("HVAC[%d]: set channel config %s (%d)",
                    getChannelNumber(),
-                   success ? "succeeded" : "failed",
+                   result->Result == SUPLA_CONFIG_RESULT_TRUE
+                       ? "succeeded" : "failed",
                    result->Result);
     return;
   }

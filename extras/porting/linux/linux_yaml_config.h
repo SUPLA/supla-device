@@ -121,7 +121,7 @@ class LinuxYamlConfig : public KeyValue {
   std::string getStateFilesPath();
 
   bool isMqttSource();
-  bool isValidMqttConfig();
+  bool isValidMqttConfig() const;
 
   bool getMqttClientHost(char* result) const;
   int32_t getMqttClientPort() const;

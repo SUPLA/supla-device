@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <string>
 #include <cstdio>
+#include <stdexcept>
 
 // Destroy the client (and stop its thread) before the topic cache and mutex.
 std::mutex Supla::LinuxMqttClient::topicsMutex;
@@ -23,11 +24,6 @@ Supla::LinuxMqttClient::LinuxMqttClient(
     : useSSL(yamlConfig.getMqttClientUseSSL()),
       verifyCA(yamlConfig.getMqttClientVerifyCA()),
       port(yamlConfig.getMqttClientPort()) {
-  if (!useSSL && port == 8883) {
-    SUPLA_LOG_WARNING("MQTT: enabling TLS because broker port is 8883");
-    useSSL = true;
-  }
-
   char buffer[256];
   host = yamlConfig.getMqttClientHost(buffer) ? buffer : "";
   if (!yamlConfig.getMqttClientName(buffer)) {
@@ -65,6 +61,9 @@ std::shared_ptr<Supla::LinuxMqttClient>& Supla::LinuxMqttClient::getInstance() {
 
 std::shared_ptr<Supla::LinuxMqttClient>& Supla::LinuxMqttClient::getInstance(
     const Supla::LinuxYamlConfig& yamlConfig) {
+  if (!yamlConfig.isValidMqttConfig()) {
+    throw std::invalid_argument("Invalid MQTT configuration");
+  }
   if (!instance) {
     instance.reset(new Supla::LinuxMqttClient(yamlConfig));
   }

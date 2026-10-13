@@ -169,6 +169,7 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/parser/parser.cpp
   ../porting/linux/supla/parser/simple.cpp
   ../porting/linux/supla/output/file.cpp
+  ../porting/linux/supla/output/mqtt.cpp
   ../porting/linux/supla/payload/json.cpp
   ../porting/linux/supla/payload/simple.cpp
   ../porting/linux/supla/source/cmd.cpp

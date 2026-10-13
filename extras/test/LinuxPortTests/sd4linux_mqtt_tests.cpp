@@ -5,16 +5,27 @@
 #include <linux_mqtt_client.h>
 #include <mqtt_client.h>
 #include <supla/source/mqtt_src.h>
+#include <supla/output/mqtt.h>
 
 #include <atomic>
 #include <memory>
 #include <string>
+#include <stdexcept>
 #include <thread>
 #include <unordered_map>
 
 namespace {
 std::unordered_map<std::string, std::string> initialTopics;
 bool modifyTopicsDuringInit = false;
+int transportStarts = 0;
+
+class MqttTestConfig : public Supla::LinuxYamlConfig {
+ public:
+  MqttTestConfig() : LinuxYamlConfig("") {
+    config = YAML::Load("mqtt: {host: localhost, use_ssl: false}");
+  }
+  using LinuxYamlConfig::config;
+};
 
 void receive(const std::string& topic, const std::string& message) {
   mqtt_response_publish published = {};
@@ -31,6 +42,7 @@ void receive(const std::string& topic, const std::string& message) {
 int mqtt_client_init(std::string, int, std::string, std::string, std::string,
                      const std::unordered_map<std::string, std::string>& topics,
                      void (*)(void**, struct mqtt_response_publish*)) {
+  ++transportStarts;
   if (modifyTopicsDuringInit) {
     Supla::LinuxMqttClient::getInstance()->subscribeTopic("mqtt-test/init-new");
     receive("mqtt-test/init", "updated");
@@ -44,10 +56,59 @@ void mqtt_client_free() {
 
 class LinuxMqttTests : public ::testing::Test {
  protected:
-  Supla::LinuxYamlConfig config{""};
+  MqttTestConfig config;
   std::shared_ptr<Supla::LinuxMqttClient> client =
       Supla::LinuxMqttClient::getInstance(config);
+  void TearDown() override {
+    client.reset();
+    Supla::LinuxMqttClient::getInstance().reset();
+  }
 };
+
+TEST_F(LinuxMqttTests, InvalidSecurityCannotCreateSourcesOutputsOrTransport) {
+  client.reset();
+  Supla::LinuxMqttClient::getInstance().reset();
+  const int before = transportStarts;
+  for (const char* fields : {"", "use_ssl: true", "use_ssl: broken",
+                             "use_ssl: true, verify_ca: []",
+                             "use_ssl: false, port: 8883"}) {
+    SCOPED_TRACE(fields);
+    config.config = YAML::Load(std::string("mqtt: {host: localhost, ") +
+                               fields + "}");
+    EXPECT_THROW(Supla::LinuxMqttClient::getInstance(config),
+                 std::invalid_argument);
+    EXPECT_THROW((Supla::Source::Mqtt(config, {"mqtt-test/tls"})),
+                 std::invalid_argument);
+    EXPECT_THROW((Supla::Output::Mqtt(config, "mqtt-test/tls", 0)),
+                 std::invalid_argument);
+    EXPECT_FALSE(Supla::LinuxMqttClient::getInstance());
+    Supla::LinuxMqttClient::start();
+    EXPECT_EQ(transportStarts, before);
+  }
+}
+
+TEST_F(LinuxMqttTests, ExplicitTlsChoicesAndCaFileReachTheClientUnchanged) {
+  for (const char* fields : {"use_ssl: false",
+                             "use_ssl: true, verify_ca: false",
+                             "use_ssl: true, verify_ca: true",
+                             "use_ssl: true, verify_ca: true, "
+                             "ca_file: ca.pem"}) {
+    SCOPED_TRACE(fields);
+    client.reset();
+    Supla::LinuxMqttClient::getInstance().reset();
+    config.config = YAML::Load(std::string("mqtt: {host: localhost, ") +
+                               fields + "}");
+    client = Supla::LinuxMqttClient::getInstance(config);
+    ASSERT_TRUE(client);
+    EXPECT_EQ(client->useSSL, config.getMqttClientUseSSL());
+    EXPECT_EQ(client->verifyCA, config.getMqttClientVerifyCA());
+    EXPECT_EQ(client->fileCA,
+              config.config["mqtt"]["ca_file"].as<std::string>(""));
+    const int before = transportStarts;
+    Supla::LinuxMqttClient::start();
+    EXPECT_EQ(transportStarts, before + 1);
+  }
+}
 
 TEST_F(LinuxMqttTests, ReturnsIndependentCopyOfLatestMessage) {
   const std::string topic = "mqtt-test/copy";

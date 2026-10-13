@@ -318,8 +318,9 @@ Mandatory.
 Defines MQTT broker port to which device should connect to. This application
 can use SSL/TLS encrypted connection. Parameter is optional. The default is
 `1883` when `use_ssl` is `false` and `8883` when `use_ssl` is `true`. An
-explicit `port` value overrides these defaults. Using port `8883` also enables
-TLS when `use_ssl` is omitted or set to `false`.
+explicit `port` value overrides these defaults, including custom TLS ports.
+Port `8883` requires `use_ssl: true`; `use_ssl: false` with this port is rejected.
+The port never enables TLS implicitly.
 
 #### Parameter `username`
 
@@ -339,12 +340,21 @@ Parameter is optional - default value: hostname.
 #### Parameter `use_ssl`
 
 Defines whether an encrypted SSL/TLS connection is to be used.
-Parameter is optional - default value: false.
+Mandatory boolean whenever an MQTT source or output is used, including named
+sources and references through `use`. Set explicitly to `true` or `false`.
 
 #### Parameter `verify_ca`
 
-Defines whether the MQTT broker certificate is to be verified.
-Parameter is optional - default value: false.
+Defines whether the MQTT broker certificate and host name are to be verified.
+Mandatory boolean when `use_ssl: true`; there is no implicit choice.
+With `use_ssl: false`, this parameter is not required. Explicit `false` keeps
+TLS encryption without verifying the broker identity and logs an INSECURE
+warning. Explicit `true` enables verification using system CAs or `ca_file`.
+
+Incomplete configurations and invalid boolean types are rejected at startup,
+before the MQTT client is created or connects. Existing MQTT configurations
+must add `use_ssl`, and TLS configurations must also add `verify_ca`.
+Configurations that do not use MQTT are unaffected.
 
 #### Parameter `ca_file`
 
@@ -358,8 +368,9 @@ Example (no SSL/TLS, anonymous):
       host: mqtt.example.org
       port: 1883
       client_name: sl4d_client_001
+      use_ssl: false
 
-Example (with SSL/TLS with login):
+Example (TLS with CA and host-name verification):
 
     mqtt:
       host: mqtt-ssl.example.org
@@ -368,10 +379,6 @@ Example (with SSL/TLS with login):
       password: my_s3cr3t-PSWD
       client_name: sl4d_client_001
       use_ssl: true
-
-It is recommended to verify the server certificate with an encrypted connection,
-so we should set `verify_ca` to `true`
-
       verify_ca: true
 
 If the server is trusted but its certificate is self-signed or its CA is not in
@@ -379,6 +386,16 @@ the system's trusted certificate store, we can use a PEM file with the certifica
 path and specify the file location as `ca_file`.
 
       ca_file: ca_chain.pem
+
+Example (TLS without certificate verification, explicitly chosen by the operator):
+
+    mqtt:
+      host: mqtt-ssl.example.org
+      use_ssl: true
+      verify_ca: false
+
+This encrypts traffic but does not authenticate the broker. It is vulnerable to
+an attacker impersonating the broker; use verification whenever possible.
 
 # Supla channels configuration
 

@@ -72,6 +72,12 @@ class FullStartupWithConfig : public ::testing::Test {
   ConfigMock cfg;
 
   virtual void SetUp() {
+    // Legacy startup scenarios have no persisted SERVER identity/root.
+    // Probing these optional records is allowed; writes remain test-specific.
+    EXPECT_CALL(cfg, getBlobSize(::testing::StrEq("sl-root")))
+        .Times(::testing::AnyNumber()).WillRepeatedly(Return(-1));
+    EXPECT_CALL(cfg, getBlobSize(::testing::StrEq("sl-identity")))
+        .Times(::testing::AnyNumber()).WillRepeatedly(Return(-1));
     if (SuplaDevice.getClock()) {
       delete SuplaDevice.getClock();
     }

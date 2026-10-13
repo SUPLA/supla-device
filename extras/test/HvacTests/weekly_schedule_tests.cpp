@@ -522,6 +522,7 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
   }
 
   void SetUp() override {
+    cfg.expectLegacyHvacBlobSizes(0);
     Supla::Channel::resetToDefaults();
 
     hvac = new HvacBaseForTests(&output);
@@ -1152,6 +1153,11 @@ TEST_F(HvacWeeklyScheduleTestsF,
 
 TEST_F(HvacWeeklyScheduleTestsF,
        LocalDefaultConfigChangeDoesNotBlockServerWeeklySchedule) {
+  // Keep this test's existing failed persistence path explicit, including
+  // rollback. Weekly-schedule synchronization must still work afterwards.
+  EXPECT_CALL(cfg, commit()).Times(1).WillOnce(Return(false));
+  EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2")))
+      .Times(1).WillOnce(Return(false));
   ProtocolLayerMock proto;
   EXPECT_CALL(cfg, init());
   EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_weekly"), _,

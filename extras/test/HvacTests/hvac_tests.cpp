@@ -64,6 +64,7 @@ class HvacTestWithChannelSetupF : public HvacTestsF {
   Supla::Sensor::ThermHygroMeter *t2 = {};
 
   void SetUp() override {
+    cfg.expectLegacyHvacBlobSizes(0);
     HvacTestsF::SetUp();
 
     hvac = new Supla::Control::HvacBase(&output);
@@ -1203,6 +1204,12 @@ TEST_F(HvacTestsF, invalidRelayAssignmentsAreClearedOnInit) {
 }
 
 TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
+  // This legacy validation/serialization fixture has no durable backend.
+  // Explicitly reject commit and check rollback instead of silently relying
+  // on GMock's default false result.
+  EXPECT_CALL(cfg, commit()).Times(1).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2")))
+      .Times(1).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, init());
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
@@ -1374,6 +1381,12 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
 }
 
 TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
+  // This legacy validation/serialization fixture has no durable backend.
+  // Explicitly reject commit and check rollback instead of silently relying
+  // on GMock's default false result.
+  EXPECT_CALL(cfg, commit()).Times(1).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2")))
+      .Times(1).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, init());
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
@@ -1552,6 +1565,12 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
 
 TEST_F(HvacTestWithChannelSetupF,
        startupProcedureWithConfigChangedBeforeConnection) {
+  // This legacy validation/serialization fixture has no durable backend.
+  // Explicitly reject commit and check rollback instead of silently relying
+  // on GMock's default false result.
+  EXPECT_CALL(cfg, commit()).Times(2).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2")))
+      .Times(2).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, init());
   ProtocolLayerMock proto;
   ::testing::Sequence s1, s2;
@@ -1877,6 +1896,12 @@ TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
 
 TEST_F(HvacTestWithChannelSetupF,
        startupProcedureWithInvalidConfigFromServerAfterRegister) {
+  // This legacy validation/serialization fixture has no durable backend.
+  // Explicitly reject commit and check rollback instead of silently relying
+  // on GMock's default false result.
+  EXPECT_CALL(cfg, commit()).Times(1).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2")))
+      .Times(1).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, init());
   ProtocolLayerMock proto;
   // Config storage doesn't contain any data about HVAC channel, so it returns

@@ -33,6 +33,7 @@
 #include <unistd.h>
 
 #include <array>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -723,8 +724,15 @@ void countState(void *context, Supla::Protocol::SupLanApplicationEvent event,
           temperature == 21.75))) ++*static_cast<int *>(context);
   }
 }
+using ProvisionedDeadline = std::chrono::steady_clock::time_point;
+ProvisionedDeadline provisionedDeadline() {
+  return std::chrono::steady_clock::now() + std::chrono::seconds(5);
+}
+
 int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
-                           bool hvacConsumer = false) {
+                           ProvisionedDeadline deadline,
+                           bool hvacConsumer = false,
+                           unsigned completionDelayMs = 0) {
   Supla::Channel::resetToDefaults();
   Supla::RegisterDevice::resetToDefaults();
   SimpleTime clock;
@@ -846,7 +854,9 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
   bool requestedMetadataRestore = false;
   bool publishedMetadata = false;
   bool publishedMetadataRestore = false;
-  for (int step = 0; step < 800; ++step) {
+  // Both children share the parent's absolute wall deadline. Iteration count
+  // and simulated time are not a bound on how much CPU the other child got.
+  while (std::chrono::steady_clock::now() < deadline) {
     usleep(1000);
     datagrams.now += 5;
     clock.advance(5);
@@ -938,6 +948,7 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
           return 21;
       }
       uint8_t complete = 0xfe;
+      if (completionDelayMs) usleep(completionDelayMs * 1000);
       if (send(socket, &complete, sizeof(complete), 0) != sizeof(complete))
         return 14;
       return 0;
@@ -975,6 +986,16 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
       return 0;
     }
   }
+  std::fprintf(stderr,
+      "Provisioned endpoint timeout: source=%d reboot=%d hvac=%d "
+      "clock=%u states=%d reads=%u complete=%d "
+      "notification=%d/%d wake=%d/%d metadata=%d/%d restore=%d/%d\n",
+      isSource, rebootEndpoint, hvacConsumer, datagrams.now, states,
+      runtime.diagnostics().readDispatched, datagrams.readReceived,
+      datagrams.notificationRequested, requestedNotification,
+      datagrams.wakeRequested, requestedWake,
+      datagrams.metadataRequested, requestedMetadata,
+      datagrams.metadataRestoreRequested, requestedMetadataRestore);
   return 11;
 }
 TEST(SupLanProvisionedRead,
@@ -988,17 +1009,20 @@ TEST(SupLanProvisionedRead,
                            sizeof(timeout)),
                 0);
     }
+    const auto deadline = provisionedDeadline();
     pid_t source = fork();
     ASSERT_GE(source, 0);
     if (source == 0) {
       close(sockets[1]);
-      _exit(runProvisionedEndpoint(sockets[0], true, rebootMode == 1));
+      _exit(runProvisionedEndpoint(sockets[0], true, rebootMode == 1,
+                                    deadline));
     }
     pid_t destination = fork();
     ASSERT_GE(destination, 0);
     if (destination == 0) {
       close(sockets[0]);
-      _exit(runProvisionedEndpoint(sockets[1], false, rebootMode == 2));
+      _exit(runProvisionedEndpoint(sockets[1], false, rebootMode == 2,
+                                    deadline));
     }
     close(sockets[0]);
     close(sockets[1]);
@@ -1024,17 +1048,20 @@ TEST(SupLanProvisionedRead,
                            sizeof(timeout)),
                 0);
     }
+    const auto deadline = provisionedDeadline();
     pid_t source = fork();
     ASSERT_GE(source, 0);
     if (source == 0) {
       close(sockets[1]);
-      _exit(runProvisionedEndpoint(sockets[0], true, rebootMode == 1, true));
+      _exit(runProvisionedEndpoint(sockets[0], true, rebootMode == 1,
+                                    deadline, true));
     }
     pid_t destination = fork();
     ASSERT_GE(destination, 0);
     if (destination == 0) {
       close(sockets[0]);
-      _exit(runProvisionedEndpoint(sockets[1], false, rebootMode == 2, true));
+      _exit(runProvisionedEndpoint(sockets[1], false, rebootMode == 2,
+                                    deadline, true));
     }
     close(sockets[0]);
     close(sockets[1]);
@@ -1048,6 +1075,41 @@ TEST(SupLanProvisionedRead,
     EXPECT_EQ(WEXITSTATUS(destinationStatus), 0)
         << "reboot mode " << rebootMode;
   }
+}
+
+TEST(SupLanProvisionedRead, DelayedCompletionAfterSuccessfulHvacChecks) {
+  int sockets[2];
+  ASSERT_EQ(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets), 0);
+  timeval timeout = {2, 0};
+  for (int socket : sockets) {
+    ASSERT_EQ(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+                         sizeof(timeout)), 0);
+  }
+  const auto deadline = provisionedDeadline();
+  const auto source = fork();
+  ASSERT_GE(source, 0);
+  if (source == 0) {
+    close(sockets[1]);
+    _exit(runProvisionedEndpoint(sockets[0], true, false, deadline, true));
+  }
+  const auto destination = fork();
+  ASSERT_GE(destination, 0);
+  if (destination == 0) {
+    close(sockets[0]);
+    // Emulate descheduling after the real HVAC assertions, not packet loss
+    // or fabricated state. The Source must still receive the final barrier.
+    _exit(runProvisionedEndpoint(sockets[1], false, true, deadline,
+                                  true, 1200));
+  }
+  close(sockets[0]);
+  close(sockets[1]);
+  int a = 0, b = 0;
+  ASSERT_EQ(waitpid(source, &a, 0), source);
+  ASSERT_EQ(waitpid(destination, &b, 0), destination);
+  ASSERT_TRUE(WIFEXITED(a));
+  ASSERT_TRUE(WIFEXITED(b));
+  EXPECT_EQ(WEXITSTATUS(a), 0);
+  EXPECT_EQ(WEXITSTATUS(b), 0);
 }
 
 // Automatic SDK bootstrap uses the same isolated process transport; all

@@ -44,6 +44,7 @@ class HvacChannelAssignmentTests : public ::testing::Test {
 };
 
 TEST_F(HvacChannelAssignmentTests, binarySensorAsChannelZero) {
+  cfg.expectLegacyHvacBlobSizes(1);
   EXPECT_CALL(cfg, init());
 
   Supla::Sensor::VirtualBinary s1;

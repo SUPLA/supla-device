@@ -34,6 +34,7 @@ class HvacIntegrationScheduleF : public ::testing::Test {
   Supla::Sensor::VirtualThermometer *t2 = {};
 
   void SetUp() override {
+    cfg.expectLegacyHvacBlobSizes(0);
     Supla::Channel::resetToDefaults();
 
     hvac = new Supla::Control::HvacBase(&primaryOutput);

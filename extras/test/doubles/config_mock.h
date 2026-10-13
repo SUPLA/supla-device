@@ -13,6 +13,9 @@ class ConfigMock : public Supla::Config {
  public:
   ConfigMock();
   virtual ~ConfigMock();
+  // Legacy HVAC fixtures supply getBlob explicitly and have no V2 record.
+  // Allow only metadata probes for these two keys, not arbitrary storage I/O.
+  void expectLegacyHvacBlobSizes(int channelNumber);
   MOCK_METHOD(bool, init, (), (override));
   MOCK_METHOD(void, removeAll, (), (override));
   //  MOCK_METHOD(bool, isMinimalConfigReady, (), (override));

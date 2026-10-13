@@ -6,7 +6,6 @@
 
 #include <supla/source/source.h>
 
-#include <map>
 #include <string>
 #include <vector>
 
@@ -28,7 +27,8 @@ class Simple : public Parser {
       const std::string &key) override;
 
  protected:
-  std::map<int, std::variant<int, bool, std::string, double>> values;
+  static constexpr size_t MAX_FIELDS = 4096;
+  std::vector<std::variant<int, bool, std::string, double>> values;
 };
 };  // namespace Parser
 };  // namespace Supla

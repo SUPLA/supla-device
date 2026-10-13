@@ -150,9 +150,9 @@ Collaboration diagram for Supla::Control::HvacBase:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aded6161c8c0a065c5d2c91ae890bc92c" id="r_aded6161c8c0a065c5d2c91ae890bc92c"><td class="memItemLeft" align="right" valign="top"><a id="aded6161c8c0a065c5d2c91ae890bc92c" name="aded6161c8c0a065c5d2c91ae890bc92c"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>HvacBase</b> (<a class="el" href="classSupla_1_1Control_1_1OutputInterface.html">Supla::Control::OutputInterface</a> *primaryOutput=nullptr, <a class="el" href="classSupla_1_1Control_1_1OutputInterface.html">Supla::Control::OutputInterface</a> *secondaryOutput=nullptr)</td></tr>
-<tr class="separator:aded6161c8c0a065c5d2c91ae890bc92c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76d74519835b64001cd1ffac16aec5ec" id="r_a76d74519835b64001cd1ffac16aec5ec"><td class="memItemLeft" align="right" valign="top"><a id="a76d74519835b64001cd1ffac16aec5ec" name="a76d74519835b64001cd1ffac16aec5ec"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>HvacBase</b> (<a class="el" href="classSupla_1_1Control_1_1OutputInterface.html">Supla::Control::OutputInterface</a> *primaryOutput=nullptr, <a class="el" href="classSupla_1_1Control_1_1OutputInterface.html">Supla::Control::OutputInterface</a> *secondaryOutput=nullptr, int channelNumber=-1)</td></tr>
+<tr class="separator:a76d74519835b64001cd1ffac16aec5ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4befe8e214b147cb74b72c9e05939aa9" id="r_a4befe8e214b147cb74b72c9e05939aa9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4befe8e214b147cb74b72c9e05939aa9">onLoadConfig</a> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *) override</td></tr>
 <tr class="memdesc:a4befe8e214b147cb74b72c9e05939aa9"><td class="mdescLeft">&#160;</td><td class="mdescRight">First method called on element in SuplaDevice.begin().  <br /></td></tr>
 <tr class="separator:a4befe8e214b147cb74b72c9e05939aa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -655,9 +655,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>isCoolingSubfunction<
 <tr class="memitem:a5fb539b972ac8b11e26d14624da5e0cf" id="r_a5fb539b972ac8b11e26d14624da5e0cf"><td class="memItemLeft" align="right" valign="top"><a id="a5fb539b972ac8b11e26d14624da5e0cf" name="a5fb539b972ac8b11e26d14624da5e0cf"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isFunctionSupported</b> (_supla_int_t channelFunction) const</td></tr>
 <tr class="separator:a5fb539b972ac8b11e26d14624da5e0cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a038ed25a2944c642c8ab044c0c19cb10" id="r_a038ed25a2944c642c8ab044c0c19cb10"><td class="memItemLeft" align="right" valign="top"><a id="a038ed25a2944c642c8ab044c0c19cb10" name="a038ed25a2944c642c8ab044c0c19cb10"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isConfigValid</b> (<a class="el" href="structTChannelConfig__HVAC.html">TChannelConfig_HVAC</a> *config) const</td></tr>
-<tr class="separator:a038ed25a2944c642c8ab044c0c19cb10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89027543067bd258ca4b19d63339001d" id="r_a89027543067bd258ca4b19d63339001d"><td class="memItemLeft" align="right" valign="top"><a id="a89027543067bd258ca4b19d63339001d" name="a89027543067bd258ca4b19d63339001d"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isConfigValid</b> (const <a class="el" href="structTChannelConfig__HVAC.html">TChannelConfig_HVAC</a> *config) const</td></tr>
+<tr class="separator:a89027543067bd258ca4b19d63339001d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a180fd9e8c5b5bfb919087a5233910063" id="r_a180fd9e8c5b5bfb919087a5233910063"><td class="memItemLeft" align="right" valign="top"><a id="a180fd9e8c5b5bfb919087a5233910063" name="a180fd9e8c5b5bfb919087a5233910063"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isWeeklyScheduleValid</b> (<a class="el" href="structTChannelConfig__WeeklySchedule.html">TChannelConfig_WeeklySchedule</a> *newSchedule, bool isAltWeeklySchedule=false) const</td></tr>
 <tr class="separator:a180fd9e8c5b5bfb919087a5233910063"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1204,6 +1204,21 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>updateChannelState</b
 <tr class="memitem:ac3d669a1d214c9b7f2d01a676c2fcb27" id="r_ac3d669a1d214c9b7f2d01a676c2fcb27"><td class="memItemLeft" align="right" valign="top"><a id="ac3d669a1d214c9b7f2d01a676c2fcb27" name="ac3d669a1d214c9b7f2d01a676c2fcb27"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>applyAdditionalValidation</b> (<a class="el" href="structTChannelConfig__HVAC.html">TChannelConfig_HVAC</a> *hvacConfig)</td></tr>
 <tr class="separator:ac3d669a1d214c9b7f2d01a676c2fcb27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ee0d0a8c5b7e7d0bd1354acb5d9bef7" id="r_a2ee0d0a8c5b7e7d0bd1354acb5d9bef7"><td class="memItemLeft" align="right" valign="top"><a id="a2ee0d0a8c5b7e7d0bd1354acb5d9bef7" name="a2ee0d0a8c5b7e7d0bd1354acb5d9bef7"></a>
+virtual ApplyConfigResult&#160;</td><td class="memItemRight" valign="bottom"><b>prepareChannelConfig</b> (<a class="el" href="structTChannelConfig__HVAC.html">TChannelConfig_HVAC</a> *config, bool local, bool &amp;changed)</td></tr>
+<tr class="separator:a2ee0d0a8c5b7e7d0bd1354acb5d9bef7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef9b8b8bc7d81208e9822a96efad7ccd" id="r_aef9b8b8bc7d81208e9822a96efad7ccd"><td class="memItemLeft" align="right" valign="top"><a id="aef9b8b8bc7d81208e9822a96efad7ccd" name="aef9b8b8bc7d81208e9822a96efad7ccd"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>importRemoteConfig</b> (const <a class="el" href="structTChannelConfig__HVAC.html">TChannelConfig_HVAC</a> &amp;config, bool persist)</td></tr>
+<tr class="separator:aef9b8b8bc7d81208e9822a96efad7ccd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55ffeba2c578f9d6a0e66227d3ea6860" id="r_a55ffeba2c578f9d6a0e66227d3ea6860"><td class="memItemLeft" align="right" valign="top"><a id="a55ffeba2c578f9d6a0e66227d3ea6860" name="a55ffeba2c578f9d6a0e66227d3ea6860"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setExternalCountdownTimer</b> (time_t ends, const <a class="el" href="structTHVACValue.html">THVACValue</a> &amp;restore)</td></tr>
+<tr class="separator:a55ffeba2c578f9d6a0e66227d3ea6860"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5a7352195260193c100716fa938bd1c" id="r_aa5a7352195260193c100716fa938bd1c"><td class="memItemLeft" align="right" valign="top"><a id="aa5a7352195260193c100716fa938bd1c" name="aa5a7352195260193c100716fa938bd1c"></a>
+<a class="el" href="structTHVACValue.html">THVACValue</a>&#160;</td><td class="memItemRight" valign="bottom"><b>getCountdownRestoreValue</b> () const</td></tr>
+<tr class="separator:aa5a7352195260193c100716fa938bd1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c710ee8dd2c35c5def452761c0682c6" id="r_a9c710ee8dd2c35c5def452761c0682c6"><td class="memItemLeft" align="right" valign="top"><a id="a9c710ee8dd2c35c5def452761c0682c6" name="a9c710ee8dd2c35c5def452761c0682c6"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>emitCountdownTimerActionIfNeeded</b> ()</td></tr>
+<tr class="separator:a9c710ee8dd2c35c5def452761c0682c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a60877f853867635afaeb7cdcdfe781e5" id="r_a60877f853867635afaeb7cdcdfe781e5"><td class="memItemLeft" align="right" valign="top"><a id="a60877f853867635afaeb7cdcdfe781e5" name="a60877f853867635afaeb7cdcdfe781e5"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>fillDefaultWeeklySchedule</b> (<a class="el" href="structTChannelConfig__WeeklySchedule.html">TChannelConfig_WeeklySchedule</a> *schedule, bool isAltWeeklySchedule)</td></tr>
 <tr class="separator:a60877f853867635afaeb7cdcdfe781e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1272,6 +1287,9 @@ ChannelConfigState&#160;</td><td class="memItemRight" valign="bottom"><b>getChan
 <tr class="memitem:a395ff7978f9a6b0821a2cbd72d18141b inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a395ff7978f9a6b0821a2cbd72d18141b"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setChannelConfigState</b> (ChannelConfigState state)</td></tr>
 <tr class="separator:a395ff7978f9a6b0821a2cbd72d18141b inherit pro_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac302ea7472f046c65f2e220493409fc7 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_ac302ea7472f046c65f2e220493409fc7"><td class="memItemLeft" align="right" valign="top">
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>finishChannelConfig</b> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *result, Supla::ApplyConfigResult applyResult, bool local)</td></tr>
+<tr class="separator:ac302ea7472f046c65f2e220493409fc7 inherit pro_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>

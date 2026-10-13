@@ -18,6 +18,7 @@ class ScopedCryptoTestState {
   uint32_t sha256Calls = 0;
   uint32_t hmacSha256Calls = 0;
   bool failRandom = false;
+  uint32_t failHmacCall = 0;
   uint32_t next;
 
  private:

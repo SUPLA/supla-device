@@ -6,6 +6,7 @@
 #include "suplan_acl.h"
 
 #include <string.h>
+#include <supla/crypto.h>
 
 #include "suplan_crypto.h"
 #include "suplan_wire.h"
@@ -120,6 +121,7 @@ bool PeerTable::addPeer(const PeerContext *context,
   memcpy(candidate->contextBytes, candidateContext, sizeof(candidateContext));
   candidate->destination = destination;
   PeerMaterial material = {};
+  Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   if (!derivePeerMaterialFromKey(context, peerKey, &material) ||
       findByLocator(material.peerLocator) != -1 ||
       !setInitialAcl(candidate, aclRevision, entries, entryCount)) {
@@ -162,6 +164,7 @@ bool PeerTable::addPeerFromRoot(const PeerContext *context,
   memset(candidate, 0, sizeof(*candidate));
   memcpy(candidate->contextBytes, candidateContext, sizeof(candidateContext));
   PeerMaterial material = {};
+  Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   if (!derivePeerMaterial(context, rootKey, &material) ||
       findByLocator(material.peerLocator) != -1 ||
       !setInitialAcl(candidate, aclRevision, entries, entryCount)) {

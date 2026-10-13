@@ -19,8 +19,8 @@
 name: Device name
 # log_level - optional, values: info (default), debug, verbose, warning, error
 log_level: debug
-# proto_verbose_log - optional, defaults to false; enables insecure low-level
-# protocol dumps that may expose secrets
+# proto_verbose_log - optional, defaults to false; enables protocol diagnostics
+# decoded SRPC logs; credential-bearing calls are redacted
 proto_verbose_log: false
 
 supla:

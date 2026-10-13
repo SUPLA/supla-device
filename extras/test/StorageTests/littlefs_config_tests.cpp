@@ -105,10 +105,23 @@ TEST_F(LittleFsConfigTests, RemoveAllDeletesEveryFileBlob) {
   ASSERT_TRUE(LittleFS.exists("/supla/blob_1"));
   ASSERT_TRUE(LittleFS.exists("/supla/blob_2"));
 
-  config.removeAll();
+  ASSERT_TRUE(config.removeAllChecked());
 
   EXPECT_FALSE(LittleFS.exists("/supla/blob_1"));
   EXPECT_FALSE(LittleFS.exists("/supla/blob_2"));
+}
+
+TEST_F(LittleFsConfigTests, FailedResetEraseIsObservable) {
+  Supla::LittleFsConfig config;
+  const char stored[80] = {42};
+  ASSERT_TRUE(config.setBlob("sl-peer-0", stored, sizeof(stored)));
+  ASSERT_TRUE(LittleFS.exists("/supla/sl-peer-0"));
+  LittleFS.failRemovePath = "/supla/sl-peer-0";
+  EXPECT_FALSE(config.removeAllChecked());
+  EXPECT_TRUE(LittleFS.exists("/supla/sl-peer-0"));
+  LittleFS.failRemovePath.clear();
+  EXPECT_TRUE(config.removeAllChecked());
+  EXPECT_FALSE(LittleFS.exists("/supla/sl-peer-0"));
 }
 
 TEST_F(LittleFsConfigTests, FallsBackToBackupAfterPartialPrimaryParse) {

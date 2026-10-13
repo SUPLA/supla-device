@@ -23,6 +23,7 @@ class NvsConfig : public Config {
 
   bool init() override;
   void removeAll() override;
+  bool removeAllChecked() override;
 
   bool generateGuidAndAuthkey() override;
   bool getAESKey(uint8_t* result) override;

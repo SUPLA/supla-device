@@ -445,7 +445,6 @@ bool RemoteResourceManager::allowPresence(uint8_t index, uint32_t nowMs) {
       resource.hintEpochMs = nowMs;
     }
     if (resource.hintCount >= 2) return false;
-    ++resource.hintCount;
     return true;
   }
   return false;
@@ -464,6 +463,13 @@ void RemoteResourceManager::peerAwake(uint8_t index, uint16_t window,
         (resource.hasHintNonce &&
          memcmp(nonce, resource.lastHintNonce, 16) == 0))
       continue;
+    if (static_cast<uint32_t>(nowMs - resource.hintEpochMs) >= 1000) {
+      resource.hintEpochMs = nowMs;
+      resource.hintCount = 0;
+    }
+    if (resource.hintCount >= 2) continue;
+    // Charge only fresh authenticated hints, after nonce deduplication.
+    ++resource.hintCount;
     accepted = true;
     if (!reset) resource.wakeUntilMs = nowMs + window;
     memcpy(resource.lastHintNonce, nonce, 16);

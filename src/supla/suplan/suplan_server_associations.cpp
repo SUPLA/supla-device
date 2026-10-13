@@ -4,6 +4,7 @@
 #ifndef ARDUINO_ARCH_AVR
 #include <stdio.h>
 #include <string.h>
+#include <supla/crypto.h>
 #include <supla/channels/channel.h>
 #include <supla/crc16.h>
 #include <supla/storage/config.h>
@@ -365,6 +366,7 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
   }
   // Precompute cryptographic material before the persistence boundary.
   PeerMaterial material = {};
+  Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   bool derived = destination ? derivePeerMaterialFromKey(&context,
                                                          key   ? key
                                                          : old ? old->peerKey
@@ -445,6 +447,7 @@ TDS_SuplaSetSuplanSourceAssociationResult ServerAssociations::accept(
   if (result.Result == SUPLA_SUPLAN_RESULT_OK && request.Flags) {
     PeerContext context = fromWire(request.PeerContext);
     PeerMaterial material = {};
+    Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
     if (!derivePeerMaterial(&context, identity_->rootKey(), &material)) {
       result.Result = SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR;
     } else {

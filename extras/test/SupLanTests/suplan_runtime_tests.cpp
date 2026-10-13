@@ -10,9 +10,12 @@
 #include <simple_time.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/suplan/remote_resource_manager.h>
+#include <supla/protocol/suplan_protocol.h>
+#include <supla/suplan/suplan_server_associations.h>
 #include <crypto_test_hooks.h>
 
 #include <array>
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -237,11 +240,16 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
                     const uint8_t *payload, size_t payloadLength) override {
     ++stateCalls;
     if (remoteResources)
-      remoteResources->receive(peerIndex, resource, payload, payloadLength, 0);
+      remoteResources->receive(peerIndex, resource, payload, payloadLength,
+                                runtime ? runtime->nowMs() : 0);
     lastStateType = messageType;
     lastStateLength = payloadLength;
     if (payloadLength == 14) {
       value = payload[6];
+    } else if (payloadLength == sizeof(TDS_SuplaDeviceChannel_E)) {
+      TDS_SuplaDeviceChannel_E snapshot;
+      memcpy(&snapshot, payload, sizeof(snapshot));
+      value = snapshot.value[0];
     }
   }
 
@@ -262,11 +270,19 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
     lastAckResult = result;
   }
 
-  bool allowPresence(uint8_t, uint32_t) override { return presenceAllowed; }
+  bool allowPresence(uint8_t index, uint32_t now) override {
+    return remoteResources ? remoteResources->allowPresence(index, now)
+                           : presenceAllowed;
+  }
   void peerAwake(uint8_t index, uint16_t window, bool reset,
-                 const uint8_t *) override {
+                 const uint8_t *nonce) override {
     ++awakeHints;
-    if (runtime) runtime->refreshPeer(index, window, reset);
+    if (remoteResources) {
+      remoteResources->peerAwake(index, window, reset, nonce,
+                                 runtime ? runtime->nowMs() : 0);
+    } else if (runtime) {
+      runtime->refreshPeer(index, window, reset);
+    }
   }
   bool presenceAllowed = false;
   int awakeHints = 0;
@@ -2458,6 +2474,208 @@ TEST(SupLanSleepySource, ForgedAwakeHintCannotStartRepair) {
   pair.pump(3);
   EXPECT_EQ(pair.appB.awakeHints, 0);
   EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+}
+
+TEST(SupLanSleepySource, ForgedHintsDoNotConsumeAuthenticatedPresenceQuota) {
+  RuntimePair pair;
+  pair.peersB.get(pair.peerB)->destination = true;
+  Supla::Device::RemoteResourceManager resources(
+      &pair.peersB, &pair.runtimeB, nullptr);
+  ASSERT_TRUE(resources.consume({1, pair.resource,
+                                Supla::SupLan::kPermissionRead}));
+  ASSERT_EQ(resources.effectivePermissions(pair.resource) &
+                Supla::SupLan::kPermissionRead,
+            Supla::SupLan::kPermissionRead);
+  pair.appB.remoteResources = &resources;
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 200, false));
+  ASSERT_EQ(pair.network.packets.size(), 1U);
+  const Packet awake = pair.network.packets.back();
+  Packet forged = awake;
+  forged.bytes.back() ^= 1;
+  pair.network.packets.clear();
+  pair.network.packets.push_back(forged);
+  pair.network.packets.push_back(forged);
+  pair.network.packets.push_back(awake);
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 0, true));
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().invalidLocateDrop, 2U);
+  EXPECT_EQ(pair.appB.awakeHints, 2);
+}
+
+TEST(SupLanSleepySource, ForgedPresenceHasBoundedCryptoWorkAndWindowRecovery) {
+  RuntimePair pair;
+  pair.appB.presenceAllowed = true;
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 200, false));
+  const Packet valid = pair.network.packets.back();
+  Packet forged = valid;
+  forged.bytes.back() ^= 1;
+  pair.network.packets.assign(4, forged);
+  pair.rng.resetCalls();
+  pair.runtimeB.iterate();
+  const auto callsPerPacket = pair.rng.hmacSha256Calls / 4;
+  ASSERT_GT(callsPerPacket, 0U);
+  pair.network.packets.assign(1000, forged);
+  for (int i = 0; i < 250; ++i) pair.runtimeB.iterate();
+  EXPECT_EQ(pair.rng.hmacSha256Calls,
+      (2 * SUPLAN_MAX_PERSISTENT_PEERS + 8) * callsPerPacket);
+  EXPECT_EQ(pair.appB.awakeHints, 0);
+  EXPECT_TRUE(pair.network.packets.empty());
+  pair.network.now += 1000;
+  pair.network.packets.push_back(valid);
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.appB.awakeHints, 1);
+}
+
+TEST(SupLanSleepySource, DuplicateHintCannotSpendFreshWakeRepairOpportunity) {
+  RuntimePair pair;
+  pair.peersB.get(pair.peerB)->destination = true;
+  pair.appB.runtime = &pair.runtimeB;
+  Supla::Device::RemoteResourceManager resources(
+      &pair.peersB, &pair.runtimeB, nullptr);
+  ASSERT_TRUE(resources.consume({1, pair.resource,
+                                 Supla::SupLan::kPermissionRead}));
+  pair.appB.remoteResources = &resources;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(30);
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 200, false));
+  const Packet first = pair.network.packets.front();
+  pair.runtimeB.iterate();
+  ASSERT_TRUE(pair.runtimeA.announceSleep(pair.peerA, 30));
+  pair.runtimeB.iterate();
+  ASSERT_TRUE(pair.runtimeB.recoveryStatus(pair.peerB).sleeping);
+  pair.network.packets.push_back(first);
+  pair.network.packets.push_back(first);
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 200, false));
+  pair.runtimeB.iterate();
+  EXPECT_FALSE(pair.runtimeB.recoveryStatus(pair.peerB).sleeping);
+  EXPECT_EQ(resources.consumerCount(), 1);
+  EXPECT_EQ(resources.resourceCount(), 1);
+}
+
+TEST(SupLanRuntime, MixedNegativeFloodCannotDispatchOrStarveAdmittedControl) {
+  RuntimePair pair;
+  Supla::Control::VirtualRelay relay;
+  relay.getChannel()->setDefault(SUPLA_CHANNELFNC_POWERSWITCH);
+  pair.appA.nativeElement = &relay;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(30);
+  for (unsigned i = 0; i < 32; ++i) {
+    ASSERT_TRUE(pair.runtimeB.sendControlAction(pair.peerB, pair.resource,
+                                               ACTION_TOGGLE, nullptr, 0));
+    ASSERT_EQ(pair.network.packets.size(), 1U);
+    const Packet valid = pair.network.packets.front();
+    Packet badTag = valid;
+    badTag.bytes.back() ^= 1;
+    Packet unknownSession = valid;
+    unknownSession.bytes[3] ^= 1;
+    Packet malformed = valid;
+    malformed.bytes = {Supla::SupLan::kAdaptationFragment, 1, 2};
+    pair.network.packets.clear();
+    pair.network.packets.push_back(unknownSession);
+    pair.network.packets.push_back(badTag);
+    pair.network.packets.push_back(malformed);
+    pair.runtimeA.iterate();
+    EXPECT_EQ(pair.appA.nativeControlCalls, i);
+    pair.network.packets.push_back(valid);
+    pair.network.packets.push_back(valid);  // Authenticated duplicate ACK path.
+    pair.pump(3);
+    EXPECT_EQ(pair.appA.nativeControlCalls, i + 1);
+    EXPECT_EQ(relay.isOn(), i % 2 == 0);
+    EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+  }
+  EXPECT_EQ(pair.runtimeA.diagnostics().dataAuthFail, 32U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().controlDuplicateSuppressed, 32U);
+}
+
+TEST(SupLanSleepySource, LostResetHealthyReadRepairRevocationAndLocalActuator) {
+  RuntimePair pair;
+  pair.peersB.get(pair.peerB)->destination = true;
+  pair.appB.runtime = &pair.runtimeB;
+  pair.appA.fullSnapshots = true;
+  Supla::Device::RemoteResourceManager manager(&pair.peersB, &pair.runtimeB,
+                                               nullptr);
+  pair.appB.remoteResources = &manager;
+  Supla::Control::VirtualRelay local;
+  local.getChannel()->setDefault(SUPLA_CHANNELFNC_POWERSWITCH);
+  ASSERT_TRUE(manager.consume({1, pair.resource,
+                               Supla::SupLan::kPermissionRead}));
+  manager.iterate(pair.network.now);
+  pair.pump(30);
+  ASSERT_TRUE(manager.state(pair.resource, pair.network.now).available());
+  ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
+  const auto sessions = pair.runtimeB.diagnostics().sessionEstablished;
+  pair.runtimeA.clearInterests();
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 0, true));
+  pair.network.packets.clear();  // Lose only RESET, with a healthy transport.
+  pair.network.now = 59999;
+  manager.iterate(pair.network.now);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 0U);
+  local.turnOn();
+  EXPECT_TRUE(local.isOn());
+  pair.network.now = 60001;
+  manager.iterate(pair.network.now);
+  pair.pump(30);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
+  EXPECT_TRUE(manager.state(pair.resource, pair.network.now).available());
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionEstablished, sessions);
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, nullptr, 0));
+  manager.authorizationChanged();
+  EXPECT_FALSE(manager.state(pair.resource, pair.network.now).available());
+  EXPECT_EQ(manager.effectivePermissions(pair.resource), 0);
+  local.turnOff();
+  EXPECT_FALSE(local.isOn());
+  EXPECT_EQ(manager.consumerCount(), 1);
+}
+
+TEST(SupLanSleepySource, LongIntentionalSleepRetainsAuthorizedReadRecipients) {
+  RuntimePair pair;
+  pair.appA.fullSnapshots = true;
+  Supla::Device::ServerAssociations associations(&pair.peersA, &pair.runtimeA);
+  Supla::Protocol::SupLan source(nullptr, &pair.peersA, nullptr, 0);
+  source.attachRuntime(&pair.runtimeA);
+  source.attachServerAssociations(&associations);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(30);
+  ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
+  for (int cycle = 0; cycle < 2; ++cycle) {
+    source.announceSleep(360);
+    pair.pump(3);
+    pair.network.now += 360000;
+    source.beginWake(200, true);
+    const auto deadline = source.remoteResources()->presence().awakeUntilMs_;
+    // Neither RESET nor AWAKE needs to reach the Destination for retained
+    // Source recipients to survive the first runtime iteration after wake.
+    source.iterate(pair.network.now);
+    pair.network.packets.erase(std::remove_if(pair.network.packets.begin(),
+        pair.network.packets.end(), [](const Packet &packet) {
+          return (packet.bytes.size() == 50 || packet.bytes.size() == 52) &&
+              packet.bytes[0] == Supla::SupLan::kVersion &&
+              (packet.bytes[1] == 6 || packet.bytes[1] == 7);
+        }), pair.network.packets.end());
+    ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U) << cycle;
+    const auto states = pair.appB.stateCalls;
+    pair.appA.value = cycle + 1;
+    pair.runtimeA.publishCurrentInterests(pair.peerA);
+    pair.pump(3);
+    EXPECT_GT(pair.appB.stateCalls, states);
+    EXPECT_EQ(pair.appB.value, cycle + 1);
+    EXPECT_EQ(source.remoteResources()->presence().awakeUntilMs_, deadline);
+    // A READ admitted just before the advertised deadline may complete, but
+    // neither it nor its ACK may turn this fixed wake into an indefinite one.
+    pair.network.now = deadline - 1;
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    source.iterate(pair.network.now);
+    pair.network.now = deadline + 1;
+    pair.runtimeB.iterate();
+    EXPECT_EQ(source.remoteResources()->presence().awakeUntilMs_, deadline);
+    for (int i = 0; i <= SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+      pair.network.now += 10;
+      source.iterate(pair.network.now);
+      pair.runtimeB.iterate();
+    }
+    EXPECT_TRUE(source.wakeWindowComplete());
+    EXPECT_EQ(source.remoteResources()->presence().awakeUntilMs_, deadline);
+  }
 }
 
 TEST(SupLanRuntime, NativeControlMaximumParamsUsesProtectedRetryAndDedupe) {

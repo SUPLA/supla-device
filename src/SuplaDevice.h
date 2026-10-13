@@ -236,6 +236,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void saveStateToStorage();
   void restartCfgModeTimeout(bool requireRestart);
   void resetToFactorySettings();
+  bool resetToFactorySettingsChecked();
   void disableLocalActionsIfNeeded();
   void restoreLocalActionsAfterConfigMode();
   void requestCfgMode();
@@ -533,7 +534,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   uint32_t sleepDeferDurationMs = 0;
 
   enum Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;
-  bool triggerResetToFactorySettings = false;
+  bool triggerResetToFactorySettings : 1;
+  bool factoryResetAttempted : 1;
   bool triggerStartLocalWebServer = false;
   bool triggerStopLocalWebServer = false;
   bool triggerCheckSwUpdate = false;

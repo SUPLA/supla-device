@@ -301,11 +301,13 @@ void FactoryTest::iterateAlways() {
       testingMachineEnabled = false;
     }
   } else if (!testFailed) {
-    // test finished successfully
-    SUPLA_LOG_INFO(
-        "TEST[%d,%d]: testing done - SUCCESS!!!", testStage, testStep);
-    sdc->handleAction(0, Supla::RESET_TO_FACTORY_SETTINGS);
-    sdc->resetToFactorySettings();
+    if (sdc->resetToFactorySettingsChecked()) {
+      SUPLA_LOG_INFO(
+          "TEST[%d,%d]: testing done - SUCCESS!!!", testStage, testStep);
+    } else {
+      setTestFailed(22);
+      SUPLA_LOG_ERROR("TEST[%d,%d]: factory reset failed", testStage, testStep);
+    }
     sdc->scheduleSoftRestart(1000);
     testingMachineEnabled = false;
   }

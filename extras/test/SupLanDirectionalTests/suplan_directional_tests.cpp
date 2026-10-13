@@ -85,6 +85,8 @@ class Transport : public DatagramPort {
 };
 class Application : public ApplicationPort {
  public:
+  Supla::SupLan::BindingRetry retry;
+  Supla::SupLan::BindingRetry *bindingRetry() override { return &retry; }
   bool readResource(const ResourceId &, bool *eventOnly, uint8_t *out,
                     size_t capacity, size_t *length) override {
     *eventOnly = false;
@@ -142,7 +144,7 @@ class DirectionalPeer : public ::testing::Test {
       std::memcpy(initFrame, transport.sent.back().data(), sizeof(initFrame));
       ASSERT_TRUE(decodeSessionInit(material.initMacKey, initFrame,
                                     sizeof(initFrame), &init));
-      EXPECT_EQ(init.rxMaxReassembledFrame, 2048);
+      EXPECT_EQ(init.rxMaxReassembledFrame, SUPLAN_RX_MAX_REASSEMBLED_FRAME);
     } else {
       std::memcpy(init.peerLocator, material.peerLocator, 16);
       init.ni[0] = ++nonce;
@@ -160,7 +162,8 @@ class DirectionalPeer : public ::testing::Test {
       ASSERT_TRUE(decodeSessionAccept(material.acceptMacKey, initFrame,
                                       &init, acceptFrame, sizeof(acceptFrame),
                                       &accept));
-      EXPECT_EQ(accept.responderRxMaxReassembledFrame, 2048);
+      EXPECT_EQ(accept.responderRxMaxReassembledFrame,
+                SUPLAN_RX_MAX_REASSEMBLED_FRAME);
     }
     if (localInitiator) {
       std::memcpy(accept.peerLocator, init.peerLocator, 16);
@@ -231,6 +234,50 @@ class DirectionalPeer : public ::testing::Test {
   uint8_t initFrame[kSessionInitSize], acceptFrame[kSessionAcceptSize];
 };
 
+#ifdef SUPLAN_BOUNDARY_TESTS
+TEST_F(DirectionalPeer, InterestPoolCountersVisitEveryConfiguredSlot) {
+  EXPECT_EQ(runtime.poolDiagnostics().interests.maximum,
+            SUPLAN_MAX_RUNTIME_INTERESTS);
+  const AclEntry scope = {{Supla::SupLan::kResourceTypeDevice, 1001},
+                         kPermissionRead};
+  ASSERT_TRUE(peers.replaceAcl(peer, 2, &scope, 1));
+  establish(1024, false);
+  for (uint32_t i = 1; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
+    ++resource.id;
+    sendRead();
+    ASSERT_EQ(runtime.poolDiagnostics().interests.used, i + 1);
+  }
+  ++resource.id;
+  sendRead();
+  EXPECT_EQ(runtime.poolDiagnostics().interests.used,
+            SUPLAN_MAX_RUNTIME_INTERESTS);
+  EXPECT_GT(runtime.diagnostics().poolReject, 0U);
+  runtime.clearPeer(peer);
+  EXPECT_EQ(runtime.poolDiagnostics().interests.used, 0);
+  sendRead();
+  EXPECT_EQ(runtime.poolDiagnostics().interests.used, 0);
+  runtime.clearInterests();
+}
+TEST_F(DirectionalPeer, BindingsBeyondTxEnvelopeRejectBeforeWriting) {
+  establish(1024, false);
+  std::vector<uint8_t> body(1 + 12 * 64);
+  body[0] = 64;
+  for (int i = 0; i < 64; ++i) {
+    auto entry = body.data() + 1 + 12 * i;
+    entry[0] = entry[1] = entry[6] = 1;
+    putUint32(entry + 2, resource.id);
+    putUint32(entry + 7, 60001 + i);
+  }
+  const auto bytes = reinterpret_cast<const uint8_t *>(&runtime);
+  const std::vector<uint8_t> before(bytes, bytes + sizeof(runtime));
+  const auto sent = transport.sent.size();
+  EXPECT_FALSE(runtime.sendBindings(peer, body.data(), body.size()));
+  EXPECT_EQ(transport.sent.size(), sent);
+  EXPECT_EQ(application.retry.length, 0);
+  EXPECT_EQ(std::memcmp(before.data(), &runtime, sizeof(runtime)), 0);
+  EXPECT_FALSE(runtime.sendBindings(peer, body.data(), SIZE_MAX));
+}
+#else
 TEST_F(DirectionalPeer, ResponderRetainsInitiatorLimitAfterConfirmation) {
   establish(1024, false);
   transport.sent.clear();
@@ -287,4 +334,5 @@ TEST(DirectionalFragmentation, SenderDoesNotApplyLocalInboundLimit) {
       sender.send(frame.data(), frame.size(), 250, 1, capture, &datagrams));
   EXPECT_EQ(datagrams, 10U);
 }
+#endif  // SUPLAN_BOUNDARY_TESTS
 }  // namespace

@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include <gtest/gtest.h>
+#include <network_client_mock.h>
 #include <SuplaDevice.h>
 #include <supla-common/log.h>
 #include <supla/protocol/supla_srpc.h>
@@ -172,5 +173,14 @@ TEST_F(SrpcPacketLogTests, ProvisioningKeysAreSensitive) {
     std::string log = supla_test_get_last_log();
     EXPECT_EQ(log.find("raw=["), std::string::npos);
   }
+}
+TEST_F(SrpcPacketLogTests, LowLevelDebugCannotBypassCredentialRedaction) {
+  auto client = new NetworkClientMock;
+  EXPECT_CALL(*client, stop()).Times(1);
+  srpc->setVerboseLog(true);
+  srpc->setNetworkClient(client);
+  EXPECT_FALSE(client->isDebugLogs());
+  srpc->setLowLevelDebugLogs(true);
+  EXPECT_FALSE(client->isDebugLogs());
 }
 #endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS

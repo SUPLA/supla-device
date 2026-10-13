@@ -44,7 +44,9 @@ bool hkdfExpand(const uint8_t prk[32],
   }
 
   uint8_t input[32 + kMaxHkdfInfoBytes + 1];
+  Supla::Crypto::ScopedWipe<decltype(input)> wipeInput(input);
   uint8_t block[32];
+  Supla::Crypto::ScopedWipe<decltype(block)> wipeBlock(block);
   size_t previousLength = 0;
   size_t outputOffset = 0;
   uint8_t counter = 1;
@@ -58,8 +60,6 @@ bool hkdfExpand(const uint8_t prk[32],
     input[previousLength + infoLength] = counter;
     if (!Supla::Crypto::hmacSha256(prk, 32, input,
                             previousLength + infoLength + 1, block)) {
-      memset(input, 0, sizeof(input));
-      memset(block, 0, sizeof(block));
       return false;
     }
     size_t amount = outputLength - outputOffset;
@@ -71,8 +71,7 @@ bool hkdfExpand(const uint8_t prk[32],
     previousLength = sizeof(block);
     ++counter;
   }
-  memset(input, 0, sizeof(input));
-  memset(block, 0, sizeof(block));
+
   return true;
 }
 
@@ -101,6 +100,7 @@ bool derivePeerMaterial(const PeerContext *context,
   }
   uint8_t canonical[kPeerContextSize];
   uint8_t rootPrk[32];
+  Supla::Crypto::ScopedWipe<decltype(rootPrk)> wipeRootPrk(rootPrk);
   static const char peerLabel[] = "SupLAN/v1/peer-key";
   if (!encodePeerContext(context, canonical) ||
       !Supla::Sha256::calculate(canonical, sizeof(canonical),
@@ -109,10 +109,9 @@ bool derivePeerMaterial(const PeerContext *context,
       !hkdfExpand(rootPrk,
                   reinterpret_cast<const uint8_t *>(peerLabel),
                   sizeof(peerLabel) - 1, material->peerKey, 32)) {
-    memset(rootPrk, 0, sizeof(rootPrk));
     return false;
   }
-  memset(rootPrk, 0, sizeof(rootPrk));
+
   memset(canonical, 0, sizeof(canonical));
   return derivePeerMaterialFromKey(context, material->peerKey,
                                   material);
@@ -127,6 +126,7 @@ bool derivePeerMaterialFromKey(const PeerContext *context,
   }
   uint8_t canonical[kPeerContextSize];
   uint8_t peerPrk[32];
+  Supla::Crypto::ScopedWipe<decltype(peerPrk)> wipePeerPrk(peerPrk);
   static const char locatorLabel[] = "SupLAN/v1/peer-locator";
   static const char locateLabel[] = "SupLAN/v1/locate-mac";
   static const char initLabel[] = "SupLAN/v1/session-init-mac";
@@ -143,7 +143,6 @@ bool derivePeerMaterialFromKey(const PeerContext *context,
                    nullptr, 0, material->initMacKey, 32) ||
       !expandLabel(peerPrk, acceptLabel, sizeof(acceptLabel) - 1,
                    nullptr, 0, material->acceptMacKey, 32)) {
-    memset(peerPrk, 0, sizeof(peerPrk));
     memset(canonical, 0, sizeof(canonical));
     return false;
   }
@@ -151,15 +150,14 @@ bool derivePeerMaterialFromKey(const PeerContext *context,
   memcpy(locatorInput, locatorLabel, sizeof(locatorLabel) - 1);
   memcpy(locatorInput + sizeof(locatorLabel) - 1, material->contextHash, 32);
   uint8_t locatorFull[32];
+  Supla::Crypto::ScopedWipe<decltype(locatorFull)> wipeLocatorFull(locatorFull);
   if (!Supla::Crypto::hmacSha256(material->peerKey, 32, locatorInput,
                           sizeof(locatorInput), locatorFull)) {
-    memset(peerPrk, 0, sizeof(peerPrk));
     memset(locatorInput, 0, sizeof(locatorInput));
     return false;
   }
   memcpy(material->peerLocator, locatorFull, 16);
-  memset(peerPrk, 0, sizeof(peerPrk));
-  memset(locatorFull, 0, sizeof(locatorFull));
+
   memset(locatorInput, 0, sizeof(locatorInput));
   memset(canonical, 0, sizeof(canonical));
   return true;
@@ -174,6 +172,7 @@ static bool locateMac(const PeerMaterial *material,
     return false;
   }
   uint8_t input[sizeof("SupLAN/v1/locate-query") - 1 + 34];
+  Supla::Crypto::ScopedWipe<decltype(input)> wipeInput(input);
   if (labelLength + 2 + 16 + 16 > sizeof(input)) {
     return false;
   }
@@ -188,14 +187,14 @@ static bool locateMac(const PeerMaterial *material,
   memcpy(input + offset, nonce, 16);
   offset += 16;
   uint8_t full[32];
+  Supla::Crypto::ScopedWipe<decltype(full)> wipeFull(full);
   if (!Supla::Crypto::hmacSha256(material->locateMacKey, 32, input,
                                 offset, full)) {
-    memset(input, 0, sizeof(input));
     return false;
   }
   memcpy(mac, full, 16);
-  memset(full, 0, sizeof(full));
-  memset(input, 0, sizeof(input));
+
+
   return true;
 }
 
@@ -240,6 +239,7 @@ bool deriveSessionKeys(const uint8_t peerKey[32],
   memcpy(salt, ni, 16);
   memcpy(salt + 16, nr, 16);
   uint8_t sessionPrk[32];
+  Supla::Crypto::ScopedWipe<decltype(sessionPrk)> wipeSessionPrk(sessionPrk);
   uint8_t transcript[kSessionInitSize + kSessionAcceptSize];
   memcpy(transcript, encodedInit, initLength);
   memcpy(transcript + initLength, encodedAccept, acceptLength);
@@ -270,7 +270,7 @@ bool deriveSessionKeys(const uint8_t peerKey[32],
                      keys->responderToInitiator.noncePrefix, 8);
   }
   memset(salt, 0, sizeof(salt));
-  memset(sessionPrk, 0, sizeof(sessionPrk));
+
   memset(transcript, 0, sizeof(transcript));
   return ok;
 }

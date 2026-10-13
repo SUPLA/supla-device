@@ -175,8 +175,10 @@ TEST(ModbusConfiguratorTests,
 
 TEST(ModbusConfiguratorTests, FactoryResetIsFollowedBySafeDefault) {
   NiceMock<ConfigMock> storage;
-  EXPECT_CALL(storage, removeAll()).Times(1);
-  EXPECT_CALL(storage, commit()).Times(1);
+  EXPECT_CALL(storage, removeAllChecked()).WillOnce(Return(true));
+  EXPECT_CALL(storage, setGUID(_)).WillOnce(Return(true));
+  EXPECT_CALL(storage, setAuthKey(_)).WillOnce(Return(true));
+  EXPECT_CALL(storage, commit()).WillOnce(Return(true));
 
   SuplaDeviceClass device;
   device.resetToFactorySettings();

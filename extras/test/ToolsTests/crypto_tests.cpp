@@ -4,10 +4,51 @@
 #include <gtest/gtest.h>
 #include <crypto_test_hooks.h>
 #include <supla/crypto.h>
+#include <suplan/suplan_acl.h>
 
 #include <limits.h>
 #include <stdint.h>
 #include <string.h>
+
+TEST(CryptoTests, ScopedWipeCoversSuccessAndEarlyReturn) {
+  uint8_t temporary[32], live[32];
+  memset(live, 0x42, sizeof(live));
+  const auto operation = [&](bool success) {
+    Supla::Crypto::ScopedWipe<decltype(temporary)> wipe(temporary);
+    memcpy(temporary, live, sizeof(temporary));
+    if (!success) return false;
+    temporary[0] ^= 1;
+    return true;
+  };
+  for (bool success : {false, true}) {
+    EXPECT_EQ(operation(success), success);
+    const uint8_t zero[32] = {};
+    EXPECT_EQ(memcmp(temporary, zero, sizeof(zero)), 0);
+    for (auto byte : live) EXPECT_EQ(byte, 0x42);
+  }
+}
+TEST(CryptoTests, EveryPeerDerivationMacFailureRejectsWithoutLiveCredential) {
+  ScopedCryptoTestState provider(5);
+  const Supla::SupLan::PeerContext context = {1, 0, {1, 101}, {1, 202}, 1, 1};
+  const Supla::SupLan::AclEntry acl = {{2, 101}, 1};
+  uint8_t root[32];
+  memset(root, 0x42, sizeof(root));
+  uint8_t index;
+  Supla::SupLan::PeerTable baseline;
+  ASSERT_TRUE(baseline.addPeerFromRoot(&context, root, 1, &acl, 1, &index));
+  const auto calls = provider.hmacSha256Calls;
+  ASSERT_GT(calls, 0U);
+  for (uint32_t failure = 1; failure <= calls; ++failure) {
+    provider.resetCalls();
+    provider.failHmacCall = failure;
+    Supla::SupLan::PeerTable rejected;
+    EXPECT_FALSE(rejected.addPeerFromRoot(&context, root, 1, &acl, 1, &index));
+    EXPECT_EQ(rejected.size(), 0);
+    EXPECT_EQ(rejected.aclEntryCount(), 0);
+    EXPECT_EQ(rejected.get(0), nullptr);
+    for (auto byte : root) EXPECT_EQ(byte, 0x42);
+  }
+}
 
 TEST(CryptoTests, HmacRfc4231AndHexWrapper) {
   uint8_t key[20];

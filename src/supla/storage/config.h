@@ -49,6 +49,12 @@ class Config {
   virtual ~Config();
   virtual bool init() = 0;
   virtual void removeAll() = 0;
+  // Compatibility path: confirm commit after the legacy void erase.
+  // Override to also report erase failures; void removeAll cannot expose them.
+  virtual bool removeAllChecked() {
+    removeAll();
+    return commit();
+  }
   virtual bool isMinimalConfigReady(bool showLogs = true);
   virtual bool isConfigModeSupported();
   virtual bool isEncryptionEnabled();

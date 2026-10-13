@@ -83,6 +83,7 @@ class ResourceBindingManager {
   bool collectIntents();
   void addIntent(uint32_t source, uint32_t target);
   int targetNumber(uint32_t id) const;
+  bool hasCompleteIntents(uint8_t peer) const;
   void sendDesired(uint32_t now);
 };
 // Per-peer set/routing storage, contributor/intent slots, protected retry,

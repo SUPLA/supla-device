@@ -251,14 +251,34 @@ void NvsConfig::printStats(const char* partitionName) const {
 }
 
 void NvsConfig::removeAll() {
-  nvs_flash_erase_partition(nvsPartitionName);
-  init();
-
-  // esp_err_t err = nvs_erase_all(nvsHandle);
-  // if (err != ESP_OK) {
-  //   SUPLA_LOG_ERROR("Failed to erase NVS storage (%d)", err);
-  // }
-  // nvs_commit(nvsHandle);
+  (void)removeAllChecked();
+}
+bool NvsConfig::removeAllChecked() {
+  // Preserve factory reset's whole-partition erase semantics.
+  // The separate device-data and NVS key partitions remain untouched.
+  if (!nvsPartitionName) {
+    return false;
+  }
+  const char *resetPartition = nvsPartitionName;
+  nvs_close(nvsHandle);
+  nvsHandle = 0;
+  initResult = false;
+  const esp_err_t error = nvs_flash_erase_partition(resetPartition);
+  if (error != ESP_OK) {
+    SUPLA_LOG_ERROR("Failed to erase NVS partition (%d)", error);
+    return false;
+  }
+  const bool initialized = init();
+  if (!initialized || strcmp(nvsPartitionName, resetPartition) != 0) {
+    // init may select a fallback partition, including on failure. A reset
+    // retry must erase the original target, never that unrelated partition.
+    if (nvsHandle) nvs_close(nvsHandle);
+    nvsHandle = 0;
+    nvsPartitionName = resetPartition;
+    initResult = false;
+    return false;
+  }
+  return true;
 }
 
 bool NvsConfig::eraseKey(const char* key) {

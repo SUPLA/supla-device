@@ -12,6 +12,7 @@
 #include <supla/control/relay.h>
 #include <supla/control/relay_hvac_aggregator.h>
 #include <supla/control/virtual_valve.h>
+#include <supla/control/virtual_relay.h>
 #include <supla/device/register_device.h>
 #include <supla/protocol/suplan_protocol.h>
 #include <supla/protocol/supla_srpc.h>
@@ -27,8 +28,10 @@
 #include <suplan/suplan_wire.h>
 #include <suplan_crypto_openssl.h>
 
+#include <algorithm>
 #include <array>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -606,6 +609,109 @@ TEST_F(M4bDevice, BindingCapacityIsAtomicAndIndependentOfRemoteCache) {
   EXPECT_GT(storage.events.size(), writes);
 }
 
+TEST_F(M4bDevice, ComposedProfileSaturationReclaimAndIndependentLocalOutput) {
+  auto bindings = adapter.resourceBindings();
+  auto resources = adapter.remoteResources();
+  const int resourceCapacity = RemoteResourceManager::kCapacity;
+  int remaining = SUPLAN_MAX_RESOURCE_BINDINGS;
+  int destinationCount = 0;
+  while (remaining) {
+    const int count = std::min(remaining, SUPLAN_MAX_BINDINGS_PER_PEER);
+    request.PeerContext.SourceNodeId = 101 + destinationCount;
+    request.AclRevision = 2;
+    request.ResourceCount = count;
+    std::vector<uint8_t> body(1 + 12 * count);
+    body[0] = count;
+    for (int i = 0; i < count; ++i) {
+      const uint32_t id = 1001 + destinationCount * 100 + i;
+      request.Resources[i] = {1, id, 1};
+      auto entry = body.data() + 1 + 12 * i;
+      entry[0] = entry[1] = entry[6] = 1;
+      putUint32(entry + 2, id);
+      putUint32(entry + 7, 604);
+    }
+    ASSERT_EQ(associations.accept(request).Result, SUPLA_SUPLAN_RESULT_OK);
+    ASSERT_EQ(bindings->accept(destinationCount, body.data(), body.size()), 3);
+    remaining -= count;
+    ++destinationCount;
+  }
+  const int additional = RemoteResourceManager::kCapacity -
+                         SUPLAN_MAX_RESOURCE_BINDINGS;
+  if (additional) {
+    request.PeerContext.SourceNodeId = 101 + destinationCount;
+    request.ResourceCount = additional;
+    for (int i = 0; i < additional; ++i)
+      request.Resources[i] = {1, 5001U + i, 1};
+    ASSERT_EQ(associations.accept(request).Result, SUPLA_SUPLAN_RESULT_OK);
+    ++destinationCount;
+    for (int i = 0; i < additional; ++i)
+      ASSERT_TRUE(resources->consume({5001U + i, {1, 5001U + i}, 1}));
+  }
+  const int sourceCount = SUPLAN_MAX_PERSISTENT_PEERS - destinationCount;
+  ASSERT_GT(sourceCount, 0);
+  TSDS_SuplaSetSuplanSourceAssociation source = {};
+  source.PeerContext = {1, 0, 1, 202, 1, 303, identity.rootEpoch(), 1};
+  source.AclRevision = 1;
+  source.Acl[0] = {1, 604, 1};
+  source.Acl[1] = {1, 605, 1};
+  source.Acl[2] = {2, 202, 1};
+  for (int i = 0; i < sourceCount; ++i) {
+    source.PeerContext.DestinationNodeId = 303 + i;
+    source.AclEntryCount = SUPLAN_MAX_TOTAL_ACL_ENTRIES / sourceCount +
+        (i < SUPLAN_MAX_TOTAL_ACL_ENTRIES % sourceCount);
+    ASSERT_LE(source.AclEntryCount, 3);
+    ASSERT_EQ(associations.accept(source).Result, SUPLA_SUPLAN_RESULT_OK);
+  }
+  bindings->iterate(time.value);
+  resources->iterate(time.value);
+  runtime.iterate();
+  ASSERT_EQ(peers.size(), SUPLAN_MAX_PERSISTENT_PEERS);
+  EXPECT_EQ(peers.entryCount(false), SUPLAN_MAX_TOTAL_ACL_ENTRIES);
+  EXPECT_EQ(peers.entryCount(true), SUPLAN_MAX_TOTAL_EXPECTED_ENTRIES);
+  EXPECT_EQ(bindings->bindingCount(), SUPLAN_MAX_RESOURCE_BINDINGS);
+  EXPECT_EQ(resources->resourceCount(), resourceCapacity);
+  EXPECT_LE(runtime.poolDiagnostics().locates.used,
+            SUPLAN_MAX_OUTSTANDING_LOCATES);
+  EXPECT_LE(runtime.poolDiagnostics().pending.used,
+            SUPLAN_MAX_PENDING_HANDSHAKES);
+  const auto events = storage.events.size();
+  ++source.AclEntryCount;
+  ++source.AclRevision;
+  EXPECT_EQ(associations.accept(source).Result,
+            SUPLA_SUPLAN_RESULT_CAPACITY_EXCEEDED);
+  EXPECT_EQ(storage.events.size(), events);
+  EXPECT_FALSE(resources->consume({99999, {1, 99999}, 1}));
+  EXPECT_TRUE(resources->resourceExhausted());
+  EXPECT_EQ(resources->resourceCount(), resourceCapacity);
+
+  request.PeerContext.SourceNodeId = 101;
+  request.ResourceCount = 0;
+  ++request.AclRevision;
+  ASSERT_EQ(associations.accept(request).Result, SUPLA_SUPLAN_RESULT_OK);
+  bindings->iterate(time.value);
+  EXPECT_EQ(bindings->bindingCount(),
+            SUPLAN_MAX_RESOURCE_BINDINGS - SUPLAN_MAX_BINDINGS_PER_PEER);
+  request.ResourceCount = 1;
+  request.Resources[0] = {1, 70001, 1};
+  ++request.AclRevision;
+  ASSERT_EQ(associations.accept(request).Result, SUPLA_SUPLAN_RESULT_OK);
+  auto body = binding();
+  putUint32(body.data() + 3, 70001);
+  ASSERT_EQ(bindings->accept(0, body.data(), body.size()), 3);
+  bindings->iterate(time.value);
+  EXPECT_EQ(bindings->bindingCount(),
+            SUPLAN_MAX_RESOURCE_BINDINGS - SUPLAN_MAX_BINDINGS_PER_PEER + 1);
+  EXPECT_EQ(resources->access({1, 1001}), RemoteAccess::PENDING);
+  EXPECT_FALSE(resources->state({1, 1001}, time.value).available());
+  EXPECT_EQ(resources->effectivePermissions({1, 70001}), kPermissionRead);
+  EXPECT_TRUE(resources->consume({99999, {1, 99999}, 1}));
+  Control::VirtualRelay local;
+  local.turnOn();
+  EXPECT_TRUE(local.isOn());
+  local.turnOff();
+  EXPECT_FALSE(local.isOn());
+}
+
 TEST_F(M4bDevice, BindingGraceUsesFreshArrivalNotCachedPollAndLiveTtl) {
   auto body = binding();
   auto manager = adapter.resourceBindings();
@@ -1166,6 +1272,109 @@ TEST_F(M4bDevice, BlockedShareDoesNotStarveProvisionedBinding) {
   manager->serverReconnected();
   manager->iterate(time.value);
   EXPECT_EQ(adapter.shares, shares + 1);
+}
+
+TEST_F(M4bDevice, OverflowingBindingIntentsDoNotStarveIndependentPeer) {
+  if (SUPLAN_MAX_RESOURCE_BINDINGS / 2 + 5 > SUPLA_CHANNELMAXCOUNT) {
+    GTEST_SKIP() << "The default Large intent pool exceeds this topology's "
+                   "two references per HVAC within the 128-channel limit";
+  }
+  std::vector<std::unique_ptr<FollowupHvac>> extra;
+  for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS / 2; ++i) {
+    extra.emplace_back(new FollowupHvac(&output));
+    extra.back()->onLoadConfig(nullptr);
+    extra.back()->onInit();
+  }
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 202;
+  ids.ChannelCount = 5 + extra.size();
+  for (int i = 0; i < ids.ChannelCount; ++i) ids.ChannelId[i] = 601 + i;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+
+  TSDS_SuplaSetSuplanSourceAssociation source = {};
+  source.PeerContext = {1, 0, 1, 202, 1, 303, identity.rootEpoch(), 1};
+  source.AclRevision = 1;
+  source.AclEntryCount = 1;
+  source.Acl[0] = {2, 202, 1};
+  ASSERT_EQ(associations.accept(source).Result, SUPLA_SUPLAN_RESULT_OK);
+  source.PeerContext.DestinationNodeId = 404;
+  source.Acl[0] = {1, 605, 1};
+  source.Flags = SUPLA_SUPLAN_SOURCE_FLAG_RETURN_PEER_KEY;
+  const auto accepted = associations.accept(source);
+  ASSERT_EQ(accepted.Result, SUPLA_SUPLAN_RESULT_OK);
+
+  PeerContext context;
+  ASSERT_TRUE(decodePeerContext(peers.get(2)->contextBytes, &context));
+  PeerTable destinationPeers;
+  uint8_t destinationPeer;
+  const AclEntry expected = {{1, 605}, 1};
+  ASSERT_TRUE(destinationPeers.addPeer(&context, accepted.PeerKey, 1,
+      &expected, 1, &destinationPeer, true));
+  IdlePort destinationPort;
+  destinationPort.time = &time;
+  destinationPort.address = {0x0200007f, 2016};
+  datagrams.linked = &destinationPort;
+  destinationPort.linked = &datagrams;
+  BindingReceiver receiver;
+  Runtime destination(&crypto, &destinationPort, &receiver, &destinationPeers,
+                      {1, 404}, 29);
+  auto config = bindingConfig(9001, 0);
+  ASSERT_EQ(hvac->handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  for (size_t i = 0; i < extra.size(); ++i) {
+    config = bindingConfig(9002 + 2 * i, 9003 + 2 * i);
+    ASSERT_EQ(extra[i]->handleChannelConfig(&config, false),
+              SUPLA_CONFIG_RESULT_TRUE);
+  }
+  auto manager = adapter.resourceBindings();
+  int completed = 0;
+  for (int i = 0; i < 300; ++i) {
+    time.advance(10);
+    manager->iterate(time.value);
+    if (adapter.shares != completed) {
+      ++completed;
+      TSD_SuplaEnsureResourceShareResult result = {};
+      result.Result = SUPLA_SUPLAN_RESULT_OK;
+      result.DestinationDeviceId =
+          adapter.lastShare.DestinationResource.ResourceId == 9001 ? 404 : 303;
+      manager->ensureShareResult(result);
+    }
+    runtime.iterate();
+    destination.iterate();
+  }
+  EXPECT_EQ(completed, SUPLAN_MAX_RESOURCE_BINDINGS);
+  ASSERT_EQ(receiver.snapshots.size(), 1U);
+  ASSERT_EQ(receiver.snapshots.front().size(), 13U);
+  EXPECT_EQ(getUint32(receiver.snapshots.front().data() + 3), 605U);
+  EXPECT_EQ(getUint32(receiver.snapshots.front().data() + 8), 9001U);
+
+  const auto locates = datagrams.locates;
+  config = bindingConfig(0, 0);
+  const int released = std::max(1,
+      (SUPLAN_MAX_RESOURCE_BINDINGS - SUPLAN_MAX_BINDINGS_PER_PEER + 1) / 2);
+  for (int i = 0; i < released; ++i)
+    ASSERT_EQ(extra[i]->handleChannelConfig(&config, false),
+              SUPLA_CONFIG_RESULT_TRUE);
+  for (int i = 0; i < 150; ++i) {
+    time.advance(10);
+    manager->iterate(time.value);
+    if (adapter.shares != completed) {
+      ++completed;
+      TSD_SuplaEnsureResourceShareResult result = {};
+      result.Result = SUPLA_SUPLAN_RESULT_OK;
+      result.DestinationDeviceId = 303;
+      manager->ensureShareResult(result);
+    }
+    runtime.iterate();
+    destination.iterate();
+  }
+  EXPECT_GT(completed, SUPLAN_MAX_RESOURCE_BINDINGS);
+  EXPECT_GT(datagrams.locates, locates);
+  EXPECT_EQ(receiver.snapshots.size(), 1U);
+  datagrams.linked = nullptr;
 }
 
 TEST_F(M4bDevice, MissingPeerAuthorizationDoesNotStarveOtherPeer) {

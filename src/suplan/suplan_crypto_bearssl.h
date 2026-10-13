@@ -9,6 +9,7 @@
 #if defined(ARDUINO_ARCH_ESP8266)
 #include <bearssl/bearssl.h>
 #include <string.h>
+#include <supla/crypto.h>
 #include <suplan/suplan_ports.h>
 
 namespace Supla {
@@ -42,11 +43,14 @@ class BearSslCryptoPort : public Supla::SupLan::CryptoPort {
            size_t length, uint8_t *output, uint8_t *tag) {
     if (!key || !nonce || !tag || (!aad && aadLength) ||
         (!input && length) || (!output && length) ||
-        length > SUPLAN_MAX_APPLICATION_BYTES) {
+        length > (encrypt ? SUPLAN_MAX_APPLICATION_BYTES
+                          : kMaxReceiveApplicationBytes)) {
       return false;
     }
     br_aes_ct_ctrcbc_keys aes;
+    Supla::Crypto::ScopedWipe<decltype(aes)> wipeAes(aes);
     br_ccm_context context;
+    Supla::Crypto::ScopedWipe<decltype(context)> wipeContext(context);
     br_aes_ct_ctrcbc_init(&aes, key, 16);
     br_ccm_init(&context, &aes.vtable);
     bool valid = br_ccm_reset(&context, nonce, 12, aadLength, length, 16);
@@ -65,8 +69,6 @@ class BearSslCryptoPort : public Supla::SupLan::CryptoPort {
     if (!valid && output && length) {
       memset(output, 0, length);
     }
-    memset(&aes, 0, sizeof(aes));
-    memset(&context, 0, sizeof(context));
     return valid;
   }
 };

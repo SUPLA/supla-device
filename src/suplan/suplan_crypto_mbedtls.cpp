@@ -85,7 +85,7 @@ bool MbedTlsCryptoPort::aes128CcmDecrypt(
       (aad == nullptr && aadLength != 0) ||
       (cipher == nullptr && cipherLength != 0) ||
       (plain == nullptr && cipherLength != 0) ||
-      cipherLength > SUPLAN_MAX_APPLICATION_BYTES ||
+      cipherLength > kMaxReceiveApplicationBytes ||
       psa_crypto_init() != PSA_SUCCESS) {
     return false;
   }

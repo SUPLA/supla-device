@@ -28,6 +28,13 @@ void KeyValue::removeAll() {
   removeAllMemory();
   commit();
 }
+bool KeyValue::removeAllChecked() {
+  // Honor existing backend removal overrides. KV contents must actually be
+  // gone and a commit must confirm the empty snapshot before reporting OK.
+  // Backends storing blobs outside KV must override the checked operation.
+  removeAll();
+  return first == nullptr && commit();
+}
 
 bool KeyValue::generateGuidAndAuthkey() {
   uint8_t guid[SUPLA_GUID_SIZE] = {};

@@ -22,6 +22,39 @@ class KeyValueTest : public Supla::KeyValue {
   }
 };
 
+namespace {
+class CheckedRemovalConfig : public Supla::KeyValue {
+ public:
+  bool init() override { return true; }
+  bool commit() override { ++commits; return true; }
+  void removeAll() override {
+    ++removals;
+    if (!failErase) removeAllMemory();
+  }
+  int removals = 0;
+  int commits = 0;
+  bool failErase = false;
+};
+}  // namespace
+
+TEST(KeyValueResetTests, CheckedRemovalHonorsExistingBackendOverride) {
+  CheckedRemovalConfig config;
+  const char data[32] = {42};
+  ASSERT_TRUE(config.setBlob("sl-root", data, sizeof(data)));
+  EXPECT_TRUE(config.removeAllChecked());
+  EXPECT_EQ(config.removals, 1);
+  EXPECT_EQ(config.commits, 1);
+}
+TEST(KeyValueResetTests, RetainedKvRecordsCannotReportSuccessfulRemoval) {
+  CheckedRemovalConfig config;
+  const char data[32] = {42};
+  ASSERT_TRUE(config.setBlob("sl-root", data, sizeof(data)));
+  config.failErase = true;
+  EXPECT_FALSE(config.removeAllChecked());
+  EXPECT_EQ(config.removals, 1);
+  EXPECT_EQ(config.commits, 0);
+}
+
 TEST(KeyValueElementTests, isKeyEqualTest) {
   Supla::KeyValueElement kve("secret");
   EXPECT_TRUE(kve.isKeyEqual("secret"));

@@ -46,11 +46,11 @@ bool encodeSessionInit(const uint8_t initMacKey[32],
   putUint16(output + 35, init->rxMaxReassembledFrame);
   putUint32(output + 37, init->featureBits);
   uint8_t fullMac[32];
+  Supla::Crypto::ScopedWipe<decltype(fullMac)> wipeFullMac(fullMac);
   if (!Supla::Crypto::hmacSha256(initMacKey, 32, output, 41, fullMac)) {
     return false;
   }
   memcpy(output + 41, fullMac, 16);
-  memset(fullMac, 0, sizeof(fullMac));
   return true;
 }
 
@@ -68,11 +68,12 @@ bool decodeSessionInit(const uint8_t initMacKey[32],
     return false;
   }
   uint8_t fullMac[32];
+  Supla::Crypto::ScopedWipe<decltype(fullMac)> wipeFullMac(fullMac);
   if (!Supla::Crypto::hmacSha256(initMacKey, 32, input, 41, fullMac)) {
     return false;
   }
   const bool valid = equalBytes(fullMac, input + 41, 16);
-  memset(fullMac, 0, sizeof(fullMac));
+
   if (!valid) {
     return false;
   }
@@ -109,13 +110,14 @@ bool encodeSessionAccept(const uint8_t acceptMacKey[32],
   memcpy(transcriptPrefix, encodedInit, 57);
   memcpy(transcriptPrefix + 57, output, 49);
   uint8_t fullMac[32];
+  Supla::Crypto::ScopedWipe<decltype(fullMac)> wipeFullMac(fullMac);
   if (!Supla::Crypto::hmacSha256(acceptMacKey, 32, transcriptPrefix,
                           sizeof(transcriptPrefix), fullMac)) {
     memset(transcriptPrefix, 0, sizeof(transcriptPrefix));
     return false;
   }
   memcpy(output + 49, fullMac, 16);
-  memset(fullMac, 0, sizeof(fullMac));
+
   memset(transcriptPrefix, 0, sizeof(transcriptPrefix));
   return true;
 }
@@ -140,13 +142,14 @@ bool decodeSessionAccept(const uint8_t acceptMacKey[32],
   memcpy(transcriptPrefix, encodedInit, 57);
   memcpy(transcriptPrefix + 57, input, 49);
   uint8_t fullMac[32];
+  Supla::Crypto::ScopedWipe<decltype(fullMac)> wipeFullMac(fullMac);
   if (!Supla::Crypto::hmacSha256(acceptMacKey, 32, transcriptPrefix,
                           sizeof(transcriptPrefix), fullMac)) {
     memset(transcriptPrefix, 0, sizeof(transcriptPrefix));
     return false;
   }
   const bool valid = equalBytes(fullMac, input + 49, 16);
-  memset(fullMac, 0, sizeof(fullMac));
+
   memset(transcriptPrefix, 0, sizeof(transcriptPrefix));
   if (!valid) {
     return false;

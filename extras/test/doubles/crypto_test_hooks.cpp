@@ -52,6 +52,7 @@ int __wrap_EVP_MAC_init(EVP_MAC_CTX *ctx, const unsigned char *key,
                        size_t length, const OSSL_PARAM *params) {
   if (active) {
     ++active->hmacSha256Calls;
+    if (active->hmacSha256Calls == active->failHmacCall) return 0;
   }
   return __real_EVP_MAC_init(ctx, key, length, params);
 }

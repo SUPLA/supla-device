@@ -99,8 +99,8 @@ Runtime::Runtime(CryptoPort *crypto, DatagramPort *datagrams,
                  uint8_t suplaProtoVersion)
     : crypto_(crypto), datagrams_(datagrams),
       application_(application), peers_(peers), localAddress_(localAddress),
-      suplaProtoVersion_(suplaProtoVersion), processing_(false),
-      nextFrameId_(UINT32_C(0xC3000000)), fragmentOrdinal_(0), sessions_(),
+      nextFrameId_(UINT32_C(0xC3000000)), fragmentOrdinal_(0),
+      suplaProtoVersion_(suplaProtoVersion), processing_(false), sessions_(),
       pending_(), locates_(),
       interests_(), retries_(), deferred_(), recovery_(), dependencies_(),
       flood_(), fragmentSender_(),
@@ -324,7 +324,7 @@ int Runtime::findFreeRetry() const {
 }
 
 int Runtime::findFreeInterest() const {
-  for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
+  for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     if (!interests_[i].used) {
       return i;
     }
@@ -365,7 +365,7 @@ void Runtime::updatePoolHighWater() {
   for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
     used[4] += locates_[i].used ? 1 : 0;
   }
-  for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
+  for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     used[5] += interests_[i].used ? 1 : 0;
   }
   used[6] = fragmentReassembler_.active() ? 1 : 0;
@@ -407,7 +407,7 @@ PoolDiagnostics Runtime::poolDiagnostics() const {
   for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
     result.locates.used += locates_[i].used ? 1 : 0;
   }
-  for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
+  for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     result.interests.used += interests_[i].used ? 1 : 0;
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
@@ -758,6 +758,7 @@ void Runtime::startLocate(uint8_t peerIndex) {
   ++recovery.locateAttempts;
   recovery.lastLocateMs = now;
   PeerMaterial material = {};
+  Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   if (!peers_->materialFor(peerIndex, &material)) {
     return;
   }
@@ -806,6 +807,7 @@ void Runtime::startHandshake(uint8_t peerIndex) {
     return;
   }
   PeerMaterial material = {};
+  Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   if (!peers_->materialFor(peerIndex, &material)) {
     return;
   }
@@ -1319,6 +1321,7 @@ bool Runtime::startFlood(TestFloodKind kind, uint8_t peerIndex,
   flood_.active = count != 0;
   if (kind == kFloodInvalidSession && count != 0) {
     PeerMaterial material = {};
+    Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
     SessionInit init = {};
     if (!peers_->materialFor(peerIndex, &material)) {
       memset(&flood_, 0, sizeof(flood_));
@@ -1640,7 +1643,10 @@ bool Runtime::sendBindings(uint8_t peerIndex, const uint8_t *body,
                             size_t length) {
   auto bindingRetry = application_ ? application_->bindingRetry() : nullptr;
   if (!bindingRetry || bindingRetry->length || !body || !length ||
-      length + 38 > sizeof(bindingRetry->frame) ||
+      length > sizeof(applicationBuffer_) ||
+      kApplicationHeaderSize > sizeof(applicationBuffer_) - length ||
+      length > sizeof(bindingRetry->frame) - kProtectedHeaderSize -
+                   kAeadTagSize - kApplicationHeaderSize ||
       !isLocalSource(peers_->get(peerIndex)) ||
       !peers_->hasActiveGrants(peerIndex)) return false;
   if (length != 1U + 12U * body[0]) return false;
@@ -1957,8 +1963,16 @@ void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
       ((data[1] == 6 && length == 50) || (data[1] == 7 && length == 52))) {
     const int index = peers_->findByLocator(data + 2);
     if (index < 0 || !isLocalDestination(peers_->get(index)) ||
-        !peers_->hasActiveGrants(index) || !application_ ||
-        !application_->allowPresence(index, datagrams_->nowMs())) return;
+        !peers_->hasActiveGrants(index) || !application_) return;
+    const uint32_t now = datagrams_->nowMs();
+    // Separate cheap pre-auth work bound from the consumer's authenticated
+    // quota. Forged hints must not spend the latter's two repair opportunities.
+    if (static_cast<uint32_t>(now - presenceBudgetEpochMs_) >= 1000) {
+      presenceBudgetEpochMs_ = now;
+      presenceAttempts_ = 0;
+    }
+    if (presenceAttempts_ >= 2 * SUPLAN_MAX_PERSISTENT_PEERS + 8) return;
+    ++presenceAttempts_;
     const bool reset = data[1] == 6;
     const char *label = reset ? "SupLAN/v1/interest-reset"
                              : "SupLAN/v1/peer-awake";
@@ -1968,7 +1982,9 @@ void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
     memcpy(input, label, labelLength);
     memcpy(input + labelLength, data, bodyLength);
     PeerMaterial material = {};
+    Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
     uint8_t mac[32];
+    Supla::Crypto::ScopedWipe<decltype(mac)> wipeMac(mac);
     if (!peers_->materialFor(index, &material) ||
         !Supla::Crypto::hmacSha256(material.locateMacKey, 32, input,
                                    labelLength + bodyLength, mac) ||
@@ -1978,6 +1994,7 @@ void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
     }
     const uint16_t window = reset ? 0 : getUint16(data + 34);
     if (!reset && !window) return;
+    if (!application_->allowPresence(index, now)) return;
     application_->peerAwake(index, window, reset, data + 18);
     return;
   }
@@ -2058,6 +2075,7 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
     return;
   }
   PeerMaterial material = {};
+  Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   if (!peers_->materialFor(static_cast<uint8_t>(peerIndex),
                            &material)) {
     ++diagnostics_.invalidLocateDrop;
@@ -2119,6 +2137,7 @@ void Runtime::processLocateReply(const Endpoint &source, const uint8_t *data,
     }
     PeerRecord *peer = peers_->get(locate->peerIndex);
     PeerMaterial material = {};
+    Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
     uint8_t expected[kPeerLocatorSize];
     if (peer == nullptr ||
         !peers_->materialFor(locate->peerIndex, &material) ||
@@ -2157,6 +2176,7 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
   const uint8_t peerIndex = static_cast<uint8_t>(selected);
   PeerRecord *peer = peers_->get(peerIndex);
   PeerMaterial material = {};
+  Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   SessionInit init = {};
   if (peer == nullptr ||
       !peers_->materialFor(peerIndex, &material) ||
@@ -2267,6 +2287,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   PendingHandshake *attempt = &pending_[slot];
   PeerRecord *peer = peers_->get(attempt->peerIndex);
   PeerMaterial material = {};
+  Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   SessionInit init = {};
   SessionAccept accept = {};
   if (peer == nullptr ||
@@ -2463,7 +2484,7 @@ void Runtime::processApplication(SessionEntry *session, uint32_t sequence,
 }
 
 void Runtime::pruneInterests(uint32_t now) {
-  for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
+  for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     RuntimeInterest &interest = interests_[i];
     if (interest.used &&
         (static_cast<uint32_t>(now - interest.lastRefreshMs) >=
@@ -2480,7 +2501,7 @@ void Runtime::pruneInterests(uint32_t now) {
 
 bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource) {
   pruneInterests(datagrams_->nowMs());
-  for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
+  for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     RuntimeInterest *interest = &interests_[i];
     if (interest->used && interest->peerIndex == peerIndex &&
         interest->resource.type == resource.type &&
@@ -2504,7 +2525,7 @@ bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource) {
 }
 
 bool Runtime::interested(uint8_t peerIndex, const ResourceId &resource) const {
-  for (uint8_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
+  for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     const RuntimeInterest &interest = interests_[i];
     if (interest.used && interest.peerIndex == peerIndex &&
         interest.resource.type == resource.type &&
@@ -3132,6 +3153,7 @@ bool Runtime::announcePresence(uint8_t peerIndex, uint16_t window,
   if (!isLocalSource(peers_->get(peerIndex)) ||
       !peers_->hasActiveGrants(peerIndex) || (!reset && !window)) return false;
   PeerMaterial material = {};
+  Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   uint8_t frame[52] = {kVersion, static_cast<uint8_t>(reset ? 6 : 7)};
   if (!peers_->materialFor(peerIndex, &material) ||
       !Supla::Crypto::fillRandom(frame + 18, 16)) return false;
@@ -3143,6 +3165,7 @@ bool Runtime::announcePresence(uint8_t peerIndex, uint16_t window,
   const size_t labelLength = strlen(label);
   uint8_t input[64];
   uint8_t mac[32];
+  Supla::Crypto::ScopedWipe<decltype(mac)> wipeMac(mac);
   memcpy(input, label, labelLength);
   memcpy(input + labelLength, frame, bodyLength);
   if (!Supla::Crypto::hmacSha256(material.locateMacKey, 32, input,
@@ -3195,6 +3218,21 @@ bool Runtime::announceSleep(uint8_t peerIndex, uint32_t duration) {
 
 void Runtime::clearInterests() {
   for (auto &interest : interests_) interest = {};
+}
+void Runtime::resumeRetainedInterests() {
+  // Explicit wake with a retained table is not five minutes of awake-time
+  // inactivity. Refresh only recipients still authorized by the current ACL.
+  const uint32_t now = datagrams_->nowMs();
+  for (auto &interest : interests_) {
+    if (!interest.used) continue;
+    if (isLocalSource(peers_->get(interest.peerIndex)) &&
+        peers_->authorize(interest.peerIndex, interest.resource,
+                          kPermissionRead)) {
+      interest.lastRefreshMs = now;
+    } else {
+      interest = {};
+    }
+  }
 }
 void Runtime::publishCurrentInterests(uint8_t peerIndex) {
   if (!application_ || !application_->fullChannelSnapshots()) return;

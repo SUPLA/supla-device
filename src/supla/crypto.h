@@ -15,6 +15,24 @@ namespace Supla {
 
 namespace Crypto {
 
+// Volatile stores retain the wipe even when the buffer is dead afterwards.
+inline void secureClear(void *buffer, size_t size) {
+  auto bytes = static_cast<volatile uint8_t *>(buffer);
+  while (size--) *bytes++ = 0;
+}
+
+template <typename T>
+class ScopedWipe {
+ public:
+  explicit ScopedWipe(T &value) : value_(value) {}
+  ~ScopedWipe() { secureClear(&value_, sizeof(value_)); }
+  ScopedWipe(const ScopedWipe &) = delete;
+  ScopedWipe &operator=(const ScopedWipe &) = delete;
+
+ private:
+  T &value_;
+};
+
 // Compares all size bytes without stopping at the first difference.
 // Both buffers must contain at least size bytes; NULL is rejected.
 // Timing may depend on size, which must not depend on secret contents.

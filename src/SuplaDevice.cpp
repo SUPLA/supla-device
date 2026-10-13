@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "SuplaDevice.h"
+
+#include <supla/crypto.h>
 #include <supla/channels/channel_handle.h>
 
 #include <stddef.h>
@@ -110,7 +112,8 @@ bool SuplaDeviceClass::prepareLastStateLog() {
   return false;
 }
 
-SuplaDeviceClass::SuplaDeviceClass() {
+SuplaDeviceClass::SuplaDeviceClass()
+    : triggerResetToFactorySettings(false), factoryResetAttempted(false) {
   timerAccessMutex = Supla::Mutex::Create();
 }
 
@@ -1108,8 +1111,8 @@ void SuplaDeviceClass::softRestart() {
     delay(0);
   }
 
-  if (!triggerResetToFactorySettings) {
-    // skip writing to storage if reset is because of factory reset
+  if (!triggerResetToFactorySettings && !factoryResetAttempted) {
+    // Skip pre-reset state writes after any factory reset attempt.
     saveStateToStorage();
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
@@ -1398,7 +1401,7 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
 }
 
 void SuplaDeviceClass::saveStateToStorage() {
-  if (triggerResetToFactorySettings) {
+  if (triggerResetToFactorySettings || factoryResetAttempted) {
     return;
   }
   Supla::Storage::WriteStateStorage();
@@ -1602,16 +1605,43 @@ void SuplaDeviceClass::handleAction(int event, int action) {
 }
 
 void SuplaDeviceClass::resetToFactorySettings() {
+  (void)resetToFactorySettingsChecked();
+}
+bool SuplaDeviceClass::resetToFactorySettingsChecked() {
+  // Keep pre-reset runtime state from being saved while awaiting a restart.
+  factoryResetAttempted = true;
   // cleanup device's configuration, but keep GUID and AuthKey
   SUPLA_LOG_DEBUG("Reset to factory settings");
   auto cfg = Supla::Storage::ConfigInstance();
+  bool durable = true;
   if (cfg) {
     SUPLA_LOG_DEBUG("Clearing configuration...");
-    cfg->removeAll();
-    cfg->setGUID(Supla::RegisterDevice::getGUID());
-    cfg->setAuthKey(Supla::RegisterDevice::getAuthKey());
-    cfg->initDefaultDeviceConfig();
-    cfg->commit();
+    for (uint8_t attempt = 0; attempt < 2; ++attempt) {
+      durable = cfg->removeAllChecked();
+      if (durable) {
+        bool guid, auth;
+        if (cfg->isDeviceDataPartitionAvailable()) {
+          char storedGuid[SUPLA_GUID_SIZE], storedAuth[SUPLA_AUTHKEY_SIZE];
+          Supla::Crypto::ScopedWipe<decltype(storedAuth)> wipeAuth(storedAuth);
+          guid = cfg->getGUID(storedGuid) && Supla::Crypto::constantTimeEqual(
+              storedGuid, Supla::RegisterDevice::getGUID(), sizeof(storedGuid));
+          auth = cfg->getAuthKey(storedAuth) &&
+              Supla::Crypto::constantTimeEqual(
+                  storedAuth, Supla::RegisterDevice::getAuthKey(),
+                  sizeof(storedAuth));
+        } else {
+          guid = cfg->setGUID(Supla::RegisterDevice::getGUID());
+          auth = cfg->setAuthKey(Supla::RegisterDevice::getAuthKey());
+        }
+        cfg->initDefaultDeviceConfig();
+        const bool committed = cfg->commit();
+        durable = guid && auth && committed;
+      }
+      if (durable) break;
+      if (attempt == 0) {
+        SUPLA_LOG_WARNING("Factory reset persistence failed, retrying once");
+      }
+    }
   }
 
 #ifndef ARDUINO_ARCH_AVR
@@ -1619,6 +1649,10 @@ void SuplaDeviceClass::resetToFactorySettings() {
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto;
        proto = proto->next()) {
     if (proto->getSdc() == this) proto->onFactoryReset();
+  }
+  if (!durable && getSrpcLayer()) {
+    // Do not permit new registration to reuse an unconfirmed storage reset.
+    getSrpcLayer()->serverIdentity().load(nullptr);
   }
 #endif  // !ARDUINO_ARCH_AVR
 
@@ -1634,6 +1668,8 @@ void SuplaDeviceClass::resetToFactorySettings() {
     SUPLA_LOG_DEBUG("Clearing security log...");
     securityLogger->deleteAll();
   }
+  if (!durable) SUPLA_LOG_ERROR("Factory reset persistence failed");
+  return durable;
 }
 
 void SuplaDeviceClass::handleLocalActionTriggers() {
@@ -1643,7 +1679,9 @@ void SuplaDeviceClass::handleLocalActionTriggers() {
   }
 
   if (triggerResetToFactorySettings) {
-    resetToFactorySettings();
+    (void)resetToFactorySettingsChecked();
+    // A storage failure must not strand an installed device in config mode.
+    // Keep the reset flag set so softRestart skips saving pre-reset state.
     softRestart();
   }
 

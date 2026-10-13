@@ -25,6 +25,7 @@ class KeyValue : public Config {
   bool generateGuidAndAuthkey() override;
 
   void removeAll() override;
+  bool removeAllChecked() override;
   bool setString(const char* key, const char* value) override;
   bool getString(const char* key, char* value, size_t maxSize) override;
   int getStringSize(const char* key) override;

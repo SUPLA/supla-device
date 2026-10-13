@@ -372,12 +372,40 @@ void ResourceBindingManager::acknowledged(uint8_t peer, uint8_t result) {
     sent_[peer].time = millis();
   }
 }
+bool ResourceBindingManager::hasCompleteIntents(uint8_t peer) const {
+  if (!intentOverflow_) return true;
+  const auto identity = associations_ ? associations_->identity() : nullptr;
+  if (!identity) return false;
+  // An omitted target has no resolved owner. Only a peer whose ACL excludes
+  // its Source can safely receive a complete snapshot without that target.
+  // Rescan canonical config rather than store another routing table.
+  for (int n = 0; n < 255; ++n) {
+    const auto element = Element::getElementByChannelNumber(n);
+    const auto hvac = element ? element->getHvacBase() : nullptr;
+    uint32_t source;
+    if (!hvac || !identity->reverse(n, &source) ||
+        !peers_->authorize(peer, {SupLan::kResourceTypeChannel, source},
+                           SupLan::kPermissionRead)) continue;
+    for (uint8_t field = 0; field < 2; ++field) {
+      const auto reference = hvac->bindingTarget(field);
+      if (resolveChannelReference(reference, identity).kind !=
+          ChannelResolutionKind::kRemote) continue;
+      bool present = false;
+      for (const auto &intent : intents_)
+        present = present || (intent.retained && intent.source == source &&
+                              intent.target == reference.id);
+      if (!present) return false;
+    }
+  }
+  return true;
+}
 void ResourceBindingManager::sendDesired(uint32_t now) {
-  if (!runtime_ || runtime_->bindingsInFlight() || intentOverflow_) return;
+  if (!runtime_ || runtime_->bindingsInFlight()) return;
   for (int peer = 0; peer < SUPLAN_MAX_PERSISTENT_PEERS; ++peer) {
     const auto owner = peers_->get(peer);
     if (!owner || owner->destination || !peers_->hasActiveGrants(peer))
       continue;
+    if (!hasCompleteIntents(peer)) continue;
     SupLan::PeerContext context;
     if (!SupLan::decodePeerContext(owner->contextBytes, &context)) continue;
     uint8_t body[1 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER] = {};
@@ -385,7 +413,13 @@ void ResourceBindingManager::sendDesired(uint32_t now) {
     // Wait for routing resolution before declaring an authoritative empty set.
     for (const auto &intent : intents_) {
       if (intent.source && intent.retained && !intent.destination &&
-          !intent.blocked) return;
+          !intent.blocked &&
+          peers_->authorize(peer,
+              {SupLan::kResourceTypeChannel, intent.source},
+              SupLan::kPermissionRead)) {
+        overflow = true;
+        break;
+      }
       if (!intent.source || !intent.retained || intent.blocked ||
           intent.destination != context.destination.nodeId)
         continue;

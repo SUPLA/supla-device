@@ -18,6 +18,7 @@ class ConfigMock : public Supla::Config {
   void expectLegacyHvacBlobSizes(int channelNumber);
   MOCK_METHOD(bool, init, (), (override));
   MOCK_METHOD(void, removeAll, (), (override));
+  MOCK_METHOD(bool, removeAllChecked, (), (override));
   //  MOCK_METHOD(bool, isMinimalConfigReady, (), (override));
   MOCK_METHOD(bool, isConfigModeSupported, (), (override));
   MOCK_METHOD(bool,

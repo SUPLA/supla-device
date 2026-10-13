@@ -1285,16 +1285,18 @@ void Supla::Protocol::SuplaSrpc::initClient() {
     }
   }
   client->setSdc(sdc);
-  client->setDebugLogs(verboseLog);
+  // Arbitrary TCP fragments cannot be redacted by call ID. Use the SRPC
+  // packet logger, which suppresses credential-bearing payloads instead.
+  client->setDebugLogs(false);
   if (port == 2016 || (port == -1 && isSuplaSSLEnabled)) {
     client->setSSLEnabled(true);
     client->setCACert(selectedCertificate);
   }
 }
 
-void Supla::Protocol::SuplaSrpc::setLowLevelDebugLogs(bool value) {
+void Supla::Protocol::SuplaSrpc::setLowLevelDebugLogs(bool) {
   if (client != nullptr) {
-    client->setDebugLogs(value);
+    client->setDebugLogs(false);
   }
 }
 

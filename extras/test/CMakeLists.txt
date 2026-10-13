@@ -396,6 +396,7 @@ if(SUPLAN_ASSOCIATION_PROFILE_TESTS)
     SupLanTests/server_association_tests.cpp
     SupLanTests/m4b_device_tests.cpp
     SupLanTests/channel_dependency_tests.cpp ${DOUBLE_SRC}
+    SupLanTests/suplan_runtime_tests.cpp SupLanTests/m5b_sdk_tests.cpp
     ../porting/linux/suplan_crypto_openssl.cpp
     doubles/crypto_test_hooks.cpp)
   target_include_directories(suplanassociationprofiletests PRIVATE
@@ -424,3 +425,72 @@ foreach(arduino_platform IN ITEMS ESP8266 ESP32)
   supla_apply_warnings(${arduino_target})
   add_test(NAME ${arduino_target} COMMAND ${arduino_target})
 endforeach()
+
+# Safety-only higher overrides; shipped profile minima/defaults stay unchanged.
+foreach(interest_limit IN ITEMS 255 256 257)
+  set(boundary_target "suplanboundstests${interest_limit}")
+  add_executable(${boundary_target}
+    SupLanDirectionalTests/suplan_directional_tests.cpp
+    ../porting/linux/suplan_crypto_openssl.cpp ../../src/supla/sha256.cpp
+    ../../src/supla/crypto.cpp ../../src/supla/tools.cpp
+    doubles/crypto_test_hooks.cpp ${SUPLAN_CORE_SRCS})
+  target_include_directories(${boundary_target} PRIVATE
+    ../../src doubles ../porting/linux)
+  target_compile_definitions(${boundary_target} PRIVATE
+    SUPLA_LINUX SUPLA_DISABLE_LOGS SUPLAN_BOUNDARY_TESTS
+    SUPLAN_MAX_RUNTIME_INTERESTS=${interest_limit}
+    SUPLAN_MAX_BINDINGS_PER_PEER=64)
+  target_link_libraries(${boundary_target} PRIVATE gtest_main OpenSSL::Crypto)
+  target_link_options(${boundary_target} PRIVATE
+    -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=EVP_MAC_init)
+  supla_apply_warnings(${boundary_target})
+  add_test(NAME ${boundary_target} COMMAND ${boundary_target})
+  set_tests_properties(${boundary_target} PROPERTIES TIMEOUT 10)
+endforeach()
+
+# Optional host execution of the actual platform crypto backends, not mocks.
+set(SUPLAN_TEST_PSA_SOURCE "" CACHE PATH "TF-PSA-Crypto source for host tests")
+set(SUPLAN_TEST_BEARSSL_SOURCE "" CACHE PATH "ESP8266 BearSSL source for host tests")
+if(SUPLAN_TEST_PSA_SOURCE)
+  set(TF_PSA_CRYPTO_CONFIG_FILE
+    "${CMAKE_CURRENT_SOURCE_DIR}/SupLanBackendTests/psa_ccm_config.h"
+    CACHE FILEPATH "Host AES-CCM test configuration" FORCE)
+  set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
+  set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+  set(TF_PSA_CRYPTO_FATAL_WARNINGS OFF CACHE BOOL "" FORCE)
+  add_subdirectory(${SUPLAN_TEST_PSA_SOURCE} platform-psa EXCLUDE_FROM_ALL)
+  add_executable(suplanpsarxtests
+    SupLanBackendTests/receive_envelope_tests.cpp
+    ../../src/suplan/suplan_crypto_mbedtls.cpp
+    ../../src/suplan/suplan_data.cpp ../../src/suplan/suplan_wire.cpp
+    ../../src/suplan/suplan_fragment.cpp ../porting/linux/suplan_crypto_openssl.cpp)
+  target_include_directories(suplanpsarxtests PRIVATE ../../src ../porting/linux)
+  target_compile_definitions(suplanpsarxtests PRIVATE ESP_PLATFORM)
+  target_link_libraries(suplanpsarxtests PRIVATE
+    gtest_main OpenSSL::Crypto TF-PSA-Crypto::tfpsacrypto)
+  add_test(NAME suplanpsarxtests COMMAND suplanpsarxtests)
+endif()
+if(SUPLAN_TEST_BEARSSL_SOURCE)
+  file(COPY ${SUPLAN_TEST_BEARSSL_SOURCE}/inc/
+    DESTINATION ${CMAKE_BINARY_DIR}/backend-include/bearssl)
+  file(GLOB bearssl_sources ${SUPLAN_TEST_BEARSSL_SOURCE}/src/symcipher/aes_ct*.c)
+  add_library(suplan_test_bearssl STATIC ${bearssl_sources}
+    ${SUPLAN_TEST_BEARSSL_SOURCE}/src/aead/ccm.c
+    ${SUPLAN_TEST_BEARSSL_SOURCE}/src/codec/dec32le.c
+    ${SUPLAN_TEST_BEARSSL_SOURCE}/src/codec/enc32le.c
+    ${SUPLAN_TEST_BEARSSL_SOURCE}/src/codec/enc32be.c
+    ${SUPLAN_TEST_BEARSSL_SOURCE}/src/codec/dec32be.c)
+  target_include_directories(suplan_test_bearssl PRIVATE
+    ${SUPLAN_TEST_BEARSSL_SOURCE}/inc ${SUPLAN_TEST_BEARSSL_SOURCE}/src)
+  add_executable(suplanbearsslrxtests
+    SupLanBackendTests/receive_envelope_tests.cpp
+    ../../src/suplan/suplan_data.cpp ../../src/suplan/suplan_wire.cpp
+    ../../src/suplan/suplan_fragment.cpp ../porting/linux/suplan_crypto_openssl.cpp)
+  target_include_directories(suplanbearsslrxtests PRIVATE
+    ../../src ../porting/linux ${CMAKE_BINARY_DIR}/backend-include)
+  target_compile_definitions(suplanbearsslrxtests PRIVATE
+    ARDUINO_ARCH_ESP8266 SUPLAN_TEST_BEARSSL)
+  target_link_libraries(suplanbearsslrxtests PRIVATE
+    gtest_main OpenSSL::Crypto suplan_test_bearssl)
+  add_test(NAME suplanbearsslrxtests COMMAND suplanbearsslrxtests)
+endif()

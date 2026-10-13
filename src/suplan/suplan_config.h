@@ -6,6 +6,7 @@
 
 #ifndef ARDUINO_ARCH_AVR
 
+#include <stddef.h>
 #include <stdint.h>
 
 // Build-selected public-v1 profiles. The default preserves existing constrained
@@ -117,6 +118,9 @@ static const uint8_t kNoncePrefixSize = 8;
 static const uint8_t kProtectedHeaderSize = 16;
 static const uint8_t kApplicationHeaderSize = 6;
 static const uint8_t kResourceHeaderSize = 5;
+// RX capacity describes the complete protected frame, independently of TX.
+static const size_t kMaxReceiveApplicationBytes = (
+    SUPLAN_RX_MAX_REASSEMBLED_FRAME - kProtectedHeaderSize - kAeadTagSize);
 
 static const uint8_t kFrameLocate = 1;
 static const uint8_t kFrameLocateReply = 2;
@@ -154,6 +158,12 @@ static const uint32_t kRuntimeInterestTimeoutMs = 300000;
 static const uint8_t kMinimumSuplaProtoVersion = 16;
 static_assert(SUPLAN_MAX_PERSISTENT_PEERS <= 128,
               "Stable slots use an 8-bit index with 255 reserved");
+static_assert(SUPLAN_MAX_RUNTIME_INTERESTS > 0 &&
+                  SUPLAN_MAX_RUNTIME_INTERESTS <= UINT16_MAX,
+              "Runtime interest loops and pool counters use 16 bits");
+static_assert(SUPLAN_MAX_BINDINGS_PER_PEER > 0 &&
+                  SUPLAN_MAX_BINDINGS_PER_PEER <= UINT8_MAX,
+              "RESOURCE_BINDINGS count uses one byte");
 static_assert(SUPLAN_MAX_TOTAL_ACL_ENTRIES +
                   SUPLAN_MAX_TOTAL_EXPECTED_ENTRIES <= UINT16_MAX,
               "ACL and Expected totals use 16-bit counters");

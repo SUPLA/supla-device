@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2026 AC SOFTWARE SP. Z O.O.
+
+#ifndef EXTRAS_TEST_SUPLANBACKENDTESTS_PSA_CCM_CONFIG_H_
+#define EXTRAS_TEST_SUPLANBACKENDTESTS_PSA_CCM_CONFIG_H_
+
+// The receive-envelope test exercises the platform AES-CCM implementation.
+#define PSA_WANT_ALG_CCM 1
+#define PSA_WANT_KEY_TYPE_AES 1
+#define PSA_WANT_ALG_SHA_256 1
+#define MBEDTLS_PSA_CRYPTO_C
+#define MBEDTLS_PSA_BUILTIN_GET_ENTROPY
+#define MBEDTLS_CTR_DRBG_C
+
+#endif  // EXTRAS_TEST_SUPLANBACKENDTESTS_PSA_CCM_CONFIG_H_

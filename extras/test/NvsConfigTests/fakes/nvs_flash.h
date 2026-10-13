@@ -14,7 +14,14 @@ inline esp_err_t nvs_flash_read_security_cfg_v2(...) {
 }
 inline esp_err_t nvs_flash_init_partition(...) { return ESP_ERR_NOT_FOUND; }
 inline esp_err_t nvs_flash_deinit_partition(...) { return ESP_ERR_NOT_FOUND; }
-inline esp_err_t nvs_flash_erase_partition(...) { return ESP_ERR_NOT_FOUND; }
+extern esp_err_t fakeNvsPartitionEraseResult;
+extern const char *fakeNvsErasedPartition;
+extern int fakeNvsPartitionEraseCalls;
+inline esp_err_t nvs_flash_erase_partition(const char *partition) {
+  ++fakeNvsPartitionEraseCalls;
+  fakeNvsErasedPartition = partition;
+  return fakeNvsPartitionEraseResult;
+}
 inline esp_err_t nvs_flash_init() { return ESP_ERR_NOT_FOUND; }
 inline esp_err_t nvs_flash_secure_init_partition(...) {
   return ESP_ERR_NOT_FOUND;

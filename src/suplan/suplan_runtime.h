@@ -158,6 +158,7 @@ class Runtime {
   bool announceSleep(uint8_t peerIndex, uint32_t durationSec);
   void refreshPeer(uint8_t peerIndex, uint16_t awakeWindowMs, bool reset);
   void publishCurrentInterests(uint8_t peerIndex = 0xff);
+  void resumeRetainedInterests();
   void clearInterests();
   typedef void (*DataTransmitObserver)(void *, const Endpoint &,
                                        const uint8_t *, size_t);
@@ -389,10 +390,12 @@ class Runtime {
   ApplicationPort *application_;
   PeerTable *peers_;
   NodeAddress localAddress_;
+  uint32_t nextFrameId_;
+  uint32_t presenceBudgetEpochMs_ = 0;
+  uint16_t fragmentOrdinal_;
+  uint16_t presenceAttempts_ = 0;
   uint8_t suplaProtoVersion_;
   bool processing_;
-  uint32_t nextFrameId_;
-  uint16_t fragmentOrdinal_;
   SessionEntry sessions_[SUPLAN_MAX_ACTIVE_SESSIONS];
   PendingHandshake pending_[SUPLAN_MAX_PENDING_HANDSHAKES];
   OutstandingLocate locates_[SUPLAN_MAX_OUTSTANDING_LOCATES];

@@ -23,6 +23,9 @@ struct nvs_stats_t {
 extern esp_err_t fakeNvsCommitResult;
 extern nvs_handle_t fakeNvsCommitHandle;
 extern int fakeNvsCommitCalls;
+extern esp_err_t fakeNvsEraseResult;
+extern nvs_handle_t fakeNvsEraseHandle;
+extern int fakeNvsEraseCalls;
 inline esp_err_t nvs_commit(nvs_handle_t handle) {
   ++fakeNvsCommitCalls;
   fakeNvsCommitHandle = handle;
@@ -34,7 +37,11 @@ inline esp_err_t nvs_get_stats(const char *, nvs_stats_t *stats) {
   return ESP_OK;
 }
 inline esp_err_t nvs_open_from_partition(...) { return ESP_ERR_NOT_FOUND; }
-inline esp_err_t nvs_erase_all(...) { return ESP_ERR_NOT_FOUND; }
+inline esp_err_t nvs_erase_all(nvs_handle_t handle) {
+  ++fakeNvsEraseCalls;
+  fakeNvsEraseHandle = handle;
+  return fakeNvsEraseResult;
+}
 inline esp_err_t nvs_erase_key(...) { return ESP_ERR_NOT_FOUND; }
 inline esp_err_t nvs_get_str(...) { return ESP_ERR_NOT_FOUND; }
 inline esp_err_t nvs_get_blob(...) { return ESP_ERR_NOT_FOUND; }

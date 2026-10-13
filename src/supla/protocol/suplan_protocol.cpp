@@ -687,6 +687,8 @@ void SupLan::beginWake(uint16_t window, bool retainedInterests) {
   if (!retainedInterests) {
     runtime_->clearInterests();
     resources_->presence().resetPending_ = true;
+  } else {
+    runtime_->resumeRetainedInterests();
   }
 }
 bool SupLan::wakeWindowComplete() const {

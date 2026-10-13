@@ -358,13 +358,19 @@ bool Supla::LittleFsConfig::initLittleFs(bool allowFormat) {
 }
 
 void Supla::LittleFsConfig::removeAll() {
+  (void)removeAllChecked();
+}
+bool Supla::LittleFsConfig::removeAllChecked() {
   SUPLA_LOG_DEBUG("LittleFsConfig remove all called");
 
   if (!initLittleFs()) {
-    return;
+    return false;
   }
-  LittleFS.remove(CustomCAFileName);
-  LittleFS.remove(MqttCAFileName);
+  bool removed = true;
+  if (LittleFS.exists(CustomCAFileName))
+    removed = LittleFS.remove(CustomCAFileName) && removed;
+  if (LittleFS.exists(MqttCAFileName))
+    removed = LittleFS.remove(MqttCAFileName) && removed;
 
   File suplaDir = LittleFS.open("/supla", "r");
   if (suplaDir && suplaDir.isDirectory()) {
@@ -377,17 +383,20 @@ void Supla::LittleFsConfig::removeAll() {
         file.close();
         if (!LittleFS.remove(path)) {
           SUPLA_LOG_ERROR("LittleFsConfig: failed to remove file");
+          removed = false;
         }
       }
       file = suplaDir.openNextFile();
     }
   } else {
     SUPLA_LOG_DEBUG("LittleFsConfig: failed to open supla directory");
+    if (LittleFS.exists("/supla")) removed = false;
   }
 
   LittleFS.end();
 
-  Supla::KeyValue::removeAll();
+  removeAllMemory();
+  return removed && commit();
 }
 
 bool Supla::LittleFsConfig::setBlob(const char* key,

@@ -26,7 +26,10 @@ class MbedTlsCryptoPort : public CryptoPort {
  private:
   // PSA returns ciphertext followed by the tag; keep that bounded output off
   // the ESP task stack and split it into CryptoPort's separate spans.
-  uint8_t aeadOutput_[SUPLAN_MAX_APPLICATION_BYTES + kAeadTagSize];
+  uint8_t aeadOutput_[
+      (SUPLAN_MAX_APPLICATION_BYTES > kMaxReceiveApplicationBytes
+           ? SUPLAN_MAX_APPLICATION_BYTES : kMaxReceiveApplicationBytes) +
+      kAeadTagSize];
 };
 
 }  // namespace SupLan

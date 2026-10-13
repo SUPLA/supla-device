@@ -19,6 +19,7 @@ class LittleFsConfig : public KeyValue {
   bool init() override;
   bool commit() override;
   void removeAll() override;
+  bool removeAllChecked() override;
 
   bool getCustomCA(char* result, int maxSize) override;
   int getCustomCASize() override;

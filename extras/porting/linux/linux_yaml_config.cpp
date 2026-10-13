@@ -355,6 +355,10 @@ bool Supla::LinuxYamlConfig::getUInt8(const char* key, uint8_t* result) {
 }
 
 void Supla::LinuxYamlConfig::commit() {
+  commitWithResult();
+}
+
+bool Supla::LinuxYamlConfig::commitWithResult() {
   uint8_t buf[SUPLA_LINUX_CONFIG_BUF_SIZE] = {};
 
   size_t dataSize = serializeToMemory(buf, SUPLA_LINUX_CONFIG_BUF_SIZE);
@@ -365,7 +369,9 @@ void Supla::LinuxYamlConfig::commit() {
           dataSize,
           false)) {
     SUPLA_LOG_ERROR("Config: failed to write read/write config storage file");
+    return false;
   }
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::setDeviceName(const char* name) {

@@ -170,10 +170,11 @@ class ElementWithChannelActions : public Element, public LocalAction {
   ConfigTypesBitmap usedConfigTypes;
   ConfigTypesBitmap receivedConfigTypes;
 
- private:
   uint8_t finishChannelConfig(
       TSD_ChannelConfig *result, Supla::ApplyConfigResult applyResult,
       bool local);
+
+ private:
   uint8_t getWeeklyConfigFailures(int configType) const;
   void resetWeeklyConfigFailures(int configType);
 };

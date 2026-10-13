@@ -76,23 +76,26 @@ SolarEdge::SolarEdge(const char *apiKeyValue,
   // min
   refreshRateSec = 6 * 60;  // refresh every 6 min
 
-  int len = strlen(apiKeyValue);
-  if (len > APIKEY_MAX_LENGTH) {
-    len = APIKEY_MAX_LENGTH;
+  size_t len = strlen(apiKeyValue);
+  if (len >= sizeof(apiKey)) {
+    len = sizeof(apiKey) - 1;
   }
-  strncpy(apiKey, apiKeyValue, len);
+  memcpy(apiKey, apiKeyValue, len);
+  apiKey[len] = '\0';
 
   len = strlen(siteIdValue);
-  if (len > PARAMETER_MAX_LENGTH) {
-    len = PARAMETER_MAX_LENGTH;
+  if (len >= sizeof(siteId)) {
+    len = sizeof(siteId) - 1;
   }
-  strncpy(siteId, siteIdValue, len);
+  memcpy(siteId, siteIdValue, len);
+  siteId[len] = '\0';
 
   len = strlen(inverterSerialNumberValue);
-  if (len > PARAMETER_MAX_LENGTH) {
-    len = PARAMETER_MAX_LENGTH;
+  if (len >= sizeof(inverterSerialNumber)) {
+    len = sizeof(inverterSerialNumber) - 1;
   }
-  strncpy(inverterSerialNumber, inverterSerialNumberValue, len);
+  memcpy(inverterSerialNumber, inverterSerialNumberValue, len);
+  inverterSerialNumber[len] = '\0';
 
   temperatureChannel.setType(SUPLA_CHANNELTYPE_THERMOMETER);
   temperatureChannel.setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);

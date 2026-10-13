@@ -4,11 +4,13 @@
 #ifndef EXTRAS_PORTING_LINUX_LINUX_PROCESS_H_
 #define EXTRAS_PORTING_LINUX_LINUX_PROCESS_H_
 
+#include <atomic>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern unsigned char st_app_terminate;
+extern std::atomic<unsigned char> st_app_terminate;
 void st_hook_signals(void);
 char st_try_fork(void);
 

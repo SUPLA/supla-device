@@ -95,6 +95,7 @@ class LinuxYamlConfig : public KeyValue {
   bool getUInt8(const char* key, uint8_t* result) override;
 
   void commit() override;
+  bool commitWithResult() override;
 
   // Device generic config
   bool setGUID(const char* guid) override;

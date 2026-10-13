@@ -1052,6 +1052,17 @@ void SuplaDeviceClass::leaveConfigModeWithoutRestart() {
 
 void SuplaDeviceClass::softRestart() {
   status(STATUS_SOFTWARE_RESET, F("Software reset"));
+  if (!prepareForShutdown()) {
+    SUPLA_LOG_ERROR("Configuration save failed before software reset");
+  }
+  SUPLA_LOG_INFO("Resetting in 0.5s...");
+  delay(500);
+  SUPLA_LOG_INFO("See you soon!");
+  deviceSoftwareReset();
+}
+
+bool SuplaDeviceClass::prepareForShutdown() {
+  bool saved = true;
   if (statusLed) {
     statusLed->setAlwaysOffSequence();
   }
@@ -1067,7 +1078,7 @@ void SuplaDeviceClass::softRestart() {
     saveStateToStorage();
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
-      cfg->commit();
+      saved = cfg->commitWithResult();
     }
   }
   deviceMode = Supla::DEVICE_MODE_NORMAL;
@@ -1079,10 +1090,7 @@ void SuplaDeviceClass::softRestart() {
   }
 
   Supla::Network::Uninit();
-  SUPLA_LOG_INFO("Resetting in 0.5s...");
-  delay(500);
-  SUPLA_LOG_INFO("See you soon!");
-  deviceSoftwareReset();
+  return saved;
 }
 
 void SuplaDeviceClass::enterNormalMode() {

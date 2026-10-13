@@ -7,6 +7,7 @@
 #include <simple_time.h>
 #include <supla/pv/solaredge.h>
 
+#include <algorithm>
 #include <array>
 #include <memory>
 #include <string>
@@ -18,7 +19,9 @@ using Measurements = std::array<double, 18>;
 
 class SolarEdgeForTest : public Supla::PV::SolarEdge {
  public:
-  SolarEdgeForTest() : SolarEdge("key", "site", "serial", nullptr) {
+  SolarEdgeForTest(const char* key = "key", const char* site = "site",
+                   const char* serial = "serial")
+      : SolarEdge(key, site, serial, nullptr) {
     temperature = 42;
     totalGeneratedEnergy = 42;
     currentFreq = 42;
@@ -36,6 +39,10 @@ class SolarEdgeForTest : public Supla::PV::SolarEdge {
     headerFound = true;
     connectionTimeoutMs = 0;
   }
+
+  using SolarEdge::apiKey;
+  using SolarEdge::inverterSerialNumber;
+  using SolarEdge::siteId;
 
   Measurements measurements() const {
     return {temperature,
@@ -117,6 +124,29 @@ class SolarEdgeCsvTests : public ::testing::Test {
   std::string input;
   size_t position = 0;
 };
+
+TEST(SolarEdgeCredentialTests, BoundsAndTerminatesConstructorStrings) {
+  for (size_t length :
+       {size_t(0), size_t(3), size_t(PARAMETER_MAX_LENGTH - 1),
+        size_t(PARAMETER_MAX_LENGTH), size_t(APIKEY_MAX_LENGTH - 1),
+        size_t(APIKEY_MAX_LENGTH), size_t(APIKEY_MAX_LENGTH + 20)}) {
+    auto* client = new ::testing::NiceMock<NetworkClientMock>();
+    (void)client;  // Owned by SolarEdge.
+    std::string input(length, 'x');
+    SolarEdgeForTest solar(input.c_str(), input.c_str(), input.c_str());
+    EXPECT_EQ(solar.apiKey[std::min(length, sizeof(solar.apiKey) - 1)], '\0');
+    EXPECT_EQ(solar.siteId[std::min(length, sizeof(solar.siteId) - 1)], '\0');
+    EXPECT_EQ(solar.inverterSerialNumber[std::min(
+                  length, sizeof(solar.inverterSerialNumber) - 1)],
+              '\0');
+    EXPECT_EQ(std::string(solar.apiKey),
+              input.substr(0, sizeof(solar.apiKey) - 1));
+    EXPECT_EQ(std::string(solar.siteId),
+              input.substr(0, sizeof(solar.siteId) - 1));
+    EXPECT_EQ(std::string(solar.inverterSerialNumber),
+              input.substr(0, sizeof(solar.inverterSerialNumber) - 1));
+  }
+}
 
 TEST_F(SolarEdgeCsvTests, ParsesAll35ColumnsWithOriginalUnitsAndIndices) {
   consume(csvRow(validFields()));

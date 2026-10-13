@@ -9,6 +9,7 @@
 #include <supla/pv/fronius.h>
 #include <supla/pv/inverter_parser.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <string>
@@ -18,12 +19,12 @@ namespace {
 
 class AforeForTest : public Supla::PV::Afore {
  public:
-  AforeForTest() : Afore(IPAddress("127.0.0.1"), 80, "test") {
+  explicit AforeForTest(const char* credentials = "test")
+      : Afore(IPAddress("127.0.0.1"), 80, credentials) {
     dataFetchInProgress = true;
   }
-  ~AforeForTest() override {
-    delete client;
-  }
+  using Afore::loginAndPassword;
+  ~AforeForTest() override { delete client; }
   std::array<double, 2> measurements() const {
     return {static_cast<double>(currentPower),
             static_cast<double>(totalGeneratedEnergy)};
@@ -87,6 +88,21 @@ class InverterResponseTests : public ::testing::Test {
   std::string input;
   size_t position = 0;
 };
+
+TEST_F(InverterResponseTests, AforeBoundsAndTerminatesCredentials) {
+  for (size_t length :
+       {size_t(0), size_t(3), size_t(99), size_t(100), size_t(120)}) {
+    auto* mock = new ::testing::NiceMock<NetworkClientMock>();
+    (void)mock;  // Owned by the test inverter.
+    std::string input(length, 'x');
+    AforeForTest inverter(input.c_str());
+    EXPECT_EQ(inverter.loginAndPassword[std::min(
+                  length, sizeof(inverter.loginAndPassword) - 1)],
+              '\0');
+    EXPECT_EQ(std::string(inverter.loginAndPassword),
+              input.substr(0, sizeof(inverter.loginAndPassword) - 1));
+  }
+}
 
 TEST_F(InverterResponseTests, AforeAcceptsCompleteRecordsWithOriginalScales) {
   setupClient();

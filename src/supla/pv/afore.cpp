@@ -27,11 +27,12 @@ Afore::Afore(IPAddress ip, int port, const char *loginAndPass)
       dataFetchInProgress(false),
       connectionTimeoutMs(0) {
   refreshRateSec = 15;
-  int len = strlen(loginAndPass);
-  if (len > LOGIN_AND_PASSOWORD_MAX_LENGTH) {
-    len = LOGIN_AND_PASSOWORD_MAX_LENGTH;
+  size_t len = strlen(loginAndPass);
+  if (len >= sizeof(loginAndPassword)) {
+    len = sizeof(loginAndPassword) - 1;
   }
-  strncpy(loginAndPassword, loginAndPass, len);
+  memcpy(loginAndPassword, loginAndPass, len);
+  loginAndPassword[len] = '\0';
   client = Supla::ClientBuilder();
 }
 

@@ -293,6 +293,79 @@ class RelayFixture : public testing::Test {
   }
 };
 
+class DelayedCountdownRelayFixture
+    : public RelayFixture,
+      public testing::WithParamInterface<bool> {};
+
+TEST_P(DelayedCountdownRelayFixture, targetDoesNotDependOnDelayedReadback) {
+  Supla::Control::Relay relay(0);
+  initializeRelayForCommunicationTest(&relay);
+  const bool commandOn = GetParam();
+  int observedState = !commandOn;
+  ON_CALL(ioMock, digitalRead(0))
+      .WillByDefault(::testing::ReturnPointee(&observedState));
+  time.advance(1);
+
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 1000, !commandOn, 0));
+  if (commandOn) {
+    relay.turnOn(1000);
+  } else {
+    relay.turnOff(1000);
+  }
+  relay.iterateConnected();
+  EXPECT_EQ(gpioValue, commandOn);
+
+  // Confirming the output does not change the timer's target.
+  observedState = commandOn;
+  relay.iterateConnected();
+  // Even stale readback at expiry must not reverse the requested transition.
+  observedState = !commandOn;
+  time.advance(1001);
+  relay.iterateAlways();
+  EXPECT_EQ(gpioValue, !commandOn);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  relay.iterateConnected();
+}
+
+TEST_P(DelayedCountdownRelayFixture, weeklyOverrideAndCancellation) {
+  ClockStub clock;
+  ::testing::NiceMock<ConfigMock> cfg;
+  TimedWeeklyRelay relay(0);
+  relay.setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+  initializeRelayForCommunicationTest(&relay);
+  auto schedule = makeSingleProgramWeeklySchedule(
+      SUPLA_CHANNELFNC_POWERSWITCH, SUPLA_RELAY_MODE_START_ON);
+  relay.handleChannelConfig(&schedule, false);
+  enableWeeklySchedule(&relay);
+
+  const bool commandOn = GetParam();
+  int observedState = !commandOn;
+  ON_CALL(ioMock, digitalRead(0))
+      .WillByDefault(::testing::ReturnPointee(&observedState));
+  time.advance(1);
+  TSD_SuplaChannelNewValue command = {};
+  command.value[0] = commandOn;
+  command.DurationMS = 1000;
+  EXPECT_EQ(relay.handleNewValueFromServer(&command), 1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 1000, !commandOn, 0));
+  relay.iterateConnected();
+  EXPECT_TRUE(relayValue(relay)->flags &
+              SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED);
+
+  // A subsequent untimed command cancels the countdown.
+  time.advance(1);
+  command.DurationMS = 0;
+  EXPECT_EQ(relay.handleNewValueFromServer(&command), 1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  relay.iterateConnected();
+  time.advance(1001);
+  relay.iterateAlways();
+  EXPECT_EQ(gpioValue, commandOn);
+}
+
+INSTANTIATE_TEST_SUITE_P(OnAndOff, DelayedCountdownRelayFixture,
+                         testing::Bool());
+
 class ImpulseForcedOffFixture : public RelayFixture,
                               public testing::WithParamInterface<uint32_t> {
  public:

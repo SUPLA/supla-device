@@ -345,6 +345,7 @@ class Relay : public ChannelElement, public ActionHandler {
   RuntimeFlags runtimeFlags;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
+  bool timerTargetOn = false;
   Supla::Io::IoPin outputPin;
   WeeklyScheduleComponents weeklyScheduleComponents;
 

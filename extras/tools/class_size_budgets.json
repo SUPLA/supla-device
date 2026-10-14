@@ -65,7 +65,7 @@
       "header": "supla/control/relay.h",
       "limits": {
         "host": 224,
-        "avr": 124,
+        "avr": 125,
         "esp8266": 168,
         "esp32": 168
       }
@@ -75,7 +75,7 @@
       "header": "supla/control/bistable_relay.h",
       "limits": {
         "host": 256,
-        "avr": 139,
+        "avr": 140,
         "esp8266": 184,
         "esp32": 184
       }

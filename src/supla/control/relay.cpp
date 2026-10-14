@@ -571,9 +571,13 @@ void Relay::iterateAlways() {
   }
 
   if (durationMs && millis() - durationTimestamp > durationMs) {
-    bool targetOn = !isOn();
+    bool targetOn = timerTargetOn;
     if (isManualActionAllowed(targetOn)) {
-      toggle();
+      if (targetOn) {
+        turnOn(isCyclicMode() ? storedTurnOnDurationMs : 0);
+      } else {
+        turnOff(isCyclicMode() ? turnOffDurationForCycle : 0);
+      }
     } else {
       SUPLA_LOG_DEBUG(
           "Relay[%d] cancelling timer transition due to operating mode",
@@ -881,6 +885,8 @@ void Relay::turnOn(_supla_int_t duration) {
 }
 
 void Relay::applyDuration(int32_t duration, bool turnOn) {
+  // Readback can lag behind the command, so keep the timer's target explicitly.
+  timerTargetOn = !turnOn;
   if (isCyclicMode() && duration > 0) {
     if (turnOn) {
       storedTurnOnDurationMs = duration;
@@ -1355,7 +1361,7 @@ void Relay::updateTimerValue() {
     uint32_t elapsedTimeMs = millis() - durationTimestamp;
     if (elapsedTimeMs <= durationMs) {
       remainingTime = durationMs - elapsedTimeMs;
-      state = (isOn() ? 0 : 1);
+      state = timerTargetOn;
     }
   }
 

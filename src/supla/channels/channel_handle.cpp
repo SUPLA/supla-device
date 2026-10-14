@@ -9,15 +9,20 @@
 #include <supla/element.h>
 #include <supla/events.h>
 #include <supla/protocol/protocol_layer.h>
-#include <supla/suplan/remote_resource_manager.h>
+#include <supla/channels/remote_channel_manager.h>
 #include <supla/time.h>
+#include <suplan/suplan_data.h>
 
 namespace Supla {
 ChannelHandle *ChannelHandle::first_ = nullptr;
 uint32_t ChannelHandle::nextToken_ = 0x80000000U;
-ChannelHandle::ChannelHandle(uint32_t channelId, uint8_t permissions)
+ChannelHandle::ChannelHandle(uint32_t channelId, uint8_t permissions,
+                             RemoteDelivery delivery)
     : location_(ChannelResolutionKind::kUnresolved), active_(true),
-      admitted_(false), baselineValid_(false), baselineTimed_(false) {
+      admitted_(false), baselineValid_(false), baselineTimed_(false),
+      delivery_(delivery == RemoteDelivery::SupLanPeer ||
+                delivery == RemoteDelivery::ServerStream
+                    ? delivery : static_cast<RemoteDelivery>(0)) {
   // Never recycle a token, including after storage/address reuse.
   if (nextToken_ != UINT32_MAX) token_ = ++nextToken_;
   configure(channelId, permissions);
@@ -31,7 +36,10 @@ ChannelHandle::~ChannelHandle() {
   if (*link) *link = next_;
 }
 bool ChannelHandle::configure(uint32_t id, uint8_t permissions) {
-  if (!token_ || !id || id > INT32_MAX || !permissions || (permissions & ~7))
+  if (!token_ || !id || id > INT32_MAX || !permissions || (permissions & ~7) ||
+      (delivery_ != RemoteDelivery::SupLanPeer &&
+       delivery_ != RemoteDelivery::ServerStream) ||
+      (delivery_ == RemoteDelivery::ServerStream && permissions != READ))
     return false;
   if (id_ == id && permissions_ == permissions && active_) return true;
   if (id_ != id) {
@@ -57,15 +65,15 @@ void ChannelHandle::deactivate() {
   releaseChannelConsumer(token_);
   DeleteActionsHandledBy(this);
 }
-Device::RemoteResourceManager *ChannelHandle::manager() const {
+Device::RemoteChannelManager *ChannelHandle::manager() const {
   for (auto layer = Protocol::ProtocolLayer::first(); layer;
        layer = layer->next()) {
-    if (auto resources = layer->remoteResources()) return resources;
+    if (auto resources = layer->remoteChannels()) return resources;
   }
   return nullptr;
 }
 Channel *ChannelHandle::localChannel() {
-  if (!active_) return nullptr;
+  if (!active_ || delivery_ != RemoteDelivery::SupLanPeer) return nullptr;
   const auto resolved = resolveChannelReference(
       ChannelReference::server(id_), acceptedReferenceIdentity());
   return !remoteOnly_ && resolved.kind == ChannelResolutionKind::kLocal
@@ -75,9 +83,11 @@ void ChannelHandle::reconcile() {
   if (!active_) return;
   const auto resolved = resolveChannelReference(
       ChannelReference::server(id_), acceptedReferenceIdentity());
-  const auto location = remoteOnly_ &&
-      resolved.kind == ChannelResolutionKind::kLocal
-          ? ChannelResolutionKind::kUnresolved : resolved.kind;
+  const auto location = delivery_ == RemoteDelivery::ServerStream &&
+      resolved.kind != ChannelResolutionKind::kUnresolved
+          ? ChannelResolutionKind::kRemote
+          : remoteOnly_ && resolved.kind == ChannelResolutionKind::kLocal
+              ? ChannelResolutionKind::kUnresolved : resolved.kind;
   const uint8_t localNumber = location == ChannelResolutionKind::kLocal
       ? resolved.channel->getChannelNumber() : 0xff;
   if (location != location_ || localNumber_ != localNumber) {
@@ -103,7 +113,8 @@ void ChannelHandle::reconcile() {
     if (!admitted_ && resources &&
         continuity_ == resources->admissionGeneration()) return;
     admitted_ = resources && resources->consume(
-        {token_, {SupLan::kResourceTypeChannel, id_}, permissions_, true});
+        {token_, {SupLan::kResourceTypeChannel, id_}, permissions_, true,
+         delivery_});
     if (!admitted_ && resources)
       continuity_ = resources->admissionGeneration();
   }
@@ -114,23 +125,22 @@ bool ChannelHandle::canRead() {
                                    SupLan::kPermissionControl))) return false;
   if (localChannel()) return true;
   auto resources = manager();
-  return admitted_ && resources && (resources->effectivePermissions(
-      {SupLan::kResourceTypeChannel, id_}) & SupLan::kPermissionRead);
+  return admitted_ && resources && (resources->effectivePermissions(key()) &
+                                    SupLan::kPermissionRead);
 }
 bool ChannelHandle::canControl() {
   reconcile();
   if (!active_ || !(permissions_ & SupLan::kPermissionControl)) return false;
   if (localChannel()) return true;
   auto resources = manager();
-  return admitted_ && resources && (resources->effectivePermissions(
-      {SupLan::kResourceTypeChannel, id_}) & SupLan::kPermissionControl);
+  return admitted_ && resources && (resources->effectivePermissions(key()) &
+                                    SupLan::kPermissionControl);
 }
 ChannelState ChannelHandle::state() {
   if (!canRead()) return ChannelState();
   if (auto channel = localChannel()) return ChannelState(channel);
   auto resources = manager();
-  return resources ? resources->state({SupLan::kResourceTypeChannel, id_},
-                                      millis()) : ChannelState();
+  return resources ? resources->state(key(), millis()) : ChannelState();
 }
 ChannelAccessStatus ChannelHandle::accessStatus() {
   reconcile();
@@ -143,21 +153,12 @@ ChannelAccessStatus ChannelHandle::accessStatus() {
         ? ChannelAccessStatus::INVALID
         : ChannelAccessStatus::IDENTITY_UNRESOLVED;
   }
-  if (!admitted_) return ChannelAccessStatus::RESOURCE_LIMIT;
-  const SupLan::ResourceId resource = {SupLan::kResourceTypeChannel, id_};
   auto resources = manager();
-  uint8_t desired = permissions_;
-  if (desired & SupLan::kPermissionControl) desired |= SupLan::kPermissionRead;
-  if ((resources->effectivePermissions(resource) & desired) == desired)
-    return resources->peerAvailable(resource) ? ChannelAccessStatus::READY
-        : ChannelAccessStatus::PEER_UNAVAILABLE;
-  switch (resources->approvalStatus(resource, desired)) {
-    case SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL:
-      return ChannelAccessStatus::PENDING_APPROVAL;
-    case SUPLA_SUPLAN_ACCESS_STATUS_REJECTED:
-      return ChannelAccessStatus::REJECTED;
-    default: return ChannelAccessStatus::PROVISIONING;
-  }
+  if (resources && !resources->supports(delivery_))
+    return ChannelAccessStatus::INVALID;
+  if (!admitted_) return ChannelAccessStatus::RESOURCE_LIMIT;
+  return resources ? resources->status(key(), permissions_)
+                   : ChannelAccessStatus::RESOURCE_LIMIT;
 }
 bool ChannelHandle::setValue(const uint8_t value[8], uint32_t durationMs) {
   if (!value || !canControl()) return false;
@@ -174,7 +175,7 @@ bool ChannelHandle::setValue(const uint8_t value[8], uint32_t durationMs) {
   for (uint8_t i = 0; i < 4; ++i)
     payload[5 + i] = static_cast<uint8_t>(durationMs >> (i * 8));
   memcpy(payload + 9, value, 8);
-  return manager()->control({SupLan::kResourceTypeChannel, id_}, payload,
+  return manager()->control(key(), payload,
                              sizeof(payload), token_);
 }
 bool ChannelHandle::executeAction(uint32_t actionId, const uint8_t *params,
@@ -187,7 +188,7 @@ bool ChannelHandle::executeAction(uint32_t actionId, const uint8_t *params,
     return element && element->handleRemoteAction(actionId, params, length) ==
                           SUPLA_RESULTCODE_TRUE;
   }
-  return manager()->action({SupLan::kResourceTypeChannel, id_}, actionId,
+  return manager()->action(key(), actionId,
                             params, length, token_);
 }
 void ChannelHandle::addAction(uint16_t action, ActionHandler &client,
@@ -234,7 +235,7 @@ void ChannelHandle::observe() {
   }
   const uint32_t now = millis();
   const uint32_t continuity = location_ == ChannelResolutionKind::kRemote
-      ? manager()->continuity({SupLan::kResourceTypeChannel, id_})
+      ? manager()->continuity(key())
       : Channel::identityGeneration();
   if (!continuity && location_ == ChannelResolutionKind::kRemote) {
     baselineValid_ = false;
@@ -338,7 +339,8 @@ void ChannelHandle::observe() {
   function_ = view.function();
   baselineValid_ = true;
   const auto ttl = view.validityTimeSec();
-  baselineTimed_ = ttl && ttl < INT32_MAX / 1000U;
+  baselineTimed_ = delivery_ == RemoteDelivery::SupLanPeer && ttl &&
+      ttl < INT32_MAX / 1000U;
   baselineExpires_ = baselineTimed_ ? view.receivedMs() + ttl * 1000U : 0;
   const uint32_t token = token_;
   const uint32_t sourceId = id_;
@@ -346,7 +348,7 @@ void ChannelHandle::observe() {
   for (uint8_t i = 0; i < count; ++i) {
     auto handle = after(token - 1, token);
     if (!handle || !handle->active_ || handle->id_ != sourceId ||
-        handle->continuity_ != continuity) break;
+        handle->continuity_ != continuity || !handle->canRead()) break;
     handle->runAction(events[i]);
   }
 }
@@ -368,12 +370,13 @@ void ChannelHandle::receiveAction(uint32_t channelId, uint32_t capability) {
   while (auto handle = after(token, limit)) {
     token = handle->token_;
     handle->reconcile();
-    if (handle->id_ != channelId || !handle->active_ || !handle->admitted_ ||
+    if (handle->delivery_ != RemoteDelivery::SupLanPeer ||
+        handle->id_ != channelId || !handle->active_ || !handle->admitted_ ||
         handle->location_ != ChannelResolutionKind::kRemote ||
         !(handle->permissions_ & SupLan::kPermissionAction)) continue;
     auto resources = handle->manager();
     if (resources && (resources->effectivePermissions(
-        {SupLan::kResourceTypeChannel, channelId}) & SupLan::kPermissionAction))
+        handle->key()) & SupLan::kPermissionAction))
       handle->runAction(event);
   }
 }

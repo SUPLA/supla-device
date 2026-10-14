@@ -644,9 +644,9 @@
       "name": "Supla::Device::RemoteResourceManager",
       "header": "supla/suplan/remote_resource_manager.h",
       "limits": {
-        "host": 1992,
-        "esp8266": 1972,
-        "esp32": 7732
+        "host": 2024,
+        "esp8266": 1988,
+        "esp32": 7748
       }
     },
     {

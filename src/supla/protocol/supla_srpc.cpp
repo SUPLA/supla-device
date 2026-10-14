@@ -1934,8 +1934,8 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
       serverIdentityState.registrationSucceeded();
       for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
            layer = layer->next()) {
-        if (layer->getSdc() == sdc && layer->remoteResources()) {
-          layer->remoteResources()->serverReconnected();
+        if (layer->getSdc() == sdc && layer->remoteChannels()) {
+          layer->remoteChannels()->serverReconnected();
           if (layer->resourceBindings())
             layer->resourceBindings()->serverReconnected();
         }

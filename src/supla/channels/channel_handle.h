@@ -7,6 +7,7 @@
 #include <supla/action_handler.h>
 #include <supla/channels/channel_reference.h>
 #include <supla/channels/channel_state.h>
+#include <supla/channels/remote_channel_manager.h>
 #include <supla/local_action.h>
 #include <suplan/suplan_config.h>
 
@@ -17,11 +18,6 @@ enum ChannelPermission : uint8_t {
   CONTROL = SupLan::kPermissionControl,
   ACTION = SupLan::kPermissionAction
 };
-namespace Device { class RemoteResourceManager; }
-enum class ChannelAccessStatus : uint8_t {
-  INVALID, IDENTITY_UNRESOLVED, LOCAL_CHANNEL, RESOURCE_LIMIT, PENDING_APPROVAL,
-  REJECTED, PROVISIONING, READY, PEER_UNAVAILABLE
-};
 // Non-owning, location-neutral facade. The application owns its lifetime.
 // Construct/delete/configure in ordinary loop context, never from an ISR.
 // deactivate() is also safe inside an action callback; delete later in loop.
@@ -31,7 +27,8 @@ enum class ChannelAccessStatus : uint8_t {
 class ChannelHandle : public LocalAction, public ActionHandler,
                       public ChannelStateProvider {
  public:
-  ChannelHandle(uint32_t channelId, uint8_t permissions);
+  ChannelHandle(uint32_t channelId, uint8_t permissions,
+                RemoteDelivery delivery = RemoteDelivery::SupLanPeer);
   ~ChannelHandle() override;
   ChannelHandle(const ChannelHandle &) = delete;
   ChannelHandle &operator=(const ChannelHandle &) = delete;
@@ -53,6 +50,7 @@ class ChannelHandle : public LocalAction, public ActionHandler,
                  Condition *condition, bool alwaysEnabled = false);
   void handleAction(int event, int action) override;
   uint32_t channelId() const { return id_; }
+  RemoteDelivery delivery() const { return delivery_; }
   static void iterateAll();
   static void receiveAction(uint32_t channelId, uint32_t capability);
 
@@ -63,7 +61,8 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   void reconcile();
   void observe();
   void baselineConditions();
-  Device::RemoteResourceManager *manager() const;
+  Device::RemoteChannelManager *manager() const;
+  RemoteChannelKey key() const { return {id_, delivery_}; }
   static ChannelHandle *after(uint32_t token, uint32_t limit);
   static ChannelHandle *first_;
   static uint32_t nextToken_;
@@ -82,6 +81,7 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   uint8_t admitted_ : 1;
   uint8_t baselineValid_ : 1;
   uint8_t baselineTimed_ : 1;
+  RemoteDelivery delivery_ : 2;
 };
 class RemoteChannel : public ChannelHandle {
  public:

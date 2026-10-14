@@ -1517,6 +1517,38 @@ TEST(ChannelHandle, BeforeIdentityNoSlotsOrSpeculativeLocalChannel) {
   EXPECT_EQ(resources.consumerCount(), 0);
   EXPECT_EQ(port.requests, 0);
 }
+TEST(ChannelHandle, FutureStreamSelectorCannotConsumePeerOrLocalCache) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualThermometer first, second;
+  SuplaDeviceClass device;
+  DependencySrpc protocol(&device);
+  bootstrapIdentity(&protocol.serverIdentity(), &storage);
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager resources(&peers, nullptr, &port);
+  protocol.resources = &resources;
+  ChannelHandle invalid(1001, kPermissionRead,
+                        static_cast<RemoteDelivery>(5));
+  EXPECT_EQ(invalid.accessStatus(), ChannelAccessStatus::INVALID);
+  EXPECT_FALSE(invalid.canRead());
+  ChannelHandle future(1001, kPermissionRead, RemoteDelivery::ServerStream);
+  EXPECT_FALSE(future.canRead());
+  EXPECT_FALSE(future.state().available());
+  EXPECT_EQ(future.accessStatus(), ChannelAccessStatus::INVALID);
+  EXPECT_FALSE(future.configure(1001, kPermissionControl));
+  ChannelHandle sameDevice(601, kPermissionRead, RemoteDelivery::ServerStream);
+  EXPECT_EQ(sameDevice.localChannel(), nullptr);
+  EXPECT_EQ(sameDevice.accessStatus(), ChannelAccessStatus::INVALID);
+  resources.iterate(0);
+  EXPECT_EQ(resources.consumerCount(), 0);
+  EXPECT_EQ(resources.resourceCount(), 0);
+  EXPECT_EQ(port.requests, 0);
+  ChannelHandle local(601, kPermissionRead);
+  EXPECT_EQ(local.localChannel(), first.getChannel());
+  EXPECT_TRUE(local.canRead());
+}
 TEST(ChannelHandle, LocalFacadeOwnsOnlyItsTrampolineAndNeverEnsures) {
   resetChannels();
   SimpleTime time;
@@ -1817,6 +1849,39 @@ struct HandleLifecycleEnvironment {
     ChannelHandle::iterateAll();
   }
 };
+
+TEST(ChannelHandle, CallbackDroppingReadStopsRemainingValueEvents) {
+  HandleLifecycleEnvironment env;
+  ChannelHandle handle(1001, kPermissionRead);
+  class DropRead : public ActionHandler {
+   public:
+    explicit DropRead(ChannelHandle *source) : source(source) {}
+    void handleAction(int, int) override {
+      ++calls;
+      EXPECT_TRUE(source->configure(1001, kPermissionAction));
+    }
+    ChannelHandle *source;
+    int calls = 0;
+  } drop(&handle);
+  HandleCounter turnedOn;
+  handle.addAction(1, drop, ON_CHANGE);
+  handle.addAction(2, turnedOn, ON_TURN_ON);
+  ChannelHandle::iterateAll();
+  TDS_SuplaDeviceChannel_E snapshot = {};
+  snapshot.Number = 0xff;
+  snapshot.Type = SUPLA_CHANNELTYPE_BINARYSENSOR;
+  snapshot.Default = SUPLA_CHANNELFNC_BINARY_SENSOR;
+  env.resources.receive(env.peer, {kResourceTypeChannel, 1001},
+      reinterpret_cast<const uint8_t *>(&snapshot), sizeof(snapshot), 0);
+  ChannelHandle::iterateAll();
+  snapshot.value[0] = 1;
+  env.resources.receive(env.peer, {kResourceTypeChannel, 1001},
+      reinterpret_cast<const uint8_t *>(&snapshot), sizeof(snapshot), 0);
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(drop.calls, 1);
+  EXPECT_EQ(turnedOn.count, 0);
+  EXPECT_FALSE(handle.canRead());
+}
 
 TEST(ChannelHandle, LocalRemoteLocalDropsBothOldTrampolinesAndLateSnapshots) {
   HandleLifecycleEnvironment env;

@@ -9,7 +9,7 @@
 #include <supla/time.h>
 #ifndef ARDUINO_ARCH_AVR
 #include <supla/suplan/suplan_server_identity.h>
-#include <supla/suplan/remote_resource_manager.h>
+#include <supla/channels/remote_channel_manager.h>
 #include <SuplaDevice.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/suplan/bootstrap.h>
@@ -46,7 +46,7 @@ void releaseChannelConsumer(uint32_t consumer) {
 #ifndef ARDUINO_ARCH_AVR
   for (auto layer = Protocol::ProtocolLayer::first(); layer;
        layer = layer->next()) {
-    if (auto manager = layer->remoteResources()) manager->remove(consumer);
+    if (auto manager = layer->remoteChannels()) manager->remove(consumer);
   }
 #else
   (void)consumer;
@@ -61,13 +61,14 @@ ChannelState consumeChannelState(ChannelReference reference,
   if (resolved.kind == ChannelResolutionKind::kRemote) {
     for (auto layer = Protocol::ProtocolLayer::first(); layer;
          layer = layer->next()) {
-      if (auto manager = layer->remoteResources()) {
+      if (auto manager = layer->remoteChannels()) {
         const SupLan::ResourceId resource = {SupLan::kResourceTypeChannel,
                                              resolved.resourceId};
         // Never borrow another consumer's cache when this demand has no slot.
         if (!manager->consume({consumer, resource, SupLan::kPermissionRead}))
           return ChannelState();
-        return manager->state(resource, millis());
+        return manager->state({resolved.resourceId, RemoteDelivery::SupLanPeer},
+                              millis());
       }
     }
   }

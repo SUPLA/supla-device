@@ -397,6 +397,7 @@ if(SUPLAN_ASSOCIATION_PROFILE_TESTS)
     SupLanTests/m4b_device_tests.cpp
     SupLanTests/channel_dependency_tests.cpp ${DOUBLE_SRC}
     SupLanTests/suplan_runtime_tests.cpp SupLanTests/m5b_sdk_tests.cpp
+    SupLanTests/remote_channel_manager_tests.cpp
     ../porting/linux/suplan_crypto_openssl.cpp
     doubles/crypto_test_hooks.cpp)
   target_include_directories(suplanassociationprofiletests PRIVATE

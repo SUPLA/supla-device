@@ -9,6 +9,9 @@ class RemoteAccessPort {
  public:
   virtual ~RemoteAccessPort() = default;
   virtual bool ensure(const TDS_SuplaEnsureResourceAccess &) { return false; }
+  // ENSURE_RESULT has no resource/correlation ID. Cancellation must drain or
+  // quarantine the old wire reply before another request can be admitted.
+  // SuplaSrpc preserves its pending-response tombstone until reply/disconnect.
   virtual void cancelEnsure() {}
   virtual bool share(const TDS_SuplaEnsureResourceShare &) { return false; }
   virtual void cancelShare() {}

@@ -67,7 +67,7 @@ bool ChannelState::available() const {
            !local_->isStateOnlineAndNotAvailable() &&
            !local_->isStateFirmwareUpdateOngoing();
   }
-  return snapshot_ && usable_ &&
+  return current() && snapshot_ && usable_ &&
          snapshot_->Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
 }
 bool ChannelState::availableFor(ChannelCapability capability) const {
@@ -132,16 +132,17 @@ bool ChannelState::hvac(THVACValue *result) const {
 }
 bool ChannelState::offline() const { return !available(); }
 uint32_t ChannelState::type() const {
-  return local_ ? local_->getChannelType() : snapshot_ ? snapshot_->Type : 0;
+  return local_ ? local_->getChannelType()
+                : current() && snapshot_ ? snapshot_->Type : 0;
 }
 uint32_t ChannelState::function() const {
   return local_      ? local_->getDefaultFunction()
-         : snapshot_ ? snapshot_->Default
+         : current() && snapshot_ ? snapshot_->Default
                      : 0;
 }
 uint32_t ChannelState::validityTimeSec() const {
   return local_      ? local_->getValidityTimeSec()
-         : snapshot_ ? snapshot_->ValueValidityTimeSec
+         : current() && snapshot_ ? snapshot_->ValueValidityTimeSec
                      : 0;
 }
 bool ChannelState::value(uint8_t output[8]) const {

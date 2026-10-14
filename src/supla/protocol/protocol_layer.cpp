@@ -4,6 +4,9 @@
 #include <SuplaDevice.h>
 
 #include "protocol_layer.h"
+#ifndef ARDUINO_ARCH_AVR
+#include <supla/suplan/remote_resource_manager.h>
+#endif
 
 namespace Supla {
 namespace Protocol {
@@ -170,3 +173,12 @@ void ProtocolLayer::sendChannelStateResult(int32_t, uint8_t) {
 
 }  // namespace Protocol
 }  // namespace Supla
+
+Supla::Device::RemoteChannelManager *Supla::Protocol::ProtocolLayer::
+    remoteChannels() {
+#ifndef ARDUINO_ARCH_AVR
+  return remoteResources();
+#else
+  return nullptr;
+#endif
+}

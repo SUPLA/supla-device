@@ -185,6 +185,10 @@ bool SupLan::iterate(uint32_t nowMs) {
     return false;
   }
 
+  // Resource orchestration, especially SRPC STREAM, is independent of the
+  // UDP transport being open. D2D refresh remains in its own backend.
+  suplanIdentityChanged();
+  if (resources_) resources_->iterate(nowMs);
   if (transport_ != nullptr) {
     if (!transport_->networkReady(nowMs)) {
       if (transport_->isOpen() || transportWasOpen_) {
@@ -211,8 +215,6 @@ bool SupLan::iterate(uint32_t nowMs) {
     transportWasOpen_ = true;
   }
 
-  suplanIdentityChanged();
-  if (resources_) resources_->iterate(nowMs);
   if (resources_ && resources_->bindings) resources_->bindings->iterate(nowMs);
   if (resources_ &&
       (resources_->presence().resetPending_ ||
@@ -650,6 +652,11 @@ void SupLan::sendChannelMetadataChanged(uint8_t number) {
   sendChannelValueChanged(number, ignored, 0, 0);
 }
 
+bool SupLan::prepareBackend(uint8_t delivery,
+    Device::RemoteChannelManager *manager) {
+  return delivery == SUPLA_RESOURCE_DELIVERY_SERVER_STREAM && sdc &&
+      sdc->getSrpcLayer() && sdc->getSrpcLayer()->prepareServerStream(manager);
+}
 bool SupLan::ensure(const TDS_SuplaEnsureResourceAccess &request) {
   return sdc && sdc->getSrpcLayer() &&
          sdc->getSrpcLayer()->ensureResourceAccess(request);

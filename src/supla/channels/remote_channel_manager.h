@@ -64,11 +64,26 @@ struct RemoteChannelResource {
 class RemoteChannelBackend {
  public:
   virtual ~RemoteChannelBackend() = default;
+  // Fixed D2D slots permit a direct generation guard without a cache lookup.
+  // A backend freeing nodes must use the manager guard instead.
+  virtual bool stableStorage() const { return true; }
   virtual int capacity() const = 0;
   virtual int consumerCapacity() const { return capacity(); }
   virtual ConsumeIntent &intentAt(int index) = 0;
   virtual RemoteChannelResource &resourceAt(int index) = 0;
   virtual void clearResource(int index) = 0;
+  virtual bool allocateResource(int index) {
+    clearResource(index);
+    return true;
+  }
+  virtual bool storeIntent(int index, const ConsumeIntent &intent) {
+    intentAt(index) = intent;
+    return true;
+  }
+  virtual void detached() {}
+  virtual void ensureStarted(RemoteChannelResource &) {}
+  virtual void ensureCompleted(RemoteChannelResource &,
+      const TSD_SuplaEnsureResourceAccessResult &) {}
   virtual void reconcileResource(RemoteChannelResource &resource) = 0;
   virtual void releaseResource(RemoteChannelResource &resource) = 0;
   virtual void cancelControls(uint32_t owner) = 0;
@@ -86,6 +101,7 @@ class RemoteChannelBackend {
 };
 
 class RemoteChannelManager {
+  friend class ServerStreamBackend;
  public:
   explicit RemoteChannelManager(RemoteAccessPort *access) : access_(access) {}
   RemoteChannelManager(const RemoteChannelManager &) = delete;
@@ -110,6 +126,12 @@ class RemoteChannelManager {
               size_t length, uint32_t owner = 0);
   void ensureResult(const TSD_SuplaEnsureResourceAccessResult &result);
   void serverReconnected();
+  // A readiness transition can unblock admission without freeing a pool slot.
+  // Do not reset active demand, cache continuity or the pending ENSURE slot.
+  void retryDeferredConsumers() {
+    if (nextGeneration_ != UINT32_MAX) ++nextGeneration_;
+  }
+  bool currentGeneration(uint32_t generation) const;
   int consumerCount() const;
   bool hasConsumer(uint32_t consumer) const;
   int resourceCount() const;

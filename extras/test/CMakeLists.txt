@@ -398,6 +398,7 @@ if(SUPLAN_ASSOCIATION_PROFILE_TESTS)
     SupLanTests/channel_dependency_tests.cpp ${DOUBLE_SRC}
     SupLanTests/suplan_runtime_tests.cpp SupLanTests/m5b_sdk_tests.cpp
     SupLanTests/remote_channel_manager_tests.cpp
+    SupLanTests/server_stream_tests.cpp
     ../porting/linux/suplan_crypto_openssl.cpp
     doubles/crypto_test_hooks.cpp)
   target_include_directories(suplanassociationprofiletests PRIVATE
@@ -495,3 +496,13 @@ if(SUPLAN_TEST_BEARSSL_SOURCE)
     gtest_main OpenSSL::Crypto suplan_test_bearssl)
   add_test(NAME suplanbearsslrxtests COMMAND suplanbearsslrxtests)
 endif()
+
+# Exercise call 1380's actual shared parser separately from SDK SRPC doubles.
+add_executable(serverstreamwiretests
+  ServerStreamWireTests/server_stream_wire_tests.cpp
+  ../../src/supla-common/srpc.c ../../src/supla-common/proto.c
+  ../../src/supla-common/lck.c ../../src/supla-common/log.c)
+target_include_directories(serverstreamwiretests PRIVATE ../../src)
+target_compile_definitions(serverstreamwiretests PRIVATE SUPLA_DEVICE)
+target_link_libraries(serverstreamwiretests PRIVATE gtest_main)
+add_test(NAME serverstreamwiretests COMMAND serverstreamwiretests)

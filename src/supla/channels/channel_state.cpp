@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "channel_state.h"
+#ifndef ARDUINO_ARCH_AVR
+#include <supla/channels/remote_channel_manager.h>
+#endif
 
 #include <math.h>
 #include <string.h>
@@ -61,6 +64,16 @@ bool buildChannelSnapshot(Channel *channel, TDS_SuplaDeviceChannel_E *output) {
   return true;
 }
 
+bool ChannelState::current() const {
+#ifndef ARDUINO_ARCH_AVR
+  if (managerGuard_)
+    return manager_ && manager_->currentGeneration(expectedGeneration_);
+  return !generation_ || (expectedGeneration_ &&
+                          *generation_ == expectedGeneration_);
+#else
+  return true;
+#endif
+}
 bool ChannelState::available() const {
   if (local_) {
     return local_->isStateOnline() &&

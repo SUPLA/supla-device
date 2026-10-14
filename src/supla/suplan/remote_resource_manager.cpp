@@ -11,6 +11,7 @@ RemoteResourceManager::RemoteResourceManager(SupLan::PeerTable *peers,
   registerBackend(RemoteDelivery::SupLanPeer, this);
 }
 RemoteResourceManager::~RemoteResourceManager() {
+  unregisterBackend(RemoteDelivery::ServerStream);
   unregisterBackend(RemoteDelivery::SupLanPeer);
 }
 RemoteResourceManager::Resource *RemoteResourceManager::find(

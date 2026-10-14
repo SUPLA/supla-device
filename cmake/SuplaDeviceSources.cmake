@@ -210,6 +210,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplan/resource_binding_manager.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel_reference.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel_state.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/channels/server_stream_backend.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/remote_channel_manager.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel_handle.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/group_button_control_rgbw.cpp

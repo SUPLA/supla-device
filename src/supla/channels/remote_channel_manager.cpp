@@ -47,6 +47,7 @@ void RemoteChannelManager::unregisterBackend(RemoteDelivery mode) {
   }
   for (int i = 0; i < 2; ++i)
     if (kDeliveries[i] == mode) backends_[i] = nullptr;
+  adapter->detached();
 }
 RemoteChannelResource *RemoteChannelManager::findResource(
     RemoteChannelKey key) const {
@@ -66,6 +67,9 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
   if (intent.delivery == RemoteDelivery::ServerStream &&
       intent.permissions != SupLan::kPermissionRead) return false;
   auto adapter = backend(intent.delivery);
+  if (!adapter && access_ &&
+      access_->prepareBackend(static_cast<uint8_t>(intent.delivery), this))
+    adapter = backend(intent.delivery);
   if (!adapter) return false;
   // The owner token denotes exactly one contribution, including its mode.
   for (auto other : backends_) {
@@ -76,7 +80,7 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
         break;
       }
   }
-  ConsumeIntent *slot = nullptr;
+  int slot = -1;
   for (int i = 0; i < adapter->consumerCapacity(); ++i) {
     auto &entry = adapter->intentAt(i);
     if (entry.consumerId == intent.consumerId) {
@@ -87,7 +91,7 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
         if ((entry.permissions & SupLan::kPermissionControl) &&
             !(intent.permissions & SupLan::kPermissionControl))
           adapter->cancelControls(intent.consumerId);
-        entry = intent;
+        if (!adapter->storeIntent(i, intent)) return false;
         auto resource = findResource({intent.resource.id, intent.delivery});
         if (!resource) return false;
         const uint8_t previous = resource->manualPermissions;
@@ -100,12 +104,12 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
         return true;
       }
       remove(intent.consumerId);
-      slot = &entry;
+      slot = i;
       break;
     }
-    if (!entry.consumerId) slot = &entry;
+    if (!entry.consumerId) slot = i;
   }
-  if (!slot) {
+  if (slot < 0) {
     admissionExhausted_ = true;
     return false;
   }
@@ -113,9 +117,12 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
   if (!resource) {
     for (int i = 0; i < adapter->capacity(); ++i) {
       if (!adapter->resourceAt(i).used()) {
-        adapter->clearResource(i);
-        resource = &adapter->resourceAt(i);
         if (nextGeneration_ == UINT32_MAX) return false;
+        if (!adapter->allocateResource(i)) {
+          admissionExhausted_ = true;
+          return false;
+        }
+        resource = &adapter->resourceAt(i);
         resource->generation = ++nextGeneration_;
         resource->id = intent.resource;
         break;
@@ -126,7 +133,18 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
     admissionExhausted_ = true;
     return false;
   }
-  *slot = intent;
+  if (!adapter->storeIntent(slot, intent)) {
+    // No consumer owns a freshly allocated entry yet.
+    if (!resource->permissions) {
+      for (int i = 0; i < adapter->capacity(); ++i)
+        if (&adapter->resourceAt(i) == resource) {
+          adapter->clearResource(i);
+          break;
+        }
+    }
+    admissionExhausted_ = true;
+    return false;
+  }
   const uint8_t previous = resource->manualPermissions;
   demand(resource, intent.delivery);
   if (previous != resource->manualPermissions)
@@ -142,7 +160,7 @@ void RemoteChannelManager::remove(uint32_t consumerId) {
     for (int i = 0; i < adapter->consumerCapacity(); ++i) {
       auto &intent = adapter->intentAt(i);
       if (intent.consumerId == consumerId) {
-        intent = {};
+        adapter->storeIntent(i, {});
         if (nextGeneration_ != UINT32_MAX) ++nextGeneration_;
       }
     }
@@ -250,6 +268,7 @@ void RemoteChannelManager::iterate(uint32_t nowMs) {
         ensureNextMs_ = nowMs + 10000;
         ensureResource_ = {resource.id.id, kDeliveries[mode]};
         ensurePermissions_ = request.Permissions;
+        adapter->ensureStarted(resource);
         if (manual) resource.manualAttempted = true;
         resource.ensureAttempted =
             !manual || request.Permissions == resource.permissions;
@@ -263,8 +282,11 @@ ChannelState RemoteChannelManager::state(RemoteChannelKey key, uint32_t nowMs) {
   auto resource = findResource(key);
   if (!resource) return ChannelState();
   backend(key.delivery)->reconcileResource(*resource);
+  if (backend(key.delivery)->stableStorage())
+    return ChannelState(&resource->snapshot, usable(key, *resource, nowMs),
+                        resource->receivedMs, &resource->generation);
   return ChannelState(&resource->snapshot, usable(key, *resource, nowMs),
-                      resource->receivedMs, &resource->generation);
+                      resource->receivedMs, this, resource->generation);
 }
 RemoteAccess RemoteChannelManager::access(RemoteChannelKey key) {
   auto resource = findResource(key);
@@ -345,8 +367,9 @@ void RemoteChannelManager::acceptSnapshot(RemoteChannelResource *resource,
   TDS_SuplaDeviceChannel_E snapshot;
   memcpy(&snapshot, payload, sizeof(snapshot));
   if (snapshot.Number != 0xff) return;
-  if (snapshot.Offline != SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE &&
-      resource->hasSnapshot) invalidate(resource);
+  if ((snapshot.Offline != SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE ||
+       snapshot.Default == SUPLA_CHANNELFNC_NONE) && resource->hasSnapshot)
+    invalidate(resource);
   resource->snapshot = snapshot;
   resource->receivedMs = nowMs;
   resource->continuityPending = false;
@@ -360,6 +383,7 @@ void RemoteChannelManager::ensureResult(
   ensureNextMs_ = 0;
   auto resource = findResource(ensureResource_);
   if (!resource) return;
+  backend(ensureResource_.delivery)->ensureCompleted(*resource, result);
   backend(ensureResource_.delivery)->reconcileResource(*resource);
   resource->approval = result.AccessStatus;
   resource->approvalPermissions = ensurePermissions_;
@@ -369,6 +393,7 @@ void RemoteChannelManager::ensureResult(
     resource->access = RemoteAccess::BLOCKED;
 }
 void RemoteChannelManager::serverReconnected() {
+  retryDeferredConsumers();
   ensurePending_ = false;
   ensureNextMs_ = 0;
   for (auto adapter : backends_) {
@@ -382,6 +407,23 @@ void RemoteChannelManager::serverReconnected() {
         resource.access = RemoteAccess::PENDING;
     }
   }
+}
+bool RemoteChannelManager::currentGeneration(uint32_t generation) const {
+  if (!generation) return false;
+  for (auto adapter : backends_) {
+    if (!adapter) continue;
+    for (int i = 0; i < adapter->capacity(); ++i) {
+      auto &resource = adapter->resourceAt(i);
+      if (resource.used() && resource.generation == generation) {
+        adapter->reconcileResource(resource);
+        return resource.generation == generation && resource.hasSnapshot &&
+            (resource.effective & resource.permissions &
+             SupLan::kPermissionRead) &&
+            resource.snapshot.Default != SUPLA_CHANNELFNC_NONE;
+      }
+    }
+  }
+  return false;
 }
 int RemoteChannelManager::consumerCount() const {
   int count = 0;

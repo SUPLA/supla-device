@@ -5,9 +5,13 @@
 #include <supla-common/proto.h>
 namespace Supla {
 namespace Device {
+class RemoteChannelManager;
 class RemoteAccessPort {
  public:
   virtual ~RemoteAccessPort() = default;
+  virtual bool prepareBackend(uint8_t, RemoteChannelManager *) {
+    return false;
+  }
   virtual bool ensure(const TDS_SuplaEnsureResourceAccess &) { return false; }
   // ENSURE_RESULT has no resource/correlation ID. Cancellation must drain or
   // quarantine the old wire reply before another request can be admitted.

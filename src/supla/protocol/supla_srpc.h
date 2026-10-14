@@ -21,6 +21,7 @@ class Client;
 
 namespace Device {
 class ChannelConflictResolver;
+class ServerStreamBackend;
 class RemoteDeviceConfig;
 }  // namespace Device
 
@@ -127,6 +128,13 @@ class SuplaSrpc : public ProtocolLayer {
       TSD_SuplaRegisterDeviceResult_B *registerDeviceResultB);
   void onDeviceSyncDone();
   bool acceptEnsureResult();
+#ifndef ARDUINO_ARCH_AVR
+  bool serverStreamReady();
+  bool prepareServerStream(Device::RemoteChannelManager *manager);
+  bool onRemoteChannelState(const TSD_SuplaRemoteChannelState *state);
+  size_t serverStreamAllocatedBytes() const;
+#endif
+  bool ownsSrpc(void *handle) const { return srpc && srpc == handle; }
   void cancelEnsureResourceShare() {
     if (shareResponsePending) discardShareResponse = true;
   }
@@ -258,6 +266,7 @@ class SuplaSrpc : public ProtocolLayer {
  private:
 #ifndef ARDUINO_ARCH_AVR
   Supla::Device::ServerIdentity serverIdentityState;
+  Supla::Device::ServerStreamBackend *serverStream = nullptr;
 #endif  // !ARDUINO_ARCH_AVR
   void releaseOwnedCertificate();
   void handlePendingCalCfgTimeouts(uint32_t _millis);

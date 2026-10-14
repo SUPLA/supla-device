@@ -666,6 +666,24 @@
         "esp8266": 160,
         "esp32": 448
       }
+    },
+    {
+      "name": "Supla::ServerRemoteChannel",
+      "header": "supla/channels/server_remote_channel.h",
+      "limits": {
+        "host": 80,
+        "esp8266": 56,
+        "esp32": 56
+      }
+    },
+    {
+      "name": "Supla::Device::ServerStreamBackend",
+      "header": "supla/channels/server_stream_backend.h",
+      "limits": {
+        "host": 104,
+        "esp8266": 88,
+        "esp32": 88
+      }
     }
   ]
 }

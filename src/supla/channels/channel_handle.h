@@ -83,6 +83,11 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   uint8_t baselineTimed_ : 1;
   RemoteDelivery delivery_ : 2;
 };
+class ServerRemoteChannel : public ChannelHandle {
+ public:
+  explicit ServerRemoteChannel(uint32_t id)
+      : ChannelHandle(id, READ, RemoteDelivery::ServerStream) {}
+};
 class RemoteChannel : public ChannelHandle {
  public:
   RemoteChannel(uint32_t channelId, uint8_t permissions)

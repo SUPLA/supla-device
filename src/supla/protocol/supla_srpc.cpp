@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+#include <supla/channels/server_stream_backend.h>
+#endif
 #include "supla_srpc.h"
 
 #ifndef __STDC_FORMAT_MACROS
@@ -1244,6 +1247,10 @@ bool Supla::Protocol::SuplaSrpc::isSensitiveCallId(int callId) {
 #endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS
 
 Supla::Protocol::SuplaSrpc::~SuplaSrpc() {
+#ifndef ARDUINO_ARCH_AVR
+  delete serverStream;
+  serverStream = nullptr;
+#endif
   if (client) {
     client->stop();
     delete client;
@@ -1500,6 +1507,9 @@ void Supla::messageReceived(void *srpc,
   Supla::Protocol::SuplaSrpc *suplaSrpc =
       reinterpret_cast<Supla::Protocol::SuplaSrpc *>(userParam);
 
+  // SRPC callbacks are synchronous on their owning parser. Retired parsers
+  // must never update the live connection's transactions or stream cache.
+  if (srpc && !suplaSrpc->ownsSrpc(srpc)) return;
   suplaSrpc->updateLastResponseTime();
 
   if (SUPLA_RESULT_TRUE == (getDataResult = srpc_getdata(srpc, &rd, 0))) {
@@ -1524,6 +1534,13 @@ void Supla::messageReceived(void *srpc,
             }
           }
         }
+        break;
+
+      case SUPLA_SD_CALL_REMOTE_CHANNEL_STATE:
+#ifndef ARDUINO_ARCH_AVR
+        if (protoVersion >= 29 && suplaSrpc->ownsSrpc(srpc))
+          suplaSrpc->onRemoteChannelState(rd.data.sd_remote_channel_state);
+#endif
         break;
 
       case SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_SHARE_RESULT:
@@ -2184,10 +2201,18 @@ void Supla::Protocol::SuplaSrpc::onDeviceSyncDone() {
       return;
     }
   }
+  const bool wasSyncComplete = serverIdentityState.serverSyncComplete();
   serverIdentityState.syncDone();
+  const bool syncBecameReady =
+      !wasSyncComplete && serverIdentityState.serverSyncComplete();
   for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
                layer = layer->next()) {
-    if (layer->getSdc() == sdc) layer->suplanIdentityChanged();
+    if (layer->getSdc() != sdc) continue;
+    layer->suplanIdentityChanged();
+    if (syncBecameReady) {
+      if (auto manager = layer->remoteChannels())
+        manager->retryDeferredConsumers();
+    }
   }
 #endif  // !ARDUINO_ARCH_AVR
   deviceSyncDoneReceived = true;
@@ -3394,6 +3419,7 @@ void Supla::Protocol::SuplaSrpc::initializeSrpc() {
 
 void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
 #ifndef ARDUINO_ARCH_AVR
+  if (serverStream) serverStream->disconnected();
   shareResponsePending = false;
   ensureResponsePending = false;
   discardShareResponse = false;
@@ -3448,7 +3474,13 @@ bool Supla::Protocol::SuplaSrpc::ensureResourceAccess(
 #ifndef ARDUINO_ARCH_AVR
   if (effectiveSrpcVersion(version) < 29 || !serverIdentityState.capable() ||
       !isRegisteredAndReady() || !serverIdentityState.serverSyncComplete() ||
-      request.DeliveryMode != SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER ||
+      (request.DeliveryMode != SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER &&
+       request.DeliveryMode != SUPLA_RESOURCE_DELIVERY_SERVER_STREAM) ||
+      (request.DeliveryMode == SUPLA_RESOURCE_DELIVERY_SERVER_STREAM &&
+       (!serverStreamReady() ||
+        request.Resource.ResourceType != SUPLA_SUPLAN_RESOURCE_TYPE_CHANNEL ||
+        request.Resource.ResourceId <= 0 ||
+        request.Permissions != SUPLA_SUPLAN_PERMISSION_READ)) ||
       (request.Flags & ~SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL) ||
       ensureResponsePending) return false;
   auto wire = request;
@@ -3474,3 +3506,39 @@ bool Supla::Protocol::SuplaSrpc::acceptEnsureResult() {
   discardEnsureResponse = false;
   return accept;
 }
+
+#ifndef ARDUINO_ARCH_AVR
+bool Supla::Protocol::SuplaSrpc::serverStreamReady() {
+  return srpc && isConnected() && effectiveSrpcVersion(version) >= 29 &&
+      isRegisteredAndReady() && serverIdentityState.capable() &&
+      serverIdentityState.serverSyncComplete() &&
+      Supla::Device::hasSupLanServerStack(sdc);
+}
+bool Supla::Protocol::SuplaSrpc::prepareServerStream(
+    Device::RemoteChannelManager *manager) {
+  if (!manager || !serverStreamReady()) return false;
+  if (serverStream && !serverStream->attached()) {
+    delete serverStream;
+    serverStream = nullptr;
+  }
+  if (serverStream && !serverStream->attachedTo(manager)) return false;
+  if (!serverStream) {
+    serverStream =
+        new (std::nothrow) Device::ServerStreamBackend(manager, this);
+    if (!serverStream) return false;
+    if (!manager->registerBackend(RemoteDelivery::ServerStream, serverStream)) {
+      delete serverStream;
+      serverStream = nullptr;
+      return false;
+    }
+  }
+  return manager->supports(RemoteDelivery::ServerStream);
+}
+bool Supla::Protocol::SuplaSrpc::onRemoteChannelState(
+    const TSD_SuplaRemoteChannelState *state) {
+  return state && serverStream && serverStream->receive(*state, millis());
+}
+size_t Supla::Protocol::SuplaSrpc::serverStreamAllocatedBytes() const {
+  return serverStream ? serverStream->allocatedBytes() : 0;
+}
+#endif

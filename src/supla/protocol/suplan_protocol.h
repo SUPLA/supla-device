@@ -105,6 +105,8 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   bool bindingSessionNeeded(uint8_t peer) override;
   uint8_t receiveBindings(uint8_t peer, const uint8_t *body,
                          size_t length) override;
+  bool prepareBackend(uint8_t delivery,
+      Device::RemoteChannelManager *manager) override;
   bool share(const TDS_SuplaEnsureResourceShare &request) override;
   void cancelShare() override;
   void ensureResourceShareResult(

@@ -9,6 +9,7 @@
 
 namespace Supla {
 class Channel;
+namespace Device { class RemoteChannelManager; }
 
 enum class ChannelCapability : uint8_t {
   Temperature, BinaryState, FloodDetection, ContainerLevel, HvacMaster,
@@ -34,6 +35,16 @@ class ChannelState {
     (void)generation;
 #endif
   }
+#ifndef ARDUINO_ARCH_AVR
+  // Dynamic slots use the manager's stable lifetime, never a pointer into a
+  // freed cache node. The manager must outlive this borrowed view.
+  ChannelState(const TDS_SuplaDeviceChannel_E *snapshot, bool usable,
+               uint32_t receivedMs,
+               const Device::RemoteChannelManager *manager, uint32_t generation)
+      : snapshot_(snapshot), usable_(usable), managerGuard_(true),
+        receivedMs_(receivedMs), manager_(manager),
+        expectedGeneration_(generation) {}
+#endif
   bool available() const;
   bool availableFor(ChannelCapability capability) const;
   bool binary(bool *result) const;
@@ -56,19 +67,18 @@ class ChannelState {
   Channel *local_ = nullptr;
   const TDS_SuplaDeviceChannel_E *snapshot_ = nullptr;
   bool usable_ = false;
+#ifndef ARDUINO_ARCH_AVR
+  bool managerGuard_ = false;
+#endif
   uint32_t receivedMs_ = 0;
 #ifndef ARDUINO_ARCH_AVR
-  const uint32_t *generation_ = nullptr;
+  union {
+    const uint32_t *generation_ = nullptr;
+    const Device::RemoteChannelManager *manager_;
+  };
   uint32_t expectedGeneration_ = 0;
 #endif
-  bool current() const {
-#ifndef ARDUINO_ARCH_AVR
-    return !generation_ || (expectedGeneration_ &&
-                            *generation_ == expectedGeneration_);
-#else
-    return true;
-#endif
-  }
+  bool current() const;
 };
 class ChannelStateProvider {
  public:

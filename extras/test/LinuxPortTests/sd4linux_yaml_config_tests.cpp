@@ -506,9 +506,13 @@ TEST(Sd4linuxYamlConfigTests, RejectsQosForMqttSource) {
 }
 
 TEST(Sd4linuxYamlConfigTests, UnusedMqttDoesNotRequireSecurityFields) {
+  ASSERT_EQ(Supla::Element::begin(), nullptr);
   TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
   config.config = YAML::Load("channels: [{type: VirtualRelay}]");
   EXPECT_TRUE(config.loadChannels());
+  deleteCreatedElement(previousElement);
+  ASSERT_EQ(Supla::Element::begin(), nullptr);
 }
 
 TEST(Sd4linuxYamlConfigTests, RequiresExplicitMqttSecurityForSourceAndOutput) {

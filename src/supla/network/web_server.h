@@ -18,7 +18,8 @@ class SuplaDeviceClass;
 namespace Supla {
 
 extern const unsigned char favico[1150];
-constexpr size_t REDACTED_LOG_VALUE_BUFFER_SIZE = 32;
+// 20 decimal digits for a 64-bit size_t, plus the wrapper and terminating NUL.
+constexpr size_t REDACTED_LOG_VALUE_BUFFER_SIZE = 36;
 
 bool isSensitiveLogField(const char *key);
 const char *redactLogValue(const char *key,

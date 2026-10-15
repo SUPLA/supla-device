@@ -15,6 +15,7 @@ class RemoteResourceManager : public RemoteChannelManager,
                               private RemoteChannelBackend {
  public:
   static const int kCapacity = SUPLAN_MAX_READ_DEPENDENCIES;
+  static const int kConsumerCapacity = SUPLAN_MAX_D2D_CONSUMERS;
   struct Presence {
     uint32_t awakeUntilMs_ = 0;
     uint32_t nextPresenceMs_ = 0;
@@ -106,7 +107,14 @@ class RemoteResourceManager : public RemoteChannelManager,
         {resource.id.id, RemoteDelivery::SupLanPeer}, resource, nowMs);
   }
   int capacity() const override { return kCapacity; }
-  ConsumeIntent &intentAt(int index) override { return intents_[index]; }
+  int consumerCapacity() const override { return kConsumerCapacity; }
+  ConsumeIntent intentAt(int index) override {
+    return intents_[index].intent(RemoteDelivery::SupLanPeer);
+  }
+  bool storeIntent(int index, const ConsumeIntent &intent) override {
+    intents_[index].assign(intent);
+    return true;
+  }
   RemoteChannelResource &resourceAt(int index) override {
     return resources_[index];
   }
@@ -129,14 +137,15 @@ class RemoteResourceManager : public RemoteChannelManager,
   Presence presence_;
   SupLan::PeerTable *peers_;
   SupLan::Runtime *runtime_;
-  ConsumeIntent intents_[kCapacity] = {};
+  ChannelConsumer intents_[kConsumerCapacity] = {};
   Resource resources_[kCapacity];
   PeerPresence peerPresence_[SUPLAN_MAX_PERSISTENT_PEERS];
 };
 static_assert(sizeof(RemoteResourceManager) <=
                   (sizeof(void *) == 8 ? 104 : 68) +
-                  (64 + sizeof(ConsumeIntent)) *
-                      RemoteResourceManager::kCapacity +
+                  64 * RemoteResourceManager::kCapacity +
+                  sizeof(ChannelConsumer) *
+                      RemoteResourceManager::kConsumerCapacity +
                   44 * SUPLAN_MAX_PERSISTENT_PEERS +
                   alignof(RemoteResourceManager) - 1,
               "Remote resources exceed their bounded workspace");

@@ -30,7 +30,7 @@ class ServerStreamBackend : public RemoteChannelBackend {
   int consumerCapacity() const override {
     return SUPLA_SERVER_STREAM_MAX_CONSUMERS;
   }
-  ConsumeIntent &intentAt(int index) override;
+  ConsumeIntent intentAt(int index) override;
   RemoteChannelResource &resourceAt(int index) override;
   bool allocateResource(int index) override;
   void clearResource(int index) override;
@@ -62,7 +62,7 @@ class ServerStreamBackend : public RemoteChannelBackend {
   };
   struct Slots {
     Resource *resources[SUPLA_SERVER_STREAM_MAX_CHANNELS] = {};
-    ConsumeIntent *intents[SUPLA_SERVER_STREAM_MAX_CONSUMERS] = {};
+    ChannelConsumer *intents[SUPLA_SERVER_STREAM_MAX_CONSUMERS] = {};
   };
   bool allocateSlots();
   void trimSlots();
@@ -72,7 +72,6 @@ class ServerStreamBackend : public RemoteChannelBackend {
   Slots *slots_ = nullptr;
   // Empty read-only lookup results; never an admitted entry or snapshot.
   RemoteChannelResource emptyResource_;
-  ConsumeIntent emptyIntent_ = {};
 };
 }  // namespace Device
 }  // namespace Supla

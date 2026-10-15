@@ -33,6 +33,7 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -2013,3 +2014,258 @@ TEST_F(M4bDevice, CoherenceMalformedVersionAndLengthRejectWholeRecord) {
 }
 
 }  // namespace
+
+#ifdef SUPLAN_R2_PRODUCT_TESTS
+// Nine independent Sources (8 x 20 HVAC + 10 HVAC), each with two binding
+// outputs on this Destination. Exercise production association/binding APIs,
+// not synthetic ChannelHandle pairs pretending to be persisted bindings.
+TEST_F(M4bDevice, R2Product170Resources340ContributorsQ40) {
+  static_assert(SUPLAN_MAX_READ_DEPENDENCIES == 170, "Product resource bound");
+  static_assert(SUPLAN_MAX_D2D_CONSUMERS == 340, "Product consumer bound");
+  static_assert(SUPLAN_MAX_RESOURCE_BINDINGS == 340, "Product binding bound");
+  static_assert(SUPLAN_MAX_BINDINGS_PER_PEER == 40, "Product wire bound");
+  std::unique_ptr<Control::Relay> second(new Control::Relay(2));
+  second->getChannel()->setDefault(SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH);
+  second->onLoadConfig(nullptr);
+  second->onInit();
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 202;
+  ids.ChannelCount = 6;
+  for (int i = 0; i < 6; ++i) ids.ChannelId[i] = 601 + i;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  auto bindings = adapter.resourceBindings();
+  auto resources = adapter.remoteResources();
+  std::vector<std::vector<uint8_t>> bodies;
+  auto provision = [&](int peer, uint32_t revision, bool grant) {
+    request.PeerContext.SourceNodeId = 101 + peer;
+    request.AclRevision = revision;
+    request.ResourceCount = grant ? (peer == 8 ? 10 : 20) : 0;
+    for (int i = 0; i < request.ResourceCount; ++i)
+      request.Resources[i] = {
+          1, static_cast<uint32_t>(1001 + peer * 20 + i), 1};
+    return associations.accept(request).Result;
+  };
+  for (int peer = 0; peer < 9; ++peer) {
+    ASSERT_EQ(provision(peer, 2, true), SUPLA_SUPLAN_RESULT_OK);
+    const int sources = peer == 8 ? 10 : 20;
+    std::vector<uint8_t> body(1 + 24 * sources, 0);
+    body[0] = 2 * sources;
+    for (int i = 0; i < 2 * sources; ++i) {
+      auto entry = body.data() + 1 + 12 * i;
+      entry[0] = entry[1] = entry[6] = 1;
+      putUint32(entry + 2, 1001 + peer * 20 + i / 2);
+      putUint32(entry + 7, i % 2 ? 606 : 604);
+    }
+    ASSERT_EQ(bindings->accept(peer, body.data(), body.size()), 3);
+    bodies.push_back(body);
+  }
+  bindings->iterate(time.value);
+  EXPECT_EQ(bindings->bindingCount(), 340);
+  EXPECT_EQ(resources->consumerCount(), 340);
+  EXPECT_EQ(resources->resourceCount(), 170);
+  EXPECT_EQ(peers.entryCount(true), 170);
+  TDS_SuplaDeviceChannel_E sample = {};
+  sample.Number = 0xff;
+  sample.Type = SUPLA_CHANNELTYPE_HVAC;
+  sample.Default = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+  sample.ValueValidityTimeSec = 1;
+  THVACValue sent = {};
+  sent.Mode = SUPLA_HVAC_MODE_HEAT;
+  sent.Flags = SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET;
+  for (int i = 0; i < 170; ++i) {
+    sent.SetpointTemperatureHeat = 2100 + i;
+    std::memcpy(sample.value, &sent, sizeof(sent));
+    resources->receive(i / 20, {1, static_cast<uint32_t>(1001 + i)},
+        reinterpret_cast<uint8_t *>(&sample), sizeof(sample), time.value);
+    THVACValue received = {};
+    ASSERT_TRUE(resources->state({1, static_cast<uint32_t>(1001 + i)},
+                                 time.value).hvac(&received));
+    EXPECT_EQ(received.SetpointTemperatureHeat, 2100 + i);
+  }
+  // A valid-looking value from a different authorized peer cannot replace it.
+  resources->receive(8, {1, 1001}, reinterpret_cast<uint8_t *>(&sample),
+                     sizeof(sample), time.value);
+  THVACValue first = {};
+  ASSERT_TRUE(resources->state({1, 1001}, time.value).hvac(&first));
+  EXPECT_EQ(first.SetpointTemperatureHeat, 2100);
+  // Isolate the global durable B limit with a non-full last-peer Q pool.
+  request.PeerContext.SourceNodeId = 109;
+  request.AclRevision = 3;
+  request.ResourceCount = 1;
+  request.Resources[0] = {2, 109, 1};
+  ASSERT_EQ(associations.accept(request).Result, SUPLA_SUPLAN_RESULT_OK);
+  auto globalOverflow = bodies[8];
+  globalOverflow.resize(1 + 12 * 21);
+  globalOverflow[0] = 21;
+  auto globalExtra = globalOverflow.data() + 1 + 12 * 20;
+  globalExtra[0] = globalExtra[1] = globalExtra[6] = 1;
+  putUint32(globalExtra + 2, 9998);
+  putUint32(globalExtra + 7, 604);
+  const auto beforeGlobal = storage.events.size();
+  EXPECT_EQ(bindings->accept(8, globalOverflow.data(), globalOverflow.size()),
+            26);
+  EXPECT_EQ(storage.events.size(), beforeGlobal);
+  EXPECT_EQ(bindings->bindingCount(), 340);
+  const auto writes = storage.events.size();
+  ASSERT_EQ(bindings->accept(0, bodies[0].data(), bodies[0].size()), 3);
+  EXPECT_EQ(storage.events.size(), writes);
+  // Malformed oversized input must not persist a prefix.
+  auto overflow = bodies[0];
+  overflow.resize(1 + 12 * 41);
+  overflow[0] = 41;
+  EXPECT_EQ(bindings->accept(0, overflow.data(), overflow.size()), 24);
+  EXPECT_EQ(storage.events.size(), writes);
+  uint8_t empty = 0;
+  storage.failCommit = true;
+  EXPECT_NE(bindings->accept(0, &empty, 1), 3);
+  EXPECT_EQ(bindings->bindingCount(), 340);
+  EXPECT_EQ(resources->consumerCount(), 340);
+  storage.failCommit = false;
+  hvacSample(true);
+  bindings->iterate(time.value);
+  bool configured = false;
+  EXPECT_TRUE(bindings->relayDemand(3, &configured));
+  EXPECT_TRUE(configured);
+  EXPECT_TRUE(bindings->relayDemand(5, &configured));
+  EXPECT_TRUE(configured);
+  const auto old = resources->state({1, 1001}, time.value);
+  ASSERT_TRUE(old.available());
+  // Sleeping Source cannot manufacture freshness; TTL independently expires.
+  time.advance(1000);
+  bindings->iterate(time.value);
+  EXPECT_FALSE(resources->state({1, 1001}, time.value).available());
+  // Existing HVAC safety policy retains last demand for up to 15 minutes.
+  EXPECT_TRUE(bindings->relayDemand(3, &configured));
+  time.advance(900000);
+  EXPECT_FALSE(bindings->relayDemand(3, &configured));
+  hvacSample(true);
+  bindings->iterate(time.value);
+  EXPECT_TRUE(bindings->relayDemand(3, &configured));
+  ASSERT_EQ(provision(0, 3, false), SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_FALSE(old.available());
+  bindings->iterate(time.value);
+  EXPECT_EQ(bindings->bindingCount(), 300);
+  EXPECT_EQ(resources->consumerCount(), 300);
+  EXPECT_EQ(resources->resourceCount(), 150);
+  ASSERT_EQ(provision(0, 4, true), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_EQ(bindings->accept(0, bodies[0].data(), bodies[0].size()), 3);
+  bindings->iterate(time.value);
+  EXPECT_EQ(resources->consumerCount(), 340);
+  EXPECT_EQ(resources->resourceCount(), 170);
+  EXPECT_FALSE(resources->state({1, 1001}, time.value).available());
+  EXPECT_FALSE(old.available());
+  // Destination reload restores all durable edges, never cached values.
+  storage.reboot();
+  bindings->attachAssociations(&associations);
+  bindings->iterate(time.value);
+  EXPECT_EQ(bindings->bindingCount(), 340);
+  EXPECT_EQ(resources->consumerCount(), 340);
+  EXPECT_EQ(resources->resourceCount(), 170);
+  EXPECT_FALSE(resources->state({1, 1001}, time.value).available());
+  hvacSample(true);
+  bindings->iterate(time.value);
+  EXPECT_TRUE(bindings->relayDemand(3, &configured));
+  EXPECT_TRUE(bindings->relayDemand(5, &configured));
+  // Removing only one output retains the shared Source state and READ.
+  auto one = bodies[0];
+  one.erase(one.begin() + 13, one.begin() + 25);
+  --one[0];
+  ASSERT_EQ(bindings->accept(0, one.data(), one.size()), 3);
+  bindings->iterate(time.value);
+  EXPECT_EQ(bindings->bindingCount(), 339);
+  EXPECT_EQ(resources->consumerCount(), 339);
+  EXPECT_EQ(resources->resourceCount(), 170);
+  EXPECT_TRUE(resources->state({1, 1001}, time.value).available());
+  // Isolate Q from global storage and precise Expected capacity: a supported
+  // Device READ grant permits a schema-valid 41st distinct Source entry.
+  request.PeerContext.SourceNodeId = 101;
+  request.AclRevision = 5;
+  request.ResourceCount = 1;
+  request.Resources[0] = {2, 101, 1};
+  ASSERT_EQ(associations.accept(request).Result, SUPLA_SUPLAN_RESULT_OK);
+  auto qOverflow = bodies[0];
+  qOverflow.resize(1 + 12 * 41);
+  qOverflow[0] = 41;
+  auto extra = qOverflow.data() + 1 + 12 * 40;
+  extra[0] = extra[1] = extra[6] = 1;
+  putUint32(extra + 2, 9999);
+  putUint32(extra + 7, 604);
+  const auto beforeQ = storage.events.size();
+  EXPECT_EQ(bindings->accept(0, qOverflow.data(), qOverflow.size()), 26);
+  EXPECT_EQ(storage.events.size(), beforeQ);
+  EXPECT_EQ(bindings->bindingCount(), 339);
+}
+TEST_F(M4bDevice,
+       R2SourceTwentyHvacCreatesFortyShareEdgesWithoutReadConsumers) {
+  std::vector<std::unique_ptr<FollowupHvac>> extra;
+  std::vector<Control::HvacBase *> sources{hvac};
+  for (int i = 1; i < 20; ++i) {
+    extra.emplace_back(new FollowupHvac(&output));
+    auto source = extra.back().get();
+    source->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+    source->onLoadConfig(nullptr);
+    source->onInit();
+    sources.push_back(source);
+  }
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 202;
+  ids.ChannelCount = 24;
+  for (int i = 0; i < 24; ++i) ids.ChannelId[i] = 601 + i;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  for (auto source : sources) {
+    TChannelConfig_HVAC wire;
+    source->copyFullChannelConfigTo(&wire);
+    wire.MainThermometerChannelId = wire.AuxThermometerChannelId = 0;
+    wire.BinarySensorChannelId = wire.MasterThermostatChannelId = 0;
+    wire.PumpSwitchChannelId = 9001;
+    wire.HeatOrColdSourceSwitchChannelId = 9002;
+    TSD_ChannelConfig config = {};
+    config.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+    config.ConfigSize = sizeof(wire);
+    std::memcpy(config.Config, &wire, sizeof(wire));
+    ASSERT_EQ(source->handleChannelConfig(&config, false),
+              SUPLA_CONFIG_RESULT_TRUE);
+  }
+  std::vector<std::pair<uint32_t, uint32_t>> edges;
+  auto bindings = adapter.resourceBindings();
+  for (int i = 0; i < 40; ++i) {
+    time.advance(1000);
+    bindings->iterate(time.value);
+    ASSERT_EQ(adapter.shares, i + 1);
+    edges.emplace_back(adapter.lastShare.SourceResource.ResourceId,
+                       adapter.lastShare.DestinationResource.ResourceId);
+    TSD_SuplaEnsureResourceShareResult result = {};
+    result.Result = SUPLA_SUPLAN_RESULT_OK;
+    result.DestinationDeviceId = 303;
+    bindings->ensureShareResult(result);
+  }
+  std::sort(edges.begin(), edges.end());
+  EXPECT_EQ(std::unique(edges.begin(), edges.end()), edges.end());
+  EXPECT_EQ(edges.size(), 40U);
+  EXPECT_EQ(adapter.remoteResources()->consumerCount(), 0);
+  EXPECT_EQ(adapter.remoteResources()->resourceCount(), 0);
+  // Reconstruct volatile Source routing from the durable HVAC configs.
+  storage.reboot();
+  for (auto source : sources) source->onLoadConfig(nullptr);
+  ResourceBindingManager restarted(&peers, nullptr,
+                                   adapter.remoteResources(), &adapter);
+  restarted.attachAssociations(&associations);
+  for (int i = 0; i < 40; ++i) {
+    time.advance(1000);
+    restarted.iterate(time.value);
+    ASSERT_EQ(adapter.shares, 41 + i);
+    TSD_SuplaEnsureResourceShareResult result = {};
+    result.Result = SUPLA_SUPLAN_RESULT_OK;
+    result.DestinationDeviceId = 303;
+    restarted.ensureShareResult(result);
+  }
+  EXPECT_EQ(adapter.remoteResources()->consumerCount(), 0);
+  // Replies above are mocked routing approvals, not Core/E2E evidence.
+}
+#endif  // SUPLAN_R2_PRODUCT_TESTS

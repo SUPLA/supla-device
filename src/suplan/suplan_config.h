@@ -76,6 +76,11 @@
 #ifndef SUPLAN_MAX_READ_DEPENDENCIES
 #define SUPLAN_MAX_READ_DEPENDENCIES SUPLAN_MAX_TOTAL_ACL_ENTRIES
 #endif
+// Logical SDK/binding consumers can share a single remote Channel and READ.
+// Preserve historical defaults without multiplying resource/dependency pools.
+#ifndef SUPLAN_MAX_D2D_CONSUMERS
+#define SUPLAN_MAX_D2D_CONSUMERS SUPLAN_MAX_READ_DEPENDENCIES
+#endif
 #ifndef SUPLAN_MAX_PEER_RECOVERY_STATES
 #define SUPLAN_MAX_PEER_RECOVERY_STATES SUPLAN_MAX_PERSISTENT_PEERS
 #endif
@@ -158,6 +163,12 @@ static const uint32_t kRuntimeInterestTimeoutMs = 300000;
 static const uint8_t kMinimumSuplaProtoVersion = 16;
 static_assert(SUPLAN_MAX_PERSISTENT_PEERS <= 128,
               "Stable slots use an 8-bit index with 255 reserved");
+static_assert(SUPLAN_MAX_READ_DEPENDENCIES > 0 &&
+                  SUPLAN_MAX_READ_DEPENDENCIES <= UINT16_MAX,
+              "READ dependency indexes use 16 bits");
+static_assert(SUPLAN_MAX_D2D_CONSUMERS > 0 &&
+                  SUPLAN_MAX_D2D_CONSUMERS <= UINT16_MAX,
+              "D2D consumers must have a bounded positive capacity");
 static_assert(SUPLAN_MAX_RUNTIME_INTERESTS > 0 &&
                   SUPLAN_MAX_RUNTIME_INTERESTS <= UINT16_MAX,
               "Runtime interest loops and pool counters use 16 bits");

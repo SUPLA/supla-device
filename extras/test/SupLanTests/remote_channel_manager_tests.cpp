@@ -60,15 +60,24 @@ class Manager : public RemoteChannelManager {
                    sizeof(snapshot), now);
   }
   void revoke(RemoteChannelResource &resource) { invalidate(&resource); }
+  void exhaustGenerations() { nextGeneration_ = UINT32_MAX; }
 };
 // Test-only storage adapter. It is not an SRPC/STREAM implementation.
 class Backend : public RemoteChannelBackend {
  public:
   explicit Backend(Manager *manager, bool localTtl)
       : manager_(manager), localTtl_(localTtl) {}
+  bool stableStorage() const override { return localTtl_; }
   int capacity() const override { return 2; }
   int consumerCapacity() const override { return 4; }
-  ConsumeIntent &intentAt(int i) override { return intents[i]; }
+  ConsumeIntent intentAt(int i) override {
+    return intents[i].intent(localTtl_ ? RemoteDelivery::SupLanPeer
+                                     : RemoteDelivery::ServerStream);
+  }
+  bool storeIntent(int i, const ConsumeIntent &intent) override {
+    intents[i].assign(intent);
+    return true;
+  }
   RemoteChannelResource &resourceAt(int i) override { return resources[i]; }
   void clearResource(int i) override { resources[i] = {}; }
   void reconcileResource(RemoteChannelResource &resource) override {
@@ -92,7 +101,7 @@ class Backend : public RemoteChannelBackend {
   uint8_t rights = 1;
   bool online = true;
   int releases = 0;
-  ConsumeIntent intents[4] = {};
+  Supla::Device::ChannelConsumer intents[4] = {};
   RemoteChannelResource resources[2];
 
  private:
@@ -305,5 +314,70 @@ TEST_F(RemoteChannelManagement, ZeroOwnerCannotAlterLiveAdmissionOrCache) {
   EXPECT_TRUE(manager.hasConsumer(1));
   EXPECT_DOUBLE_EQ(view.temperature(), 21);
   EXPECT_EQ(manager.consumerCount(), 1);
+}
+TEST_F(RemoteChannelManagement, FullOwnerAndChannelDomainsSurviveModeReentry) {
+  attach();
+  const RemoteChannelKey largest = {INT32_MAX, RemoteDelivery::SupLanPeer};
+  ASSERT_TRUE(manager.consume(demand(UINT32_MAX, largest, 7, true)));
+  ASSERT_TRUE(manager.consume(demand(0x7fffffffU, largest, 1, false)));
+  EXPECT_EQ(manager.consumerCount(), 2);
+  EXPECT_EQ(manager.resourceCount(), 1);
+  auto invalid = demand(UINT32_MAX, largest);
+  for (uint8_t type : {0, 2, 255}) {
+    invalid.resource.type = type;
+    EXPECT_FALSE(manager.consume(invalid));
+    EXPECT_TRUE(manager.hasConsumer(UINT32_MAX));
+    EXPECT_EQ(manager.resourceCount(), 1);
+  }
+  EXPECT_FALSE(manager.consume(demand(UINT32_MAX,
+      {UINT32_MAX, RemoteDelivery::SupLanPeer})));
+  ASSERT_TRUE(manager.consume(demand(UINT32_MAX, stream, 1, true)));
+  EXPECT_EQ(manager.consumerCount(), 2);
+  EXPECT_EQ(manager.resourceCount(), 2);
+  manager.remove(0x7fffffffU);
+  EXPECT_EQ(manager.resourceCount(), 1);
+  manager.remove(UINT32_MAX);
+  EXPECT_EQ(manager.consumerCount(), 0);
+  EXPECT_EQ(manager.resourceCount(), 0);
+  EXPECT_TRUE(manager.consume(demand(UINT32_MAX, largest, 4, false)));
+}
+TEST_F(RemoteChannelManagement, ExhaustedGenerationNeverReusesFreedResource) {
+  attach();
+  ASSERT_TRUE(manager.consume(demand(UINT32_MAX, peer)));
+  manager.publish(peer, 21, 0);
+  const auto old = manager.state(peer, 0);
+  manager.exhaustGenerations();
+  manager.remove(UINT32_MAX);
+  EXPECT_FALSE(old.available());
+  EXPECT_FALSE(manager.consume(demand(UINT32_MAX, peer)));
+  EXPECT_FALSE(manager.consume(demand(1, stream)));
+  EXPECT_EQ(manager.resourceCount(), 0);
+  EXPECT_EQ(manager.consumerCount(), 0);
+}
+TEST(RemoteConsumerCapacity, IndependentAdmissionAndReclamation) {
+  Supla::SupLan::PeerTable peers;
+  Supla::Device::RemoteResourceManager manager(&peers, nullptr, nullptr);
+  const int consumers = Supla::Device::RemoteResourceManager::kConsumerCapacity;
+  const int resources = Supla::Device::RemoteResourceManager::kCapacity;
+  for (int i = 0; i < consumers; ++i)
+    ASSERT_TRUE(manager.consume(demand(0x90000000U + i, peer)));
+  EXPECT_EQ(manager.consumerCount(), consumers);
+  EXPECT_EQ(manager.resourceCount(), 1);
+  EXPECT_FALSE(manager.consume(demand(UINT32_MAX, peer)));
+  manager.remove(0x90000000U + consumers / 2);
+  EXPECT_TRUE(manager.consume(demand(UINT32_MAX, peer)));
+  for (int i = 0; i < consumers; ++i) manager.remove(0x90000000U + i);
+  manager.remove(UINT32_MAX);
+  EXPECT_EQ(manager.resourceCount(), 0);
+  const int count = consumers < resources ? consumers : resources;
+  for (int i = 0; i < count; ++i)
+    ASSERT_TRUE(manager.consume(demand(1U + i,
+        {1001U + i, RemoteDelivery::SupLanPeer})));
+  EXPECT_EQ(manager.resourceCount(), count);
+  EXPECT_FALSE(manager.consume(demand(UINT32_MAX,
+      {1001U + count, RemoteDelivery::SupLanPeer})));
+  manager.remove(count);
+  EXPECT_TRUE(manager.consume(demand(UINT32_MAX,
+      {1001U + count, RemoteDelivery::SupLanPeer})));
 }
 }  // namespace

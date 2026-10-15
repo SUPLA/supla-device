@@ -34,6 +34,28 @@ struct ConsumeIntent {
   RemoteDelivery delivery = RemoteDelivery::SupLanPeer;
 };
 
+// Only validated Channel demand is retained. Type and delivery belong to the
+// admitting manager/backend; the public request still validates both in full.
+// No owner/index indirection: tokens and canonical IDs retain all 32 bits.
+struct ChannelConsumer {
+  uint32_t consumerId = 0;
+  uint32_t channelId = 0;
+  uint8_t permissions = 0;
+  bool approvalEligible = false;
+  ConsumeIntent intent(RemoteDelivery delivery) const {
+    return {consumerId, {SupLan::kResourceTypeChannel, channelId},
+            permissions, approvalEligible, delivery};
+  }
+  void assign(const ConsumeIntent &request) {
+    consumerId = request.consumerId;
+    channelId = request.resource.id;
+    permissions = request.permissions;
+    approvalEligible = request.approvalEligible;
+  }
+};
+static_assert(sizeof(ChannelConsumer) == 12,
+              "Channel consumer storage must retain its measured saving");
+
 // Shared cache/lifetime state. No peer, session, transport timer or credential.
 struct RemoteChannelResource {
   SupLan::ResourceId id = {};
@@ -69,17 +91,14 @@ class RemoteChannelBackend {
   virtual bool stableStorage() const { return true; }
   virtual int capacity() const = 0;
   virtual int consumerCapacity() const { return capacity(); }
-  virtual ConsumeIntent &intentAt(int index) = 0;
+  virtual ConsumeIntent intentAt(int index) = 0;
   virtual RemoteChannelResource &resourceAt(int index) = 0;
   virtual void clearResource(int index) = 0;
   virtual bool allocateResource(int index) {
     clearResource(index);
     return true;
   }
-  virtual bool storeIntent(int index, const ConsumeIntent &intent) {
-    intentAt(index) = intent;
-    return true;
-  }
+  virtual bool storeIntent(int index, const ConsumeIntent &intent) = 0;
   virtual void detached() {}
   virtual void ensureStarted(RemoteChannelResource &) {}
   virtual void ensureCompleted(RemoteChannelResource &,

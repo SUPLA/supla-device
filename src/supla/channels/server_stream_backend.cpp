@@ -27,9 +27,10 @@ void ServerStreamBackend::trimSlots() {
   delete slots_;
   slots_ = nullptr;
 }
-ConsumeIntent &ServerStreamBackend::intentAt(int index) {
-  return slots_ && slots_->intents[index] ? *slots_->intents[index]
-                                         : emptyIntent_;
+ConsumeIntent ServerStreamBackend::intentAt(int index) {
+  return slots_ && slots_->intents[index]
+      ? slots_->intents[index]->intent(RemoteDelivery::ServerStream)
+      : ConsumeIntent{};
 }
 RemoteChannelResource &ServerStreamBackend::resourceAt(int index) {
   return slots_ && slots_->resources[index] ? *slots_->resources[index]
@@ -59,9 +60,9 @@ bool ServerStreamBackend::storeIntent(int index, const ConsumeIntent &intent) {
   }
   if (!allocateSlots()) return false;
   if (!slots_->intents[index])
-    slots_->intents[index] = new (std::nothrow) ConsumeIntent;
+    slots_->intents[index] = new (std::nothrow) ChannelConsumer;
   if (!slots_->intents[index]) return false;
-  *slots_->intents[index] = intent;
+  slots_->intents[index]->assign(intent);
   return true;
 }
 void ServerStreamBackend::invalidate(Resource *resource) {
@@ -149,7 +150,7 @@ size_t ServerStreamBackend::allocatedBytes() const {
     for (auto resource : slots_->resources)
       if (resource) bytes += sizeof(Resource);
     for (auto intent : slots_->intents)
-      if (intent) bytes += sizeof(ConsumeIntent);
+      if (intent) bytes += sizeof(ChannelConsumer);
   }
   return bytes;
 }

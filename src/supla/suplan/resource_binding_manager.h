@@ -88,11 +88,15 @@ class ResourceBindingManager {
 };
 // Per-peer set/routing storage, contributor/intent slots, protected retry,
 // two bounded record workspaces and fixed metadata. Independent of ACL pools.
+// Round the final bound to class alignment, including odd custom peer counts.
 static_assert(sizeof(ResourceBindingManager) <=
-                  41 * SUPLAN_MAX_PERSISTENT_PEERS +
+                  ((41 * SUPLAN_MAX_PERSISTENT_PEERS +
                   36 * SUPLAN_MAX_RESOURCE_BINDINGS +
                   sizeof(SupLan::BindingRetry) +
-                  2 * (29 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER) + 64,
+                  2 * (29 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER) + 64 +
+                  alignof(ResourceBindingManager) - 1) /
+                  alignof(ResourceBindingManager)) *
+                  alignof(ResourceBindingManager),
               "Resource bindings exceed their bounded workspace");
 }  // namespace Device
 }  // namespace Supla

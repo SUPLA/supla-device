@@ -82,7 +82,7 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
   }
   int slot = -1;
   for (int i = 0; i < adapter->consumerCapacity(); ++i) {
-    auto &entry = adapter->intentAt(i);
+    const auto entry = adapter->intentAt(i);
     if (entry.consumerId == intent.consumerId) {
       if (sameResource(entry.resource, intent.resource) &&
           entry.permissions == intent.permissions &&
@@ -158,7 +158,7 @@ void RemoteChannelManager::remove(uint32_t consumerId) {
     if (!adapter) continue;
     adapter->cancelControls(consumerId);
     for (int i = 0; i < adapter->consumerCapacity(); ++i) {
-      auto &intent = adapter->intentAt(i);
+      const auto intent = adapter->intentAt(i);
       if (intent.consumerId == consumerId) {
         adapter->storeIntent(i, {});
         if (nextGeneration_ != UINT32_MAX) ++nextGeneration_;
@@ -194,7 +194,7 @@ void RemoteChannelManager::demand(RemoteChannelResource *resource,
   resource->manualPermissions = 0;
   auto adapter = backend(delivery);
   for (int i = 0; i < adapter->consumerCapacity(); ++i) {
-    const auto &intent = adapter->intentAt(i);
+    const auto intent = adapter->intentAt(i);
     if (!intent.consumerId || !sameResource(intent.resource, resource->id))
       continue;
     uint8_t rights = intent.permissions;
@@ -410,7 +410,13 @@ void RemoteChannelManager::serverReconnected() {
 }
 bool RemoteChannelManager::currentGeneration(uint32_t generation) const {
   if (!generation) return false;
-  for (auto adapter : backends_) {
+  // Dynamic STREAM views use this guard; fixed D2D views have a direct guard.
+  // Search STREAM first so its live views never scan unused D2D capacity.
+  // Generations are issued once by this manager across both modes. A missing
+  // or stale generation still checks both backends without touching a freed
+  // node, and reconciliation remains authoritative before snapshot access.
+  for (int mode = 1; mode >= 0; --mode) {
+    auto adapter = backends_[mode];
     if (!adapter) continue;
     for (int i = 0; i < adapter->capacity(); ++i) {
       auto &resource = adapter->resourceAt(i);

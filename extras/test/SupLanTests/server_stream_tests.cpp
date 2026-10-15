@@ -17,6 +17,7 @@
 #include <suplan_bootstrap_port.h>
 #include <cstring>
 #include <memory>
+#include <utility>
 #include <vector>
 #include "suplan_crypto_openssl.h"
 
@@ -232,6 +233,43 @@ TEST_F(ServerStream, DynamicLifetimeFreesCacheAndFencesBorrowedView) {
     if (!i) emptyBytes = protocol.serverStreamAllocatedBytes();
     EXPECT_EQ(protocol.serverStreamAllocatedBytes(), emptyBytes);
   }
+}
+TEST_F(ServerStream, MovedAndCopiedViewsNeverAcceptRecycledStreamNodes) {
+  for (int i = 0; i < 64; ++i) {
+    std::unique_ptr<ServerRemoteChannel> handle(new ServerRemoteChannel(1001));
+    tick(i ? 1000 : 0);
+    reply();
+    publish(snapshot());
+    auto original = handle->state();
+    auto moved = std::move(original);
+    ChannelState assigned;
+    assigned = std::move(moved);
+    ASSERT_TRUE(assigned.available());
+    handle.reset();
+    EXPECT_FALSE(original.available());
+    EXPECT_FALSE(moved.available());
+    EXPECT_FALSE(assigned.available());
+    ServerRemoteChannel replacement(1001);
+    tick(1000);
+    reply();
+    publish(snapshot(1001, 24));
+    EXPECT_TRUE(replacement.state().available());
+    EXPECT_FALSE(assigned.available());
+    EXPECT_EQ(assigned.type(), 0U);
+  }
+}
+TEST_F(ServerStream, ManagerDestructionDetachesBackendAndLiveHandles) {
+  ServerRemoteChannel handle(1001);
+  tick();
+  reply();
+  publish(snapshot());
+  const auto borrowed = handle.state();
+  ASSERT_TRUE(borrowed.available());
+  stack.reset();
+  EXPECT_FALSE(handle.state().available());
+  // Borrowed views require their manager to outlive method calls. Their
+  // destruction itself performs no lookup and is safe after manager teardown.
+  // SRPC's detached backend and the handle also remain safely destructible.
 }
 TEST_F(ServerStream, CapabilityVersionAndIdentityAreMandatory) {
   EXPECT_TRUE(protocol.serverStreamReady());

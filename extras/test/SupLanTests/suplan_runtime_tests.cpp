@@ -3013,3 +3013,75 @@ TEST(SupLanRuntime, UnreachableActionPeerCannotBlockHealthyRecipientOrReplay) {
   EXPECT_TRUE(pair.peersB.authorize(offlinePeer, resource,
                                    Supla::SupLan::kPermissionAction));
 }
+
+TEST(SupLanSleepySource, SharedPeerResetRepairsOnlyAuthorizedResourceReads) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  RuntimePair pair;
+  pair.peersB.get(pair.peerB)->destination = true;
+  AclEntry acl[] = {{{kResourceTypeChannel, 50001}, kPermissionRead},
+                    {{kResourceTypeChannel, 50003}, kPermissionRead},
+                    {{kResourceTypeChannel, 50004}, kPermissionRead}};
+  ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 2, acl, 3));
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, acl, 3));
+  Supla::Device::RemoteResourceManager resources(
+      &pair.peersB, &pair.runtimeB, nullptr);
+  pair.appB.remoteResources = &resources;
+  pair.appB.runtime = &pair.runtimeB;
+  pair.appA.fullSnapshots = pair.appB.fullSnapshots = true;
+  for (const auto &entry : acl)
+    ASSERT_TRUE(resources.consume({entry.resource.id, entry.resource,
+                                   kPermissionRead}));
+  resources.iterate(pair.network.now);
+  pair.pump(40);
+  ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 3U);
+  for (const auto &entry : acl)
+    ASSERT_TRUE(resources.state(entry.resource, pair.network.now).available());
+  pair.runtimeA.clearInterests();
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 0, true));
+  pair.runtimeB.iterate();
+  resources.iterate(pair.network.now);
+  pair.pump(40);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 3U);
+  auto revoked = resources.state(acl[0].resource, pair.network.now);
+  ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 3, acl + 1, 2));
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 3, acl + 1, 2));
+  pair.runtimeA.authorizationChanged(pair.peerA);
+  pair.runtimeB.authorizationChanged(pair.peerB);
+  resources.authorizationChanged();
+  EXPECT_FALSE(revoked.available());
+  pair.runtimeA.clearInterests();
+  pair.network.now += 1000;
+  ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 0, true));
+  pair.runtimeB.iterate();
+  resources.iterate(pair.network.now);
+  pair.pump(40);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 2U);
+  EXPECT_FALSE(resources.state(acl[0].resource, pair.network.now).available());
+  EXPECT_TRUE(resources.state(acl[1].resource, pair.network.now).available());
+  EXPECT_TRUE(resources.state(acl[2].resource, pair.network.now).available());
+}
+
+TEST(SupLanSleepySource, SharedWakeDeadlineExpiresAcrossMillisWrap) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  RuntimePair pair;
+  pair.peersB.get(pair.peerB)->destination = true;
+  Supla::Device::RemoteResourceManager resources(
+      &pair.peersB, &pair.runtimeB, nullptr);
+  pair.appB.runtime = &pair.runtimeB;
+  pair.appB.remoteResources = &resources;
+  ASSERT_TRUE(resources.consume({1, pair.resource, kPermissionRead}));
+  pair.network.now = UINT32_MAX - 100;
+  uint8_t nonce[16] = {1};
+  resources.peerAwake(pair.peerB, 200, false, nonce, pair.network.now);
+  resources.iterate(pair.network.now);
+  EXPECT_EQ(pair.runtimeB.recoveryStatus(pair.peerB).deadlineMs, 99U);
+  pair.network.now += 500;
+  // Renew demand after its original awake window, without another hint.
+  resources.remove(1);
+  ASSERT_TRUE(resources.consume({2, pair.resource, kPermissionRead}));
+  resources.iterate(pair.network.now);
+  // A stale wrapped deadline must not shorten the new recovery cycle.
+  EXPECT_GT(static_cast<int32_t>(
+      pair.runtimeB.recoveryStatus(pair.peerB).deadlineMs - pair.network.now),
+      200);
+}

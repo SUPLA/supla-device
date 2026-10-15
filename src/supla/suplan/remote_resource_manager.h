@@ -75,16 +75,29 @@ class RemoteResourceManager : public RemoteChannelManager,
   }
   struct Resource : RemoteChannelResource {
     uint32_t lastReadMs = 0;
+    uint8_t peerIndex = 0xff;
+    bool readAttempted = false;
+  };
+  // One authenticated association per stable PeerTable slot. The full locator
+  // binds authority, direction, context generations and credential. Replacing
+  // it fences every bound Resource generation before any new slot is used.
+  struct PeerPresence {
     uint32_t wakeUntilMs = 0;
     uint32_t hintEpochMs = 0;
     uint8_t locator[16] = {};
     uint8_t lastHintNonce[16] = {};
-    uint8_t peerIndex = 0xff;
-    Resource() : hintCount(0), readAttempted(false), hasHintNonce(false) {}
+    PeerPresence() : hintCount(0), bound(false), hasHintNonce(false),
+                     awake(false) {}
     uint8_t hintCount : 2;
-    uint8_t readAttempted : 1;
+    uint8_t bound : 1;
     uint8_t hasHintNonce : 1;
+    uint8_t awake : 1;
   };
+  static_assert(sizeof(Resource) == 64, "D2D slot gained retained state");
+  static_assert(sizeof(PeerPresence) == 44, "Peer presence gained state");
+  PeerPresence *peerPresence(uint8_t index);
+  PeerPresence *reconcilePeer(uint8_t index,
+                             const SupLan::PeerRecord *eligiblePeer);
   Resource *find(const SupLan::ResourceId &resource);
   int readyPeer(const Resource &resource) const;
   void reconcile(Resource *resource);
@@ -118,9 +131,14 @@ class RemoteResourceManager : public RemoteChannelManager,
   SupLan::Runtime *runtime_;
   ConsumeIntent intents_[kCapacity] = {};
   Resource resources_[kCapacity];
+  PeerPresence peerPresence_[SUPLAN_MAX_PERSISTENT_PEERS];
 };
 static_assert(sizeof(RemoteResourceManager) <=
-                  64 + 124 * RemoteResourceManager::kCapacity,
+                  (sizeof(void *) == 8 ? 104 : 68) +
+                  (64 + sizeof(ConsumeIntent)) *
+                      RemoteResourceManager::kCapacity +
+                  44 * SUPLAN_MAX_PERSISTENT_PEERS +
+                  alignof(RemoteResourceManager) - 1,
               "Remote resources exceed their bounded workspace");
 }  // namespace Device
 }  // namespace Supla

@@ -2116,3 +2116,282 @@ TEST(ChannelHandle, ReconfigureInsideCallbackStopsRemainingOldSourceEvents) {
   EXPECT_EQ(change.calls, 2);
   EXPECT_EQ(on.count, 1);  // Same-ID configure inside B's callback is a no-op.
 }
+
+namespace {
+class R1PeerPresence : public testing::Test {
+ protected:
+  PeerTable peers;
+  RemoteResourceManager resources{&peers, nullptr, nullptr};
+  PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
+                         {kNodeIdDevice, 202}, 7, 1};
+  uint8_t key[32] = {1};
+  AclEntry entries[3] = {{{kResourceTypeChannel, 1001}, kPermissionRead},
+                         {{kResourceTypeChannel, 1002}, kPermissionRead},
+                         {{kResourceTypeChannel, 1003}, kPermissionRead}};
+  uint8_t add(bool destination = true) {
+    uint8_t index = 0xff;
+    EXPECT_TRUE(peers.addPeer(&context, key, 1, entries, 3, &index,
+                              destination));
+    return index;
+  }
+  void consume(uint32_t id, uint32_t owner = 0) {
+    ASSERT_TRUE(resources.consume({owner ? owner : id,
+        {kResourceTypeChannel, id}, kPermissionRead}));
+  }
+  void publish(uint8_t peer, uint32_t id, uint32_t now = 0,
+               uint32_t ttl = 0) {
+    TDS_SuplaDeviceChannel_E snapshot = {};
+    snapshot.Number = 0xff;
+    snapshot.Type = SUPLA_CHANNELTYPE_THERMOMETER;
+    snapshot.Default = SUPLA_CHANNELFNC_THERMOMETER;
+    snapshot.ValueValidityTimeSec = ttl;
+    double value = 21;
+    memcpy(snapshot.value, &value, 8);
+    resources.receive(peer, {kResourceTypeChannel, id},
+        reinterpret_cast<const uint8_t *>(&snapshot), sizeof(snapshot), now);
+  }
+  void hint(uint8_t peer, uint8_t token, uint32_t now, bool reset = false) {
+    uint8_t nonce[16] = {token};
+    resources.peerAwake(peer, reset ? 0 : 200, reset, nonce, now);
+  }
+};
+
+TEST_F(R1PeerPresence, QuotaAndNonceBelongToAssociationAcrossConsumers) {
+  const auto peer = add();
+  ASSERT_NE(peer, 0xff);
+  consume(1001);
+  consume(1001, 2001);
+  publish(peer, 1001);
+  hint(peer, 1, 0);
+  hint(peer, 1, 0);  // Duplicate cannot consume the second opportunity.
+  EXPECT_TRUE(resources.allowPresence(peer, 0));
+  consume(1002);  // A new Channel shares the existing nonce/quota history.
+  resources.remove(1001);
+  EXPECT_TRUE(resources.state({kResourceTypeChannel, 1001}, 0).available());
+  hint(peer, 2, 0, true);
+  EXPECT_FALSE(resources.allowPresence(peer, 0));
+  resources.remove(2001);
+  resources.remove(1002);
+  consume(1003);
+  EXPECT_FALSE(resources.allowPresence(peer, 0));
+  resources.remove(1003);
+  consume(1001);
+  EXPECT_FALSE(resources.allowPresence(peer, 999));
+  EXPECT_TRUE(resources.allowPresence(peer, 1000));
+}
+
+TEST_F(R1PeerPresence, PeerQuotasAreIndependentAndRejectOtherAuthorities) {
+  const auto a = add();
+  consume(1001);
+  context.source.nodeId = 102;
+  for (auto &entry : entries) entry.resource.id += 10;
+  const auto b = add();
+  consume(1011);
+  hint(a, 1, 0);
+  hint(a, 2, 0);
+  EXPECT_FALSE(resources.allowPresence(a, 0));
+  EXPECT_TRUE(resources.allowPresence(b, 0));
+  hint(b, 1, 0);  // Same nonce in another association is independent.
+  EXPECT_TRUE(resources.allowPresence(b, 0));
+  hint(b, 2, 0);
+  EXPECT_FALSE(resources.allowPresence(b, 0));
+  context.authorityType = kAuthorityLocal;
+  context.authorityId = 9;
+  context.source = {kNodeIdLocal, 103};
+  context.destination = {kNodeIdLocal, 202};
+  for (auto &entry : entries) entry.resource.id += 10;
+  const auto local = add();
+  consume(1021);
+  EXPECT_FALSE(resources.allowPresence(local, 1000));
+  hint(local, 3, 1000);
+  EXPECT_TRUE(resources.allowPresence(a, 1000));
+}
+
+TEST_F(R1PeerPresence, SlotReplacementFencesAllBorrowedViewsAndHintState) {
+  for (int variant = 0; variant < 5; ++variant) {
+    SCOPED_TRACE(variant);
+    const auto peer = add();
+    consume(1001);
+    consume(1002);
+    publish(peer, 1001);
+    publish(peer, 1002);
+    auto a = resources.state({kResourceTypeChannel, 1001}, 0);
+    auto b = resources.state({kResourceTypeChannel, 1002}, 0);
+    ASSERT_TRUE(a.available());
+    ASSERT_TRUE(b.available());
+    hint(peer, 1, 0);
+    hint(peer, 2, 0);
+    EXPECT_FALSE(resources.allowPresence(peer, 0));
+    ASSERT_TRUE(peers.removePeer(peer));
+    if (variant == 0) ++context.rootEpoch;
+    if (variant == 1) ++context.peerGeneration;
+    if (variant == 2) ++context.source.nodeId;
+    if (variant == 3) ++context.destination.nodeId;
+    if (variant == 4) ++key[0];
+    ASSERT_EQ(add(), peer);
+    // Reconciling only A must also fence B's already borrowed view.
+    EXPECT_FALSE(resources.state({kResourceTypeChannel, 1001}, 0).available());
+    EXPECT_FALSE(a.available());
+    EXPECT_FALSE(b.available());
+    EXPECT_TRUE(resources.allowPresence(peer, 0));
+    hint(peer, 1, 0);
+    EXPECT_TRUE(resources.allowPresence(peer, 0));
+    hint(peer, 2, 0);
+    EXPECT_FALSE(resources.allowPresence(peer, 0));
+    publish(peer, 1001);
+    publish(peer, 1002);
+    EXPECT_TRUE(resources.state({kResourceTypeChannel, 1002}, 0).available());
+    EXPECT_FALSE(b.available());
+    resources.remove(1001);
+    resources.remove(1002);
+    ASSERT_TRUE(peers.removePeer(peer));
+    resources.authorizationChanged();
+  }
+}
+
+TEST_F(R1PeerPresence, ReversedRoleAndOwnershipBarrierCannotReuseOldState) {
+  const auto peer = add();
+  consume(1001);
+  consume(1002);
+  publish(peer, 1001);
+  publish(peer, 1002);
+  auto old = resources.state({kResourceTypeChannel, 1002}, 0);
+  peers.get(peer)->destination = false;
+  EXPECT_FALSE(resources.state({kResourceTypeChannel, 1001}, 0).available());
+  EXPECT_FALSE(old.available());
+  EXPECT_FALSE(resources.allowPresence(peer, 0));
+  peers.get(peer)->destination = true;
+  EXPECT_FALSE(resources.state({kResourceTypeChannel, 1002}, 0).available());
+  publish(peer, 1001);
+  old = resources.state({kResourceTypeChannel, 1001}, 0);
+  peers.setOwnershipCheck([](void *, const PeerContext &, const ResourceId &) {
+    return false;
+  }, nullptr);
+  resources.authorizationChanged();
+  EXPECT_FALSE(old.available());
+  EXPECT_FALSE(resources.allowPresence(peer, 0));
+  peers.setOwnershipCheck(nullptr, nullptr);
+  EXPECT_FALSE(resources.state({kResourceTypeChannel, 1001}, 0).available());
+}
+
+TEST_F(R1PeerPresence, RevokeRegrantDoesNotRestoreValuesOrResetPeerQuota) {
+  const auto peer = add();
+  consume(1001);
+  consume(1002);
+  publish(peer, 1001);
+  publish(peer, 1002);
+  auto old = resources.state({kResourceTypeChannel, 1001}, 0);
+  hint(peer, 1, 0);
+  hint(peer, 2, 0);
+  ASSERT_TRUE(peers.replaceAcl(peer, 2, entries + 1, 2));
+  resources.authorizationChanged();
+  EXPECT_FALSE(old.available());
+  EXPECT_FALSE(resources.allowPresence(peer, 0));
+  ASSERT_TRUE(peers.replaceAcl(peer, 3, entries, 3));
+  resources.authorizationChanged();
+  EXPECT_FALSE(resources.state({kResourceTypeChannel, 1001}, 0).available());
+  EXPECT_FALSE(resources.allowPresence(peer, 0));
+  ASSERT_TRUE(peers.replaceAcl(peer, 4, nullptr, 0));
+  resources.authorizationChanged();
+  EXPECT_FALSE(resources.allowPresence(peer, 1000));
+  ASSERT_TRUE(peers.replaceAcl(peer, 5, entries, 3));
+  resources.authorizationChanged();
+  hint(peer, 2, 1000);  // Same-identity nonce history survives ACL edits.
+  hint(peer, 3, 1000);
+  EXPECT_TRUE(resources.allowPresence(peer, 1000));
+  hint(peer, 4, 1000);
+  EXPECT_FALSE(resources.allowPresence(peer, 1000));
+}
+
+TEST_F(R1PeerPresence, QuotaClockWrapAndResourceTtlRemainIndependent) {
+  const auto peer = add();
+  consume(1001);
+  consume(1002);
+  const uint32_t start = UINT32_MAX - 500;
+  publish(peer, 1001, start, 1);
+  publish(peer, 1002, start, 0);
+  hint(peer, 1, start);
+  hint(peer, 2, start);
+  EXPECT_FALSE(resources.allowPresence(peer, start + 999));
+  EXPECT_TRUE(resources.allowPresence(peer, start + 1000));
+  EXPECT_FALSE(resources.state({kResourceTypeChannel, 1001},
+                               start + 1000).available());
+  EXPECT_TRUE(resources.state({kResourceTypeChannel, 1002},
+                              start + 1000).available());
+  hint(peer, 3, start + 1000, true);
+  EXPECT_TRUE(resources.allowPresence(peer, start + 1000));
+  hint(peer, 4, start + 1000);
+  EXPECT_FALSE(resources.allowPresence(peer, start + 1000));
+}
+
+TEST_F(R1PeerPresence, FullSnapshotRawValuesAndMetadataStayLossless) {
+  const auto peer = add();
+  consume(1001);
+  const uint32_t types[] = {SUPLA_CHANNELTYPE_THERMOMETER,
+      SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR, SUPLA_CHANNELTYPE_BINARYSENSOR,
+      SUPLA_CHANNELTYPE_HVAC, SUPLA_CHANNELTYPE_IMPULSE_COUNTER,
+      SUPLA_CHANNELTYPE_RELAY, UINT32_MAX};
+  for (uint32_t type : types) {
+    TDS_SuplaDeviceChannel_E snapshot = {};
+    snapshot.Number = 0xff;
+    snapshot.Type = type;
+    snapshot.Default = INT32_MAX;
+    snapshot.ValueValidityTimeSec = UINT32_MAX;
+    snapshot.Flags = INT64_MAX;
+    snapshot.FuncList = INT32_MAX;
+    snapshot.DefaultIcon = 255;
+    snapshot.SubDeviceId = 255;
+    const uint8_t raw[8] = {0, 1, 0x7f, 0x80, 0xff, 4, 5, 6};
+    memcpy(snapshot.value, raw, 8);
+    resources.receive(peer, {kResourceTypeChannel, 1001},
+        reinterpret_cast<const uint8_t *>(&snapshot), sizeof(snapshot), 0);
+    auto view = resources.state({kResourceTypeChannel, 1001}, 0);
+    uint8_t output[8] = {};
+    ASSERT_TRUE(view.value(output));
+    EXPECT_EQ(memcmp(output, raw, 8), 0);
+    EXPECT_EQ(view.type(), type);
+    EXPECT_EQ(view.function(), static_cast<uint32_t>(INT32_MAX));
+    EXPECT_EQ(view.validityTimeSec(), UINT32_MAX);
+    const uint8_t offlineFlags[] = {SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE,
+        SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE,
+        SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING,
+        SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED};
+    for (uint8_t offline : offlineFlags) {
+      snapshot.Offline = offline;
+      resources.receive(peer, {kResourceTypeChannel, 1001},
+          reinterpret_cast<const uint8_t *>(&snapshot), sizeof(snapshot), 1);
+      EXPECT_FALSE(view.available());
+      EXPECT_FALSE(resources.state({kResourceTypeChannel, 1001}, 1)
+                       .available());
+    }
+  }
+}
+}  // namespace
+
+namespace {
+TEST_F(R1PeerPresence, LargestCanonicalIdAndBinaryFalseRemainDistinct) {
+  entries[0].resource.id = INT32_MAX;
+  const auto peer = add();
+  consume(INT32_MAX);
+  EXPECT_FALSE(resources.consume({4, {kResourceTypeChannel, UINT32_MAX},
+                                   kPermissionRead}));
+  TDS_SuplaDeviceChannel_E snapshot = {};
+  snapshot.Number = 0xff;
+  snapshot.Type = SUPLA_CHANNELTYPE_BINARYSENSOR;
+  snapshot.Default = SUPLA_CHANNELFNC_BINARY_SENSOR;
+  for (uint8_t raw : {0, 1}) {
+    snapshot.value[0] = raw;
+    resources.receive(peer, {kResourceTypeChannel, INT32_MAX},
+        reinterpret_cast<const uint8_t *>(&snapshot), sizeof(snapshot), 0);
+    auto view = resources.state({kResourceTypeChannel, INT32_MAX}, 0);
+    bool value = !raw;
+    ASSERT_TRUE(view.binary(&value));
+    EXPECT_EQ(value, raw != 0);
+    snapshot.Default = SUPLA_CHANNELFNC_NONE;
+    resources.receive(peer, {kResourceTypeChannel, INT32_MAX},
+        reinterpret_cast<const uint8_t *>(&snapshot), sizeof(snapshot), 0);
+    EXPECT_FALSE(view.available());
+    snapshot.Default = SUPLA_CHANNELFNC_BINARY_SENSOR;
+  }
+}
+}  // namespace

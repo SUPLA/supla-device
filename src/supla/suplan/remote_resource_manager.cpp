@@ -35,8 +35,50 @@ int RemoteResourceManager::readyPeer(const Resource &resource) const {
   return -1;
 }
 
+RemoteResourceManager::PeerPresence *RemoteResourceManager::peerPresence(
+    uint8_t index) {
+  if (!peers_ || index >= SUPLAN_MAX_PERSISTENT_PEERS) return nullptr;
+  const auto peer = peers_->get(index);
+  const bool eligible = peer && peer->destination &&
+      peer->contextBytes[0] == SupLan::kAuthorityServer &&
+      peers_->runtimeEligible(index);
+  return reconcilePeer(index, eligible ? peer : nullptr);
+}
+
+RemoteResourceManager::PeerPresence *RemoteResourceManager::reconcilePeer(
+    uint8_t index, const SupLan::PeerRecord *peer) {
+  // The caller has already checked this slot's SERVER Destination ownership.
+  // No callbacks or PeerTable mutation occur between that check and this call.
+  auto &state = peerPresence_[index];
+  if (peer && state.bound &&
+      memcmp(state.locator, peer->peerLocator, 16) == 0) return &state;
+  if (state.bound) {
+    // Synchronous invalidation replaces the old per-resource locator check.
+    // Also fence other borrowed views, not just the resource being reconciled.
+    // Its transport cleanup only queries the production read-only
+    // bindingSessionNeeded hook; it cannot reenter resource admission.
+    for (auto &resource : resources_) {
+      if (!resource.used() || resource.peerIndex != index) continue;
+      if (runtime_) runtime_->removeReadDependency(index, resource.id);
+      invalidate(&resource);
+      resource.peerIndex = 0xff;
+      resource.effective = 0;
+      resource.readAttempted = false;
+      resource.ensureAttempted = false;
+      resource.access = RemoteAccess::PENDING;
+    }
+    state = {};
+  }
+  if (!peer) return nullptr;
+  memcpy(state.locator, peer->peerLocator, 16);
+  state.bound = true;
+  return &state;
+}
+
 void RemoteResourceManager::reconcile(Resource *resource) {
   const int peerIndex = readyPeer(*resource);
+  if (resource->peerIndex != 0xff && resource->peerIndex != peerIndex)
+    peerPresence(resource->peerIndex);
   if (peerIndex < 0) {
     if (resource->effective || resource->peerIndex != 0xff) {
       if (runtime_ && resource->peerIndex != 0xff)
@@ -50,12 +92,13 @@ void RemoteResourceManager::reconcile(Resource *resource) {
     resource->effective = 0;
     return;
   }
-  const auto *peer = peers_->get(peerIndex);
-  if (resource->peerIndex != peerIndex ||
-      memcmp(resource->locator, peer->peerLocator, 16) != 0) {
+  // readyPeer has validated role/authority/ownership and precise rights.
+  reconcilePeer(peerIndex, peers_->get(peerIndex));
+  if (resource->peerIndex != peerIndex) {
+    if (runtime_ && resource->peerIndex != 0xff)
+      runtime_->removeReadDependency(resource->peerIndex, resource->id);
     invalidate(resource);
     resource->readAttempted = false;
-    memcpy(resource->locator, peer->peerLocator, 16);
   }
   const uint8_t previous = resource->effective;
   resource->effective = 0;
@@ -93,9 +136,12 @@ void RemoteResourceManager::refreshResource(RemoteChannelResource &entry,
          (static_cast<uint32_t>(nowMs - resource.lastReadMs) >= refreshMs &&
           !runtime_->readNeedsRefresh(resource.peerIndex, resource.id)))) {
       if (runtime_->requestRead(resource.peerIndex, resource.id)) {
-        const int32_t awakeRemaining = resource.wakeUntilMs - nowMs;
-        if (awakeRemaining > 0) {
+        auto &peer = peerPresence_[resource.peerIndex];
+        const int32_t awakeRemaining = peer.wakeUntilMs - nowMs;
+        if (peer.awake && awakeRemaining > 0) {
           runtime_->refreshPeer(resource.peerIndex, awakeRemaining, false);
+        } else {
+          peer.awake = false;
         }
         resource.lastReadMs = nowMs;
         resource.readAttempted = true;
@@ -153,12 +199,18 @@ void RemoteResourceManager::sessionChanged(uint8_t peerIndex) {
   }
 }
 void RemoteResourceManager::authorizationChanged() {
+  // Removed peers can have no resources left; retain a same-identity quota
+  // through ACL edits, but never through an observed association replacement.
+  for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
+    if (peerPresence_[i].bound) peerPresence(i);
   for (auto &resource : resources_) {
     if (!resource.used()) continue;
     reconcile(&resource);
   }
 }
 bool RemoteResourceManager::allowPresence(uint8_t index, uint32_t nowMs) {
+  auto peer = peerPresence(index);
+  if (!peer) return false;
   for (auto &resource : resources_) {
     if (!resource.used()) continue;
     reconcile(&resource);
@@ -167,46 +219,42 @@ bool RemoteResourceManager::allowPresence(uint8_t index, uint32_t nowMs) {
         resource.peerIndex != index) {
       continue;
     }
-    if (static_cast<uint32_t>(nowMs - resource.hintEpochMs) >= 1000) {
-      resource.hintCount = 0;
-      resource.hintEpochMs = nowMs;
+    if (static_cast<uint32_t>(nowMs - peer->hintEpochMs) >= 1000) {
+      peer->hintCount = 0;
+      peer->hintEpochMs = nowMs;
     }
-    if (resource.hintCount >= 2) return false;
-    return true;
+    return peer->hintCount < 2;
   }
   return false;
 }
 void RemoteResourceManager::peerAwake(uint8_t index, uint16_t window,
                                       bool reset, const uint8_t nonce[16],
                                       uint32_t nowMs) {
+  if (!nonce || (!reset && !window) || !allowPresence(index, nowMs)) return;
+  auto &peer = peerPresence_[index];
+  if (peer.hasHintNonce && memcmp(nonce, peer.lastHintNonce, 16) == 0) return;
+  // Admission/release of a Channel cannot reset this association's quota.
+  ++peer.hintCount;
+  memcpy(peer.lastHintNonce, nonce, 16);
+  peer.hasHintNonce = true;
+  if (!reset) {
+    peer.wakeUntilMs = nowMs + window;
+    peer.awake = true;
+  }
   bool refresh = false;
-  bool accepted = false;
   for (auto &resource : resources_) {
     if (!resource.used()) continue;
     reconcile(&resource);
     if (!(resource.effective & resource.permissions &
         SupLan::kPermissionRead) ||
-        resource.peerIndex != index ||
-        (resource.hasHintNonce &&
-         memcmp(nonce, resource.lastHintNonce, 16) == 0))
+        resource.peerIndex != index)
       continue;
-    if (static_cast<uint32_t>(nowMs - resource.hintEpochMs) >= 1000) {
-      resource.hintEpochMs = nowMs;
-      resource.hintCount = 0;
-    }
-    if (resource.hintCount >= 2) continue;
-    // Charge only fresh authenticated hints, after nonce deduplication.
-    ++resource.hintCount;
-    accepted = true;
-    if (!reset) resource.wakeUntilMs = nowMs + window;
-    memcpy(resource.lastHintNonce, nonce, 16);
-    resource.hasHintNonce = true;
     if (reset || !usable(resource, nowMs)) {
       resource.readAttempted = false;
       refresh = true;
     }
   }
-  if (accepted && runtime_) {
+  if (runtime_) {
     runtime_->refreshPeer(index, window, reset && refresh);
   }
 }

@@ -91,6 +91,20 @@ class IdleDatagrams : public DatagramPort {
   uint32_t now = 0;
 };
 
+class IdleApplication : public ApplicationPort {
+ public:
+  bool readResource(const ResourceId &, bool *, uint8_t *, size_t,
+                    size_t *) override { return false; }
+  uint8_t dispatchControl(const ResourceId &, uint32_t, const uint8_t *,
+                          size_t) override { return 24; }
+  void receiveState(uint8_t, const ResourceId &, uint32_t, const uint8_t *,
+                     size_t) override {}
+  void receiveAction(uint8_t, const ResourceId &, uint32_t, const uint8_t *,
+                      size_t) override {}
+  void operationAcknowledged(uint8_t, const ResourceId &, uint32_t,
+                              uint8_t) override {}
+};
+
 class ServerAssociationTests : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -140,7 +154,8 @@ class ServerAssociationTests : public ::testing::Test {
   PeerTable peers;
   IdleDatagrams datagrams;
   OpenSslCryptoPort crypto;
-  Runtime runtime{&crypto, &datagrams,           nullptr,
+  IdleApplication application;
+  Runtime runtime{&crypto, &datagrams,           &application,
                   &peers,  {kNodeIdDevice, 101}, 29};
   ServerAssociations associations{&peers, &runtime};
   Supla::Channel *channel = nullptr;
@@ -425,6 +440,7 @@ TEST_F(ServerAssociationTests,
        RemovedPeerHasNoLocateHandshakeRetryOrRecoveryState) {
   ASSERT_EQ(dst(), 0);
   ASSERT_TRUE(runtime.requestRead(0, {1, 601}));
+  runtime.iterate();
   EXPECT_GT(runtime.poolDiagnostics().locates.used, 0);
   destination.AclRevision = 2;
   destination.ResourceCount = 0;

@@ -308,7 +308,7 @@ class AdapterFanoutPair {
     return peersA.addPeerFromRoot(&context, rootKey, 1, &acl, 1,
                                   sourcePeer) &&
         destinationPeers->addPeer(&context, material.peerKey, 1,
-                                  &acl, 1, destinationPeer);
+                                  &acl, 1, destinationPeer, true);
   }
 
   void pump(uint8_t count) {
@@ -327,9 +327,11 @@ TEST(SupLanAdapter, FansOutStateExtendedStateAndActionToMappedPeers) {
   ASSERT_TRUE(pair.protocolA.verifyConfig());
 
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resourceB));
+  pair.runtimeB.iterate();
   pair.pump(24);
   ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
   ASSERT_TRUE(pair.runtimeC.requestRead(pair.peerC, pair.resourceC));
+  pair.runtimeC.iterate();
   pair.pump(24);
   ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 2U);
 
@@ -369,6 +371,7 @@ TEST(SupLanAdapter, DisconnectInvalidatesSessionsButPreservesReadInterest) {
   AdapterFanoutPair pair;
   ASSERT_TRUE(pair.configured);
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resourceB));
+  pair.runtimeB.iterate();
   pair.pump(24);
   ASSERT_EQ(pair.runtimeA.poolDiagnostics().sessions.used, 1U);
   ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
@@ -394,6 +397,7 @@ TEST(SupLanAdapter, DisconnectInvalidatesSessionsButPreservesReadInterest) {
   EXPECT_TRUE(pair.protocolA.iterate(pair.network.now));
   const uint32_t statesBefore = pair.appB.stateCalls;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resourceB));
+  pair.runtimeB.iterate();
   pair.pump(100);
   EXPECT_GT(pair.appB.stateCalls, statesBefore);
   EXPECT_EQ(pair.runtimeA.poolDiagnostics().sessions.used, 1U);

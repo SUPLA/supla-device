@@ -171,6 +171,7 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
       *payloadLength = 0;
       return false;
     }
+    if (unavailableResource && resource.id == unavailableResource) return false;
     ++readCalls;
     if (fullSnapshots && stateAvailable && capacity >=
         sizeof(TDS_SuplaDeviceChannel_E)) {
@@ -295,6 +296,7 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
   Supla::Element *nativeElement = nullptr;
   Supla::Device::RemoteResourceManager *remoteResources = nullptr;
   bool stateAvailable = true;
+  uint32_t unavailableResource = 0;
   uint8_t value;
   uint32_t controlCalls;
   uint32_t stateCalls;
@@ -371,7 +373,7 @@ struct RuntimePair {
     EXPECT_TRUE(peersA.addPeerFromRoot(&context, rootKey, 1, &acl, 1,
                                        &peerA));
     EXPECT_TRUE(peersB.addPeer(&context, material.peerKey, 1, &acl, 1,
-                               &peerB));
+                               &peerB, true));
     const uint8_t reversePeerKey[32] = {
         0x70, 0xD1, 0x3F, 0x17, 0x8A, 0x1F, 0x93, 0xE3,
         0x4E, 0x0C, 0x8A, 0x0B, 0x84, 0x4C, 0x4E, 0xAB,
@@ -382,7 +384,7 @@ struct RuntimePair {
     actionAcl.resource.id = 50002;
     actionAcl.permissions = Supla::SupLan::kPermissionAction;
     EXPECT_TRUE(peersA.addPeer(&actionContext, reversePeerKey, 1,
-                               &actionAcl, 1, &actionPeerA));
+                               &actionAcl, 1, &actionPeerA, true));
     EXPECT_TRUE(peersB.addPeerFromRoot(&actionContext, rootKey, 1,
                                        &actionAcl, 1, &actionPeerB));
     rng.resetCalls();
@@ -448,6 +450,7 @@ TEST(SupLanRuntime, RandomFailureDoesNotTransmitLocate) {
   RuntimePair pair;
   pair.rng.failRandom = true;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 0U);
   EXPECT_TRUE(pair.network.packets.empty());
 }
@@ -456,6 +459,7 @@ TEST(SupLanRuntime, LocateKdfRunsOnceAndNotAgainWhileLocateIsOutstanding) {
   RuntimePair pair;
 
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 1U);
   EXPECT_EQ(pair.rng.sha256Calls, 1U);
   EXPECT_EQ(pair.rng.hmacSha256Calls, 6U);
@@ -1128,6 +1132,7 @@ TEST(SupLanRuntime, TamperedSessionAcceptIsRejectedThenRetryRecovers) {
 TEST(SupLanDiscoveryAudit, MissingPeerStopsAfterThreeLocateAttempts) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   for (uint32_t now = 1; now <= 5000; ++now) {
     pair.network.packets.clear();
     pair.network.now = now;
@@ -1145,6 +1150,7 @@ TEST(SupLanDiscoveryAudit, MissingPeerStopsAfterThreeLocateAttempts) {
 TEST(SupLanDiscoveryAudit, LostQueryAndLateJoiningPeerRecoverOnNextAttempt) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   for (int i = 0; i < 2; ++i) {
     pair.network.packets.clear();
     pair.network.now += Supla::SupLan::kLocateReplyWindowMs;
@@ -1159,6 +1165,7 @@ TEST(SupLanDiscoveryAudit, LostQueryAndLateJoiningPeerRecoverOnNextAttempt) {
 TEST(SupLanDiscoveryAudit, LostReplyRecoversWithFreshQuery) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   pair.runtimeA.iterate();
   ASSERT_EQ(pair.network.packets.size(), 1U);
   ASSERT_EQ(pair.network.packets[0].bytes.size(), 34U);
@@ -1173,6 +1180,7 @@ TEST(SupLanDiscoveryAudit, LostReplyRecoversWithFreshQuery) {
 TEST(SupLanDiscoveryAudit, ReplyJustBeforeDeadlineIsAccepted) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   pair.runtimeA.iterate();
   pair.network.now = Supla::SupLan::kLocateReplyWindowMs - 1;
   pair.runtimeB.iterate();
@@ -1184,6 +1192,7 @@ TEST(SupLanDiscoveryAudit, ReplyJustBeforeDeadlineIsAccepted) {
 TEST(SupLanDiscoveryAudit, ReplyAtDeadlineIsRejectedEvenIfAlreadyQueued) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   pair.runtimeA.iterate();
   pair.network.now = Supla::SupLan::kLocateReplyWindowMs;
   pair.runtimeB.iterate();
@@ -1195,6 +1204,7 @@ TEST(SupLanDiscoveryAudit, ReplyAtDeadlineIsRejectedEvenIfAlreadyQueued) {
 TEST(SupLanDiscoveryAudit, DuplicateQueryIsRateLimitedAndReplyConsumedOnce) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   pair.network.packets.push_back(pair.network.packets.front());
   pair.runtimeA.iterate();
   EXPECT_EQ(pair.runtimeA.diagnostics().locateRx, 2U);
@@ -1212,6 +1222,7 @@ TEST(SupLanDiscoveryAudit, DuplicateQueryIsRateLimitedAndReplyConsumedOnce) {
 TEST(SupLanDiscoveryAudit, ReorderedOldReplyCannotReplaceNewCandidate) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   pair.runtimeA.iterate();
   ASSERT_EQ(pair.network.packets.size(), 1U);
   const Packet oldReply = pair.network.packets.front();
@@ -1233,6 +1244,7 @@ TEST(SupLanDiscoveryAudit,
   uint8_t control[17] = {};
   control[4] = 0xFF;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource,
                                         control, sizeof(control)));
   for (unsigned i = 2; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
@@ -1250,6 +1262,7 @@ TEST(SupLanDiscoveryAudit,
 TEST(SupLanDiscoveryAudit, UnresponsiveCandidateIsRetiredWithinCycle) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   pair.runtimeA.iterate();
   pair.runtimeB.iterate();
   for (unsigned i = 0; i < 15; ++i) {
@@ -1271,6 +1284,7 @@ TEST(SupLanDiscoveryAudit,
      ReadRetriesStaleSessionAndRecoversAtRetainedEndpoint) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   pair.pump(20);
   ASSERT_TRUE(pair.runtimeA.forgetSession(pair.peerA));
   const uint32_t readsBefore = pair.runtimeA.diagnostics().readDispatched;
@@ -1335,6 +1349,7 @@ TEST(SupLanDiscoveryAudit,
      ReadRecoveryFallsBackToAuthenticatedLocateWhenDirectSessionFails) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   pair.pump(20);
   ASSERT_TRUE(pair.runtimeA.forgetSession(pair.peerA));
   pair.runtimeA.testHooks()->dropNextSessionAcceptTx = 0xFF;
@@ -1362,6 +1377,7 @@ TEST(SupLanDiscoveryAudit,
 TEST(SupLanDiscoveryAudit, SameIpDistinctPortsPreservedAcrossEntireExchange) {
   RuntimePair pair(true);
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   ASSERT_EQ(pair.network.packets.size(), 1U);
   const Packet query = pair.network.packets.front();
   EXPECT_EQ(query.destination.port, 2016U);
@@ -1387,6 +1403,7 @@ TEST(SupLanDiscoveryAudit, FailedMulticastSendConsumesSpacedAttempts) {
   RuntimePair pair;
   pair.network.failMulticast = true;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   for (unsigned i = 0; i < 50; ++i) pair.runtimeB.iterate();
   EXPECT_EQ(pair.network.multicastAttempts, 1U);
   pair.network.now = 249;
@@ -1410,6 +1427,7 @@ TEST(SupLanDiscoveryAudit, FailedMulticastSendConsumesSpacedAttempts) {
 TEST(SupLanDiscoveryAudit, SourceLocatesInterestedDestinationAfterIpLoss) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   pair.pump(10);
   pair.runtimeA.clearEndpoint(pair.peerA);
   ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
@@ -1793,6 +1811,7 @@ TEST(SupLanRecovery, BackgroundStagesHaveHardMinimumAndAdditiveJitter) {
   RuntimePair pair;
   pair.network.failMulticast = true;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   for (uint32_t now = 250; now <= 750; now += 250) {
     pair.network.now = now;
     pair.runtimeB.iterate();
@@ -1856,7 +1875,10 @@ TEST(SupLanRecovery, ResourcesAndExplicitTriggersShareOneCycle) {
     ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
     ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, second));
   }
-  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 2U);
+  // Accepted logical demand does not reserve deferred frames before iterate.
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+  EXPECT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  EXPECT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, second));
   EXPECT_EQ(pair.runtimeB.recoveryStatus(pair.peerB).deadlineMs, deadline);
   pair.pumpMs(800);
   EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 3U);
@@ -2050,6 +2072,7 @@ TEST(SupLanRecovery, LocalStateSendFailureDoesNotBecomeRunnableRetry) {
 TEST(SupLanDiscoveryAudit, LateLocateReplyPreservesConfirmedSessionEndpoint) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
   pair.pump(20);
   pair.runtimeB.clearEndpoint(pair.peerB);
   ASSERT_TRUE(pair.runtimeA.forgetSession(pair.peerA));
@@ -2103,6 +2126,349 @@ TEST(SupLanDiscoveryAudit, LateLocateReplyPreservesConfirmedSessionEndpoint) {
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
 }
 
+
+TEST(SupLanRecovery, LogicalAdmissionIsIndependentOfDeferredFrameCapacity) {
+  RuntimePair pair;
+  pair.datagramsA.available = false;
+  uint8_t control[17] = {};
+  control[4] = 0xff;
+  for (unsigned i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
+    ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
+                                         sizeof(control), 701));
+  }
+  ASSERT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used,
+            SUPLAN_MAX_DEFERRED_APP_EVENTS);
+  const auto packets = pair.network.history.size();
+  for (int i = 0; i < 5; ++i) {
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  }
+  EXPECT_EQ(pair.network.history.size(), packets);
+  EXPECT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used,
+            SUPLAN_MAX_DEFERRED_APP_EVENTS);
+  pair.runtimeB.cancelOwnedControls(701);
+  pair.datagramsA.available = true;
+  pair.pump(40);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+  EXPECT_EQ(pair.appB.stateCalls, 1U);
+  EXPECT_EQ(pair.appA.controlCalls, 0U);
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+}
+
+TEST(SupLanRecovery, LogicalDemandPoolRejectsOverflowAndReclaimsLastOwner) {
+  RuntimePair pair;
+  const Supla::SupLan::AclEntry wildcard = {
+      {Supla::SupLan::kResourceTypeDevice, 1001},
+      Supla::SupLan::kPermissionRead};
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, &wildcard, 1));
+  for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+    const ResourceId resource = {
+        Supla::SupLan::kResourceTypeChannel, 61000 + i};
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, resource)) << i;
+    ASSERT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, resource));
+  }
+  const ResourceId extra = {Supla::SupLan::kResourceTypeChannel, 71000};
+  EXPECT_FALSE(pair.runtimeB.requestRead(pair.peerB, extra));
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, extra));
+  EXPECT_EQ(pair.runtimeB.diagnostics().poolReject, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+  pair.runtimeB.removeReadDependency(
+      pair.peerB, {Supla::SupLan::kResourceTypeChannel, 61000});
+  EXPECT_TRUE(pair.runtimeB.requestRead(pair.peerB, extra));
+  EXPECT_FALSE(pair.runtimeB.requestRead(pair.peerB, wildcard.resource));
+  EXPECT_FALSE(pair.runtimeB.requestRead(pair.peerB, {0xff, 1001}));
+}
+
+TEST(SupLanRecovery, DirectServerRoleMutationCannotDispatchRetainedRead) {
+  for (bool connected : {false, true}) {
+    RuntimePair pair;
+    if (connected) {
+      ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+      pair.pump(20);
+    }
+    pair.datagramsA.available = false;
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.runtimeB.iterate();
+    const auto dataTx = pair.runtimeB.diagnostics().dataTx;
+    pair.peersB.get(pair.peerB)->destination = false;
+    pair.network.now += Supla::SupLan::kAckRetryMs + 1;
+    pair.runtimeB.iterate();
+    EXPECT_EQ(pair.runtimeB.diagnostics().dataTx, dataTx);
+    EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+    EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+    EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+    EXPECT_FALSE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.peersB.get(pair.peerB)->destination = true;
+    pair.datagramsA.available = true;
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.pump(40);
+    EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  }
+}
+
+
+TEST(SupLanRecovery, FairCursorDispatchesAllSlotsAndReusedSlotsOnce) {
+  RuntimePair pair;
+  const Supla::SupLan::AclEntry wildcard = {
+      {Supla::SupLan::kResourceTypeDevice, 1001},
+      Supla::SupLan::kPermissionRead};
+  ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 2, &wildcard, 1));
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, &wildcard, 1));
+  // Each normal Source has half as many interest slots as Destination
+  // dependencies. Two Sources cover the full pool without overriding limits.
+  const Endpoint endpointC = {0x0300007f, 2016};
+  FakeDatagramPort portC(&pair.network, endpointC);
+  FakeApplication appC;
+  Supla::SupLan::PeerTable peersC;
+  Supla::SupLan::Runtime runtimeC(&pair.crypto, &portC, &appC, &peersC,
+                                 RuntimePair::nodeAddress(1003), 27);
+  const Supla::SupLan::PeerContext context = {
+      Supla::SupLan::kAuthorityServer, 0,
+      RuntimePair::nodeAddress(1003), RuntimePair::nodeAddress(1002), 1, 1};
+  const uint8_t root[32] = {42};
+  Supla::SupLan::PeerMaterial material = {};
+  ASSERT_TRUE(Supla::SupLan::derivePeerMaterial(&context, root, &material));
+  const Supla::SupLan::AclEntry otherWildcard = {
+      {Supla::SupLan::kResourceTypeDevice, 1003},
+      Supla::SupLan::kPermissionRead};
+  uint8_t sourceC = 0xff, destinationC = 0xff;
+  ASSERT_TRUE(peersC.addPeerFromRoot(&context, root, 1, &otherWildcard, 1,
+                                    &sourceC));
+  ASSERT_TRUE(pair.peersB.addPeer(&context, material.peerKey, 1,
+                                 &otherWildcard, 1, &destinationC, true));
+  // The single-recipient fake multicast bus is not a broadcast simulation.
+  // Known candidates exercise actual authenticated handshakes for both peers.
+  pair.peersB.get(pair.peerB)->endpoint = pair.endpointA;
+  pair.peersB.get(pair.peerB)->endpointState =
+      Supla::SupLan::kPeerEndpointLocateCandidate;
+  pair.peersB.get(destinationC)->endpoint = endpointC;
+  pair.peersB.get(destinationC)->endpointState =
+      Supla::SupLan::kPeerEndpointLocateCandidate;
+  for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+    ASSERT_TRUE(pair.runtimeB.requestRead(
+        i % 2 ? destinationC : pair.peerB,
+        {Supla::SupLan::kResourceTypeChannel, 61000 + i})) << i;
+  }
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+  for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES + 40U; ++i) {
+    ++pair.network.now;
+    const auto sent = pair.runtimeB.diagnostics().dataTx;
+    const auto retries = pair.runtimeB.diagnostics().retryTx;
+    pair.runtimeB.iterate();
+    EXPECT_LE(pair.runtimeB.diagnostics().dataTx - sent,
+              2U + pair.runtimeB.diagnostics().retryTx - retries) << i;
+    pair.runtimeA.iterate();
+    runtimeC.iterate();
+  }
+  EXPECT_EQ(pair.appB.stateCalls, SUPLAN_MAX_READ_DEPENDENCIES);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched +
+                runtimeC.diagnostics().readDispatched,
+            SUPLAN_MAX_READ_DEPENDENCIES);
+  for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+    const ResourceId resource = {
+        Supla::SupLan::kResourceTypeChannel, 61000 + i};
+    ASSERT_FALSE(pair.runtimeB.readNeedsRefresh(
+        i % 2 ? destinationC : pair.peerB, resource)) << i;
+    if (i % 2 == 0) {
+      pair.runtimeB.removeReadDependency(pair.peerB, resource);
+      ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, resource));
+    }
+  }
+  for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES + 40U; ++i) {
+    pair.network.now += 10;
+    pair.runtimeB.iterate();
+    pair.runtimeA.iterate();
+    runtimeC.iterate();
+  }
+  EXPECT_EQ(pair.appB.stateCalls, SUPLAN_MAX_READ_DEPENDENCIES +
+                                (SUPLAN_MAX_READ_DEPENDENCIES + 1) / 2);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+  // A known-session Source that stops replying may own one retry, but must
+  // not fill the shared pools ahead of healthy C's waiting demand.
+  const auto readsC = runtimeC.diagnostics().readDispatched;
+  pair.datagramsA.available = false;
+  const auto unavailableAt = pair.network.now;
+  for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+    ASSERT_TRUE(pair.runtimeB.requestRead(
+        i % 2 ? destinationC : pair.peerB,
+        {Supla::SupLan::kResourceTypeChannel, 61000 + i}));
+  }
+  for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES + 40U; ++i) {
+    ++pair.network.now;
+    pair.runtimeB.iterate();
+    pair.runtimeA.iterate();
+    runtimeC.iterate();
+    bool waitingC = false;
+    for (uint32_t id = 1; id < SUPLAN_MAX_READ_DEPENDENCIES; id += 2) {
+      waitingC = waitingC || pair.runtimeB.readNeedsRefresh(
+          destinationC, {Supla::SupLan::kResourceTypeChannel, 61000 + id});
+    }
+    if (!waitingC) break;
+  }
+  EXPECT_EQ(runtimeC.diagnostics().readDispatched,
+            readsC + SUPLAN_MAX_READ_DEPENDENCIES / 2);
+  // C completed before A's retry timer: A may now use both retry slots,
+  // since it is the only remaining peer with demand, but C was not blocked.
+  EXPECT_LE(pair.network.now - unavailableAt,
+            SUPLAN_MAX_READ_DEPENDENCIES + 40U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 2U);
+  // Two admissions per turn can leave two additional A frames queued after
+  // the final C response; C has already completed within the same bound.
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 2U);
+  pair.datagramsA.available = true;
+  pair.runtimeB.refreshPeer(pair.peerB, 40000, true);
+  for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES + 80U; ++i) {
+    ++pair.network.now;
+    pair.runtimeB.iterate();
+    pair.runtimeA.iterate();
+    runtimeC.iterate();
+  }
+  for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+    EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(
+        i % 2 ? destinationC : pair.peerB,
+        {Supla::SupLan::kResourceTypeChannel, 61000 + i}));
+  }
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+}
+
+
+TEST(SupLanRecovery, MissingStateCannotBlockHealthyChannelOnSameSource) {
+  RuntimePair pair;
+  const ResourceId second = {Supla::SupLan::kResourceTypeChannel, 50003};
+  const Supla::SupLan::AclEntry acl[] = {
+      {pair.resource, Supla::SupLan::kPermissionRead},
+      {second, Supla::SupLan::kPermissionRead}};
+  ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 2, acl, 2));
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, acl, 2));
+  pair.appA.unavailableResource = pair.resource.id;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, second));
+  pair.pump(20);
+  EXPECT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, second));
+  EXPECT_EQ(pair.appB.stateCalls, 1U);
+  pair.appA.unavailableResource = 0;
+  pair.pumpMs(1000);
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.appB.stateCalls, 2U);
+}
+
+TEST(SupLanRecovery, NestedIterateAndRequestsCannotBypassFreshReadBudget) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  const ResourceId second = {Supla::SupLan::kResourceTypeChannel, 50003};
+  const ResourceId third = {Supla::SupLan::kResourceTypeChannel, 50004};
+  const Supla::SupLan::AclEntry acl[] = {
+      {pair.resource, Supla::SupLan::kPermissionRead},
+      {second, Supla::SupLan::kPermissionRead},
+      {third, Supla::SupLan::kPermissionRead}};
+  ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 2, acl, 3));
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, acl, 3));
+  struct Context {
+    RuntimePair *pair; ResourceId second; ResourceId third; bool called;
+  };
+  Context context = {&pair, second, third, false};
+  pair.runtimeB.setDataTransmitObserver(
+      [](void *opaque, const Endpoint &, const uint8_t *, size_t) {
+        auto &context = *static_cast<Context *>(opaque);
+        if (context.called) return;
+        context.called = true;
+        EXPECT_TRUE(context.pair->runtimeB.requestRead(
+            context.pair->peerB, context.second));
+        EXPECT_TRUE(context.pair->runtimeB.requestRead(
+            context.pair->peerB, context.third));
+        context.pair->runtimeB.iterate();
+      }, &context);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  const auto sent = pair.runtimeB.diagnostics().dataTx;
+  pair.runtimeB.iterate();
+  EXPECT_TRUE(context.called);
+  EXPECT_EQ(pair.runtimeB.diagnostics().dataTx, sent + 2);
+  EXPECT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, third));
+  pair.pump(30);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 4U);
+  EXPECT_EQ(pair.appB.stateCalls, 4U);
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, second));
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, third));
+}
+
+TEST(SupLanRecovery, BeforeSendCallbackRevokesOrRecreatesReadFailClosed) {
+  for (int variant = 0; variant < 3; ++variant) {
+    RuntimePair pair;
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.pump(20);
+    struct Context { RuntimePair *pair; int variant; bool called; };
+    Context context = {&pair, variant, false};
+    pair.runtimeB.setDataTransmitObserver(
+        [](void *opaque, const Endpoint &, const uint8_t *, size_t) {
+          auto &context = *static_cast<Context *>(opaque);
+          if (context.called) return;
+          context.called = true;
+          auto &pair = *context.pair;
+          if (context.variant == 0) {
+            const Supla::SupLan::AclEntry other = {
+                {Supla::SupLan::kResourceTypeChannel, 50003},
+                Supla::SupLan::kPermissionRead};
+            EXPECT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, &other, 1));
+          } else {
+            pair.runtimeB.removeReadDependency(pair.peerB, pair.resource);
+            if (context.variant == 2) {
+              EXPECT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+            }
+          }
+        }, &context);
+    const auto sent = pair.runtimeB.diagnostics().dataTx;
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.runtimeB.iterate();
+    EXPECT_TRUE(context.called);
+    EXPECT_EQ(pair.runtimeB.diagnostics().dataTx,
+              sent + (variant == 2 ? 1U : 0U));
+    pair.pump(30);
+    EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched,
+              variant == 2 ? 2U : 1U);
+    EXPECT_EQ(pair.appB.stateCalls, variant == 2 ? 2U : 1U);
+    EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  }
+}
+
+TEST(SupLanRecovery, QueuedReadRevocationKeepsUnrelatedControl) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  const ResourceId second = {Supla::SupLan::kResourceTypeChannel, 50003};
+  const Supla::SupLan::AclEntry acl[] = {
+      {pair.resource, Supla::SupLan::kPermissionRead},
+      {second, Supla::SupLan::kPermissionControl}};
+  ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 2, acl, 2));
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, acl, 2));
+  pair.datagramsA.available = false;
+  uint8_t control[17] = {};
+  control[4] = 0xff;
+  for (unsigned i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
+    ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, second, control,
+                                         sizeof(control)));
+  }
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
+  ASSERT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 3, acl + 1, 1));
+  // Synchronous drain occurs before an outer prune, with a queued READ.
+  ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, second, control,
+                                       sizeof(control)));
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used,
+            SUPLAN_MAX_RETRY_SLOTS);
+  pair.datagramsA.available = true;
+  pair.pump(40);
+  EXPECT_EQ(pair.appA.controlCalls, SUPLAN_MAX_RETRY_SLOTS + 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
+}
+
 TEST(SupLanRecovery, CompletedReadDependenciesFollowCurrentAclCapacity) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
@@ -2142,9 +2508,10 @@ TEST(SupLanRecovery, AclRevocationCancelsQueuedAndRetryingReads) {
     ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
     pair.runtimeB.iterate();
     ASSERT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
-    EXPECT_EQ(established ? pair.runtimeB.poolDiagnostics().retries.used
-                          : pair.runtimeB.poolDiagnostics().deferredEvents.used,
-              1U);
+    // Without a session, logical demand stays outside the deferred pool.
+    EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used,
+              established ? 1U : 0U);
+    EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
     const Supla::SupLan::AclEntry controlOnly = {
         {Supla::SupLan::kResourceTypeChannel, 50003},
         Supla::SupLan::kPermissionControl};
@@ -2173,7 +2540,7 @@ TEST(SupLanRecovery, AclRefreshPreservesStillAuthorizedPendingReads) {
   ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, &readOnly, 1));
   pair.runtimeB.iterate();
   EXPECT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
-  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
   pair.datagramsA.available = true;
   pair.pump(20);
   EXPECT_EQ(pair.appB.stateCalls, 1U);

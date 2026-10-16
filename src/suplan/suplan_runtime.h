@@ -117,6 +117,9 @@ class Runtime {
     const auto retry = application_ ? application_->bindingRetry() : nullptr;
     return retry && retry->length;
   }
+  // True accepts a bounded logical READ dependency, not an enqueued frame or
+  // delivered subscription. iterate() owns eventual dispatch/recovery. False
+  // means invalid/denied demand or dependency capacity exhaustion.
   bool requestRead(uint8_t peerIndex, const ResourceId &resource);
   void removeReadDependency(uint8_t peerIndex, const ResourceId &resource);
   bool sendControl(uint8_t peerIndex, const ResourceId &resource,
@@ -322,8 +325,10 @@ class Runtime {
   void finishRecovery(uint8_t peerIndex);
   void iterateRecovery(uint32_t now);
   void pruneReadDependencies();
+  bool readAuthorized(uint8_t peerIndex, const ResourceId &resource) const;
   void noteReachability(uint8_t peerIndex);
   void completeRead(uint8_t peerIndex, const ResourceId &resource);
+  bool dispatchRead();
   bool queueRead(uint8_t peerIndex, const ResourceId &resource);
   int findReadDependency(uint8_t peerIndex, const ResourceId &resource) const;
   bool sendRaw(const Endpoint &endpoint, const uint8_t *data, size_t length,
@@ -395,7 +400,9 @@ class Runtime {
   uint16_t fragmentOrdinal_;
   uint16_t presenceAttempts_ = 0;
   uint8_t suplaProtoVersion_;
-  bool processing_;
+  bool processing_ : 1;
+  bool iterating_ : 1;
+  uint16_t nextReadDependency_ = 0;
   SessionEntry sessions_[SUPLAN_MAX_ACTIVE_SESSIONS];
   PendingHandshake pending_[SUPLAN_MAX_PENDING_HANDSHAKES];
   OutstandingLocate locates_[SUPLAN_MAX_OUTSTANDING_LOCATES];

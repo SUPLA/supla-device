@@ -100,7 +100,8 @@ Runtime::Runtime(CryptoPort *crypto, DatagramPort *datagrams,
     : crypto_(crypto), datagrams_(datagrams),
       application_(application), peers_(peers), localAddress_(localAddress),
       nextFrameId_(UINT32_C(0xC3000000)), fragmentOrdinal_(0),
-      suplaProtoVersion_(suplaProtoVersion), processing_(false), sessions_(),
+      suplaProtoVersion_(suplaProtoVersion), processing_(false),
+      iterating_(false), sessions_(),
       pending_(), locates_(),
       interests_(), retries_(), deferred_(), recovery_(), dependencies_(),
       flood_(), fragmentSender_(),
@@ -631,9 +632,7 @@ void Runtime::pruneReadDependencies() {
     }
     const uint8_t peerIndex = entry.peerIndex;
     const ResourceId resource = {entry.resourceType, entry.resourceId};
-    if (isLocalDestination(peers_->get(peerIndex)) &&
-        (peers_->authorize(peerIndex, resource, kPermissionRead) ||
-         peers_->authorize(peerIndex, resource, kPermissionAction))) {
+    if (readAuthorized(peerIndex, resource)) {
       continue;
     }
     // A revoked dependency must not retain queued or retrying READ work.
@@ -675,7 +674,6 @@ void Runtime::pruneReadDependencies() {
 }
 
 void Runtime::iterateRecovery(uint32_t now) {
-  pruneReadDependencies();
   for (uint8_t peerIndex = 0; peerIndex < SUPLAN_MAX_PERSISTENT_PEERS;
        ++peerIndex) {
     PeerRecovery &peer = recovery_[peerIndex];
@@ -708,15 +706,9 @@ void Runtime::iterateRecovery(uint32_t now) {
       beginRecovery(peerIndex);
     }
     if (peer.active) {
-      for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
-        ReadDependency &entry = dependencies_[i];
-        if (!entry.used || entry.peerIndex != peerIndex ||
-            !entry.needsRefresh || entry.pending) {
-          continue;
-        }
-        const ResourceId resource = {entry.resourceType, entry.resourceId};
-        (void)queueRead(peerIndex, resource);
-      }
+      // Discover peers without occupying scarce application slots with READs.
+      // Existing locate/handshake pools, deadlines and backoff bound this work.
+      startHandshake(peerIndex);
     }
   }
 }
@@ -952,21 +944,43 @@ void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
   updatePoolHighWater();
 }
 
-bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
+bool Runtime::readAuthorized(uint8_t peerIndex,
+                             const ResourceId &resource) const {
   const PeerRecord *peer = peers_->get(peerIndex);
-  const bool readAuthorized = peers_->authorize(peerIndex, resource,
-                                                 kPermissionRead);
-  const bool actionAuthorized = peers_->authorize(peerIndex, resource,
-                                                   kPermissionAction);
-  if (!isLocalDestination(peer) || (!readAuthorized && !actionAuthorized)) {
+  return resource.type == kResourceTypeChannel && peer &&
+      (peer->contextBytes[0] != kAuthorityServer || peer->destination) &&
+      isLocalDestination(peer) &&
+      (peers_->authorize(peerIndex, resource, kPermissionRead) ||
+       peers_->authorize(peerIndex, resource, kPermissionAction));
+}
+
+bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
+  if (!readAuthorized(peerIndex, resource)) {
     ++diagnostics_.aclReject;
     return false;
   }
-  pruneReadDependencies();
   int slot = findReadDependency(peerIndex, resource);
   if (slot < 0) {
     for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
       if (!dependencies_[i].used) {
+        slot = i;
+        dependencies_[i].used = true;
+        dependencies_[i].peerIndex = peerIndex;
+        dependencies_[i].resourceType = resource.type;
+        dependencies_[i].resourceId = resource.id;
+        break;
+      }
+    }
+  }
+  if (slot < 0) {
+    // Only allocation pressure needs reclamation between outer iterations.
+    // A direct ACL replacement need not notify Runtime first. Reclaim one
+    // currently denied dependency; do not globally prune on every request.
+    for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+      const auto &entry = dependencies_[i];
+      const ResourceId old = {entry.resourceType, entry.resourceId};
+      if (!readAuthorized(entry.peerIndex, old)) {
+        removeReadDependency(entry.peerIndex, old);
         slot = i;
         dependencies_[i].used = true;
         dependencies_[i].peerIndex = peerIndex;
@@ -983,8 +997,78 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
   if (dependencies_[slot].pending) {
     return true;
   }
+  // Accept bounded logical demand independently of deferred frame capacity.
+  // Runtime owns queue admission and recovery until completion or removal.
+  dependencies_[slot].needsRefresh = true;
   beginRecovery(peerIndex);
-  return queueRead(peerIndex, resource);
+  return true;
+}
+
+bool Runtime::dispatchRead() {
+  // This is the sole fresh READ admission point, bounded by outer iterate.
+  // A direct request or nested drain only records demand; neither calls here.
+  bool capacity = false;
+  for (const auto &queued : deferred_) capacity = capacity || !queued.used;
+  if (!capacity) return false;
+  uint8_t waitingPeer = 0xff;
+  bool competingPeers = false;
+  for (const auto &entry : dependencies_) {
+    if (!entry.used || !entry.needsRefresh || entry.pending ||
+        !recovery_[entry.peerIndex].active || !hasSession(entry.peerIndex))
+      continue;
+    if (waitingPeer != 0xff && waitingPeer != entry.peerIndex) {
+      competingPeers = true;
+      break;
+    }
+    waitingPeer = entry.peerIndex;
+  }
+  // No eligible dependency means the following scan cannot admit a frame.
+  if (waitingPeer == 0xff) return false;
+  for (uint16_t visited = 0; visited < SUPLAN_MAX_READ_DEPENDENCIES;
+       ++visited) {
+    const uint16_t slot = nextReadDependency_;
+    if (++nextReadDependency_ >= SUPLAN_MAX_READ_DEPENDENCIES)
+      nextReadDependency_ = 0;
+    const auto &entry = dependencies_[slot];
+    if (!entry.used || !entry.needsRefresh || entry.pending ||
+        !recovery_[entry.peerIndex].active || !hasSession(entry.peerIndex))
+      continue;
+    const uint8_t peerIndex = entry.peerIndex;
+    const ResourceId resource = {entry.resourceType, entry.resourceId};
+    if (!readAuthorized(peerIndex, resource)) {
+      removeReadDependency(peerIndex, resource);
+      continue;
+    }
+    bool peerPending = false;
+    for (const auto &retry : retries_) {
+      peerPending = peerPending || (retry.isUsed() &&
+          retry.peerIndex == peerIndex && (retry.flags & kRetryReadRequest));
+    }
+    for (const auto &queued : deferred_) {
+      peerPending = peerPending || (queued.used &&
+          queued.peerIndex == peerIndex &&
+          queued.data[0] == kMessageClassNative &&
+          getUint32(queued.data + 1) == kNativeReadResource);
+    }
+    // Reserve progress for other ready peers, but let a lone Source's healthy
+    // channels proceed while one of its channels has no readable state.
+    if (peerPending && competingPeers) continue;
+    // Prefer another peer's waiting slot on the next turn, without retaining
+    // a second queue or per-peer scheduler state. Recheck it on actual use.
+    uint16_t next = nextReadDependency_;
+    for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
+      const auto &candidate = dependencies_[next];
+      if (candidate.used && candidate.needsRefresh && !candidate.pending &&
+          candidate.peerIndex != peerIndex) {
+        nextReadDependency_ = next;
+        break;
+      }
+      if (++next >= SUPLAN_MAX_READ_DEPENDENCIES) next = 0;
+    }
+    // Advance before enqueue: draining may synchronously invoke callbacks.
+    return queueRead(peerIndex, resource);
+  }
+  return false;
 }
 
 bool Runtime::queueRead(uint8_t peerIndex, const ResourceId &resource) {
@@ -1449,6 +1533,15 @@ void Runtime::drainDeferred() {
       cancelPeerRecoveryIfIdle(peerIndex);
       continue;
     }
+    if ((retry->flags & kRetryReadRequest) != 0 &&
+        (!readAuthorized(retry->peerIndex, retry->resource) ||
+         findReadDependency(retry->peerIndex, retry->resource) < 0)) {
+      const uint8_t peerIndex = retry->peerIndex;
+      const ResourceId resource = retry->resource;
+      clearRetryEntry(retry);
+      removeReadDependency(peerIndex, resource);
+      continue;
+    }
     int sessionIndex = -1;
     for (uint8_t s = 0; s < SUPLAN_MAX_ACTIVE_SESSIONS; ++s) {
       if (sessions_[s].used &&
@@ -1483,6 +1576,11 @@ void Runtime::drainDeferred() {
                        &session->nextTransmitSequence,
                        &session->lastActivityMs, applicationBuffer_,
                        applicationLength, true, resource)) {
+      if ((readFlags & kRetryReadRequest) != 0) {
+        const int slot = findReadDependency(peerIndex, resource);
+        if (slot < 0 || !dependencies_[slot].pending ||
+            !readAuthorized(peerIndex, resource)) continue;
+      }
       retry->peerIndex = peerIndex;
       retry->resource = resource;
       retry->sessionRecoveryAttempts = recoveryAttempts;
@@ -1506,6 +1604,20 @@ void Runtime::drainDeferred() {
     DeferredApplication *queued = &deferred_[i];
     if (!queued->used) {
       continue;
+    }
+    if (queued->length >= kApplicationHeaderSize &&
+        queued->data[0] == kMessageClassNative &&
+        getUint32(queued->data + 1) == kNativeReadResource) {
+      const ResourceId resource = {
+          queued->data[kApplicationHeaderSize],
+          getUint32(queued->data + kApplicationHeaderSize + 1)};
+      if (!readAuthorized(queued->peerIndex, resource) ||
+          findReadDependency(queued->peerIndex, resource) < 0) {
+        const uint8_t peerIndex = queued->peerIndex;
+        queued->used = false;
+        removeReadDependency(peerIndex, resource);
+        continue;
+      }
     }
     const bool actionDelivery =
         isActionApplication(queued->data, queued->length);
@@ -1750,6 +1862,13 @@ bool Runtime::sendProtectedToEndpoint(
       applicationLength > SUPLAN_MAX_APPLICATION_BYTES) {
     return false;
   }
+  if (ackRequired && applicationLength >= kApplicationHeaderSize &&
+      applicationData[0] == kMessageClassNative &&
+      getUint32(applicationData + 1) == kNativeReadResource &&
+      (!readAuthorized(peerIndex, resource) ||
+       findReadDependency(peerIndex, resource) < 0)) {
+    return false;
+  }
   // PROTO-014: admission applies before encryption, sequence consumption or TX.
   // Include responder-pending keys used for a protected admission rejection.
   uint16_t peerReceiveLimit = 0;
@@ -1847,6 +1966,12 @@ bool Runtime::sendProtectedToEndpoint(
   if (frameKind == kTxKindData && dataTransmitObserver_ != nullptr) {
     dataTransmitObserver_(dataTransmitContext_, endpoint,
                           transmitFrame_, frameLength);
+  }
+  if ((retryFlags & kRetryReadRequest) != 0) {
+    const int slot = findReadDependency(peerIndex, resource);
+    if (slot < 0 || !dependencies_[slot].pending ||
+        !readAuthorized(peerIndex, resource) ||
+        findSession(sessionId, endpoint) < 0) return false;
   }
   if (frameKind == kTxKindData && hooks_.failNextDataTx != 0) {
     --hooks_.failNextDataTx;
@@ -2961,9 +3086,12 @@ void Runtime::processFlood() {
 
 void Runtime::iterate() {
   if (crypto_ == nullptr || datagrams_ == nullptr ||
-      peers_ == nullptr || application_ == nullptr || processing_) {
+      peers_ == nullptr || application_ == nullptr || processing_ ||
+      iterating_) {
     return;
   }
+  iterating_ = true;
+  pruneReadDependencies();
   for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     if (peers_->get(i) && !peers_->runtimeEligible(i)) clearPeer(i);
   }
@@ -3014,6 +3142,15 @@ void Runtime::iterate() {
   pruneInterests(now);
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
+    if (retry->isUsed() && (retry->flags & kRetryReadRequest) != 0 &&
+        (!readAuthorized(retry->peerIndex, retry->resource) ||
+         findReadDependency(retry->peerIndex, retry->resource) < 0)) {
+      const uint8_t peerIndex = retry->peerIndex;
+      const ResourceId resource = retry->resource;
+      clearRetryEntry(retry);
+      removeReadDependency(peerIndex, resource);
+      continue;
+    }
     if (retry->isUsed()) {
       uint8_t permission = retry->actionDelivery ? kPermissionAction :
           retry->controlDelivery ? kPermissionControl : kPermissionRead;
@@ -3048,7 +3185,8 @@ void Runtime::iterate() {
         const int slot = findReadDependency(peerIndex, resource);
         if (slot >= 0) {
           dependencies_[slot].pending = false;
-          (void)queueRead(peerIndex, resource);
+          dependencies_[slot].needsRefresh = true;
+          beginRecovery(peerIndex);
         }
       }
       continue;
@@ -3090,10 +3228,18 @@ void Runtime::iterate() {
               datagrams_->maxDatagramPayload()
           ? hooks_.maxDatagramPayload : datagrams_->maxDatagramPayload();
       fragmentOrdinal_ = 0;
+      const bool readRequest = (retry->flags & kRetryReadRequest) != 0;
+      const uint32_t sequence = retry->sequence;
       if (dataTransmitObserver_ != nullptr) {
         dataTransmitObserver_(dataTransmitContext_, peer->endpoint,
                               retry->frame, retry->frameLength);
       }
+      if (readRequest &&
+          (!retry->isUsed() || retry->sequence != sequence ||
+           (retry->flags & kRetryReadRequest) == 0 ||
+           !readAuthorized(retry->peerIndex, retry->resource) ||
+           findReadDependency(retry->peerIndex, retry->resource) < 0 ||
+           findSession(retry->sessionId, peer->endpoint) < 0)) continue;
       if (hooks_.failNextDataTx != 0) {
         --hooks_.failNextDataTx;
       } else if (fragmentSender_.send(
@@ -3119,10 +3265,15 @@ void Runtime::iterate() {
     processDatagram(source, transmitFrame_, static_cast<size_t>(length));
   }
   drainDeferred();
+  // Bound fresh READ work across both recovery phases and nested callbacks.
+  for (uint8_t i = 0; i < 2; ++i) {
+    if (!dispatchRead()) break;
+  }
   for (uint8_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     cancelPeerRecoveryIfIdle(i);
   }
   updatePoolHighWater();
+  iterating_ = false;
 }
 
 void Runtime::removeReadDependency(uint8_t peerIndex,

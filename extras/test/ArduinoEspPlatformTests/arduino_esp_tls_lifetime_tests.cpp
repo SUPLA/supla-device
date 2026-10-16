@@ -4,10 +4,15 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <ctime>
 #include <cstring>
 #include <string>
 
+#include "supla/clock/clock.h"
+
+#define time ArduinoTestTime
 #include "../../../src/supla/arduino_esp_platform.cpp"  // NOLINT(build/include)
+#undef time
 
 // Entropy is outside this TLS lifetime harness. Fail closed if requested.
 bool Supla::Crypto::fillRandom(uint8_t *, size_t) {
@@ -25,6 +30,10 @@ void ResetFakeState() {
   WiFiClientSecure::lookupDn.clear();
   WiFiClientSecure::fingerprintValid = true;
   WiFiClientSecure::connectResult = 1;
+  WiFiClientSecure::connectCalls = 0;
+  arduinoTestEpoch = 1700000000;
+  arduinoTestDelayCalls = 0;
+  Supla::Clock::ready = true;
   BearSSL::X509List::lastCreated = nullptr;
   BearSSL::X509List::nextId = 0;
   WiFiClientSecure::events.clear();
@@ -294,6 +303,60 @@ TEST(ArduinoEspTlsLifetime, InvalidCAFailsClosedAndReleasesPartialState) {
   EXPECT_EQ(0, ConnectWithCA(&client, "invalid"));
   EXPECT_EQ(0, BearSSL::X509List::liveCount);
   EXPECT_EQ(1, WiFiClientSecure::liveCount);
+}
+
+TEST(ArduinoEspTlsLifetime, UnavailableClockDefersCAWithoutBlockingOrBypass) {
+  ResetFakeState();
+  Supla::Clock::ready = false;
+  arduinoTestEpoch = 0;
+  Supla::ArduinoEspClient client;
+  client.setTimeoutMs(3000);
+  client.setSSLEnabled(true);
+  client.setCACert("ca-one");
+
+  for (int i = 0; i < 5; ++i) {
+    int result = -1;
+    EXPECT_NO_THROW(result = client.connect("server", 443));
+    EXPECT_EQ(0, result);
+    EXPECT_EQ(0u, WiFiClientSecure::connectCalls);
+    EXPECT_EQ(0, BearSSL::X509List::nextId);
+    EXPECT_EQ(0u, arduinoTestDelayCalls);
+    // Like the production one-time request, this counter survives test resets.
+    EXPECT_EQ(1u, arduinoTestNtpRequests);
+  }
+
+  // SDK clock readiness must not bypass an unusable TLS system epoch.
+  Supla::Clock::ready = true;
+  EXPECT_EQ(0, client.connect("server", 443));
+  EXPECT_EQ(0u, WiFiClientSecure::connectCalls);
+  auto *caClient = WiFiClientSecure::lastCreated;
+
+  {
+    Supla::ArduinoEspClient fingerprintClient;
+    fingerprintClient.setSSLEnabled(true);
+    fingerprintClient.setServersCertFingerprint("fingerprint");
+    EXPECT_EQ(1, fingerprintClient.connect("server", 443));
+    EXPECT_EQ("fingerprint", WiFiClientSecure::lastCreated->authMode);
+  }
+  WiFiClientSecure::lastCreated = caClient;
+
+  arduinoTestEpoch = 1700000000;
+  // An underlying TLS rejection remains a rejection after time becomes usable.
+  WiFiClientSecure::connectResult = 0;
+  EXPECT_EQ(0, client.connect("server", 443));
+  WiFiClientSecure::connectResult = 1;
+  EXPECT_EQ(1, client.connect("server", 443));
+  EXPECT_NE(nullptr, caClient->certStore);
+  EXPECT_NE("insecure", caClient->authMode);
+  EXPECT_EQ(0, BearSSL::X509List::liveCount);
+  EXPECT_EQ(1u, arduinoTestNtpRequests);
+
+  const auto attempts = WiFiClientSecure::connectCalls;
+  arduinoTestEpoch = 0;
+  EXPECT_EQ(0, client.connect("server", 443));
+  EXPECT_EQ(attempts, WiFiClientSecure::connectCalls);
+  EXPECT_EQ(1u, arduinoTestNtpRequests);
+  EXPECT_EQ(0u, arduinoTestDelayCalls);
 }
 
 }  // namespace

@@ -14,7 +14,6 @@
 #endif
 #include <WiFiClient.h>
 #include <WiFiClientSecure.h>
-#include <supla/clock/clock.h>
 #include <SuplaDevice.h>
 #include <supla/crypto.h>
 #include "tools.h"
@@ -231,18 +230,16 @@ class ArduinoEspClient : public Client {
 #ifdef ARDUINO_ARCH_ESP8266
       clientSec->setBufferSizes(1024, 512);  // EXPERIMENTAL
       if (rootCACert) {
-        // Set time via NTP, as required for x.509 validation
-        static bool timeConfigured = Supla::Clock::IsReady();
-
-        if (!timeConfigured) {
-          timeConfigured = true;
-          configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-          SUPLA_LOG_DEBUG("Waiting for NTP time sync");
-          time_t now = time(nullptr);
-          while (now < 8 * 3600 * 2) {
-            delay(100);
-            now = time(nullptr);
+        // Request time for x.509 validation without blocking the Device loop.
+        // Recheck the system epoch on every attempt, including after rollback.
+        static bool ntpRequested = false;
+        if (time(nullptr) < 8 * 3600 * 2) {
+          if (!ntpRequested) {
+            configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+            ntpRequested = true;
+            SUPLA_LOG_DEBUG("Waiting for NTP time sync");
           }
+          return 0;
         }
 
         caCert = new (std::nothrow) BearSSL::X509List(rootCACert);

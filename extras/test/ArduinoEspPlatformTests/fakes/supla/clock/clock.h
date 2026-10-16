@@ -6,7 +6,8 @@
 namespace Supla {
 class Clock {
  public:
-  static bool IsReady() { return true; }
+  static bool IsReady() { return ready; }
+  inline static bool ready = true;
 };
 }  // namespace Supla
 

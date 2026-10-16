@@ -170,6 +170,7 @@ class WiFiClientSecure : public WiFiClient {
   }
 
   int connect(const char *, uint16_t) override {
+    ++connectCalls;
     if (certStore != nullptr) {
       br_x509_minimal_context context;
       certStore->installCertStore(&context);
@@ -243,6 +244,7 @@ class WiFiClientSecure : public WiFiClient {
   inline static WiFiClientSecure *lastCreated = nullptr;
   inline static int liveCount = 0;
   inline static int connectResult = 1;
+  inline static unsigned connectCalls = 0;
   inline static int lookupIndex = 0;
   inline static std::string lookupDn;
   inline static bool fingerprintValid = true;

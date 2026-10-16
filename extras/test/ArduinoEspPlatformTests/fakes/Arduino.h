@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include <ctime>
+#include <stdexcept>
 #include <string>
 
 using String = std::string;
@@ -29,7 +30,24 @@ class EspTestStub {
 
 inline EspTestStub ESP;
 
-inline void delay(uint32_t) {}
-inline void configTime(int32_t, int32_t, const char *, const char *) {}
+inline time_t arduinoTestEpoch = 1700000000;
+inline unsigned arduinoTestDelayCalls = 0;
+inline unsigned arduinoTestNtpRequests = 0;
+
+inline time_t ArduinoTestTime(time_t *result) {
+  if (result) {
+    *result = arduinoTestEpoch;
+  }
+  return arduinoTestEpoch;
+}
+
+inline void delay(uint32_t) {
+  ++arduinoTestDelayCalls;
+  // Fail immediately rather than hang a test on a blocking clock wait.
+  throw std::runtime_error("Blocking delay in TLS connection prerequisite");
+}
+inline void configTime(int32_t, int32_t, const char *, const char *) {
+  ++arduinoTestNtpRequests;
+}
 
 #endif  // EXTRAS_TEST_ARDUINOESPPLATFORMTESTS_FAKES_ARDUINO_H_

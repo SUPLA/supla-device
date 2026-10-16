@@ -154,17 +154,23 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
 }
 void RemoteChannelManager::remove(uint32_t consumerId) {
   if (!consumerId) return;
+  bool removed = false;
   for (auto adapter : backends_) {
     if (!adapter) continue;
     adapter->cancelControls(consumerId);
     for (int i = 0; i < adapter->consumerCapacity(); ++i) {
       const auto intent = adapter->intentAt(i);
       if (intent.consumerId == consumerId) {
+        removed = true;
         adapter->storeIntent(i, {});
         if (nextGeneration_ != UINT32_MAX) ++nextGeneration_;
       }
     }
   }
+  // Local/unset dependencies release their token on every reconciliation.
+  // No demand changed when that token was absent; keep control cancellation
+  // above, but leave resource authorization to state/access and iterate.
+  if (!removed) return;
   for (int mode = 0; mode < 2; ++mode) {
     auto adapter = backends_[mode];
     if (!adapter) continue;

@@ -81,6 +81,7 @@ class Backend : public RemoteChannelBackend {
   RemoteChannelResource &resourceAt(int i) override { return resources[i]; }
   void clearResource(int i) override { resources[i] = {}; }
   void reconcileResource(RemoteChannelResource &resource) override {
+    ++reconciliations;
     if ((resource.effective & 1) && !(rights & 1)) manager_->revoke(resource);
     resource.effective = rights;
     resource.access = (rights & resource.permissions) == resource.permissions
@@ -88,7 +89,10 @@ class Backend : public RemoteChannelBackend {
         : Supla::Device::RemoteAccess::PENDING;
   }
   void releaseResource(RemoteChannelResource &) override { ++releases; }
-  void cancelControls(uint32_t) override {}
+  void cancelControls(uint32_t owner) override {
+    ++cancellations;
+    cancelledOwner = owner;
+  }
   void refreshResource(RemoteChannelResource &, uint32_t) override {}
   bool fresh(const RemoteChannelResource &resource,
               uint32_t now) const override {
@@ -101,6 +105,9 @@ class Backend : public RemoteChannelBackend {
   uint8_t rights = 1;
   bool online = true;
   int releases = 0;
+  int reconciliations = 0;
+  int cancellations = 0;
+  uint32_t cancelledOwner = 0;
   Supla::Device::ChannelConsumer intents[4] = {};
   RemoteChannelResource resources[2];
 
@@ -126,6 +133,42 @@ class RemoteChannelManagement : public testing::Test {
                                         &skeleton));
   }
 };
+TEST_F(RemoteChannelManagement,
+       AbsentRemovalCancelsControlsWithoutRescanningUnchangedDemand) {
+  attach();
+  ASSERT_TRUE(manager.consume(demand(1, peer)));
+  ASSERT_TRUE(manager.consume(demand(2, peer)));
+  ASSERT_TRUE(manager.consume(demand(3, stream)));
+  manager.publish(peer, 21, 0);
+  manager.publish(stream, 12, 0);
+  auto borrowed = manager.state(peer, 0);
+  const auto admission = manager.admissionGeneration();
+  const int reconciliations = d2d.reconciliations + skeleton.reconciliations;
+  const int cancelled = d2d.cancellations + skeleton.cancellations;
+  for (int i = 0; i < 34; ++i) manager.remove(UINT32_MAX);
+  EXPECT_EQ(d2d.reconciliations + skeleton.reconciliations, reconciliations);
+  EXPECT_EQ(d2d.cancellations + skeleton.cancellations, cancelled + 68);
+  EXPECT_EQ(d2d.cancelledOwner, UINT32_MAX);
+  EXPECT_EQ(skeleton.cancelledOwner, UINT32_MAX);
+  EXPECT_EQ(manager.admissionGeneration(), admission);
+  EXPECT_EQ(manager.consumerCount(), 3);
+  EXPECT_EQ(manager.resourceCount(), 2);
+  EXPECT_TRUE(borrowed.available());
+  // Revocation still reconciles on the next real use, without any packet.
+  d2d.rights = 0;
+  EXPECT_FALSE(manager.state(peer, 0).available());
+  EXPECT_FALSE(borrowed.available());
+  EXPECT_TRUE(manager.state(stream, 0).available());
+  manager.remove(1);
+  EXPECT_EQ(manager.consumerCount(), 2);
+  EXPECT_EQ(manager.resourceCount(), 2);
+  manager.remove(2);
+  EXPECT_EQ(manager.resourceCount(), 1);
+  EXPECT_EQ(d2d.releases, 1);
+  manager.remove(3);
+  EXPECT_EQ(manager.resourceCount(), 0);
+}
+
 TEST_F(RemoteChannelManagement,
        SameKeySharesSnapshotDifferentModesStaySeparate) {
   attach();

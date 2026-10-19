@@ -10,6 +10,8 @@
 #include <yaml-cpp/yaml.h>
 
 #include <memory>
+#include <chrono>
+#include <vector>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -32,6 +34,15 @@ class LinuxMqttClient {
 
   bool getMessage(const std::string& topic, std::string& message) const;
 
+  struct Message {
+    std::string content;
+    bool received = false;
+    std::chrono::steady_clock::time_point updated;
+  };
+  // Copies all requested topics under one lock; parsing happens after return.
+  std::vector<Message> getMessages(
+      const std::vector<std::string>& requestedTopics) const;
+
   static void publishCallback(void**, struct mqtt_response_publish* published);
 
   enum MQTTErrors publish(const std::string& topic,
@@ -48,7 +59,7 @@ class LinuxMqttClient {
 
  private:
   static std::mutex topicsMutex;
-  static std::unordered_map<std::string, std::string> topics;
+  static std::unordered_map<std::string, Message> topics;
 
   explicit LinuxMqttClient(const LinuxYamlConfig& yamlConfig);
 

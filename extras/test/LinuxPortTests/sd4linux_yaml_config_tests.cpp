@@ -1128,3 +1128,90 @@ TEST(Sd4linuxYamlConfigTests, RejectsParsedIconIdOutsideAllowedRange) {
                                       &parser));
   deleteCreatedElement(previousElement);
 }
+
+TEST(Sd4linuxYamlConfigTests, RejectsInvalidMultiDocumentConfiguration) {
+  for (const char* fields : {
+           "sub_topics: [a, a]",
+           "expiration_time_sec: -1",
+           "expiration_time_sec: 4294967296",
+           "expiration_time_sec: 99999999999999999999999",
+           "expiration_time_sec: broken",
+           "expiration_time_sec: 1.5",
+           "expiration_time_sec: []"}) {
+    SCOPED_TRACE(fields);
+    TestLinuxYamlConfig config;
+    config.config = YAML::Load(std::string(
+        "mqtt: {host: localhost, use_ssl: false}\n"
+        "sources:\n  data:\n    type: MQTT\n    state_topic: yaml-docs\n    ") +
+        fields + "\nchannels: [{type: VirtualRelay}]\n");
+    EXPECT_FALSE(config.loadChannels());
+  }
+  for (const char* mapping : {"unknown:/data/val", "a:data/val",
+                               "a:/bad~2escape", ":/data/val"}) {
+    SCOPED_TRACE(mapping);
+    TestLinuxYamlConfig config;
+    config.config = YAML::Load(std::string(
+        "mqtt: {host: localhost, use_ssl: false}\n"
+        "channels:\n- type: ElectricityMeterParsed\n"
+        "  source: {type: MQTT, state_topic: yaml-docs, sub_topics: [a]}\n"
+        "  parser: {type: Json, multi_document: true}\n"
+        "  phase_1: [{voltage: '") + mapping + "'}]\n");
+    auto previous = Supla::Element::last();
+    EXPECT_FALSE(config.loadChannels());
+    deleteCreatedElement(previous);
+  }
+}
+
+TEST(Sd4linuxYamlConfigTests, NamedMultiDocumentSourceAndParsersCanBeShared) {
+  for (int mode : {-1, 0, 1}) {
+    TestLinuxYamlConfig config;
+    config.config = YAML::Load(R"(
+mqtt: {host: localhost, use_ssl: false}
+sources:
+  docs: {type: MQTT, state_topic: shared-docs, sub_topics: ["0505", "0508"]}
+parsers:
+  first: {source: docs, type: Json}
+  second: {source: docs, type: Json}
+channels:
+- type: ElectricityMeterParsed
+  parser: first
+  phase_1: [{voltage: /data/val}]
+- type: ElectricityMeterParsed
+  parser: {use: first}
+  phase_1: [{current: /data/val}]
+- type: ElectricityMeterParsed
+  parser: second
+  phase_1: [{voltage: /data/val}]
+)");
+    if (mode >= 0) {
+      config.config["parsers"]["first"]["multi_document"] = mode == 1;
+      config.config["parsers"]["second"]["multi_document"] = mode == 1;
+    }
+    if (mode == 1) {
+      config.config["channels"][0]["phase_1"][0]["voltage"] = "0505:/data/val";
+      config.config["channels"][1]["phase_1"][0]["current"] = "0508:/data/val";
+      config.config["channels"][2]["phase_1"][0]["voltage"] = "0505:/data/val";
+    }
+    auto previous = Supla::Element::last();
+    EXPECT_TRUE(config.loadChannels());
+    while (Supla::Element::last() != previous) {
+      delete Supla::Element::last();
+    }
+  }
+}
+
+TEST(Sd4linuxYamlConfigTests, LegacyMqttSimpleYamlRemainsSupported) {
+  TestLinuxYamlConfig config;
+  config.config = YAML::Load(R"(
+mqtt: {host: localhost, use_ssl: false}
+channels:
+- type: ThermHygroMeterParsed
+  source: {type: MQTT, state_topic: device, sub_topics: [temperature, humidity]}
+  parser: {type: Simple}
+  temperature: 0
+  humidity: 1
+)");
+  auto previous = Supla::Element::last();
+  EXPECT_TRUE(config.loadChannels());
+  deleteCreatedElement(previous);
+}

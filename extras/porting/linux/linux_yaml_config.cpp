@@ -55,6 +55,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <climits>
+#include <set>
 #include <cstring>
 #include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
@@ -699,6 +701,8 @@ bool Supla::LinuxYamlConfig::loadChannels() {
       SUPLA_LOG_ERROR("Config: \"channels\" section missing in file");
       return false;
     }
+  } catch (const std::invalid_argument& ex) {
+    SUPLA_LOG_ERROR("Config: %s", ex.what());
   } catch (const YAML::Exception& ex) {
     logError(file, ex);
   }
@@ -2157,7 +2161,9 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
     if (type == "Simple") {
       prs = new Supla::Parser::Simple(src);
     } else if (type == "Json") {
-      prs = new Supla::Parser::Json(src);
+      prs = new Supla::Parser::Json(
+          src, parser["multi_document"] ?
+              parser["multi_document"].as<bool>() : false);
     } else {
       SUPLA_LOG_ERROR("Config: unknown parser type \"%s\"", type.c_str());
       return nullptr;
@@ -2284,9 +2290,25 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       }
       auto base_state_topic = source["state_topic"].as<std::string>();
       std::vector<std::string> allSubTopics;
+      std::vector<std::string> documentIds;
+      unsigned int expirationTimeSec = 0;
+      if (source["expiration_time_sec"]) {
+        const auto expiration = source["expiration_time_sec"].as<int64_t>();
+        if (expiration < 0 || expiration > UINT_MAX) {
+          SUPLA_LOG_ERROR("Config: MQTT expiration_time_sec out of range");
+          return nullptr;
+        }
+        expirationTimeSec = static_cast<unsigned int>(expiration);
+      }
       if (source["sub_topics"] && source["sub_topics"].size() > 0) {
         auto sub_topics = source["sub_topics"].as<std::vector<std::string>>();
+        std::set<std::string> seen;
         for (auto& sub_topic : sub_topics) {
+          if (sub_topic.empty() || !seen.insert(sub_topic).second) {
+            SUPLA_LOG_ERROR("Config: empty or duplicate MQTT sub_topics id");
+            return nullptr;
+          }
+          documentIds.push_back(sub_topic);
           std::string state_topic = base_state_topic;
           state_topic.append("/").append(sub_topic);
           allSubTopics.push_back(state_topic);
@@ -2294,7 +2316,8 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       } else {
         allSubTopics.push_back(base_state_topic);
       }
-      src = new Supla::Source::Mqtt(*this, allSubTopics);
+      src = new Supla::Source::Mqtt(*this, allSubTopics, documentIds,
+                                    expirationTimeSec);
     } else if (type == "HTTP") {
 #ifndef SUPLA_LINUX_HTTP_SOURCE_ENABLED
       SUPLA_LOG_ERROR(

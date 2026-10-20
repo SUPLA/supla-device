@@ -148,7 +148,9 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   Supla::AtChannel channel;
 
   uint16_t localHandlerAction = 0;
-  ActionHandlingType actionHandlingType : 2;
+  // Integer storage avoids old-GCC warnings about the enum's full uint8_t
+  // range, while retaining the same two-bit encoding and RAM layout.
+  uint8_t actionHandlingType : 2;
 #ifndef ARDUINO_ARCH_AVR
   uint8_t suplanRecognitionActive : 1;
 #else

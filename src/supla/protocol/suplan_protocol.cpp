@@ -197,7 +197,12 @@ bool SupLan::iterate(uint32_t nowMs) {
 
   // Resource orchestration, especially SRPC STREAM, is independent of the
   // UDP transport being open. D2D refresh remains in its own backend.
-  suplanIdentityChanged();
+  // Full-scope invalidation runs synchronously at migration notifications.
+  // While fenced no SERVER peer can be admitted; repeating teardown here
+  // cannot add safety. Keep ordinary live identity reconciliation otherwise.
+  const auto identity = associations() ? associations()->identity() : nullptr;
+  if (associations() && (!identity || !identity->fullScopeFenced()))
+    associations()->identityChanged();
   if (resources_) resources_->iterate(nowMs);
   if (transport_ != nullptr) {
     if (!transport_->networkReady(nowMs)) {

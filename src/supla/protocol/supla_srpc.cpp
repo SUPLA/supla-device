@@ -2910,9 +2910,16 @@ uint32_t Supla::Protocol::SuplaSrpc::getActivityTimeout() {
 }
 
 bool Supla::Protocol::SuplaSrpc::isUpdatePending() {
+  bool syncPending = !deviceSyncDoneReceived;
+#ifndef ARDUINO_ARCH_AVR
+  // Receiving SYNC_DONE does not imply that the identity/fence commit
+  // succeeded. SupLAN must remain awake until both barriers complete.
+  syncPending = syncPending ||
+      (supLanTlsRequired(sdc) && !serverIdentityState.serverSyncComplete());
+#endif
   if (Supla::RegisterDevice::isSleepingDeviceEnabled() &&
       effectiveSrpcVersion(version) >= 29 &&
-      (!deviceSyncDoneReceived || !calCfgResultPending.empty())) {
+      (syncPending || !calCfgResultPending.empty())) {
     return true;
   }
 

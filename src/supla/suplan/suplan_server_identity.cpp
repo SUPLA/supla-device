@@ -705,6 +705,11 @@ bool Supla::Device::ServerIdentity::configuredService(
     if (!strcmp(previous, server)) return true;
     if (!configuredServerChanged(cfg)) return false;
   }
+  // First upgrade from firmware without sl-service has no trustworthy prior
+  // application/YAML service. suplaserver may be an autodiscovered endpoint,
+  // so comparing it would turn routing changes into ownership migrations.
+  // Establish a baseline; a simultaneous service change with colliding IDs
+  // is undetectable on this first upgrade, as with an absent old identity.
   // Record explicit application/YAML configuration, never resolved endpoints.
   if (cfg->setString("sl-service", server) && cfg->commit()) return true;
   if (hadService) cfg->setString("sl-service", previous);

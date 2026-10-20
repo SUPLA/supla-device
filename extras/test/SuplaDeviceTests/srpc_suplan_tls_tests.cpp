@@ -24,7 +24,10 @@ std::string &tlsDiagnostic() {
 class TlsConfig : public Supla::KeyValue {
  public:
   bool init() override { return true; }
-  bool commit() override { return true; }
+  using KeyValue::getBlobSize;
+  bool commit() override { return ++commits != failCommitNumber; }
+  int commits = 0;
+  int failCommitNumber = -1;
 };
 class TlsClient : public Supla::Client {
  public:
@@ -309,4 +312,44 @@ TEST_F(SupLanTls, ChannelConfigUploadWaitsForCurrentRegistrationIdentities) {
   TChannelConfig_HVAC value = {};
   EXPECT_FALSE(protocol->setChannelConfig(0, SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
       &value, sizeof(value), SUPLA_CONFIG_TYPE_DEFAULT));
+}
+
+TEST_F(SupLanTls, SleepingDeviceWaitsForDurableIdentitySync) {
+  enable();
+  Supla::RegisterDevice::addFlags(SUPLA_DEVICE_FLAG_SLEEP_MODE_ENABLED);
+  protocol->iterate(1);
+  TSD_SuplaRegisterDeviceResult result = {};
+  result.result_code = SUPLA_RESULTCODE_TRUE;
+  result.activity_timeout = 30;
+  protocol->onRegisterResult(&result);
+  ASSERT_TRUE(protocol->isRegisteredAndReady());
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 101;
+  ASSERT_EQ(protocol->serverIdentity().accept(ids).Result,
+            SUPLA_SUPLAN_RESULT_OK);
+  protocol->onDeviceSyncDone();
+  ASSERT_FALSE(protocol->isUpdatePending());
+
+  // Exercise both the ready-identity commit and the fence-erasure commit.
+  for (int phase = 1; phase <= 2; ++phase) {
+    ids.DeviceId += 101;
+    ASSERT_EQ(protocol->serverIdentity().accept(ids).Result,
+              SUPLA_SUPLAN_RESULT_OK);
+    ASSERT_GE(config.getBlobSize("sl-migration"), 0);
+    config.failCommitNumber = config.commits + phase;
+    protocol->onDeviceSyncDone();
+    EXPECT_FALSE(protocol->serverIdentity().serverSyncComplete());
+    EXPECT_TRUE(protocol->isUpdatePending());
+    EXPECT_GE(config.getBlobSize("sl-migration"), 0);
+
+    config.failCommitNumber = -1;
+    // A failed identity write invalidates durability; replaying the current
+    // authenticated snapshot repairs it before retrying SYNC_DONE.
+    ASSERT_EQ(protocol->serverIdentity().accept(ids).Result,
+              SUPLA_SUPLAN_RESULT_OK);
+    protocol->onDeviceSyncDone();
+    EXPECT_TRUE(protocol->serverIdentity().serverSyncComplete());
+    EXPECT_LT(config.getBlobSize("sl-migration"), 0);
+    EXPECT_FALSE(protocol->isUpdatePending());
+  }
 }

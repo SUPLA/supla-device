@@ -430,3 +430,24 @@ TEST_F(ServerMigrationTests, AnotherExplicitServerBeforeSyncSanitizesAgain) {
   EXPECT_EQ(hvac.references[0].local.channelNo, 0);
   EXPECT_EQ(hvac.references[1].local.isSet, 0);
 }
+
+TEST_F(ServerMigrationTests, LegacyServiceBaselineDoesNotGuessDiscoveryOrigin) {
+  install();
+  ASSERT_TRUE(config.setSuplaServerFromDiscovery("resolved-cluster.example"));
+  const int before = config.commits;
+  ASSERT_TRUE(ServerIdentity::configuredService(&config, "configured.example"));
+  EXPECT_EQ(config.commits, before + 1);
+  EXPECT_TRUE(identity.serverSyncComplete());
+  EXPECT_LT(config.getBlobSize("sl-migration"), 0);
+  auto stored = config.get<Control::HvacStoredConfigV2>("1_hvac_cfg2");
+  EXPECT_EQ(stored.references[1].channelId, 901u);
+
+  // Once the explicit-service baseline is available, an offline change is
+  // detectable even with identical DEVICE_IDENTITIES on the next server.
+  ASSERT_TRUE(ServerIdentity::configuredService(&config, "new.example"));
+  EXPECT_TRUE(identity.fullScopeFenced());
+  stored = config.get<Control::HvacStoredConfigV2>("1_hvac_cfg2");
+  EXPECT_EQ(stored.referenceNamespace,
+            Control::HvacReferenceNamespace::LOCAL_CHANNEL_NUMBER);
+  EXPECT_EQ(stored.references[1].local.isSet, 0);
+}

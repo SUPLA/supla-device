@@ -222,6 +222,11 @@ class BindingAdapter : public Protocol::SupLan {
     ++shares;
     return true;
   }
+  void suplanIdentityChanged() override {
+    ++identityNotifications;
+    Protocol::SupLan::suplanIdentityChanged();
+  }
+  int identityNotifications = 0;
   TDS_SuplaEnsureResourceShare lastShare = {};
   int shares = 0;
 };
@@ -2317,4 +2322,24 @@ TEST_F(M4bDevice, DeviceIdMigrationSanitizesLiveFallbackBeforeCloudUpload) {
   h = bindingConfig(9009, 0);
   ASSERT_EQ(hvac->handleChannelConfig(&h), SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac->bindingTarget(0), ChannelReference::server(9009));
+}
+
+TEST_F(M4bDevice, FencedIdleLoopsDoNotRepeatIdentityTeardown) {
+  const int before = adapter.identityNotifications;
+  adapter.iterate(0);
+  EXPECT_EQ(adapter.identityNotifications, before);
+  ASSERT_TRUE(ServerIdentity::configuredServerChanged(&storage));
+  ASSERT_TRUE(identity.fullScopeFenced());
+  ASSERT_GT(adapter.identityNotifications, before);
+  const int notifications = adapter.identityNotifications;
+  const int commits = storage.commits;
+  for (int i = 0; i < 100; ++i) adapter.iterate(10 * i);
+  EXPECT_EQ(adapter.identityNotifications, notifications);
+  EXPECT_EQ(storage.commits, commits);
+  EXPECT_EQ(adapter.remoteResources()->consumerCount(), 0);
+
+  // A second explicit event must still invalidate immediately, even though
+  // no intervening iterate has lifted the first barrier.
+  ASSERT_TRUE(ServerIdentity::configuredServerChanged(&storage));
+  EXPECT_GT(adapter.identityNotifications, notifications);
 }

@@ -419,13 +419,13 @@ add_test(NAME suplanlinuxudptests COMMAND suplanlinuxudptests)
 
 # Only host test builds intercept provider calls; production uses the SDK API.
 target_link_options(supladevicelib PRIVATE
-  -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=EVP_MAC_init)
+  -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=HMAC)
 foreach(crypto_test_target supladevicetests sd4linuxtests nvsconfigtests
                           suplandirectionaltests)
   target_sources(${crypto_test_target} PRIVATE doubles/crypto_test_hooks.cpp)
   target_link_libraries(${crypto_test_target} PRIVATE OpenSSL::Crypto)
   target_link_options(${crypto_test_target} PRIVATE
-    -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=EVP_MAC_init)
+    -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=HMAC)
 endforeach()
 target_include_directories(suplandirectionaltests PRIVATE doubles)
 
@@ -449,7 +449,7 @@ if(SUPLAN_ASSOCIATION_PROFILE_TESTS)
   target_link_libraries(suplanassociationprofiletests PRIVATE
     supladevicelib nlohmann_json::nlohmann_json gmock gtest_main OpenSSL::Crypto)
   target_link_options(suplanassociationprofiletests PRIVATE
-    -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=EVP_MAC_init)
+    -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=HMAC)
   supla_apply_warnings(suplanassociationprofiletests)
 endif()
 
@@ -487,7 +487,7 @@ foreach(interest_limit IN ITEMS 255 256 257)
     SUPLAN_MAX_BINDINGS_PER_PEER=64)
   target_link_libraries(${boundary_target} PRIVATE gtest_main OpenSSL::Crypto)
   target_link_options(${boundary_target} PRIVATE
-    -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=EVP_MAC_init)
+    -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=HMAC)
   supla_apply_warnings(${boundary_target})
   add_test(NAME ${boundary_target} COMMAND ${boundary_target})
   set_tests_properties(${boundary_target} PROPERTIES TIMEOUT 10)

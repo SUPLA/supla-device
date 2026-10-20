@@ -32,9 +32,8 @@
 #include <Esp.h>
 #include <bearssl/bearssl.h>
 #elif defined(SUPLA_LINUX) || defined(SUPLA_TEST)
-#include <openssl/core_names.h>
 #include <openssl/evp.h>
-#include <openssl/params.h>
+#include <openssl/hmac.h>
 #include <openssl/rand.h>
 #endif
 
@@ -193,27 +192,12 @@ bool Supla::Crypto::hmacSha256(const uint8_t *key, size_t keyLen,
   memset(&context, 0, sizeof(context));
   return result;
 #elif defined(SUPLA_LINUX) || defined(SUPLA_TEST)
-  EVP_MAC *mac = EVP_MAC_fetch(nullptr, "HMAC", nullptr);
-  if (!mac) {
-    return false;
-  }
-  EVP_MAC_CTX *context = EVP_MAC_CTX_new(mac);
-  EVP_MAC_free(mac);
-  if (!context) {
-    return false;
-  }
-  char digestName[] = "SHA256";
-  OSSL_PARAM params[] = {
-      OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST, digestName, 0),
-      OSSL_PARAM_construct_end(),
-  };
-  size_t outputLength = 0;
-  bool result = EVP_MAC_init(context, key, keyLen, params) == 1 &&
-      EVP_MAC_update(context, data, dataLen) == 1 &&
-      EVP_MAC_final(context, output, &outputLength, 32) == 1 &&
-      outputLength == 32;
-  EVP_MAC_CTX_free(context);
-  return result;
+  // HMAC() is available in OpenSSL 1.1 and 3.x. Always supply the caller's
+  // buffer; a null output would select OpenSSL's shared static buffer.
+  if (keyLen > INT_MAX) return false;
+  unsigned int outputLength = 0;
+  return HMAC(EVP_sha256(), key, static_cast<int>(keyLen), data, dataLen,
+              output, &outputLength) != nullptr && outputLength == 32;
 #else
   return false;
 #endif

@@ -69,7 +69,9 @@ struct RemoteChannelResource {
         effective(0), approval(0), approvalPermissions(0), hasSnapshot(false),
         ensureAttempted(false), manualAttempted(false),
         continuityPending(false), leaseExpired(false) {}
-  RemoteAccess access : 2;
+  // A full enum byte avoids old-GCC narrow-enum warnings and fits in the
+  // resource's existing tail padding without enlarging the cache slot.
+  RemoteAccess access;
   uint8_t permissions : 3;
   uint8_t manualPermissions : 3;
   uint8_t effective : 3;

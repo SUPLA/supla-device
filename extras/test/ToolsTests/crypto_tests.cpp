@@ -91,6 +91,28 @@ TEST(CryptoTests, HmacEmptyInputAndValidation) {
   EXPECT_FALSE(Supla::Crypto::hmacSha256Hex(nullptr, 0, "d", 1, hex, 65));
 }
 
+TEST(CryptoTests, HmacRfc4231LongKeyAndOversizedKeyRejection) {
+  ScopedCryptoTestState provider(5);
+  uint8_t key[131];
+  memset(key, 0xaa, sizeof(key));
+  const char data[] = "Test Using Larger Than Block-Size Key - Hash Key First";
+  char hex[65] = {};
+  ASSERT_TRUE(Supla::Crypto::hmacSha256Hex(
+      reinterpret_cast<const char *>(key), sizeof(key), data,
+      sizeof(data) - 1, hex, sizeof(hex)));
+  EXPECT_STREQ(hex,
+      "60E431591EE0B67F0D8A26AACBF5B77F"
+      "8E0BC6213728C5140546040F0EE37F54");
+
+  uint8_t output[32];
+  memset(output, 0x42, sizeof(output));
+  const auto calls = provider.hmacSha256Calls;
+  EXPECT_FALSE(Supla::Crypto::hmacSha256(
+      key, static_cast<size_t>(INT_MAX) + 1, nullptr, 0, output));
+  EXPECT_EQ(provider.hmacSha256Calls, calls);
+  for (auto byte : output) EXPECT_EQ(byte, 0x42);
+}
+
 TEST(CryptoTests, CheckedRandomBoundariesAndGeneration) {
   EXPECT_TRUE(Supla::Crypto::fillRandom(nullptr, 0));
   EXPECT_FALSE(Supla::Crypto::fillRandom(nullptr, 1));

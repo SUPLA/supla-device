@@ -18,11 +18,12 @@ ChannelHandle *ChannelHandle::first_ = nullptr;
 uint32_t ChannelHandle::nextToken_ = 0x80000000U;
 ChannelHandle::ChannelHandle(uint32_t channelId, uint8_t permissions,
                              RemoteDelivery delivery)
-    : location_(ChannelResolutionKind::kUnresolved), active_(true),
+    : location_(static_cast<uint8_t>(ChannelResolutionKind::kUnresolved)),
+      active_(true),
       admitted_(false), baselineValid_(false), baselineTimed_(false),
-      delivery_(delivery == RemoteDelivery::SupLanPeer ||
+      delivery_(static_cast<uint8_t>(delivery == RemoteDelivery::SupLanPeer ||
                 delivery == RemoteDelivery::ServerStream
-                    ? delivery : static_cast<RemoteDelivery>(0)) {
+                    ? delivery : static_cast<RemoteDelivery>(0))) {
   // Never recycle a token, including after storage/address reuse.
   if (nextToken_ != UINT32_MAX) token_ = ++nextToken_;
   configure(channelId, permissions);
@@ -37,9 +38,9 @@ ChannelHandle::~ChannelHandle() {
 }
 bool ChannelHandle::configure(uint32_t id, uint8_t permissions) {
   if (!token_ || !id || id > INT32_MAX || !permissions || (permissions & ~7) ||
-      (delivery_ != RemoteDelivery::SupLanPeer &&
-       delivery_ != RemoteDelivery::ServerStream) ||
-      (delivery_ == RemoteDelivery::ServerStream && permissions != READ))
+      (delivery() != RemoteDelivery::SupLanPeer &&
+       delivery() != RemoteDelivery::ServerStream) ||
+      (delivery() == RemoteDelivery::ServerStream && permissions != READ))
     return false;
   if (id_ == id && permissions_ == permissions && active_) return true;
   if (id_ != id) {
@@ -49,7 +50,7 @@ bool ChannelHandle::configure(uint32_t id, uint8_t permissions) {
     admitted_ = false;
     baselineValid_ = false;
     continuity_ = 0;
-    location_ = ChannelResolutionKind::kUnresolved;
+    location_ = static_cast<uint8_t>(ChannelResolutionKind::kUnresolved);
   }
   id_ = id;
   permissions_ = permissions;
@@ -79,7 +80,7 @@ Device::RemoteChannelManager *ChannelHandle::manager() const {
   return nullptr;
 }
 Channel *ChannelHandle::localChannel() {
-  if (!active_ || delivery_ != RemoteDelivery::SupLanPeer) return nullptr;
+  if (!active_ || delivery() != RemoteDelivery::SupLanPeer) return nullptr;
   const auto resolved = resolveChannelReference(
       ChannelReference::server(id_), acceptedReferenceIdentity());
   return !remoteOnly_ && resolved.kind == ChannelResolutionKind::kLocal
@@ -89,20 +90,20 @@ void ChannelHandle::reconcile() {
   if (!active_) return;
   const auto resolved = resolveChannelReference(
       ChannelReference::server(id_), acceptedReferenceIdentity());
-  const auto location = delivery_ == RemoteDelivery::ServerStream &&
+  const auto location = delivery() == RemoteDelivery::ServerStream &&
       resolved.kind != ChannelResolutionKind::kUnresolved
           ? ChannelResolutionKind::kRemote
           : remoteOnly_ && resolved.kind == ChannelResolutionKind::kLocal
               ? ChannelResolutionKind::kUnresolved : resolved.kind;
   const uint8_t localNumber = location == ChannelResolutionKind::kLocal
       ? resolved.channel->getChannelNumber() : 0xff;
-  if (location != location_ || localNumber_ != localNumber) {
+  if (location != resolutionKind() || localNumber_ != localNumber) {
     releaseChannelConsumer(token_);
     DeleteActionsHandledBy(this);
     baselineValid_ = false;
     admitted_ = false;
     continuity_ = 0;
-    location_ = location;
+    location_ = static_cast<uint8_t>(location);
     localNumber_ = localNumber;
   }
   if (location == ChannelResolutionKind::kLocal) {
@@ -120,7 +121,7 @@ void ChannelHandle::reconcile() {
         continuity_ == resources->admissionGeneration()) return;
     admitted_ = resources && resources->consume(
         {token_, {SupLan::kResourceTypeChannel, id_}, permissions_, true,
-         delivery_});
+         delivery()});
     if (!admitted_ && resources)
       continuity_ = resources->admissionGeneration();
   }
@@ -152,7 +153,7 @@ ChannelAccessStatus ChannelHandle::accessStatus() {
   reconcile();
   if (!active_ || !id_) return ChannelAccessStatus::INVALID;
   if (localChannel()) return ChannelAccessStatus::LOCAL_CHANNEL;
-  if (location_ == ChannelResolutionKind::kUnresolved) {
+  if (resolutionKind() == ChannelResolutionKind::kUnresolved) {
     const auto resolved = resolveChannelReference(
         ChannelReference::server(id_), acceptedReferenceIdentity());
     return remoteOnly_ && resolved.kind == ChannelResolutionKind::kLocal
@@ -160,7 +161,7 @@ ChannelAccessStatus ChannelHandle::accessStatus() {
         : ChannelAccessStatus::IDENTITY_UNRESOLVED;
   }
   auto resources = manager();
-  if (resources && !resources->supports(delivery_))
+  if (resources && !resources->supports(delivery()))
     return ChannelAccessStatus::INVALID;
   if (!admitted_) return ChannelAccessStatus::RESOURCE_LIMIT;
   return resources ? resources->status(key(), permissions_)
@@ -240,10 +241,10 @@ void ChannelHandle::observe() {
     return;
   }
   const uint32_t now = millis();
-  const uint32_t continuity = location_ == ChannelResolutionKind::kRemote
+  const uint32_t continuity = resolutionKind() == ChannelResolutionKind::kRemote
       ? manager()->continuity(key())
       : Channel::identityGeneration();
-  if (!continuity && location_ == ChannelResolutionKind::kRemote) {
+  if (!continuity && resolutionKind() == ChannelResolutionKind::kRemote) {
     baselineValid_ = false;
     return;
   }
@@ -253,7 +254,7 @@ void ChannelHandle::observe() {
           static_cast<int32_t>(now - baselineExpires_) < 0);
   uint16_t events[24];
   uint8_t count = 0;
-  if (continuous && location_ == ChannelResolutionKind::kRemote &&
+  if (continuous && resolutionKind() == ChannelResolutionKind::kRemote &&
       memcmp(baseline_, bytes, 8)) {
     events[count++] = ON_CHANGE;
     if ((view.type() == SUPLA_CHANNELTYPE_BINARYSENSOR ||
@@ -345,7 +346,7 @@ void ChannelHandle::observe() {
   function_ = view.function();
   baselineValid_ = true;
   const auto ttl = view.validityTimeSec();
-  baselineTimed_ = delivery_ == RemoteDelivery::SupLanPeer && ttl &&
+  baselineTimed_ = delivery() == RemoteDelivery::SupLanPeer && ttl &&
       ttl < INT32_MAX / 1000U;
   baselineExpires_ = baselineTimed_ ? view.receivedMs() + ttl * 1000U : 0;
   const uint32_t token = token_;
@@ -376,9 +377,9 @@ void ChannelHandle::receiveAction(uint32_t channelId, uint32_t capability) {
   while (auto handle = after(token, limit)) {
     token = handle->token_;
     handle->reconcile();
-    if (handle->delivery_ != RemoteDelivery::SupLanPeer ||
+    if (handle->delivery() != RemoteDelivery::SupLanPeer ||
         handle->id_ != channelId || !handle->active_ || !handle->admitted_ ||
-        handle->location_ != ChannelResolutionKind::kRemote ||
+        handle->resolutionKind() != ChannelResolutionKind::kRemote ||
         !(handle->permissions_ & SupLan::kPermissionAction)) continue;
     auto resources = handle->manager();
     if (resources && (resources->effectivePermissions(

@@ -50,7 +50,9 @@ class ChannelHandle : public LocalAction, public ActionHandler,
                  Condition *condition, bool alwaysEnabled = false);
   void handleAction(int event, int action) override;
   uint32_t channelId() const { return id_; }
-  RemoteDelivery delivery() const { return delivery_; }
+  RemoteDelivery delivery() const {
+    return static_cast<RemoteDelivery>(delivery_);
+  }
   static void iterateAll();
   static void invalidateServerScope();
   static void receiveAction(uint32_t channelId, uint32_t capability);
@@ -63,7 +65,10 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   void observe();
   void baselineConditions();
   Device::RemoteChannelManager *manager() const;
-  RemoteChannelKey key() const { return {id_, delivery_}; }
+  RemoteChannelKey key() const { return {id_, delivery()}; }
+  ChannelResolutionKind resolutionKind() const {
+    return static_cast<ChannelResolutionKind>(location_);
+  }
   static ChannelHandle *after(uint32_t token, uint32_t limit);
   static ChannelHandle *first_;
   static uint32_t nextToken_;
@@ -77,12 +82,18 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   uint8_t baseline_[8] = {};
   uint8_t permissions_ = 0;
   uint8_t localNumber_ = 0xff;
-  ChannelResolutionKind location_ : 2;
+  // Store narrow enum encodings as integers: older GCC warns for a scoped
+  // enum bitfield narrower than its fixed underlying type's full range.
+  static_assert(static_cast<uint8_t>(ChannelResolutionKind::kRemote) <= 3 &&
+                static_cast<uint8_t>(RemoteDelivery::SupLanPeer) <= 3 &&
+                static_cast<uint8_t>(RemoteDelivery::ServerStream) <= 3,
+                "ChannelHandle enum encoding exceeds two bits");
+  uint8_t location_ : 2;
   uint8_t active_ : 1;
   uint8_t admitted_ : 1;
   uint8_t baselineValid_ : 1;
   uint8_t baselineTimed_ : 1;
-  RemoteDelivery delivery_ : 2;
+  uint8_t delivery_ : 2;
 };
 class ServerRemoteChannel : public ChannelHandle {
  public:

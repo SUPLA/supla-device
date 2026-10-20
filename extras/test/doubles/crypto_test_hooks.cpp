@@ -4,6 +4,7 @@
 #include "crypto_test_hooks.h"
 
 #include <openssl/evp.h>
+#include <openssl/hmac.h>
 
 namespace {
 thread_local ScopedCryptoTestState *active = nullptr;
@@ -21,8 +22,9 @@ ScopedCryptoTestState::~ScopedCryptoTestState() {
 extern "C" {
 int __real_RAND_bytes(unsigned char *buffer, int size);
 int __real_EVP_DigestInit_ex(EVP_MD_CTX *, const EVP_MD *, ENGINE *);
-int __real_EVP_MAC_init(EVP_MAC_CTX *, const unsigned char *, size_t,
-                        const OSSL_PARAM *);
+unsigned char *__real_HMAC(const EVP_MD *, const void *, int,
+                            const unsigned char *, size_t,
+                            unsigned char *, unsigned int *);
 
 int __wrap_RAND_bytes(unsigned char *buffer, int size) {
   if (!active) {
@@ -48,12 +50,14 @@ int __wrap_EVP_DigestInit_ex(EVP_MD_CTX *ctx, const EVP_MD *type,
   return __real_EVP_DigestInit_ex(ctx, type, engine);
 }
 
-int __wrap_EVP_MAC_init(EVP_MAC_CTX *ctx, const unsigned char *key,
-                       size_t length, const OSSL_PARAM *params) {
+unsigned char *__wrap_HMAC(const EVP_MD *digest, const void *key, int keyLength,
+                           const unsigned char *data, size_t dataLength,
+                           unsigned char *output, unsigned int *outputLength) {
   if (active) {
     ++active->hmacSha256Calls;
-    if (active->hmacSha256Calls == active->failHmacCall) return 0;
+    if (active->hmacSha256Calls == active->failHmacCall) return nullptr;
   }
-  return __real_EVP_MAC_init(ctx, key, length, params);
+  return __real_HMAC(digest, key, keyLength, data, dataLength,
+                     output, outputLength);
 }
 }

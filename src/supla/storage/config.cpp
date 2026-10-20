@@ -458,6 +458,10 @@ bool Config::commit() {
   return false;
 }
 
+bool Config::commitWithResult() {
+  return commit();
+}
+
 bool Config::generateGuidAndAuthkey() {
   return false;
 }
@@ -518,9 +522,13 @@ void Config::saveWithDelay(uint16_t delayMs) {
 void Config::saveIfNeeded() {
   if (saveDelayMs) {
     if (millis() - saveDelayTimestamp > saveDelayMs) {
-      commit();
-      saveDelayMs = 0;
-      saveDelayTimestamp = 0;
+      if (commitWithResult()) {
+        saveDelayMs = 0;
+        saveDelayTimestamp = 0;
+      } else {
+        saveDelayMs = 5000;
+        saveDelayTimestamp = millis();
+      }
     }
   }
   if (deviceConfigUpdateDelayTimestamp) {

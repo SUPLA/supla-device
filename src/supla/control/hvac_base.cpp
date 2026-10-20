@@ -51,7 +51,9 @@ uint32_t HvacBase::supLanFunction() const {
 }
 
 HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
-                   Supla::Control::OutputInterface *secondaryOutput) {
+                   Supla::Control::OutputInterface *secondaryOutput,
+                   int channelNumber)
+    : ChannelElement(channelNumber) {
   auto *nativeWeeklySchedule = new HvacWeeklySchedule(this);
   setWeeklyScheduleController(
       nativeWeeklySchedule, nativeWeeklySchedule, nativeWeeklySchedule);
@@ -1149,6 +1151,15 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   }
   serverChannelFunctionValid = true;
 
+  auto preparation =
+      prepareChannelConfig(hvacConfig, local, additionalValidationChanged);
+  if (preparation != ApplyConfigResult::Success) {
+    return finishChannelConfig(newConfig, preparation, local);
+  }
+  if (!isConfigValid(hvacConfig)) {
+    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+  }
+
   if (config.referenceNamespace == HvacReferenceNamespace::SERVER_CHANNEL_ID) {
     auto decoded = HvacConfiguration::fromLegacy(*hvacConfig,
                                                   getChannelNumber());
@@ -1225,7 +1236,29 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   return SUPLA_CONFIG_RESULT_TRUE;
 }
 
-void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
+Supla::ApplyConfigResult HvacBase::prepareChannelConfig(
+    TChannelConfig_HVAC *hvacConfig, bool local, bool &changed) {
+  (void)hvacConfig;
+  (void)local;
+  (void)changed;
+  return ApplyConfigResult::Success;
+}
+
+bool HvacBase::importRemoteConfig(const TChannelConfig_HVAC &remote,
+                                 bool persist) {
+  if (!isConfigValid(&remote)) {
+    return false;
+  }
+  auto before = config;
+  applyConfigWithoutValidation(&remote);
+  if (persist && memcmp(&before, &config, sizeof(before)) != 0) {
+    saveConfig();
+  }
+  return true;
+}
+
+void HvacBase::applyConfigWithoutValidation(
+    const TChannelConfig_HVAC *hvacConfig) {
   if (hvacConfig == nullptr) {
     return;
   }
@@ -1363,10 +1396,18 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   }
 }
 
-bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig,
+bool HvacBase::isConfigValid(const TChannelConfig_HVAC *newConfig,
                              uint32_t function) const {
   if (!function) function = channel.getDefaultFunction();
   if (newConfig == nullptr) {
+    return false;
+  }
+
+  if (newConfig->AntiFreezeAndOverheatProtectionEnabled > 1 ||
+      newConfig->TemperatureSetpointChangeSwitchesToManualMode > 1 ||
+      newConfig->AuxMinMaxSetpointEnabled > 1) {
+    SUPLA_LOG_WARNING("HVAC[%d]: invalid boolean configuration",
+                      channel.getChannelNumber());
     return false;
   }
 
@@ -2745,10 +2786,10 @@ void HvacBase::handleSetChannelConfigResult(
   Supla::ElementWithChannelActions::handleSetChannelConfigResult(result);
 
   if (result->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT) {
-    bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
     SUPLA_LOG_INFO("HVAC[%d]: set channel config %s (%d)",
                    getChannelNumber(),
-                   success ? "succeeded" : "failed",
+                   result->Result == SUPLA_CONFIG_RESULT_TRUE
+                       ? "succeeded" : "failed",
                    result->Result);
     return;
   }

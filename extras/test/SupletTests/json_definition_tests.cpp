@@ -11,7 +11,18 @@
 #include <supla/suplet/manager.h>
 #include <supla/suplet/runtime.h>
 
+#include <string>
+
 namespace {
+
+std::string nestedJson(int depth, const std::string &pattern) {
+  std::string value = "null";
+  for (int i = 0; i < depth; i++) {
+    value = pattern[i % pattern.size()] == '[' ?
+        "[" + value + "]" : "{\"x\":" + value + "}";
+  }
+  return value;
+}
 
 class NoopConfig : public Supla::Config {
  public:
@@ -84,6 +95,45 @@ class SupletJsonFixture : public testing::Test {
 };
 
 }  // namespace
+
+TEST(SupletJsonDefinitionTests, BoundsUnknownValueNesting) {
+  for (const char *pattern : {"[", "{", "[{"}) {
+    for (int depth : {0, 1, 16, 17, 1000}) {
+      for (int location : {0, 1, 2}) {
+        SCOPED_TRACE(std::string(pattern) + ":" + std::to_string(depth));
+        SCOPED_TRACE(location);
+        const std::string value = nestedJson(depth, pattern);
+        // Exercise skipping at the root, inside a channel and a parameter.
+        const std::string json =
+            "{\"definitionId\":1,\"definitionVersion\":1,"
+            "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
+            "\"future\":" + (location == 0 ? value : "null") +
+            ",\"channels\":[{\"channelId\":1,"
+            "\"kind\":\"virtualRelay\",\"future\":" +
+            (location == 1 ? value : "null") + "}],"
+            "\"parameters\":[{\"key\":\"enabled\",\"type\":\"bool\","
+            "\"future\":" + (location == 2 ? value : "null") + "}]}";
+        Supla::Suplet::JsonDefinition parsed;
+        EXPECT_EQ(Supla::Suplet::JsonDefinitionParser::parse(
+                      json.c_str(), &parsed),
+                  depth <= 16);
+      }
+    }
+  }
+}
+
+TEST(SupletJsonDefinitionTests, RejectsMalformedUnknownValues) {
+  for (const char *value : {"", "[", "{", "[null,]", "{\"x\":}", "[{]}"}) {
+    const std::string json =
+        std::string("{\"definitionId\":1,\"definitionVersion\":1,") +
+        "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
+        "\"channels\":[{\"channelId\":1,\"kind\":\"virtualRelay\"}],"
+        "\"future\":" + value + "}";
+    Supla::Suplet::JsonDefinition parsed;
+    EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+        json.c_str(), &parsed)) << value;
+  }
+}
 
 TEST(SupletJsonDefinitionTests, ParsesVirtualDefinition) {
   const char json[] =

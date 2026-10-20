@@ -146,7 +146,7 @@ class TestingChannelElement : public Supla::ChannelElement {
   }
 
   Supla::ChannelConfigState getChannelConfigState() const {
-    return channelConfigState;
+    return Supla::ElementWithChannelActions::getChannelConfigState();
   }
 
   uint8_t getLocallyChangedConfigTypes() const {

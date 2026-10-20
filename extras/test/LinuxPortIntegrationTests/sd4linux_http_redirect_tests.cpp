@@ -20,6 +20,8 @@
 
 namespace {
 
+// These tests exercise real libcurl requests over TCP loopback. They belong to
+// the optional integration target, not the default offline test executable.
 class LocalHttpServer {
  public:
   explicit LocalHttpServer(

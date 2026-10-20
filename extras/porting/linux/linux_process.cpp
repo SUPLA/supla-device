@@ -3,32 +3,32 @@
 
 #include "linux_process.h"
 
-#include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <supla/log_wrapper.h>
 #include <unistd.h>
 
-unsigned char st_app_terminate = 0;
+std::atomic<unsigned char> st_app_terminate{0};
+static_assert(std::atomic<unsigned char>::is_always_lock_free,
+              "Signal termination flag must be lock-free");
 
 namespace {
-pthread_t mainThread;
-
 void signalHandler(int signal) {
   (void)signal;
-  if (pthread_self() == mainThread) {
-    st_app_terminate = 1;
-  }
+  st_app_terminate.store(1, std::memory_order_relaxed);
 }
 }  // namespace
 
 void st_hook_signals(void) {
-  mainThread = pthread_self();
-  signal(SIGHUP, signalHandler);
-  signal(SIGINT, signalHandler);
-  signal(SIGTERM, signalHandler);
-  signal(SIGQUIT, signalHandler);
-  signal(SIGPIPE, SIG_IGN);
+  struct sigaction action = {};
+  sigemptyset(&action.sa_mask);
+  action.sa_handler = signalHandler;
+  const int signals[] = {SIGHUP, SIGINT, SIGTERM, SIGQUIT};
+  for (int sig : signals) {
+    sigaction(sig, &action, nullptr);
+  }
+  action.sa_handler = SIG_IGN;
+  sigaction(SIGPIPE, &action, nullptr);
 }
 
 char st_try_fork(void) {

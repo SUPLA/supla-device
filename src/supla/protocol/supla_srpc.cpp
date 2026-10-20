@@ -1762,6 +1762,7 @@ void Supla::messageReceived(void *srpc,
         if (request) {
           TSDS_SetChannelConfigResult result = {};
           result.ChannelNumber = request->ChannelNumber;
+          result.ConfigType = request->ConfigType;
           result.Result = SUPLA_RESULTCODE_CHANNELNOTFOUND;
           auto element =
               Supla::Element::getElementByChannelNumber(request->ChannelNumber);

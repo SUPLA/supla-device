@@ -60,6 +60,7 @@ uint8_t localConfigTypeBit(int configType) {
   return configTypeBit(configType);
 }
 
+#ifndef SUPLA_DISABLE_LOGS
 const char *configTypeToString(int configType) {
   switch (configType) {
     case SUPLA_CONFIG_TYPE_DEFAULT:
@@ -76,12 +77,13 @@ const char *configTypeToString(int configType) {
       return "UNKNOWN";
   }
 }
+#endif
 
 }  // namespace
 
 Supla::ElementWithChannelActions::ElementWithChannelActions(ElementMode mode)
     : Element(mode),
-      channelConfigState(Supla::ChannelConfigState::None),
+      channelConfigState(static_cast<uint8_t>(Supla::ChannelConfigState::None)),
       setChannelConfigAttempts(0),
       configFinishedReceived(0),
       reserved(0),
@@ -316,9 +318,9 @@ bool Supla::ElementWithChannelActions::loadConfigChangeFlag() {
       }
     }
 
-    channelConfigState = locallyChangedConfigTypes.getAll()
-                             ? Supla::ChannelConfigState::LocalChangePending
-                             : Supla::ChannelConfigState::None;
+    setChannelConfigState(locallyChangedConfigTypes.getAll()
+        ? Supla::ChannelConfigState::LocalChangePending
+        : Supla::ChannelConfigState::None);
     SUPLA_LOG_INFO("Channel[%d] locally changed config types: 0x%X",
                    getChannelNumber(),
                    locallyChangedConfigTypes.getAll());
@@ -332,8 +334,7 @@ bool Supla::ElementWithChannelActions::setAndSaveConfigChangeFlag(bool value) {
     if (!setLocalConfigChange(SUPLA_CONFIG_TYPE_DEFAULT)) {
       return false;
     }
-    channelConfigState =
-        Supla::ChannelConfigState::LocalChangePending;
+    setChannelConfigState(Supla::ChannelConfigState::LocalChangePending);
   } else {
     setLocalConfigChange(SUPLA_CONFIG_TYPE_DEFAULT, false);
   }
@@ -381,15 +382,15 @@ bool Supla::ElementWithChannelActions::isAnyUpdatePending() const {
     return false;
   }
 
-  if (channelConfigState ==
+  if (getChannelConfigState() ==
           Supla::ChannelConfigState::LocalChangePending ||
-      channelConfigState ==
+      getChannelConfigState() ==
           Supla::ChannelConfigState::SetChannelConfigSend ||
-      channelConfigState ==
+      getChannelConfigState() ==
           Supla::ChannelConfigState::LocalChangeSent ||
-      channelConfigState ==
+      getChannelConfigState() ==
           Supla::ChannelConfigState::WaitForConfigFinished ||
-      channelConfigState ==
+      getChannelConfigState() ==
           Supla::ChannelConfigState::ResendConfig) {
     return true;
   }
@@ -402,12 +403,12 @@ bool Supla::ElementWithChannelActions::isAnyUpdatePending() const {
 }
 
 void Supla::ElementWithChannelActions::clearChannelConfigChangedFlag() {
-  if ((channelConfigState !=
+  if ((getChannelConfigState() !=
            Supla::ChannelConfigState::None &&
-       channelConfigState !=
+       getChannelConfigState() !=
            Supla::ChannelConfigState::SetChannelConfigFailed) ||
       locallyChangedConfigTypes.getAll() != 0) {
-    channelConfigState = Supla::ChannelConfigState::None;
+    setChannelConfigState(Supla::ChannelConfigState::None);
     locallyChangedConfigTypes.clearAll();
     saveConfigChangeFlag();
   }
@@ -421,7 +422,7 @@ void Supla::ElementWithChannelActions::markChannelConfigReceived(
 void Supla::ElementWithChannelActions::markAllChannelConfigsReceived() {
   receivedConfigTypes = usedConfigTypes;
   configFinishedReceived = 0;
-  channelConfigState = Supla::ChannelConfigState::None;
+  setChannelConfigState(Supla::ChannelConfigState::None);
   if (locallyChangedConfigTypes.getAll() != 0) {
     locallyChangedConfigTypes.clearAll();
     saveConfigChangeFlag();
@@ -448,28 +449,24 @@ void Supla::ElementWithChannelActions::onRegistered(
   configFinishedReceived = 0;
   Supla::Element::onRegistered(suplaSrpc);
   if (locallyChangedConfigTypes.getAll() != 0) {
-    channelConfigState =
-        Supla::ChannelConfigState::LocalChangePending;
+    setChannelConfigState(Supla::ChannelConfigState::LocalChangePending);
     return;
   }
-  switch (channelConfigState) {
+  switch (getChannelConfigState()) {
     case Supla::ChannelConfigState::None:
     case Supla::ChannelConfigState::WaitForConfigFinished: {
-      channelConfigState =
-          Supla::ChannelConfigState::WaitForConfigFinished;
+      setChannelConfigState(Supla::ChannelConfigState::WaitForConfigFinished);
       break;
     }
     case Supla::ChannelConfigState::LocalChangePending: {
       break;
     }
     case Supla::ChannelConfigState::LocalChangeSent: {
-      channelConfigState =
-          Supla::ChannelConfigState::LocalChangePending;
+      setChannelConfigState(Supla::ChannelConfigState::LocalChangePending);
       break;
     }
     default: {
-      channelConfigState =
-          Supla::ChannelConfigState::ResendConfig;
+      setChannelConfigState(Supla::ChannelConfigState::ResendConfig);
       break;
     }
   }
@@ -478,17 +475,17 @@ void Supla::ElementWithChannelActions::onRegistered(
 void Supla::ElementWithChannelActions::handleChannelConfigFinished() {
   configFinishedReceived = 1;
   setChannelConfigAttempts = 0;
-  if (channelConfigState ==
+  if (getChannelConfigState() ==
       Supla::ChannelConfigState::WaitForConfigFinished) {
-    channelConfigState = Supla::ChannelConfigState::None;
+    setChannelConfigState(Supla::ChannelConfigState::None);
   }
   if (receivedConfigTypes != usedConfigTypes &&
       !(sentWeeklyConfigType != 0 &&
-        channelConfigState ==
+        getChannelConfigState() ==
             Supla::ChannelConfigState::SetChannelConfigSend) &&
-      channelConfigState !=
+      getChannelConfigState() !=
           Supla::ChannelConfigState::LocalChangePending &&
-      channelConfigState !=
+      getChannelConfigState() !=
           Supla::ChannelConfigState::LocalChangeSent) {
     SUPLA_LOG_INFO(
         "Channel[%d] some config is missing on server... (rcv: 0x%X != used: "
@@ -496,8 +493,7 @@ void Supla::ElementWithChannelActions::handleChannelConfigFinished() {
         getChannelNumber(),
         receivedConfigTypes.getAll(),
         usedConfigTypes.getAll());
-    channelConfigState =
-        Supla::ChannelConfigState::ResendConfig;
+    setChannelConfigState(Supla::ChannelConfigState::ResendConfig);
   }
 }
 
@@ -671,8 +667,9 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
 
   const bool weeklyReply = sentWeeklyConfigType != 0 &&
       sentWeeklyConfigType == result->ConfigType &&
-      (channelConfigState == Supla::ChannelConfigState::SetChannelConfigSend ||
-       channelConfigState == Supla::ChannelConfigState::LocalChangeSent);
+      (getChannelConfigState() ==
+           Supla::ChannelConfigState::SetChannelConfigSend ||
+       getChannelConfigState() == Supla::ChannelConfigState::LocalChangeSent);
   if (weeklyReply) {
     sentWeeklyConfigType = 0;
     if (success) {
@@ -688,7 +685,7 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
 
   receivedConfigTypes.set(result->ConfigType);
   bool sentLocalConfig =
-      channelConfigState ==
+      getChannelConfigState() ==
           Supla::ChannelConfigState::LocalChangeSent &&
       isLocalChannelConfigChangePending(result->ConfigType);
   if (sentLocalConfig) {
@@ -696,21 +693,20 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
     saveConfigChangeFlag();
   }
 
-  if (channelConfigState ==
+  if (getChannelConfigState() ==
           Supla::ChannelConfigState::SetChannelConfigSend ||
-      channelConfigState ==
+      getChannelConfigState() ==
           Supla::ChannelConfigState::LocalChangeSent) {
     if (receivedConfigTypes != usedConfigTypes) {
       setChannelConfigAttempts = 0;
-      channelConfigState =
-          locallyChangedConfigTypes.getAll()
-              ? Supla::ChannelConfigState::LocalChangePending
-              : Supla::ChannelConfigState::ResendConfig;
+      setChannelConfigState(locallyChangedConfigTypes.getAll()
+          ? Supla::ChannelConfigState::LocalChangePending
+          : Supla::ChannelConfigState::ResendConfig);
     } else {
       if (success) {
         setChannelConfigAttempts = 0;
       }
-      channelConfigState = Supla::ChannelConfigState::None;
+      setChannelConfigState(Supla::ChannelConfigState::None);
     }
   }
 
@@ -718,16 +714,14 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
       getWeeklyConfigFailures(result->ConfigType) < 3) {
     receivedConfigTypes.clear(result->ConfigType);
     setChannelConfigAttempts = 0;
-    channelConfigState = locallyChangedConfigTypes.getAll()
-                            ? Supla::ChannelConfigState::LocalChangePending
-                            : Supla::ChannelConfigState::ResendConfig;
+    setChannelConfigState(locallyChangedConfigTypes.getAll()
+        ? Supla::ChannelConfigState::LocalChangePending
+        : Supla::ChannelConfigState::ResendConfig);
   } else if (!success) {
     if (locallyChangedConfigTypes.getAll() != 0) {
-      channelConfigState =
-          Supla::ChannelConfigState::LocalChangePending;
+      setChannelConfigState(Supla::ChannelConfigState::LocalChangePending);
     } else {
-      channelConfigState =
-          Supla::ChannelConfigState::SetChannelConfigFailed;
+      setChannelConfigState(Supla::ChannelConfigState::SetChannelConfigFailed);
     }
   }
 }
@@ -774,7 +768,7 @@ void Supla::ElementWithChannelActions::triggerSetChannelConfig(
                       configType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE;
   if (!localChange &&
       (weekly ? getWeeklyConfigFailures(configType) >= 3
-              : channelConfigState ==
+              : getChannelConfigState() ==
                     Supla::ChannelConfigState::SetChannelConfigFailed)) {
     return;
   }
@@ -788,18 +782,19 @@ void Supla::ElementWithChannelActions::triggerSetChannelConfig(
   receivedConfigTypes.clear(configType);
   // Queue other missing types, but never restart an exchange awaiting a reply.
   if (!localChange && weekly &&
-      (channelConfigState == Supla::ChannelConfigState::SetChannelConfigSend ||
-       channelConfigState == Supla::ChannelConfigState::LocalChangeSent)) {
+      (getChannelConfigState() ==
+           Supla::ChannelConfigState::SetChannelConfigSend ||
+       getChannelConfigState() == Supla::ChannelConfigState::LocalChangeSent)) {
     return;
   }
   if (localChange ||
-      (channelConfigState !=
+      (getChannelConfigState() !=
            Supla::ChannelConfigState::LocalChangePending &&
-       channelConfigState !=
+       getChannelConfigState() !=
            Supla::ChannelConfigState::LocalChangeSent)) {
-    channelConfigState = localChange
-                              ? Supla::ChannelConfigState::LocalChangePending
-                              : Supla::ChannelConfigState::ResendConfig;
+    setChannelConfigState(localChange
+        ? Supla::ChannelConfigState::LocalChangePending
+        : Supla::ChannelConfigState::ResendConfig);
   }
 }
 
@@ -818,16 +813,15 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
     saveConfigChangeFlag();
   }
 
-  if (channelConfigState ==
+  if (getChannelConfigState() ==
           Supla::ChannelConfigState::LocalChangePending ||
-      channelConfigState ==
+      getChannelConfigState() ==
           Supla::ChannelConfigState::ResendConfig) {
     int nextConfigType = getNextLocalConfigType();
     if (nextConfigType == -1) {
-      if (channelConfigState ==
+      if (getChannelConfigState() ==
           Supla::ChannelConfigState::LocalChangePending) {
-        channelConfigState =
-            Supla::ChannelConfigState::ResendConfig;
+        setChannelConfigState(Supla::ChannelConfigState::ResendConfig);
       }
       nextConfigType = getNextConfigType();
     }
@@ -882,11 +876,10 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
                 configTypeToString(nextConfigType),
                 nextConfigType);
             if (isLocalChannelConfigChangePending(nextConfigType)) {
-              channelConfigState =
-                  Supla::ChannelConfigState::LocalChangeSent;
+              setChannelConfigState(Supla::ChannelConfigState::LocalChangeSent);
             } else {
-              channelConfigState =
-                  Supla::ChannelConfigState::SetChannelConfigSend;
+              setChannelConfigState(
+                  Supla::ChannelConfigState::SetChannelConfigSend);
             }
             sentWeeklyConfigType =
                 nextConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE ||
@@ -962,20 +955,16 @@ void Supla::ElementWithChannelActions::clearLocalConfigChanges(
   locallyChangedConfigTypes.setAll(
       locallyChangedConfigTypes.getAll() &
       static_cast<uint8_t>(~typesToClear));
-  if (channelConfigState ==
+  if (getChannelConfigState() ==
       Supla::ChannelConfigState::LocalChangePending) {
     if (locallyChangedConfigTypes.getAll() != 0) {
-      channelConfigState =
-          Supla::ChannelConfigState::LocalChangePending;
+      setChannelConfigState(Supla::ChannelConfigState::LocalChangePending);
     } else if (!isChannelConfigFinishedReceived()) {
-      channelConfigState =
-          Supla::ChannelConfigState::WaitForConfigFinished;
+      setChannelConfigState(Supla::ChannelConfigState::WaitForConfigFinished);
     } else if (receivedConfigTypes != usedConfigTypes) {
-      channelConfigState =
-          Supla::ChannelConfigState::ResendConfig;
+      setChannelConfigState(Supla::ChannelConfigState::ResendConfig);
     } else {
-      channelConfigState =
-          Supla::ChannelConfigState::None;
+      setChannelConfigState(Supla::ChannelConfigState::None);
     }
   }
   saveConfigChangeFlag();

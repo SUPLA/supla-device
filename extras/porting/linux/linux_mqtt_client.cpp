@@ -7,25 +7,25 @@
 
 #include <cstdlib>
 #include <memory>
+#include <vector>
 #include <unordered_map>
 #include <string>
 #include <cstdio>
+#include <stdexcept>
+
+// Destroy the client (and stop its thread) before the topic cache and mutex.
+std::mutex Supla::LinuxMqttClient::topicsMutex;
+std::unordered_map<std::string, Supla::LinuxMqttClient::Message>
+    Supla::LinuxMqttClient::topics;
 
 std::shared_ptr<Supla::LinuxMqttClient> Supla::LinuxMqttClient::instance =
     nullptr;
-
-std::unordered_map<std::string, std::string> Supla::LinuxMqttClient::topics;
 
 Supla::LinuxMqttClient::LinuxMqttClient(
     const Supla::LinuxYamlConfig& yamlConfig)
     : useSSL(yamlConfig.getMqttClientUseSSL()),
       verifyCA(yamlConfig.getMqttClientVerifyCA()),
       port(yamlConfig.getMqttClientPort()) {
-  if (!useSSL && port == 8883) {
-    SUPLA_LOG_WARNING("MQTT: enabling TLS because broker port is 8883");
-    useSSL = true;
-  }
-
   char buffer[256];
   host = yamlConfig.getMqttClientHost(buffer) ? buffer : "";
   if (!yamlConfig.getMqttClientName(buffer)) {
@@ -63,6 +63,9 @@ std::shared_ptr<Supla::LinuxMqttClient>& Supla::LinuxMqttClient::getInstance() {
 
 std::shared_ptr<Supla::LinuxMqttClient>& Supla::LinuxMqttClient::getInstance(
     const Supla::LinuxYamlConfig& yamlConfig) {
+  if (!yamlConfig.isValidMqttConfig()) {
+    throw std::invalid_argument("Invalid MQTT configuration");
+  }
   if (!instance) {
     instance.reset(new Supla::LinuxMqttClient(yamlConfig));
   }
@@ -71,11 +74,39 @@ std::shared_ptr<Supla::LinuxMqttClient>& Supla::LinuxMqttClient::getInstance(
 }
 
 void Supla::LinuxMqttClient::subscribeTopic(const std::string& topic) {
-  topics[topic] = "";
+  std::lock_guard<std::mutex> lock(topicsMutex);
+  topics.try_emplace(topic);
+}
+
+bool Supla::LinuxMqttClient::getMessage(const std::string& topic,
+                                       std::string& message) const {
+  std::lock_guard<std::mutex> lock(topicsMutex);
+  const auto found = topics.find(topic);
+  if (found == topics.end()) {
+    return false;
+  }
+  message = found->second.content;
+  return true;
+}
+
+std::vector<Supla::LinuxMqttClient::Message>
+Supla::LinuxMqttClient::getMessages(
+    const std::vector<std::string>& requestedTopics) const {
+  std::lock_guard<std::mutex> lock(topicsMutex);
+  std::vector<Message> result;
+  result.reserve(requestedTopics.size());
+  for (const auto& topic : requestedTopics) {
+    const auto it = topics.find(topic);
+    result.push_back(it == topics.end() ? Message{} : it->second);
+  }
+  return result;
 }
 
 void Supla::LinuxMqttClient::unsubscribeTopic(const std::string& topic) {
-  topics.erase(topic);
+  {
+    std::lock_guard<std::mutex> lock(topicsMutex);
+    topics.erase(topic);
+  }
   if (mq_client == nullptr || mq_client->reconnect_state == nullptr) {
     return;
   }
@@ -89,8 +120,16 @@ void Supla::LinuxMqttClient::unsubscribeTopic(const std::string& topic) {
 
 int Supla::LinuxMqttClient::mqttClientInit() {
   SUPLA_LOG_DEBUG("Linux MQTT client init.");
+  std::unordered_map<std::string, std::string> subscribedTopics;
+  {
+    std::lock_guard<std::mutex> lock(topicsMutex);
+    for (const auto& entry : topics) {
+      subscribedTopics.emplace(entry.first, entry.second.content);
+    }
+  }
   return mqtt_client_init(
-      host, port, username, password, clientName, topics, publishCallback);
+      host, port, username, password, clientName,
+      subscribedTopics, publishCallback);
 }
 
 void Supla::LinuxMqttClient::publishCallback(void**,
@@ -102,11 +141,14 @@ void Supla::LinuxMqttClient::publishCallback(void**,
   std::string application_message_string(application_message,
                                          published->application_message_size);
 
-  topics[topic_name_string] = application_message_string;
+  {
+    std::lock_guard<std::mutex> lock(topicsMutex);
+    topics[topic_name_string] = {application_message_string, true,
+                                 std::chrono::steady_clock::now()};
+  }
 
-  SUPLA_LOG_DEBUG("Linux MQTT client received message from %s: %s",
-                  topic_name_string.c_str(),
-                  application_message_string.c_str());
+  SUPLA_LOG_DEBUG("Linux MQTT client received message from %s",
+                  topic_name_string.c_str());
 }
 bool Supla::LinuxMqttClient::isConnected() const {
   return mq_client != nullptr && mq_client->error == MQTT_OK;

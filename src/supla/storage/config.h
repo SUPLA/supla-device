@@ -94,6 +94,7 @@ class Config {
 
   // True only when the backend confirms persistence; unsupported returns false.
   virtual bool commit();
+  virtual bool commitWithResult();
   virtual void saveWithDelay(uint16_t delayMs);
   virtual void saveIfNeeded();
 

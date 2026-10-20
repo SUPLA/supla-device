@@ -36,6 +36,7 @@ namespace {
 
 constexpr uint32_t POSTPONED_TIME = 500;
 
+#ifndef SUPLA_DISABLE_LOGS
 const char *relayModeName(uint8_t mode) {
   switch (mode) {
     case SUPLA_RELAY_MODE_NOT_SET: return "NOT_SET";
@@ -49,6 +50,7 @@ const char *relayModeName(uint8_t mode) {
     default: return "UNKNOWN";
   }
 }
+#endif
 
 Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io, int pin, bool highIsOn) {
   Supla::Io::IoPin outputPin(pin, io);
@@ -570,9 +572,13 @@ void Relay::iterateAlways() {
   }
 
   if (durationMs && millis() - durationTimestamp > durationMs) {
-    bool targetOn = !isOn();
+    bool targetOn = timerTargetOn;
     if (isManualActionAllowed(targetOn)) {
-      toggle();
+      if (targetOn) {
+        turnOn(isCyclicMode() ? storedTurnOnDurationMs : 0);
+      } else {
+        turnOff(isCyclicMode() ? turnOffDurationForCycle : 0);
+      }
     } else {
       SUPLA_LOG_DEBUG(
           "Relay[%d] cancelling timer transition due to operating mode",
@@ -928,6 +934,8 @@ void Relay::turnOn(_supla_int_t duration) {
 }
 
 void Relay::applyDuration(int32_t duration, bool turnOn) {
+  // Readback can lag behind the command, so keep the timer's target explicitly.
+  timerTargetOn = !turnOn;
   if (isCyclicMode() && duration > 0) {
     if (turnOn) {
       storedTurnOnDurationMs = duration;
@@ -1402,7 +1410,7 @@ void Relay::updateTimerValue() {
     uint32_t elapsedTimeMs = millis() - durationTimestamp;
     if (elapsedTimeMs <= durationMs) {
       remainingTime = durationMs - elapsedTimeMs;
-      state = (isOn() ? 0 : 1);
+      state = timerTargetOn;
     }
   }
 

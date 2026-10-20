@@ -4,6 +4,7 @@
 #include <supla/log_wrapper.h>
 
 #include <chrono>  // NOLINT(build/c++11)
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -43,28 +44,71 @@ bool Supla::Source::File::isConnected() {
 }
 
 std::string Supla::Source::File::getContent() {
+  constexpr size_t maxSize = 10 * 1024 * 1024;
   std::string result;
   std::ifstream file;
+  bool readError = false;
+  bool tooLarge = false;
   try {
     if (!isConnected()) {
       // file is too old
       return result;
     }
 
-    file.open(filePath);
-    std::string line;
-    while (std::getline(file, line)) {
-      result.append(line).append("\n");
-      if (result.length() > 1024 * 1024 * 10) {
-        // file is too big - cut it at 10 MB
+    file.open(filePath, std::ios::binary);
+    readError = !file.is_open();
+    char buffer[4096];
+    while (!readError) {
+      const size_t remaining = maxSize - result.size();
+      // Probe one byte beyond the limit, including when the buffer is full.
+      file.read(buffer, std::min(sizeof(buffer), remaining + 1));
+      const size_t count = static_cast<size_t>(file.gcount());
+      if (file.bad() || (file.fail() && !file.eof())) {
+        readError = true;
+        break;
+      }
+      if (count > remaining) {
+        tooLarge = true;
+        readError = true;
+        break;
+      }
+      result.append(buffer, count);
+      if (file.eof()) {
+        if (!result.empty() && result.back() != '\n') {
+          if (result.size() == maxSize) {
+            tooLarge = true;
+            readError = true;
+          } else {
+            result.push_back('\n');
+          }
+        }
         break;
       }
     }
   } catch (const std::filesystem::filesystem_error &) {
+    readError = true;
     SUPLA_LOG_ERROR("File: file \"%s\" reading error", filePath.c_str());
   }
 
   file.close();
+  if (readError) {
+    result.clear();
+  }
+  if (tooLarge) {
+    if (!fileIsTooLargeLog) {
+      SUPLA_LOG_ERROR("File: file \"%s\" content exceeds 10 MiB",
+                      filePath.c_str());
+      fileIsTooLargeLog = true;
+    }
+    // Retain the valid cache, but stop returning it after the grace period.
+    if (readFailures < 3) {
+      readFailures++;
+      return prevResult;
+    }
+    return result;
+  } else if (!readError) {
+    fileIsTooLargeLog = false;
+  }
 
   if (result.length() < 1 && readFailures < 3) {
     SUPLA_LOG_DEBUG("File: file \"%s\" reading error or empty",

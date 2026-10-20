@@ -202,6 +202,7 @@ class BinaryBase : public ElementWithChannelActions {
   LocalActionState localActionState = LocalActionState::LoadingConfig;
   bool turnActionSyncOnStartup = false;
   bool initialStateCandidatePending = false;
+  bool inputStateCandidatePending = false;
   BinarySensorChannel channel;
   BinarySensorConfig config;
 };

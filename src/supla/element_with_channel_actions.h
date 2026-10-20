@@ -12,12 +12,7 @@
 
 namespace Supla {
 
-// AVR GCC requires an inferred enum range for a narrower bitfield.
-#ifdef ARDUINO_ARCH_AVR
-enum ChannelConfigState {
-#else
 enum class ChannelConfigState : uint8_t {
-#endif
   None = 0,
   LocalChangePending = 1,
   SetChannelConfigSend = 2,
@@ -155,8 +150,15 @@ class ElementWithChannelActions : public Element, public LocalAction {
   bool setLocalConfigChange(int configType, bool value = true);
   void clearLocalConfigChanges(int configType, int secondConfigType = -1);
   uint8_t getUsedLocalConfigTypes() const;
+  ChannelConfigState getChannelConfigState() const {
+    return static_cast<ChannelConfigState>(channelConfigState);
+  }
+  void setChannelConfigState(ChannelConfigState state) {
+    channelConfigState = static_cast<uint8_t>(state);
+  }
   // Keep exchange state in one byte. The retry counter must stay in 2 bits.
-  ChannelConfigState channelConfigState : 4;
+  // Older GCC warns about the enum's full underlying range in a bitfield.
+  uint8_t channelConfigState : 4;
   uint8_t setChannelConfigAttempts : 2;
   uint8_t configFinishedReceived : 1;
   uint8_t reserved : 1;
@@ -168,10 +170,11 @@ class ElementWithChannelActions : public Element, public LocalAction {
   ConfigTypesBitmap usedConfigTypes;
   ConfigTypesBitmap receivedConfigTypes;
 
- private:
   uint8_t finishChannelConfig(
       TSD_ChannelConfig *result, Supla::ApplyConfigResult applyResult,
       bool local);
+
+ private:
   uint8_t getWeeklyConfigFailures(int configType) const;
   void resetWeeklyConfigFailures(int configType);
 };

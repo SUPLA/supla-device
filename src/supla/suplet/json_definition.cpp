@@ -183,9 +183,13 @@ class JsonReader {
     return false;
   }
 
-  bool skipValue() {
+  bool skipValue(unsigned depth = 0) {
     skipWhitespace();
     if (!ok()) {
+      return false;
+    }
+    // Limit containers in the skipped value; scalar leaves add no depth.
+    if (depth >= 16 && (*pos == '{' || *pos == '[')) {
       return false;
     }
     if (*pos == '"') {
@@ -199,7 +203,7 @@ class JsonReader {
         return true;
       }
       while (true) {
-        if (!skipString() || !consume(':') || !skipValue()) {
+        if (!skipString() || !consume(':') || !skipValue(depth + 1)) {
           return false;
         }
         skipWhitespace();
@@ -220,7 +224,7 @@ class JsonReader {
         return true;
       }
       while (true) {
-        if (!skipValue()) {
+        if (!skipValue(depth + 1)) {
           return false;
         }
         skipWhitespace();

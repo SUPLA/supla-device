@@ -21,16 +21,23 @@ namespace Supla::Source {
 class Mqtt : public Source {
  public:
   Mqtt(const Supla::LinuxYamlConfig& yamlConfig,
-       const std::vector<std::string>& topics);
+       const std::vector<std::string>& topics,
+       const std::vector<std::string>& documentIds = {},
+       unsigned int expirationTimeSec = 0);
   ~Mqtt();
 
   std::string getContent() override;
   bool isConnected() override;
+  std::vector<Document> getDocuments() override;
+  std::vector<std::string> getDocumentIds() const override;
+
 
  protected:
   std::shared_ptr<Supla::LinuxMqttClient> client;
   std::string latestMessage;
   std::vector<std::string> topics;
+  std::vector<std::string> documentIds;
+  unsigned int expirationTimeSec = 0;
 };
 }  // namespace Supla::Source
 

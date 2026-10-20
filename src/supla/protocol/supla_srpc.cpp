@@ -2552,7 +2552,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       sdc->status(STATUS_SERVER_DISCONNECTED,
                   F("SupLAN requires TLS connection"), true);
       disconnect();
-      scheduleReconnect(_millis);
+      scheduleReconnect(millis());
       return false;
     }
     if (1 == result) {
@@ -2570,7 +2570,9 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
                       result,
                       Supla::RegisterDevice::getServerName());
       disconnect();
-      scheduleReconnect(_millis);
+      // connect() may block longer than the backoff. Start the pause after
+      // the attempt finishes, not at the outer iterate's sampled timestamp.
+      scheduleReconnect(millis());
       firstConnectionAttempt = false;
       connectionFailCounter++;
       if (connectionFailCounter % 6 == 0) {

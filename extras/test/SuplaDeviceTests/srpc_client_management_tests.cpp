@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <gtest/gtest.h>
+#include <simple_time.h>
 #include <SuplaDevice.h>
 #include <supla/device/register_device.h>
 #include <supla/network/client.h>
@@ -28,6 +29,8 @@ struct ClientStats {
   int stopCalls = 0;
   int destroyed = 0;
   int connectResult = 0;
+  SimpleTime *connectClock = nullptr;
+  int connectDelayMs = 0;
   std::string written;
   std::string response;
   std::vector<Event> events;
@@ -71,6 +74,7 @@ class TrackingClient : public Supla::Client {
  protected:
   int connectImp(const char *, uint16_t) override {
     stats.connectCalls++;
+    if (stats.connectClock) stats.connectClock->advance(stats.connectDelayMs);
     connectedState = stats.connectResult == 1;
     return stats.connectResult;
   }
@@ -185,6 +189,46 @@ TEST_F(SrpcClientManagementTests,
   EXPECT_EQ(srpc.client, nullptr);
   EXPECT_EQ(srpc.waitForIterateForTest(), 1000U);
   EXPECT_FALSE(srpc.isNetworkRestartRequested());
+}
+
+TEST_F(SrpcClientManagementTests,
+       FailedBlockingConnectWaitsFullBackoffAfterCompletionIncludingClockWrap) {
+  for (uint32_t start : {0U, UINT32_MAX - 10000U}) {
+    SCOPED_TRACE(start);
+    SimpleTime time;
+    time.value = start;
+    ClientStats stats;
+    stats.connectClock = &time;
+    stats.connectDelayMs = 15000;
+    TestNetwork network;
+    network.clients.push_back(new TrackingClient(stats));
+    SuplaDeviceClass sd;
+    Supla::RegisterDevice::setServerName("supla.example");
+    Supla::RegisterDevice::setEmail("user@example.com");
+    TestSrpc srpc(&sd);
+
+    int attempts = 0;
+    for (int backoff : {1000, 5000, 5000, 15000, 15000, 15000, 60000}) {
+      SCOPED_TRACE(backoff);
+      const uint32_t before = time.value;
+      EXPECT_FALSE(srpc.iterate(time.value));
+      ++attempts;
+      ASSERT_EQ(stats.connectCalls, attempts);
+      EXPECT_EQ(time.value, static_cast<uint32_t>(before + 15000));
+      EXPECT_EQ(srpc.waitForIterateForTest(),
+                static_cast<uint32_t>(backoff));
+
+      // A slow TCP/TLS attempt must not consume its own reconnect pause.
+      EXPECT_FALSE(srpc.iterate(time.value));
+      ASSERT_EQ(stats.connectCalls, attempts);
+      time.advance(backoff - 1);
+      EXPECT_FALSE(srpc.iterate(time.value));
+      ASSERT_EQ(stats.connectCalls, attempts);
+      time.advance(1);
+    }
+    EXPECT_FALSE(srpc.iterate(time.value));
+    EXPECT_EQ(stats.connectCalls, attempts + 1);
+  }
 }
 
 TEST_F(SrpcClientManagementTests,

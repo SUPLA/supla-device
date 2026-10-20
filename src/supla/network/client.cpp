@@ -16,6 +16,10 @@ Supla::Client::Client() {
 Supla::Client::~Client() {
 }
 
+bool Supla::Client::isSecure() const {
+  return false;
+}
+
 Supla::ConnectionError Supla::Client::getConnectionError() const {
   return Supla::ConnectionError::NONE;
 }

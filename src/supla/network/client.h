@@ -29,6 +29,9 @@ class Client {
   virtual int available() = 0;
   virtual void stop() = 0;
   virtual uint8_t connected() = 0;
+  // Actual encrypted TLS session, not the requested mode or port.
+  // Unknown/custom transports fail closed until they implement this query.
+  virtual bool isSecure() const;
   virtual void setTimeoutMs(uint16_t timeoutMs) = 0;
   virtual ConnectionError getConnectionError() const;
 

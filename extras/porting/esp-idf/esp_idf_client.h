@@ -18,6 +18,7 @@ class EspIdfClient : public Client {
   int available() override;
   void stop() override;
   uint8_t connected() override;
+  bool isSecure() const override;
   ConnectionError getConnectionError() const override;
   void logConnReason(int, int, int, const char *);
   void setTimeoutMs(uint16_t _timeoutMs) override;

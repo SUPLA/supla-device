@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include <gtest/gtest.h>
+#include <authenticated_client_stub.h>
 #include <SuplaDevice.h>
 #include <arduino_mock.h>
 #include <crypto_test_hooks.h>
@@ -229,6 +230,7 @@ class CoherenceSrpc : public Protocol::SuplaSrpc {
  public:
   explicit CoherenceSrpc(SuplaDeviceClass *device) : SuplaSrpc(device, 29) {}
   void prepare(void *handle) {
+    if (!client) setNetworkClient(new AuthenticatedClientStub);
     srpc = handle;
     registered = 1;
   }

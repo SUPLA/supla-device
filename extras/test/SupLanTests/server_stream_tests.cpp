@@ -51,6 +51,7 @@ class ServerStream : public testing::Test {
     device.use(&protocol);
     client = new testing::NiceMock<NetworkClientMock>;
     ON_CALL(*client, connected()).WillByDefault(Return(1));
+    ON_CALL(*client, isSecure()).WillByDefault(Return(true));
     protocol.setNetworkClient(client);
     protocol.connected(&transport);
     stack.reset(new Stack(&device, 29));
@@ -171,6 +172,19 @@ TEST_F(ServerStream, ExplicitReadOnlySharedSnapshotWithoutUdpOrPeer) {
   EXPECT_FALSE(a.state().available());
   publish(snapshot(1001, 23));
   EXPECT_DOUBLE_EQ(a.state().temperature(), 23);
+}
+TEST_F(ServerStream, NonTlsTransportCannotSendStreamEnsure) {
+  ServerRemoteChannel channel(1001);
+  ChannelHandle::iterateAll();
+  ASSERT_EQ(manager()->consumerCount(), 1);
+  ON_CALL(*client, isSecure()).WillByDefault(Return(false));
+  tick();
+  EXPECT_TRUE(requests.empty());
+  EXPECT_FALSE(channel.canRead());
+  EXPECT_FALSE(channel.state().available());
+  ON_CALL(*client, isSecure()).WillByDefault(Return(true));
+  tick(1000);  // Existing failed-ENSURE backoff, no immediate retry loop.
+  EXPECT_EQ(requests.size(), 1u);
 }
 TEST_F(ServerStream, SnapshotBeforeResultIsHiddenAndPendingActivatesByPush) {
   ServerRemoteChannel a(1001);

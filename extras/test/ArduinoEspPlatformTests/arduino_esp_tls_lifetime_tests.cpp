@@ -359,4 +359,28 @@ TEST(ArduinoEspTlsLifetime, UnavailableClockDefersCAWithoutBlockingOrBypass) {
   EXPECT_EQ(0u, arduinoTestDelayCalls);
 }
 
+TEST(ArduinoEspTlsLifetime, TlsStateIndependentOfCertificatePolicy) {
+  ResetFakeState();
+  Supla::ArduinoEspClient client;
+  EXPECT_FALSE(client.isSecure());
+  ASSERT_EQ(1, ConnectWithCA(&client, "ca-one"));
+  EXPECT_TRUE(client.isSecure());
+  client.stop();
+  EXPECT_FALSE(client.isSecure());
+  WiFiClientSecure::connectResult = 0;
+  EXPECT_EQ(0, client.connect("server", 443));
+  EXPECT_FALSE(client.isSecure());
+  WiFiClientSecure::connectResult = 1;
+  client.setCACert(nullptr);
+  client.setServersCertFingerprint("fingerprint");
+  ASSERT_EQ(1, client.connect("server", 443));
+  EXPECT_TRUE(client.isSecure());
+  client.setServersCertFingerprint("");
+  ASSERT_EQ(1, client.connect("server", 443));
+  EXPECT_TRUE(client.isSecure());
+  client.setSSLEnabled(false);
+  ASSERT_EQ(1, client.connect("server", 2015));
+  EXPECT_FALSE(client.isSecure());
+}
+
 }  // namespace

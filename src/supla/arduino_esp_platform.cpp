@@ -201,6 +201,10 @@ class ArduinoEspClient : public Client {
     return (wifiClient != nullptr) && wifiClient->connected();
   }
 
+  bool isSecure() const override {
+    return sslEnabled && clientSec && clientSec->connected();
+  }
+
   void setTimeoutMs(uint16_t _timeoutMs) override {
     timeoutMs = _timeoutMs;
   }
@@ -210,6 +214,14 @@ class ArduinoEspClient : public Client {
   }
 
  protected:
+  bool isCertificateValidationEnabled() const override {
+#ifdef ARDUINO_ARCH_ESP8266
+    return rootCACert != nullptr || fingerprint.length() > 0;
+#else
+    return rootCACert != nullptr;
+#endif
+  }
+
   int connectImp(const char *host, uint16_t port) override {
     stop();
 

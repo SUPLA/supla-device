@@ -78,6 +78,11 @@ static const char *pkTypeStr(mbedtls_pk_type_t t) {
   }
 }
 #endif
+bool Supla::EspIdfClient::isSecure() const {
+  Supla::AutoLock autoLock(mutex);
+  return client && isConnected && esp_tls_get_ssl_context(client);
+}
+
 int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
   Supla::AutoLock autoLock(mutex);
   if (client != nullptr) {

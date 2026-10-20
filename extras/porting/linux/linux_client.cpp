@@ -580,6 +580,10 @@ bool Supla::LinuxClient::isCertificateValidationEnabled() const {
   return rootCACert != nullptr || useDefaultCACerts;
 }
 
+bool Supla::LinuxClient::isSecure() const {
+  return ssl && connectionFd >= 0 && SSL_is_init_finished(ssl);
+}
+
 bool Supla::LinuxClient::checkSslCerts(SSL *ssl) {
   X509 *cert = nullptr;
   char *line;

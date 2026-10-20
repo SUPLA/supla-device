@@ -17,6 +17,7 @@ class NetworkClientMock : public Supla::Client {
   MOCK_METHOD(int, available, (), (override));
   MOCK_METHOD(void, stop, (), (override));
   MOCK_METHOD(uint8_t, connected, (), (override));
+  MOCK_METHOD(bool, isSecure, (), (const, override));
   MOCK_METHOD(void, setTimeoutMs, (uint16_t timeoutMs), (override));
   MOCK_METHOD(int, connectImp, (const char *host, uint16_t port), (override));
   MOCK_METHOD(size_t, writeImp, (const uint8_t *buf, size_t size), (override));

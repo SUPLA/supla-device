@@ -17,6 +17,7 @@ class LinuxClient : public Client {
   int available() override;
   void stop() override;
   uint8_t connected() override;
+  bool isSecure() const override;
 
   void setTimeoutMs(uint16_t timeoutMs) override;
   void setUseDefaultCACerts(bool useDefault);

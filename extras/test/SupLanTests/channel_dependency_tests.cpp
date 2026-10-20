@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <gtest/gtest.h>
+#include <authenticated_client_stub.h>
 #include <SuplaDevice.h>
 #include <output_mock.h>
 #include <srpc_mock.h>
@@ -365,6 +366,7 @@ class DependencySrpc : public Protocol::SuplaSrpc {
   RemoteResourceManager *remoteResources() override { return resources; }
   RemoteResourceManager *resources = nullptr;
   void prepare(void *handle) {
+    setNetworkClient(new AuthenticatedClientStub);
     srpc = handle;
     registered = 1;
   }

@@ -169,7 +169,7 @@ class WiFiClientSecure : public WiFiClient {
     WiFiClient::stop();
   }
 
-  int connect(const char *, uint16_t) override {
+  int connect(const char *host, uint16_t port) override {
     ++connectCalls;
     if (certStore != nullptr) {
       br_x509_minimal_context context;
@@ -198,7 +198,7 @@ class WiFiClientSecure : public WiFiClient {
       }
       context.freeTrustAnchor(context.dynamicContext, dynamicAnchor);
     }
-    return connectResult;
+    return connectResult ? WiFiClient::connect(host, port) : 0;
   }
 
   void setBufferSizes(int, int) {}

@@ -16,6 +16,7 @@
 #include <supla/suplan/resource_binding_manager.h>
 #include <fcntl.h>
 #include <gtest/gtest.h>
+#include <authenticated_client_stub.h>
 #include <simple_time.h>
 #include <srpc_mock.h>
 #include <supla/channels/channel.h>
@@ -596,6 +597,7 @@ class AssociationSrpc : public Supla::Protocol::SuplaSrpc {
   explicit AssociationSrpc(SuplaDeviceClass *device, int protocol = 29)
       : SuplaSrpc(device, protocol) {}
   void prepare(void *handle, bool ready = true) {
+    if (!client) setNetworkClient(new AuthenticatedClientStub);
     srpc = handle;
     registered = ready ? 1 : 0;
   }

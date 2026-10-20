@@ -57,6 +57,17 @@ Supla::Client *createNetworkClient() {
   return Supla::ClientBuilder();
 }
 
+bool supLanTlsRequired(SuplaDeviceClass *device) {
+  if (Supla::RegisterDevice::getRegDevHeaderPtr()->Flags &
+      SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED) return true;
+#ifndef ARDUINO_ARCH_AVR
+  return Supla::Device::hasSupLanServerStack(device);
+#else
+  (void)device;
+  return false;
+#endif
+}
+
 uint8_t effectiveSrpcVersion(int requestedVersion) {
   if (requestedVersion >= SUPLA_PROTO_VERSION_MIN &&
       requestedVersion <= SUPLA_PROTO_VERSION) {
@@ -1283,6 +1294,11 @@ void Supla::Protocol::SuplaSrpc::setNetworkClient(Supla::Client *newClient) {
   initClient();
 }
 
+bool Supla::Protocol::SuplaSrpc::tlsConfigured() const {
+  return port == 2016 || (port == -1 && isSuplaSSLEnabled) ||
+      (supLanTlsRequired(sdc) && port != 2015 && isSuplaSSLEnabled);
+}
+
 void Supla::Protocol::SuplaSrpc::initClient() {
   if (client == nullptr) {
     client = createNetworkClient();
@@ -1295,7 +1311,7 @@ void Supla::Protocol::SuplaSrpc::initClient() {
   // Arbitrary TCP fragments cannot be redacted by call ID. Use the SRPC
   // packet logger, which suppresses credential-bearing payloads instead.
   client->setDebugLogs(false);
-  if (port == 2016 || (port == -1 && isSuplaSSLEnabled)) {
+  if (tlsConfigured()) {
     client->setSSLEnabled(true);
     client->setCACert(selectedCertificate);
   }
@@ -1315,6 +1331,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
   }
 
   releaseOwnedCertificate();
+  if (supLanTlsRequired(sdc) && client) disconnect();
   bool configComplete = true;
   char buf[256] = {};
 
@@ -1342,7 +1359,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
       configComplete = false;
     }
 
-    if (port == 2016 || (port == -1 && isSuplaSSLEnabled)) {
+    if (tlsConfigured()) {
       bool usePublicServer =
           Supla::RegisterDevice::isSuplaPublicServerConfigured();
       selectedCertificate = suplaCACert;
@@ -1429,7 +1446,7 @@ void Supla::Protocol::SuplaSrpc::onInit() {
     return;
   }
 
-  if (port == 2016 || (port == -1 && isSuplaSSLEnabled)) {
+  if (tlsConfigured()) {
     auto cfg = Supla::Storage::ConfigInstance();
 
     if (!cfg && (suplaCACert != nullptr || supla3rdPartyCACert != nullptr)) {
@@ -1463,12 +1480,22 @@ _supla_int_t Supla::dataRead(void *buf, _supla_int_t count, void *userParams) {
   if (srpcLayer == nullptr || srpcLayer->client == nullptr) {
     return 0;
   }
+  if (supLanTlsRequired(srpcLayer->getSdc()) &&
+      !srpcLayer->client->isSecure()) {
+    srpcLayer->markWriteFailure();
+    return 0;
+  }
   return srpcLayer->client->read(reinterpret_cast<uint8_t *>(buf), count);
 }
 
 _supla_int_t Supla::dataWrite(void *buf, _supla_int_t count, void *userParams) {
   auto srpcLayer = reinterpret_cast<Supla::Protocol::SuplaSrpc *>(userParams);
   if (srpcLayer == nullptr || srpcLayer->client == nullptr) {
+    return 0;
+  }
+  if (supLanTlsRequired(srpcLayer->getSdc()) &&
+      !srpcLayer->client->isSecure()) {
+    srpcLayer->markWriteFailure();
     return 0;
   }
   if (srpcLayer->hasWriteFailure()) {
@@ -1867,6 +1894,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResultB(
   auto regDevResult =
       reinterpret_cast<TSD_SuplaRegisterDeviceResult *>(registerDeviceResultB);
   onRegisterResult(regDevResult);
+  if (regDevResult->result_code == SUPLA_RESULTCODE_TLS_REQUIRED) return;
 
   // Handle channel conflict report
   SUPLA_LOG_DEBUG("onRegisterResultB: %d, report size: %d",
@@ -2005,6 +2033,11 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
       sdc->status(STATUS_INVALID_GUID, F("Incorrect device GUID!"), true);
       break;
 
+    case SUPLA_RESULTCODE_TLS_REQUIRED:
+      sdc->status(STATUS_SERVER_DISCONNECTED,
+                  F("SupLAN registration requires TLS"), true);
+      break;
+
     case SUPLA_RESULTCODE_AUTHKEY_ERROR:
       sdc->status(STATUS_INVALID_AUTHKEY, F("Incorrect AuthKey!"), true);
       break;
@@ -2090,7 +2123,7 @@ bool Supla::Protocol::SuplaSrpc::rotateServerRoot() {
 
 void Supla::Protocol::SuplaSrpc::onSetSuplanSourceAssociation(
     const TSDS_SuplaSetSuplanSourceAssociation *request) {
-  if (!request || !srpc) return;
+  if (!request || !srpc || !client || !client->isSecure()) return;
   TDS_SuplaSetSuplanSourceAssociationResult result = {};
   result.PeerContext = request->PeerContext;
   result.AclRevision = request->AclRevision;
@@ -2116,7 +2149,7 @@ void Supla::Protocol::SuplaSrpc::onSetSuplanSourceAssociation(
 
 void Supla::Protocol::SuplaSrpc::onSetSuplanDestinationAssociation(
     const TSDS_SuplaSetSuplanDestinationAssociation *request) {
-  if (!request || !srpc) return;
+  if (!request || !srpc || !client || !client->isSecure()) return;
   TDS_SuplaSetSuplanDestinationAssociationResult result = {};
   result.PeerContext = request->PeerContext;
   result.AclRevision = request->AclRevision;
@@ -2296,7 +2329,9 @@ bool Supla::Protocol::SuplaSrpc::autodiscover(uint32_t now) {
   adClient->setSSLEnabled(true);
   adClient->setCACert(::suplaCACert);
 
-  if (1 == adClient->connect(server, 443)) {
+  const bool requireTls = supLanTlsRequired(sdc);
+  if (1 == adClient->connect(server, 443) &&
+      (!requireTls || adClient->isSecure())) {
     adClient->write("GET /users/");
     const char *email = Supla::RegisterDevice::getEmail();
     while (*email) {
@@ -2463,6 +2498,18 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     waitForIterate = 1000;
     return false;
   }
+  // Reject unsafe configuration before connecting, or an already open
+  // plaintext client before any SRPC packet is processed.
+  if (supLanTlsRequired(sdc) &&
+      (!tlsConfigured() ||
+       (client->connected() && !client->isSecure()))) {
+    sdc->status(STATUS_SERVER_DISCONNECTED,
+                F("SupLAN requires TLS connection"),
+                true);
+    disconnect();
+    scheduleReconnect(_millis);
+    return false;
+  }
   // Establish connection with Supla server
   if (!client->connected()) {
     deinitializeSrpc();
@@ -2492,7 +2539,15 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
         port = 2015;
       }
     }
+    if (supLanTlsRequired(sdc)) client->setSSLEnabled(true);
     int result = client->connect(Supla::RegisterDevice::getServerName(), port);
+    if (result == 1 && supLanTlsRequired(sdc) && !client->isSecure()) {
+      sdc->status(STATUS_SERVER_DISCONNECTED,
+                  F("SupLAN requires TLS connection"), true);
+      disconnect();
+      scheduleReconnect(_millis);
+      return false;
+    }
     if (1 == result) {
       sdc->uptime.resetConnectionUptime();
       connectionFailCounter = 0;
@@ -2549,6 +2604,15 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     return false;
   }
 
+  // Recheck after SRPC callbacks, immediately before registration enqueue.
+  if (registered == 0 && supLanTlsRequired(sdc) &&
+      (!client || !client->isSecure())) {
+    sdc->status(STATUS_SERVER_DISCONNECTED,
+                F("SupLAN requires TLS connection"), true);
+    disconnect();
+    scheduleReconnect(_millis);
+    return false;
+  }
   if (registered == 0) {
     // Perform registration if we are not yet registered
     registered = -1;
@@ -2854,7 +2918,9 @@ bool Supla::Protocol::SuplaSrpc::isUpdatePending() {
 }
 
 bool Supla::Protocol::SuplaSrpc::isRegisteredAndReady() {
-  return registered == 1;
+  return registered == 1 &&
+      (!supLanTlsRequired(sdc) ||
+       (client && tlsConfigured() && client->isSecure()));
 }
 
 void Supla::Protocol::SuplaSrpc::sendActionTrigger(uint8_t channelNumber,
@@ -3444,6 +3510,7 @@ void Supla::Protocol::SuplaSrpc::setChannelConflictResolver(
 bool Supla::Protocol::SuplaSrpc::ensureResourceShare(
     const TDS_SuplaEnsureResourceShare &request) {
 #ifndef ARDUINO_ARCH_AVR
+  if (!client || !client->isSecure()) return false;
   if (effectiveSrpcVersion(version) < 29 || !serverIdentityState.capable() ||
       !isRegisteredAndReady() || !serverIdentityState.serverSyncComplete() ||
       shareResponsePending) return false;
@@ -3461,7 +3528,7 @@ bool Supla::Protocol::SuplaSrpc::ensureResourceShare(
 #endif
 }
 bool Supla::Protocol::SuplaSrpc::acceptShareResult() {
-  if (!shareResponsePending) return false;
+  if (!shareResponsePending || !client || !client->isSecure()) return false;
   const bool accept = !discardShareResponse &&
       millis() - shareRequestStartedMs < 10000;
   shareResponsePending = false;
@@ -3472,6 +3539,7 @@ bool Supla::Protocol::SuplaSrpc::acceptShareResult() {
 bool Supla::Protocol::SuplaSrpc::ensureResourceAccess(
     const TDS_SuplaEnsureResourceAccess &request) {
 #ifndef ARDUINO_ARCH_AVR
+  if (!client || !client->isSecure()) return false;
   if (effectiveSrpcVersion(version) < 29 || !serverIdentityState.capable() ||
       !isRegisteredAndReady() || !serverIdentityState.serverSyncComplete() ||
       (request.DeliveryMode != SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER &&
@@ -3499,7 +3567,7 @@ bool Supla::Protocol::SuplaSrpc::ensureResourceAccess(
 }
 
 bool Supla::Protocol::SuplaSrpc::acceptEnsureResult() {
-  if (!ensureResponsePending) return false;
+  if (!ensureResponsePending || !client || !client->isSecure()) return false;
   const bool accept = !discardEnsureResponse &&
       millis() - ensureRequestStartedMs < 10000;
   ensureResponsePending = false;

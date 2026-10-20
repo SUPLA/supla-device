@@ -5,6 +5,7 @@
 #include <crypto_test_hooks.h>
 #include <SuplaDevice.h>
 #include <gtest/gtest.h>
+#include <authenticated_client_stub.h>
 #include <network_client_mock.h>
 #include <simple_time.h>
 #include <srpc_mock.h>
@@ -442,7 +443,10 @@ class TestSrpc : public Supla::Protocol::SuplaSrpc {
  public:
   explicit TestSrpc(SuplaDeviceClass *sdc, int version = 29)
       : SuplaSrpc(sdc, version) {}
-  void attach(void *handle) { srpc = handle; }
+  void attach(void *handle) {
+    if (!client) setNetworkClient(new AuthenticatedClientStub);
+    srpc = handle;
+  }
   void initializeForTest() { initializeSrpc(); }
   void deinitializeForTest() { deinitializeSrpc(); }
   ~TestSrpc() { srpc = nullptr; }
@@ -745,6 +749,7 @@ TEST_F(ServerIdentityTests,
   auto *client = new NiceMock<NetworkClientMock>;
   EXPECT_CALL(wire, srpc_init(_)).WillOnce(Return(&handle));
   EXPECT_CALL(*client, connected()).WillRepeatedly(Return(1));
+  ON_CALL(*client, isSecure()).WillByDefault(Return(true));
   EXPECT_CALL(wire, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(wire, srpc_ds_async_registerdevice_in_chunks_g(_, _))
       .WillOnce([](void *, TDS_SuplaRegisterDeviceHeader *header) {
@@ -753,6 +758,7 @@ TEST_F(ServerIdentityTests,
         return 1;
       });
   protocol.setNetworkClient(client);
+  client->setCACert("fixture CA");
   protocol.initializeForTest();
   EXPECT_FALSE(protocol.iterate(0));
   auto data = snapshot();
@@ -953,10 +959,12 @@ TEST_F(ServerIdentityTests, NormalSrpcAbortsRegistrationAfterRemoval) {
   auto *client = new NiceMock<NetworkClientMock>;
   EXPECT_CALL(wire, srpc_init(_)).WillOnce(Return(&handle));
   EXPECT_CALL(*client, connected()).WillRepeatedly(Return(1));
+  ON_CALL(*client, isSecure()).WillByDefault(Return(true));
   EXPECT_CALL(wire, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(wire, srpc_ds_async_registerdevice_in_chunks_g(_, _))
       .WillOnce(Return(1));
   protocol.setNetworkClient(client);
+  client->setCACert("fixture CA");
   protocol.initializeForTest();
   EXPECT_FALSE(protocol.iterate(0));
   delete second;
@@ -1238,6 +1246,7 @@ TEST_F(ServerIdentityTests, MissingDisabledOrForeignStackCannotAdvertise) {
     auto client = new NiceMock<NetworkClientMock>;
     EXPECT_CALL(wire, srpc_init(_)).WillOnce(Return(&handle));
     EXPECT_CALL(*client, connected()).WillRepeatedly(Return(1));
+    ON_CALL(*client, isSecure()).WillByDefault(Return(true));
     EXPECT_CALL(wire, srpc_iterate(_))
         .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
     EXPECT_CALL(wire, srpc_ds_async_registerdevice_in_chunks_g(_, _))
@@ -1247,6 +1256,7 @@ TEST_F(ServerIdentityTests, MissingDisabledOrForeignStackCannotAdvertise) {
           return 1;
         });
     protocol.setNetworkClient(client);
+    client->setCACert("fixture CA");
     protocol.initializeForTest();
     EXPECT_FALSE(protocol.iterate(0));
   }
@@ -1266,6 +1276,7 @@ TEST_F(ServerIdentityTests, OlderProtocolCannotAdvertiseOrAcceptIdentities) {
   auto *client = new NiceMock<NetworkClientMock>;
   EXPECT_CALL(wire, srpc_init(_)).WillOnce(Return(&handle));
   EXPECT_CALL(*client, connected()).WillRepeatedly(Return(1));
+  ON_CALL(*client, isSecure()).WillByDefault(Return(true));
   EXPECT_CALL(wire, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(wire, srpc_ds_async_registerdevice_in_chunks_g(_, _))
       .WillOnce([](void *, TDS_SuplaRegisterDeviceHeader *header) {
@@ -1273,6 +1284,7 @@ TEST_F(ServerIdentityTests, OlderProtocolCannotAdvertiseOrAcceptIdentities) {
         return 1;
       });
   protocol.setNetworkClient(client);
+  client->setCACert("fixture CA");
   protocol.initializeForTest();
   EXPECT_FALSE(protocol.iterate(0));
   auto data = snapshot();

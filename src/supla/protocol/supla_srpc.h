@@ -269,6 +269,7 @@ class SuplaSrpc : public ProtocolLayer {
   Supla::Device::ServerStreamBackend *serverStream = nullptr;
 #endif  // !ARDUINO_ARCH_AVR
   void releaseOwnedCertificate();
+  bool tlsConfigured() const;
   void handlePendingCalCfgTimeouts(uint32_t _millis);
   Supla::Device::RemoteDeviceConfig *remoteDeviceConfig = nullptr;
 };

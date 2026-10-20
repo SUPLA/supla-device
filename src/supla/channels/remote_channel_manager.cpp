@@ -5,9 +5,25 @@
 #include <supla/suplan/suplan_server_identity.h>
 #ifndef ARDUINO_ARCH_AVR
 #include <string.h>
+#include <inttypes.h>
+#include <supla/log_wrapper.h>
 #include <supla/element.h>
 
 namespace Supla {
+const char *channelAccessStatusName(ChannelAccessStatus status) {
+  switch (status) {
+    case ChannelAccessStatus::INVALID: return "INVALID";
+    case ChannelAccessStatus::IDENTITY_UNRESOLVED: return "IDENTITY_UNRESOLVED";
+    case ChannelAccessStatus::LOCAL_CHANNEL: return "LOCAL_CHANNEL";
+    case ChannelAccessStatus::RESOURCE_LIMIT: return "RESOURCE_LIMIT";
+    case ChannelAccessStatus::PENDING_APPROVAL: return "PENDING_APPROVAL";
+    case ChannelAccessStatus::REJECTED: return "REJECTED";
+    case ChannelAccessStatus::PROVISIONING: return "PROVISIONING";
+    case ChannelAccessStatus::READY: return "READY";
+    case ChannelAccessStatus::PEER_UNAVAILABLE: return "PEER_UNAVAILABLE";
+  }
+  return "UNKNOWN";
+}
 namespace Device {
 namespace {
 const RemoteDelivery kDeliveries[] = {
@@ -408,6 +424,21 @@ void RemoteChannelManager::ensureResult(
   if (!resource) return;
   backend(ensureResource_.delivery)->ensureCompleted(*resource, result);
   backend(ensureResource_.delivery)->reconcileResource(*resource);
+  const char *mode =
+      result.DeliveryMode == SUPLA_RESOURCE_DELIVERY_SERVER_STREAM
+          ? "SERVER_STREAM" : "SUPLAN_PEER";
+  const char *approval = "INVALID";
+  switch (result.AccessStatus) {
+    case SUPLA_SUPLAN_ACCESS_STATUS_GRANTED: approval = "GRANTED"; break;
+    case SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL:
+      approval = "PENDING_APPROVAL"; break;
+    case SUPLA_SUPLAN_ACCESS_STATUS_REJECTED: approval = "REJECTED"; break;
+  }
+  SUPLA_LOG_DEBUG("SupLAN %s ChannelId=%" PRIu32
+      " ENSURE access=%s result=%s code=%u", mode, resource->id.id, approval,
+      result.Result == SUPLA_SUPLAN_RESULT_OK ? "OK" :
+      result.Result == SUPLA_SUPLAN_RESULT_NOT_AUTHORIZED ? "NOT_AUTHORIZED" :
+      "FAILED", result.Result);
   resource->approval = result.AccessStatus;
   resource->approvalPermissions = ensurePermissions_;
   if (resource->access == RemoteAccess::READY) return;

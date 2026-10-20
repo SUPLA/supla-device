@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gmock/gmock.h>
+#include <config_key_collector.h>
+#include <config_mock.h>
 #include <gtest/gtest.h>
 #include <supla/storage/key_value.h>
 #include <supla-common/proto.h>
@@ -691,4 +693,64 @@ TEST(KeyValueTests, SerializationFailsInsteadOfSilentlyOmittingLargeElement) {
   ASSERT_TRUE(config.setBlob("large", value.data(), value.size()));
   std::array<uint8_t, 64> buffer = {};
   EXPECT_EQ(config.serializeToMemory(buffer.data(), buffer.size()), SIZE_MAX);
+}
+
+TEST(KeyValueIterationTests, FiltersSubstringsAndReportsAllStoredTypes) {
+  KeyValueTest config;
+  ASSERT_TRUE(config.setInt8("sl-i8", -12));
+  ASSERT_TRUE(config.setUInt8("sl-u8", 250));
+  ASSERT_TRUE(config.setInt32("sl-i32", -12345));
+  ASSERT_TRUE(config.setUInt32("sl-u32", 12345));
+  ASSERT_TRUE(config.setString("sl-text", "value"));
+  ASSERT_TRUE(config.setBlob("12_hvac_cfg2", "abc", 3));
+  using Type = Supla::ConfigValueType;
+  using Result = Supla::ConfigIterationResult;
+  ConfigKeyCollector found;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::COMPLETED);
+  EXPECT_EQ(found.visits, 6);
+  EXPECT_EQ(found.keys.at("sl-i8"), Type::INT8);
+  EXPECT_EQ(found.keys.at("sl-u8"), Type::UINT8);
+  EXPECT_EQ(found.keys.at("sl-i32"), Type::INT32);
+  EXPECT_EQ(found.keys.at("sl-u32"), Type::UINT32);
+  EXPECT_EQ(found.keys.at("sl-text"), Type::STRING);
+  EXPECT_EQ(found.keys.at("12_hvac_cfg2"), Type::BLOB);
+  for (const auto filter : {"hvac_cfg2", "hvac_", "_cfg"}) {
+    ConfigKeyCollector match;
+    EXPECT_EQ(config.forEachKey(filter, match.collect, &match),
+              Result::COMPLETED);
+    EXPECT_EQ(match.visits, 1);
+    EXPECT_EQ(match.keys.begin()->first, "12_hvac_cfg2");
+  }
+  for (const auto filter : {"HVAC", "missing", "hvac*"}) {
+    ConfigKeyCollector match;
+    EXPECT_EQ(config.forEachKey(filter, match.collect, &match),
+              Result::COMPLETED);
+    EXPECT_EQ(match.visits, 0);
+  }
+}
+
+TEST(KeyValueIterationTests, EmptyStopAndInvalidArgumentsAreDistinct) {
+  KeyValueTest config;
+  ConfigKeyCollector found;
+  using Result = Supla::ConfigIterationResult;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::COMPLETED);
+  EXPECT_EQ(found.visits, 0);
+  ASSERT_TRUE(config.setString("one", "value"));
+  ASSERT_TRUE(config.setString("two", "value"));
+  found.stopAfter = 1;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::STOPPED);
+  EXPECT_EQ(found.visits, 1);
+  EXPECT_EQ(config.forEachKey(nullptr, found.collect, &found), Result::ERROR);
+  EXPECT_EQ(config.forEachKey("", nullptr, &found), Result::ERROR);
+  EXPECT_EQ(config.forEachKey("", [](const char *, Supla::ConfigValueType,
+                                   void *) { return false; }, nullptr),
+            Result::STOPPED);
+}
+
+TEST(KeyValueIterationTests, UnsupportedBackendCannotMasqueradeAsEmptyStorage) {
+  ConfigMock config;
+  ConfigKeyCollector found;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found),
+            Supla::ConfigIterationResult::UNSUPPORTED);
+  EXPECT_EQ(found.visits, 0);
 }

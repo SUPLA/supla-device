@@ -13,6 +13,19 @@
 #include <vector>
 
 class FakeLittleFs;
+using lfs_t = FakeLittleFs;
+struct lfs_dir_t {
+  std::string lastPath;
+  bool opened = false;
+};
+struct lfs_info {
+  uint8_t type;
+  char name[64];
+};
+constexpr int LFS_ERR_NOENT = -2;
+constexpr int LFS_ERR_IO = -5;
+constexpr uint8_t LFS_TYPE_REG = 1;
+constexpr uint8_t LFS_TYPE_DIR = 2;
 
 struct LittleFSConfig {
   explicit LittleFSConfig(bool autoFormat = true) : autoFormat(autoFormat) {}
@@ -97,10 +110,21 @@ class FakeLittleFs {
     corruptClosePath.clear();
     beginCalls = 0;
     failBeginCall = -1;
+    failDirectoryReadCall = -1;
+    directoryReadCalls = 0;
+    openDirectories = 0;
+    failDirectoryClose = false;
+    directoryMissing = false;
     maxWrite = SIZE_MAX;
     maxRead = SIZE_MAX;
   }
 
+  int failDirectoryReadCall = -1;
+  int directoryReadCalls = 0;
+  int openDirectories = 0;
+  bool failDirectoryClose = false;
+  bool directoryMissing = false;
+  lfs_t *native() { return this; }
   bool beginResult = true;
   std::string failOpenPath;
   std::string failReadPath;
@@ -114,7 +138,9 @@ class FakeLittleFs {
   size_t maxRead = SIZE_MAX;
 
   bool exists(const char *path) const {
-    return path != nullptr && files_.find(path) != files_.end();
+    // The directory is always exposed by open() in this fake.
+    return path != nullptr &&
+        (std::string(path) == "/supla" || files_.find(path) != files_.end());
   }
 
   bool mkdir(const char *) { return true; }
@@ -151,6 +177,7 @@ class FakeLittleFs {
 
  private:
   friend class File;
+  friend int lfs_dir_read(lfs_t *, lfs_dir_t *, lfs_info *);
 
   bool autoFormat_ = true;
   std::map<std::string, std::vector<uint8_t>> files_;
@@ -216,11 +243,45 @@ inline File File::openNextFile() {
       continue;
     }
     lastDirectoryEntry_ = entry.first;
-    return File(filesystem_, entry.first, false,
-                entry.first.substr(prefix.size()));
+    // Match the real Arduino iterator: a failed entry open also returns File().
+    auto file = filesystem_->open(entry.first.c_str(), "r");
+    if (file) file.name_ = entry.first.substr(prefix.size());
+    return file;
   }
 
   return {};
+}
+
+inline int lfs_dir_open(lfs_t *fs, lfs_dir_t *dir, const char *path) {
+  if (fs->directoryMissing) return LFS_ERR_NOENT;
+  if (fs->failOpenPath == path) return LFS_ERR_IO;
+  dir->lastPath.clear();
+  dir->opened = true;
+  ++fs->openDirectories;
+  return 0;
+}
+inline int lfs_dir_read(lfs_t *fs, lfs_dir_t *dir, lfs_info *info) {
+  if (!dir->opened || ++fs->directoryReadCalls == fs->failDirectoryReadCall)
+    return LFS_ERR_IO;
+  for (const auto &entry : fs->files_) {
+    const std::string prefix = "/supla/";
+    if (entry.first.rfind(prefix, 0) != 0 ||
+        entry.first.find('/', prefix.size()) != std::string::npos ||
+        entry.first <= dir->lastPath) continue;
+    dir->lastPath = entry.first;
+    const auto name = entry.first.substr(prefix.size());
+    if (name.size() >= sizeof(info->name)) return LFS_ERR_IO;
+    std::copy(name.begin(), name.end(), info->name);
+    info->name[name.size()] = 0;
+    info->type = LFS_TYPE_REG;
+    return 1;
+  }
+  return 0;
+}
+inline int lfs_dir_close(lfs_t *fs, lfs_dir_t *dir) {
+  if (dir->opened) --fs->openDirectories;
+  dir->opened = false;
+  return fs->failDirectoryClose ? LFS_ERR_IO : 0;
 }
 
 inline FakeLittleFs LittleFS;

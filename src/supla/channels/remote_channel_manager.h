@@ -24,6 +24,8 @@ enum class ChannelAccessStatus : uint8_t {
   INVALID, IDENTITY_UNRESOLVED, LOCAL_CHANNEL, RESOURCE_LIMIT, PENDING_APPROVAL,
   REJECTED, PROVISIONING, READY, PEER_UNAVAILABLE
 };
+const char *channelAccessStatusName(ChannelAccessStatus status);
+
 namespace Device {
 enum class RemoteAccess : uint8_t { PENDING, READY, BLOCKED };
 struct ConsumeIntent {
@@ -66,7 +68,7 @@ struct RemoteChannelResource {
       : access(RemoteAccess::PENDING), permissions(0), manualPermissions(0),
         effective(0), approval(0), approvalPermissions(0), hasSnapshot(false),
         ensureAttempted(false), manualAttempted(false),
-        continuityPending(false) {}
+        continuityPending(false), leaseExpired(false) {}
   RemoteAccess access : 2;
   uint8_t permissions : 3;
   uint8_t manualPermissions : 3;
@@ -77,6 +79,8 @@ struct RemoteChannelResource {
   uint8_t ensureAttempted : 1;
   uint8_t manualAttempted : 1;
   uint8_t continuityPending : 1;
+  // Expiry latch and one diagnostic per lease, no second cache.
+  mutable uint8_t leaseExpired : 1;
   bool used() const { return id.id != 0; }
 };
 

@@ -30,12 +30,58 @@ bool save(Config *cfg, const char *key, const void *data, int size) {
       cfg->getBlobSize(key) == size && cfg->getBlob(key, confirmed, size) &&
       !memcmp(confirmed, data, size);
 }
+// Short-lived key snapshot: 5 record families x 255 slots, no retained index.
+// Callbacks only inspect metadata; Config reads/writes happen after iteration.
+struct Inventory {
+  uint8_t present[5][32] = {};
+  bool has(int family, int slot) const {
+    return present[family][slot / 8] & (1u << (slot % 8));
+  }
+  static bool visit(const char *key, ConfigValueType type, void *context) {
+    auto self = static_cast<Inventory *>(context);
+    const char *number = key;
+    if (!strncmp(key, "sl-peer-", 8)) number += 8;
+    else if (!strncmp(key, "slb_", 4)) number += 4;
+    if (*number < '0' || *number > '9') return true;
+    const auto slot = strtol(number, nullptr, 10);
+    if (slot < 0 || slot >= 255) return true;
+    char expected[SUPLA_CONFIG_MAX_KEY_SIZE];
+    for (int family = 0; family < 5; ++family) {
+      // Five fixed formats only; no untrusted formatting input.
+      switch (family) {
+        case 0: snprintf(expected, sizeof(expected), "%d_hvac_cfg2",
+                         static_cast<int>(slot)); break;
+        case 1: snprintf(expected, sizeof(expected), "%d_cnt_cfg2",
+                         static_cast<int>(slot)); break;
+        case 2: snprintf(expected, sizeof(expected), "%d_valve_cfg2",
+                         static_cast<int>(slot)); break;
+        case 3: snprintf(expected, sizeof(expected), "sl-peer-%d",
+                         static_cast<int>(slot)); break;
+        default: snprintf(expected, sizeof(expected), "slb_%d",
+                          static_cast<int>(slot)); break;
+      }
+      if (strcmp(key, expected)) continue;
+      // A known name with another type is damaged storage, not absent state.
+      if (type != ConfigValueType::BLOB) return false;
+      self->present[family][slot / 8] |= 1u << (slot % 8);
+      break;
+    }
+    return true;
+  }
+  bool load(Config *cfg) {
+    return cfg && cfg->forEachKey("", visit, this) ==
+        ConfigIterationResult::COMPLETED;
+  }
+};
 }  // namespace
 bool ServerMigration::hasServerState(Config *cfg) {
+  Inventory keys;
+  if (!keys.load(cfg)) return true;  // Unknown inventory must fail closed.
   char key[SUPLA_CONFIG_MAX_KEY_SIZE];
   for (int n = 0; n < 255; ++n) {
     snprintf(key, sizeof(key), "%d_hvac_cfg2", n);
-    int size = cfg->getBlobSize(key);
+    int size = keys.has(0, n) ? cfg->getBlobSize(key) : -1;
+    if (keys.has(0, n) && size < 0) return true;
     if (size >= 0) {
       Control::HvacStoredConfigV2 record;
       if ((size != sizeof(record) &&
@@ -46,7 +92,8 @@ bool ServerMigration::hasServerState(Config *cfg) {
           record.serverNone.rootEpoch) return true;
     }
     snprintf(key, sizeof(key), "%d_cnt_cfg2", n);
-    size = cfg->getBlobSize(key);
+    size = keys.has(1, n) ? cfg->getBlobSize(key) : -1;
+    if (keys.has(1, n) && size < 0) return true;
     if (size >= 0) {
       Sensor::ContainerStoredConfigV2 record;
       if (size != sizeof(record) ||
@@ -58,7 +105,8 @@ bool ServerMigration::hasServerState(Config *cfg) {
           return true;
     }
     snprintf(key, sizeof(key), "%d_valve_cfg2", n);
-    size = cfg->getBlobSize(key);
+    size = keys.has(2, n) ? cfg->getBlobSize(key) : -1;
+    if (keys.has(2, n) && size < 0) return true;
     if (size >= 0) {
       Control::ValveStoredConfigV2 record;
       if (size != sizeof(record) ||
@@ -70,9 +118,9 @@ bool ServerMigration::hasServerState(Config *cfg) {
           return true;
     }
     snprintf(key, sizeof(key), "sl-peer-%d", n);
-    if (cfg->getBlobSize(key) >= 0) return true;
+    if (keys.has(3, n)) return true;
     snprintf(key, sizeof(key), "slb_%d", n);
-    if (cfg->getBlobSize(key) >= 0) return true;
+    if (keys.has(4, n)) return true;
   }
   return false;
 }
@@ -98,10 +146,13 @@ ChannelReference ServerMigration::translate(ChannelReference ref) const {
   return record[2] ? ChannelReference() : ref;
 }
 bool ServerMigration::migrate(Config *cfg) const {
+  Inventory keys;
+  if (!keys.load(cfg)) return false;
   char key[SUPLA_CONFIG_MAX_KEY_SIZE];
   for (int number = 0; number < 255; ++number) {
     snprintf(key, sizeof(key), "%d_hvac_cfg2", number);
-    int size = cfg->getBlobSize(key);
+    int size = keys.has(0, number) ? cfg->getBlobSize(key) : -1;
+    if (keys.has(0, number) && size < 0) return false;
     if (size >= 0) {
       Control::HvacStoredConfigV2 stored;
       Control::HvacConfiguration decoded;
@@ -131,7 +182,8 @@ bool ServerMigration::migrate(Config *cfg) const {
           !save(cfg, key, &next, sizeof(next))) return false;
     }
     snprintf(key, sizeof(key), "%d_cnt_cfg2", number);
-    size = cfg->getBlobSize(key);
+    size = keys.has(1, number) ? cfg->getBlobSize(key) : -1;
+    if (keys.has(1, number) && size < 0) return false;
     if (size >= 0) {
       Sensor::ContainerStoredConfigV2 stored;
       if (size != sizeof(stored) ||
@@ -144,7 +196,8 @@ bool ServerMigration::migrate(Config *cfg) const {
           !save(cfg, key, &next, sizeof(next))) return false;
     }
     snprintf(key, sizeof(key), "%d_valve_cfg2", number);
-    size = cfg->getBlobSize(key);
+    size = keys.has(2, number) ? cfg->getBlobSize(key) : -1;
+    if (keys.has(2, number) && size < 0) return false;
     if (size >= 0) {
       Control::ValveStoredConfigV2 stored;
       if (size != sizeof(stored) ||
@@ -163,13 +216,14 @@ bool ServerMigration::migrate(Config *cfg) const {
   bool erased = false;
   for (int slot = 0; slot < 255; ++slot) {
     snprintf(key, sizeof(key), "sl-peer-%d", slot);
-    if (cfg->getBlobSize(key) >= 0) {
+    if (keys.has(3, slot)) {
       if (!cfg->eraseKey(key)) return false;
       erased = true;
     }
     snprintf(key, sizeof(key), "slb_%d", slot);
+    if (!keys.has(4, slot)) continue;
     const int size = cfg->getBlobSize(key);
-    if (size < 0) continue;
+    if (size < 0) return false;
     SupLan::PeerContext context = {};
     // Config::getBlob requires the complete blob, not an arbitrary prefix.
     // Binding records are bounded by the compiled wire envelope.

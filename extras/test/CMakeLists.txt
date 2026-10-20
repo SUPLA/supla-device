@@ -459,12 +459,13 @@ foreach(arduino_platform IN ITEMS ESP8266 ESP32)
   set(arduino_target "suplan${arduino_target}arduinoudptests")
   add_executable(${arduino_target}
     SupLanArduinoUdpTests/arduino_udp_tests.cpp
+    doubles/log.cpp
     ../../src/supla/suplan/arduino_udp.cpp
     ../../src/supla/suplan/network_transport.cpp)
   target_include_directories(${arduino_target} BEFORE PRIVATE
     SupLanArduinoUdpTests/fakes ../../src)
   target_compile_definitions(${arduino_target} PRIVATE
-    ARDUINO_ARCH_${arduino_platform})
+    SUPLA_DEVICE ARDUINO_ARCH_${arduino_platform})
   target_link_libraries(${arduino_target} PRIVATE gtest_main)
   supla_apply_warnings(${arduino_target})
   add_test(NAME ${arduino_target} COMMAND ${arduino_target})

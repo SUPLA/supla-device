@@ -14,6 +14,8 @@ namespace Supla {
 
 class LittleFsConfig : public KeyValue {
  public:
+  ConfigIterationResult forEachKey(const char *filter,
+      ConfigKeyCallback callback, void *context) override;
   explicit LittleFsConfig(int configMaxSize = SUPLA_LITTLEFS_CONFIG_BUF_SIZE);
   virtual ~LittleFsConfig();
   bool init() override;

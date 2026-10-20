@@ -282,6 +282,7 @@ bool LinuxUdpPort::refreshMulticastInterfaces() {
       joinedAddresses_[move - 1] = joinedAddresses_[move];
     }
     --joinedCount_;
+    multicastMembershipChanged(membership.imr_interface.s_addr, -1);
   }
 
   for (size_t current = 0; current < count; ++current) {
@@ -302,6 +303,12 @@ bool LinuxUdpPort::refreshMulticastInterfaces() {
         errno == EADDRINUSE;
     if (joined) {
       joinedAddresses_[joinedCount_++] = addresses[current];
+      multicastMembershipChanged(addresses[current], 1);
+    } else {
+      bool known = false;
+      for (size_t old = 0; old < interfaceCount_; ++old)
+        known = known || interfaceAddresses_[old] == addresses[current];
+      if (!known) multicastMembershipChanged(addresses[current], 0);
     }
   }
 

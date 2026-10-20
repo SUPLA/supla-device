@@ -54,3 +54,22 @@ example_build=$(mktemp -d /tmp/codex/suplan-thermometer-XXXXXXXX)
 TMPDIR=/tmp/codex arduino-cli compile --fqbn esp8266:esp8266:generic --library . --build-path "$example_build/esp8266" examples/esp/SupLanRemoteThermometer
 TMPDIR=/tmp/codex arduino-cli compile --fqbn esp32:esp32:esp32wrover:PartitionScheme=huge_app --library . --build-path "$example_build/esp32" examples/esp/SupLanRemoteThermometer
 ```
+
+## Cache freshness and troubleshooting
+
+The five-second print is a cached snapshot, not a new sensor measurement.
+It includes snapshot age, D2D TTL, a named access status and peer/session
+reachability independently of value availability. A valid cached temperature can
+remain available briefly after losing the peer; after its lease expires the
+example prints `unavailable`. The Source default is 180 seconds. The Destination
+continues normal READ/recovery after Source restart, even if its reset hint is
+lost. No manual Serial commands or fixed credentials are needed.
+
+Source applications can override a Channel with
+`channel->setSupLanValidityTimeSec(30)` (or 600, or explicit zero to disable timed
+expiry). This does not change D2S validity or sleep mode. SERVER_STREAM follows
+Server Offline/expiry, without a local countdown.
+
+See [SDK validity and diagnostic notes](../../../docs/suplan-validity-diagnostics.md)
+for measurement-vs-delivery freshness, log levels and troubleshooting. Host tests
+and compilation do not verify Wi-Fi/Ethernet multicast on physical hardware.

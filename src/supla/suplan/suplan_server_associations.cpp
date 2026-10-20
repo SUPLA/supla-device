@@ -3,6 +3,8 @@
 
 #ifndef ARDUINO_ARCH_AVR
 #include <stdio.h>
+#include <inttypes.h>
+#include <supla/log_wrapper.h>
 #include <string.h>
 #include <supla/crypto.h>
 #include <supla/channels/channel.h>
@@ -252,7 +254,24 @@ void ServerAssociations::load(Config *config, ServerIdentity *identity) {
   runtime_->setLocalAddress(
       {kNodeIdDevice, static_cast<uint32_t>(identity_->serverDeviceId())});
   if (identity_->scopeFenced()) return;
+  uint8_t present[(SUPLAN_MAX_PERSISTENT_PEERS + 7) / 8] = {};
+  const auto enumerated = config_->forEachKey("sl-peer-",
+      [](const char *key, ConfigValueType type, void *context) {
+        if (type != ConfigValueType::BLOB) return true;
+        auto slots = static_cast<uint8_t *>(context);
+        for (uint16_t slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
+          char expected[16];
+          slotKey(slot, expected);
+          if (!strcmp(key, expected)) {
+            slots[slot / 8] |= 1u << (slot % 8);
+            break;
+          }
+        }
+        return true;
+      }, present);
+  if (enumerated != ConfigIterationResult::COMPLETED) return;
   for (uint16_t slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
+    if (!(present[slot / 8] & (1u << (slot % 8)))) continue;
     PeerContext context = {};
     uint32_t revision = 0;
     uint8_t count = 0;
@@ -269,6 +288,10 @@ void ServerAssociations::load(Config *config, ServerIdentity *identity) {
       slots_[index] = slot;
       durable_[index] = true;
     }
+    SUPLA_LOG_INFO("SupLAN association restored peer=%u role=%s revision=%"
+        PRIu32 " resources=%u result=%s", index,
+        destination ? "Destination" : "Source", revision, count,
+        added ? "OK" : "REJECTED");
   }
   memset(record_, 0, sizeof(record_));
 }
@@ -430,6 +453,9 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
   bool saved = persist(slot, record_, count ? size : 0);
   memset(record_, 0, sizeof(record_));
   if (!saved) {
+    SUPLA_LOG_WARNING("SupLAN association persistence failed role=%s revision=%"
+        PRIu32 " resources=%u", destination ? "Destination" : "Source",
+        revision, count);
     busy_ = false;
     memset(&material, 0, sizeof(material));
     return SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR;
@@ -454,6 +480,12 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
   identityChanged();
   busy_ = false;
   memset(&material, 0, sizeof(material));
+  SUPLA_LOG_INFO("SupLAN association/rights changed slot=%d Source=%" PRIu32
+      " Destination=%" PRIu32 " role=%s revision=%" PRIu32
+      " resources=%u result=%s", slot, context.source.nodeId,
+      context.destination.nodeId,
+      destination ? "Destination" : "Source", revision, count,
+      activated ? "OK" : "ACTIVATION_FAILED");
   return activated ? SUPLA_SUPLAN_RESULT_OK
                    : SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR;
 }

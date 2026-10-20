@@ -15,6 +15,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <vector>
 
 #include "suplan_crypto_openssl.h"
 #include "suplan_poc1_profile.h"
@@ -206,8 +207,9 @@ class FanoutApplication : public Supla::SupLan::ApplicationPort {
     return 0;
   }
 
-  void receiveState(uint8_t, const ResourceId &, uint32_t, const uint8_t *,
-                    size_t) override {
+  void receiveState(uint8_t, const ResourceId &, uint32_t, const uint8_t *data,
+                    size_t size) override {
+    lastState.assign(data, data + size);
     ++stateCalls;
   }
 
@@ -219,6 +221,7 @@ class FanoutApplication : public Supla::SupLan::ApplicationPort {
   void operationAcknowledged(uint8_t, const ResourceId &, uint32_t,
                              uint8_t) override {}
 
+  std::vector<uint8_t> lastState;
   uint32_t stateCalls;
   uint32_t actionCalls;
 };
@@ -531,4 +534,85 @@ TEST(SupLanAdapter, NativeActionUsesFunctionGuardAndRealSourceRelay) {
   EXPECT_EQ(protocol.dispatchControlAction(foreign, ACTION_TOGGLE,
       nullptr, 0), SUPLA_RESULTCODE_CHANNELNOTFOUND);
   EXPECT_FALSE(relay.isOn());
+}
+
+TEST(SupLanAdapter,
+     D2dValidityReadAndMetadataPublicationAgreeWithoutValueChange) {
+  AdapterFanoutPair pair;
+  ASSERT_TRUE(pair.configured);
+  Supla::SupLan::Poc1::initializeRelay(&pair.relay);
+  pair.relay.getChannel()->setValidityTimeSec(999);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resourceB));
+  pair.runtimeB.iterate();  // Deliver the fixture multicast to Source first.
+  pair.pump(40);
+  ASSERT_EQ(pair.appB.lastState.size(), 14U);
+  auto ttl = [&pair]() {
+    const auto &b = pair.appB.lastState;
+    return static_cast<uint32_t>(b[2]) | static_cast<uint32_t>(b[3]) << 8 |
+           static_cast<uint32_t>(b[4]) << 16 |
+           static_cast<uint32_t>(b[5]) << 24;
+  };
+  EXPECT_EQ(ttl(), 180U);
+  const auto count = pair.appB.stateCalls;
+  pair.relay.getChannel()->setSupLanValidityTimeSec(30);
+  pair.pump(10);
+  EXPECT_EQ(pair.appB.stateCalls, count + 1);
+  EXPECT_EQ(ttl(), 30U);
+  EXPECT_EQ(pair.relay.getChannel()->getValidityTimeSec(), 999U);
+  pair.relay.getChannel()->setSupLanValidityTimeSec(30);
+  pair.pump(10);
+  EXPECT_EQ(pair.appB.stateCalls, count + 1);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resourceB));
+  pair.pump(40);
+  EXPECT_EQ(ttl(), 30U);
+  int8_t value[8] = {};
+  pair.protocolA.sendChannelValueChanged(pair.relay.getChannelNumber(), value,
+      SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE, 999);
+  pair.pump(10);
+  EXPECT_EQ(pair.appB.lastState[1], SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE);
+  EXPECT_EQ(ttl(), 30U);
+}
+
+TEST(SupLanAdapter, D2dOnlyMetadataDoesNotDirtyOrdinaryProtocolValue) {
+  testing::NiceMock<ProtocolLayerMock> srpc;
+  Supla::Control::VirtualRelay relay;
+  relay.getChannel()->sendUpdate();  // Drain initialization value, if any.
+  EXPECT_CALL(srpc, sendChannelValueChanged(
+      testing::_, testing::_, testing::_, testing::_)).Times(0);
+  relay.getChannel()->setSupLanValidityTimeSec(30);
+  relay.getChannel()->sendUpdate();
+  relay.getChannel()->setSupLanValidityTimeSec(0);
+  relay.getChannel()->sendUpdate();
+  EXPECT_FALSE(relay.getChannel()->isSleepingEnabled());
+}
+
+extern "C" unsigned int supla_test_log_calls();
+TEST(SupLanAdapter, DiagnosticRejectFloodIsRateLimitedAndNeverSends) {
+  AdapterFanoutPair pair;
+  ASSERT_TRUE(pair.configured);
+  const auto calls = supla_test_log_calls();
+  const auto packets = pair.network.count;
+  for (int i = 0; i < 1000; ++i) {
+    pair.protocolA.diagnostic(Supla::SupLan::DiagnosticEvent::RejectPacket,
+                             0, pair.resourceB, 0);
+  }
+  EXPECT_EQ(supla_test_log_calls(), calls + 1);
+  EXPECT_EQ(pair.network.count, packets);
+  pair.network.now += 5000;
+  pair.protocolA.diagnostic(Supla::SupLan::DiagnosticEvent::RejectPacket,
+                           0, pair.resourceB, 0);
+  EXPECT_EQ(supla_test_log_calls(), calls + 2);
+  EXPECT_EQ(pair.network.count, packets);
+  const int oldLevel = supla_log_get_level();
+  supla_log_set_level(LOG_INFO);
+  pair.network.now += 5000;
+  for (int i = 0; i < 1000; ++i)
+    pair.protocolA.diagnostic(Supla::SupLan::DiagnosticEvent::RejectPacket,
+                             0, pair.resourceB, 0);
+  EXPECT_EQ(supla_test_log_calls(), calls + 2);
+  // Disabled DEBUG must not consume the first WARNING opportunity.
+  pair.protocolA.diagnostic(Supla::SupLan::DiagnosticEvent::ResourceLimit,
+                           0, pair.resourceB, 0);
+  EXPECT_EQ(supla_test_log_calls(), calls + 3);
+  supla_log_set_level(oldLevel);
 }

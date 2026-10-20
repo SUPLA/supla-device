@@ -45,6 +45,19 @@ using namespace Supla::SupLan;  // NOLINT(build/namespaces)
 class DurableConfig : public KeyValue {
  public:
   using KeyValue::getBlobSize;
+  int getBlobSize(const char *key) override {
+    const int size = KeyValue::getBlobSize(key);
+    if (size < 0 && (!strncmp(key, "slb_", 4) ||
+                     !strncmp(key, "sl-peer-", 8))) ++missingSlotReads;
+    return size;
+  }
+  ConfigIterationResult forEachKey(const char *filter,
+      ConfigKeyCallback callback, void *context) override {
+    return failEnumeration ? ConfigIterationResult::ERROR
+                           : KeyValue::forEachKey(filter, callback, context);
+  }
+  bool failEnumeration = false;
+  int missingSlotReads = 0;
   bool init() override { return true; }
   bool commit() override {
     events.push_back("commit");
@@ -2342,4 +2355,228 @@ TEST_F(M4bDevice, FencedIdleLoopsDoNotRepeatIdentityTeardown) {
   // no intervening iterate has lifted the first barrier.
   ASSERT_TRUE(ServerIdentity::configuredServerChanged(&storage));
   EXPECT_GT(adapter.identityNotifications, notifications);
+}
+
+TEST_F(M4bDevice, LoadersDoNotProbeAbsentPeerOrBindingSlots) {
+  storage.missingSlotReads = 0;
+  associations.load(&storage, &identity);
+  adapter.remoteResources()->bindings->attachAssociations(&associations);
+  adapter.iterate(1);
+  EXPECT_EQ(storage.missingSlotReads, 0);
+  ASSERT_NE(peers.get(0), nullptr);  // Existing persisted peer was restored.
+}
+
+TEST_F(M4bDevice, BindingEnumerationFailureDoesNotAcceptNewPersistentSet) {
+  auto bindings = adapter.remoteResources()->bindings;
+  bindings->attachAssociations(&associations);
+  storage.failEnumeration = true;
+  const uint8_t empty[] = {0};
+  EXPECT_NE(bindings->accept(0, empty, sizeof(empty)), 3);
+  storage.failEnumeration = false;
+  EXPECT_EQ(bindings->accept(0, empty, sizeof(empty)), 3);
+}
+
+TEST_F(M4bDevice, PeerEnumerationFailureCannotRestoreOldGrant) {
+  storage.failEnumeration = true;
+  associations.load(&storage, &identity);
+  EXPECT_EQ(peers.get(0), nullptr);
+  storage.failEnumeration = false;
+  associations.load(&storage, &identity);
+  EXPECT_NE(peers.get(0), nullptr);
+}
+
+TEST_F(M4bDevice, IndependentD2dValidityDoesNotChangeD2sOrLocalSnapshots) {
+  auto channel = relay->getChannel();
+  auto other = sensor->getChannel();
+  EXPECT_EQ(channel->getSupLanValidityTimeSec(), 180U);
+  EXPECT_EQ(other->getSupLanValidityTimeSec(), 180U);
+  for (uint32_t d2s : {0U, 777U}) {
+    channel->setValidityTimeSec(d2s);
+    TDS_SuplaDeviceChannel_E snapshot;
+    bool eventOnly = false;
+    size_t size = 0;
+    ASSERT_TRUE(adapter.readResource({1, 604}, &eventOnly,
+        reinterpret_cast<uint8_t *>(&snapshot), sizeof(snapshot), &size));
+    EXPECT_EQ(snapshot.ValueValidityTimeSec, 180U);
+  }
+  EXPECT_TRUE(channel->isSleepingEnabled());
+  for (uint32_t ttl : {30U, 600U, 0U}) {
+    channel->setSupLanValidityTimeSec(ttl);
+    EXPECT_EQ(channel->getValidityTimeSec(), 777U);
+    EXPECT_TRUE(channel->isSleepingEnabled());
+    EXPECT_EQ(other->getSupLanValidityTimeSec(), 180U);
+    TDS_SuplaDeviceChannel_E snapshot;
+    bool eventOnly = true;
+    size_t size = 0;
+    ASSERT_TRUE(adapter.readResource({1, 604}, &eventOnly,
+        reinterpret_cast<uint8_t *>(&snapshot), sizeof(snapshot), &size));
+    EXPECT_EQ(snapshot.ValueValidityTimeSec, ttl);
+    ASSERT_TRUE(buildChannelSnapshot(channel, &snapshot));
+    EXPECT_EQ(snapshot.ValueValidityTimeSec, 777U);
+    EXPECT_EQ(ChannelState(channel).validityTimeSec(), 777U);
+  }
+  channel->setValidityTimeSec(0);
+  EXPECT_FALSE(channel->isSleepingEnabled());
+  EXPECT_EQ(channel->getSupLanValidityTimeSec(), 0U);
+}
+
+TEST_F(M4bDevice, D2dLeaseSurvivesSessionLossButExpiresAt180Seconds) {
+  auto manager = adapter.remoteResources();
+  ASSERT_TRUE(manager->consume({123, {1, 1001}, 1}));
+  time.value = 100;
+  binary(true, SUPLA_CHANNELFNC_FLOOD_SENSOR, 180);
+  runtime.forgetSession(0);
+  manager->sessionChanged(0);
+  EXPECT_TRUE(manager->state({1, 1001}, 179100).available());
+  EXPECT_FALSE(manager->state({1, 1001}, 180100).available());
+  EXPECT_FALSE(manager->state({1, 1001}, 180101).available());
+  // A later complete millis cycle cannot revive an expired cache.
+  EXPECT_FALSE(manager->state({1, 1001}, 200).available());
+  time.value = 181000;
+  binary(true, SUPLA_CHANNELFNC_FLOOD_SENSOR, 180);
+  EXPECT_TRUE(manager->state({1, 1001}, time.value).available());
+}
+
+TEST_F(M4bDevice, UnchangedSnapshotRenewsButAckAndSleepHintsDoNot) {
+  auto manager = adapter.remoteResources();
+  ASSERT_TRUE(manager->consume({123, {1, 1001}, 1}));
+  time.value = 100;
+  binary(true, SUPLA_CHANNELFNC_FLOOD_SENSOR, 180);
+  time.value = 179000;
+  binary(true, SUPLA_CHANNELFNC_FLOOD_SENSOR, 180);
+  EXPECT_TRUE(manager->state({1, 1001}, 180100).available());
+  adapter.operationAcknowledged(0, {1, 1001}, 3, 3);
+  runtime.setPeerSleeping(0, true);
+  uint8_t nonce[16] = {1};
+  manager->peerAwake(0, 40000, false, nonce, time.value);
+  EXPECT_TRUE(manager->state({1, 1001}, 358999).available());
+  EXPECT_FALSE(manager->state({1, 1001}, 359000).available());
+}
+
+TEST_F(M4bDevice, D2dZeroWrapOfflineAndRevocation) {
+  auto manager = adapter.remoteResources();
+  ASSERT_TRUE(manager->consume({123, {1, 1001}, 1}));
+  time.value = UINT32_MAX - 5000;
+  binary(true, SUPLA_CHANNELFNC_FLOOD_SENSOR, 30);
+  EXPECT_TRUE(manager->state({1, 1001}, 24998).available());
+  EXPECT_FALSE(manager->state({1, 1001}, 24999).available());
+  time.value = 100;
+  binary(true, SUPLA_CHANNELFNC_FLOOD_SENSOR, 0);
+  EXPECT_TRUE(manager->state({1, 1001}, 10000000).available());
+  auto borrowed = manager->state({1, 1001}, 1000);
+  ASSERT_TRUE(peers.replaceAcl(0, 2, nullptr, 0));
+  manager->authorizationChanged();
+  EXPECT_FALSE(borrowed.available());
+  EXPECT_FALSE(manager->state({1, 1001}, 1000).available());
+}
+
+TEST_F(M4bDevice, ShortD2dTtlRefreshesWithHalfLeaseMargin) {
+  auto manager = adapter.remoteResources();
+  ASSERT_TRUE(manager->consume({123, {1, 1001}, 1}));
+  time.value = 100;
+  manager->iterate(time.value);
+  binary(true, SUPLA_CHANNELFNC_FLOOD_SENSOR, 30);
+  runtime.removeReadDependency(0, {1, 1001});
+  time.value = 15099;
+  manager->iterate(time.value);
+  EXPECT_FALSE(runtime.readNeedsRefresh(0, {1, 1001}));
+  time.value = 15100;
+  manager->iterate(time.value);
+  EXPECT_TRUE(runtime.readNeedsRefresh(0, {1, 1001}));
+  EXPECT_TRUE(manager->state({1, 1001}, time.value).available());
+}
+
+TEST_F(M4bDevice, FullD2dReadAndMetadataChangeRespectMeasurementValidity) {
+  Sensor::VirtualThermometer thermometer;
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 202;
+  ids.ChannelCount = 6;
+  for (int i = 0; i < 6; ++i) ids.ChannelId[i] = 601 + i;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  TSDS_SuplaSetSuplanSourceAssociation source = {};
+  source.PeerContext = {1, 0, 1, 202, 1, 303, identity.rootEpoch(), 1};
+  source.AclRevision = 1;
+  source.AclEntryCount = 1;
+  source.Acl[0] = {1, 606, 1};
+  source.Flags = SUPLA_SUPLAN_SOURCE_FLAG_RETURN_PEER_KEY;
+  const auto provisioned = associations.accept(source);
+  ASSERT_EQ(provisioned.Result, SUPLA_SUPLAN_RESULT_OK);
+  PeerContext context;
+  ASSERT_TRUE(decodePeerContext(peers.get(1)->contextBytes, &context));
+  PeerTable destinationPeers;
+  const AclEntry expected = {{1, 606}, 1};
+  uint8_t index = 0;
+  ASSERT_TRUE(destinationPeers.addPeer(&context, provisioned.PeerKey, 1,
+                                      &expected, 1, &index, true));
+  IdlePort destinationPort;
+  destinationPort.time = &time;
+  destinationPort.address = {0x0200007f, 2016};
+  datagrams.linked = &destinationPort;
+  destinationPort.linked = &datagrams;
+  BindingReceiver receiver;
+  Runtime destination(&crypto, &destinationPort, &receiver, &destinationPeers,
+                      {1, 303}, 29);
+  auto pump = [&]() {
+    for (int i = 0; i < 50; ++i) {
+      time.advance(10);
+      runtime.iterate();
+      destination.iterate();
+    }
+  };
+  thermometer.setValue(21);
+  thermometer.onInit();
+  thermometer.getChannel()->setValidityTimeSec(999);
+  ASSERT_TRUE(destination.requestRead(index, {1, 606}));
+  pump();
+  EXPECT_EQ(receiver.state.ValueValidityTimeSec, 180U);
+  EXPECT_EQ(receiver.state.Offline, SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE);
+  const auto publications = runtime.diagnostics().stateNotificationTx;
+  thermometer.getChannel()->setSupLanValidityTimeSec(30);
+  pump();
+  EXPECT_EQ(runtime.diagnostics().stateNotificationTx, publications + 1);
+  EXPECT_EQ(receiver.state.ValueValidityTimeSec, 30U);
+  EXPECT_EQ(thermometer.getChannel()->getValidityTimeSec(), 999U);
+  ASSERT_TRUE(destination.requestRead(index, {1, 606}));
+  pump();
+  EXPECT_EQ(receiver.state.ValueValidityTimeSec, 30U);
+  // Acquisition reports failure. READ must not invoke a new measurement or
+  // make this sentinel look like a fresh usable temperature.
+  thermometer.setValue(TEMPERATURE_NOT_AVAILABLE);
+  thermometer.onInit();
+  thermometer.setValue(25);  // Not acquired into the Channel yet.
+  for (int i = 0; i < 3; ++i) {
+    ASSERT_TRUE(destination.requestRead(index, {1, 606}));
+    pump();
+    EXPECT_EQ(receiver.state.Offline,
+              SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE);
+    EXPECT_EQ(thermometer.getChannel()->getLastTemperature(),
+              TEMPERATURE_NOT_AVAILABLE);
+  }
+  datagrams.linked = nullptr;
+}
+
+TEST_F(M4bDevice, ExpiredUnpolledLeaseBreaksBorrowedObserverContinuity) {
+  auto manager = adapter.remoteResources();
+  ASSERT_TRUE(manager->consume({123, {1, 1001}, 1}));
+  time.value = 100;
+  binary(true, SUPLA_CHANNELFNC_FLOOD_SENSOR, 1);
+  auto old = manager->state({1, 1001}, time.value);
+  const auto continuity = manager->continuity({1, 1001});
+  time.value = 2100;
+  binary(false, SUPLA_CHANNELFNC_FLOOD_SENSOR, 1);
+  EXPECT_FALSE(old.available());
+  EXPECT_NE(manager->continuity({1, 1001}), continuity);
+  EXPECT_TRUE(manager->state({1, 1001}, time.value).available());
+  TDS_SuplaDeviceChannel_E snapshot = {};
+  snapshot.Number = 0xff;
+  snapshot.Type = SUPLA_CHANNELTYPE_BINARYSENSOR;
+  snapshot.Default = SUPLA_CHANNELFNC_FLOOD_SENSOR;
+  snapshot.ValueValidityTimeSec = 600;
+  snapshot.Offline = SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE;
+  manager->receive(0, {1, 1001}, reinterpret_cast<uint8_t *>(&snapshot),
+                   sizeof(snapshot), time.value);
+  EXPECT_FALSE(manager->state({1, 1001}, time.value).available());
 }

@@ -10,6 +10,7 @@
 namespace {
 int logLevel = LOG_VERBOSE;
 char lastLog[4096] = {};
+unsigned int logCalls = 0;
 }
 
 void supla_log_set_level(int level) {
@@ -25,6 +26,7 @@ char supla_log_is_enabled(int level) {
 }
 
 void supla_log(int, const char *fmt, ...) {
+  ++logCalls;
   if (fmt == nullptr) {
     lastLog[0] = 0;
     return;
@@ -42,4 +44,12 @@ extern "C" const char *supla_test_get_last_log() {
 
 extern "C" void supla_test_clear_last_log() {
   memset(lastLog, 0, sizeof(lastLog));
+}
+
+extern "C" void supla_vlog(int priority, const char *message) {
+  supla_log(priority, "%s", message);
+}
+
+extern "C" unsigned int supla_test_log_calls() {
+  return logCalls;
 }

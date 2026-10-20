@@ -296,6 +296,10 @@ class Channel : public LocalAction {
   uint32_t getActionTriggerCaps();
 
   void setValidityTimeSec(uint32_t timeSec);
+  // D2D snapshot lease, independent of D2S validity/sleep.
+  // Zero disables expiry.
+  void setSupLanValidityTimeSec(uint32_t timeSec);
+  uint32_t getSupLanValidityTimeSec() const;
   void clearValue();
   virtual void sendUpdate();
   virtual TSuplaChannelExtendedValue *getExtValue();
@@ -410,6 +414,7 @@ class Channel : public LocalAction {
   char *initialCaption = nullptr;
 
   uint32_t functionsBitmap = 0;
+  uint32_t supLanValidityTimeSec = 180;
 
   uint64_t channelFlags = 0;
   uint32_t validityTimeSec = 0;

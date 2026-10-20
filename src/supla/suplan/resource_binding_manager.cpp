@@ -217,7 +217,7 @@ bool ResourceBindingManager::persist(uint8_t set, const uint8_t *record,
 }
 uint8_t ResourceBindingManager::accept(uint8_t peer, const uint8_t *body,
                                       size_t size) {
-  if (!loaded_) load();
+  if (!loaded_ && !load()) return kRejected;
   const auto owner = peers_->get(peer);
   if (!owner || !owner->destination || !validateBody(peer, body, size))
     return kRejected;
@@ -252,13 +252,30 @@ uint8_t ResourceBindingManager::accept(uint8_t peer, const uint8_t *body,
   activate(slot, body, size);
   return kInstalled;
 }
-void ResourceBindingManager::load() {
+bool ResourceBindingManager::load() {
   if (!associations_ || !associations_->available() ||
-      !associations_->identity()->identityAvailable()) return;
+      !associations_->identity()->identityAvailable()) return true;
   auto cfg = Storage::ConfigInstance();
-  if (!cfg) return;
+  if (!cfg) return true;
+  uint8_t present[(SUPLAN_MAX_PERSISTENT_PEERS + 7) / 8] = {};
+  const auto enumerated = cfg->forEachKey("slb_",
+      [](const char *key, ConfigValueType type, void *context) {
+        if (type != ConfigValueType::BLOB) return true;
+        auto slots = static_cast<uint8_t *>(context);
+        for (uint16_t slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
+          char expected[16];
+          bindingKey(slot, expected, sizeof(expected));
+          if (!strcmp(key, expected)) {
+            slots[slot / 8] |= 1u << (slot % 8);
+            break;
+          }
+        }
+        return true;
+      }, present);
+  if (enumerated != ConfigIterationResult::COMPLETED) return false;
   loaded_ = true;
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+    if (!(present[i / 8] & (1u << (i % 8)))) continue;
     char key[16];
     bindingKey(i, key, sizeof(key));
     const auto size = cfg->getBlobSize(key);
@@ -277,11 +294,12 @@ void ResourceBindingManager::load() {
       if (persist(i, nullptr, 0)) sets_[i].used = false;
     }
   }
+  return true;
 }
 bool ResourceBindingManager::authorizationReplacing(
     const SupLan::PeerContext &context, const SupLan::AclEntry *expected,
     uint16_t count) {
-  if (!loaded_) load();
+  if (!loaded_ && !load()) return false;
   uint8_t encoded[27];
   SupLan::encodePeerContext(&context, encoded);
   for (int slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
@@ -487,7 +505,7 @@ void ResourceBindingManager::serverReconnected() {
 }
 
 void ResourceBindingManager::iterate(uint32_t now) {
-  if (!loaded_) load();
+  if (!loaded_ && !load()) return;
   if (!loaded_) return;
   const auto identity = associations_->identity();
   if (identity && !identity->identityTransition() &&

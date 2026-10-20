@@ -27,6 +27,18 @@ namespace Supla {
 
 class Storage;
 
+// UNKNOWN covers native backend types not exposed by Config getters.
+enum class ConfigValueType : uint8_t {
+  UNKNOWN, INT8, UINT8, INT32, UINT32, STRING, BLOB
+};
+enum class ConfigIterationResult : uint8_t {
+  COMPLETED, STOPPED, ERROR, UNSUPPORTED
+};
+// Return true to continue, false to stop. No std::function/heap allocation.
+using ConfigKeyCallback = bool (*)(const char *key, ConfigValueType type,
+                                  void *context);
+
+
 #pragma pack(push, 1)
 struct SaltPassword {
   uint8_t salt[SUPLA_CFG_MODE_SALT_SIZE] = {};
@@ -65,6 +77,19 @@ class Config {
 
   // Override this method and setup all default value if needed
   virtual void initDefaultDeviceConfig();
+
+  // Visit effective stored keys whose names contain filter (case-sensitive).
+  // Empty filter matches all; null filter/callback is ERROR. Order unspecified.
+  // Key pointers are borrowed only for the callback. Do not call this Config
+  // (including getters), mutate it, or access its backend concurrently from
+  // callbacks. Collect keys and read/change values after enumeration instead.
+  // COMPLETED means traversal finished, not that any key matched. Unsupported
+  // backends must never report COMPLETED for an unknown key set.
+  virtual ConfigIterationResult forEachKey(const char *filter,
+      ConfigKeyCallback callback, void *) {
+    return filter && callback ? ConfigIterationResult::UNSUPPORTED
+                              : ConfigIterationResult::ERROR;
+  }
 
   // Generic getters and setters
   virtual bool setString(const char* key, const char* value) = 0;

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z. O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <config_key_collector.h>
 #include <gtest/gtest.h>
 #include <simple_time.h>
 #include <config_simulator.h>
@@ -1347,4 +1348,38 @@ channels:
   auto previous = Supla::Element::last();
   EXPECT_TRUE(config.loadChannels());
   deleteCreatedElement(previous);
+}
+
+TEST(LinuxYamlConfigIterationTests,
+       EnumeratesStoredConfigNotYamlChannelFields) {
+  TestLinuxYamlConfig config;
+  config.config = YAML::Load("channels: [{type: ThermometerParsed}]\n");
+  ASSERT_TRUE(config.setBlob("12_hvac_cfg2", "abc", 3));
+  ASSERT_TRUE(config.setString("sl-service", "server.example"));
+  ConfigKeyCollector found;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found),
+            Supla::ConfigIterationResult::COMPLETED);
+  EXPECT_EQ(found.visits, 2);
+  EXPECT_EQ(found.keys.at("12_hvac_cfg2"), Supla::ConfigValueType::BLOB);
+  EXPECT_EQ(found.keys.at("sl-service"), Supla::ConfigValueType::STRING);
+  ConfigKeyCollector filtered;
+  EXPECT_EQ(config.forEachKey("hvac_", filtered.collect, &filtered),
+            Supla::ConfigIterationResult::COMPLETED);
+  EXPECT_EQ(filtered.visits, 1);
+}
+
+TEST(LinuxYamlConfigIterationTests, RestoredPersistentKeysRemainEnumerable) {
+  TestLinuxYamlConfig config;
+  ASSERT_TRUE(config.setBlob("12_hvac_cfg2", "abc", 3));
+  ASSERT_TRUE(config.setString("sl-service", "server.example"));
+  std::array<uint8_t, 1024> storage = {};
+  const auto size = config.serializeToMemory(storage.data(), storage.size());
+  ASSERT_NE(size, SIZE_MAX);
+  TestLinuxYamlConfig restored;
+  ASSERT_TRUE(restored.initFromMemory(storage.data(), size));
+  ConfigKeyCollector found;
+  EXPECT_EQ(restored.forEachKey("hvac_", found.collect, &found),
+            Supla::ConfigIterationResult::COMPLETED);
+  EXPECT_EQ(found.visits, 1);
+  EXPECT_EQ(found.keys.at("12_hvac_cfg2"), Supla::ConfigValueType::BLOB);
 }

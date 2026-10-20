@@ -12,6 +12,8 @@ namespace Supla {
 
 class NvsConfig : public Config {
  public:
+  ConfigIterationResult forEachKey(const char *filter,
+      ConfigKeyCallback callback, void *context) override;
   typedef char DeviceDataBuf[16 * 8];
 
   NvsConfig();

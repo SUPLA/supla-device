@@ -143,6 +143,11 @@ class FakeDatagramPort : public Supla::SupLan::DatagramPort {
 
 class FakeApplication : public Supla::SupLan::ApplicationPort {
  public:
+  void diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t,
+      const ResourceId &, uint32_t) override {
+    ++diagnosticEvents[static_cast<unsigned>(event)];
+  }
+  uint32_t diagnosticEvents[32] = {};
   FakeApplication() : value(0), controlCalls(0), stateCalls(0), actionCalls(0),
       acknowledged(0), lastAckResult(0), lastStateType(0), lastStateLength(0),
       runtime(nullptr) {}
@@ -3516,3 +3521,47 @@ TEST(SupLanRuntime, R2Q40ProtectedRetryAndAcknowledgement) {
 }
 
 #endif  // SUPLAN_R2_PRODUCT_TESTS
+
+TEST(SupLanRuntime, DiagnosticsObserveLogicalReadDispatchAndAckWithoutTraffic) {
+  using E = Supla::SupLan::DiagnosticEvent;
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.appB.diagnosticEvents[static_cast<unsigned>(E::ReadAccepted)],
+            1U);
+  EXPECT_EQ(pair.appB.diagnosticEvents[static_cast<unsigned>(E::ReadTransmit)],
+            0U);
+  const auto dependencies = pair.runtimeB.poolDiagnostics().deferredEvents.used;
+  pair.pump(40);
+  EXPECT_GT(pair.appB.diagnosticEvents[static_cast<unsigned>(E::ReadTransmit)],
+            0U);
+  EXPECT_EQ(pair.appB.acknowledged, 1U);
+  EXPECT_EQ(pair.appB.stateCalls, 1U);
+  const auto frames = pair.runtimeB.diagnostics().dataTx;
+  for (int i = 0; i < 1000; ++i) pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().dataTx, frames);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, dependencies);
+}
+
+TEST(SupLanRuntime, PresenceDiagnosticsIgnoreEmptyPeerSlots) {
+  using E = Supla::SupLan::DiagnosticEvent;
+  RuntimePair pair;
+  const auto frames = pair.network.history.size();
+  for (uint16_t index = 0; index < SUPLAN_MAX_PERSISTENT_PEERS; ++index) {
+    if (pair.peersB.get(index)) continue;
+    EXPECT_FALSE(pair.runtimeB.announcePresence(index, 0, true));
+  }
+  EXPECT_FALSE(pair.runtimeB.announcePresence(0xff, 0, true));
+  EXPECT_EQ(pair.appB.diagnosticEvents[static_cast<unsigned>(E::ResetSkipped)],
+            0U);
+  EXPECT_EQ(pair.network.history.size(), frames);
+
+  // A real Destination-only association still explains why no reset is sent.
+  ASSERT_NE(pair.peersB.get(pair.peerB), nullptr);
+  EXPECT_FALSE(pair.runtimeB.announcePresence(pair.peerB, 0, true));
+  EXPECT_EQ(pair.appB.diagnosticEvents[static_cast<unsigned>(E::ResetSkipped)],
+            1U);
+  EXPECT_EQ(pair.network.history.size(), frames);
+
+  EXPECT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 0, true));
+  EXPECT_EQ(pair.appA.diagnosticEvents[static_cast<unsigned>(E::ResetTx)], 1U);
+}

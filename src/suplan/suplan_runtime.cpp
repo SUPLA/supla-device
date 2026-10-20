@@ -239,6 +239,7 @@ int Runtime::allocatePending() {
       return i;
     }
   }
+  emit(DiagnosticEvent::ResourceLimit);
   ++diagnostics_.poolReject;
   return -1;
 }
@@ -246,6 +247,7 @@ int Runtime::allocatePending() {
 int Runtime::allocateSession(uint8_t peerIndex) {
   if (hooks_.failNextSessionAllocation != 0) {
     --hooks_.failNextSessionAllocation;
+    emit(DiagnosticEvent::ResourceLimit);
     ++diagnostics_.poolReject;
     return -1;
   }
@@ -286,6 +288,7 @@ int Runtime::allocateSession(uint8_t peerIndex) {
     }
   }
   if (selected < 0) {
+    emit(DiagnosticEvent::ResourceLimit);
     ++diagnostics_.poolReject;
     return -1;
   }
@@ -298,8 +301,11 @@ int Runtime::allocateSession(uint8_t peerIndex) {
       }
     }
   }
-  if (sessions_[selected].used && application_)
-    application_->sessionChanged(sessions_[selected].peerIndex);
+  if (sessions_[selected].used) {
+    if (application_)
+      application_->sessionChanged(sessions_[selected].peerIndex);
+    emit(DiagnosticEvent::SessionLost, sessions_[selected].peerIndex);
+  }
   clearSessionEntry(&sessions_[selected]);
   sessions_[selected].used = true;
   sessions_[selected].peerIndex = peerIndex;
@@ -557,6 +563,9 @@ void Runtime::setPeerSleeping(uint8_t peerIndex, bool sleeping) {
 void Runtime::beginRecovery(uint8_t peerIndex) {
   PeerRecovery &peer = recovery_[peerIndex];
   if (!peer.active) {
+    if (!hasSession(peerIndex) || peer.scheduled)
+      emit(DiagnosticEvent::RecoveryBegin, peerIndex);
+    if (peer.scheduled) emit(DiagnosticEvent::ReadRefresh, peerIndex);
     peer.active = true;
     peer.scheduled = false;
     peer.locateAttempts = 0;
@@ -604,6 +613,8 @@ void Runtime::finishRecovery(uint8_t peerIndex) {
     (void)Supla::Crypto::fillRandom(jitter, sizeof(jitter));
     peer.nextRefreshMs = datagrams_->nowMs() + base +
         getUint32(jitter) % (base / 5 + 1);
+    emit(DiagnosticEvent::RecoveryFailed, peerIndex, ResourceId(),
+         peer.nextRefreshMs - datagrams_->nowMs());
     if (peer.backgroundStage < 3) {
       ++peer.backgroundStage;
     }
@@ -616,6 +627,9 @@ void Runtime::completeRead(uint8_t peerIndex, const ResourceId &resource) {
     dependencies_[slot].pending = false;
     dependencies_[slot].needsRefresh = false;
   }
+  if (recovery_[peerIndex].backgroundStage &&
+      !recovery_[peerIndex].locateAttempts)
+    emit(DiagnosticEvent::RecoveryComplete, peerIndex);
   recovery_[peerIndex].backgroundStage = 0;
 }
 
@@ -739,6 +753,7 @@ void Runtime::startLocate(uint8_t peerIndex) {
     }
   }
   if (slot < 0) {
+    emit(DiagnosticEvent::ResourceLimit);
     ++diagnostics_.poolReject;
     return;
   }
@@ -775,7 +790,9 @@ void Runtime::startLocate(uint8_t peerIndex) {
   locates_[slot].peerIndex = peerIndex;
   memcpy(locates_[slot].nonce, nonce, sizeof(nonce));
   locates_[slot].expiresAtMs = now + kLocateReplyWindowMs;
-  if (datagrams_->sendLocateMulticast(frame, sizeof(frame))) {
+  const bool sent = datagrams_->sendLocateMulticast(frame, sizeof(frame));
+  emit(DiagnosticEvent::LocateTx, peerIndex, ResourceId(), sent);
+  if (sent) {
     ++diagnostics_.locateTx;
   }
   memset(nonce, 0, sizeof(nonce));
@@ -836,7 +853,10 @@ void Runtime::startHandshake(uint8_t peerIndex) {
       kSessionInitRetryMs * kSessionInitMaxAttempts +
       kPendingHandshakeTimeoutMs;
   attempt->attempts = 1;
-  if (sendRaw(endpoint, attempt->initFrame, sizeof(attempt->initFrame), 0)) {
+  const bool sent = sendRaw(
+      endpoint, attempt->initFrame, sizeof(attempt->initFrame), 0);
+  emit(DiagnosticEvent::HandshakeTx, peerIndex, ResourceId(), sent);
+  if (sent) {
     ++diagnostics_.sessionInitTx;
   }
   updatePoolHighWater();
@@ -903,6 +923,7 @@ void Runtime::recoverSession(uint8_t peerIndex, uint64_t sessionId) {
     if (sessions_[i].used && sessions_[i].peerIndex == peerIndex &&
         sessions_[i].sessionId == sessionId) {
       if (application_) application_->sessionChanged(sessions_[i].peerIndex);
+      emit(DiagnosticEvent::SessionLost, sessions_[i].peerIndex);
       clearSessionEntry(&sessions_[i]);
     }
   }
@@ -935,6 +956,7 @@ void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
     if (locates_[i].used && locates_[i].peerIndex == peerIndex) {
+      emit(DiagnosticEvent::LocateTimeout, locates_[i].peerIndex);
       locates_[i].used = false;
     }
   }
@@ -944,6 +966,10 @@ void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
       clearPendingHandshake(&pending_[i]);
     }
   }
+  if (recovery_[peerIndex].active &&
+      (recovery_[peerIndex].locateAttempts ||
+       recovery_[peerIndex].backgroundStage))
+    emit(DiagnosticEvent::RecoveryComplete, peerIndex);
   recovery_[peerIndex].active = false;
   updatePoolHighWater();
 }
@@ -960,10 +986,12 @@ bool Runtime::readAuthorized(uint8_t peerIndex,
 
 bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
   if (!readAuthorized(peerIndex, resource)) {
+    emit(DiagnosticEvent::RejectAuthority);
     ++diagnostics_.aclReject;
     return false;
   }
   int slot = findReadDependency(peerIndex, resource);
+  const bool existing = slot >= 0;
   if (slot < 0) {
     for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
       if (!dependencies_[i].used) {
@@ -995,6 +1023,7 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
     }
   }
   if (slot < 0) {
+    emit(DiagnosticEvent::ResourceLimit);
     ++diagnostics_.poolReject;
     return false;
   }
@@ -1003,6 +1032,8 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
   }
   // Accept bounded logical demand independently of deferred frame capacity.
   // Runtime owns queue admission and recovery until completion or removal.
+  emit(DiagnosticEvent::ReadAccepted, peerIndex, resource,
+       existing ? (dependencies_[slot].needsRefresh ? 2 : 1) : 0);
   dependencies_[slot].needsRefresh = true;
   beginRecovery(peerIndex);
   return true;
@@ -1082,6 +1113,7 @@ bool Runtime::queueRead(uint8_t peerIndex, const ResourceId &resource) {
   }
   dependencies_[slot].needsRefresh = true;
   dependencies_[slot].pending = true;
+  emit(DiagnosticEvent::ReadQueued, peerIndex, resource);
   size_t length = kApplicationHeaderSize + kResourceHeaderSize;
   applicationBuffer_[0] = kMessageClassNative;
   putUint32(applicationBuffer_ + 1, kNativeReadResource);
@@ -1103,6 +1135,7 @@ bool Runtime::sendControl(uint8_t peerIndex, const ResourceId &resource,
   const PeerRecord *peer = peers_->get(peerIndex);
   if (!isLocalDestination(peer) ||
       !peers_->authorize(peerIndex, resource, kPermissionControl)) {
+    emit(DiagnosticEvent::RejectAuthority);
     ++diagnostics_.aclReject;
     return false;
   }
@@ -1244,6 +1277,7 @@ bool Runtime::forgetSession(uint8_t peerIndex) {
     if (sessions_[i].used && sessions_[i].peerIndex == peerIndex) {
       const uint64_t sessionId = sessions_[i].sessionId;
       if (application_) application_->sessionChanged(sessions_[i].peerIndex);
+      emit(DiagnosticEvent::SessionLost, sessions_[i].peerIndex);
       clearSessionEntry(&sessions_[i]);
       for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
         if (retries_[r].isUsed() && retries_[r].sessionId == sessionId) {
@@ -1716,6 +1750,7 @@ void Runtime::drainDeferred() {
       // leave this Action Trigger in the deferred queue to send it later when
       // a shared READ/CONTROL retry slot becomes free.
       queued->used = false;
+      emit(DiagnosticEvent::ResourceLimit);
       ++diagnostics_.poolReject;
       cancelPeerRecoveryIfIdle(queued->peerIndex);
       continue;
@@ -1916,6 +1951,7 @@ bool Runtime::sendProtectedToEndpoint(
   if (ackRequired && !binding) {
     retryIndex = findFreeRetry();
     if (retryIndex < 0) {
+      emit(DiagnosticEvent::ResourceLimit);
       ++diagnostics_.poolReject;
       return false;
     }
@@ -1932,6 +1968,7 @@ bool Runtime::sendProtectedToEndpoint(
     return false;
   }
   if (ackRequired && !binding && frameLength > sizeof(retries_[0].frame)) {
+    emit(DiagnosticEvent::ResourceLimit);
     ++diagnostics_.poolReject;
     return false;
   }
@@ -1999,6 +2036,8 @@ bool Runtime::sendProtectedToEndpoint(
   if (!sent && !ackRequired) {
     return false;
   }
+  if (retryFlags & kRetryReadRequest)
+    emit(DiagnosticEvent::ReadTransmit, peerIndex, resource, sent);
   if (sent) {
     ++diagnostics_.dataTx;
   }
@@ -2090,6 +2129,7 @@ bool Runtime::resourceFromApplication(const ApplicationDataView &application,
 void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
                               size_t length) {
   if (data == nullptr || length < 2) {
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
     return;
   }
@@ -2123,6 +2163,7 @@ void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
         !Supla::Crypto::hmacSha256(material.locateMacKey, 32, input,
                                    labelLength + bodyLength, mac) ||
         !equalBytesConstantTime(mac, data + bodyLength, 16)) {
+      emit(DiagnosticEvent::RejectLocate);
       ++diagnostics_.invalidLocateDrop;
       return;
     }
@@ -2191,11 +2232,13 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
   uint8_t nonce[kNonceSize];
   uint8_t mac[kPeerLocatorSize];
   if (!decodeLocate(data, length, locator, nonce, mac)) {
+    emit(DiagnosticEvent::RejectLocate);
     ++diagnostics_.invalidLocateDrop;
     return;
   }
   const int peerIndex = peers_->findByLocator(locator);
   if (peerIndex < 0 || !peers_->hasActiveGrants(peerIndex)) {
+    emit(DiagnosticEvent::RejectLocate);
     ++diagnostics_.invalidLocateDrop;
     return;
   }
@@ -2205,6 +2248,7 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
   // A valid grant is still required, and SESSION remains the endpoint proof.
   if (peer == nullptr ||
       (!isLocalSource(peer) && !isLocalDestination(peer))) {
+    emit(DiagnosticEvent::RejectLocate);
     ++diagnostics_.invalidLocateDrop;
     return;
   }
@@ -2212,6 +2256,7 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
   Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   if (!peers_->materialFor(static_cast<uint8_t>(peerIndex),
                            &material)) {
+    emit(DiagnosticEvent::RejectLocate);
     ++diagnostics_.invalidLocateDrop;
     return;
   }
@@ -2220,6 +2265,7 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
       !locateQueryMac(&material, kVersion, kFrameLocate,
                       nonce, expected) ||
       !equalBytesConstantTime(expected, mac, sizeof(expected))) {
+    emit(DiagnosticEvent::RejectLocate);
     ++diagnostics_.invalidLocateDrop;
     return;
   }
@@ -2233,6 +2279,7 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
       return;
     }
   }
+  emit(DiagnosticEvent::LocateRx, peerIndex);
   ++diagnostics_.locateRx;
   const uint32_t now = datagrams_->nowMs();
   if (peer->hasLocateReplied &&
@@ -2248,6 +2295,7 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
     return;
   }
   if (sendRaw(source, reply, sizeof(reply), 0)) {
+    emit(DiagnosticEvent::LocateReplyTx, peerIndex);
     ++diagnostics_.locateReplyTx;
     peer->lastLocateReplyMs = now;
     peer->hasLocateReplied = true;
@@ -2259,6 +2307,7 @@ void Runtime::processLocateReply(const Endpoint &source, const uint8_t *data,
   uint8_t nonce[kNonceSize];
   uint8_t mac[kPeerLocatorSize];
   if (!decodeLocateReply(data, length, nonce, mac)) {
+    emit(DiagnosticEvent::RejectLocate);
     ++diagnostics_.invalidLocateDrop;
     return;
   }
@@ -2278,9 +2327,11 @@ void Runtime::processLocateReply(const Endpoint &source, const uint8_t *data,
         !locateReplyMac(&material, kVersion,
                         kFrameLocateReply, nonce, expected) ||
         !equalBytesConstantTime(expected, mac, sizeof(expected))) {
+      emit(DiagnosticEvent::RejectLocate);
       ++diagnostics_.invalidLocateDrop;
       return;
     }
+    emit(DiagnosticEvent::LocateReplyRx, locate->peerIndex);
     ++diagnostics_.locateReplyRx;
     const uint8_t peerIndex = locate->peerIndex;
     locate->used = false;
@@ -2293,17 +2344,20 @@ void Runtime::processLocateReply(const Endpoint &source, const uint8_t *data,
     }
     return;
   }
+  emit(DiagnosticEvent::RejectLocate);
   ++diagnostics_.invalidLocateDrop;
 }
 
 void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
                                  size_t length) {
   if (data == nullptr || length != kSessionInitSize) {
+    emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.invalidSessionDrop;
     return;
   }
   const int selected = peers_->findByLocator(data + 2);
   if (selected < 0 || !peers_->hasActiveGrants(selected)) {
+    emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.sessionUnknownDrop;
     return;
   }
@@ -2315,11 +2369,13 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
   if (peer == nullptr ||
       !peers_->materialFor(peerIndex, &material) ||
       !decodeSessionInit(material.initMacKey, data, length, &init)) {
+    emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.invalidSessionDrop;
     return;
   }
   ++diagnostics_.sessionInitRx;
   if (!isLocalSource(peer) && !isLocalDestination(peer)) {
+    emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.invalidSessionDrop;
     return;
   }
@@ -2401,6 +2457,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
     return;
   }
   if (data == nullptr || length != kSessionAcceptSize) {
+    emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.invalidSessionDrop;
     return;
   }
@@ -2415,6 +2472,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
     }
   }
   if (slot < 0) {
+    emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.sessionUnknownDrop;
     return;
   }
@@ -2431,6 +2489,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
       !decodeSessionAccept(material.acceptMacKey,
                            attempt->initFrame, &init, data, length,
                            &accept)) {
+    emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.invalidSessionDrop;
     return;
   }
@@ -2444,6 +2503,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
                          sizeof(attempt->acceptFrame), attempt->sessionId,
                          &attempt->keys,
                          transmitFrame_)) {
+    emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.invalidSessionDrop;
     clearPendingHandshake(attempt);
     return;
@@ -2467,6 +2527,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   session->lastActivityMs = datagrams_->nowMs();
   clearPendingHandshake(attempt);
   if (application_) application_->sessionChanged(peerIndex);
+  emit(DiagnosticEvent::SessionEstablished, peerIndex);
   ++diagnostics_.sessionEstablished;
   drainDeferred();
 }
@@ -2474,6 +2535,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
 void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
                               size_t frameLength) {
   if (frame == nullptr || frameLength < kProtectedHeaderSize) {
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
     return;
   }
@@ -2488,7 +2550,9 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
     }
   }
   if (sessionIndex < 0 && pendingSession == nullptr) {
+    emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.sessionUnknownDrop;
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
     return;
   }
@@ -2517,22 +2581,28 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
       sizeof(plaintext), &decodedSessionId, &decodedSequence,
       &plaintextLength);
   if (result == kProtectedDataAuthenticationFailed) {
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.dataAuthFail;
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
     return;
   }
   if (result == kProtectedDataTooOld) {
+    emit(DiagnosticEvent::RejectReplay);
     ++diagnostics_.dataReplayDrop;
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
     return;
   }
   if (result == kProtectedDataMalformed ||
       result == kProtectedDataCapacityExceeded) {
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
     return;
   }
   if (peer == nullptr || decodedSessionId != sessionId ||
       decodedSequence != sequence) {
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
     return;
   }
@@ -2575,7 +2645,8 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
     clearPendingHandshake(pendingSession);
     sessionIndex = admitted;
     if (application_) application_->sessionChanged(peerIndex);
-    ++diagnostics_.sessionEstablished;
+    emit(DiagnosticEvent::SessionEstablished, peerIndex);
+  ++diagnostics_.sessionEstablished;
   }
   noteReachability(peerIndex);
   SessionEntry *session = &sessions_[sessionIndex];
@@ -2600,6 +2671,7 @@ void Runtime::processApplication(SessionEntry *session, uint32_t sequence,
                                  bool duplicate) {
   ApplicationDataView app = {};
   if (!decodeApplicationData(data, length, &app)) {
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
     return;
   }
@@ -2613,6 +2685,7 @@ void Runtime::processApplication(SessionEntry *session, uint32_t sequence,
   } else if (app.messageClass == kMessageClassSuplaCall) {
     handleSuplaCall(session->peerIndex, session, sequence, app, duplicate);
   } else {
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
   }
 }
@@ -2647,6 +2720,7 @@ bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource) {
   }
   const int slot = findFreeInterest();
   if (slot < 0) {
+    emit(DiagnosticEvent::ResourceLimit);
     ++diagnostics_.poolReject;
     return false;
   }
@@ -2681,6 +2755,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
         !decodeResourceData(&application, &body) ||
         body.resource.type != kResourceTypeChannel ||
         !decodeControlAction(body.payload, body.payloadLength, &action)) {
+      emit(DiagnosticEvent::RejectPacket);
       ++diagnostics_.invalidDataDrop;
       return;
     }
@@ -2698,6 +2773,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
                             : kResultChannelNotFound;
       ++diagnostics_.controlDispatched;
     } else {
+      emit(DiagnosticEvent::RejectAuthority);
       ++diagnostics_.aclReject;
     }
     session->ackResults[slot] = result;
@@ -2756,6 +2832,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
         payload[0] != kChannelNumberUnresolved ||
         !isLocalDestination(peers_->get(peerIndex)) ||
         !peers_->authorize(peerIndex, resource, kPermissionRead)) {
+      emit(DiagnosticEvent::RejectPacket);
       ++diagnostics_.invalidDataDrop;
       return;
     }
@@ -2768,6 +2845,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
   }
   if (application.messageType == 1) {
     if (duplicate || application.flags != 0 || application.bodyLength != 5) {
+      emit(DiagnosticEvent::RejectPacket);
       ++diagnostics_.invalidDataDrop;
       return;
     }
@@ -2793,6 +2871,9 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
             (retry->flags & kRetryReadExpectsState) != 0;
         const bool stateReceived =
             (retry->flags & kRetryReadStateReceived) != 0;
+        emit(expectsState && !stateReceived ? DiagnosticEvent::AckWithoutState
+                                           : DiagnosticEvent::AckWithState,
+             peerIndex, resource, result);
         if (expectsState && result == kResultTrue && !stateReceived) {
           retry->flags |= kRetryAwaitingReadState;
           retry->lastTransmitMs = datagrams_->nowMs();
@@ -2815,6 +2896,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
   if (application.messageType == kNativeSessionReject) {
     if (duplicate || application.flags != 0 || application.bodyLength != 1 ||
         application.body[0] != kSessionRejectResourceLimit) {
+      emit(DiagnosticEvent::RejectPacket);
       ++diagnostics_.invalidDataDrop;
       return;
     }
@@ -2825,6 +2907,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
   if (application.messageType != kNativeReadResource ||
       application.flags != kAckRequired ||
       application.bodyLength != kResourceHeaderSize) {
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
     return;
   }
@@ -2846,9 +2929,11 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
     return;
   }
   if (!isLocalSource(peer) || (!readAuthorized && !actionAuthorized)) {
+    emit(DiagnosticEvent::RejectAuthority);
     ++diagnostics_.aclReject;
     return;
   }
+  emit(DiagnosticEvent::ReadReceive, peerIndex, resource);
   bool eventOnly = false;
   size_t payloadLength = 0;
   const size_t payloadOffset = kApplicationHeaderSize + kResourceHeaderSize;
@@ -2869,6 +2954,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
     return;
   }
   if (!readAuthorized) {
+    emit(DiagnosticEvent::RejectAuthority);
     ++diagnostics_.aclReject;
     return;
   }
@@ -2879,6 +2965,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
   if (!addInterest(peerIndex, resource)) {
     return;
   }
+  emit(DiagnosticEvent::StateTransmit, peerIndex, resource);
   ++diagnostics_.readDispatched;
   if (application_ != nullptr) {
     application_->readInterestRefreshed(peerIndex, resource, false);
@@ -2907,6 +2994,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
   size_t payloadLength = 0;
   if (!resourceFromApplication(application, &resource, &payload,
                                &payloadLength)) {
+    emit(DiagnosticEvent::RejectPacket);
     ++diagnostics_.invalidDataDrop;
     return;
   }
@@ -2914,6 +3002,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
   if (application.messageType == kSuplaCallChannelSetValue) {
     if (application.flags != kAckRequired || payloadLength != 17 ||
         payload[4] != kChannelNumberUnresolved) {
+      emit(DiagnosticEvent::RejectPacket);
       ++diagnostics_.invalidDataDrop;
       return;
     }
@@ -2932,6 +3021,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
                                            payload, payloadLength);
       ++diagnostics_.controlDispatched;
     } else {
+      emit(DiagnosticEvent::RejectAuthority);
       ++diagnostics_.aclReject;
       if (duplicate) {
         ++diagnostics_.controlDuplicateSuppressed;
@@ -2951,6 +3041,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
         payload[0] != kChannelNumberUnresolved || duplicate ||
         !isLocalDestination(peer) ||
         !peers_->authorize(peerIndex, resource, kPermissionRead)) {
+      emit(DiagnosticEvent::RejectPacket);
       ++diagnostics_.invalidDataDrop;
       return;
     }
@@ -2969,6 +3060,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
         getSuplaUint32(payload + 2) != payloadLength - 6 ||
         !isLocalDestination(peer) ||
         !peers_->authorize(peerIndex, resource, kPermissionRead)) {
+      emit(DiagnosticEvent::RejectPacket);
       ++diagnostics_.invalidDataDrop;
       return;
     }
@@ -2985,6 +3077,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
         payload[0] != kChannelNumberUnresolved ||
         !isLocalDestination(peer) ||
         !peers_->authorize(peerIndex, resource, kPermissionAction)) {
+      emit(DiagnosticEvent::RejectPacket);
       ++diagnostics_.invalidDataDrop;
       return;
     }
@@ -3005,6 +3098,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
     sendAck(peerIndex, session, sequence, kResultTrue);
     return;
   }
+  emit(DiagnosticEvent::RejectPacket);
   ++diagnostics_.invalidDataDrop;
 }
 
@@ -3085,6 +3179,7 @@ void Runtime::processFlood() {
     }
     --flood_.remaining;
     if (!attempted) {
+      emit(DiagnosticEvent::RejectPacket);
       ++diagnostics_.invalidDataDrop;
     }
     if (flood_.remaining == 0) {
@@ -3137,6 +3232,7 @@ void Runtime::iterate() {
     if (static_cast<int32_t>(now - attempt->expiresAtMs) >= 0) {
       const bool initiator = attempt->initiator;
       const uint8_t peerIndex = attempt->peerIndex;
+      emit(DiagnosticEvent::HandshakeTimeout, peerIndex);
       clearPendingHandshake(attempt);
       if (initiator) {
         PeerRecord *peer = peers_->get(peerIndex);
@@ -3310,13 +3406,28 @@ void Runtime::removeReadDependency(uint8_t peerIndex,
 
 bool Runtime::announcePresence(uint8_t peerIndex, uint16_t window,
                                 bool reset) {
-  if (!isLocalSource(peers_->get(peerIndex)) ||
-      !peers_->hasActiveGrants(peerIndex) || (!reset && !window)) return false;
+  const auto *peer = peers_->get(peerIndex);
+  // The startup pass visits the whole bounded pool. Empty slots are not peers
+  // and do not represent a skipped reset worth reporting.
+  if (!peer) return false;
+  if (!isLocalSource(peer) ||
+      !peers_->hasActiveGrants(peerIndex) || (!reset && !window)) {
+    if (reset) emit(DiagnosticEvent::ResetSkipped, peerIndex);
+    return false;
+  }
   PeerMaterial material = {};
   Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   uint8_t frame[52] = {kVersion, static_cast<uint8_t>(reset ? 6 : 7)};
-  if (!peers_->materialFor(peerIndex, &material) ||
-      !Supla::Crypto::fillRandom(frame + 18, 16)) return false;
+  if (!peers_->materialFor(peerIndex, &material)) {
+    if (reset)
+      emit(DiagnosticEvent::ResetSendFailed, peerIndex, ResourceId(), 1);
+    return false;
+  }
+  if (!Supla::Crypto::fillRandom(frame + 18, 16)) {
+    if (reset)
+      emit(DiagnosticEvent::ResetSendFailed, peerIndex, ResourceId(), 2);
+    return false;
+  }
   memcpy(frame + 2, material.peerLocator, 16);
   const size_t bodyLength = reset ? 34 : 36;
   if (!reset) putUint16(frame + 34, window);
@@ -3329,19 +3440,32 @@ bool Runtime::announcePresence(uint8_t peerIndex, uint16_t window,
   memcpy(input, label, labelLength);
   memcpy(input + labelLength, frame, bodyLength);
   if (!Supla::Crypto::hmacSha256(material.locateMacKey, 32, input,
-                                 labelLength + bodyLength, mac)) return false;
+                                 labelLength + bodyLength, mac)) {
+    if (reset)
+      emit(DiagnosticEvent::ResetSendFailed, peerIndex, ResourceId(), 3);
+    return false;
+  }
   memcpy(frame + bodyLength, mac, 16);
-  return datagrams_->sendLocateMulticast(frame, bodyLength + 16);
+  const bool sent = datagrams_->sendLocateMulticast(frame, bodyLength + 16);
+  if (reset) emit(sent ? DiagnosticEvent::ResetTx
+                       : DiagnosticEvent::ResetSendFailed, peerIndex,
+                  ResourceId(), 4);
+  return sent;
 }
 
 void Runtime::refreshPeer(uint8_t peerIndex, uint16_t window, bool reset) {
   if (peerIndex >= SUPLAN_MAX_PERSISTENT_PEERS ||
       !isLocalDestination(peers_->get(peerIndex))) return;
+  if (reset) emit(DiagnosticEvent::ResetRx, peerIndex);
   noteReachability(peerIndex);
   bool pending = false;
   for (auto &dependency : dependencies_) {
     if (!dependency.used || dependency.peerIndex != peerIndex) continue;
-    if (reset) dependency.needsRefresh = true;
+    if (reset) {
+      emit(DiagnosticEvent::ReadRefresh, peerIndex,
+           {dependency.resourceType, dependency.resourceId}, 1);
+      dependency.needsRefresh = true;
+    }
     pending = pending || dependency.needsRefresh;
   }
   if (pending) {

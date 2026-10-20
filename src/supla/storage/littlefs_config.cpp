@@ -9,6 +9,10 @@
 #include "littlefs_config.h"
 
 #include <LittleFS.h>
+#if defined(ARDUINO_ARCH_ESP32) || defined(ESP32)
+#include <dirent.h>
+#include <errno.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <supla/log_wrapper.h>
@@ -552,6 +556,122 @@ bool Supla::LittleFsConfig::eraseKey(const char* key) {
   bool absent = !LittleFS.exists(filename);
   LittleFS.end();
   return removed && absent;
+}
+
+
+namespace {
+#if (defined(ARDUINO_ARCH_ESP8266) || defined(ESP8266)) && !defined(SUPLA_TEST)
+// Form the inherited member pointer where protected access is allowed, then
+// invoke it on the real implementation. No derived implementation is created
+// and the mounted filesystem is neither copied nor downcast to this helper.
+class NativeLittleFsImplAccess : public littlefs_impl::LittleFSImpl {
+ public:
+  static lfs_t *native(littlefs_impl::LittleFSImpl &impl) {
+    auto getter = &NativeLittleFsImplAccess::getFS;
+    return (impl.*getter)();
+  }
+};
+
+// FS is safely copied as a shared view of the existing mounted backend. This
+// exposes its protected implementation accessor without a downcast of FS to
+// an object of a different derived type or a second filesystem instance.
+class NativeLittleFsView : public fs::FS {
+ public:
+  NativeLittleFsView() : fs::FS(LittleFS) {}
+  lfs_t *native() {
+    auto impl = getImpl();
+    if (!impl) return nullptr;
+    return NativeLittleFsImplAccess::native(
+        *static_cast<littlefs_impl::LittleFSImpl *>(impl.get()));
+  }
+};
+#endif
+
+// Directory metadata only: opening each value would conflate a failed file
+// open with EOF in Arduino's openNextFile(). Native iterators expose errors.
+template <typename Visitor>
+Supla::ConfigIterationResult visitStoredFiles(Visitor visit) {
+  using Result = Supla::ConfigIterationResult;
+#if defined(SUPLA_TEST) || defined(ARDUINO_ARCH_ESP8266) || defined(ESP8266)
+#ifdef SUPLA_TEST
+  auto native = LittleFS.native();
+#else
+  NativeLittleFsView view;
+  auto native = view.native();
+#endif
+  if (!native) return Result::ERROR;
+  lfs_dir_t directory = {};
+  int error = lfs_dir_open(native, &directory, "/supla");
+  if (error == LFS_ERR_NOENT) return Result::COMPLETED;
+  if (error < 0) return Result::ERROR;
+  auto result = Result::COMPLETED;
+  lfs_info info = {};
+  while ((error = lfs_dir_read(native, &directory, &info)) > 0) {
+    if (info.type == LFS_TYPE_DIR) continue;
+    if (info.type != LFS_TYPE_REG) {
+      result = Result::ERROR;
+      break;
+    }
+    result = visit(info.name);
+    if (result != Result::COMPLETED) break;
+  }
+  if (error < 0) result = Result::ERROR;
+  if (lfs_dir_close(native, &directory) < 0) result = Result::ERROR;
+  return result;
+#elif defined(ARDUINO_ARCH_ESP32) || defined(ESP32)
+  const char *base = LittleFS.mountpoint();
+  if (!base || !*base) return Result::ERROR;
+  char path[128];
+  const int length = snprintf(path, sizeof(path), "%s/supla", base);
+  if (length < 0 || static_cast<size_t>(length) >= sizeof(path))
+    return Result::ERROR;
+  DIR *directory = opendir(path);
+  if (!directory) return errno == ENOENT ? Result::COMPLETED : Result::ERROR;
+  auto result = Result::COMPLETED;
+  for (;;) {
+    errno = 0;
+    auto entry = readdir(directory);
+    if (!entry) {
+      if (errno) result = Result::ERROR;
+      break;
+    }
+    if (entry->d_type == DT_DIR) continue;
+    if (entry->d_type != DT_REG) {
+      result = Result::ERROR;
+      break;
+    }
+    result = visit(entry->d_name);
+    if (result != Result::COMPLETED) break;
+  }
+  if (closedir(directory)) result = Result::ERROR;
+  return result;
+#else
+  // An unchecked Arduino iterator cannot promise a complete inventory.
+  (void)visit;
+  return Result::UNSUPPORTED;
+#endif
+}
+}  // namespace
+
+Supla::ConfigIterationResult Supla::LittleFsConfig::forEachKey(
+    const char *filter, ConfigKeyCallback callback, void *context) {
+  const auto memory = KeyValue::forEachKey(filter, callback, context);
+  if (memory != ConfigIterationResult::COMPLETED) return memory;
+  // Enumeration is read-only: a mount failure must never format storage.
+  if (!initLittleFs(false)) return ConfigIterationResult::ERROR;
+  const auto result = visitStoredFiles([&](const char *name) {
+    if (!name || !*name || strlen(name) >= SUPLA_CONFIG_MAX_KEY_SIZE)
+      return ConfigIterationResult::ERROR;
+    auto entry = find(name);
+    const bool shadowed = entry &&
+        entry->getValueType() != ConfigValueType::UNKNOWN;
+    if (!shadowed && strstr(name, filter) &&
+        !callback(name, ConfigValueType::BLOB, context))
+      return ConfigIterationResult::STOPPED;
+    return ConfigIterationResult::COMPLETED;
+  });
+  LittleFS.end();
+  return result;
 }
 
 #endif  // !defined(ARDUINO_ARCH_AVR)

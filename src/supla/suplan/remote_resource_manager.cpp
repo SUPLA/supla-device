@@ -3,6 +3,8 @@
 #include "remote_resource_manager.h"
 #ifndef ARDUINO_ARCH_AVR
 #include <string.h>
+#include <inttypes.h>
+#include <supla/log_wrapper.h>
 namespace Supla {
 namespace Device {
 RemoteResourceManager::RemoteResourceManager(SupLan::PeerTable *peers,
@@ -121,16 +123,29 @@ void RemoteResourceManager::reconcile(Resource *resource) {
 
 bool RemoteResourceManager::fresh(const RemoteChannelResource &resource,
                                    uint32_t nowMs) const {
+  // Once expired, only an accepted snapshot can restore this lease. In
+  // particular another millis() cycle must not revive the old cached value.
+  if (resource.leaseExpired) return false;
   const uint32_t ttl = resource.snapshot.ValueValidityTimeSec;
-  return ttl == 0 || (nowMs - resource.receivedMs) / 1000 < ttl;
+  const bool valid = ttl == 0 || (nowMs - resource.receivedMs) / 1000 < ttl;
+  if (!valid && resource.hasSnapshot && !resource.leaseExpired &&
+      resource.snapshot.Default != SUPLA_CHANNELFNC_NONE &&
+      resource.snapshot.Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE) {
+    resource.leaseExpired = true;
+    SUPLA_LOG_WARNING("SupLAN SUPLAN_PEER ChannelId=%" PRIu32
+        " cache expired age_ms=%" PRIu32 " ttl_s=%" PRIu32,
+        resource.id.id, nowMs - resource.receivedMs, ttl);
+  }
+  return valid;
 }
 void RemoteResourceManager::refreshResource(RemoteChannelResource &entry,
                                            uint32_t nowMs) {
   auto &resource = static_cast<Resource &>(entry);
+  if (resource.hasSnapshot) (void)fresh(resource, nowMs);
   if (resource.effective & resource.permissions & SupLan::kPermissionRead) {
     const uint32_t ttl = resource.snapshot.ValueValidityTimeSec;
     const uint32_t refreshMs =
-        resource.hasSnapshot && ttl && ttl < 60 ? ttl * 1000 : 60000;
+        resource.hasSnapshot && ttl && ttl < 120 ? ttl * 500 : 60000;
     if (runtime_ && !runtime_->recoveryStatus(resource.peerIndex).sleeping &&
         (!resource.readAttempted ||
          (static_cast<uint32_t>(nowMs - resource.lastReadMs) >= refreshMs &&
@@ -181,12 +196,29 @@ void RemoteResourceManager::receive(uint8_t peerIndex,
                                     const uint8_t *payload, size_t length,
                                     uint32_t nowMs) {
   auto *resource = find(id);
-  if (!resource || !payload || length != sizeof(resource->snapshot)) return;
+  if (!resource || !payload || length != sizeof(resource->snapshot) ||
+      payload[0] != 0xff) return;
   reconcile(resource);
   if (!(resource->effective & resource->permissions &
         SupLan::kPermissionRead) || resource->peerIndex != peerIndex)
     return;
+  const bool wasAvailable = usable(*resource, nowMs) &&
+      resource->snapshot.Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
+  // Break observer continuity even when no poll occurred during the gap.
+  if (resource->hasSnapshot && !fresh(*resource, nowMs)) invalidate(resource);
   acceptSnapshot(resource, payload, length, nowMs);
+  if (!resource->hasSnapshot) return;
+  resource->leaseExpired = false;
+  SUPLA_LOG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+      " snapshot state=%s Offline=%u ttl_s=%" PRIu32 " lease renewed",
+      peerIndex, id.id,
+      resource->snapshot.Offline == 0 ? "ONLINE" : "UNAVAILABLE",
+      resource->snapshot.Offline,
+      resource->snapshot.ValueValidityTimeSec);
+  if (!wasAvailable && usable(*resource, nowMs) &&
+      resource->snapshot.Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE)
+    SUPLA_LOG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+        " cache available after snapshot", peerIndex, id.id);
 }
 void RemoteResourceManager::sessionChanged(uint8_t peerIndex) {
   for (auto &resource : resources_) {

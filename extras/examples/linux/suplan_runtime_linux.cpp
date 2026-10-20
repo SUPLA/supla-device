@@ -28,6 +28,14 @@
 
 namespace Supla {
 
+void LinuxSupLanRuntime::DiagnosticUdpPort::multicastMembershipChanged(
+    uint32_t address, int8_t result) {
+  SUPLA_LOG_INFO("SupLAN UDP multicast interface=%u.%u.%u.%u result=%s",
+      address & 255, (address >> 8) & 255, (address >> 16) & 255,
+      address >> 24,
+      result < 0 ? "REMOVED" : result ? "JOINED" : "JOIN_FAILED");
+}
+
 class LinuxSupLanRuntime::TransportLifecycle
     : public Protocol::SupLanTransportLifecycle {
  public:
@@ -64,11 +72,19 @@ class LinuxSupLanRuntime::TransportLifecycle
       datagrams_->close();
       return false;
     }
+    const auto endpoint = datagrams_->localEndpoint();
+    SUPLA_LOG_INFO("SupLAN UDP open local=%u.%u.%u.%u port=%u "
+        "multicast joined=%u interfaces=%u", endpoint.address & 255,
+        (endpoint.address >> 8) & 255, (endpoint.address >> 16) & 255,
+        endpoint.address >> 24, port_,
+        static_cast<unsigned>(datagrams_->joinedMulticastInterfaceCount()),
+        static_cast<unsigned>(datagrams_->multicastInterfaceCount()));
     return true;
   }
 
   void close() override {
     if (datagrams_ != nullptr) {
+      if (datagrams_->isOpen()) SUPLA_LOG_INFO("SupLAN UDP closed");
       datagrams_->close();
     }
   }

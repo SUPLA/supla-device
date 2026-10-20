@@ -809,3 +809,39 @@ bool NvsConfig::isEncryptionEnabled() {
 }
 
 }  // namespace Supla
+
+Supla::ConfigIterationResult Supla::NvsConfig::forEachKey(const char *filter,
+    ConfigKeyCallback callback, void *context) {
+  if (!filter || !callback || !nvsHandle || !nvsPartitionName)
+    return ConfigIterationResult::ERROR;
+  nvs_iterator_t iterator = nullptr;
+  esp_err_t error = nvs_entry_find(nvsPartitionName, "supla", NVS_TYPE_ANY,
+                                  &iterator);
+  auto result = ConfigIterationResult::COMPLETED;
+  while (error == ESP_OK) {
+    nvs_entry_info_t info = {};
+    if (nvs_entry_info(iterator, &info) != ESP_OK) {
+      result = ConfigIterationResult::ERROR;
+      break;
+    }
+    ConfigValueType type = ConfigValueType::UNKNOWN;
+    switch (info.type) {
+      case NVS_TYPE_I8: type = ConfigValueType::INT8; break;
+      case NVS_TYPE_U8: type = ConfigValueType::UINT8; break;
+      case NVS_TYPE_I32: type = ConfigValueType::INT32; break;
+      case NVS_TYPE_U32: type = ConfigValueType::UINT32; break;
+      case NVS_TYPE_STR: type = ConfigValueType::STRING; break;
+      case NVS_TYPE_BLOB: type = ConfigValueType::BLOB; break;
+      default: break;
+    }
+    if (strstr(info.key, filter) && !callback(info.key, type, context)) {
+      result = ConfigIterationResult::STOPPED;
+      break;
+    }
+    error = nvs_entry_next(&iterator);
+  }
+  nvs_release_iterator(iterator);
+  if (result == ConfigIterationResult::COMPLETED &&
+      error != ESP_ERR_NVS_NOT_FOUND) return ConfigIterationResult::ERROR;
+  return result;
+}

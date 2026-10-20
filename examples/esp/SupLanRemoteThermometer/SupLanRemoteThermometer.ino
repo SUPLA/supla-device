@@ -12,6 +12,8 @@
 
 #include <SuplaDevice.h>
 #include <math.h>
+#include <stdio.h>
+#include <supla/protocol/suplan_protocol.h>
 #include <supla/channels/remote_channel.h>
 #include <supla/control/button.h>
 #include <supla/device/status_led.h>
@@ -50,7 +52,7 @@ void setup() {
   SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   deviceStarted = SuplaDevice.enableSupLan() && SuplaDevice.begin(29);
   if (!deviceStarted) {
-    Serial.println("Device/SupLAN initialization failed");
+    Serial.println("SupLAN Device initialization failed");
   }
 }
 
@@ -65,11 +67,32 @@ void loop() {
 
   const auto state = thermometer.state();
   const double temperature = state.getValueDouble();
+  bool peerReachable = false;
+  bool transportReady = false;
+  for (auto p = Supla::Protocol::ProtocolLayer::first(); p; p = p->next()) {
+    if (auto resources = p->remoteResources()) {
+      transportReady = p->isRegisteredAndReady();
+      peerReachable = resources->peerAvailable(
+          {Supla::SupLan::kResourceTypeChannel, REMOTE_THERMOMETER_CHANNEL_ID});
+    }
+  }
+  const auto status = thermometer.accessStatus();
+  char age[11] = "none";
+  if (state.type()) snprintf(age, sizeof(age), "%lu",
+      static_cast<unsigned long>(now - state.receivedMs()));
+  Serial.printf("SupLAN ChannelId=%lu mode=SUPLAN_PEER access=%s "
+                "D2D_transport=%s peer_session=%s "
+                "snapshot_age_ms=%s ttl_s=%lu\n",
+      static_cast<unsigned long>(REMOTE_THERMOMETER_CHANNEL_ID),
+      Supla::channelAccessStatusName(status),
+      transportReady ? "ready" : "unavailable",
+      peerReachable ? "known" : "unavailable",
+      age,
+      static_cast<unsigned long>(state.validityTimeSec()));
   if (state.availableFor(Supla::ChannelCapability::Temperature) &&
       isfinite(temperature)) {
-    Serial.printf("Remote temperature: %.2f C\n", temperature);
+    Serial.printf("SupLAN remote temperature (cached snapshot): %.2f C\n", temperature);
   } else {
-    Serial.printf("Remote temperature unavailable (access status: %u)\n",
-                  static_cast<unsigned int>(thermometer.accessStatus()));
+    Serial.println("SupLAN remote temperature unavailable");
   }
 }

@@ -33,6 +33,7 @@ class LinuxUdpPort : public DatagramPort {
             size_t maxDatagramPayload);
   void close();
   bool isOpen() const;
+  Endpoint localEndpoint() const { return localEndpoint_; }
   bool hasActiveMulticastInterface() const;
   bool sendUnicast(const Endpoint &endpoint, const uint8_t *data,
                    size_t length) override;
@@ -56,6 +57,11 @@ class LinuxUdpPort : public DatagramPort {
   bool compareNextDataWithCapture();
   bool dataComparisonComplete() const;
   bool dataComparisonMatched() const;
+
+ protected:
+  // Observational only: -1 removed, 0 first join failure, 1 joined.
+  // No SDK logger dependency or additional port state.
+  virtual void multicastMembershipChanged(uint32_t, int8_t) {}
 
  private:
   bool refreshMulticastInterfaces();

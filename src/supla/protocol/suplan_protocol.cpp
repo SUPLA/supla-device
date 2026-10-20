@@ -6,6 +6,11 @@
 #include <supla/protocol/suplan_protocol.h>
 
 #include <string.h>
+#include <inttypes.h>
+#include <math.h>
+#include <stdio.h>
+#include <supla/debug/debug_log.h>
+#include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/crypto.h>
 #include <supla/channels/channel_state.h>
@@ -26,6 +31,68 @@
 namespace Supla {
 namespace Protocol {
 namespace {
+// Runtime diagnostics must not allocate, including on Arduino where the
+// general flash-format logger uses String/heap. Reuse the existing log sinks.
+#ifndef SUPLA_DEVICE_ESP32
+#ifdef ARDUINO
+using DiagnosticFormat = const __FlashStringHelper *;
+#else
+using DiagnosticFormat = const char *;
+#endif
+void diagnosticLog(int priority, DiagnosticFormat format, ...) {
+#ifdef SUPLA_DISABLE_LOGS
+  (void)priority;
+  (void)format;
+#else
+  if (!SUPLA_LOG_IS_ENABLED(priority)) return;
+  char message[192];
+  va_list args;
+  va_start(args, format);
+#ifdef ARDUINO
+  const int result = vsnprintf_P(message, sizeof(message),
+      reinterpret_cast<PGM_P>(format), args);
+#else
+  const int result = vsnprintf(message, sizeof(message), format, args);
+#endif
+  va_end(args);
+  if (result < 0) return;
+  supla_vlog(priority, message);
+  supla_debug_log_write(priority, message);
+#endif
+}
+#define SUPLAN_DIAG_DEBUG(format, ...) \
+  do { \
+    if (SUPLA_LOG_IS_ENABLED(LOG_DEBUG)) \
+      diagnosticLog(LOG_DEBUG, F(format), ##__VA_ARGS__); \
+  } while (0)
+#define SUPLAN_DIAG_INFO(format, ...) \
+  do { \
+    if (SUPLA_LOG_IS_ENABLED(LOG_INFO)) \
+      diagnosticLog(LOG_INFO, F(format), ##__VA_ARGS__); \
+  } while (0)
+#define SUPLAN_DIAG_WARNING(format, ...) \
+  do { \
+    if (SUPLA_LOG_IS_ENABLED(LOG_WARNING)) \
+      diagnosticLog(LOG_WARNING, F(format), ##__VA_ARGS__); \
+  } while (0)
+#else
+// The IDF SDK adapter already uses a fixed stack buffer.
+#define SUPLAN_DIAG_DEBUG SUPLA_LOG_DEBUG
+#define SUPLAN_DIAG_INFO SUPLA_LOG_INFO
+#define SUPLAN_DIAG_WARNING SUPLA_LOG_WARNING
+#endif
+
+// Only the D2D egress boundary substitutes validity. The common builder keeps
+// D2S/local semantics. READ observes acquisition state; never calls a sensor.
+bool buildD2dSnapshot(Channel *channel, TDS_SuplaDeviceChannel_E *snapshot) {
+  if (!buildChannelSnapshot(channel, snapshot)) return false;
+  snapshot->ValueValidityTimeSec = channel->getSupLanValidityTimeSec();
+  const ChannelState view(snapshot, true);
+  if (view.availableFor(ChannelCapability::Temperature) &&
+      !isfinite(view.getValueDouble()))
+    snapshot->Offline = SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE;
+  return true;
+}
 bool sourceControlAvailable(Element *element) {
   TDS_SuplaDeviceChannel_E snapshot = {};
   return element && buildChannelSnapshot(element->getChannel(), &snapshot) &&
@@ -207,6 +274,7 @@ bool SupLan::iterate(uint32_t nowMs) {
   if (transport_ != nullptr) {
     if (!transport_->networkReady(nowMs)) {
       if (transport_->isOpen() || transportWasOpen_) {
+        SUPLA_LOG_INFO("SupLAN UDP closed: network unavailable");
         transport_->close();
         clearPeerTransportState();
       }
@@ -382,14 +450,16 @@ bool SupLan::readResource(const Supla::SupLan::ResourceId &resource,
   if (fullChannelSnapshots()) {
     TDS_SuplaDeviceChannel_E snapshot;
     if (capacity < sizeof(snapshot) ||
-        !buildChannelSnapshot(channel, &snapshot)) return false;
+        !buildD2dSnapshot(channel, &snapshot)) return false;
     memcpy(payload, &snapshot, sizeof(snapshot));
     *payloadLength = sizeof(snapshot);
     return true;
   }
   payload[0] = Supla::SupLan::kChannelNumberUnresolved;
-  payload[1] = channelOfflineState(channel);
-  putSuplaUint32(payload + 2, channel->getValidityTimeSec());
+  TDS_SuplaDeviceChannel_E snapshot;
+  if (!buildD2dSnapshot(channel, &snapshot)) return false;
+  payload[1] = snapshot.Offline;
+  putSuplaUint32(payload + 2, channel->getSupLanValidityTimeSec());
   channel->fillRawValue(payload + 6);
   *payloadLength = 14;
   return true;
@@ -500,6 +570,214 @@ void SupLan::ensureResourceShareResult(
     resources_->bindings->ensureShareResult(result);
 }
 
+void SupLan::diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
+                        const Supla::SupLan::ResourceId &resource,
+                        uint32_t detail) {
+  using E = Supla::SupLan::DiagnosticEvent;
+  const bool warning = event == E::RecoveryFailed || event == E::ResourceLimit;
+  const bool rejection = event >= E::RejectAuthority;
+  // Disabled DEBUG rejects must not spend the WARNING rate-limit window.
+  if (((rejection && !warning) || event == E::ResetSendFailed) &&
+      !SUPLA_LOG_IS_ENABLED(LOG_DEBUG)) return;
+  uint32_t count = 0;
+  if (warning || rejection || event == E::ResetSendFailed) {
+    const uint32_t now = runtime_ ? runtime_->nowMs() : millis();
+    if (diagnosticSuppressed_ && now - diagnosticLastMs_ < 5000) {
+      if (diagnosticSuppressed_ != UINT32_MAX) ++diagnosticSuppressed_;
+      return;
+    }
+    diagnosticLastMs_ = now;
+    count = diagnosticSuppressed_ ? diagnosticSuppressed_ - 1 : 0;
+    diagnosticSuppressed_ = 1;
+  }
+  // Literal formats use the SDK's flash-string logging on Arduino.
+  switch (event) {
+    case E::RecoveryBegin:
+      SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                     " recovery started"
+                     " detail=%" PRIu32,
+                     peer, resource.id, detail);
+      break;
+    case E::RecoveryFailed:
+      SUPLAN_DIAG_WARNING(
+          "SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+          " recovery cycle failed (discovery/handshake/READ timeout)"
+          " next_retry_ms=%" PRIu32 " suppressed=%" PRIu32,
+          peer, resource.id, detail, count);
+      break;
+    case E::RecoveryComplete:
+      SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                     " recovery completed"
+                     " detail=%" PRIu32,
+                     peer, resource.id, detail);
+      break;
+    case E::ReadAccepted:
+      SUPLAN_DIAG_DEBUG(
+          "SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+          " READ logical demand accepted reason=%s awaiting queue/session",
+          peer, resource.id,
+                      detail == 2 ? "recovery"
+                                  : detail ? "periodic" : "initial");
+      break;
+    case E::ReadQueued:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " READ queue admission attempt"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::ReadTransmit:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " READ transmit result=%s awaiting snapshot",
+                      peer, resource.id, detail ? "SENT" : "TRANSPORT_FAILED");
+      break;
+    case E::ReadReceive:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " Source READ received"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::StateTransmit:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " Source snapshot response enqueue attempt"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::AckWithoutState:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " ACK received awaiting snapshot (no lease renewal)"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::AckWithState:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " ACK received (not a snapshot)"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::LocateTx:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+          " LOCATE TX result=%s", peer, resource.id,
+          detail ? "SENT" : "TRANSPORT_FAILED");
+      break;
+    case E::LocateRx:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " LOCATE RX"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::LocateReplyTx:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " LOCATE_REPLY TX"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::LocateReplyRx:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " LOCATE_REPLY RX"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::LocateTimeout:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " LOCATE timeout"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::HandshakeTx:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+          " SESSION_INIT TX result=%s", peer, resource.id,
+          detail ? "SENT" : "TRANSPORT_FAILED");
+      break;
+    case E::HandshakeTimeout:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " handshake timeout"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::SessionEstablished:
+      SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                     " session established/restored"
+                     " detail=%" PRIu32,
+                     peer, resource.id, detail);
+      break;
+    case E::SessionLost:
+      SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                     " session lost"
+                     " detail=%" PRIu32,
+                     peer, resource.id, detail);
+      break;
+    case E::ResetTx:
+      SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                     " SOURCE_INTEREST_RESET TX"
+                     " detail=%" PRIu32,
+                     peer, resource.id, detail);
+      break;
+    case E::ResetSkipped:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " SOURCE_INTEREST_RESET skipped: not Source/no grants"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::ResetSendFailed:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+          " SOURCE_INTEREST_RESET not sent reason=%s", peer, resource.id,
+          detail == 1 ? "PEER_MATERIAL" : detail == 2 ? "RANDOM" :
+          detail == 3 ? "MAC" : "TRANSPORT");
+      break;
+    case E::ResetRx:
+      SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                     " SOURCE_INTEREST_RESET accepted"
+                     " detail=%" PRIu32,
+                     peer, resource.id, detail);
+      break;
+    case E::ReadRefresh:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+          " READ refresh reason=%s", peer, resource.id,
+          detail ? "interest_reset" : "recovery");
+      break;
+    case E::RejectAuthority:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " packet/request rejected: live authority"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::RejectPacket:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " packet rejected: invalid data/shape/authentication"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::RejectSession:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " packet rejected: session authentication/shape"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::RejectLocate:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " packet rejected: locate authentication/shape"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::RejectReplay:
+      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                      " packet rejected: replay"
+                      " detail=%" PRIu32,
+                      peer, resource.id, detail);
+      break;
+    case E::ResourceLimit:
+      SUPLAN_DIAG_WARNING("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                        " resource capacity exhausted"
+                        " next_retry_ms=%" PRIu32 " suppressed=%" PRIu32,
+                        peer, resource.id, detail, count);
+      break;
+  }
+}
+
+#undef SUPLAN_DIAG_DEBUG
+#undef SUPLAN_DIAG_INFO
+#undef SUPLAN_DIAG_WARNING
+
 void SupLan::operationAcknowledged(uint8_t peerIndex,
                                    const Supla::SupLan::ResourceId &resource,
                                    uint32_t sequence, uint8_t result) {
@@ -571,6 +849,8 @@ void SupLan::sendActionTrigger(uint8_t channelNumber, uint32_t actionId) {
 void SupLan::sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
                                      uint8_t offline,
                                      uint32_t validityTimeSec) {
+  // D2S fan-out argument; D2D owns an independent lease.
+  (void)validityTimeSec;
   if (!isRegisteredAndReady() || value == nullptr) {
     return;
   }
@@ -580,7 +860,7 @@ void SupLan::sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
     auto *channel = Supla::Channel::GetByChannelNumber(channelNumber);
     if (!associations()->identity() ||
         !associations()->identity()->reverse(channelNumber, &id) ||
-        !buildChannelSnapshot(channel, &snapshot)) return;
+        !buildD2dSnapshot(channel, &snapshot)) return;
     const Supla::SupLan::ResourceId resource = {
         Supla::SupLan::kResourceTypeChannel, id};
     for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
@@ -592,7 +872,16 @@ void SupLan::sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
   uint8_t payload[14] = {};
   payload[0] = Supla::SupLan::kChannelNumberUnresolved;
   payload[1] = offline;
-  putSuplaUint32(payload + 2, validityTimeSec);
+  auto *channel = Supla::Channel::GetByChannelNumber(channelNumber);
+  if (!channel) return;
+  TDS_SuplaDeviceChannel_E snapshot;
+  if (!buildD2dSnapshot(channel, &snapshot)) return;
+  // Preserve the legacy callback's explicit Offline argument. Acquisition
+  // failure can additionally withdraw availability, never restore it.
+  if (offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE &&
+      snapshot.Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE)
+    payload[1] = snapshot.Offline;
+  putSuplaUint32(payload + 2, channel->getSupLanValidityTimeSec());
   memcpy(payload + 6, value, SUPLA_CHANNELVALUE_SIZE);
   if (associations() && associations()->identity()) {
     uint32_t id = 0;
@@ -662,9 +951,11 @@ void SupLan::sendExtendedChannelValueChanged(
 }
 
 void SupLan::sendChannelMetadataChanged(uint8_t number) {
-  if (!fullChannelSnapshots()) return;
-  int8_t ignored[8] = {};
-  sendChannelValueChanged(number, ignored, 0, 0);
+  auto *channel = Supla::Channel::GetByChannelNumber(number);
+  if (!channel) return;
+  int8_t value[8];
+  channel->fillRawValue(value);
+  sendChannelValueChanged(number, value, channelOfflineState(channel), 0);
 }
 
 bool SupLan::prepareBackend(uint8_t delivery,

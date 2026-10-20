@@ -16,6 +16,8 @@ class KeyValueElement;
 
 class KeyValue : public Config {
  public:
+  ConfigIterationResult forEachKey(const char *filter,
+      ConfigKeyCallback callback, void *context) override;
   ~KeyValue();
   bool initFromMemory(uint8_t* input, size_t inputSize);
   // Returns size of written structure, or SIZE_MAX if any element does not fit.
@@ -65,6 +67,8 @@ class KeyValueElement {
  public:
   explicit KeyValueElement(const char* keyName);
   ~KeyValueElement();
+  const char *getKey() const { return key; }
+  ConfigValueType getValueType() const;
   bool isKeyEqual(const char* keyToCheck);
   KeyValueElement* getNext();
   bool hasNext();

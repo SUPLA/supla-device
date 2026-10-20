@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include <supla/protocol/protocol_layer.h>
+#include <supla/log_wrapper.h>
 #include <suplan/suplan_runtime.h>
 #include <supla/suplan/remote_resource_manager.h>
 #include <supla/suplan/resource_binding_manager.h>
@@ -64,12 +65,22 @@ class SupLanTransportLifecycle {
     }
     openAttempted_ = true;
     lastOpenAttemptMs_ = nowMs;
-    return open();
+    const bool opened = open();
+    if (opened) {
+      openFailures_ = 0;
+    } else {
+      if (openFailures_ != UINT16_MAX) ++openFailures_;
+      if (openFailures_ == 1 || openFailures_ % 16 == 0)
+        SUPLA_LOG_WARNING("SupLAN UDP open failed count=%u next_retry_ms=1000",
+                          openFailures_);
+    }
+    return opened;
   }
 
   void resetOpenRetry() { openAttempted_ = false; }
 
  private:
+  uint16_t openFailures_ = 0;
   bool openAttempted_ = false;
   uint32_t lastOpenAttemptMs_ = 0;
 };
@@ -185,6 +196,8 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
                      const Supla::SupLan::ResourceId &resource,
                      uint32_t messageType, const uint8_t *payload,
                      size_t payloadLength) override;
+  void diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
+      const Supla::SupLan::ResourceId &resource, uint32_t detail) override;
   void operationAcknowledged(uint8_t peerIndex,
                              const Supla::SupLan::ResourceId &resource,
                              uint32_t sequence, uint8_t result) override;
@@ -211,6 +224,8 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   const SupLanResourceMapping *mappings_;
   SupLanApplicationEventHandler eventHandler_;
   void *eventContext_;
+  uint32_t diagnosticLastMs_ = 0;
+  uint32_t diagnosticSuppressed_ = 0;
   uint8_t mappingCount_;
   bool enabled_;
   bool transportWasOpen_;

@@ -845,6 +845,18 @@ void Channel::setValidityTimeSec(uint32_t timeSec) {
   validityTimeSec = timeSec;
 }
 
+void Channel::setSupLanValidityTimeSec(uint32_t timeSec) {
+  if (supLanValidityTimeSec == timeSec) return;
+  supLanValidityTimeSec = timeSec;
+  // Existing metadata hook is D2D-only; do not mark the common value dirty.
+  for (auto p = Protocol::ProtocolLayer::first(); p; p = p->next())
+    p->sendChannelMetadataChanged(channelNumber);
+}
+
+uint32_t Channel::getSupLanValidityTimeSec() const {
+  return supLanValidityTimeSec;
+}
+
 void Channel::clearValue() {
   const int8_t emptyValue[SUPLA_CHANNELVALUE_SIZE] = {};
   const bool valueChanged =

@@ -3,6 +3,7 @@
 #include "arduino_udp.h"
 #if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
 #include <supla/time.h>
+#include <supla/log_wrapper.h>
 namespace Supla {
 namespace Device {
 bool SupLanArduinoUdp::open() {
@@ -13,10 +14,14 @@ bool SupLanArduinoUdp::open() {
 #else
   open_ = udp_.beginMulticast(group(), kPort) != 0;
 #endif
+  if (open_) {
+    SUPLA_LOG_INFO("SupLAN UDP open port=%u multicast=joined", kPort);
+  }
   if (!open_) udp_.stop();
   return open_;
 }
 void SupLanArduinoUdp::close() {
+  if (open_) SUPLA_LOG_INFO("SupLAN UDP closed");
   udp_.stop();
   open_ = false;
 }

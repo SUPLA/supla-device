@@ -33,9 +33,23 @@ struct BindingRetry {
     uint8_t frame[39 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER] = {};
 };
 
+// Synchronous observer only: must not reenter/mutate Runtime, block or retain
+// arguments. No logger/platform dependency and no per-resource allocation.
+enum class DiagnosticEvent : uint8_t {
+  RecoveryBegin, RecoveryFailed, RecoveryComplete, ReadAccepted, ReadQueued,
+  ReadTransmit, ReadReceive, StateTransmit, AckWithoutState, AckWithState,
+  LocateTx, LocateRx, LocateReplyTx, LocateReplyRx, LocateTimeout,
+  HandshakeTx, HandshakeTimeout, SessionEstablished, SessionLost,
+  ResetTx, ResetSkipped, ResetSendFailed, ResetRx, ReadRefresh,
+  RejectAuthority, RejectPacket, RejectSession, RejectLocate, RejectReplay,
+  ResourceLimit
+};
+
 class ApplicationPort {
  public:
   virtual ~ApplicationPort() {}
+  virtual void diagnostic(DiagnosticEvent, uint8_t, const ResourceId &,
+                          uint32_t) {}
   virtual bool authorizationReplacing(const PeerContext &, const AclEntry *,
                                       uint16_t) { return true; }
   virtual BindingRetry *bindingRetry() { return nullptr; }
@@ -324,6 +338,10 @@ class Runtime {
   void beginRecovery(uint8_t peerIndex);
   void finishRecovery(uint8_t peerIndex);
   void iterateRecovery(uint32_t now);
+  void emit(DiagnosticEvent event, uint8_t peer = 0xff,
+             const ResourceId &resource = ResourceId(), uint32_t detail = 0) {
+    if (application_) application_->diagnostic(event, peer, resource, detail);
+  }
   void pruneReadDependencies();
   bool readAuthorized(uint8_t peerIndex, const ResourceId &resource) const;
   void noteReachability(uint8_t peerIndex);

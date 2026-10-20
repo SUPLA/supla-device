@@ -624,4 +624,28 @@ bool KeyValue::eraseKey(const char* key) {
 
 };  // namespace Supla
 
+Supla::ConfigValueType Supla::KeyValueElement::getValueType() const {
+  switch (dataType) {
+    case DATA_TYPE_INT8: return ConfigValueType::INT8;
+    case DATA_TYPE_UINT8: return ConfigValueType::UINT8;
+    case DATA_TYPE_INT32: return ConfigValueType::INT32;
+    case DATA_TYPE_UINT32: return ConfigValueType::UINT32;
+    case DATA_TYPE_STRING: return ConfigValueType::STRING;
+    case DATA_TYPE_BLOB: return ConfigValueType::BLOB;
+    default: return ConfigValueType::UNKNOWN;
+  }
+}
+
+Supla::ConfigIterationResult Supla::KeyValue::forEachKey(const char *filter,
+    ConfigKeyCallback callback, void *context) {
+  if (!filter || !callback) return ConfigIterationResult::ERROR;
+  for (auto entry = first; entry; entry = entry->getNext()) {
+    const auto type = entry->getValueType();
+    if (type != ConfigValueType::UNKNOWN && strstr(entry->getKey(), filter) &&
+        !callback(entry->getKey(), type, context))
+      return ConfigIterationResult::STOPPED;
+  }
+  return ConfigIterationResult::COMPLETED;
+}
+
 #endif  // !defined(ARDUINO_ARCH_AVR)

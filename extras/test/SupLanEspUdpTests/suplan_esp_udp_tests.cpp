@@ -24,6 +24,7 @@ int failBindPort;
 int receivedPort;
 int sendFd;
 int sentPort;
+uint32_t interfaceIp;
 esp_netif_t netif = {0};
 
 class SupLanEspUdp : public ::testing::Test {
@@ -35,6 +36,7 @@ class SupLanEspUdp : public ::testing::Test {
     receivedPort = 0;
     sendFd = -1;
     sentPort = 0;
+    interfaceIp = htonl(0xC0A80028);
   }
 };
 }  // namespace
@@ -44,7 +46,7 @@ esp_netif_t *esp_netif_next_unsafe(esp_netif_t *current) {
 }
 bool esp_netif_is_netif_up(esp_netif_t *) { return true; }
 int esp_netif_get_ip_info(esp_netif_t *, esp_netif_ip_info_t *info) {
-  info->ip.addr = htonl(0xC0A80028);
+  info->ip.addr = interfaceIp;
   return ESP_OK;
 }
 int64_t esp_timer_get_time() { return 0; }
@@ -143,3 +145,31 @@ TEST_F(SupLanEspUdp, DiscoveryBindFailureClosesBothSocketsAndAllowsRetry) {
   EXPECT_TRUE(port.open(2287, 250));
   EXPECT_TRUE(port.isOpen());
 }
+
+namespace {
+class ObservedUdpPort : public Supla::SupLan::EspIdfUdpPort {
+ public:
+  int joins = 0;
+  int removes = 0;
+ protected:
+  void multicastMembershipChanged(uint32_t, int8_t result) override {
+    if (result == 1) ++joins;
+    if (result == -1) ++removes;
+  }
+};
+TEST_F(SupLanEspUdp, MembershipDiagnosticsOnlyFollowActualInterfaceChanges) {
+  ObservedUdpPort port;
+  ASSERT_TRUE(port.open(2016, 250));
+  EXPECT_EQ(port.joins, 1);
+  const uint8_t data[] = {1, 2};
+  for (int i = 0; i < 100; ++i)
+    ASSERT_TRUE(port.sendLocateMulticast(data, sizeof(data)));
+  EXPECT_EQ(port.joins, 1);
+  EXPECT_EQ(port.removes, 0);
+  interfaceIp = htonl(0xC0A80029);
+  ASSERT_TRUE(port.sendLocateMulticast(data, sizeof(data)));
+  EXPECT_EQ(port.joins, 2);
+  EXPECT_EQ(port.removes, 1);
+  EXPECT_EQ(port.joinedMulticastInterfaceCount(), 1U);
+}
+}  // namespace

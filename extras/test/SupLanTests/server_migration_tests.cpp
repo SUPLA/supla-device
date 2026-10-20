@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include <gtest/gtest.h>
+#include <supla/suplan/suplan_server_migration.h>
 #include <simple_time.h>
 #include <crypto_test_hooks.h>
 #include <supla/channels/channel.h>
@@ -26,6 +27,24 @@ class MigrationConfig : public KeyValue {
  public:
   using KeyValue::getBlobSize;
   bool init() override { return true; }
+  ConfigIterationResult forEachKey(const char *filter,
+      ConfigKeyCallback callback, void *ctx) override {
+    return failEnumeration ? ConfigIterationResult::ERROR
+                           : KeyValue::forEachKey(filter, callback, ctx);
+  }
+  int getBlobSize(const char *key) override {
+    int size = KeyValue::getBlobSize(key);
+    if (strstr(key, "hvac_cfg2") || strstr(key, "cnt_cfg2") ||
+        strstr(key, "valve_cfg2") || !strncmp(key, "sl-peer-", 8) ||
+        !strncmp(key, "slb_", 4)) {
+      ++recordSizeQueries;
+      if (size < 0) ++missingRecordQueries;
+    }
+    return size;
+  }
+  bool failEnumeration = false;
+  int recordSizeQueries = 0;
+  int missingRecordQueries = 0;
   bool commit() override {
     ++commits;
     if (commits == failCommit) return false;
@@ -450,4 +469,42 @@ TEST_F(ServerMigrationTests, LegacyServiceBaselineDoesNotGuessDiscoveryOrigin) {
   EXPECT_EQ(stored.referenceNamespace,
             Control::HvacReferenceNamespace::LOCAL_CHANNEL_NUMBER);
   EXPECT_EQ(stored.references[1].local.isSet, 0);
+}
+
+TEST_F(ServerMigrationTests, InventoryDoesNotProbeMissingKeysAndCoversSlot254) {
+  config.recordSizeQueries = config.missingRecordQueries = 0;
+  EXPECT_FALSE(ServerMigration::hasServerState(&config));
+  EXPECT_EQ(config.recordSizeQueries, 0);
+  install();
+  auto hvac = config.get<Control::HvacStoredConfigV2>("1_hvac_cfg2");
+  config.put("254_hvac_cfg2", hvac);
+  const char oldPeer[] = {1, 2, 3};
+  ASSERT_TRUE(config.setBlob("sl-peer-254", oldPeer, sizeof(oldPeer)));
+  ASSERT_TRUE(config.commit());
+  config.missingRecordQueries = 0;
+  ASSERT_EQ(accept(next()), SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(config.missingRecordQueries, 0);
+  auto migrated = config.get<Control::HvacStoredConfigV2>("254_hvac_cfg2");
+  EXPECT_EQ(migrated.referenceNamespace,
+            Control::HvacReferenceNamespace::LOCAL_CHANNEL_NUMBER);
+  EXPECT_EQ(migrated.references[1].local.isSet, 0);
+  EXPECT_LT(config.getBlobSize("sl-peer-254"), 0);
+}
+
+TEST_F(ServerMigrationTests,
+       EnumerationErrorOrWrongTypeCannotReleaseMigration) {
+  install();
+  config.failEnumeration = true;
+  ASSERT_EQ(accept(next()), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
+  EXPECT_FALSE(identity.serverSyncComplete());
+  config.failEnumeration = false;
+  ASSERT_EQ(accept(next()), SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  EXPECT_TRUE(identity.serverSyncComplete());
+  ASSERT_TRUE(config.setString("254_hvac_cfg2", "damaged"));
+  ASSERT_TRUE(config.commit());
+  auto another = next();
+  another.DeviceId = 303;
+  EXPECT_EQ(accept(another), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
+  EXPECT_FALSE(identity.serverSyncComplete());
 }

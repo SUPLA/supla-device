@@ -74,7 +74,7 @@ class ResourceBindingManager {
   bool loaded_ = false;
   bool intentOverflow_ = false;
   uint32_t cleanupNextMs_ = 0;
-  void load();
+  bool load();
   bool persist(uint8_t set, const uint8_t *record, size_t length);
   bool validateBody(uint8_t peer, const uint8_t *body, size_t size,
                     bool authorization = true) const;

@@ -16,18 +16,19 @@
       "limits": {
         "host": 72,
         "avr": 48,
-        "esp8266": 56,
-        "esp32": 56
-      }
+        "esp8266": 64,
+        "esp32": 64
+      },
+      "reason": "ADR-017: independent per-Channel D2D validity; actual target ABI includes padding. Host uses existing padding."
     },
     {
       "name": "Supla::ChannelElement",
       "header": "supla/channel_element.h",
       "limits": {
         "host": 128,
-        "avr": 62,
-        "esp8266": 88,
-        "esp32": 88
+        "avr": 63,
+        "esp8266": 96,
+        "esp32": 96
       }
     },
     {
@@ -55,9 +56,9 @@
       "header": "supla/control/action_trigger.h",
       "limits": {
         "host": 192,
-        "avr": 97,
-        "esp8266": 136,
-        "esp32": 136
+        "avr": 98,
+        "esp8266": 144,
+        "esp32": 144
       },
       "reason": "Includes the accepted main 2fbd72a3 layout correction; SupLAN recognition adds no object bytes."
     },
@@ -66,9 +67,9 @@
       "header": "supla/control/relay.h",
       "limits": {
         "host": 224,
-        "avr": 127,
-        "esp8266": 168,
-        "esp32": 168
+        "avr": 129,
+        "esp8266": 176,
+        "esp32": 176
       }
     },
     {
@@ -76,9 +77,9 @@
       "header": "supla/control/bistable_relay.h",
       "limits": {
         "host": 256,
-        "avr": 142,
-        "esp8266": 184,
-        "esp32": 184
+        "avr": 144,
+        "esp8266": 192,
+        "esp32": 192
       }
     },
     {
@@ -86,9 +87,9 @@
       "header": "supla/control/roller_shutter.h",
       "limits": {
         "host": 256,
-        "avr": 140,
-        "esp8266": 184,
-        "esp32": 184
+        "avr": 141,
+        "esp8266": 192,
+        "esp32": 192
       }
     },
     {
@@ -106,9 +107,9 @@
       "header": "supla/control/lighting_pwm_base.h",
       "limits": {
         "host": 312,
-        "avr": 211,
-        "esp8266": 248,
-        "esp32": 248
+        "avr": 212,
+        "esp8266": 256,
+        "esp32": 256
       }
     },
     {
@@ -116,9 +117,9 @@
       "header": "supla/control/rgbw_base.h",
       "limits": {
         "host": 312,
-        "avr": 211,
-        "esp8266": 248,
-        "esp32": 248
+        "avr": 212,
+        "esp8266": 256,
+        "esp32": 256
       }
     },
     {
@@ -126,9 +127,9 @@
       "header": "supla/control/dimmer_base.h",
       "limits": {
         "host": 312,
-        "avr": 211,
-        "esp8266": 248,
-        "esp32": 248
+        "avr": 212,
+        "esp8266": 256,
+        "esp32": 256
       }
     },
     {
@@ -136,9 +137,9 @@
       "header": "supla/control/valve_base.h",
       "limits": {
         "host": 320,
-        "avr": 241,
-        "esp8266": 272,
-        "esp32": 272
+        "avr": 242,
+        "esp8266": 280,
+        "esp32": 280
       },
       "reason": "M4 canonical 20 x 5-byte references replace 20 x 1-byte local numbers; durability lifecycle adds 8 bytes (7 on AVR)."
     },
@@ -147,9 +148,9 @@
       "header": "supla/control/roller_shutter_interface.h",
       "limits": {
         "host": 208,
-        "avr": 115,
-        "esp8266": 152,
-        "esp32": 152
+        "avr": 116,
+        "esp8266": 160,
+        "esp32": 160
       }
     },
     {
@@ -157,9 +158,9 @@
       "header": "supla/sensor/general_purpose_channel_base.h",
       "limits": {
         "host": 256,
-        "avr": 174,
-        "esp8266": 208,
-        "esp32": 208
+        "avr": 175,
+        "esp8266": 216,
+        "esp32": 216
       }
     },
     {
@@ -167,9 +168,9 @@
       "header": "supla/sensor/general_purpose_measurement.h",
       "limits": {
         "host": 256,
-        "avr": 174,
-        "esp8266": 208,
-        "esp32": 208
+        "avr": 175,
+        "esp8266": 216,
+        "esp32": 216
       }
     },
     {
@@ -177,9 +178,9 @@
       "header": "supla/sensor/general_purpose_meter.h",
       "limits": {
         "host": 288,
-        "avr": 189,
-        "esp8266": 232,
-        "esp32": 232
+        "avr": 190,
+        "esp8266": 240,
+        "esp32": 240
       }
     },
     {
@@ -187,9 +188,9 @@
       "header": "supla/sensor/therm_hygro_meter.h",
       "limits": {
         "host": 136,
-        "avr": 73,
-        "esp8266": 104,
-        "esp32": 104
+        "avr": 74,
+        "esp8266": 112,
+        "esp32": 112
       }
     },
     {
@@ -197,9 +198,9 @@
       "header": "supla/sensor/thermometer.h",
       "limits": {
         "host": 144,
-        "avr": 75,
-        "esp8266": 104,
-        "esp32": 104
+        "avr": 76,
+        "esp8266": 112,
+        "esp32": 112
       }
     },
     {
@@ -207,9 +208,9 @@
       "header": "supla/sensor/hygro_meter.h",
       "limits": {
         "host": 136,
-        "avr": 73,
-        "esp8266": 104,
-        "esp32": 104
+        "avr": 74,
+        "esp8266": 112,
+        "esp32": 112
       }
     },
     {
@@ -217,9 +218,9 @@
       "header": "supla/sensor/therm_hygro_press_meter.h",
       "limits": {
         "host": 208,
-        "avr": 121,
-        "esp8266": 160,
-        "esp32": 160
+        "avr": 122,
+        "esp8266": 176,
+        "esp32": 176
       }
     },
     {
@@ -227,9 +228,9 @@
       "header": "supla/sensor/therm_press_meter.h",
       "limits": {
         "host": 208,
-        "avr": 121,
-        "esp8266": 160,
-        "esp32": 160
+        "avr": 122,
+        "esp8266": 176,
+        "esp32": 176
       }
     },
     {
@@ -237,9 +238,9 @@
       "header": "supla/sensor/electricity_meter.h",
       "limits": {
         "host": 736,
-        "avr": 662,
-        "esp8266": 704,
-        "esp32": 704
+        "avr": 663,
+        "esp8266": 712,
+        "esp32": 712
       },
       "reason": "Combines main 2fbd72a3 (+8 bytes) with the existing SupLAN ChannelExtended identity layout (+8 bytes relative to main)."
     },
@@ -248,9 +249,9 @@
       "header": "supla/sensor/one_phase_electricity_meter.h",
       "limits": {
         "host": 736,
-        "avr": 662,
-        "esp8266": 704,
-        "esp32": 704
+        "avr": 663,
+        "esp8266": 712,
+        "esp32": 712
       },
       "reason": "Combines main 2fbd72a3 (+8 bytes) with the existing SupLAN ChannelExtended identity layout (+8 bytes relative to main)."
     },
@@ -259,9 +260,9 @@
       "header": "supla/sensor/binary_base.h",
       "limits": {
         "host": 168,
-        "avr": 107,
-        "esp8266": 136,
-        "esp32": 136
+        "avr": 109,
+        "esp8266": 144,
+        "esp32": 144
       }
     },
     {
@@ -269,9 +270,9 @@
       "header": "supla/sensor/binary.h",
       "limits": {
         "host": 192,
-        "avr": 118,
-        "esp8266": 152,
-        "esp32": 152
+        "avr": 121,
+        "esp8266": 160,
+        "esp32": 160
       }
     },
     {
@@ -279,9 +280,9 @@
       "header": "supla/sensor/virtual_binary.h",
       "limits": {
         "host": 192,
-        "avr": 117,
-        "esp8266": 152,
-        "esp32": 152
+        "avr": 119,
+        "esp8266": 160,
+        "esp32": 160
       }
     },
     {
@@ -289,9 +290,9 @@
       "header": "supla/sensor/virtual_impulse_counter.h",
       "limits": {
         "host": 160,
-        "avr": 81,
-        "esp8266": 120,
-        "esp32": 120
+        "avr": 82,
+        "esp8266": 128,
+        "esp32": 128
       }
     },
     {
@@ -299,9 +300,9 @@
       "header": "supla/sensor/impulse_counter.h",
       "limits": {
         "host": 192,
-        "avr": 101,
-        "esp8266": 144,
-        "esp32": 144
+        "avr": 102,
+        "esp8266": 152,
+        "esp32": 152
       }
     },
     {
@@ -309,9 +310,9 @@
       "header": "supla/sensor/pressure.h",
       "limits": {
         "host": 128,
-        "avr": 66,
-        "esp8266": 96,
-        "esp32": 96
+        "avr": 67,
+        "esp8266": 104,
+        "esp32": 104
       }
     },
     {
@@ -319,9 +320,9 @@
       "header": "supla/sensor/wind.h",
       "limits": {
         "host": 128,
-        "avr": 66,
-        "esp8266": 96,
-        "esp32": 96
+        "avr": 67,
+        "esp8266": 104,
+        "esp32": 104
       }
     },
     {
@@ -329,9 +330,9 @@
       "header": "supla/sensor/rain.h",
       "limits": {
         "host": 128,
-        "avr": 66,
-        "esp8266": 96,
-        "esp32": 96
+        "avr": 67,
+        "esp8266": 104,
+        "esp32": 104
       }
     },
     {
@@ -339,9 +340,9 @@
       "header": "supla/sensor/distance.h",
       "limits": {
         "host": 136,
-        "avr": 70,
-        "esp8266": 96,
-        "esp32": 96
+        "avr": 71,
+        "esp8266": 104,
+        "esp32": 104
       }
     },
     {
@@ -349,9 +350,9 @@
       "header": "supla/sensor/weight.h",
       "limits": {
         "host": 144,
-        "avr": 70,
-        "esp8266": 104,
-        "esp32": 104
+        "avr": 71,
+        "esp8266": 112,
+        "esp32": 112
       }
     },
     {
@@ -369,9 +370,9 @@
       "header": "supla/sensor/virtual_thermometer.h",
       "limits": {
         "host": 152,
-        "avr": 79,
-        "esp8266": 112,
-        "esp32": 112
+        "avr": 80,
+        "esp8266": 120,
+        "esp32": 120
       }
     },
     {
@@ -379,9 +380,9 @@
       "header": "supla/sensor/virtual_therm_hygro_meter.h",
       "limits": {
         "host": 152,
-        "avr": 81,
-        "esp8266": 120,
-        "esp32": 120
+        "avr": 82,
+        "esp8266": 128,
+        "esp32": 128
       }
     },
     {
@@ -389,9 +390,9 @@
       "header": "supla/sensor/virtual_hygromometer.h",
       "limits": {
         "host": 144,
-        "avr": 77,
-        "esp8266": 112,
-        "esp32": 112
+        "avr": 78,
+        "esp8266": 120,
+        "esp32": 120
       }
     },
     {
@@ -399,9 +400,9 @@
       "header": "supla/sensor/multi_ds_sensor.h",
       "limits": {
         "host": 184,
-        "avr": 93,
-        "esp8266": 144,
-        "esp32": 144
+        "avr": 94,
+        "esp8266": 152,
+        "esp32": 152
       }
     },
     {
@@ -419,9 +420,9 @@
       "header": "supla/sensor/container.h",
       "limits": {
         "host": 256,
-        "avr": 181,
-        "esp8266": 216,
-        "esp32": 216
+        "avr": 182,
+        "esp8266": 224,
+        "esp32": 224
       },
       "reason": "M4 canonical references add 40 bytes, full wire reserved scalar block 32 bytes, durability lifecycle 8 bytes (7 on AVR)."
     },
@@ -430,9 +431,9 @@
       "header": "supla/sensor/temperature_drop_sensor.h",
       "limits": {
         "host": 376,
-        "avr": 270,
-        "esp8266": 320,
-        "esp32": 320
+        "avr": 272,
+        "esp8266": 328,
+        "esp32": 328
       }
     },
     {
@@ -537,10 +538,11 @@
       "name": "Supla::Protocol::SupLan",
       "header": "supla/protocol/suplan_protocol.h",
       "limits": {
-        "host": 104,
-        "esp8266": 52,
-        "esp32": 52
-      }
+        "host": 112,
+        "esp8266": 60,
+        "esp32": 60
+      },
+      "reason": "Allocation-free diagnostic events; two bounded uint32_t rate-limit fields (+8 B)."
     },
     {
       "name": "Supla::Device::ServerIdentity",

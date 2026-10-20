@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gtest/gtest.h>
+#include <config_key_collector.h>
 #include <nvs_config.h>
 
 esp_err_t fakeNvsCommitResult = ESP_OK;
@@ -118,4 +119,83 @@ TEST_F(NvsConfigResetTests, SuccessfulFallbackCannotConfirmOrRedirectReset) {
   EXPECT_FALSE(config.removeAllChecked());
   EXPECT_STREQ(fakeNvsErasedPartition, "suplanvs");
   EXPECT_EQ(fakeNvsPartitionEraseCalls, 2);
+}
+
+class NvsConfigIterationTests : public testing::Test {
+ protected:
+  void SetUp() override {
+    fakeNvsEntries.clear();
+    fakeNvsFindError = fakeNvsInfoError = fakeNvsNextError = ESP_OK;
+    fakeNvsIteratorActive = false;
+    fakeNvsIteratorReleases = 0;
+  }
+  void TearDown() override {
+    EXPECT_FALSE(fakeNvsIteratorActive);
+  }
+};
+
+TEST_F(NvsConfigIterationTests,
+       FiltersNamespaceSubstringAndReportsNativeTypes) {
+  fakeNvsEntries = {{"other", "hvac_ignore", NVS_TYPE_BLOB},
+      {"supla", "1_hvac_cfg2", NVS_TYPE_BLOB},
+      {"supla", "sl-text", NVS_TYPE_STR},
+      {"supla", "i8", NVS_TYPE_I8}, {"supla", "u8", NVS_TYPE_U8},
+      {"supla", "i32", NVS_TYPE_I32}, {"supla", "u32", NVS_TYPE_U32},
+      {"supla", "native-u64", NVS_TYPE_U64}};
+  TestNvsConfig config;
+  ConfigKeyCollector all;
+  using Type = Supla::ConfigValueType;
+  using Result = Supla::ConfigIterationResult;
+  EXPECT_EQ(config.forEachKey("", all.collect, &all), Result::COMPLETED);
+  EXPECT_EQ(all.visits, 7);
+  EXPECT_EQ(fakeNvsEnumeratedPartition, "suplanvs");
+  EXPECT_EQ(fakeNvsEnumeratedNamespace, "supla");
+  EXPECT_EQ(all.keys.at("1_hvac_cfg2"), Type::BLOB);
+  EXPECT_EQ(all.keys.at("sl-text"), Type::STRING);
+  EXPECT_EQ(all.keys.at("i8"), Type::INT8);
+  EXPECT_EQ(all.keys.at("u8"), Type::UINT8);
+  EXPECT_EQ(all.keys.at("i32"), Type::INT32);
+  EXPECT_EQ(all.keys.at("u32"), Type::UINT32);
+  EXPECT_EQ(all.keys.at("native-u64"), Type::UNKNOWN);
+  ConfigKeyCollector match;
+  EXPECT_EQ(config.forEachKey("hvac_", match.collect, &match),
+              Result::COMPLETED);
+  EXPECT_EQ(match.visits, 1);
+  ConfigKeyCollector absent;
+  EXPECT_EQ(config.forEachKey("HVAC", absent.collect, &absent),
+              Result::COMPLETED);
+  EXPECT_EQ(absent.visits, 0);
+  config.useDefaultPartition();
+  EXPECT_EQ(config.forEachKey("no-match", absent.collect, &absent),
+            Result::COMPLETED);
+  EXPECT_EQ(fakeNvsEnumeratedPartition, "nvs");
+}
+
+TEST_F(NvsConfigIterationTests, EmptyStopAndBackendErrorsAreDistinct) {
+  TestNvsConfig config;
+  ConfigKeyCollector found;
+  using Result = Supla::ConfigIterationResult;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::COMPLETED);
+  EXPECT_EQ(found.visits, 0);
+  EXPECT_EQ(config.forEachKey(nullptr, found.collect, &found), Result::ERROR);
+  EXPECT_EQ(config.forEachKey("", nullptr, &found), Result::ERROR);
+  fakeNvsEntries = {{"supla", "first", NVS_TYPE_BLOB},
+                    {"supla", "second", NVS_TYPE_BLOB}};
+  found.stopAfter = 1;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::STOPPED);
+  EXPECT_EQ(found.visits, 1);
+  EXPECT_FALSE(fakeNvsIteratorActive);
+  found = {};
+  fakeNvsFindError = ESP_FAIL;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::ERROR);
+  EXPECT_EQ(found.visits, 0);
+  fakeNvsFindError = ESP_OK;
+  fakeNvsInfoError = ESP_FAIL;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::ERROR);
+  EXPECT_EQ(found.visits, 0);
+  fakeNvsInfoError = ESP_OK;
+  fakeNvsNextError = ESP_FAIL;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::ERROR);
+  EXPECT_EQ(found.visits, 1);  // partial visits do not imply completion
+  EXPECT_FALSE(fakeNvsIteratorActive);
 }

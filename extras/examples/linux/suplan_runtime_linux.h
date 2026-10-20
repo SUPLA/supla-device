@@ -48,7 +48,10 @@ class LinuxSupLanRuntime {
   uint8_t primaryPeer_ = 0;
   uint8_t actionPeer_ = 1;
   SupLan::OpenSslCryptoPort crypto_;
-  SupLan::LinuxUdpPort datagrams_;
+  class DiagnosticUdpPort : public SupLan::LinuxUdpPort {
+    void multicastMembershipChanged(uint32_t address, int8_t result) override;
+  };
+  DiagnosticUdpPort datagrams_;
   SupLan::PeerTable peers_;
   Protocol::SupLanResourceMapping mapping_ = {};
   std::unique_ptr<TransportLifecycle> transport_;

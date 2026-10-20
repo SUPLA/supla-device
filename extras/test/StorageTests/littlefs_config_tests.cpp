@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gtest/gtest.h>
+#include <config_key_collector.h>
 #include <LittleFS.h>
 #include <supla/storage/littlefs_config.h>
+#include <supla/suplan/suplan_server_migration.h>
 
 #include <array>
 #include <cstring>
@@ -302,4 +304,140 @@ TEST_F(LittleFsConfigTests, EraseKeyVerificationFailureDoesNotAutoFormat) {
   LittleFS.failBeginCall = LittleFS.beginCalls + 2;
   EXPECT_FALSE(config.eraseKey(BlobKey));
   EXPECT_TRUE(LittleFS.exists("/supla/other"));
+}
+
+TEST_F(LittleFsConfigTests, IteratesMemoryAndFilesOnceWithSubstringFilter) {
+  Supla::LittleFsConfig config;
+  ASSERT_TRUE(config.setUInt32("other", 42));
+  ASSERT_TRUE(config.setBlob("1_hvac_cfg2", "abc", 3));
+  const std::array<char, 60> blob = {};
+  ASSERT_TRUE(config.setBlob("254_hvac_cfg2", blob.data(), blob.size()));
+  ASSERT_TRUE(config.setBlob("sl-peer-254", blob.data(), blob.size()));
+  // Simulate a stale file shadowed by a current in-memory value.
+  const uint8_t data[] = {1, 2, 3};
+  writeFile("/supla/1_hvac_cfg2", data, sizeof(data));
+  const int mounts = LittleFS.beginCalls;
+  ConfigKeyCollector found;
+  EXPECT_EQ(config.forEachKey("hvac_", found.collect, &found),
+            Supla::ConfigIterationResult::COMPLETED);
+  EXPECT_EQ(LittleFS.beginCalls, mounts + 1);
+  EXPECT_EQ(found.visits, 2);
+  EXPECT_EQ(found.keys.size(), 2u);
+  EXPECT_EQ(found.keys.at("254_hvac_cfg2"), Supla::ConfigValueType::BLOB);
+  ConfigKeyCollector all;
+  EXPECT_EQ(config.forEachKey("", all.collect, &all),
+            Supla::ConfigIterationResult::COMPLETED);
+  EXPECT_EQ(all.visits, 4);
+}
+
+TEST_F(LittleFsConfigTests, StopFromMemoryDoesNotMountAndStopFromFileWorks) {
+  Supla::LittleFsConfig config;
+  ASSERT_TRUE(config.setUInt8("memory", 1));
+  const std::array<char, 60> blob = {};
+  ASSERT_TRUE(config.setBlob("file", blob.data(), blob.size()));
+  ConfigKeyCollector found;
+  found.stopAfter = 1;
+  int mounts = LittleFS.beginCalls;
+  EXPECT_EQ(config.forEachKey("memory", found.collect, &found),
+            Supla::ConfigIterationResult::STOPPED);
+  EXPECT_EQ(LittleFS.beginCalls, mounts);
+  found = {};
+  found.stopAfter = 1;
+  EXPECT_EQ(config.forEachKey("file", found.collect, &found),
+            Supla::ConfigIterationResult::STOPPED);
+  EXPECT_EQ(found.visits, 1);
+  // Iterator cleanup must leave regular Config access usable.
+  std::array<char, 60> loaded = {};
+  EXPECT_TRUE(config.getBlob("file", loaded.data(), loaded.size()));
+}
+
+TEST_F(LittleFsConfigTests, EmptyFailureAndInvalidArgumentsAreDistinct) {
+  Supla::LittleFsConfig config;
+  ConfigKeyCollector found;
+  using Result = Supla::ConfigIterationResult;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::COMPLETED);
+  EXPECT_EQ(found.visits, 0);
+  EXPECT_EQ(config.forEachKey(nullptr, found.collect, &found), Result::ERROR);
+  EXPECT_EQ(config.forEachKey("", nullptr, &found), Result::ERROR);
+  const uint8_t data[] = {42};
+  writeFile("/supla/preserved", data, sizeof(data));
+  LittleFS.beginResult = false;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::ERROR);
+  EXPECT_TRUE(LittleFS.exists("/supla/preserved"));  // no implicit format
+  LittleFS.beginResult = true;
+  LittleFS.failOpenPath = "/supla";
+  EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::ERROR);
+}
+
+TEST_F(LittleFsConfigTests,
+       MigrationDetectionMountsOnceInsteadOfProbing1275Keys) {
+  Supla::LittleFsConfig config;
+  int mounts = LittleFS.beginCalls;
+  EXPECT_FALSE(Supla::Device::ServerMigration::hasServerState(&config));
+  EXPECT_EQ(LittleFS.beginCalls, mounts + 1);
+  const std::array<char, 60> peer = {};
+  ASSERT_TRUE(config.setBlob("sl-peer-254", peer.data(), peer.size()));
+  mounts = LittleFS.beginCalls;
+  EXPECT_TRUE(Supla::Device::ServerMigration::hasServerState(&config));
+  EXPECT_EQ(LittleFS.beginCalls, mounts + 1);
+}
+
+TEST_F(LittleFsConfigTests, UnreadableUnrelatedFileDoesNotHideServerPeer) {
+  Supla::LittleFsConfig config;
+  const std::array<char, 60> blob = {};
+  ASSERT_TRUE(config.setBlob("aaa", blob.data(), blob.size()));
+  ASSERT_TRUE(config.setBlob("sl-peer-254", blob.data(), blob.size()));
+  LittleFS.failOpenPath = "/supla/aaa";
+  ConfigKeyCollector found;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found),
+            Supla::ConfigIterationResult::COMPLETED);
+  EXPECT_EQ(found.visits, 2);
+  EXPECT_EQ(found.keys.at("sl-peer-254"), Supla::ConfigValueType::BLOB);
+  EXPECT_TRUE(Supla::Device::ServerMigration::hasServerState(&config));
+  EXPECT_EQ(LittleFS.openDirectories, 0);
+  std::array<char, 60> readable = {};
+  EXPECT_TRUE(config.getBlob("sl-peer-254", readable.data(), readable.size()));
+}
+
+TEST_F(LittleFsConfigTests, DirectoryReadAndCloseErrorsCannotReportCompletion) {
+  Supla::LittleFsConfig config;
+  const std::array<char, 60> blob = {};
+  ASSERT_TRUE(config.setBlob("aaa", blob.data(), blob.size()));
+  ASSERT_TRUE(config.setBlob("sl-peer-254", blob.data(), blob.size()));
+  // Before/after entries and at expected EOF.
+  for (int failingRead : {1, 2, 3}) {
+    LittleFS.directoryReadCalls = 0;
+    LittleFS.failDirectoryReadCall = failingRead;
+    ConfigKeyCollector found;
+    EXPECT_EQ(config.forEachKey("", found.collect, &found),
+              Supla::ConfigIterationResult::ERROR);
+    EXPECT_EQ(LittleFS.openDirectories, 0);
+    LittleFS.directoryReadCalls = 0;
+    EXPECT_TRUE(Supla::Device::ServerMigration::hasServerState(&config));
+  }
+  LittleFS.failDirectoryReadCall = -1;
+  LittleFS.failDirectoryClose = true;
+  ConfigKeyCollector found;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found),
+            Supla::ConfigIterationResult::ERROR);
+  EXPECT_EQ(LittleFS.openDirectories, 0);
+  EXPECT_TRUE(Supla::Device::ServerMigration::hasServerState(&config));
+}
+
+TEST_F(LittleFsConfigTests,
+       MissingDirectoryIsEmptyAndStopClosesNativeIterator) {
+  Supla::LittleFsConfig config;
+  ConfigKeyCollector found;
+  LittleFS.directoryMissing = true;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found),
+            Supla::ConfigIterationResult::COMPLETED);
+  EXPECT_EQ(found.visits, 0);
+  LittleFS.directoryMissing = false;
+  const std::array<char, 60> blob = {};
+  ASSERT_TRUE(config.setBlob("sl-peer-254", blob.data(), blob.size()));
+  found.stopAfter = 1;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found),
+            Supla::ConfigIterationResult::STOPPED);
+  EXPECT_EQ(found.visits, 1);
+  EXPECT_EQ(LittleFS.openDirectories, 0);
 }

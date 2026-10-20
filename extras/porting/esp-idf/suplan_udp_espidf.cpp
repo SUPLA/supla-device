@@ -267,6 +267,7 @@ bool EspIdfUdpPort::refreshMulticastInterfaces() {
       joinedAddresses_[move - 1] = joinedAddresses_[move];
     }
     --joinedCount_;
+    multicastMembershipChanged(membership.imr_interface.s_addr, -1);
   }
 
   for (size_t current = 0; current < count; ++current) {
@@ -281,11 +282,18 @@ bool EspIdfUdpPort::refreshMulticastInterfaces() {
       continue;
     }
     membership.imr_interface.s_addr = addresses[current];
-    if (lwip_setsockopt(discoverySocket_ >= 0 ? discoverySocket_ : socket_,
-                        IPPROTO_IP, IP_ADD_MEMBERSHIP,
-                        &membership, sizeof(membership)) == 0 ||
-        errno == EADDRINUSE) {
+    const bool joined = lwip_setsockopt(
+        discoverySocket_ >= 0 ? discoverySocket_ : socket_,
+        IPPROTO_IP, IP_ADD_MEMBERSHIP, &membership, sizeof(membership)) == 0 ||
+        errno == EADDRINUSE;
+    if (joined) {
       joinedAddresses_[joinedCount_++] = addresses[current];
+      multicastMembershipChanged(addresses[current], 1);
+    } else {
+      bool known = false;
+      for (size_t old = 0; old < interfaceCount_; ++old)
+        known = known || interfaceAddresses_[old] == addresses[current];
+      if (!known) multicastMembershipChanged(addresses[current], 0);
     }
   }
 

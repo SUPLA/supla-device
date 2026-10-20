@@ -29,6 +29,11 @@ class EspIdfUdpPort : public DatagramPort {
   size_t multicastInterfaceCount() const;
   size_t joinedMulticastInterfaceCount() const;
 
+ protected:
+  // Observational only: -1 removed, 0 first join failure, 1 joined.
+  // No SDK logger dependency or additional port state.
+  virtual void multicastMembershipChanged(uint32_t, int8_t) {}
+
  private:
   bool refreshMulticastInterfaces();
 

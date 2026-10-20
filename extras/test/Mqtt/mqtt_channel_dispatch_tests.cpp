@@ -3803,3 +3803,32 @@ TEST_F(MqttChannelDispatchTests,
       "true"));
   EXPECT_FALSE(pair.getSecondaryChannel()->getValueBool());
 }
+
+TEST_F(MqttChannelDispatchTests, HandlesChannelNumbersAboveChannelCount) {
+  ChannelElementMock relay;
+  relay.getChannel()->setType(SUPLA_CHANNELTYPE_RELAY);
+  relay.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+  ChannelElementMock dimmer;
+  dimmer.getChannel()->setType(SUPLA_CHANNELTYPE_DIMMER);
+  dimmer.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
+  ASSERT_TRUE(dimmer.getChannel()->setChannelNumber(112));
+
+  SuplaDeviceClass sd;
+  NiceMock<MqttTestMock> mqtt(&sd);
+  initMqtt(sd, mqtt);
+  mqtt.setRegisteredAndReady();
+
+  EXPECT_CALL(mqtt, publishTest(_, _, _, _)).Times(AtLeast(0));
+  EXPECT_CALL(mqtt, subscribeTest(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(mqtt,
+              publishTest(StrEq(expectedDiscoveryTopic("light", 112)), _, _, _))
+      .Times(AtLeast(1));
+  EXPECT_CALL(mqtt, subscribeTest(HasSubstr("/channels/112/"), _))
+      .Times(AtLeast(1));
+  mqtt.publishChannelSetup(112);
+
+  // gaps between channel numbers are skipped
+  EXPECT_CALL(mqtt, publishTest(HasSubstr("/channels/5/"), _, _, _)).Times(0);
+  EXPECT_CALL(mqtt, publishTest(HasSubstr("_5_0/"), _, _, _)).Times(0);
+  mqtt.publishChannelSetup(5);
+}

@@ -1470,3 +1470,63 @@ TEST(SupLanProvisionedRead, SourceFirstBindingFeedsRealRelayAndOfflineRestart) {
   }
 }
 }  // namespace
+
+TEST_F(ServerAssociationTests, DeviceIdMigrationCannotReloadOldPeers) {
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_EQ(dst(), SUPLA_SUPLAN_RESULT_OK);
+  const auto epoch = identity.rootEpoch();
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities changed = {};
+  changed.DeviceId = 303;
+  changed.ChannelCount = 1;
+  changed.ChannelId[0] = 701;
+  ASSERT_EQ(identity.accept(changed).Result, SUPLA_SUPLAN_RESULT_OK);
+  associations.identityChanged();
+  EXPECT_LT(config.getBlobSize("sl-peer-0"), 0);
+  EXPECT_LT(config.getBlobSize("sl-peer-1"), 0);
+  identity.syncDone();
+  reboot();
+  EXPECT_EQ(identity.rootEpoch(), epoch);
+  for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
+    EXPECT_EQ(peers.get(i), nullptr);
+}
+
+TEST_F(ServerAssociationTests, ExplicitServerResetRejectsCollidingOldPeerIds) {
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_EQ(dst(), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_TRUE(ServerIdentity::configuredServerChanged(&config));
+  for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
+    EXPECT_EQ(peers.get(i), nullptr);
+  reboot();
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities same = {};
+  same.DeviceId = 101;
+  same.ChannelCount = 1;
+  same.ChannelId[0] = 501;
+  ASSERT_EQ(identity.accept(same).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  reboot();
+  for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
+    EXPECT_EQ(peers.get(i), nullptr);
+}
+
+TEST_F(ServerAssociationTests, ServerAddressChangePreservesLocalReadDemand) {
+  PeerContext context = {kAuthorityLocal, 0x1234,
+      {kNodeIdLocal, 1}, {kNodeIdLocal, 2}, 123, 1};
+  uint8_t key[32];
+  memset(key, 0x61, sizeof(key));
+  AclEntry expected = {{kResourceTypeChannel, (1u << 16) | 7},
+                       kPermissionRead};
+  uint8_t index = 0xff;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &expected, 1, &index, true));
+  ASSERT_TRUE(runtime.requestRead(index, expected.resource));
+  runtime.setLocalAddress({kNodeIdDevice, 303});
+  EXPECT_TRUE(runtime.readNeedsRefresh(index, expected.resource));
+  EXPECT_TRUE(peers.authorize(index, expected.resource, kPermissionRead));
+  ASSERT_TRUE(ServerIdentity::configuredServerChanged(&config));
+  EXPECT_TRUE(runtime.readNeedsRefresh(index, expected.resource));
+  EXPECT_TRUE(peers.authorize(index, expected.resource, kPermissionRead));
+  EXPECT_TRUE(runtime.requestRead(index, expected.resource));
+}

@@ -57,6 +57,12 @@ bool ChannelHandle::configure(uint32_t id, uint8_t permissions) {
   // Reconciliation happens at the loop boundary, never in a constructor.
   return true;
 }
+void ChannelHandle::invalidateServerScope() {
+  // Numeric IDs belong to the old SERVER scope. The application must configure
+  // these handles explicitly again; admission retries must not recreate them.
+  for (auto handle = first_; handle; handle = handle->next_)
+    handle->deactivate();
+}
 void ChannelHandle::deactivate() {
   CancelDispatch(this);
   active_ = false;

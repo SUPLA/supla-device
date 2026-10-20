@@ -145,7 +145,9 @@ class Config {
 
   // Supla protocol config
   virtual bool setSuplaCommProtocolEnabled(bool enabled);
+  // Explicit user provisioning. Discovery updates must use the internal path.
   virtual bool setSuplaServer(const char* server);
+  bool setSuplaServerFromDiscovery(const char* server);
   virtual bool setSuplaServerPort(int32_t port);
   virtual bool setEmail(const char* email);
   virtual bool setAuthKey(const char* authkey);

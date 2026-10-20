@@ -424,6 +424,25 @@ bool Container::isAlarmBelowLevelSet() const {
   return config.alarmBelowLevel > 0;
 }
 
+#ifndef ARDUINO_ARCH_AVR
+void Container::onServerScopeMigration() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) return;
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE];
+  generateKey(key, "cnt_cfg2");
+  ContainerStoredConfigV2 record;
+  if (cfg->getBlobSize(key) != sizeof(record) ||
+      !cfg->getBlob(key, reinterpret_cast<char *>(&record), sizeof(record)) ||
+      record.version != 2 || !record.config.valid()) return;
+  if (memcmp(&config, &record.config, sizeof(config))) {
+    config = record.config;
+    configDurable = false;
+    reconcileChannelDependencies();
+  }
+}
+
+#endif
+
 void Container::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) return;

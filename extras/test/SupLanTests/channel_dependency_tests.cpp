@@ -1301,7 +1301,7 @@ TEST(ChannelDependency, ReadonlyServerReferenceRebindsAfterIdentityRemap) {
   thermometer.getChannel()->setNewValue(20.5);
   EXPECT_EQ(hvac.getPrimaryTemp(), 2050);
 }
-TEST(ChannelDependency, ReadonlyRemoteReferenceIsPreservedAfterIdentityRemap) {
+TEST(ChannelDependency, ReadonlyForeignReferenceIsClearedAfterDeviceIdChange) {
   resetChannels();
   SimpleTime time;
   DurableHvacConfig storage;
@@ -1345,7 +1345,7 @@ TEST(ChannelDependency, ReadonlyRemoteReferenceIsPreservedAfterIdentityRemap) {
   memcpy(request.Config, &wire, sizeof(wire));
   ASSERT_EQ(hvac.handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_EQ(hvac.configuration().MainThermometer.channelId, 1001u);
+  EXPECT_EQ(hvac.configuration().MainThermometer.channelId, 0u);
   identity.syncDone();
   thermometer.getChannel()->setNewValue(20.5);
   EXPECT_EQ(hvac.getPrimaryTemp(), INT16_MIN);
@@ -2001,13 +2001,17 @@ TEST(ChannelHandle, IdentityReplacementBarrierPreventsOldLocalCallbacks) {
   update.ChannelId[1] = 802;
   ASSERT_EQ(identity.accept(update).Result, SUPLA_SUPLAN_RESULT_OK);
   ASSERT_TRUE(identity.identityTransition());
-  EXPECT_EQ(old.accessStatus(), ChannelAccessStatus::IDENTITY_UNRESOLVED);
+  EXPECT_EQ(old.accessStatus(), ChannelAccessStatus::INVALID);
   EXPECT_EQ(replacement.accessStatus(),
-            ChannelAccessStatus::IDENTITY_UNRESOLVED);
+            ChannelAccessStatus::INVALID);
   env.first.getChannel()->setNewValue(21.0);
   EXPECT_EQ(counter.count, 0);
   EXPECT_EQ(env.resources.consumerCount(), 0);
   identity.syncDone();
+  EXPECT_EQ(replacement.localChannel(), nullptr);
+  // An old-scope future ID is not implicitly rebound after numeric collision.
+  ASSERT_TRUE(replacement.configure(801, kPermissionRead));
+  ChannelHandle::iterateAll();
   EXPECT_EQ(replacement.localChannel(), env.first.getChannel());
   EXPECT_EQ(old.localChannel(), nullptr);
   EXPECT_FALSE(old.canRead());

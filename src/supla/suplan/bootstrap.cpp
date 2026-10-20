@@ -42,6 +42,9 @@ int manualCount(SuplaDeviceClass *device, bool *ready) {
   return count;
 }
 }  // namespace
+bool supLanRequested(SuplaDeviceClass *device) {
+  return find(device) || hasSupLanServerStack(device);
+}
 bool hasSupLanServerStack(SuplaDeviceClass *device) {
   bool ready;
   return manualCount(device, &ready) == 1 && ready;

@@ -24,6 +24,10 @@
 #include <supla/time.h>
 #include <supla/tools.h>
 
+#ifndef ARDUINO_ARCH_AVR
+#include <supla/suplan/suplan_server_identity.h>
+#endif
+
 namespace Supla {
 
 namespace {
@@ -365,7 +369,20 @@ bool Config::setDeviceMode(enum DeviceMode mode) {
 }
 
 bool Config::setSuplaServer(const char* server) {
-  if (strlen(server) > SUPLA_SERVER_NAME_MAXSIZE - 1) {
+  if (!server || strlen(server) > SUPLA_SERVER_NAME_MAXSIZE - 1) return false;
+#ifndef ARDUINO_ARCH_AVR
+  char previous[SUPLA_SERVER_NAME_MAXSIZE] = {};
+  const bool hadServer = getString("suplaserver", previous, sizeof(previous));
+  if (((hadServer && strcmp(previous, server)) ||
+       (!hadServer && getBlobSize("sl-identity") >= 0)) &&
+      !Supla::Device::ServerIdentity::configuredServerChanged(this))
+    return false;
+#endif
+  return setSuplaServerFromDiscovery(server);
+}
+
+bool Config::setSuplaServerFromDiscovery(const char* server) {
+  if (!server || strlen(server) > SUPLA_SERVER_NAME_MAXSIZE - 1) {
     return false;
   }
   return setString("suplaserver", server);

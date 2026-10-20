@@ -38,6 +38,9 @@ class Element {
   virtual ~Element();
   virtual bool isChannelConfigDurable() const { return true; }
   virtual void onServerIdentityTransition() {}
+#ifndef ARDUINO_ARCH_AVR
+  virtual void onServerScopeMigration() {}
+#endif
   virtual void reconcileChannelDependencies() {}
   virtual Control::HvacBase *getHvacBase() { return nullptr; }
   // Typed access without RTTI, including ATs whose button is not initialized.

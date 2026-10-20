@@ -8,7 +8,14 @@
 #include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <supla/crypto.h>
+#include <supla/suplan/suplan_server_associations.h>
+#include <supla/suplan/bootstrap.h>
+#include <supla/suplan/suplan_server_migration.h>
+#include <supla/element.h>
+#include <supla/protocol/protocol_layer.h>
+#include <supla/channels/channel_handle.h>
 #include <supla/channels/channel.h>
 #include <supla/crc16.h>
 #include <supla/device/register_device.h>
@@ -18,6 +25,8 @@
 namespace {
 const char kRootKey[] = "sl-root";
 const char kIdentityKey[] = "sl-identity";
+const char kMigrationKey[] = "sl-migration";
+using Supla::Device::ServerMigration;
 const int kRootSize = 39;
 // v1 was already an explicit ChannelNumber/ChannelId record. v2/v3 preserve
 // its layout and encode synchronized/pending-transition state respectively.
@@ -70,10 +79,31 @@ bool validIds(const TSD_SuplaDeviceIdentities &s) {
   }
   return true;
 }
+bool validMigration(const uint8_t *record, int size) {
+  if (size < ServerMigration::kPrefix + 2 ||
+      size > ServerMigration::kMaxSize || !valid(record, size) ||
+      record[0] != 1 || record[1] > 2 || record[2] > 1 ||
+      record[3] > SUPLA_CHANNELMAXCOUNT ||
+      size != ServerMigration::kPrefix + 6 * record[3] + 2 ||
+      get32(record + 4) > INT32_MAX || get32(record + 8) > INT32_MAX ||
+      (record[3] && !get32(record + 4))) return false;
+  for (int i = 0; i < record[3]; ++i) {
+    const auto entry = record + ServerMigration::kPrefix + 6 * i;
+    if (entry[0] >= SUPLA_CHANNELMAXCOUNT || entry[5] > 1 ||
+        !get32(entry + 1) || get32(entry + 1) > INT32_MAX) return false;
+    for (int j = 0; j < i; ++j) {
+      const auto prior = record + ServerMigration::kPrefix + 6 * j;
+      if (prior[0] == entry[0] || get32(prior + 1) == get32(entry + 1))
+        return false;
+    }
+  }
+  return true;
+}
 // Bounded, transient serialization storage; never a frame-sized stack array.
 struct Buffer {
   explicit Buffer(int size) : data(static_cast<uint8_t *>(calloc(size, 1))) {}
   ~Buffer() { free(data); }
+  void reset() { free(data); data = nullptr; }
   uint8_t *data;
 };
 }  // namespace
@@ -84,6 +114,8 @@ Supla::Device::ServerIdentity::ServerIdentity() {
   rootValid = identityValid = rootDurable = identityDurable = false;
   registrationPrepared = registrationValid = transition = syncComplete = false;
   identitiesAccepted = contextInvalidated = false;
+  migrationPending = fullMigration = false;
+  topologyReady = true;
 }
 
 Supla::Device::ServerIdentity::~ServerIdentity() {
@@ -177,9 +209,13 @@ void Supla::Device::ServerIdentity::load(Config *cfg) {
   rootValid = identityValid = registrationValid = registrationPrepared = false;
   rootDurable = identityDurable = false;
   transition = syncComplete = false;
+  migrationPending = fullMigration = false;
   if (!config) {
     return;
   }
+  migrationPending = config->getBlobSize(kMigrationKey) >= 0;
+  // Unknown/damaged fences remain fenced; never infer that migration finished.
+  fullMigration = migrationPending;
   uint8_t rootRecord[kRootSize] = {};
   if (config->getBlobSize(kRootKey) == kRootSize &&
       config->getBlob(kRootKey, reinterpret_cast<char *>(rootRecord),
@@ -246,7 +282,8 @@ void Supla::Device::ServerIdentity::load(Config *cfg) {
   identityValid = true;
   // Existing Channels remain usable; removed associations need cleanup/sync.
   identityDurable = !missing;
-  transition = missing || record[0] == kIdentityTransition;
+  transition = missing || record[0] == kIdentityTransition || migrationPending;
+  if (migrationPending && topologyReady) resumeMigration(false);
   SUPLA_LOG_INFO(
       "SupLAN SERVER identity loaded: device=%" PRId32
       ", channels=%u, rootEpoch=%" PRIu32,
@@ -342,6 +379,22 @@ void Supla::Device::ServerIdentity::syncDone() {
       }
       identityDurable = true;
     }
+    if (migrationPending) {
+      // Erasure must be durable before SERVER can become READY. On failure,
+      // restage the fence, so unrelated later commits cannot release it.
+      Buffer fence(ServerMigration::kMaxSize);
+      const int size = config->getBlobSize(kMigrationKey);
+      if (!fence.data || size < ServerMigration::kPrefix + 2 ||
+          size > ServerMigration::kMaxSize ||
+          !config->getBlob(kMigrationKey,
+              reinterpret_cast<char *>(fence.data), size)) return;
+      if (!config->eraseKey(kMigrationKey) || !config->commit()) {
+        config->setBlob(kMigrationKey,
+            reinterpret_cast<const char *>(fence.data), size);
+        return;
+      }
+      migrationPending = fullMigration = false;
+    }
     syncComplete = true;
     transition = false;
     identityGeneration = Supla::Channel::identityGeneration();
@@ -362,13 +415,15 @@ bool Supla::Device::ServerIdentity::persist(const char *key,
   }
   // Restore staged data on failure so an unrelated later commit cannot install
   // an unacknowledged update behind the still-valid runtime snapshot.
-  Buffer workspace(kIdentityMaxSize);
+  const int capacity = !strcmp(key, kMigrationKey)
+      ? ServerMigration::kMaxSize : kIdentityMaxSize;
+  Buffer workspace(capacity);
   auto previous = workspace.data;
   if (!previous) {
     return false;
   }
   int previousSize = config->getBlobSize(key);
-  bool saved = previousSize >= 0 && previousSize <= kIdentityMaxSize;
+  bool saved = previousSize >= 0 && previousSize <= capacity;
   if (saved && !config->getBlob(key, reinterpret_cast<char *>(previous),
                               previousSize)) {
     return false;
@@ -469,6 +524,14 @@ TDS_SuplaDeviceIdentitiesResult Supla::Device::ServerIdentity::accept(
     return result;
   }
   result.RootEpoch = rootEpoch();
+  const bool orphaned = !identityValid && config &&
+      (config->getBlobSize(kIdentityKey) >= 0 ||
+       ServerMigration::hasServerState(config));
+  const bool full = orphaned ||
+      (identityValid && deviceId != snapshot.DeviceId);
+  if (full || changed || migrationPending) {
+    if (!beginMigration(full, &snapshot)) return result;
+  }
   if (!identical || !identityDurable) {
     Buffer workspace(kIdentityMaxSize);
     auto record = workspace.data;
@@ -531,9 +594,15 @@ TDS_SuplaDeviceIdentitiesResult Supla::Device::ServerIdentity::accept(
 
 bool Supla::Device::ServerIdentity::forgetChannel(uint8_t number) {
   auto forgotten = Supla::Channel::GetByChannelNumber(number);
-  if (!forgotten || !forgotten->serverChannelId || !identityValid) {
-    return true;
+  if (!forgotten || !identityValid) {
+    return !migrationPending || beginMigration(false, nullptr, number);
   }
+  if (!forgotten->serverChannelId) {
+    // Explicit local references also require lifecycle cleanup for a Channel
+    // added since registration, before its number can be reused.
+    return beginMigration(false, nullptr, number);
+  }
+  if (!beginMigration(false, nullptr, number)) return false;
   Buffer workspace(kIdentityMaxSize);
   auto record = workspace.data;
   if (!record) {
@@ -571,7 +640,7 @@ bool Supla::Device::ServerIdentity::forgetChannel(uint8_t number) {
 }
 
 bool Supla::Device::ServerIdentity::identityAvailable() const {
-  return identityValid;
+  return identityValid && (!fullMigration || !scopeFenced());
 }
 Supla::Device::ServerChannelResolution Supla::Device::ServerIdentity::resolve(
     uint32_t channelId) const {
@@ -595,6 +664,228 @@ bool Supla::Device::ServerIdentity::reverse(uint8_t channelNumber,
     return false;
   }
   *channelId = ch->serverChannelId;
+  return true;
+}
+
+void Supla::Device::ServerIdentity::notifyMigration() {
+  ServerAssociations::scopeChanged(this);
+  if (fullScopeFenced()) Supla::ChannelHandle::invalidateServerScope();
+  for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
+       layer = layer->next()) layer->suplanIdentityChanged();
+}
+
+bool Supla::Device::ServerIdentity::configuredServerChanged(Config *cfg) {
+  if (!cfg) return false;
+  if (cfg->getBlobSize(kIdentityKey) < 0 &&
+      cfg->getBlobSize(kMigrationKey) < 0) return true;
+  if (active) {
+    if (active->config != cfg) return false;
+    return active->beginMigration(true);
+  }
+  // User provisioning can happen before normal boot identity restoration.
+  ServerIdentity temporary;
+  temporary.topologyReady = false;
+  temporary.load(cfg);
+  return temporary.beginMigration(true);
+}
+
+bool Supla::Device::ServerIdentity::configuredService(
+    Config *cfg, const char *server) {
+  if (!cfg || !server || strlen(server) >= SUPLA_SERVER_NAME_MAXSIZE)
+    return false;
+  bool scoped = cfg->getBlobSize(kIdentityKey) >= 0 ||
+      cfg->getBlobSize(kMigrationKey) >= 0;
+  for (auto layer = Supla::Protocol::ProtocolLayer::first(); !scoped && layer;
+       layer = layer->next()) scoped = supLanRequested(layer->getSdc());
+  if (!scoped) return true;  // Legacy devices need no extra persistence.
+  char previous[SUPLA_SERVER_NAME_MAXSIZE] = {};
+  const bool hadService = cfg->getString("sl-service", previous,
+                                        sizeof(previous));
+  if (hadService) {
+    if (!strcmp(previous, server)) return true;
+    if (!configuredServerChanged(cfg)) return false;
+  }
+  // Record explicit application/YAML configuration, never resolved endpoints.
+  if (cfg->setString("sl-service", server) && cfg->commit()) return true;
+  if (hadService) cfg->setString("sl-service", previous);
+  else cfg->eraseKey("sl-service");
+  return false;
+}
+
+bool Supla::Device::ServerIdentity::beginMigration(bool full,
+    const TSD_SuplaDeviceIdentities *next, int removed) {
+  if (!config) return false;
+  bool existed = config->getBlobSize(kMigrationKey) >= 0;
+  const bool oldPending = migrationPending;
+  const bool oldFull = fullMigration;
+  const bool oldTransition = transition;
+  const bool oldSync = syncComplete;
+  const bool oldAccepted = identitiesAccepted;
+  migrationPending = true;
+  fullMigration = fullMigration || full;
+  identitiesAccepted = syncComplete = false;
+  transition = true;
+  // Full scope loss also invalidates borrowed views if scratch allocation or
+  // the very first fence write fails. LOCAL authority remains independent.
+  if (full) notifyMigration();
+  Buffer workspace(ServerMigration::kMaxSize);
+  if (!workspace.data) return false;
+  auto fence = workspace.data;
+  int size = config->getBlobSize(kMigrationKey);
+  if (existed) {
+    if (size < ServerMigration::kPrefix + 2 ||
+        size > ServerMigration::kMaxSize ||
+        !config->getBlob(kMigrationKey,
+            reinterpret_cast<char *>(fence), size) ||
+        !validMigration(fence, size)) return false;
+    bool oldMapIsCurrent = identityValid &&
+        get32(fence + 4) == static_cast<uint32_t>(deviceId);
+    for (int i = 0; i < fence[3] && oldMapIsCurrent; ++i) {
+      const auto entry = fence + ServerMigration::kPrefix + 6 * i;
+      const auto ch = Supla::Channel::GetByChannelNumber(entry[0]);
+      oldMapIsCurrent = ch && ch->getServerChannelId() == get32(entry + 1);
+    }
+    int currentCount = 0;
+    for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next())
+      if (ch->getServerChannelId()) ++currentCount;
+    oldMapIsCurrent = oldMapIsCurrent && currentCount == fence[3];
+    bool changesCurrent = next && next->DeviceId != deviceId;
+    for (int i = 0; next && i < registrationCount; ++i) {
+      const auto ch =
+          Supla::Channel::GetByChannelNumber(registrationNumbers[i]);
+      if (!ch || ch->getServerChannelId() !=
+                     static_cast<uint32_t>(next->ChannelId[i]))
+        changesCurrent = true;
+    }
+    if (fence[1] == 2 &&
+        ((!next && full) ||
+         (next && (!identityValid || (!oldMapIsCurrent && changesCurrent))))) {
+      // A second ownership change after installation needs the CURRENT map,
+      // rather than replaying provenance from an earlier completed normalize.
+      memset(fence, 0, ServerMigration::kMaxSize);
+      existed = false;
+    } else if (removed < 0 && (!full || fence[2])) {
+      const bool notify = fence[1] != 2 || full || changesCurrent;
+      workspace.reset();
+      if (notify) notifyMigration();
+      return resumeMigration(true);
+    } else if (full) {
+      fence[2] = 1;
+    }
+  }
+  if (!existed) {
+    fence[0] = 1;
+    fence[2] = full;
+    put32(fence + 4, deviceId);
+    put32(fence + 8, next ? next->DeviceId : 0);
+    for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next()) {
+      const int n = ch->getChannelNumber();
+      if (n < 255 && n != removed)
+        fence[12 + n / 8] |= 1u << (n % 8);
+    }
+    // Read the persisted OLD map, not incidental current registration order.
+    Buffer previous(kIdentityMaxSize);
+    const int oldSize = config->getBlobSize(kIdentityKey);
+    if (!previous.data) return false;
+    if (identityValid && oldSize >= kIdentityPrefix + 2 &&
+        oldSize <= kIdentityMaxSize &&
+        config->getBlob(kIdentityKey,
+            reinterpret_cast<char *>(previous.data), oldSize) &&
+        valid(previous.data, oldSize) &&
+        oldSize == kIdentityPrefix + 5 * previous.data[1] + 2) {
+      fence[3] = previous.data[1];
+      for (int i = 0; i < fence[3]; ++i) {
+        auto out = fence + ServerMigration::kPrefix + 6 * i;
+        memcpy(out, previous.data + kIdentityPrefix + 5 * i, 5);
+        auto ch = Supla::Channel::GetByChannelNumber(out[0]);
+        bool survives = ch && ch->getServerChannelId() == get32(out + 1);
+        if (!full && next) {
+          bool same = false;
+          for (int j = 0; j < registrationCount; ++j)
+            if (registrationNumbers[j] == out[0] &&
+                static_cast<uint32_t>(next->ChannelId[j]) == get32(out + 1))
+              same = true;
+          survives = survives && same;
+        }
+        out[5] = survives && out[0] != removed;
+      }
+    }
+    size = ServerMigration::kPrefix + 6 * fence[3] + 2;
+  }
+  if (removed >= 0) {
+    fence[12 + removed / 8] &= ~(1u << (removed % 8));
+    for (int i = 0; i < fence[3]; ++i) {
+      auto entry = fence + ServerMigration::kPrefix + 6 * i;
+      if (entry[0] == removed) entry[5] = 0;
+    }
+  }
+  fence[1] = topologyReady ? 1 : 0;
+  seal(fence, size);
+  if (!persist(kMigrationKey, fence, size)) {
+    if (!full && !existed) {
+      // The proposed local removal/renumbering was refused. Nothing migrated.
+      migrationPending = oldPending;
+      fullMigration = oldFull;
+      transition = oldTransition;
+      syncComplete = oldSync;
+      identitiesAccepted = oldAccepted;
+    } else {
+      notifyMigration();
+    }
+    return false;
+  }
+  workspace.reset();
+  notifyMigration();
+  return topologyReady ? resumeMigration(true) : true;
+}
+
+bool Supla::Device::ServerIdentity::resumeMigration(bool reload) {
+  Buffer workspace(ServerMigration::kMaxSize);
+  auto fence = workspace.data;
+  const int size = config->getBlobSize(kMigrationKey);
+  if (!fence || size < ServerMigration::kPrefix + 2 ||
+      size > ServerMigration::kMaxSize ||
+      !config->getBlob(kMigrationKey,
+            reinterpret_cast<char *>(fence), size) ||
+      !validMigration(fence, size)) return false;
+  fullMigration = fence[2];
+  if (!topologyReady) return true;
+  if (fence[1] == 0) {
+    // Deferred explicit user intent was recorded before dynamic topology load.
+    memset(fence + 12, 0, 32);
+    for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next()) {
+      const auto n = ch->getChannelNumber();
+      if (n < 255) fence[12 + n / 8] |= 1u << (n % 8);
+    }
+    for (int i = 0; i < fence[3]; ++i) {
+      auto entry = fence + ServerMigration::kPrefix + 6 * i;
+      const auto ch = Supla::Channel::GetByChannelNumber(entry[0]);
+      entry[5] = ch && ch->getServerChannelId() == get32(entry + 1);
+    }
+    fence[1] = 1;
+    seal(fence, size);
+    if (!persist(kMigrationKey, fence, size)) return false;
+  }
+  if (fence[1] == 1) {
+    const ServerMigration migration = {fence};
+    if (!migration.migrate(config)) return false;
+    fence[1] = 2;
+    seal(fence, size);
+    if (!persist(kMigrationKey, fence, size)) return false;
+  }
+  if (reload) {
+    for (auto element = Supla::Element::begin(); element;
+         element = element->next()) element->onServerScopeMigration();
+  }
+  return true;
+}
+
+bool Supla::Device::ServerIdentity::configurationChannel(
+    uint8_t number, uint32_t *id) const {
+  auto ch = Supla::Channel::GetByChannelNumber(number);
+  if (!id || !configurationReady() || !ch || !ch->getServerChannelId())
+    return false;
+  *id = ch->getServerChannelId();
   return true;
 }
 

@@ -179,14 +179,18 @@ bool Runtime::sameNode(const NodeAddress &left,
 
 bool Runtime::isLocalSource(const PeerRecord *peer) const {
   PeerContext context = {};
-  return peer != nullptr && decodePeerContext(peer->contextBytes, &context) &&
-      sameNode(context.source, localAddress_);
+  if (!peer || !decodePeerContext(peer->contextBytes, &context)) return false;
+  if (context.authorityType == kAuthorityLocal &&
+      localAddress_.nameSpace == kNodeIdDevice) return !peer->destination;
+  return sameNode(context.source, localAddress_);
 }
 
 bool Runtime::isLocalDestination(const PeerRecord *peer) const {
   PeerContext context = {};
-  return peer != nullptr && decodePeerContext(peer->contextBytes, &context) &&
-      sameNode(context.destination, localAddress_);
+  if (!peer || !decodePeerContext(peer->contextBytes, &context)) return false;
+  if (context.authorityType == kAuthorityLocal &&
+      localAddress_.nameSpace == kNodeIdDevice) return peer->destination;
+  return sameNode(context.destination, localAddress_);
 }
 
 int Runtime::findSession(uint64_t sessionId, const Endpoint &endpoint) const {
@@ -1322,6 +1326,11 @@ void Runtime::clearPeer(uint8_t peerIndex) {
 void Runtime::setLocalAddress(const NodeAddress &address) {
   if (!sameNode(localAddress_, address)) {
     for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+      const auto peer = peers_ ? peers_->get(i) : nullptr;
+      PeerContext context = {};
+      if (address.nameSpace == kNodeIdDevice && peer &&
+          decodePeerContext(peer->contextBytes, &context) &&
+          context.authorityType == kAuthorityLocal) continue;
       clearPeer(i);
     }
     localAddress_ = address;

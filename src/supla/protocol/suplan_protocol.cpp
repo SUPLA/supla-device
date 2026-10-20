@@ -123,7 +123,17 @@ bool SupLan::setSuplanDestinationAssociation(
 }
 
 void SupLan::suplanIdentityChanged() {
-  if (associations()) associations()->identityChanged();
+  if (!associations()) return;
+  associations()->identityChanged();
+  const auto identity = associations()->identity();
+  if (identity && identity->fullScopeFenced() && resources_) {
+    if (resources_->bindings) resources_->bindings->invalidateServerScope();
+    resources_->invalidateServerScope();
+  } else if (identity && identity->identityTransition() && resources_) {
+    // Selective transitions keep demand/credentials, but invalidate borrowed
+    // D2D snapshots immediately rather than waiting for a subsequent getter.
+    resources_->authorizationChanged();
+  }
 }
 
 bool SupLan::isSupLanServerCapable() const {

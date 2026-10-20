@@ -24,6 +24,7 @@ bool requestSupLan(SuplaDeviceClass *device, SupLanFactory factory);
 bool startSupLan(SuplaDeviceClass *device, uint8_t version);
 void releaseSupLan(SuplaDeviceClass *device);
 bool hasSupLanServerStack(SuplaDeviceClass *device);
+bool supLanRequested(SuplaDeviceClass *device);
 bool verifySupLanCrypto(SupLan::CryptoPort *crypto);
 #ifdef SUPLA_TEST
 void setSupLanFactoryForTest(SupLanFactory factory);

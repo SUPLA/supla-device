@@ -55,11 +55,21 @@ namespace Supla {
 namespace Device {
 using namespace SupLan;  // NOLINT(build/namespaces)
 
+ServerAssociations *ServerAssociations::first_ = nullptr;
+void ServerAssociations::scopeChanged(ServerIdentity *identity) {
+  for (auto state = first_; state; state = state->next_)
+    if (state->identity_ == identity) state->identityChanged();
+}
 ServerAssociations::ServerAssociations(PeerTable *peers, Runtime *runtime)
     : peers_(peers), runtime_(runtime) {
+  next_ = first_;
+  first_ = this;
   memset(slots_, 0xff, sizeof(slots_));
 }
 ServerAssociations::~ServerAssociations() {
+  auto link = &first_;
+  while (*link && *link != this) link = &(*link)->next_;
+  if (*link) *link = next_;
   if (peers_) {
     for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) clear(i);
     peers_->setOwnershipCheck(nullptr, nullptr);
@@ -241,6 +251,7 @@ void ServerAssociations::load(Config *config, ServerIdentity *identity) {
   peers_->setOwnershipCheck(owns, this);
   runtime_->setLocalAddress(
       {kNodeIdDevice, static_cast<uint32_t>(identity_->serverDeviceId())});
+  if (identity_->scopeFenced()) return;
   for (uint16_t slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
     PeerContext context = {};
     uint32_t revision = 0;
@@ -268,9 +279,18 @@ void ServerAssociations::identityChanged() {
       {kNodeIdDevice, static_cast<uint32_t>(identity_->serverDeviceId())});
   for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     auto peer = peers_->get(i);
-    if (!peer || slots_[i] == 0xff) continue;
+    if (!peer) continue;
     PeerContext context = {};
     decodePeerContext(peer->contextBytes, &context);
+    if (identity_->fullScopeFenced() &&
+        context.authorityType == kAuthorityServer) {
+      runtime_->clearPeer(i);
+      peers_->removePeer(i);
+      slots_[i] = 0xff;
+      durable_[i] = false;
+      continue;
+    }
+    if (slots_[i] == 0xff) continue;
     uint32_t local = static_cast<uint32_t>(identity_->serverDeviceId());
     if ((peer->destination ? context.destination.nodeId
                            : context.source.nodeId) != local ||
@@ -280,6 +300,12 @@ void ServerAssociations::identityChanged() {
                      {kResourceTypeDevice, context.source.nodeId})) {
       runtime_->clearPeer(i);
     }
+  }
+  if (identity_->fullScopeFenced()) {
+    memset(record_, 0, sizeof(record_));
+    memset(previous_, 0, sizeof(previous_));
+    memset(entries_, 0, sizeof(entries_));
+    memset(wireEntries_, 0, sizeof(wireEntries_));
   }
 }
 

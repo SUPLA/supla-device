@@ -93,6 +93,9 @@ class Container : public ChannelElement, public ActionHandler {
   bool isInternalLevelReporting() const;
 
   void iterateAlways() override;
+#ifndef ARDUINO_ARCH_AVR
+  void onServerScopeMigration() override;
+#endif
   void onLoadConfig(SuplaDeviceClass *) override;
   void purgeConfig() override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,

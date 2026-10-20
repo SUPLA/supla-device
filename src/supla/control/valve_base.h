@@ -63,6 +63,9 @@ class ValveBase : public ChannelElement, public ActionHandler {
 
   void onInit() override;
   void iterateAlways() override;
+#ifndef ARDUINO_ARCH_AVR
+  void onServerScopeMigration() override;
+#endif
   void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onSaveState() override;

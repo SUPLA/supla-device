@@ -184,6 +184,25 @@ int32_t ValveBase::handleNewValueFromServer(
   return SUPLA_RESULT_TRUE;
 }
 
+#ifndef ARDUINO_ARCH_AVR
+void ValveBase::onServerScopeMigration() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) return;
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE];
+  generateKey(key, "valve_cfg2");
+  ValveStoredConfigV2 record;
+  if (cfg->getBlobSize(key) != sizeof(record) ||
+      !cfg->getBlob(key, reinterpret_cast<char *>(&record), sizeof(record)) ||
+      record.version != 2 || !record.config.valid()) return;
+  if (memcmp(&config, &record.config, sizeof(config))) {
+    config = record.config;
+    configDurable = false;
+    reconcileChannelDependencies();
+  }
+}
+
+#endif
+
 void ValveBase::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) return;

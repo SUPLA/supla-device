@@ -91,6 +91,10 @@ int localReferenceNumber(ChannelReference reference) {
 bool referenceWireId(ChannelReference reference, uint32_t *id) {
   if (!id || !reference.valid()) return false;
   *id = 0;
+#ifndef ARDUINO_ARCH_AVR
+  const auto scope = acceptedReferenceIdentity();
+  if (usesServerReferences() && scope && scope->scopeFenced()) return false;
+#endif
   if (reference.kind == ChannelReferenceKind::NONE) return true;
   if (reference.kind == ChannelReferenceKind::SERVER_CHANNEL) {
     if (!usesServerReferences()) {
@@ -108,13 +112,7 @@ bool referenceWireId(ChannelReference reference, uint32_t *id) {
   }
 #ifndef ARDUINO_ARCH_AVR
   const auto identity = acceptedReferenceIdentity();
-  if (!identity || !identity->identityAvailable() ||
-      !identity->registrationContextValid() || identity->identityTransition())
-    return false;
-  auto channel = Channel::GetByChannelNumber(reference.id);
-  if (!channel || !channel->getServerChannelId()) return false;
-  *id = channel->getServerChannelId();
-  return true;
+  return identity && identity->configurationChannel(reference.id, id);
 #else
   return false;
 #endif

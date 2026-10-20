@@ -691,3 +691,30 @@ TEST_F(ServerStream, PersistedIdentityAdmitsAfterProductionSyncOrdering) {
   EXPECT_TRUE(channel.state().available());
 }
 }  // namespace
+
+TEST_F(ServerStream, DeviceIdMigrationInvalidatesBorrowedViewAndOldDemand) {
+  ServerRemoteChannel channel(1001);
+  tick();
+  reply();
+  publish(snapshot());
+  auto borrowed = channel.state();
+  ASSERT_TRUE(borrowed.available());
+  const auto epoch = protocol.serverIdentity().rootEpoch();
+  auto &identity = protocol.serverIdentity();
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities changed = {};
+  changed.DeviceId = 303;
+  changed.ChannelCount = 1;
+  changed.ChannelId[0] = 701;
+  ASSERT_EQ(identity.accept(changed).Result, SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_FALSE(borrowed.available());
+  EXPECT_FALSE(channel.state().available());
+  EXPECT_EQ(manager()->consumerCount(), 0);
+  auto stale = snapshot();
+  EXPECT_FALSE(protocol.onRemoteChannelState(&stale));
+  identity.syncDone();
+  tick(1000);
+  EXPECT_EQ(requests.size(), 1u);  // No automatic approval in the new scope.
+  EXPECT_EQ(identity.rootEpoch(), epoch);
+}

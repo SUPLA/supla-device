@@ -32,6 +32,7 @@ class ServerAssociations {
   ServerAssociations &operator=(const ServerAssociations &) = delete;
   void load(Config *config, ServerIdentity *identity);
   void identityChanged();
+  static void scopeChanged(ServerIdentity *identity);
   TDS_SuplaSetSuplanSourceAssociationResult accept(
       const TSDS_SuplaSetSuplanSourceAssociation &request);
   TDS_SuplaSetSuplanDestinationAssociationResult accept(
@@ -52,6 +53,8 @@ class ServerAssociations {
   static bool owns(void *self, const SupLan::PeerContext &context,
                    const SupLan::ResourceId &resource);
   void clear(uint8_t index);
+  static ServerAssociations *first_;
+  ServerAssociations *next_ = nullptr;
   Config *config_ = nullptr;
   ServerIdentity *identity_ = nullptr;
   SupLan::PeerTable *peers_;

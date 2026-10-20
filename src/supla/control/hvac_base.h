@@ -49,6 +49,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
                                        : config.HeatOrColdSourceSwitch);
   }
 
+#ifndef ARDUINO_ARCH_AVR
+  void onServerScopeMigration() override;
+#endif
   void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onInit() override;

@@ -48,6 +48,26 @@ void ResourceBindingManager::attachRuntime(SupLan::Runtime *runtime) {
   retry_.length = 0;
   runtime_ = runtime;
 }
+void ResourceBindingManager::invalidateServerScope() {
+  if (pendingIntent_ >= 0 && port_) port_->cancelShare();
+  pendingIntent_ = -1;
+  const auto retryPeer = peers_->get(retry_.peerIndex);
+  if (!retryPeer || retryPeer->contextBytes[0] == SupLan::kAuthorityServer)
+    retry_.length = 0;
+  memset(record_, 0, sizeof(record_));
+  memset(previous_, 0, sizeof(previous_));
+  for (auto &intent : intents_) intent = {};
+  for (auto &sent : sent_) sent = {};
+  for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+    SupLan::PeerContext context = {};
+    if (sets_[i].used &&
+        SupLan::decodePeerContext(sets_[i].context, &context) &&
+        context.authorityType == SupLan::kAuthorityLocal) continue;
+    detach(i);
+    sets_[i] = {};
+  }
+  loaded_ = false;
+}
 void ResourceBindingManager::attachAssociations(ServerAssociations *state) {
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     detach(i);

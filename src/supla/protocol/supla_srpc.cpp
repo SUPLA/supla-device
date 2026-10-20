@@ -1340,9 +1340,15 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
     enabled = true;
     memset(buf, 0, sizeof(buf));
     if (cfg->getSuplaServer(buf) && strlen(buf) > 0) {
-      sdc->setServer(buf);
+      Supla::RegisterDevice::setServerName(buf);
       configEmpty = false;
     } else {
+#ifndef ARDUINO_ARCH_AVR
+      const auto configured = Supla::RegisterDevice::getServerName();
+      if (configured && *configured &&
+          !Supla::Device::ServerIdentity::configuredService(cfg, configured))
+        return false;
+#endif
       SUPLA_LOG_INFO("Config incomplete: missing server");
 #ifdef ARDUINO_ARCH_AVR
       configComplete = false;
@@ -2418,7 +2424,7 @@ bool Supla::Protocol::SuplaSrpc::autodiscover(uint32_t now) {
         sdc->addLastStateLog(tmp);
         auto cfg = Supla::Storage::ConfigInstance();
         if (cfg) {
-          cfg->setSuplaServer(serverName);
+          cfg->setSuplaServerFromDiscovery(serverName);
           cfg->saveWithDelay(1000);
           // reload config to initialize certificates etc.
           onLoadConfig();
@@ -3023,6 +3029,11 @@ bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
   if (!isRegisteredAndReady()) {
     return false;
   }
+#ifndef ARDUINO_ARCH_AVR
+  if (serverIdentityState.scopeFenced() ||
+      (supLanTlsRequired(sdc) &&
+       !serverIdentityState.acceptedForRegistration())) return false;
+#endif
   if ((size != 0 && channelConfig == nullptr) ||
       (size == 0 && channelConfig != nullptr) || (size < 0) ||
       (size > SUPLA_CHANNEL_CONFIG_MAXSIZE)) {

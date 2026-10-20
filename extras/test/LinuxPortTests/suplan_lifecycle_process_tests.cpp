@@ -157,7 +157,8 @@ TEST_F(SupLanLifecycleProcessTests,
   ProcessDevice rebooted(yaml);
   rebooted.start();
   auto &state = rebooted.protocol.serverIdentity();
-  EXPECT_EQ(state.serverDeviceId(), 101);
+  EXPECT_EQ(state.serverDeviceId(), 0);  // Pending SERVER scope is unavailable.
+  EXPECT_FALSE(state.identityAvailable());
   EXPECT_TRUE(state.identityTransition());
   EXPECT_EQ(state.resolve(502).location, Location::kUnresolved);
   rebooted.identity(101, 901);
@@ -166,3 +167,45 @@ TEST_F(SupLanLifecycleProcessTests,
   EXPECT_EQ(state.resolve(902).channelNumber, 3);
 }
 }  // namespace
+
+TEST_F(SupLanLifecycleProcessTests,
+       ExplicitYamlServerChangeSanitizesBeforeDynamicConfigLoad) {
+  prepareIdentity();
+  EXPECT_EXIT(
+      {
+        ProcessDevice child(yaml);
+        child.start();
+        Supla::Sensor::ContainerStoredConfigV2 record;
+        record.config.alarmAboveLevel = 95;
+        record.config.sensorData[0].source.assign(
+            Supla::ChannelReference::server(502));
+        record.config.sensorData[0].fillLevel = 70;
+        record.config.sensorData[1].source.assign(
+            Supla::ChannelReference::server(999));
+        if (!child.config.setBlob("7_cnt_cfg2",
+                reinterpret_cast<const char *>(&record), sizeof(record)) ||
+            !child.config.commit()) _exit(1);
+        _exit(testing::Test::HasFailure() ? 1 : 73);
+      },
+      testing::ExitedWithCode(73), "");
+  std::ifstream input(yaml);
+  std::string text((std::istreambuf_iterator<char>(input)), {});
+  const auto server = text.find("127.0.0.2");
+  ASSERT_NE(server, std::string::npos);
+  text.replace(server, strlen("127.0.0.2"), "127.0.0.3");
+  std::ofstream output(yaml);
+  output << text;
+  output.close();
+  ProcessDevice changed(yaml);
+  changed.start();
+  auto &state = changed.protocol.serverIdentity();
+  ASSERT_TRUE(state.fullScopeFenced());
+  auto container = changed.topology.container.get();
+  EXPECT_EQ(container->sensorReference(0), Supla::ChannelReference::local(3));
+  EXPECT_EQ(container->sensorReference(1), Supla::ChannelReference());
+  EXPECT_EQ(container->getFillLevelForSensor(3), 70);
+  changed.identity(100, 501);  // Same numeric DeviceId/map on another Server.
+  state.syncDone();
+  EXPECT_TRUE(state.serverSyncComplete());
+  EXPECT_EQ(container->sensorReference(1), Supla::ChannelReference());
+}

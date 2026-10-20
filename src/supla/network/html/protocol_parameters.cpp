@@ -515,8 +515,7 @@ bool ProtocolParameters::handleResponse(const char* key, const char* value) {
     cfg->setMqttCommProtocolEnabled(enabled == 1);
     return true;
   } else if (strcmp(key, "svr") == 0) {
-    cfg->setSuplaServer(value);
-    return true;
+    return cfg->setSuplaServer(value);
   } else if (strcmp(key, "eml") == 0) {
     cfg->setEmail(value);
     return true;

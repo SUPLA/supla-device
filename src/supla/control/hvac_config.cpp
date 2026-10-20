@@ -184,6 +184,9 @@ bool HvacConfiguration::serverWire(const Device::ServerIdentity *identity,
                                    TChannelConfig_HVAC *wire) const {
   if (!wire) return false;
   *wire = {};
+#ifndef ARDUINO_ARCH_AVR
+  if (identity && identity->scopeFenced()) return false;
+#endif
   if (!validReferences()) return false;
   const HvacReferenceValue *values[] = {
       &MainThermometer, &AuxThermometer, &BinarySensor, &MasterThermostat,
@@ -195,7 +198,8 @@ bool HvacConfiguration::serverWire(const Device::ServerIdentity *identity,
       ids[i] = ref.id;
     } else if (ref.kind == ChannelReferenceKind::LOCAL_CHANNEL_NUMBER) {
 #ifndef ARDUINO_ARCH_AVR
-      if (!identity || !identity->reverse(ref.id, &ids[i])) return false;
+      if (!identity || !identity->configurationChannel(ref.id, &ids[i]))
+        return false;
 #else
       (void)identity;
       return false;

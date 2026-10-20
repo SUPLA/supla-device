@@ -52,6 +52,7 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   uint32_t channelId() const { return id_; }
   RemoteDelivery delivery() const { return delivery_; }
   static void iterateAll();
+  static void invalidateServerScope();
   static void receiveAction(uint32_t channelId, uint32_t capability);
 
  protected:

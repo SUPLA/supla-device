@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "remote_channel_manager.h"
+#include <supla/channels/channel_reference.h>
+#include <supla/suplan/suplan_server_identity.h>
 #ifndef ARDUINO_ARCH_AVR
 #include <string.h>
 #include <supla/element.h>
@@ -60,6 +62,8 @@ RemoteChannelResource *RemoteChannelManager::findResource(
   return nullptr;
 }
 bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
+  const auto scope = acceptedReferenceIdentity();
+  if (scope && scope->scopeFenced()) return false;
   if (!intent.consumerId ||
       intent.resource.type != SupLan::kResourceTypeChannel ||
       !intent.resource.id || intent.resource.id > INT32_MAX ||
@@ -193,6 +197,19 @@ void RemoteChannelManager::remove(uint32_t consumerId) {
       }
     }
   }
+}
+void RemoteChannelManager::invalidateServerScope() {
+  if (ensurePending_ && access_) access_->cancelEnsure();
+  ensurePending_ = false;
+  ensureNextMs_ = 0;
+  for (auto adapter : backends_) {
+    if (!adapter) continue;
+    for (int i = 0; i < adapter->consumerCapacity(); ++i) {
+      const auto intent = adapter->intentAt(i);
+      if (intent.consumerId) remove(intent.consumerId);
+    }
+  }
+  retryDeferredConsumers();
 }
 void RemoteChannelManager::demand(RemoteChannelResource *resource,
                                   RemoteDelivery delivery) {

@@ -862,6 +862,17 @@ void SuplaDeviceClass::setEmail(const char *email) {
 }
 
 void SuplaDeviceClass::setServer(const char *server) {
+#ifndef ARDUINO_ARCH_AVR
+  const auto identity = Supla::Device::ServerIdentity::current();
+  const auto previous = Supla::RegisterDevice::getServerName();
+  if (identity && server && previous && *previous &&
+      strcmp(previous, server) &&
+      !Supla::Device::ServerIdentity::configuredServerChanged(
+          Supla::Storage::ConfigInstance())) {
+    SUPLA_LOG_ERROR("SupLAN: cannot persist SERVER scope reset");
+    return;
+  }
+#endif
   Supla::RegisterDevice::setServerName(server);
 }
 

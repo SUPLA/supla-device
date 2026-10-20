@@ -2271,3 +2271,50 @@ TEST_F(M4bDevice,
   // Replies above are mocked routing approvals, not Core/E2E evidence.
 }
 #endif  // SUPLAN_R2_PRODUCT_TESTS
+
+TEST_F(M4bDevice, DeviceIdMigrationSanitizesLiveFallbackBeforeCloudUpload) {
+  auto c = containerWire();
+  auto v = valveWire();
+  auto h = bindingConfig(1001, 0);
+  ASSERT_EQ(container->handleChannelConfig(&c), SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_EQ(valve->handleChannelConfig(&v), SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_EQ(hvac->handleChannelConfig(&h), SUPLA_CONFIG_RESULT_TRUE);
+  SuplaDeviceClass device;
+  CoherenceSrpc srpc(&device);
+  int handle = 0;
+  srpc.prepare(&handle);
+  auto &current = srpc.serverIdentity();
+  current.load(&storage);
+  ASSERT_TRUE(current.registrationStarted());
+  current.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 303;
+  ids.ChannelCount = 5;
+  for (int i = 0; i < 5; ++i) ids.ChannelId[i] = 701 + i;
+  ASSERT_EQ(current.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(container->sensorReference(0), ChannelReference());
+  EXPECT_EQ(valve->sensorReference(0), ChannelReference());
+  EXPECT_EQ(hvac->bindingTarget(0), ChannelReference());
+  EXPECT_EQ(adapter.remoteResources()->consumerCount(), 0);
+  srpc.onDeviceSyncDone();
+  EXPECT_FALSE(current.serverSyncComplete());
+  // Empty Cloud config accepts the durable sanitized fallback for each family.
+  for (int family = 0; family < 3; ++family) {
+    auto request = familyRequest(family);
+    request.ConfigSize = 0;
+    ASSERT_EQ(familyElement(family)->handleChannelConfig(&request),
+              SUPLA_CONFIG_RESULT_TRUE);
+  }
+  TChannelConfig_HVAC wire;
+  int size = 0;
+  hvac->fillChannelConfig(&wire, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+  ASSERT_EQ(size, sizeof(wire));
+  EXPECT_EQ(wire.PumpSwitchChannelId, 0u);
+  EXPECT_EQ(wire.HeatOrColdSourceSwitchChannelId, 0u);
+  srpc.onDeviceSyncDone();
+  EXPECT_TRUE(current.serverSyncComplete());
+  // Later authoritative Cloud configuration replaces the sanitized fallback.
+  h = bindingConfig(9009, 0);
+  ASSERT_EQ(hvac->handleChannelConfig(&h), SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(hvac->bindingTarget(0), ChannelReference::server(9009));
+}

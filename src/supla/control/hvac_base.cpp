@@ -258,6 +258,35 @@ bool HvacBase::isAltWeeklySchedulePossible() const {
           !(isHeatingSubfunction() && parameterFlags.SubfunctionReadonly));
 }
 
+#ifndef ARDUINO_ARCH_AVR
+void HvacBase::onServerScopeMigration() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) return;
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE];
+  generateKey(key, "hvac_cfg2");
+  HvacStoredConfigV2 record;
+  HvacConfiguration next;
+  const int size = cfg->getBlobSize(key);
+  if ((size != sizeof(record) &&
+       size != offsetof(HvacStoredConfigV2, serverNone)) ||
+      !cfg->getBlob(key, reinterpret_cast<char *>(&record), size) ||
+      !restoreHvacConfig(record, &next)) return;
+  const auto before = storeHvacConfig(config, record.function);
+  auto after = storeHvacConfig(next, record.function);
+  if (memcmp(&before, &after, sizeof(before))) {
+    Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
+    registeredInRelayHvacAggregator = false;
+    config = next;
+    synchronizedConfigDurable = false;
+    refreshMainDependency();
+  }
+#ifndef ARDUINO_ARCH_AVR
+  serverNoneProjection = record.serverNone;
+#endif
+}
+
+#endif
+
 void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
   weeklyScheduleComponents.loadConfig();

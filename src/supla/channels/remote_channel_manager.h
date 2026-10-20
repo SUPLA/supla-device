@@ -145,6 +145,7 @@ class RemoteChannelManager {
               size_t length, uint32_t owner = 0);
   void ensureResult(const TSD_SuplaEnsureResourceAccessResult &result);
   void serverReconnected();
+  void invalidateServerScope();
   // A readiness transition can unblock admission without freeing a pool slot.
   // Do not reset active demand, cache continuity or the pending ENSURE slot.
   void retryDeferredConsumers() {

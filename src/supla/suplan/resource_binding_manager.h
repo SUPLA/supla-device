@@ -28,6 +28,7 @@ class ResourceBindingManager {
   bool relayDemand(uint8_t target, bool *configured);
   void acknowledged(uint8_t peer, uint8_t result);
   void serverReconnected();
+  void invalidateServerScope();
   int bindingCount() const;
   bool sessionNeeded(uint8_t peer) const;
   SupLan::BindingRetry *retryStorage() { return &retry_; }

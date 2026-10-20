@@ -555,10 +555,11 @@
       "name": "Supla::Device::ServerAssociations",
       "header": "supla/suplan/suplan_server_associations.h",
       "limits": {
-        "host": 672,
+        "host": 680,
         "esp8266": 656,
         "esp32": 2144
-      }
+      },
+      "reason": "ADR-015 owner notification adds one pointer; measured host needs 680 B, MCU owners remain within existing limits."
     },
     {
       "name": "Supla::Control::HvacReferenceValue",

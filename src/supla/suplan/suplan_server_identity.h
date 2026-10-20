@@ -32,6 +32,15 @@ class ServerIdentity {
   bool capable() const;
   static const ServerIdentity *current() { return active; }
   bool rotateRoot();
+  static bool configuredServerChanged(Config *config);
+  static bool configuredService(Config *config, const char *server);
+  bool scopeFenced() const { return migrationPending && !identitiesAccepted; }
+  bool fullScopeFenced() const { return scopeFenced() && fullMigration; }
+  bool configurationReady() const {
+    return identityValid && identityDurable && !scopeFenced() &&
+        (!identityTransition() || identitiesAccepted);
+  }
+  bool configurationChannel(uint8_t number, uint32_t *id) const;
   static void factoryReset();
   // Thin local lifecycle hook. Configuration must honor failure before reuse.
   static bool channelChanging(uint8_t channelNumber, bool removing = false);
@@ -49,6 +58,10 @@ class ServerIdentity {
   // Configuration must durably forget an association before reusing its number.
   bool forgetChannel(uint8_t channelNumber);
   bool registrationContextValid() const;
+  bool acceptedForRegistration() const {
+    return registrationValid && registrationContextValid() &&
+        identitiesAccepted && identityDurable;
+  }
   bool registrationInvalidated() const;
   bool identityAvailable() const;
   bool identityTransition() const;
@@ -62,6 +75,10 @@ class ServerIdentity {
   static const int kIdentityMaxSize =
       kIdentityPrefix + 5 * SUPLA_CHANNELMAXCOUNT + 2;
   bool ensureRoot();
+  bool beginMigration(bool full,
+      const TSD_SuplaDeviceIdentities *next = nullptr, int removed = -1);
+  bool resumeMigration(bool reload);
+  void notifyMigration();
   static ServerIdentity *active;
   void abandonRegistration();
   bool persist(const char *key, const uint8_t *data, int size);
@@ -83,6 +100,9 @@ class ServerIdentity {
   bool syncComplete : 1;
   bool identitiesAccepted : 1;
   bool contextInvalidated : 1;
+  bool migrationPending : 1;
+  bool fullMigration : 1;
+  bool topologyReady : 1;
 };
 
 }  // namespace Device

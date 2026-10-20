@@ -264,7 +264,8 @@ TEST_F(ServerIdentityTests, ChangedSnapshotIsDurableBeforeActivation) {
   EXPECT_EQ(state.accept(changed).Result, SUPLA_SUPLAN_RESULT_OK);
   EXPECT_EQ(first->getServerChannelId(), 600u);
   EXPECT_EQ(state.resolve(501).location, ServerChannelLocation::kUnresolved);
-  EXPECT_EQ(config.commits, 3);
+  // Durable fence + normalization + new map, rather than overwriting OLD first.
+  EXPECT_EQ(config.commits, 5);
   EXPECT_TRUE(state.identityTransition());
   config.reboot();
   ServerIdentity restarted;
@@ -323,7 +324,7 @@ TEST_F(ServerIdentityTests,
   EXPECT_NE(state.rootEpoch(), 0u);
 }
 TEST_F(ServerIdentityTests,
-       IdentityCommitFailurePreservesRootAndPreviousRuntime) {
+       IdentityCommitFailurePreservesRootAndFencesServerRuntime) {
   acceptInitial();
   state.syncDone();
   auto epoch = state.rootEpoch();
@@ -335,9 +336,9 @@ TEST_F(ServerIdentityTests,
   auto result = state.accept(changed);
   EXPECT_EQ(result.Result, SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
   EXPECT_EQ(result.RootEpoch, epoch);
-  EXPECT_EQ(state.serverDeviceId(), 101);
-  EXPECT_EQ(state.resolve(501).channelNumber, 7);
-  EXPECT_FALSE(state.identityTransition());
+  EXPECT_EQ(state.serverDeviceId(), 0);
+  EXPECT_EQ(state.resolve(501).location, ServerChannelLocation::kUnresolved);
+  EXPECT_TRUE(state.identityTransition());
   EXPECT_EQ(config.durable, durable);
   // A later unrelated commit cannot persist the rejected candidate.
   ASSERT_TRUE(config.commit());
@@ -373,7 +374,7 @@ TEST_F(ServerIdentityTests,
   auto changed = snapshot();
   changed.DeviceId = 999;
   EXPECT_EQ(state.accept(changed).Result, SUPLA_SUPLAN_RESULT_OK);
-  EXPECT_EQ(config.commits, 3);
+  EXPECT_EQ(config.commits, 5);  // Fence, normalize, then install identity.
   EXPECT_EQ(state.rootEpoch(), epoch);
   EXPECT_EQ(config.blob("sl-root"), root);
 }
@@ -626,12 +627,13 @@ TEST_F(ServerIdentityTests,
   EXPECT_EQ(local.accept(changed).Result,
             SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
   EXPECT_EQ(local.rootEpoch(), epoch);
-  EXPECT_EQ(local.resolve(501).channelNumber, 7);
-  EXPECT_EQ(local.resolve(600).location, ServerChannelLocation::kRemote);
-  EXPECT_FALSE(local.identityTransition());
-  EXPECT_TRUE(local.serverSyncComplete());
+  EXPECT_EQ(local.resolve(501).location, ServerChannelLocation::kUnresolved);
+  EXPECT_EQ(local.resolve(600).location, ServerChannelLocation::kUnresolved);
+  EXPECT_TRUE(local.identityTransition());
+  EXPECT_FALSE(local.serverSyncComplete());
   LittleFS.failSyncPath.clear();
   ASSERT_EQ(local.accept(initial).Result, SUPLA_SUPLAN_RESULT_OK);
+  local.syncDone();  // An installed fence needs authoritative sync completion.
   ServerIdentity restarted;
   restarted.load(&fs);
   EXPECT_EQ(restarted.rootEpoch(), epoch);
@@ -667,7 +669,8 @@ TEST_F(ServerIdentityTests,
   LittleFS.maxWrite = 10;
   EXPECT_EQ(local.accept(changed).Result,
             SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
-  EXPECT_EQ(LittleFS.open("/supla/sl-identity", "r").size(), 10u);
+  // The short write now targets the fence before the OLD map is touched.
+  EXPECT_EQ(LittleFS.open("/supla/sl-identity", "r").size(), 33u);
   // A replay must fail while storage still cannot repair the previous state.
   EXPECT_EQ(local.accept(initial).Result,
             SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
@@ -1040,7 +1043,7 @@ TEST_F(ServerIdentityTests, RemovedMappedIdentityNeverBecomesRemoteBeforeSync) {
   EXPECT_FALSE(restarted.identityTransition());
   EXPECT_EQ(restarted.resolve(502).location, ServerChannelLocation::kRemote);
   EXPECT_EQ(restarted.resolve(700).channelNumber, 3);
-  EXPECT_EQ(config.commits, before + 1);
+  EXPECT_EQ(config.commits, before + 2);  // Ready map + durable fence removal.
   config.reboot();
   ServerIdentity offline;
   offline.load(&config);

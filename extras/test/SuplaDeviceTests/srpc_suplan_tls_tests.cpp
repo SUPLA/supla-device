@@ -297,3 +297,16 @@ TEST_F(SupLanTls, AssociationCallbacksRejectNonTlsTransport) {
   protocol->onSetSuplanDestinationAssociation(&destination);
 }
 }  // namespace
+
+TEST_F(SupLanTls, ChannelConfigUploadWaitsForCurrentRegistrationIdentities) {
+  enable();
+  protocol->iterate(1);
+  TSD_SuplaRegisterDeviceResult result = {};
+  result.result_code = SUPLA_RESULTCODE_TRUE;
+  result.activity_timeout = 30;
+  protocol->onRegisterResult(&result);
+  ASSERT_TRUE(protocol->isRegisteredAndReady());
+  TChannelConfig_HVAC value = {};
+  EXPECT_FALSE(protocol->setChannelConfig(0, SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
+      &value, sizeof(value), SUPLA_CONFIG_TYPE_DEFAULT));
+}

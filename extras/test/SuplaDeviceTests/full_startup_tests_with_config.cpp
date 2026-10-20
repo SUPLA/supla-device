@@ -78,6 +78,8 @@ class FullStartupWithConfig : public ::testing::Test {
         .Times(::testing::AnyNumber()).WillRepeatedly(Return(-1));
     EXPECT_CALL(cfg, getBlobSize(::testing::StrEq("sl-identity")))
         .Times(::testing::AnyNumber()).WillRepeatedly(Return(-1));
+    EXPECT_CALL(cfg, getBlobSize(::testing::StrEq("sl-migration")))
+        .Times(::testing::AnyNumber()).WillRepeatedly(Return(-1));
     if (SuplaDevice.getClock()) {
       delete SuplaDevice.getClock();
     }

@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 
 #include <supla-common/proto.h>
+#include <supla/suplan/suplan_server_identity.h>
 #include <supla/control/action_trigger.h>
 #include <supla/control/action_trigger_parsed.h>
 #include <supla/control/cmd_relay.h>
@@ -420,11 +421,18 @@ bool Supla::LinuxYamlConfig::getSuplaServer(char* result) {
   try {
     if (config["supla"] && config["supla"]["server"]) {
       auto server = config["supla"]["server"].as<std::string>();
+      // Stage the explicit YAML service before first identity persistence.
+      // Discovery may replace endpoints later, but never this provenance.
+      if (getBlobSize("sl-identity") < 0 && getBlobSize("sl-migration") < 0)
+        setString("sl-service", server.c_str());
+      if (!Supla::Device::ServerIdentity::configuredService(this,
+                                                           server.c_str()))
+        return false;
       strncpy(result, server.c_str(), SUPLA_SERVER_NAME_MAXSIZE);
       char tmp[SUPLA_SERVER_NAME_MAXSIZE] = {};
       if (Supla::Config::getSuplaServer(tmp)) {
         SUPLA_LOG_DEBUG("Cleaning Config Supla server name: %s", tmp);
-        setSuplaServer("");
+        setSuplaServerFromDiscovery("");
         saveWithDelay(1000);
       }
       return true;

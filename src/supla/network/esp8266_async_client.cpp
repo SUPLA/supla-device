@@ -338,7 +338,6 @@ int Supla::Esp8266AsyncClient::receiveTcp(uint8_t *data, size_t size) {
 }
 
 int Supla::Esp8266AsyncClient::available() {
-  service();
   pumpTls();
   if (tls_) {
     size_t size = 0;
@@ -349,7 +348,6 @@ int Supla::Esp8266AsyncClient::available() {
 }
 
 int Supla::Esp8266AsyncClient::readImp(uint8_t *data, size_t size) {
-  service();
   if (!tls_) return receiveTcp(data, size);
   pumpTls();
   size_t available = 0;
@@ -376,9 +374,27 @@ int Supla::Esp8266AsyncClient::transmit(const uint8_t *data, size_t size) {
   return failed_ ? 0 : size;
 }
 
-void Supla::Esp8266AsyncClient::service() {
-  pumpTls();
-  AsyncClient::service();
+size_t Supla::Esp8266AsyncClient::writeImp(const uint8_t *data, size_t size) {
+  const size_t sent = AsyncClient::writeImp(data, size);
+  if (!sent || !tls_) return sent;
+  // Finish handing the existing TLS record buffer to lwIP before returning.
+  const uint32_t started = millis();
+  while (!failed_ && (br_ssl_engine_current_state(&tls_->client.eng) &
+                      BR_SSL_SENDREC)) {
+    pumpTls();
+    if (static_cast<uint32_t>(millis() - started) >= timeoutMs) {
+      connectionError_ = ConnectionError::CONNECTION_TIMEOUT;
+      stop();
+      return 0;
+    }
+    if (br_ssl_engine_current_state(&tls_->client.eng) & BR_SSL_SENDREC)
+      delay(1);
+  }
+  if (failed_) {
+    stop();
+    return 0;
+  }
+  return sent;
 }
 
 bool Supla::Esp8266AsyncClient::transportConnected() {

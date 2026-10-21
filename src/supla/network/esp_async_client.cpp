@@ -217,7 +217,6 @@ bool Supla::EspAsyncClient::isSecure() const {
 }
 
 int Supla::EspAsyncClient::available() {
-  service();
   if (!connectionReady() || fd_ < 0) return 0;
   if (tls_ && mbedtls_ssl_get_bytes_avail(&tls_->ssl))
     return mbedtls_ssl_get_bytes_avail(&tls_->ssl);
@@ -238,7 +237,6 @@ int Supla::EspAsyncClient::transmit(const uint8_t *data, size_t size) {
 }
 
 int Supla::EspAsyncClient::readImp(uint8_t *data, size_t size) {
-  service();
   if (!connectionReady() || !size) return -1;
   const int result = tls_ ? mbedtls_ssl_read(&tls_->ssl, data, size)
                          : receiveSocket(this, data, size);

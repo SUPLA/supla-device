@@ -2323,7 +2323,7 @@ void Supla::Protocol::SuplaSrpc::scheduleReconnect(uint32_t now) {
 
 #ifndef ARDUINO_ARCH_AVR
 struct Supla::Protocol::SuplaSrpc::Discovery {
-  enum Phase { Connecting, Sending, Reading } phase = Connecting;
+  enum Phase { Connecting, Reading } phase = Connecting;
   Supla::Client *client = nullptr;
   uint32_t started = 0;
   uint32_t readStarted = 0;
@@ -2375,35 +2375,39 @@ bool Supla::Protocol::SuplaSrpc::autodiscover(uint32_t now) {
   auto ad = discovery->client;
   if (discovery->phase != Discovery::Connecting &&
       supLanTlsRequired(sdc) && !ad->isSecure()) return fail();
-  ad->service();
   if (discovery->phase == Discovery::Connecting) {
     const auto result = ad->connectStep(server, 443);
     if (result == Client::ConnectResult::Pending) return false;
     if (result != Client::ConnectResult::Connected ||
         (supLanTlsRequired(sdc) && !ad->isSecure())) return fail();
+    auto writeText = [&](const char *text) {
+      const size_t size = strlen(text);
+      return ad->write(text, size) == size;
+    };
+    if (!writeText("GET /users/")) return fail();
+    const char *email = discovery->email;
+    while (*email) {
+      char part[17] = {};
+      const size_t size = strnlen(email, sizeof(part) - 1);
+      memcpy(part, email, size);
+      char encoded[3 * (sizeof(part) - 1) + 1] = {};
+      const int length = urlEncode(part, encoded, sizeof(encoded));
+      if (ad->write(encoded, length) != static_cast<size_t>(length))
+        return fail();
+      email += size;
+    }
     char agent[100] = {};
     RegisterDevice::generateHttpAgent(agent, sizeof(agent));
     char guid[SUPLA_GUID_SIZE * 2 + 1] = {};
     generateHexString(RegisterDevice::getGUID(), guid, SUPLA_GUID_SIZE);
-    char request[3 * SUPLA_EMAIL_MAXSIZE + 384] = "GET /users/";
-    const size_t prefix = strlen(request);
-    const int encodedSize = urlEncode(discovery->email, request + prefix,
-                                      3 * SUPLA_EMAIL_MAXSIZE + 1);
-    const size_t used = prefix + encodedSize;
-    const int rest = snprintf(request + used, sizeof(request) - used,
-        " HTTP/1.1\r\nHost: %s\r\nUser-Agent: %s\r\n"
-        "Accept: application/json\r\nX-GUID: %s\r\n"
-        "Connection: close\r\n\r\n", server, agent, guid);
-    if (rest < 0 || static_cast<size_t>(rest) >= sizeof(request) - used ||
-        ad->write(request, used + rest) != used + rest) return fail();
-    discovery->phase = Discovery::Sending;
-    return false;
-  }
-  if (discovery->phase == Discovery::Sending) {
-    if (!ad->connected()) return fail();
-    if (ad->hasPendingWrites()) return false;
+    if (!writeText(" HTTP/1.1\r\nHost: ") || !writeText(server) ||
+        !writeText("\r\nUser-Agent: ") || !writeText(agent) ||
+        !writeText("\r\nAccept: application/json\r\nX-GUID: ") ||
+        !writeText(guid) || !writeText("\r\nConnection: close\r\n\r\n"))
+      return fail();
     discovery->phase = Discovery::Reading;
     discovery->readStarted = now;
+    return false;
   }
   const size_t room = sizeof(discovery->response) - 1 - discovery->used;
   if (room) {
@@ -2456,8 +2460,6 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     cancelPendingConnection();
     return false;
   }
-  if (client && (!supLanTlsRequired(sdc) || client->isSecure()))
-    client->service();
 
   // rr_id is sender-local. A timed-out anonymous reply cannot safely be
   // assigned to another request on this connection. Close outside callbacks;

@@ -219,8 +219,9 @@ Supla::Client::ConnectResult Supla::LinuxClient::startTls() {
   if (!sslEnabled) return ConnectResult::Connected;
   if (!setupSslContext()) return ConnectResult::Failed;
   ssl = SSL_new(ctx);
+  // Older OpenSSL SNI macros take void*, although the hostname is read-only.
   if (!ssl || SSL_set_fd(ssl, connectionFd) != 1 ||
-      SSL_set_tlsext_host_name(ssl, connectionHost()) != 1)
+      SSL_set_tlsext_host_name(ssl, const_cast<char *>(connectionHost())) != 1)
     return ConnectResult::Failed;
   if (isCertificateValidationEnabled()) {
     in_addr ip = {};
@@ -317,7 +318,6 @@ int Supla::LinuxClient::transmit(const uint8_t *buf, size_t size) {
 }
 
 int Supla::LinuxClient::available() {
-  service();
   if (connectionFd < 0) {
     return 0;
   }
@@ -354,7 +354,6 @@ int Supla::LinuxClient::available() {
 }
 
 int Supla::LinuxClient::readImp(uint8_t *buf, size_t size) {
-  service();
   ssize_t response = 0;
   if (buf == nullptr || size == 0) {
     return -1;

@@ -204,6 +204,7 @@ class ArduinoEspClient : public Client {
 #ifdef ARDUINO
     delete asyncClient;
     asyncClient = nullptr;
+    srcIp = 0;
 #endif
     if (wifiClient) {
       wifiClient->stop();
@@ -245,7 +246,9 @@ class ArduinoEspClient : public Client {
       asyncClient->setCACert(rootCACert);
     }
     asyncClient->setTimeoutMs(timeoutMs);
-    return asyncClient->connectStep(host, port);
+    const auto result = asyncClient->connectStep(host, port);
+    srcIp = asyncClient->getSrcConnectionIPAddress();
+    return result;
   }
   void setSSLEnabled(bool value) override {
     if (asyncClient) asyncClient->setSSLEnabled(value);
@@ -254,12 +257,6 @@ class ArduinoEspClient : public Client {
   void setCACert(const char *value) override {
     if (asyncClient) asyncClient->setCACert(value);
     Client::setCACert(value);
-  }
-  void service() override {
-    if (asyncClient) asyncClient->service();
-  }
-  bool hasPendingWrites() const override {
-    return asyncClient && asyncClient->hasPendingWrites();
   }
   ConnectionError getConnectionError() const override {
     return asyncClient ? asyncClient->getConnectionError()

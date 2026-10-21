@@ -39,8 +39,6 @@ class Client {
   // One bounded connection step. Legacy clients retain synchronous connect().
   // Pending is not a connection failure. stop() also cancels a pending attempt.
   virtual ConnectResult connectStep(const char *host, uint16_t port);
-  virtual void service();
-  virtual bool hasPendingWrites() const;
 
   int connect(IPAddress ip, uint16_t port);
   int connect(const char *host, uint16_t port);

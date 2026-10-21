@@ -99,7 +99,6 @@ TEST(LinuxAsyncClient, PlaintextAndDnsReconnectDeliverOrderedBytes) {
   ASSERT_GE(peer, 0);
   EXPECT_EQ(client.write("first", 5), 5U);
   EXPECT_EQ(client.write("second", 6), 6U);
-  for (int i = 0; i < 20 && client.hasPendingWrites(); ++i) client.service();
   char bytes[11] = {};
   timeval timeout = {1, 0};
   setsockopt(peer, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
@@ -107,7 +106,26 @@ TEST(LinuxAsyncClient, PlaintextAndDnsReconnectDeliverOrderedBytes) {
   EXPECT_EQ(std::string(bytes, sizeof(bytes)), "firstsecond");
   close(peer);
   client.stop();
-  EXPECT_FALSE(client.hasPendingWrites());
+}
+
+TEST(LinuxAsyncClient, LegacyConnectWrites8192BytesWithoutSrpcLimit) {
+  Listener server;
+  ASSERT_NE(server.port, 0);
+  Supla::LinuxClient client;
+  client.setTimeoutMs(1000);
+  ASSERT_EQ(client.connect("127.0.0.1", server.port), 1);
+  const int peer = accept(server.fd, nullptr, nullptr);
+  ASSERT_GE(peer, 0);
+  const std::string payload(8192, 'x');
+  const size_t sent = client.write(payload.data(), payload.size());
+  EXPECT_EQ(sent, payload.size());
+  std::string received(payload.size(), '\0');
+  timeval timeout = {1, 0};
+  setsockopt(peer, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+  EXPECT_EQ(recv(peer, &received[0], received.size(), MSG_WAITALL),
+            static_cast<ssize_t>(payload.size()));
+  EXPECT_EQ(received, payload);
+  close(peer);
 }
 
 TEST(LinuxAsyncClient, CancelledDnsCannotCompleteDifferentClientOrAttempt) {
@@ -230,7 +248,6 @@ TEST(LinuxAsyncClient, ValidTlsPreservesCaAndHostnameAndTransfersData) {
   char reply[5] = {};
   size_t used = 0;
   for (int i = 0; i < 2000 && used < sizeof(reply); ++i) {
-    client.service();
     int count = client.read(reply + used, sizeof(reply) - used);
     if (count > 0) used += count;
     delay(1);
@@ -257,6 +274,5 @@ TEST(LinuxAsyncClient, WrongServerIdentityFailsWithoutPlaintextFallback) {
   EXPECT_EQ(result, Result::Failed);
   EXPECT_FALSE(client.isSecure());
   EXPECT_FALSE(client.connected());
-  EXPECT_FALSE(client.hasPendingWrites());
 }
 #endif  // SUPLA_ASYNC_LINUX_TEST

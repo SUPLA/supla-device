@@ -8,14 +8,11 @@
 #include "client.h"
 
 namespace Supla {
-// Shared connection lifetime and bounded, ordered backpressure. Only migrated
+// Shared cooperative connection lifetime. Writes remain synchronous. Migrated
 // transports derive from this class; legacy/AVR Client layouts are unchanged.
 class AsyncClient : public Client {
  public:
-  ~AsyncClient() override;
   ConnectResult connectStep(const char *host, uint16_t port) override;
-  void service() override;
-  bool hasPendingWrites() const override;
   ConnectionError getConnectionError() const override;
   void stop() override;
   uint8_t connected() override;
@@ -38,17 +35,10 @@ class AsyncClient : public Client {
   bool connectionReady() const { return state_ == ConnectResult::Connected; }
 
  private:
-  struct TxBlock;
-  void clearWrites();
   char host_[256] = {};
   uint16_t port_ = 0;
   uint32_t startedMs_ = 0;
-  uint32_t writeProgressMs_ = 0;
   ConnectResult state_ = ConnectResult::Failed;
-  TxBlock *head_ = nullptr;
-  TxBlock *tail_ = nullptr;
-  size_t queuedBytes_ = 0;
-  bool synchronous_ = false;
 };
 }  // namespace Supla
 #endif  // !ARDUINO_ARCH_AVR

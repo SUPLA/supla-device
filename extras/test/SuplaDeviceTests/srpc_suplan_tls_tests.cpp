@@ -32,7 +32,6 @@ class TlsConfig : public Supla::KeyValue {
 class TlsClient : public Supla::Client {
  public:
   int available() override { return 0; }
-  void service() override { ++serviceCalls; }
   void stop() override { online = false; }
   uint8_t connected() override { return online; }
   void setTimeoutMs(uint16_t) override {}
@@ -45,7 +44,6 @@ class TlsClient : public Supla::Client {
   bool lastTls = false;
   uint16_t lastPort = 0;
   int attempts = 0;
-  int serviceCalls = 0;
 
  protected:
   int connectImp(const char *, uint16_t port) override {
@@ -256,7 +254,6 @@ TEST_F(SupLanTls, FlagAloneCannotUseAnAlreadyOpenPlaintextConnection) {
   Supla::RegisterDevice::addFlags(SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED);
   protocol->iterate(1);
   EXPECT_EQ(registrations, 0);
-  EXPECT_EQ(client->serviceCalls, 0);  // No buffered dispatch before TLS gate.
   EXPECT_FALSE(client->online);
   EXPECT_TRUE(Supla::RegisterDevice::getRegDevHeaderPtr()->Flags &
               SUPLA_DEVICE_FLAG_SUPLAN_SUPPORTED);

@@ -14,7 +14,6 @@ class Esp8266AsyncClient : public AsyncClient {
   void setFingerprint(const char *value);
   int available() override;
   bool isSecure() const override;
-  void service() override;
 
  protected:
   bool isCertificateValidationEnabled() const override;
@@ -22,6 +21,7 @@ class Esp8266AsyncClient : public AsyncClient {
   ConnectResult pollTransport() override;
   void closeTransport() override;
   bool transportConnected() override;
+  size_t writeImp(const uint8_t *data, size_t size) override;
   int transmit(const uint8_t *data, size_t size) override;
   int readImp(uint8_t *data, size_t size) override;
 

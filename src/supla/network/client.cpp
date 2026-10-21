@@ -47,10 +47,6 @@ Supla::Client::ConnectResult Supla::Client::connectStep(
                                  : ConnectResult::Failed;
 }
 
-void Supla::Client::service() {}
-
-bool Supla::Client::hasPendingWrites() const { return false; }
-
 void Supla::Client::logConnecting(const char *host, uint16_t port) const {
   if (sslEnabled) {
     if (!isCertificateValidationEnabled()) {

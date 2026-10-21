@@ -25,6 +25,8 @@ class StepClient : public Supla::AsyncClient {
   bool online = false;
   Result next = Result::Pending;
   int sendLimit = -1;
+  int blockedAttempts = 0;
+  SimpleTime *clock = nullptr;
   std::string written;
   std::vector<std::string> attempts;
 
@@ -44,6 +46,11 @@ class StepClient : public Supla::AsyncClient {
   int readImp(uint8_t *, size_t) override { return -1; }
   int transmit(const uint8_t *data, size_t size) override {
     attempts.emplace_back(reinterpret_cast<const char *>(data), size);
+    if (clock) clock->advance(10);
+    if (blockedAttempts > 0) {
+      --blockedAttempts;
+      return -1;
+    }
     if (sendLimit < 0) return -1;
     if (static_cast<size_t>(sendLimit) < size) size = sendLimit;
     written.append(reinterpret_cast<const char *>(data), size);
@@ -97,60 +104,47 @@ TEST(AsyncClient, StopAndTargetOrCertificateChangeCancelAttempt) {
   EXPECT_EQ(client.starts, 6);
 }
 
-TEST(AsyncClient, PartialWritesPreserveOrderAndWantRetryBytes) {
+TEST(AsyncClient, ConnectedWritesCompleteBeforeReturningWithoutQueue) {
   SimpleTime time;
   StepClient client;
   client.next = Result::Connected;
-  ASSERT_EQ(client.connectStep("server", 2016), Result::Connected);
-  ASSERT_EQ(client.write("abc", 3), 3U);
-  client.service();
-  ASSERT_TRUE(client.hasPendingWrites());
-  ASSERT_EQ(client.write("defgh", 5), 5U);
-  client.service();
-  ASSERT_EQ(client.attempts.size(), 2U);
-  EXPECT_EQ(client.attempts[0], "abc");
-  EXPECT_EQ(client.attempts[1], "abc");
   client.sendLimit = 2;
-  for (int i = 0; i < 5; ++i) {
-    time.advance(10);
-    client.service();
-  }
+  client.blockedAttempts = 1;
+  client.clock = &time;
+  ASSERT_EQ(client.connectStep("server", 2016), Result::Connected);
+  ASSERT_EQ(client.write("abcdefgh", 8), 8U);
   EXPECT_EQ(client.written, "abcdefgh");
-  EXPECT_FALSE(client.hasPendingWrites());
+  ASSERT_GE(client.attempts.size(), 2U);
+  EXPECT_EQ(client.attempts[0], client.attempts[1]);
 }
 
 TEST(AsyncClient, BlockedWriterTimesOutAndDoesNotReplayAfterReconnect) {
   SimpleTime time;
   StepClient client;
-  client.setTimeoutMs(100);
+  client.clock = &time;
+  client.setTimeoutMs(30);
   client.next = Result::Connected;
   ASSERT_EQ(client.connectStep("server", 2016), Result::Connected);
-  ASSERT_EQ(client.write("old", 3), 3U);
-  time.advance(100);
-  client.service();
+  EXPECT_EQ(client.write("old", 3), 0U);
   EXPECT_FALSE(client.connected());
-  EXPECT_FALSE(client.hasPendingWrites());
   ASSERT_EQ(client.connectStep("server", 2016), Result::Connected);
   client.sendLimit = 512;
   ASSERT_EQ(client.write("fresh", 5), 5U);
-  client.service();
   EXPECT_EQ(client.written, "fresh");
 }
 
-TEST(AsyncClient, OutputCapacityIsBoundedAndOverflowClosesConnection) {
+TEST(AsyncClient, ConnectedWriteHasNoSrpcSizeLimitAndPendingRejectsTx) {
   SimpleTime time;
   StepClient client;
+  ASSERT_EQ(client.connectStep("server", 2016), Result::Pending);
+  EXPECT_EQ(client.write("unsent", 6), 0U);
+  EXPECT_TRUE(client.attempts.empty());
   client.next = Result::Connected;
+  client.sendLimit = 512;
   ASSERT_EQ(client.connectStep("server", 2016), Result::Connected);
-  std::string data(512, 'x');
-  int accepted = 0;
-  while (client.write(data.data(), data.size())) {
-    ++accepted;
-    ASSERT_LT(accepted, 100);
-  }
-  EXPECT_GT(accepted, 1);
-  EXPECT_FALSE(client.connected());
-  EXPECT_FALSE(client.hasPendingWrites());
+  const std::string data(8192, 'x');
+  EXPECT_EQ(client.write(data.data(), data.size()), data.size());
+  EXPECT_EQ(client.written, data);
 }
 
 TEST(AsyncClient, SrpcPendingDoesNotCountFailureOrRestartOrDuplicateAttempt) {
@@ -175,7 +169,6 @@ TEST(AsyncClient, SrpcPendingDoesNotCountFailureOrRestartOrDuplicateAttempt) {
   EXPECT_FALSE(protocol.iterate(time.value));
   EXPECT_EQ(protocol.failures(), 1);
   EXPECT_EQ(protocol.pause(), 1000U);
-  EXPECT_FALSE(client->hasPendingWrites());
   Supla::RegisterDevice::resetToDefaults();
 }
 

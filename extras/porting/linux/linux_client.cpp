@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 #include <openssl/err.h>
 #include <openssl/pem.h>
@@ -21,7 +22,49 @@
 
 #include "linux_client.h"
 
+namespace {
+// Bounded process-wide resolver jobs. A cancelled request owns its slot until
+// getaddrinfo returns; no callback ever retains a Client pointer. DNS cannot
+// force stop()/destruction to join a blocked system resolver.
+struct DnsJob {
+  enum State { Free, Running, Done, Abandoned } state = Free;
+  char host[256] = {};
+  uint32_t addresses[8] = {};
+  uint8_t count = 0;
+};
+DnsJob dnsJobs[4];
+pthread_mutex_t dnsMutex = PTHREAD_MUTEX_INITIALIZER;
+void *resolveHost(void *context) {
+  auto job = static_cast<DnsJob *>(context);
+  addrinfo hints = {};
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  addrinfo *result = nullptr;
+  uint32_t addresses[8] = {};
+  uint8_t count = 0;
+  if (!getaddrinfo(job->host, nullptr, &hints, &result)) {
+    for (auto item = result; item && count < 8; item = item->ai_next) {
+      if (item->ai_family == AF_INET)
+        addresses[count++] = reinterpret_cast<sockaddr_in *>(
+            item->ai_addr)->sin_addr.s_addr;
+    }
+  }
+  if (result) freeaddrinfo(result);
+  pthread_mutex_lock(&dnsMutex);
+  if (job->state == DnsJob::Abandoned) {
+    job->state = DnsJob::Free;
+  } else {
+    memcpy(job->addresses, addresses, sizeof(addresses));
+    job->count = count;
+    job->state = DnsJob::Done;
+  }
+  pthread_mutex_unlock(&dnsMutex);
+  return nullptr;
+}
+}  // namespace
+
 Supla::LinuxClient::LinuxClient() {
+  timeoutMs = 3000;
 }
 
 Supla::LinuxClient::~LinuxClient() {
@@ -134,285 +177,147 @@ bool Supla::LinuxClient::setupSslContext() {
   return true;
 }
 
-int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
-  stop();
-
-  struct addrinfo hints = {};
-  struct addrinfo *addresses = {};
-  hints.ai_family = AF_INET;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_protocol = IPPROTO_TCP;
-
-  char portStr[10] = {};
-  snprintf(portStr, sizeof(portStr), "%d", port);
-
-  const int status = getaddrinfo(server, portStr, &hints, &addresses);
-  if (status != 0) {
-    SUPLA_LOG_ERROR("%s: %s", server, gai_strerror(status));
-    return 0;
+Supla::Client::ConnectResult Supla::LinuxClient::startTransport(
+    const char *host, uint16_t port) {
+  remotePort = port;
+  addressCount = addressIndex = 0;
+  if (inet_pton(AF_INET, host, &addresses[0]) == 1) {
+    addressCount = 1;
+    return startTcp();
   }
+  phase = Phase::Dns;
+  return ConnectResult::Pending;
+}
 
-  int err = 0;
-  int flagsCopy = 0;
-  for (struct addrinfo *addr = addresses; addr != nullptr;
-       addr = addr->ai_next) {
-    connectionFd = socket(
-        addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-    if (connectionFd == -1) {
-      err = errno;
-      continue;
-    }
-
-    flagsCopy = ::fcntl(connectionFd, F_GETFL, 0);
-    if (flagsCopy == -1) {
-      err = errno;
-      ::close(connectionFd);
-      connectionFd = -1;
-      continue;
-    }
-    struct timeval timeout = {};
-    timeout.tv_sec = 10;
-    ::setsockopt(
-        connectionFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-    ::setsockopt(
-        connectionFd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-    if (::fcntl(connectionFd, F_SETFL, flagsCopy | O_NONBLOCK) == -1) {
-      err = errno;
-      ::close(connectionFd);
-      connectionFd = -1;
-      continue;
-    }
-    if (::connect(connectionFd, addr->ai_addr, addr->ai_addrlen) == 0) {
-      if (::fcntl(connectionFd, F_SETFL, flagsCopy) == -1) {
-        err = errno;
-        srcIp = 0;
-        ::close(connectionFd);
-        connectionFd = -1;
-        continue;
-      }
-      break;
-    }
-
-    err = errno;
-    bool isConnected = false;
-
-    if (errno == EWOULDBLOCK || errno == EINPROGRESS) {
-      struct pollfd pfd = {};
-      pfd.fd = connectionFd;
-      pfd.events = POLLOUT;
-
-      int result = ::poll(&pfd, 1, timeoutMs);
-      if (result > 0) {
-        socklen_t len = sizeof(err);
-        int retval =
-            ::getsockopt(connectionFd, SOL_SOCKET, SO_ERROR, &err, &len);
-
-        if (retval == 0 && err == 0) {
-          isConnected = true;
-        }
-      }
-    }
-
-    if (::fcntl(connectionFd, F_SETFL, flagsCopy) == -1) {
-      err = errno;
-      srcIp = 0;
-      ::close(connectionFd);
-      connectionFd = -1;
-      continue;
-    }
-
-    if (isConnected) {
-      break;
-    }
-    srcIp = 0;
+Supla::Client::ConnectResult Supla::LinuxClient::startTcp() {
+  while (addressIndex < addressCount) {
+    connectionFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (connectionFd < 0) return ConnectResult::Failed;
+    int flags = fcntl(connectionFd, F_GETFL, 0);
+    if (flags < 0 || fcntl(connectionFd, F_SETFL, flags | O_NONBLOCK) < 0)
+      return ConnectResult::Failed;
+    sockaddr_in address = {};
+    address.sin_family = AF_INET;
+    address.sin_port = htons(remotePort);
+    address.sin_addr.s_addr = addresses[addressIndex++];
+    phase = Phase::Tcp;
+    if (::connect(connectionFd, reinterpret_cast<sockaddr *>(&address),
+                  sizeof(address)) == 0) return startTls();
+    if (errno == EINPROGRESS || errno == EWOULDBLOCK)
+      return ConnectResult::Pending;
     ::close(connectionFd);
     connectionFd = -1;
   }
-
-  freeaddrinfo(addresses);
-
-  if (connectionFd == -1) {
-    srcIp = 0;
-    SUPLA_LOG_ERROR("%s: %s", server, strerror(err));
-    return 0;
-  }
-
-
-  if (sslEnabled) {
-    if (!setupSslContext()) {
-      stop();
-      return 0;
-    }
-    ssl = SSL_new(ctx);
-    if (ssl == nullptr) {
-      SUPLA_LOG_ERROR("SSL_new() failed");
-      stop();
-      return 0;
-    }
-    if (SSL_set_fd(ssl, connectionFd) != 1) {
-      SUPLA_LOG_ERROR("SSL_set_fd failed");
-      stop();
-      return 0;
-    }
-    // OpenSSL's macro casts to void *, but only reads and copies the name.
-    if (SSL_set_tlsext_host_name(ssl, const_cast<char *>(server)) != 1) {
-      SUPLA_LOG_ERROR("SSL_set_tlsext_host_name failed");
-      stop();
-      return 0;
-    }
-    if (isCertificateValidationEnabled() && SSL_set1_host(ssl, server) != 1) {
-      SUPLA_LOG_ERROR("SSL_set1_host failed");
-      stop();
-      return 0;
-    }
-    int ret = SSL_connect(ssl);
-    if (ret <= 0) {
-      printSslError(ssl, ret);
-      if (isCertificateValidationEnabled()) {
-        SUPLA_LOG_WARNING("SSL verify result: %s",
-                          X509_verify_cert_error_string(
-                              SSL_get_verify_result(ssl)));
-      }
-      stop();
-      return 0;
-    }
-
-    SUPLA_LOG_DEBUG("TLS version: %s", SSL_get_version(ssl));
-    SUPLA_LOG_DEBUG("Cipher suite: %s", SSL_get_cipher(ssl));
-    if (!checkSslCerts(ssl)) {
-      stop();
-      return 0;
-    }
-  } else {
-    // TODO(klew): implement non ssl connection handling for Linux
-  }
-
-  if (::fcntl(connectionFd, F_SETFL, flagsCopy | O_NONBLOCK) == -1) {
-    SUPLA_LOG_ERROR("Failed to set socket nonblocking mode");
-    stop();
-    return 0;
-  }
-
-  // store connection source IP address
-  struct sockaddr_in addr = {};
-  socklen_t addrLen = sizeof(addr);
-  if (getsockname(connectionFd, (struct sockaddr *)&addr, &addrLen) == 0) {
-    srcIp = addr.sin_addr.s_addr;
-  } else {
-    srcIp = 0;
-  }
-  uint8_t ipArr[4];
-  for (int i = 0; i < 4; i++) {
-    ipArr[i] = (srcIp >> (i * 8)) & 0xFF;
-  }
-
-  SUPLA_LOG_DEBUG("Connected via IP %d.%d.%d.%d", ipArr[0], ipArr[1],
-      ipArr[2], ipArr[3]);
-
-  return 1;
+  return ConnectResult::Failed;
 }
 
-size_t Supla::LinuxClient::writeImp(const uint8_t *buf, size_t size) {
-  if (connectionFd == -1) {
-    return 0;
+Supla::Client::ConnectResult Supla::LinuxClient::startTls() {
+  sockaddr_in local = {};
+  socklen_t length = sizeof(local);
+  if (!getsockname(connectionFd, reinterpret_cast<sockaddr *>(&local), &length))
+    srcIp = local.sin_addr.s_addr;
+  if (!sslEnabled) return ConnectResult::Connected;
+  if (!setupSslContext()) return ConnectResult::Failed;
+  ssl = SSL_new(ctx);
+  if (!ssl || SSL_set_fd(ssl, connectionFd) != 1 ||
+      SSL_set_tlsext_host_name(ssl, connectionHost()) != 1)
+    return ConnectResult::Failed;
+  if (isCertificateValidationEnabled()) {
+    in_addr ip = {};
+    if (inet_pton(AF_INET, connectionHost(), &ip) == 1) {
+      if (!X509_VERIFY_PARAM_set1_ip_asc(SSL_get0_param(ssl), connectionHost()))
+        return ConnectResult::Failed;
+    } else if (SSL_set1_host(ssl, connectionHost()) != 1) {
+      return ConnectResult::Failed;
+    }
   }
+  SSL_set_mode(ssl, SSL_MODE_ENABLE_PARTIAL_WRITE);
+  phase = Phase::Tls;
+  return ConnectResult::Pending;
+}
 
+Supla::Client::ConnectResult Supla::LinuxClient::pollTransport() {
+  if (phase == Phase::Dns) {
+    pthread_mutex_lock(&dnsMutex);
+    if (dnsSlot < 0) {
+      for (int i = 0; i < 4; ++i) {
+        if (dnsJobs[i].state != DnsJob::Free) continue;
+        dnsSlot = i;
+        auto &job = dnsJobs[i];
+        snprintf(job.host, sizeof(job.host), "%s", connectionHost());
+        job.count = 0;
+        job.state = DnsJob::Running;
+        pthread_t thread;
+        if (pthread_create(&thread, nullptr, resolveHost, &job)) {
+          job.state = DnsJob::Free;
+          dnsSlot = -1;
+          pthread_mutex_unlock(&dnsMutex);
+          return ConnectResult::Failed;
+        }
+        pthread_detach(thread);
+        break;
+      }
+    }
+    if (dnsSlot < 0 || dnsJobs[dnsSlot].state != DnsJob::Done) {
+      pthread_mutex_unlock(&dnsMutex);
+      return ConnectResult::Pending;
+    }
+    auto &job = dnsJobs[dnsSlot];
+    memcpy(addresses, job.addresses, sizeof(addresses));
+    addressCount = job.count;
+    job.state = DnsJob::Free;
+    dnsSlot = -1;
+    pthread_mutex_unlock(&dnsMutex);
+    return startTcp();
+  }
+  if (phase == Phase::Tcp) {
+    pollfd descriptor = {};
+    descriptor.fd = connectionFd;
+    descriptor.events = POLLOUT;
+    int ready = ::poll(&descriptor, 1, 0);
+    if (ready < 0 && errno != EINTR) return ConnectResult::Failed;
+    if (ready <= 0) return ConnectResult::Pending;
+    int error = 0;
+    socklen_t length = sizeof(error);
+    if (getsockopt(connectionFd, SOL_SOCKET, SO_ERROR, &error, &length) ||
+        error) {
+      ::close(connectionFd);
+      connectionFd = -1;
+      return startTcp();
+    }
+    return startTls();
+  }
+  const int result = SSL_connect(ssl);
+  if (result == 1) {
+    return checkSslCerts(ssl) ? ConnectResult::Connected
+                              : ConnectResult::Failed;
+  }
+  const int error = SSL_get_error(ssl, result);
+  if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
+    return ConnectResult::Pending;
+  printSslError(ssl, result);
+  return ConnectResult::Failed;
+}
+
+int Supla::LinuxClient::transmit(const uint8_t *buf, size_t size) {
+  if (connectionFd < 0) return 0;
   if (sslEnabled) {
-    if (ssl == nullptr) {
-      return 0;
-    }
-
-    size_t sent = 0;
-    while (sent < size) {
-      int result = SSL_write(ssl, buf + sent, size - sent);
-      if (result > 0) {
-        sent += result;
-        continue;
-      }
-
-      int sslError = SSL_get_error(ssl, result);
-      if (sslError == SSL_ERROR_WANT_READ ||
-          sslError == SSL_ERROR_WANT_WRITE) {
-        struct pollfd pfd = {};
-        pfd.fd = connectionFd;
-        pfd.events = sslError == SSL_ERROR_WANT_READ ? POLLIN : POLLOUT;
-        int pollResult = ::poll(&pfd, 1, timeoutMs);
-        if (pollResult > 0) {
-          if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
-            stop();
-            return 0;
-          }
-          if (pfd.revents & pfd.events) {
-            continue;
-          }
-          stop();
-          return 0;
-        }
-        if (pollResult == 0) {
-          stop();
-          return 0;
-        }
-        if (errno == EINTR) {
-          continue;
-        }
-        stop();
-        return 0;
-      }
-
-      printSslError(ssl, result);
-      stop();
-      return 0;
-    }
-    return sent;
-  }
-
-  size_t sent = 0;
-  while (sent < size) {
-    ssize_t result = ::write(connectionFd, buf + sent, size - sent);
-    if (result > 0) {
-      sent += result;
-      continue;
-    }
-
-    if (result == 0) {
-      stop();
-      return 0;
-    }
-
-    if (errno == EINTR) {
-      continue;
-    }
-
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-      struct pollfd pfd = {};
-      pfd.fd = connectionFd;
-      pfd.events = POLLOUT;
-      int pollResult = ::poll(&pfd, 1, timeoutMs);
-      if (pollResult > 0) {
-        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
-          stop();
-          return 0;
-        }
-        if (pfd.revents & POLLOUT) {
-          continue;
-        }
-        stop();
-        return 0;
-      }
-      if (pollResult < 0 && errno == EINTR) {
-        continue;
-      }
-      stop();
-      return 0;
-    }
-
-    stop();
+    const int result = SSL_write(ssl, buf, size);
+    if (result > 0) return result;
+    const int error = SSL_get_error(ssl, result);
+    if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
+    return -1;
     return 0;
   }
-  return sent;
+  const int result = ::send(connectionFd, buf, size, MSG_NOSIGNAL);
+  if (result > 0) return result;
+  return result < 0 &&
+      (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+      ? -1 : 0;
 }
 
 int Supla::LinuxClient::available() {
+  service();
   if (connectionFd < 0) {
     return 0;
   }
@@ -449,6 +354,7 @@ int Supla::LinuxClient::available() {
 }
 
 int Supla::LinuxClient::readImp(uint8_t *buf, size_t size) {
+  service();
   ssize_t response = 0;
   if (buf == nullptr || size == 0) {
     return -1;
@@ -537,7 +443,14 @@ int Supla::LinuxClient::readImp(uint8_t *buf, size_t size) {
   return response;
 }
 
-void Supla::LinuxClient::stop() {
+void Supla::LinuxClient::closeTransport() {
+  pthread_mutex_lock(&dnsMutex);
+  if (dnsSlot >= 0) {
+    auto &job = dnsJobs[dnsSlot];
+    job.state = job.state == DnsJob::Done ? DnsJob::Free : DnsJob::Abandoned;
+    dnsSlot = -1;
+  }
+  pthread_mutex_unlock(&dnsMutex);
   if (ssl) {
     SSL_free(ssl);
   }
@@ -549,7 +462,8 @@ void Supla::LinuxClient::stop() {
   srcIp = 0;
 }
 
-uint8_t Supla::LinuxClient::connected() {
+bool Supla::LinuxClient::transportConnected() {
+  if (ssl && SSL_pending(ssl) > 0) return true;
   if (connectionFd == -1) {
     return false;
   }
@@ -569,11 +483,8 @@ uint8_t Supla::LinuxClient::connected() {
   return true;
 }
 
-void Supla::LinuxClient::setTimeoutMs(uint16_t _timeoutMs) {
-  timeoutMs = _timeoutMs;
-}
-
 void Supla::LinuxClient::setUseDefaultCACerts(bool useDefault) {
+  if (useDefaultCACerts != useDefault) stop();
   useDefaultCACerts = useDefault;
 }
 
@@ -582,7 +493,8 @@ bool Supla::LinuxClient::isCertificateValidationEnabled() const {
 }
 
 bool Supla::LinuxClient::isSecure() const {
-  return ssl && connectionFd >= 0 && SSL_is_init_finished(ssl);
+  return connectionReady() && ssl && connectionFd >= 0 &&
+      SSL_is_init_finished(ssl);
 }
 
 bool Supla::LinuxClient::checkSslCerts(SSL *ssl) {

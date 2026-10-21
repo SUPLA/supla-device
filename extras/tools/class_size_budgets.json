@@ -490,7 +490,7 @@
       "name": "Supla::Protocol::SuplaSrpc",
       "header": "supla/protocol/supla_srpc.h",
       "limits": {
-        "host": 216,
+        "host": 224,
         "avr": 121,
         "esp8266": 156,
         "esp32": 156

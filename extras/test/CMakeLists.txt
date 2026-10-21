@@ -19,6 +19,11 @@ endif(CCACHE_FOUND)
 
 enable_testing()
 
+# Actual Linux socket/OpenSSL transport, isolated from SDK network doubles.
+find_package(OpenSSL REQUIRED)
+find_package(Threads REQUIRED)
+
+
 include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/SuplaDeviceSources.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/SuplaTools.cmake)
 
@@ -549,3 +554,28 @@ target_include_directories(serverstreamwiretests PRIVATE ../../src)
 target_compile_definitions(serverstreamwiretests PRIVATE SUPLA_DEVICE)
 target_link_libraries(serverstreamwiretests PRIVATE gtest_main)
 add_test(NAME serverstreamwiretests COMMAND serverstreamwiretests)
+
+add_executable(async_linux_client_tests
+  SuplaDeviceTests/async_client_linux_tests.cpp
+  ../porting/linux/linux_client.cpp
+  ../../src/supla/network/client.cpp
+  ../../src/supla/network/async_client.cpp
+  ../../src/supla/network/ip_address.cpp
+  doubles/log.cpp)
+target_include_directories(async_linux_client_tests PRIVATE ../../src)
+target_compile_definitions(async_linux_client_tests PRIVATE
+  SUPLA_ASYNC_LINUX_TEST SUPLA_DEVICE SUPLA_LINUX)
+target_link_libraries(async_linux_client_tests PRIVATE
+  OpenSSL::SSL OpenSSL::Crypto Threads::Threads gtest_main)
+add_test(NAME async_linux_client_tests COMMAND async_linux_client_tests)
+supla_apply_warnings(async_linux_client_tests)
+
+add_executable(async_dns_tests
+  AsyncDnsTests/async_dns_tests.cpp
+  ../../src/supla/network/async_dns.cpp)
+target_compile_definitions(async_dns_tests PRIVATE ESP_PLATFORM)
+target_include_directories(async_dns_tests BEFORE PRIVATE
+  AsyncDnsTests/fakes ../../src)
+target_link_libraries(async_dns_tests PRIVATE gtest_main)
+add_test(NAME async_dns_tests COMMAND async_dns_tests)
+supla_apply_warnings(async_dns_tests)

@@ -37,6 +37,21 @@ int Supla::Client::connect(IPAddress ip, uint16_t port) {
 }
 
 int Supla::Client::connect(const char *host, uint16_t port) {
+  logConnecting(host, port);
+  return connectImp(host, port);
+}
+
+Supla::Client::ConnectResult Supla::Client::connectStep(
+    const char *host, uint16_t port) {
+  return connect(host, port) == 1 ? ConnectResult::Connected
+                                 : ConnectResult::Failed;
+}
+
+void Supla::Client::service() {}
+
+bool Supla::Client::hasPendingWrites() const { return false; }
+
+void Supla::Client::logConnecting(const char *host, uint16_t port) const {
   if (sslEnabled) {
     if (!isCertificateValidationEnabled()) {
       SUPLA_LOG_WARNING(
@@ -49,8 +64,6 @@ int Supla::Client::connect(const char *host, uint16_t port) {
             sslEnabled ? "" : "NOT ",
             host,
             port);
-
-  return connectImp(host, port);
 }
 
 size_t Supla::Client::write(uint8_t data) {

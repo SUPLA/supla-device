@@ -31,6 +31,7 @@
 #include <supla/storage/storage.h>
 #include <supla/time.h>
 #include <supla/tools.h>
+#include <new>
 
 namespace Supla::Protocol {
 struct CalCfgResultPendingItem {
@@ -1057,7 +1058,8 @@ Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
       shareResponsePending(false),
       ensureResponsePending(false),
       discardShareResponse(false),
-      discardEnsureResponse(false) {
+      discardEnsureResponse(false),
+      connectionPending(false) {
   setSuplaCACert(::suplaCACert);
   setSupla3rdPartyCACert(::supla3rdCACert);
 }
@@ -1259,6 +1261,7 @@ bool Supla::Protocol::SuplaSrpc::isSensitiveCallId(int callId) {
 
 Supla::Protocol::SuplaSrpc::~SuplaSrpc() {
 #ifndef ARDUINO_ARCH_AVR
+  cancelAutodiscover();
   delete serverStream;
   serverStream = nullptr;
 #endif
@@ -1287,6 +1290,7 @@ void Supla::Protocol::SuplaSrpc::releaseOwnedCertificate() {
 }
 
 void Supla::Protocol::SuplaSrpc::setNetworkClient(Supla::Client *newClient) {
+  connectionPending = false;
   if (client) {
     delete client;
   }
@@ -1340,6 +1344,10 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
     enabled = true;
     memset(buf, 0, sizeof(buf));
     if (cfg->getSuplaServer(buf) && strlen(buf) > 0) {
+      if (client && strcmp(buf, Supla::RegisterDevice::getServerName())) {
+        cancelPendingConnection();
+        if (client->connected()) disconnect();
+      }
       Supla::RegisterDevice::setServerName(buf);
       configEmpty = false;
     } else {
@@ -1435,6 +1443,10 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
       }
     }
   } else {
+    cancelPendingConnection();
+    if (client && client->connected()) disconnect();
+    deinitializeSrpc();
+    registered = 0;
     enabled = false;
   }
 
@@ -2310,143 +2322,130 @@ void Supla::Protocol::SuplaSrpc::scheduleReconnect(uint32_t now) {
 }
 
 #ifndef ARDUINO_ARCH_AVR
+struct Supla::Protocol::SuplaSrpc::Discovery {
+  enum Phase { Connecting, Sending, Reading } phase = Connecting;
+  Supla::Client *client = nullptr;
+  uint32_t started = 0;
+  uint32_t readStarted = 0;
+  size_t used = 0;
+  char response[512] = {};
+  char email[SUPLA_EMAIL_MAXSIZE] = {};
+  ~Discovery() {
+    if (client) client->stop();
+    delete client;
+  }
+};
+
+void Supla::Protocol::SuplaSrpc::cancelAutodiscover() {
+  delete discovery;
+  discovery = nullptr;
+}
+
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__((noinline))
 #endif
 bool Supla::Protocol::SuplaSrpc::autodiscover(uint32_t now) {
-  autodiscoverRetryCounter++;
-  if (autodiscoverRetryCounter > 4) {
-    if (autodiscoverRetryCounter == 5) {
-      SUPLA_LOG_WARNING("Autodiscover failed too many times. Giving up");
-    }
-    autodiscoverRetryCounter = 6;
-    return false;
-  }
-
-  // Try to get server from AD
-  SUPLA_LOG_INFO("Supla server name not set. Trying to get it from AD");
-  // fetch json from https://autodiscover.supla.org/users/email@host
   const char server[] = "iot.autodiscover.supla.org";
-  auto adClient = createNetworkClient();
-  if (adClient == nullptr) {
-    SUPLA_LOG_ERROR("Failed to create autodiscovery network client");
+  auto fail = [&]() {
+    if (autodiscoverRetryCounter < 6) ++autodiscoverRetryCounter;
+    cancelAutodiscover();
     waitForIterate = 1000;
+    lastIterateTime = now;
     return false;
-  }
-  adClient->setSSLEnabled(true);
-  adClient->setCACert(::suplaCACert);
-
-  const bool requireTls = supLanTlsRequired(sdc);
-  if (1 == adClient->connect(server, 443) &&
-      (!requireTls || adClient->isSecure())) {
-    adClient->write("GET /users/");
-    const char *email = Supla::RegisterDevice::getEmail();
-    while (*email) {
-      char part[17] = {};
-      size_t len = strnlen(email, sizeof(part) - 1);
-      memcpy(part, email, len);
-      char encoded[3 * (sizeof(part) - 1) + 1] = {};
-      int encodedLen = urlEncode(part, encoded, sizeof(encoded));
-      adClient->write(encoded, encodedLen);
-      email += len;
+  };
+  if (discovery && strcmp(discovery->email, RegisterDevice::getEmail()))
+    cancelAutodiscover();
+  if (!discovery) {
+    if (autodiscoverRetryCounter >= 4) return false;
+    SUPLA_LOG_INFO("Supla server name not set. Trying to get it from AD");
+    discovery = new (std::nothrow) Discovery;
+    if (!discovery) return fail();
+    discovery->started = now;
+    snprintf(discovery->email, sizeof(discovery->email), "%s",
+             RegisterDevice::getEmail());
+    discovery->client = createNetworkClient();
+    if (!discovery->client) {
+      SUPLA_LOG_ERROR("Failed to create autodiscovery network client");
+      return fail();
     }
-    adClient->write(" HTTP/1.1\r\n");
-    adClient->write("Host: ");
-    adClient->write(server);
-    adClient->write("\r\n");
-#define HTTP_AGENT_SIZE 100
-    char httpAgent[HTTP_AGENT_SIZE] = {};
-    Supla::RegisterDevice::generateHttpAgent(httpAgent, HTTP_AGENT_SIZE);
-
-    adClient->write("User-Agent: ");
-    adClient->write(httpAgent);
-    adClient->write("\r\n");
-    adClient->write("Accept: application/json\r\n");
+    discovery->client->setSSLEnabled(true);
+    discovery->client->setCACert(::suplaCACert);
+  }
+  if (now - discovery->started >= 20000) return fail();
+  auto ad = discovery->client;
+  if (discovery->phase != Discovery::Connecting &&
+      supLanTlsRequired(sdc) && !ad->isSecure()) return fail();
+  ad->service();
+  if (discovery->phase == Discovery::Connecting) {
+    const auto result = ad->connectStep(server, 443);
+    if (result == Client::ConnectResult::Pending) return false;
+    if (result != Client::ConnectResult::Connected ||
+        (supLanTlsRequired(sdc) && !ad->isSecure())) return fail();
+    char agent[100] = {};
+    RegisterDevice::generateHttpAgent(agent, sizeof(agent));
     char guid[SUPLA_GUID_SIZE * 2 + 1] = {};
-    generateHexString(Supla::RegisterDevice::getGUID(), guid, SUPLA_GUID_SIZE);
-    adClient->write("X-GUID: ");
-    adClient->write(guid);
-    adClient->write("\r\n");
-    adClient->write("Connection: close\r\n\r\n");
-
-    char buf[512] = {};
-    char *bufPos = buf;
-    int timeout = 3000;
-
-    bool dataReady = false;
-    do {
-      int len = adClient->read(bufPos, sizeof(buf) - 1 - (bufPos - buf));
-      if (len > 0) {
-        SUPLA_LOG_DEBUG("Data read: %d", len);
-        bufPos += len;
-        *bufPos = 0;
-      }
-      delay(1);
-      timeout--;
-      if (timeout == 0) {
-        break;
-      }
-    } while (adClient->connected() && (bufPos - buf) < 512);
-
-    adClient->stop();
-    delete adClient;
-    adClient = nullptr;
-
-    SUPLA_LOG_DEBUG("Data: %s", buf);
-
-    // get http return code from string
-    if (strncmp(buf, "HTTP/1.1 404", 12) == 0) {
-      SUPLA_LOG_DEBUG("HTTP/1.1 404 not found");
-      autodiscoverRetryCounter = 6;
-      addLastStateAdError(buf);
-      return false;
-    }
-
-    if (strncmp(buf, "HTTP/1.1 200", 12) != 0) {
-      SUPLA_LOG_DEBUG("HTTP/1.1 200 not found");
-      addLastStateAdError(buf);
-      return false;
-    }
-
-    const char serverKey[] = "\"server\":\"";
-
-    char *serverName = strstr(buf, serverKey);
-    if (serverName != nullptr) {
-      serverName += sizeof(serverKey) - 1;
-      char *serverEnd = strchr(serverName, '\"');
-      if (serverEnd != nullptr) {
-        *serverEnd = 0;
-        Supla::RegisterDevice::setServerName(serverName);
-        dataReady = true;
-        char tmp[sizeof("AD got server: ") + SUPLA_SERVER_NAME_MAXSIZE - 1] =
-            {};
-        snprintf(tmp, sizeof(tmp), "AD got server: %s", serverName);
-        sdc->addLastStateLog(tmp);
-        auto cfg = Supla::Storage::ConfigInstance();
-        if (cfg) {
-          cfg->setSuplaServerFromDiscovery(serverName);
-          cfg->saveWithDelay(1000);
-          // reload config to initialize certificates etc.
-          onLoadConfig();
-        }
-      }
-    }
-
-    if (!dataReady) {
-      SUPLA_LOG_DEBUG("Supla server name not found from AD");
-      waitForIterate = 1000;
-      return false;
-    }
-
-  } else {
-    SUPLA_LOG_DEBUG("AD connection failed");
-    adClient->stop();
-    delete adClient;
-    adClient = nullptr;
-    waitForIterate = 1000;
+    generateHexString(RegisterDevice::getGUID(), guid, SUPLA_GUID_SIZE);
+    char request[3 * SUPLA_EMAIL_MAXSIZE + 384] = "GET /users/";
+    const size_t prefix = strlen(request);
+    const int encodedSize = urlEncode(discovery->email, request + prefix,
+                                      3 * SUPLA_EMAIL_MAXSIZE + 1);
+    const size_t used = prefix + encodedSize;
+    const int rest = snprintf(request + used, sizeof(request) - used,
+        " HTTP/1.1\r\nHost: %s\r\nUser-Agent: %s\r\n"
+        "Accept: application/json\r\nX-GUID: %s\r\n"
+        "Connection: close\r\n\r\n", server, agent, guid);
+    if (rest < 0 || static_cast<size_t>(rest) >= sizeof(request) - used ||
+        ad->write(request, used + rest) != used + rest) return fail();
+    discovery->phase = Discovery::Sending;
     return false;
   }
-
+  if (discovery->phase == Discovery::Sending) {
+    if (!ad->connected()) return fail();
+    if (ad->hasPendingWrites()) return false;
+    discovery->phase = Discovery::Reading;
+    discovery->readStarted = now;
+  }
+  const size_t room = sizeof(discovery->response) - 1 - discovery->used;
+  if (room) {
+    const int count = ad->read(discovery->response + discovery->used, room);
+    if (count > 0) {
+      discovery->used += count;
+      discovery->response[discovery->used] = 0;
+    }
+  }
+  if (ad->connected() && room && now - discovery->readStarted < 3000)
+    return false;
+  auto response = discovery->response;
+  if (!strncmp(response, "HTTP/1.1 404", 12)) {
+    autodiscoverRetryCounter = 6;
+    addLastStateAdError(response);
+    return fail();
+  }
+  if (strncmp(response, "HTTP/1.1 200", 12)) {
+    addLastStateAdError(response);
+    return fail();
+  }
+  auto name = strstr(response, "\"server\":\"");
+  if (!name) return fail();
+  name += sizeof("\"server\":\"") - 1;
+  auto end = strchr(name, '"');
+  if (!end || end == name ||
+      static_cast<size_t>(end - name) >= SUPLA_SERVER_NAME_MAXSIZE)
+    return fail();
+  *end = 0;
+  char serverName[SUPLA_SERVER_NAME_MAXSIZE] = {};
+  snprintf(serverName, sizeof(serverName), "%s", name);
+  cancelAutodiscover();
+  RegisterDevice::setServerName(serverName);
+  char message[SUPLA_SERVER_NAME_MAXSIZE + 16] = {};
+  snprintf(message, sizeof(message), "AD got server: %s", serverName);
+  sdc->addLastStateLog(message);
+  auto cfg = Storage::ConfigInstance();
+  if (cfg) {
+    cfg->setSuplaServerFromDiscovery(serverName);
+    cfg->saveWithDelay(1000);
+    onLoadConfig();
+  }
   lastIterateTime = now;
   return true;
 }
@@ -2454,8 +2453,11 @@ bool Supla::Protocol::SuplaSrpc::autodiscover(uint32_t now) {
 
 bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   if (!isEnabled()) {
+    cancelPendingConnection();
     return false;
   }
+  if (client && (!supLanTlsRequired(sdc) || client->isSecure()))
+    client->service();
 
   // rr_id is sender-local. A timed-out anonymous reply cannot safely be
   // assigned to another request on this connection. Close outside callbacks;
@@ -2487,6 +2489,8 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   }
 
 #ifndef ARDUINO_ARCH_AVR
+  if (discovery && !Supla::RegisterDevice::isServerNameEmpty())
+    cancelAutodiscover();
   if (Supla::RegisterDevice::isServerNameEmpty() &&
       !Supla::RegisterDevice::isEmailEmpty() && !autodiscover(_millis)) {
     return false;
@@ -2519,7 +2523,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   }
   // Establish connection with Supla server
   if (!client->connected()) {
-    deinitializeSrpc();
+    if (!connectionPending) deinitializeSrpc();
     if (registered != 0) {
       sdc->uptime.setConnectionLostCause(
           SUPLA_LASTCONNECTIONRESETCAUSE_SERVER_CONNECTION_LOST);
@@ -2547,7 +2551,11 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       }
     }
     if (supLanTlsRequired(sdc)) client->setSSLEnabled(true);
-    int result = client->connect(Supla::RegisterDevice::getServerName(), port);
+    const auto step = client->connectStep(
+        Supla::RegisterDevice::getServerName(), port);
+    connectionPending = step == Supla::Client::ConnectResult::Pending;
+    if (connectionPending) return false;
+    const int result = step == Supla::Client::ConnectResult::Connected ? 1 : 0;
     if (result == 1 && supLanTlsRequired(sdc) && !client->isSecure()) {
       sdc->status(STATUS_SERVER_DISCONNECTED,
                   F("SupLAN requires TLS connection"), true);
@@ -2766,7 +2774,19 @@ void Supla::Protocol::SuplaSrpc::addLastStateAdError(char *buf) {
   }
 }
 
+void Supla::Protocol::SuplaSrpc::cancelPendingConnection() {
+  if (connectionPending && client) client->stop();
+  connectionPending = false;
+#ifndef ARDUINO_ARCH_AVR
+  cancelAutodiscover();
+#endif
+}
+
 void Supla::Protocol::SuplaSrpc::disconnect() {
+  connectionPending = false;
+#ifndef ARDUINO_ARCH_AVR
+  cancelAutodiscover();
+#endif
   versionErrorDisconnectPending = false;
   if (!isEnabled()) {
     return;
@@ -2789,6 +2809,10 @@ void Supla::Protocol::SuplaSrpc::updateLastSentTime() {
 }
 
 void Supla::Protocol::SuplaSrpc::setServerPort(int value) {
+  if (port != value && client) {
+    cancelPendingConnection();
+    if (client->connected()) disconnect();
+  }
   port = value;
 }
 

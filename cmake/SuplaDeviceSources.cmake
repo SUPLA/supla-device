@@ -162,6 +162,10 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/pwm_frequency_parameters.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/client.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/async_client.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/async_dns.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/esp_async_client.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/esp8266_async_client.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/ip_address.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/protocol_layer.cpp

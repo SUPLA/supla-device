@@ -276,6 +276,8 @@ TEST_F(SrpcClientManagementTests,
     TestSrpc srpc(&sd);
 
     EXPECT_FALSE(srpc.iterate(0));
+    EXPECT_EQ(stats.destroyed, 0);  // Request survives between iterations.
+    EXPECT_FALSE(srpc.iterate(1));
 
     const std::string expected = std::string("GET /users/") + test.encoded +
         " HTTP/1.1\r\nHost: iot.autodiscover.supla.org\r\n";

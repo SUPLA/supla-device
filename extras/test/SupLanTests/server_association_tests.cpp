@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <supla/network/async_client.h>
 #include <SuplaDevice.h>
 #include <output_mock.h>
 #include <arduino_mock.h>
@@ -1158,7 +1159,25 @@ Supla::Device::SupLanStack *makeProcessBootstrap(SuplaDeviceClass *device,
   }
   return stack;
 }
-int runAutomaticEndpoint(int socket, bool source, bool reboot) {
+class PendingBootstrapClient : public Supla::AsyncClient {
+ public:
+  ~PendingBootstrapClient() override { stop(); }
+  int available() override { return 0; }
+  int starts = 0;
+
+ protected:
+  ConnectResult startTransport(const char *, uint16_t) override {
+    ++starts;
+    return ConnectResult::Pending;
+  }
+  ConnectResult pollTransport() override { return ConnectResult::Pending; }
+  void closeTransport() override {}
+  bool transportConnected() override { return false; }
+  int transmit(const uint8_t *, size_t) override { return -1; }
+  int readImp(uint8_t *, size_t) override { return -1; }
+};
+int runAutomaticEndpoint(int socket, bool source, bool reboot,
+                          bool pendingSrpc = false, bool controlMode = false) {
   Supla::Channel::resetToDefaults();
   Supla::RegisterDevice::resetToDefaults();
   SimpleTime time;
@@ -1172,9 +1191,13 @@ int runAutomaticEndpoint(int socket, bool source, bool reboot) {
   config.setAuthKey(auth);
   config.setSuplaServer("supla.example");
   config.setEmail("user@example.com");
-  config.setSuplaCommProtocolEnabled(false);  // No Server/WAN in this harness.
+  config.setSuplaCommProtocolEnabled(pendingSrpc);
   std::unique_ptr<Supla::Element> element;
-  if (source) {
+  if (source && controlMode) {
+    auto relay = new Supla::Control::VirtualRelay;
+    relay->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+    element.reset(relay);
+  } else if (source) {
     auto thermometer = new Supla::Sensor::VirtualThermometer;
     thermometer->setValue(21.75);
     element.reset(thermometer);
@@ -1212,7 +1235,7 @@ int runAutomaticEndpoint(int socket, bool source, bool reboot) {
     request.AclRevision = 1;
     request.Flags = SUPLA_SUPLAN_SOURCE_FLAG_RETURN_PEER_KEY;
     request.AclEntryCount = 1;
-    request.Acl[0] = {1, 501, 1};
+    request.Acl[0] = {1, 501, static_cast<uint8_t>(controlMode ? 2 : 1)};
     if (!adapter()->setSuplanSourceAssociation(request, &key) || key.Result)
       return 33;
     if (send(socket, &key, sizeof(key), 0) != sizeof(key)) return 34;
@@ -1224,7 +1247,8 @@ int runAutomaticEndpoint(int socket, bool source, bool reboot) {
     request.PeerKeySize = 32;
     std::memcpy(request.PeerKey, key.PeerKey, 32);
     request.ResourceCount = 1;
-    request.Resources[0] = {1, 501, 1};
+    request.Resources[0] = {1, 501,
+                            static_cast<uint8_t>(controlMode ? 2 : 1)};
     TDS_SuplaSetSuplanDestinationAssociationResult result = {};
     if (!adapter()->setSuplanDestinationAssociation(request, &result) ||
         result.Result) return 36;
@@ -1237,14 +1261,38 @@ int runAutomaticEndpoint(int socket, bool source, bool reboot) {
     if (!identity->identityAvailable() || identity->serverDeviceId() !=
         ids.DeviceId) return 38;
   }
-  Supla::RemoteChannel thermometer(501, Supla::READ);
+  PendingBootstrapClient *pendingClient = nullptr;
+  if (pendingSrpc) {
+    pendingClient = new PendingBootstrapClient;
+    pendingClient->setTimeoutMs(60000);
+    device->getSrpcLayer()->setNetworkClient(pendingClient);
+  }
+  Supla::RemoteChannel thermometer(501, controlMode
+      ? Supla::CONTROL : Supla::READ);
+  bool commanded = false;
   for (int step = 0; step < 1000; ++step) {
     usleep(1000);
     time.advance(5);
     BootstrapProcessUdp::latest->now = time.value;
     device->iterate();  // No second SupLAN runtime loop.
-    if (source && BootstrapProcessUdp::latest->readReceived) return 0;
-    if (!source && thermometer.state().temperature() == 21.75) {
+    if (pendingClient && pendingClient->starts > 1) return 41;
+    if (source && BootstrapProcessUdp::latest->readReceived) {
+      if (controlMode &&
+          !static_cast<Supla::Control::VirtualRelay *>(element.get())->isOn())
+        return 42;
+      return pendingClient && pendingClient->starts != 1 ? 41 : 0;
+    }
+    bool on = false;
+    const bool receivedControl = controlMode &&
+        thermometer.state().getValueBool(&on) && on;
+    if (!source && controlMode && !commanded &&
+        thermometer.state().available()) {
+      uint8_t value[8] = {1};
+      commanded = thermometer.setValue(value);
+    }
+    if (!source && (controlMode ? receivedControl
+                               : thermometer.state().temperature() == 21.75)) {
+      if (pendingClient && pendingClient->starts != 1) return 41;
       uint8_t complete = 0xfe;
       if (send(socket, &complete, 1, 0) != 1) return 39;
       return 0;
@@ -1283,6 +1331,43 @@ TEST(SupLanProvisionedRead, AutomaticBootstrapReadsAndRestartsWithoutServer) {
     EXPECT_EQ(WEXITSTATUS(sourceStatus), 0) << "mode " << mode;
     EXPECT_EQ(WEXITSTATUS(destinationStatus), 0) << "mode " << mode;
   }
+}
+
+void checkPendingSrpcDeviceLoop(bool controlMode) {
+  int sockets[2];
+  ASSERT_EQ(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets), 0);
+  timeval timeout = {2, 0};
+  for (int socket : sockets)
+    ASSERT_EQ(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+                         sizeof(timeout)), 0);
+  const auto source = fork();
+  ASSERT_GE(source, 0);
+  if (!source) {
+    close(sockets[1]);
+    _exit(runAutomaticEndpoint(sockets[0], true, false, true, controlMode));
+  }
+  const auto destination = fork();
+  ASSERT_GE(destination, 0);
+  if (!destination) {
+    close(sockets[0]);
+    _exit(runAutomaticEndpoint(sockets[1], false, false, true, controlMode));
+  }
+  close(sockets[0]);
+  close(sockets[1]);
+  int sourceStatus = 0, destinationStatus = 0;
+  ASSERT_EQ(waitpid(source, &sourceStatus, 0), source);
+  ASSERT_EQ(waitpid(destination, &destinationStatus, 0), destination);
+  ASSERT_TRUE(WIFEXITED(sourceStatus));
+  ASSERT_TRUE(WIFEXITED(destinationStatus));
+  EXPECT_EQ(WEXITSTATUS(sourceStatus), 0);
+  EXPECT_EQ(WEXITSTATUS(destinationStatus), 0);
+}
+
+TEST(SupLanProvisionedRead, AutomaticDeviceLoopReadsWhileSrpcIsPending) {
+  checkPendingSrpcDeviceLoop(false);
+}
+TEST(SupLanProvisionedRead, AutomaticDeviceLoopControlsWhileSrpcIsPending) {
+  checkPendingSrpcDeviceLoop(true);
 }
 
 // SRPC business authorization belongs to Core. This double supplies only the

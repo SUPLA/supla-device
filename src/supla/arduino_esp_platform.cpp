@@ -6,7 +6,6 @@
 #ifdef ARDUINO_ARCH_ESP8266
 #include <stdlib.h>
 #include <string.h>
-#include <new>
 #endif
 #include <supla/log_wrapper.h>
 #if defined(ARDUINO_ARCH_ESP32)
@@ -18,6 +17,12 @@
 #include <supla/crypto.h>
 #include "tools.h"
 #include "supla/network/client.h"
+#ifdef ARDUINO
+#include "supla/network/esp8266_async_client.h"
+#include "supla/network/esp_async_client.h"
+#endif
+
+#include <new>
 
 namespace Supla {
 #ifdef ARDUINO_ARCH_ESP8266
@@ -171,6 +176,10 @@ class ArduinoEspCaStore : public BearSSL::CertStoreBase {
 class ArduinoEspClient : public Client {
  public:
   ~ArduinoEspClient() {
+#ifdef ARDUINO
+    delete asyncClient;
+    asyncClient = nullptr;
+#endif
     if (clientSec) {
       destroySecureClient();
     }
@@ -182,6 +191,9 @@ class ArduinoEspClient : public Client {
   }
 
   int available() override {
+#ifdef ARDUINO
+    if (asyncClient) return asyncClient->available();
+#endif
     if (wifiClient) {
       return wifiClient->available();
     }
@@ -189,6 +201,10 @@ class ArduinoEspClient : public Client {
   }
 
   void stop() override {
+#ifdef ARDUINO
+    delete asyncClient;
+    asyncClient = nullptr;
+#endif
     if (wifiClient) {
       wifiClient->stop();
     }
@@ -198,12 +214,58 @@ class ArduinoEspClient : public Client {
   }
 
   uint8_t connected() override {
+#ifdef ARDUINO
+    if (asyncClient) return asyncClient->connected();
+#endif
     return (wifiClient != nullptr) && wifiClient->connected();
   }
 
   bool isSecure() const override {
+#ifdef ARDUINO
+    if (asyncClient) return asyncClient->isSecure();
+#endif
     return sslEnabled && clientSec && clientSec->connected();
   }
+
+#ifdef ARDUINO
+  ConnectResult connectStep(const char *host, uint16_t port) override {
+    if (!asyncClient) {
+      // Explicit connect() retains the legacy API. SRPC uses only this path.
+      if (wifiClient) wifiClient->stop();
+#ifdef ARDUINO_ARCH_ESP8266
+      auto backend = new (std::nothrow) Esp8266AsyncClient;
+      if (backend) backend->setFingerprint(fingerprint.c_str());
+#else
+      auto backend = new (std::nothrow) EspAsyncClient;
+#endif
+      if (!backend) return ConnectResult::Failed;
+      asyncClient = backend;
+      asyncClient->setSdc(sdc);
+      asyncClient->setSSLEnabled(sslEnabled);
+      asyncClient->setCACert(rootCACert);
+    }
+    asyncClient->setTimeoutMs(timeoutMs);
+    return asyncClient->connectStep(host, port);
+  }
+  void setSSLEnabled(bool value) override {
+    if (asyncClient) asyncClient->setSSLEnabled(value);
+    Client::setSSLEnabled(value);
+  }
+  void setCACert(const char *value) override {
+    if (asyncClient) asyncClient->setCACert(value);
+    Client::setCACert(value);
+  }
+  void service() override {
+    if (asyncClient) asyncClient->service();
+  }
+  bool hasPendingWrites() const override {
+    return asyncClient && asyncClient->hasPendingWrites();
+  }
+  ConnectionError getConnectionError() const override {
+    return asyncClient ? asyncClient->getConnectionError()
+                       : Client::getConnectionError();
+  }
+#endif
 
   void setTimeoutMs(uint16_t _timeoutMs) override {
     timeoutMs = _timeoutMs;
@@ -382,6 +444,9 @@ class ArduinoEspClient : public Client {
 #endif
 
   int readImp(uint8_t *buf, size_t count) override {
+#ifdef ARDUINO
+    if (asyncClient) return asyncClient->read(buf, count);
+#endif
     if (wifiClient) {
       size_t size = wifiClient->available();
 
@@ -396,12 +461,18 @@ class ArduinoEspClient : public Client {
   }
 
   size_t writeImp(const uint8_t *buf, size_t count) override {
+#ifdef ARDUINO
+    if (asyncClient) return asyncClient->write(buf, count);
+#endif
     if (wifiClient) {
       return wifiClient->write(buf, count);
     }
     return 0;
   }
 
+#ifdef ARDUINO
+  AsyncClient *asyncClient = nullptr;
+#endif
   WiFiClient *wifiClient = nullptr;
   WiFiClientSecure *clientSec = nullptr;
 #ifdef ARDUINO_ARCH_ESP8266

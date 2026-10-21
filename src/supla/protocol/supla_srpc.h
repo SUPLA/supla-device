@@ -214,11 +214,15 @@ class SuplaSrpc : public ProtocolLayer {
  protected:
   bool ping();
   void scheduleReconnect(uint32_t now);
+  void cancelPendingConnection();
   void initializeSrpc();
   void deinitializeSrpc();
   void addLastStateAdError(char *buf);
 #ifndef ARDUINO_ARCH_AVR
   bool autodiscover(uint32_t now);
+  void cancelAutodiscover();
+  struct Discovery;
+  Discovery *discovery = nullptr;
 #endif
 
   uint8_t version = 0;
@@ -240,6 +244,7 @@ class SuplaSrpc : public ProtocolLayer {
   bool ensureResponsePending : 1;
   bool discardShareResponse : 1;
   bool discardEnsureResponse : 1;
+  bool connectionPending : 1;  // Teardown once, not on every handshake step.
 
  protected:
   uint8_t autodiscoverRetryCounter = 0;

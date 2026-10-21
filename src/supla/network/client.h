@@ -23,6 +23,7 @@ namespace Supla {
 
 class Client {
  public:
+  enum class ConnectResult : uint8_t { Pending, Connected, Failed };
   Client();
   virtual ~Client();
 
@@ -34,6 +35,12 @@ class Client {
   virtual bool isSecure() const;
   virtual void setTimeoutMs(uint16_t timeoutMs) = 0;
   virtual ConnectionError getConnectionError() const;
+
+  // One bounded connection step. Legacy clients retain synchronous connect().
+  // Pending is not a connection failure. stop() also cancels a pending attempt.
+  virtual ConnectResult connectStep(const char *host, uint16_t port);
+  virtual void service();
+  virtual bool hasPendingWrites() const;
 
   int connect(IPAddress ip, uint16_t port);
   int connect(const char *host, uint16_t port);
@@ -55,7 +62,7 @@ class Client {
 
   // SSL configuration
   virtual void setSSLEnabled(bool enabled);
-  void setCACert(const char *rootCA);
+  virtual void setCACert(const char *rootCA);
 
   void setDebugLogs(bool);
   bool isDebugLogs() const;
@@ -64,6 +71,7 @@ class Client {
   uint32_t getSrcConnectionIPAddress() const;
 
  protected:
+  void logConnecting(const char *host, uint16_t port) const;
   virtual bool isCertificateValidationEnabled() const;
   virtual int connectImp(const char *host, uint16_t port) = 0;
   virtual size_t writeImp(const uint8_t *buf, size_t size) = 0;

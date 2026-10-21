@@ -11,6 +11,8 @@ namespace Supla {
 class AsyncDns {
  public:
   ~AsyncDns() { cancel(); }
+  // Caller owns the immutable hostname until cancel()/completion. Destruction
+  // synchronizes with a queued copy before the caller may free that storage.
   bool start(const char *host);
   // 0 pending, 1 IPv4 result, -1 failed.
   int poll(uint32_t *address);

@@ -6,7 +6,9 @@ SPDX-License-Identifier: GPL-2.0-or-later
 # Host tests
 
 Run commands from the repository root. By default, CTest registers
-`supladevicetests`, `sd4linuxtests` and `arduinoesp8266_tls_lifetime_tests`.
+`supladevicetests`, `sd4linuxtests` and `arduinoesp8266_client_factory_tests`.
+The Arduino factory suite uses a fake transport and production AsyncClient
+lifecycle; it does not verify actual ESP TLS certificate handling.
 These tests do not require network access at runtime. The HTTP source unit tests
 use fake transports or local `file://` inputs; MQTT uses a simulated transport.
 

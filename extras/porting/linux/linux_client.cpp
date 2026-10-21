@@ -28,7 +28,7 @@ namespace {
 // force stop()/destruction to join a blocked system resolver.
 struct DnsJob {
   enum State { Free, Running, Done, Abandoned } state = Free;
-  char host[256] = {};
+  const char *host = nullptr;
   uint32_t addresses[8] = {};
   uint8_t count = 0;
 };
@@ -36,13 +36,23 @@ DnsJob dnsJobs[4];
 pthread_mutex_t dnsMutex = PTHREAD_MUTEX_INITIALIZER;
 void *resolveHost(void *context) {
   auto job = static_cast<DnsJob *>(context);
+  char host[256];
+  pthread_mutex_lock(&dnsMutex);
+  if (job->state == DnsJob::Abandoned) {
+    job->state = DnsJob::Free;
+    pthread_mutex_unlock(&dnsMutex);
+    return nullptr;
+  }
+  memcpy(host, job->host, strlen(job->host) + 1);
+  job->host = nullptr;
+  pthread_mutex_unlock(&dnsMutex);
   addrinfo hints = {};
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
   addrinfo *result = nullptr;
   uint32_t addresses[8] = {};
   uint8_t count = 0;
-  if (!getaddrinfo(job->host, nullptr, &hints, &result)) {
+  if (!getaddrinfo(host, nullptr, &hints, &result)) {
     for (auto item = result; item && count < 8; item = item->ai_next) {
       if (item->ai_family == AF_INET)
         addresses[count++] = reinterpret_cast<sockaddr_in *>(
@@ -245,7 +255,7 @@ Supla::Client::ConnectResult Supla::LinuxClient::pollTransport() {
         if (dnsJobs[i].state != DnsJob::Free) continue;
         dnsSlot = i;
         auto &job = dnsJobs[i];
-        snprintf(job.host, sizeof(job.host), "%s", connectionHost());
+        job.host = connectionHost();
         job.count = 0;
         job.state = DnsJob::Running;
         pthread_t thread;

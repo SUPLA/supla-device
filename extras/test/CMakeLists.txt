@@ -241,21 +241,22 @@ add_executable(sd4linuxtests
   ${SD4LINUX_PORT_SRC}
   )
 
-add_executable(arduinoesp8266_tls_lifetime_tests
-  ArduinoEspPlatformTests/arduino_esp_tls_lifetime_tests.cpp
+add_executable(arduinoesp8266_client_factory_tests
+  ArduinoEspPlatformTests/arduino_esp_client_factory_tests.cpp
+  ../../src/supla/network/async_client.cpp
   ../../src/supla/network/client.cpp
   ../../src/supla/network/ip_address.cpp
 )
-target_include_directories(arduinoesp8266_tls_lifetime_tests BEFORE PRIVATE
+target_include_directories(arduinoesp8266_client_factory_tests BEFORE PRIVATE
   ArduinoEspPlatformTests/fakes
 )
-target_include_directories(arduinoesp8266_tls_lifetime_tests PRIVATE
+target_include_directories(arduinoesp8266_client_factory_tests PRIVATE
   ../../src
 )
-target_compile_definitions(arduinoesp8266_tls_lifetime_tests PRIVATE
+target_compile_definitions(arduinoesp8266_client_factory_tests PRIVATE
   ARDUINO_ARCH_ESP8266
 )
-target_link_libraries(arduinoesp8266_tls_lifetime_tests PRIVATE
+target_link_libraries(arduinoesp8266_client_factory_tests PRIVATE
   gtest
   gtest_main
 )
@@ -345,13 +346,13 @@ if(Python3_Interpreter_FOUND)
       -s ${CMAKE_CURRENT_SOURCE_DIR}/../examples/suplan_poc1_linux
       -p test_run_acceptance.py)
 endif()
-add_test(NAME arduinoesp8266_tls_lifetime_tests
-  COMMAND arduinoesp8266_tls_lifetime_tests)
+add_test(NAME arduinoesp8266_client_factory_tests
+  COMMAND arduinoesp8266_client_factory_tests)
 
 
 supla_apply_warnings(supladevicetests)
 supla_apply_warnings(sd4linuxtests)
-supla_apply_warnings(arduinoesp8266_tls_lifetime_tests)
+supla_apply_warnings(arduinoesp8266_client_factory_tests)
 supla_apply_warnings(supladevicelib)
 
 target_compile_definitions(supladevicetests PRIVATE
@@ -579,3 +580,14 @@ target_include_directories(async_dns_tests BEFORE PRIVATE
 target_link_libraries(async_dns_tests PRIVATE gtest_main)
 add_test(NAME async_dns_tests COMMAND async_dns_tests)
 supla_apply_warnings(async_dns_tests)
+
+# ESP8266 submits DNS directly and must not allocate a hostname scratch buffer.
+add_executable(async_dns_esp8266_tests
+  AsyncDnsTests/async_dns_tests.cpp
+  ../../src/supla/network/async_dns.cpp)
+target_compile_definitions(async_dns_esp8266_tests PRIVATE ARDUINO_ARCH_ESP8266)
+target_include_directories(async_dns_esp8266_tests BEFORE PRIVATE
+  AsyncDnsTests/fakes ../../src)
+target_link_libraries(async_dns_esp8266_tests PRIVATE gtest_main)
+add_test(NAME async_dns_esp8266_tests COMMAND async_dns_esp8266_tests)
+supla_apply_warnings(async_dns_esp8266_tests)

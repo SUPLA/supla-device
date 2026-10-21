@@ -36,7 +36,9 @@ class StreamDevice : public SuplaDeviceClass {
 };
 class StreamSrpc : public Protocol::SuplaSrpc {
  public:
-  explicit StreamSrpc(SuplaDeviceClass *device) : SuplaSrpc(device, 29) {}
+  explicit StreamSrpc(SuplaDeviceClass *device) : SuplaSrpc(device, 29) {
+    setServerPort(2016);  // This fixture injects an established TLS session.
+  }
   void connected(void *handle) { srpc = handle; registered = 1; }
   void lost() { deinitializeSrpc(); registered = 0; }
   ~StreamSrpc() override { srpc = nullptr; }
@@ -110,6 +112,7 @@ class ServerStream : public testing::Test {
     Supla::messageReceived(connection, 19, 0, &protocol, version);
   }
   void reply(uint8_t status = SUPLA_SUPLAN_ACCESS_STATUS_GRANTED) {
+    ASSERT_FALSE(requests.empty());
     TSD_SuplaEnsureResourceAccessResult result = {};
     result.Result = SUPLA_SUPLAN_RESULT_OK;
     result.AccessStatus = status;

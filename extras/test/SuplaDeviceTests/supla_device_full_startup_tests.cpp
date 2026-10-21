@@ -31,6 +31,13 @@ using ::testing::ReturnPointee;
 
 class SuplaDeviceFullStartupTests : public ::testing::Test {
  protected:
+  ~SuplaDeviceFullStartupTests() override {
+    Supla::Protocol::SuplaSrpc::isSuplaSSLEnabled = previousTls;
+  }
+
+  // Capture before derived NetworkMock constructors configure the global TLS
+  // default. Plaintext startup tests must not change later fixtures' policy.
+  const bool previousTls = Supla::Protocol::SuplaSrpc::isSuplaSSLEnabled;
   SimpleTime time;
   virtual void SetUp() {
     if (SuplaDevice.getClock()) {

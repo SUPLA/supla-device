@@ -565,7 +565,6 @@ void Runtime::beginRecovery(uint8_t peerIndex) {
   if (!peer.active) {
     if (!hasSession(peerIndex) || peer.scheduled)
       emit(DiagnosticEvent::RecoveryBegin, peerIndex);
-    if (peer.scheduled) emit(DiagnosticEvent::ReadRefresh, peerIndex);
     peer.active = true;
     peer.scheduled = false;
     peer.locateAttempts = 0;
@@ -576,7 +575,8 @@ void Runtime::beginRecovery(uint8_t peerIndex) {
 void Runtime::finishRecovery(uint8_t peerIndex) {
   PeerRecovery &peer = recovery_[peerIndex];
   peer.active = false;
-  bool refresh = application_ && application_->bindingSessionNeeded(peerIndex);
+  bool refresh = !hasSession(peerIndex) && application_ &&
+      application_->bindingSessionNeeded(peerIndex);
   for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
     ReadDependency &entry = dependencies_[i];
     if (entry.used && entry.peerIndex == peerIndex) {
@@ -934,7 +934,9 @@ void Runtime::recoverSession(uint8_t peerIndex, uint64_t sessionId) {
 }
 
 void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
-  if (recovery_[peerIndex].active && application_ &&
+  // Source grants require a session, not a response after each publication.
+  if ((recovery_[peerIndex].active || recovery_[peerIndex].scheduled) &&
+      !hasSession(peerIndex) && application_ &&
       application_->bindingSessionNeeded(peerIndex)) return;
   for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
     if (deferred_[i].used && deferred_[i].peerIndex == peerIndex) {
@@ -946,7 +948,7 @@ void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
       return;
     }
   }
-  if (recovery_[peerIndex].active) {
+  if (recovery_[peerIndex].active || recovery_[peerIndex].scheduled) {
     for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
       if (dependencies_[i].used && dependencies_[i].peerIndex == peerIndex &&
           dependencies_[i].needsRefresh) {
@@ -971,6 +973,7 @@ void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
        recovery_[peerIndex].backgroundStage))
     emit(DiagnosticEvent::RecoveryComplete, peerIndex);
   recovery_[peerIndex].active = false;
+  recovery_[peerIndex].scheduled = false;
   updatePoolHighWater();
 }
 
@@ -1487,6 +1490,16 @@ bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
     ++diagnostics_.deferredQueueOverflow;
     return false;
   }
+  const bool state = length >= kApplicationHeaderSize && data[5] == 0 &&
+      (data[0] == kMessageClassSuplaCall || snapshot);
+  const bool session = hasSession(peerIndex);
+  const auto &recovery = recovery_[peerIndex];
+  // Fresh best-effort values do not bypass a failed cycle's backoff. They are
+  // not retained for replay; a later READ or publication supplies fresh state.
+  if (state && !session && !recovery.active &&
+      (recovery.sleeping || (recovery.scheduled &&
+       static_cast<int32_t>(datagrams_->nowMs() - recovery.nextRefreshMs) < 0)))
+    return false;
   if (length >= kApplicationHeaderSize + kResourceHeaderSize &&
       (data[0] == kMessageClassSuplaCall || snapshot) && data[5] == 0) {
     for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
@@ -1528,7 +1541,9 @@ bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
     putActionDeadline(queued->data, sizeof(queued->data),
                       datagrams_->nowMs() + kActionDeliveryLifetimeMs);
   }
-  beginRecovery(peerIndex);
+  // A usable session needs no recovery for an unacknowledged state update.
+  // READ, CONTROL and ACTION keep their existing operation/retry lifetime.
+  if (!state || !session) beginRecovery(peerIndex);
   updatePoolHighWater();
   if (!processing_) {
     drainDeferred();
@@ -1768,6 +1783,7 @@ void Runtime::drainDeferred() {
               applicationBuffer_ + offset, sizeof(applicationBuffer_) - offset,
               &snapshotLength) || eventOnly || snapshotLength != 36) {
         queued->used = false;
+        cancelPeerRecoveryIfIdle(queued->peerIndex);
         continue;
       }
       sendData = applicationBuffer_;
@@ -1788,6 +1804,10 @@ void Runtime::drainDeferred() {
         retries_[retryIndex].controlExpiresAtMs = queued->controlExpiresAtMs;
       }
       queued->used = false;
+      if (parsed && app.flags == 0) {
+        emit(DiagnosticEvent::StateTransmit, queued->peerIndex, resource, 1);
+        cancelPeerRecoveryIfIdle(queued->peerIndex);
+      }
     } else if (parsed && app.flags == 0) {
       queued->used = false;
       cancelPeerRecoveryIfIdle(queued->peerIndex);

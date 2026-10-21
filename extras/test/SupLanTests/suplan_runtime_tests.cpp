@@ -2057,6 +2057,111 @@ TEST(SupLanRuntime, FailedControlSendRetriesIdenticalFrameAt150Ms) {
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
 }
 
+TEST(SupLanRecovery, SourcePublicationsWithSessionDoNotCreateRecoveryCycles) {
+  using E = Supla::SupLan::DiagnosticEvent;
+  for (bool full : {false, true}) {
+    SCOPED_TRACE(full);
+    RuntimePair pair;
+    pair.appA.fullSnapshots = full;
+    // Match the SDK Source callback: grants require a session, not a READ.
+    pair.appA.bindingPoolEnabled = true;
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.pump(20);
+    ASSERT_TRUE(pair.runtimeA.hasSession(pair.peerA));
+    EXPECT_FALSE(pair.runtimeA.recoveryStatus(pair.peerA).active);
+    const auto before = pair.appB.stateCalls;
+    for (int i = 0; i < 12; ++i) {
+      pair.appA.value = i + 1;
+      uint8_t payload[36] = {};
+      size_t length = 0;
+      bool eventOnly = false;
+      ASSERT_TRUE(pair.appA.readResource(pair.resource, &eventOnly,
+          payload, sizeof(payload), &length));
+      ASSERT_TRUE(pair.runtimeA.publishStateParts(pair.peerA, pair.resource,
+          full ? 6 : Supla::SupLan::kSuplaCallDeviceChannelValueChangedC,
+          nullptr, 0, payload, length, full));
+      pair.pumpMs(1000);
+      EXPECT_FALSE(pair.runtimeA.recoveryStatus(pair.peerA).active);
+    }
+    EXPECT_EQ(pair.appB.stateCalls, before + 12);
+    EXPECT_EQ(pair.appA.diagnosticEvents[
+                  static_cast<unsigned>(E::RecoveryFailed)], 0U);
+    EXPECT_EQ(pair.appA.diagnosticEvents[static_cast<unsigned>(E::ReadRefresh)],
+              0U);
+    EXPECT_EQ(pair.appA.diagnosticEvents[
+                  static_cast<unsigned>(E::ReadTransmit)], 0U);
+    EXPECT_EQ(pair.runtimeA.poolDiagnostics().deferredEvents.used, 0U);
+  }
+}
+
+TEST(SupLanRecovery, SourcePublicationsRespectBackoffAndRecoverFreshState) {
+  using E = Supla::SupLan::DiagnosticEvent;
+  RuntimePair pair;
+  pair.appA.bindingPoolEnabled = true;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  const auto before = pair.appB.stateCalls;
+  pair.runtimeA.clearEndpoint(pair.peerA);
+  pair.datagramsB.available = false;
+  pair.network.packets.clear();
+  uint8_t state[14] = {};
+  state[0] = 0xff;
+  ASSERT_TRUE(pair.runtimeA.publishState(pair.peerA, pair.resource,
+      Supla::SupLan::kSuplaCallDeviceChannelValueChangedC,
+      state, sizeof(state)));
+  pair.pumpMs(1000);
+  ASSERT_FALSE(pair.runtimeA.recoveryStatus(pair.peerA).active);
+  const auto deadline = pair.runtimeA.recoveryStatus(pair.peerA).nextRefreshMs;
+  ASSERT_GT(deadline, pair.network.now);
+  const auto attempts = pair.network.multicastAttempts;
+  while (pair.network.now + 10 < deadline) {
+    pair.network.now += 10;
+    EXPECT_FALSE(pair.runtimeA.publishState(pair.peerA, pair.resource,
+        Supla::SupLan::kSuplaCallDeviceChannelValueChangedC,
+        state, sizeof(state)));
+    pair.runtimeA.iterate();
+    EXPECT_FALSE(pair.runtimeA.recoveryStatus(pair.peerA).active);
+    EXPECT_EQ(pair.runtimeA.recoveryStatus(pair.peerA).nextRefreshMs, deadline);
+  }
+  EXPECT_EQ(pair.network.multicastAttempts, attempts);
+  EXPECT_EQ(pair.appA.diagnosticEvents[static_cast<unsigned>(E::ReadRefresh)],
+            0U);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().deferredEvents.used, 0U);
+  pair.network.packets.clear();
+  pair.datagramsB.available = true;
+  pair.network.now = deadline;
+  pair.pump(20);
+  ASSERT_TRUE(pair.runtimeA.hasSession(pair.peerA));
+  EXPECT_EQ(pair.appB.stateCalls, before);  // No old publication is replayed.
+  state[6] = 42;
+  ASSERT_TRUE(pair.runtimeA.publishState(pair.peerA, pair.resource,
+      Supla::SupLan::kSuplaCallDeviceChannelValueChangedC,
+      state, sizeof(state)));
+  pair.pump(20);
+  EXPECT_EQ(pair.appB.stateCalls, before + 1);
+  EXPECT_FALSE(pair.runtimeA.recoveryStatus(pair.peerA).active);
+}
+
+TEST(SupLanRecovery, SourceSnapshotBuildFailureDoesNotLeaveRecoveryActive) {
+  using E = Supla::SupLan::DiagnosticEvent;
+  RuntimePair pair;
+  pair.appA.fullSnapshots = true;
+  pair.appA.bindingPoolEnabled = true;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  const auto before = pair.appB.stateCalls;
+  uint8_t payload[36] = {};
+  pair.appA.stateAvailable = false;
+  ASSERT_TRUE(pair.runtimeA.publishStateParts(pair.peerA, pair.resource, 6,
+      nullptr, 0, payload, sizeof(payload), true));
+  pair.pumpMs(6000);
+  EXPECT_EQ(pair.appA.diagnosticEvents[
+                static_cast<unsigned>(E::RecoveryFailed)], 0U);
+  EXPECT_EQ(pair.appB.stateCalls, before);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().deferredEvents.used, 0U);
+  EXPECT_FALSE(pair.runtimeA.recoveryStatus(pair.peerA).active);
+}
+
 TEST(SupLanRecovery, LocalStateSendFailureDoesNotBecomeRunnableRetry) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));

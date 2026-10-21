@@ -595,7 +595,9 @@ TEST_F(ServerAssociationTests,
 class AssociationSrpc : public Supla::Protocol::SuplaSrpc {
  public:
   explicit AssociationSrpc(SuplaDeviceClass *device, int protocol = 29)
-      : SuplaSrpc(device, protocol) {}
+      : SuplaSrpc(device, protocol) {
+    setServerPort(2016);  // This fixture injects an established TLS session.
+  }
   void prepare(void *handle, bool ready = true) {
     if (!client) setNetworkClient(new AuthenticatedClientStub);
     srpc = handle;

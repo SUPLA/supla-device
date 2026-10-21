@@ -637,10 +637,14 @@ void SupLan::diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
                       peer, resource.id, detail);
       break;
     case E::StateTransmit:
-      SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
-                      " Source snapshot response enqueue attempt"
-                      " detail=%" PRIu32,
-                      peer, resource.id, detail);
+      if (detail) {
+        SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                         " Source state TX result=SENT", peer, resource.id);
+      } else {
+        SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+                         " Source READ snapshot response enqueue attempt",
+                         peer, resource.id);
+      }
       break;
     case E::AckWithoutState:
       SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32

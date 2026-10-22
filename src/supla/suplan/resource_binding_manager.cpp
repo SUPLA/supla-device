@@ -13,6 +13,7 @@
 #include <supla/suplan/remote_resource_manager.h>
 #include <supla/suplan/suplan_server_associations.h>
 #include <supla/suplan/suplan_server_identity.h>
+#include <supla/suplan/suplan_server_migration.h>
 #include <supla/time.h>
 #include <suplan/suplan_wire.h>
 
@@ -67,6 +68,38 @@ void ResourceBindingManager::invalidateServerScope() {
     sets_[i] = {};
   }
   loaded_ = false;
+}
+void ResourceBindingManager::migrate(const ServerIdentity *identity,
+                                     const ServerMigration &migration) {
+  if (!associations_ || associations_->identity() != identity) return;
+  auto removed = [&migration](uint32_t id) {
+    return id && migration.translate(ChannelReference::server(id)).kind ==
+                     ChannelReferenceKind::NONE;
+  };
+  for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS; ++i) {
+    auto &entry = contributors_[i];
+    if (entry.source && removed(entry.target)) {
+      if (resources_) resources_->remove(0x40000 + i);
+      entry = {};
+    }
+    auto &intent = intents_[i];
+    if (intent.source && (removed(intent.source) || removed(intent.target))) {
+      if (pendingIntent_ == i) {
+        if (port_) port_->cancelShare();
+        pendingIntent_ = -1;
+      }
+      intent = {};
+    }
+  }
+  // A retry contains an old complete set. Rebuild through the existing path.
+  retry_.length = 0;
+  for (auto &sent : sent_) sent = {};
+  for (int slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
+    bool retained = false;
+    for (const auto &entry : contributors_)
+      retained = retained || (entry.source && entry.set == slot);
+    if (!retained) sets_[slot] = {};
+  }
 }
 void ResourceBindingManager::attachAssociations(ServerAssociations *state) {
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {

@@ -230,7 +230,8 @@ bool ServerAssociations::readRecord(uint8_t slot, PeerContext *context,
   *revision = getUint32(record_ + 29);
   *count = record_[33];
   int prefix = *destination ? kDestinationPrefix : kSourcePrefix;
-  if (*count == 0 || *count > kMaxEntries || size != prefix + 6 * *count + 2 ||
+  if ((*destination && *count == 0) || *count > kMaxEntries ||
+      size != prefix + 6 * *count + 2 ||
       (*destination && !keyValid(record_ + kSourcePrefix)))
     return false;
   // Decode entries explicitly; never serialize C++ object memory.
@@ -253,7 +254,7 @@ void ServerAssociations::load(Config *config, ServerIdentity *identity) {
   peers_->setOwnershipCheck(owns, this);
   runtime_->setLocalAddress(
       {kNodeIdDevice, static_cast<uint32_t>(identity_->serverDeviceId())});
-  if (identity_->scopeFenced()) return;
+  if (identity_->fullScopeFenced()) return;
   uint8_t present[(SUPLAN_MAX_PERSISTENT_PEERS + 7) / 8] = {};
   const auto enumerated = config_->forEachKey("sl-peer-",
       [](const char *key, ConfigValueType type, void *context) {
@@ -296,6 +297,34 @@ void ServerAssociations::load(Config *config, ServerIdentity *identity) {
   memset(record_, 0, sizeof(record_));
 }
 
+bool ServerAssociations::reloadSourceRights(ServerIdentity *identity) {
+  for (auto state = first_; state; state = state->next_) {
+    if (state->identity_ != identity || !state->available()) continue;
+    if (state->busy_) return false;
+    for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+      const auto peer = state->peers_->get(i);
+      if (!peer || state->slots_[i] == 0xff) continue;
+      PeerContext context = {};
+      uint32_t revision = 0;
+      uint8_t count = 0;
+      bool destination = false;
+      const auto slot = state->slots_[i];
+      if (!state->readRecord(slot, &context, &revision, &count, &destination) ||
+          revision != peer->aclRevision ||
+          memcmp(peer->contextBytes, state->record_ + 2, kPeerContextSize))
+        return false;
+      if (destination) continue;
+      if (state->peers_->sameAcl(i, state->entries_, count)) continue;
+      // Cancel pending operations, keeping credential/revision and slot stable.
+      state->runtime_->clearPeer(i);
+      if (!state->peers_->restrictAcl(i, state->entries_, count)) return false;
+      state->durable_[i] = true;
+    }
+    memset(state->record_, 0, sizeof(state->record_));
+  }
+  return true;
+}
+
 void ServerAssociations::identityChanged() {
   if (!available()) return;
   runtime_->setLocalAddress(
@@ -315,9 +344,11 @@ void ServerAssociations::identityChanged() {
     }
     if (slots_[i] == 0xff) continue;
     uint32_t local = static_cast<uint32_t>(identity_->serverDeviceId());
-    if ((peer->destination ? context.destination.nodeId
-                           : context.source.nodeId) != local ||
-        (!peer->destination && context.rootEpoch != identity_->rootEpoch())) {
+    // Authority roles come from the immutable context, not a mutable hint.
+    const bool destination = context.destination.nodeId == local;
+    if ((destination ? context.destination.nodeId : context.source.nodeId) !=
+            local ||
+        (!destination && context.rootEpoch != identity_->rootEpoch())) {
       clear(i);
     } else if (!owns(this, context,
                      {kResourceTypeDevice, context.source.nodeId})) {

@@ -56,7 +56,7 @@ class AssociationConfig : public Supla::KeyValue {
   }
   bool commit() override {
     ++writes;
-    if (failCommit) return false;
+    if (failCommit || writes == failAtWrite) return false;
     std::array<uint8_t, 16384> bytes = {};
     size_t size = serializeToMemory(bytes.data(), bytes.size());
     if (size == SIZE_MAX) return false;
@@ -79,6 +79,7 @@ class AssociationConfig : public Supla::KeyValue {
   int writes = 0;
   bool failWrite = false;
   bool failCommit = false;
+  int failAtWrite = -1;
   std::vector<uint8_t> disk;
 };
 class IdleDatagrams : public DatagramPort {
@@ -1616,4 +1617,240 @@ TEST_F(ServerAssociationTests, ServerAddressChangePreservesLocalReadDemand) {
   EXPECT_TRUE(runtime.readNeedsRefresh(index, expected.resource));
   EXPECT_TRUE(peers.authorize(index, expected.resource, kPermissionRead));
   EXPECT_TRUE(runtime.requestRead(index, expected.resource));
+}
+
+namespace {
+void replaceChannel(Supla::Channel **channel) {
+  delete *channel;
+  *channel = new Supla::Channel(7);
+  (*channel)->setType(SUPLA_CHANNELTYPE_RELAY);
+}
+void registerReplacement(ServerIdentity *identity) {
+  ASSERT_TRUE(identity->registrationStarted());
+  identity->registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 101;
+  ids.ChannelCount = 1;
+  ids.ChannelId[0] = 501;
+  ASSERT_EQ(identity->accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity->syncDone();
+  ASSERT_TRUE(identity->serverSyncComplete());
+}
+}  // namespace
+
+TEST_F(ServerAssociationTests, RemovalPrunesReadControlActionBeforeIdReuse) {
+  source.Acl[0].Permissions = kPermissionControl | kPermissionAction;
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_TRUE(channel->prepareForRemoval());
+  ASSERT_NE(peers.get(0), nullptr);
+  EXPECT_EQ(peers.get(0)->aclCount, 0);
+  EXPECT_EQ(config.blob("sl-peer-0").size(), 36U);
+  replaceChannel(&channel);
+  ASSERT_NE(peers.get(0), nullptr);
+  registerReplacement(&identity);
+  ASSERT_NE(peers.get(0), nullptr);
+  EXPECT_EQ(peers.get(0)->aclCount, 0);
+  for (auto permission : {kPermissionRead, kPermissionControl,
+                          kPermissionAction})
+    EXPECT_FALSE(peers.authorize(0, {1, 501}, permission));
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_REVISION_CONFLICT);
+  reboot();
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionControl));
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_REVISION_CONFLICT);
+  ++source.AclRevision;
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionControl));
+}
+
+TEST_F(ServerAssociationTests, RemovalSurvivesRebootBeforeRegistration) {
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_TRUE(channel->prepareForRemoval());
+  replaceChannel(&channel);
+  reboot();
+  EXPECT_EQ(channel->getServerChannelId(), 0U);
+  registerReplacement(&identity);
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionRead));
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_REVISION_CONFLICT);
+}
+
+TEST_F(ServerAssociationTests, RemovalWriteFailureRetainsDeviceAndRights) {
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  config.failCommit = true;
+  EXPECT_FALSE(channel->prepareForRemoval());
+  EXPECT_EQ(channel->getServerChannelId(), 501U);
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionRead));
+  config.failCommit = false;
+  ASSERT_TRUE(channel->prepareForRemoval());
+  replaceChannel(&channel);
+  registerReplacement(&identity);
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionRead));
+}
+
+TEST_F(ServerAssociationTests, RemovalPreservesOtherChannelGrants) {
+  auto other = std::make_unique<Supla::Channel>(8);
+  other->setType(SUPLA_CHANNELTYPE_RELAY);
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 101;
+  ids.ChannelCount = 2;
+  ids.ChannelId[0] = 501;
+  ids.ChannelId[1] = 701;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  source.AclEntryCount = 2;
+  source.Acl[0] = {1, 501, kPermissionControl};
+  source.Acl[1] = {1, 701, kPermissionControl};
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_TRUE(channel->prepareForRemoval());
+  replaceChannel(&channel);
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  ids.ChannelId[0] = 701;
+  ids.ChannelId[1] = 501;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionControl));
+  EXPECT_TRUE(peers.authorize(0, {1, 701}, kPermissionControl));
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_REVISION_CONFLICT);
+  reboot();
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionControl));
+  EXPECT_TRUE(peers.authorize(0, {1, 701}, kPermissionControl));
+}
+
+TEST_F(ServerAssociationTests, RemovalRetainsDeviceWildcardForFutureChannels) {
+  source.Acl[0] = {2, 101, kPermissionControl};
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_TRUE(channel->prepareForRemoval());
+  replaceChannel(&channel);
+  registerReplacement(&identity);
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionControl));
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  reboot();
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionControl));
+}
+
+TEST_F(ServerAssociationTests,
+       RemovalInterruptedAfterFenceCannotRestoreRights) {
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  config.failAtWrite = config.writes + 2;
+  EXPECT_FALSE(channel->prepareForRemoval());
+  EXPECT_EQ(channel->getServerChannelId(), 501U);
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionRead));
+  config.failAtWrite = -1;
+  reboot();
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionRead));
+  ASSERT_TRUE(channel->prepareForRemoval());
+  replaceChannel(&channel);
+  registerReplacement(&identity);
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionRead));
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_REVISION_CONFLICT);
+}
+
+TEST_F(ServerAssociationTests, RemovedWildcardKeepsExistingOtherChannelRights) {
+  auto other = std::make_unique<Supla::Channel>(8);
+  other->setType(SUPLA_CHANNELTYPE_RELAY);
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 101;
+  ids.ChannelCount = 2;
+  ids.ChannelId[0] = 501;
+  ids.ChannelId[1] = 701;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  source.Acl[0] = {2, 101, kPermissionControl};
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_TRUE(channel->prepareForRemoval());
+  replaceChannel(&channel);
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  ids.ChannelId[0] = 701;
+  ids.ChannelId[1] = 501;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  EXPECT_TRUE(peers.authorize(0, {1, 701}, kPermissionControl));
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionControl));
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  reboot();
+  EXPECT_TRUE(peers.authorize(0, {1, 701}, kPermissionControl));
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionControl));
+}
+
+TEST_F(ServerAssociationTests, LocalAclRestrictionCannotAddAuthority) {
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  AclEntry control = {{1, 501}, kPermissionControl};
+  EXPECT_FALSE(peers.restrictAcl(0, &control, 1));
+  AclEntry foreign = {{1, 701}, kPermissionRead};
+  EXPECT_FALSE(peers.restrictAcl(0, &foreign, 1));
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionRead));
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionControl));
+  const auto revision = peers.get(0)->aclRevision;
+  EXPECT_TRUE(peers.restrictAcl(0, nullptr, 0));
+  ASSERT_NE(peers.get(0), nullptr);
+  EXPECT_EQ(peers.get(0)->aclRevision, revision);
+  AclEntry read = {{1, 501}, kPermissionRead};
+  EXPECT_FALSE(peers.restrictAcl(0, &read, 1));
+  EXPECT_FALSE(peers.replaceAcl(0, revision, &read, 1));
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionRead));
+  EXPECT_TRUE(peers.replaceAcl(0, revision + 1, &read, 1));
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionRead));
+}
+
+TEST_F(ServerAssociationTests, OwnershipCallbackRemovalFailsClosed) {
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  peers.setOwnershipCheck([](void *context, const PeerContext &,
+                              const ResourceId &) {
+    static_cast<PeerTable *>(context)->removePeer(0);
+    return true;
+  }, &peers);
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionRead));
+}
+
+TEST_F(ServerAssociationTests, MutableRoleDoesNotBypassSourceRightsRemoval) {
+  source.Acl[0].Permissions = kPermissionControl;
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  peers.get(0)->destination = true;
+  ASSERT_TRUE(channel->prepareForRemoval());
+  replaceChannel(&channel);
+  registerReplacement(&identity);
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionControl));
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_REVISION_CONFLICT);
+}
+
+TEST_F(ServerAssociationTests, RemovalWildcardDoesNotExpandOrExhaustAclPool) {
+  std::vector<std::unique_ptr<Supla::Channel>> others;
+  for (int i = 0; i <= ServerAssociations::kMaxEntries; ++i)
+    others.emplace_back(new Supla::Channel(8 + i));
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 101;
+  ids.ChannelCount = others.size() + 1;
+  for (int i = 0; i < ids.ChannelCount; ++i) ids.ChannelId[i] = 501 + i;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  source.Acl[0] = {2, 101, kPermissionControl};
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  const auto before = config.blob("sl-peer-0");
+  ASSERT_TRUE(channel->prepareForRemoval());
+  EXPECT_EQ(config.blob("sl-peer-0"), before);
+  ASSERT_NE(peers.get(0), nullptr);
+  EXPECT_EQ(peers.get(0)->aclCount, 1);
+}
+
+TEST_F(ServerAssociationTests, RemovalPrunesExplicitEntryAlongsideWildcard) {
+  source.AclEntryCount = 2;
+  source.Acl[0] = {1, 501, kPermissionAction};
+  source.Acl[1] = {2, 101, kPermissionControl};
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_TRUE(channel->prepareForRemoval());
+  replaceChannel(&channel);
+  registerReplacement(&identity);
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionControl));
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionAction));
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_REVISION_CONFLICT);
+  reboot();
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionControl));
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionAction));
 }

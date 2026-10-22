@@ -35,6 +35,11 @@ class Channel : public LocalAction {
   bool executeAction(uint32_t actionId, const uint8_t *params = nullptr,
                      size_t length = 0);
   virtual ~Channel();
+  // Call before deleting persistent device/configuration; abort on failure.
+  // Explicit SupLAN channel grants/bindings are removed before number reuse.
+  // Device-wide allow-all grants also cover future channels.
+  // Regrant in the same peer context requires a newer ACL revision.
+  bool prepareForRemoval();
   static void setStartingChannelNumber(int channelNumber);
   static int getStartingChannelNumber();
   static Channel *Begin();

@@ -192,6 +192,25 @@ bool PeerTable::replaceAcl(uint8_t peerIndex, uint32_t revision,
   if (revision == peer->aclRevision) {
     return sameEntries(peer, entries, entryCount);
   }
+  return installAcl(peerIndex, revision, entries, entryCount);
+}
+
+bool PeerTable::restrictAcl(uint8_t peerIndex, const AclEntry *entries,
+                             uint8_t entryCount) {
+  const auto peer = get(peerIndex);
+  if (!peer || !validEntries(entries, entryCount)) return false;
+  for (uint16_t i = 0; i < entryCount; ++i) {
+    uint8_t permissions = entries[i].permissions;
+    if (permissions & kPermissionControl) permissions |= kPermissionRead;
+    if (permissions & ~aclPermissions(peerIndex, entries[i].resource))
+      return false;
+  }
+  return installAcl(peerIndex, peer->aclRevision, entries, entryCount);
+}
+
+bool PeerTable::installAcl(uint8_t peerIndex, uint32_t revision,
+                            const AclEntry *entries, uint8_t entryCount) {
+  auto peer = get(peerIndex);
   const uint16_t updatedTotal = static_cast<uint16_t>(aclEntryCount_ -
       peer->aclCount) + entryCount;
   if (updatedTotal >
@@ -283,6 +302,13 @@ uint8_t PeerTable::effectivePermissions(uint8_t peerIndex,
   if (!peer || !owns(peerIndex, resource)) {
     return 0;
   }
+  return aclPermissions(peerIndex, resource);
+}
+
+uint8_t PeerTable::aclPermissions(uint8_t peerIndex,
+                                  const ResourceId &resource) const {
+  const auto peer = get(peerIndex);
+  if (!peer) return 0;
   PeerContext context = {};
   if (!decodePeerContext(peer->contextBytes, &context)) {
     return 0;

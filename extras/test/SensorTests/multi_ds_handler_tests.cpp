@@ -9,6 +9,9 @@
 #include <simple_time.h>
 
 #include <supla/channel.h>
+#include <supla/correction.h>
+#include <supla/device/server_identity.h>
+#include <supla/storage/key_value.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/sensor/multi_ds_handler_base.h>
 #include <supla/storage/config_tags.h>
@@ -134,6 +137,7 @@ class MultiDsHandlerTests : public ::testing::Test {
   }
 
   void TearDown() override {
+    Supla::Correction::clear();
     Supla::Storage::SetConfigInstance(nullptr);
     Supla::Channel::resetToDefaults();
   }
@@ -442,3 +446,53 @@ TEST_F(MultiDsHandlerTests, ConflictObserverReportsRemovedSensor) {
 }
 
 }  // namespace
+
+namespace {
+class RemovalConfig : public Supla::KeyValue {
+ public:
+  using Supla::KeyValue::getBlobSize;
+  bool init() override { return true; }
+  bool commit() override { return !failCommit; }
+  bool failCommit = false;
+};
+}  // namespace
+
+TEST_F(MultiDsHandlerTests, RemovalFailureDoesNotPurgeOrDeleteSensor) {
+  RemovalConfig config;
+  Supla::Storage::SetConfigInstance(&config);
+  SimpleTime time;
+  SuplaDeviceClass device;
+  TestMultiDsHandler handler(&device);
+  auto sensor = handler.add(1);
+  ASSERT_NE(sensor, nullptr);
+  const auto number = sensor->getChannelNumber();
+  const auto key = configKey(sensor->getSubDeviceId());
+  sensor->saveSensorConfig();
+  ASSERT_GT(config.getBlobSize(key.c_str()), 0);
+  Supla::Device::ServerIdentity identity;
+  identity.load(&config);
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 101;
+  ids.ChannelCount = 1;
+  ids.ChannelId[0] = 501;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  config.failCommit = true;
+  uint8_t report[SUPLA_CHANNELMAXCOUNT] = {};
+  EXPECT_FALSE(handler.onChannelConflictReport(report, sizeof(report),
+                                               false, true, false));
+  EXPECT_EQ(handler.slot(0), sensor);
+  EXPECT_EQ(sensor->getChannelNumber(), number);
+  EXPECT_EQ(sensor->getChannel()->getServerChannelId(), 501U);
+  EXPECT_GT(config.getBlobSize(key.c_str()), 0);
+  config.failCommit = false;
+  EXPECT_TRUE(handler.onChannelConflictReport(report, sizeof(report),
+                                              false, true, false));
+  EXPECT_EQ(handler.slot(0), nullptr);
+  EXPECT_LT(config.getBlobSize(key.c_str()), 0);
+  auto replacement = handler.add(2);
+  ASSERT_NE(replacement, nullptr);
+  EXPECT_EQ(replacement->getChannel()->getServerChannelId(), 0U);
+}

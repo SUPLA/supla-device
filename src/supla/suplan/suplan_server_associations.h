@@ -33,6 +33,7 @@ class ServerAssociations {
   void load(Config *config, ServerIdentity *identity);
   void identityChanged();
   static void scopeChanged(ServerIdentity *identity);
+  static bool reloadSourceRights(ServerIdentity *identity);
   TDS_SuplaSetSuplanSourceAssociationResult accept(
       const TSDS_SuplaSetSuplanSourceAssociation &request);
   TDS_SuplaSetSuplanDestinationAssociationResult accept(

@@ -59,6 +59,8 @@ class PeerTable {
                        uint8_t *peerIndex);
   bool replaceAcl(uint8_t peerIndex, uint32_t revision,
                   const AclEntry *entries, uint8_t entryCount);
+  // Local lifecycle revocation: same revision, permissions may only decrease.
+  bool restrictAcl(uint8_t peerIndex, const AclEntry *entries, uint8_t count);
   int findByLocator(const uint8_t locator[16]) const;
   bool hasActiveGrants(uint8_t peerIndex) const;
   bool runtimeEligible(uint8_t peerIndex) const;
@@ -86,6 +88,9 @@ class PeerTable {
   uint16_t entryCount(bool destination) const;
 
  private:
+  uint8_t aclPermissions(uint8_t peerIndex, const ResourceId &resource) const;
+  bool installAcl(uint8_t peerIndex, uint32_t revision,
+                  const AclEntry *entries, uint8_t count);
   bool setInitialAcl(PeerRecord *peer, uint32_t revision,
                      const AclEntry *entries, uint8_t entryCount);
   bool validEntries(const AclEntry *entries, uint8_t entryCount) const;

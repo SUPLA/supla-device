@@ -413,6 +413,12 @@ bool MultiDsHandlerBase::onChannelConflictReport(
         SUPLA_LOG_DEBUG("MultiDS: Channel removed (subId: %d, number: %d)",
                         sensor->getSubDeviceId(), channelNumber);
 
+        if (!sensor->getChannel()->prepareForRemoval()) {
+          SUPLA_LOG_WARNING("MultiDS: Cannot persist channel removal (%d)",
+                            channelNumber);
+          notifyChannelConflictResolution(false);
+          return false;
+        }
         sensor->purgeConfig();
         delete sensor;
         sensor = nullptr;

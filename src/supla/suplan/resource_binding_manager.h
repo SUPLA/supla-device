@@ -9,6 +9,8 @@
 namespace Supla {
 namespace Device {
 class ServerAssociations;
+class ServerIdentity;
+struct ServerMigration;
 class RemoteResourceManager;
 // Destination topology is durable; Source routing is derived volatile state.
 class ResourceBindingManager {
@@ -29,6 +31,8 @@ class ResourceBindingManager {
   void acknowledged(uint8_t peer, uint8_t result);
   void serverReconnected();
   void invalidateServerScope();
+  void migrate(const ServerIdentity *identity,
+               const ServerMigration &migration);
   int bindingCount() const;
   bool sessionNeeded(uint8_t peer) const;
   SupLan::BindingRetry *retryStorage() { return &retry_; }

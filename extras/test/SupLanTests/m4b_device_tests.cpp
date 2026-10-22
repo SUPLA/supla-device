@@ -2580,3 +2580,137 @@ TEST_F(M4bDevice, ExpiredUnpolledLeaseBreaksBorrowedObserverContinuity) {
                    sizeof(snapshot), time.value);
   EXPECT_FALSE(manager->state({1, 1001}, time.value).available());
 }
+
+TEST_F(M4bDevice, RemovedTargetBindingCannotActuateReusedChannelId) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  manager->iterate(time.value);
+  hvacSample(true);
+  manager->iterate(time.value);
+  bool configured = false;
+  ASSERT_TRUE(manager->relayDemand(3, &configured));
+  ASSERT_TRUE(relay->getChannel()->prepareForRemoval());
+  EXPECT_EQ(manager->bindingCount(), 0);
+  EXPECT_EQ(storage.getBlobSize("slb_0"), -1);
+  delete relay;
+  relay = new Control::Relay(1);
+  ASSERT_TRUE(relay->getChannel()->setChannelNumber(3));
+  relay->getChannel()->setDefault(SUPLA_CHANNELFNC_PUMPSWITCH);
+  relay->onLoadConfig(nullptr);
+  relay->onInit();
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 202;
+  ids.ChannelCount = 5;
+  for (int i = 0; i < 5; ++i) ids.ChannelId[i] = 601 + i;
+  // Replacement is last in registration order, after the retained HVAC.
+  ids.ChannelId[3] = 605;
+  ids.ChannelId[4] = 604;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  ASSERT_EQ(relay->getChannel()->getServerChannelId(), 604U);
+  hvacSample(true);
+  manager->iterate(time.value);
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_FALSE(configured);
+  associations.load(nullptr, nullptr);
+  identity.load(nullptr);
+  storage.reboot();
+  identity.load(&storage);
+  associations.load(&storage, &identity);
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  hvacSample(true);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->bindingCount(), 0);
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_FALSE(configured);
+}
+
+TEST_F(M4bDevice, RemovalPreservesUnrelatedBindingAndSharedConsumer) {
+  auto other = std::unique_ptr<Control::Relay>(new Control::Relay(2));
+  other->getChannel()->setDefault(SUPLA_CHANNELFNC_PUMPSWITCH);
+  other->onLoadConfig(nullptr);
+  other->onInit();
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 202;
+  ids.ChannelCount = 6;
+  for (int i = 0; i < 6; ++i) ids.ChannelId[i] = 601 + i;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  auto manager = adapter.resourceBindings();
+  const auto one = binding();
+  std::vector<uint8_t> body(one.begin(), one.end());
+  body.resize(25);
+  body[0] = 2;
+  std::memcpy(body.data() + 13, one.data() + 1, 12);
+  putUint32(body.data() + 20, 606);
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  manager->iterate(time.value);
+  hvacSample(true);
+  manager->iterate(time.value);
+  ASSERT_TRUE(relay->getChannel()->prepareForRemoval());
+  EXPECT_EQ(manager->bindingCount(), 1);
+  std::array<char, 41> persisted = {};
+  ASSERT_EQ(storage.getBlobSize("slb_0"), persisted.size());
+  ASSERT_TRUE(storage.getBlob("slb_0", persisted.data(), persisted.size()));
+  EXPECT_EQ(static_cast<uint8_t>(persisted[28]), 1);
+  EXPECT_EQ(getUint32(reinterpret_cast<const uint8_t *>(persisted.data()) + 36),
+            606U);
+  // Before any registration/cleanup loop, no in-memory deleted edge remains.
+  EXPECT_EQ(adapter.remoteResources()->consumerCount(), 1);
+  EXPECT_FALSE(adapter.remoteResources()->state({1, 1001}, time.value)
+                   .available());
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  manager->iterate(time.value);
+  hvacSample(true);
+  manager->iterate(time.value);
+  bool configured = false;
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_FALSE(configured);
+  EXPECT_TRUE(manager->relayDemand(5, &configured));
+  EXPECT_TRUE(configured);
+  associations.load(nullptr, nullptr);
+  identity.load(nullptr);
+  storage.reboot();
+  identity.load(&storage);
+  associations.load(&storage, &identity);
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  hvacSample(true);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->bindingCount(), 1);
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_FALSE(configured);
+  EXPECT_TRUE(manager->relayDemand(5, &configured));
+  EXPECT_TRUE(configured);
+}
+
+TEST_F(M4bDevice, BindingRemovalCommitFailureAbortsAndReplaysAfterReboot) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  storage.failCommitNumber = storage.commits + 2;  // Fence, then binding erase.
+  EXPECT_FALSE(relay->getChannel()->prepareForRemoval());
+  EXPECT_EQ(relay->getChannel()->getServerChannelId(), 604U);
+  bool configured = false;
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  storage.failCommitNumber = 0;
+  associations.load(nullptr, nullptr);
+  identity.load(nullptr);
+  storage.reboot();
+  identity.load(&storage);
+  associations.load(&storage, &identity);
+  manager->attachAssociations(&associations);
+  EXPECT_EQ(storage.getBlobSize("slb_0"), -1);
+  EXPECT_TRUE(relay->getChannel()->prepareForRemoval());
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->bindingCount(), 0);
+}

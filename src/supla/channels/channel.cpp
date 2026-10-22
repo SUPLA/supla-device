@@ -115,6 +115,14 @@ Channel::Channel(int number) {
   setFlag(SUPLA_CHANNEL_FLAG_CHANNELSTATE);
 }
 
+bool Channel::prepareForRemoval() {
+#ifndef ARDUINO_ARCH_AVR
+  return Supla::Device::ServerIdentity::channelChanging(channelNumber);
+#else
+  return true;
+#endif
+}
+
 Channel::~Channel() {
 #ifndef ARDUINO_ARCH_AVR
   if (!Supla::Device::ServerIdentity::channelChanging(channelNumber, true)) {

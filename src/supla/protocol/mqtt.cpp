@@ -275,7 +275,8 @@ void Supla::Protocol::Mqtt::onInit() {
     SUPLA_LOG_ERROR("Mqtt: failed to generate prefix");
   }
 
-  channelsCount = Supla::RegisterDevice::getChannelCount();
+  // channel numbers may have gaps, so use the highest number instead of count
+  channelsCount = Supla::RegisterDevice::getMaxChannelNumberUsed() + 1;
 }
 
 void Supla::Protocol::Mqtt::publishDeviceStatus(bool onRegistration) {
@@ -2027,7 +2028,8 @@ void Supla::Protocol::Mqtt::generateObjectId(char *result,
                                              int channelNumber,
                                              int subId) {
   uint8_t mac[6] = {};
-  if (channelNumber >= 100 || subId >= 100 || channelNumber < 0 || subId < 0) {
+  if (channelNumber >= SUPLA_CHANNELMAXCOUNT || subId >= 100 ||
+      channelNumber < 0 || subId < 0) {
     SUPLA_LOG_DEBUG("Mqtt: invalid channel number");
     return;
   }
@@ -2036,7 +2038,7 @@ void Supla::Protocol::Mqtt::generateObjectId(char *result,
   for (int i = 0; i < 12; i++) {
     result[i] = static_cast<char>(tolower(result[i]));
   }
-  int size = 7;
+  int size = 8;
 
   snprintf(result + 12, size, "_%d_%d", channelNumber, subId);
 }
@@ -3154,6 +3156,10 @@ void Mqtt::notifyConfigChange(int channelNumber) {
 }
 void Mqtt::publishChannelSetup(int channelNumber) {
   if (channelNumber < 0 || channelNumber >= channelsCount) {
+    return;
+  }
+  if (Supla::Element::getElementByChannelNumber(channelNumber) == nullptr) {
+    configChangedBit[channelNumber / 8] &= ~(1U << (channelNumber % 8));
     return;
   }
   publishChannelAvailability(channelNumber, true);

@@ -249,6 +249,47 @@ target_link_libraries(arduinoesp8266_tls_lifetime_tests PRIVATE
   gtest_main
 )
 
+add_executable(arduinoesp32_tcp_abort_tests
+  ArduinoEsp32PlatformTests/arduino_esp32_tcp_abort_tests.cpp
+  ../../src/supla/network/client.cpp
+  ../../src/supla/network/ip_address.cpp
+)
+target_include_directories(arduinoesp32_tcp_abort_tests BEFORE PRIVATE
+  ArduinoEsp32PlatformTests/fakes
+  ArduinoEspPlatformTests/fakes
+)
+target_include_directories(arduinoesp32_tcp_abort_tests PRIVATE ../../src)
+target_compile_definitions(arduinoesp32_tcp_abort_tests PRIVATE
+  ARDUINO_ARCH_ESP32)
+target_link_libraries(arduinoesp32_tcp_abort_tests PRIVATE gtest gtest_main)
+supla_apply_warnings(arduinoesp32_tcp_abort_tests)
+add_test(NAME arduinoesp32_tcp_abort_tests COMMAND arduinoesp32_tcp_abort_tests)
+
+# Compile the real helper against C lwIP doubles in both synchronization modes.
+# The ordinary host library still compiles this source as an empty translation
+# unit; only these isolated tests impersonate the ESP32 platform.
+foreach(core_locking IN ITEMS 0 1)
+  foreach(socket_offset IN ITEMS 0 4)
+    set(abort_test esp32_tcp_abort_tests_core_locking_${core_locking}_offset_${socket_offset})
+    add_executable(${abort_test}
+      Esp32TcpAbortTests/esp32_tcp_abort_tests.cpp
+      Esp32TcpAbortTests/fake_lwip.c
+      ../../src/supla/network/esp32_tcp_abort.cpp
+    )
+    target_include_directories(${abort_test} BEFORE PRIVATE
+      Esp32TcpAbortTests/fakes
+      ArduinoEspPlatformTests/fakes
+    )
+    target_include_directories(${abort_test} PRIVATE ../../src)
+    target_compile_definitions(${abort_test} PRIVATE
+      ARDUINO_ARCH_ESP32 LWIP_TCPIP_CORE_LOCKING=${core_locking}
+      LWIP_SOCKET_OFFSET=${socket_offset})
+    target_link_libraries(${abort_test} PRIVATE gtest gtest_main)
+    supla_apply_warnings(${abort_test})
+    add_test(NAME ${abort_test} COMMAND ${abort_test})
+  endforeach()
+endforeach()
+
 target_include_directories(supladevicetests BEFORE PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/MCP23008Tests
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles/esp_idf

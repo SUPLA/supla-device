@@ -21,6 +21,7 @@ set(SUPLA_DEVICE_PORTING_SRCS
 idf_component_register(SRCS
   ${SUPLA_DEVICE_PORTING_SRCS}
   REQUIRES
+    lwip
     esp-tls
     nvs_flash
     spiffs

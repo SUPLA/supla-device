@@ -7,7 +7,6 @@
 #include <BearSSLHelpers.h>
 #include <StackThunk.h>
 #include <bearssl/bearssl.h>
-#include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <supla/crypto.h>
@@ -91,6 +90,23 @@ int hexDigit(char value) {
   if (value >= 'A' && value <= 'F') return value - 'A' + 10;
   return -1;
 }
+// Same accepted format as WiFiClientSecure::setFingerprint(const char *).
+bool parseFingerprint(const char *text, uint8_t fingerprint[20]) {
+  for (size_t i = 0; i < 20; ++i) {
+    while (*text == ' ' || *text == ':') ++text;
+    const int high = hexDigit(*text);
+    if (high < 0) return false;
+    ++text;
+    const int low = hexDigit(*text);
+    if (low < 0) return false;
+    ++text;
+    fingerprint[i] = high * 16 + low;
+  }
+  while (*text == ' ' || *text == ':') ++text;
+  return !*text;
+}
+constexpr size_t kTlsInputSize = 1024 + 325;
+constexpr size_t kTlsOutputSize = 512 + 85;
 }  // namespace
 
 struct Supla::Esp8266AsyncClient::Tls {
@@ -98,8 +114,10 @@ struct Supla::Esp8266AsyncClient::Tls {
   br_x509_minimal_context *minimal = nullptr;
   LeafValidator *leaf = nullptr;
   const br_x509_class *reject = &rejectVtable;
-  uint8_t input[1024 + 325];
-  uint8_t output[512 + 85];
+  // Separate blocks, as in WiFiClientSecure, so a fragmented heap does not
+  // need one contiguous context-plus-buffers allocation.
+  uint8_t *input = nullptr;
+  uint8_t *output = nullptr;
   BearSSL::X509List *ca = nullptr;
   void releaseVerifier() {
     br_ssl_engine_set_x509(&client.eng, &reject);
@@ -114,25 +132,36 @@ struct Supla::Esp8266AsyncClient::Tls {
     releaseVerifier();
     volatile uint8_t *bytes = reinterpret_cast<volatile uint8_t *>(&client);
     for (size_t i = 0; i < sizeof(client); ++i) bytes[i] = 0;
-    memset(input, 0, sizeof(input));
-    memset(output, 0, sizeof(output));
+    if (input) memset(input, 0, kTlsInputSize);
+    if (output) memset(output, 0, kTlsOutputSize);
+    delete[] input;
+    delete[] output;
   }
 };
 
-Supla::Esp8266AsyncClient::~Esp8266AsyncClient() { stop(); }
+Supla::Esp8266AsyncClient::~Esp8266AsyncClient() {
+  stop();
+  delete[] fingerprint_;
+}
 
 void Supla::Esp8266AsyncClient::setFingerprint(const char *value) {
   stop();
-  if (value && strlen(value) >= sizeof(fingerprint_)) {
-    fingerprint_[0] = '!';  // Invalid, never silently fall back to insecure.
-    fingerprint_[1] = 0;
-    return;
+  delete[] fingerprint_;
+  fingerprint_ = nullptr;
+  fingerprintSet_ = value && *value;
+  if (!fingerprintSet_) return;
+  // An invalid value or a failed allocation stays set without bytes, so TLS
+  // fails instead of silently falling back to insecure.
+  fingerprint_ = new (std::nothrow) uint8_t[20];
+  if (fingerprint_ && !parseFingerprint(value, fingerprint_)) {
+    SUPLA_LOG_ERROR("Invalid TLS certificate fingerprint");
+    delete[] fingerprint_;
+    fingerprint_ = nullptr;
   }
-  snprintf(fingerprint_, sizeof(fingerprint_), "%s", value ? value : "");
 }
 
 bool Supla::Esp8266AsyncClient::isCertificateValidationEnabled() const {
-  return rootCACert || fingerprint_[0];
+  return rootCACert || fingerprintSet_;
 }
 
 Supla::Client::ConnectResult Supla::Esp8266AsyncClient::startTransport(
@@ -147,8 +176,12 @@ Supla::Client::ConnectResult Supla::Esp8266AsyncClient::startTransport(
     }
     return ConnectResult::Failed;
   }
+  noteProgress(kDnsTimeoutMs);
   resolving_ = dns_.start(host);
-  return resolving_ ? ConnectResult::Pending : ConnectResult::Failed;
+  if (resolving_) return ConnectResult::Pending;
+  connectionError_ = ConnectionError::DNS;
+  setFailure(kCannotResolveHostname);
+  return ConnectResult::Failed;
 }
 
 err_t Supla::Esp8266AsyncClient::onConnected(void *context, tcp_pcb *,
@@ -182,31 +215,53 @@ void Supla::Esp8266AsyncClient::onError(void *context, err_t) {
   client->failed_ = true;
 }
 
+Supla::Client::ConnectResult Supla::Esp8266AsyncClient::fail() {
+  if (tls_) {
+    setFailure(kTlsHandshakeFailed,
+               br_ssl_engine_last_error(&tls_->client.eng));
+  } else {
+    setFailure(resolving_ ? kCannotResolveHostname : kFailedConnectToHost);
+  }
+  return ConnectResult::Failed;
+}
+
 Supla::Client::ConnectResult Supla::Esp8266AsyncClient::pollTransport() {
-  if (failed_ || remoteClosed_) return ConnectResult::Failed;
+  if (failed_ || remoteClosed_) return fail();
   if (resolving_) {
     uint32_t address = 0;
     const int result = dns_.poll(&address);
     if (!result) return ConnectResult::Pending;
-    if (result < 0) return ConnectResult::Failed;
+    if (result < 0) {
+      connectionError_ = ConnectionError::DNS;
+      return fail();
+    }
     resolving_ = false;
+    noteProgress();
     pcb_ = tcp_new();
-    if (!pcb_) return ConnectResult::Failed;
+    if (!pcb_) {
+      setFailure(kCannotCreateSocket);
+      return ConnectResult::Failed;
+    }
     tcp_arg(pcb_, this);
     tcp_recv(pcb_, onReceive);
     tcp_err(pcb_, onError);
     ip_addr_t ip;
     ip_addr_set_ip4_u32(&ip, address);
-    if (tcp_connect(pcb_, &ip, port_, onConnected) != ERR_OK)
-      return ConnectResult::Failed;
+    if (tcp_connect(pcb_, &ip, port_, onConnected) != ERR_OK) return fail();
     return ConnectResult::Pending;
   }
   if (!tcpReady_) return ConnectResult::Pending;
   srcIp = ip4_addr_get_u32(ip_2_ip4(&pcb_->local_ip));
   if (!sslEnabled) return ConnectResult::Connected;
-  if (!tls_ && !setupTls()) return ConnectResult::Failed;
+  if (!tls_) {
+    noteProgress();
+    if (!setupTls()) {
+      setFailure(kTlsSetupFailed);
+      return ConnectResult::Failed;
+    }
+  }
   pumpTls();
-  if (failed_) return ConnectResult::Failed;
+  if (failed_) return fail();
   const unsigned state = br_ssl_engine_current_state(&tls_->client.eng);
   if (state & (BR_SSL_SENDAPP | BR_SSL_RECVAPP)) {
     tls_->releaseVerifier();
@@ -222,9 +277,17 @@ bool Supla::Esp8266AsyncClient::setupTls() {
   thunkReferenced_ = true;
   tls_ = new (std::nothrow) Tls;
   if (!tls_) return false;
+  tls_->input = new (std::nothrow) uint8_t[kTlsInputSize];
+  tls_->output = new (std::nothrow) uint8_t[kTlsOutputSize];
+  if (!tls_->input || !tls_->output) return false;
   if (rootCACert) {
     tls_->ca = new (std::nothrow) BearSSL::X509List(rootCACert);
-    if (!tls_->ca || !tls_->ca->getCount()) return false;
+    if (!tls_->ca) return false;
+    if (!tls_->ca->getCount()) {
+      setFailure(kCaParseFailed);
+      connectionError_ = ConnectionError::CERTIFICATE_ERROR;
+      return false;
+    }
   }
   tls_->minimal = new (std::nothrow) br_x509_minimal_context;
   if (!tls_->minimal) return false;
@@ -242,28 +305,20 @@ bool Supla::Esp8266AsyncClient::setupTls() {
     auto &leaf = *tls_->leaf;
     memset(&leaf, 0, sizeof(leaf));
     leaf.vtable = &leafVtable;
-    leaf.checkFingerprint = fingerprint_[0];
-    if (leaf.checkFingerprint) {
-      const char *text = fingerprint_;
-      for (size_t i = 0; i < sizeof(leaf.fingerprint); ++i) {
-        while (*text == ' ' || *text == ':') ++text;
-        const int high = hexDigit(*text);
-        if (high < 0) return false;
-        ++text;
-        const int low = hexDigit(*text);
-        if (low < 0) return false;
-        ++text;
-        leaf.fingerprint[i] = high * 16 + low;
+    leaf.checkFingerprint = fingerprintSet_;
+    if (fingerprintSet_) {
+      if (!fingerprint_) {
+        connectionError_ = ConnectionError::CERTIFICATE_ERROR;
+        return false;
       }
-      while (*text == ' ' || *text == ':') ++text;
-      if (*text) return false;
+      memcpy(leaf.fingerprint, fingerprint_, sizeof(leaf.fingerprint));
     }
     br_ssl_engine_set_x509(engine, &leaf.vtable);
     delete tls_->minimal;
     tls_->minimal = nullptr;
   }
-  br_ssl_engine_set_buffers_bidi(engine, tls_->input, sizeof(tls_->input),
-                                tls_->output, sizeof(tls_->output));
+  br_ssl_engine_set_buffers_bidi(engine, tls_->input, kTlsInputSize,
+                                tls_->output, kTlsOutputSize);
   br_ssl_engine_set_versions(engine, BR_TLS12, BR_TLS12);
   br_ssl_engine_add_flags(engine, BR_OPT_NO_RENEGOTIATION);
   uint8_t entropy[32];
@@ -292,6 +347,7 @@ void Supla::Esp8266AsyncClient::pumpTls() {
       const int sent = sendTcp(data, size);
       if (sent > 0) {
         br_ssl_engine_sendrec_ack(engine, sent);
+        if (!connectionReady()) noteProgress();
         continue;
       }
     }
@@ -301,6 +357,7 @@ void Supla::Esp8266AsyncClient::pumpTls() {
       const int received = receiveTcp(data, size);
       if (received > 0) {
         br_ssl_engine_recvrec_ack(engine, received);
+        if (!connectionReady()) noteProgress();
         continue;
       }
     }

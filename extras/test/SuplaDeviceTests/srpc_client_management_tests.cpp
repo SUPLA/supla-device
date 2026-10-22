@@ -288,6 +288,33 @@ TEST_F(SrpcClientManagementTests,
 }
 
 TEST_F(SrpcClientManagementTests,
+       AutodiscoveryRestartsWhenEmailChangesDuringRequest) {
+  // Discovery keeps only a hash of the email; a changed email must still
+  // abandon the old request and query the new one.
+  ClientStats firstStats;
+  ClientStats secondStats;
+  firstStats.connectResult = 1;
+  secondStats.connectResult = 1;
+  TestNetwork network;
+  network.clients.push_back(new TrackingClient(firstStats));
+  network.clients.push_back(new TrackingClient(secondStats));
+  SuplaDeviceClass sd;
+  Supla::RegisterDevice::setEmail("old@example.com");
+  TestSrpc srpc(&sd);
+
+  EXPECT_FALSE(srpc.iterate(0));
+  EXPECT_EQ(firstStats.destroyed, 0);
+  EXPECT_NE(firstStats.written.find("old%40example.com"), std::string::npos);
+
+  Supla::RegisterDevice::setEmail("new@example.com");
+  EXPECT_FALSE(srpc.iterate(1));
+  EXPECT_EQ(firstStats.destroyed, 1);
+  EXPECT_EQ(network.createClientCalls, 2);
+  EXPECT_NE(secondStats.written.find("new%40example.com"), std::string::npos);
+  EXPECT_EQ(secondStats.written.find("old%40example.com"), std::string::npos);
+}
+
+TEST_F(SrpcClientManagementTests,
        FailedAutodiscoveryConnectStopsAndDestroysEachClient) {
   ClientStats firstStats;
   ClientStats secondStats;

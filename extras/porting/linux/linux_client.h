@@ -29,6 +29,7 @@ class LinuxClient : public AsyncClient {
   int transmit(const uint8_t *buf, size_t size) override;
   ConnectResult startTcp();
   ConnectResult startTls();
+  bool setupTls();
 
   bool checkSslCerts(SSL *ssl);
   bool setupSslContext();
@@ -44,6 +45,8 @@ class LinuxClient : public AsyncClient {
   uint8_t addressCount = 0;
   uint8_t addressIndex = 0;
   uint16_t remotePort = 0;
+  int lastErrno = 0;
+  uint64_t tlsBytes = 0;
   bool useDefaultCACerts = false;
 };
 };  // namespace Supla

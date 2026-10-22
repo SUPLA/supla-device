@@ -17,12 +17,21 @@
 #include <unistd.h>
 #include <signal.h>
 #include <supla/network/network.h>
+#include <SuplaDevice.h>
 #include <chrono>
 #include <thread>
 #include <string>
+#include <vector>
 #include "../../porting/linux/linux_client.h"
 
 void Supla::Network::printData(const char *, const void *, int) {}
+extern "C" const char *supla_test_get_last_log();
+
+// This target links no SuplaDevice; record the client's last state reports.
+std::vector<std::string> lastStates;
+void SuplaDeviceClass::addLastStateLog(const char *text) {
+  lastStates.emplace_back(text);
+}
 
 uint32_t millis() {
   using Clock = std::chrono::steady_clock;
@@ -81,6 +90,63 @@ TEST(LinuxAsyncClient, StalledTlsReturnsToApplicationAndCanBeCancelled) {
   EXPECT_EQ(client.connectStep("127.0.0.1", server.port), Result::Pending);
   client.stop();
   EXPECT_FALSE(client.connected());
+}
+
+TEST(LinuxAsyncClient, RefusedConnectionLogsErrnoAndLastState) {
+  uint16_t closedPort = 0;
+  {
+    Listener probe;
+    closedPort = probe.port;
+  }  // Nothing listens on this port now.
+  ASSERT_NE(closedPort, 0);
+  Supla::LinuxClient client;
+  // Only the stub above receives this pointer; it is never dereferenced.
+  client.setSdc(reinterpret_cast<SuplaDeviceClass *>(&lastStates));
+  client.setTimeoutMs(1000);
+  lastStates.clear();
+  for (int attempt = 0; attempt < 2; ++attempt) {
+    Result result = Result::Pending;
+    for (int i = 0; i < 1000 && result == Result::Pending; ++i) {
+      result = client.connectStep("127.0.0.1", closedPort);
+      delay(1);
+    }
+    EXPECT_EQ(result, Result::Failed);
+  }
+  EXPECT_EQ(client.getConnectionError(),
+            Supla::ConnectionError::CONNECTION_REFUSED);
+  EXPECT_STREQ(supla_test_get_last_log(), "127.0.0.1: Connection refused");
+  // The repeated failure is deduplicated.
+  EXPECT_EQ(lastStates, std::vector<std::string>(
+      {"Connection: failed connect to host \"127.0.0.1\""}));
+}
+
+TEST(LinuxAsyncClient, StalledTcpConnectTimesOut) {
+  // A full accept queue makes Linux drop further SYNs, so connect() stays in
+  // progress until the client's own TCP timeout.
+  Listener server;
+  ASSERT_NE(server.port, 0);
+  ASSERT_EQ(listen(server.fd, 0), 0);
+  sockaddr_in address = {};
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  address.sin_port = htons(server.port);
+  int fillers[4];
+  for (int &filler : fillers) {
+    filler = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    connect(filler, reinterpret_cast<sockaddr *>(&address), sizeof(address));
+  }
+  delay(50);
+  Supla::LinuxClient client;
+  client.setTimeoutMs(200);
+  Result result = Result::Pending;
+  for (int i = 0; i < 2000 && result == Result::Pending; ++i) {
+    result = client.connectStep("127.0.0.1", server.port);
+    delay(1);
+  }
+  for (int filler : fillers) close(filler);
+  EXPECT_EQ(result, Result::Failed);
+  EXPECT_EQ(client.getConnectionError(),
+            Supla::ConnectionError::CONNECTION_TIMEOUT);
 }
 
 TEST(LinuxAsyncClient, PlaintextAndDnsReconnectDeliverOrderedBytes) {

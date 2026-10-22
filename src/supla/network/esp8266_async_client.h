@@ -27,6 +27,7 @@ class Esp8266AsyncClient : public AsyncClient {
 
  private:
   struct Tls;
+  ConnectResult fail();
   bool setupTls();
   void pumpTls();
   int receiveTcp(uint8_t *data, size_t size);
@@ -45,7 +46,8 @@ class Esp8266AsyncClient : public AsyncClient {
   bool remoteClosed_ = false;
   bool resolving_ = false;
   bool thunkReferenced_ = false;
-  char fingerprint_[60] = {};
+  bool fingerprintSet_ = false;
+  uint8_t *fingerprint_ = nullptr;  // SHA-1, allocated only when set.
 };
 }  // namespace Supla
 #endif

@@ -26,14 +26,14 @@ class EspAsyncClient : public AsyncClient {
  private:
   struct Tls;
   bool setupTls();
-  void tlsError(int result);
+  void tlsFailed(Failure failure, int result);
   static int sendSocket(void *context, const unsigned char *data, size_t size);
   static int receiveSocket(void *context, unsigned char *data, size_t size);
   AsyncDns dns_;
   Tls *tls_ = nullptr;
   int fd_ = -1;
   uint16_t port_ = 0;
-  enum class Phase { Dns, Tcp, Tls } phase_ = Phase::Dns;
+  enum class Phase : uint8_t { Dns, Tcp, Tls } phase_ = Phase::Dns;
 };
 }  // namespace Supla
 #endif

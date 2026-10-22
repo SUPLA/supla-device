@@ -43,17 +43,26 @@ int randomBytes(void *, unsigned char *data, size_t size) {
 bool wouldBlock() {
   return errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR;
 }
+// TLS 1.3 delivers session tickets through mbedtls_ssl_read(); they are not
+// connection errors (ESP-TLS ignored them as well).
+bool wantsRead(int result) {
+#ifdef MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET
+  if (result == MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET) return true;
+#endif
+  return result == MBEDTLS_ERR_SSL_WANT_READ;
+}
 }  // namespace
 
 Supla::EspAsyncClient::~EspAsyncClient() { stop(); }
 
 Supla::Client::ConnectResult Supla::EspAsyncClient::startTransport(
     const char *host, uint16_t port) {
-  connectionError_ = ConnectionError::NONE;
   port_ = port;
   phase_ = Phase::Dns;
+  noteProgress(kDnsTimeoutMs);
   if (!dns_.start(host)) {
     connectionError_ = ConnectionError::DNS;
+    setFailure(kCannotResolveHostname);
     return ConnectResult::Failed;
   }
   return ConnectResult::Pending;
@@ -61,14 +70,17 @@ Supla::Client::ConnectResult Supla::EspAsyncClient::startTransport(
 
 bool Supla::EspAsyncClient::setupTls() {
   tls_ = new (std::nothrow) Tls;
-  if (!tls_) return false;
+  if (!tls_) {
+    SUPLA_LOG_ERROR("ESP TLS INIT FAILED");
+    return false;
+  }
 #if MBEDTLS_VERSION_MAJOR >= 4 || defined(MBEDTLS_USE_PSA_CRYPTO)
   if (psa_crypto_init() != PSA_SUCCESS) return false;
 #endif
   int result = mbedtls_ssl_config_defaults(&tls_->config, MBEDTLS_SSL_IS_CLIENT,
       MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
   if (result) {
-    tlsError(result);
+    tlsFailed(kTlsSetupFailed, result);
     return false;
   }
 #if MBEDTLS_VERSION_MAJOR < 4
@@ -80,6 +92,7 @@ bool Supla::EspAsyncClient::setupTls() {
         reinterpret_cast<const unsigned char *>(rootCACert),
         strlen(rootCACert) + 1);
     if (result) {
+      setFailure(kCaParseFailed, -result);
       connectionError_ = ConnectionError::CERTIFICATE_ERROR;
       return false;
     }
@@ -98,7 +111,7 @@ bool Supla::EspAsyncClient::setupTls() {
   result = mbedtls_ssl_setup(&tls_->ssl, &tls_->config);
   if (!result) result = mbedtls_ssl_set_hostname(&tls_->ssl, connectionHost());
   if (result) {
-    tlsError(result);
+    tlsFailed(kTlsSetupFailed, result);
     return false;
   }
   mbedtls_ssl_set_bio(&tls_->ssl, this, sendSocket, receiveSocket, nullptr);
@@ -112,11 +125,16 @@ Supla::Client::ConnectResult Supla::EspAsyncClient::pollTransport() {
     if (!result) return ConnectResult::Pending;
     if (result < 0) {
       connectionError_ = ConnectionError::DNS;
+      setFailure(kCannotResolveHostname);
       return ConnectResult::Failed;
     }
+    phase_ = Phase::Tcp;
+    noteProgress();
     fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (fd_ < 0 || fcntl(fd_, F_SETFL, O_NONBLOCK) < 0)
+    if (fd_ < 0 || fcntl(fd_, F_SETFL, O_NONBLOCK) < 0) {
+      setFailure(kCannotCreateSocket);
       return ConnectResult::Failed;
+    }
     sockaddr_in remote = {};
     remote.sin_family = AF_INET;
     remote.sin_port = htons(port_);
@@ -125,9 +143,9 @@ Supla::Client::ConnectResult Supla::EspAsyncClient::pollTransport() {
                                  sizeof(remote));
     if (status < 0 && errno != EINPROGRESS && !wouldBlock()) {
       connectionError_ = ConnectionError::CONNECTION_REFUSED;
+      setFailure(kFailedConnectToHost);
       return ConnectResult::Failed;
     }
-    phase_ = Phase::Tcp;
     return ConnectResult::Pending;
   }
   if (phase_ == Phase::Tcp) {
@@ -136,12 +154,16 @@ Supla::Client::ConnectResult Supla::EspAsyncClient::pollTransport() {
     FD_SET(fd_, &writable);
     timeval timeout = {};
     const int ready = select(fd_ + 1, nullptr, &writable, nullptr, &timeout);
-    if (ready < 0 && !wouldBlock()) return ConnectResult::Failed;
+    if (ready < 0 && !wouldBlock()) {
+      setFailure(kFailedConnectToHost);
+      return ConnectResult::Failed;
+    }
     if (ready <= 0) return ConnectResult::Pending;
     int error = 0;
     socklen_t length = sizeof(error);
     if (getsockopt(fd_, SOL_SOCKET, SO_ERROR, &error, &length) || error) {
       connectionError_ = ConnectionError::CONNECTION_REFUSED;
+      setFailure(kFailedConnectToHost);
       return ConnectResult::Failed;
     }
     sockaddr_in local = {};
@@ -149,31 +171,38 @@ Supla::Client::ConnectResult Supla::EspAsyncClient::pollTransport() {
     if (!getsockname(fd_, reinterpret_cast<sockaddr *>(&local), &length))
       srcIp = local.sin_addr.s_addr;
     if (!sslEnabled) return ConnectResult::Connected;
-    if (!setupTls()) return ConnectResult::Failed;
     phase_ = Phase::Tls;
-    return ConnectResult::Pending;
+    noteProgress();
+    if (setupTls()) return ConnectResult::Pending;
+    setFailure(kTlsSetupFailed);
+    return ConnectResult::Failed;
   }
   const int result = mbedtls_ssl_handshake(&tls_->ssl);
   if (!result) return ConnectResult::Connected;
   if (result == MBEDTLS_ERR_SSL_WANT_READ ||
       result == MBEDTLS_ERR_SSL_WANT_WRITE)
     return ConnectResult::Pending;
-  tlsError(result);
+  tlsFailed(kTlsHandshakeFailed, result);
   return ConnectResult::Failed;
 }
 
-void Supla::EspAsyncClient::tlsError(int result) {
+void Supla::EspAsyncClient::tlsFailed(Failure failure, int result) {
+  setFailure(failure, -result);
   connectionError_ = ConnectionError::TLS_ERROR;
   const uint32_t flags = tls_ ? mbedtls_ssl_get_verify_result(&tls_->ssl) : 0;
-  if (flags & MBEDTLS_X509_BADCERT_EXPIRED)
+  if (flags == static_cast<uint32_t>(-1)) {
+    // No verification result yet: the handshake failed before it.
+  } else if (flags & MBEDTLS_X509_BADCERT_EXPIRED) {
     connectionError_ = ConnectionError::CERTIFICATE_EXPIRED;
-  else if (flags & MBEDTLS_X509_BADCERT_FUTURE)
+  } else if (flags & MBEDTLS_X509_BADCERT_FUTURE) {
     connectionError_ = ConnectionError::CERTIFICATE_NOT_YET_VALID;
-  else if (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH)
+  } else if (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH) {
     connectionError_ = ConnectionError::HOSTNAME_MISMATCH;
-  else if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED)
+  } else if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED) {
     connectionError_ = ConnectionError::UNTRUSTED_CERTIFICATE;
-  else if (flags) connectionError_ = ConnectionError::CERTIFICATE_ERROR;
+  } else if (flags || result == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
+    connectionError_ = ConnectionError::CERTIFICATE_ERROR;
+  }
   SUPLA_LOG_WARNING("TLS connection failed error=%d verify_flags=%u",
                     result, static_cast<unsigned>(flags));
 }
@@ -182,7 +211,10 @@ int Supla::EspAsyncClient::sendSocket(void *context, const unsigned char *data,
                                      size_t size) {
   auto client = static_cast<EspAsyncClient *>(context);
   const int result = ::send(client->fd_, data, size, MSG_DONTWAIT);
-  if (result >= 0) return result;
+  if (result >= 0) {
+    if (result > 0 && !client->connectionReady()) client->noteProgress();
+    return result;
+  }
   return wouldBlock() ? MBEDTLS_ERR_SSL_WANT_WRITE
                       : MBEDTLS_ERR_SSL_INTERNAL_ERROR;
 }
@@ -191,7 +223,10 @@ int Supla::EspAsyncClient::receiveSocket(void *context, unsigned char *data,
                                         size_t size) {
   auto client = static_cast<EspAsyncClient *>(context);
   const int result = ::recv(client->fd_, data, size, MSG_DONTWAIT);
-  if (result >= 0) return result;
+  if (result >= 0) {
+    if (result > 0 && !client->connectionReady()) client->noteProgress();
+    return result;
+  }
   return wouldBlock() ? MBEDTLS_ERR_SSL_WANT_READ
                       : MBEDTLS_ERR_SSL_INTERNAL_ERROR;
 }
@@ -230,9 +265,7 @@ int Supla::EspAsyncClient::available() {
 int Supla::EspAsyncClient::transmit(const uint8_t *data, size_t size) {
   const int result = tls_ ? mbedtls_ssl_write(&tls_->ssl, data, size)
                          : sendSocket(this, data, size);
-  if (result == MBEDTLS_ERR_SSL_WANT_READ ||
-      result == MBEDTLS_ERR_SSL_WANT_WRITE)
-    return -1;
+  if (wantsRead(result) || result == MBEDTLS_ERR_SSL_WANT_WRITE) return -1;
   return result > 0 ? result : 0;
 }
 
@@ -240,9 +273,7 @@ int Supla::EspAsyncClient::readImp(uint8_t *data, size_t size) {
   if (!connectionReady() || !size) return -1;
   const int result = tls_ ? mbedtls_ssl_read(&tls_->ssl, data, size)
                          : receiveSocket(this, data, size);
-  if (result == MBEDTLS_ERR_SSL_WANT_READ ||
-      result == MBEDTLS_ERR_SSL_WANT_WRITE)
-    return -1;
+  if (wantsRead(result) || result == MBEDTLS_ERR_SSL_WANT_WRITE) return -1;
   if (result <= 0) {
     connectionError_ = ConnectionError::CONNECTION_LOST;
     stop();

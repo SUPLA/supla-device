@@ -31,6 +31,7 @@ struct DnsJob {
   const char *host = nullptr;
   uint32_t addresses[8] = {};
   uint8_t count = 0;
+  int status = 0;  // getaddrinfo() result, for the original error log.
 };
 DnsJob dnsJobs[4];
 pthread_mutex_t dnsMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -52,7 +53,8 @@ void *resolveHost(void *context) {
   addrinfo *result = nullptr;
   uint32_t addresses[8] = {};
   uint8_t count = 0;
-  if (!getaddrinfo(host, nullptr, &hints, &result)) {
+  const int status = getaddrinfo(host, nullptr, &hints, &result);
+  if (!status) {
     for (auto item = result; item && count < 8; item = item->ai_next) {
       if (item->ai_family == AF_INET)
         addresses[count++] = reinterpret_cast<sockaddr_in *>(
@@ -66,6 +68,7 @@ void *resolveHost(void *context) {
   } else {
     memcpy(job->addresses, addresses, sizeof(addresses));
     job->count = count;
+    job->status = status;
     job->state = DnsJob::Done;
   }
   pthread_mutex_unlock(&dnsMutex);
@@ -191,33 +194,45 @@ Supla::Client::ConnectResult Supla::LinuxClient::startTransport(
     const char *host, uint16_t port) {
   remotePort = port;
   addressCount = addressIndex = 0;
+  lastErrno = 0;
   if (inet_pton(AF_INET, host, &addresses[0]) == 1) {
     addressCount = 1;
     return startTcp();
   }
   phase = Phase::Dns;
+  noteProgress(kDnsTimeoutMs);
   return ConnectResult::Pending;
 }
 
 Supla::Client::ConnectResult Supla::LinuxClient::startTcp() {
   while (addressIndex < addressCount) {
+    phase = Phase::Tcp;
+    // Like the old blocking client, each address has its own TCP timeout.
+    noteProgress();
     connectionFd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (connectionFd < 0) return ConnectResult::Failed;
-    int flags = fcntl(connectionFd, F_GETFL, 0);
-    if (flags < 0 || fcntl(connectionFd, F_SETFL, flags | O_NONBLOCK) < 0)
-      return ConnectResult::Failed;
+    int flags = connectionFd < 0 ? -1 : fcntl(connectionFd, F_GETFL, 0);
+    if (flags < 0 || fcntl(connectionFd, F_SETFL, flags | O_NONBLOCK) < 0) {
+      lastErrno = errno;
+      if (connectionFd >= 0) ::close(connectionFd);
+      connectionFd = -1;
+      ++addressIndex;
+      continue;
+    }
     sockaddr_in address = {};
     address.sin_family = AF_INET;
     address.sin_port = htons(remotePort);
     address.sin_addr.s_addr = addresses[addressIndex++];
-    phase = Phase::Tcp;
     if (::connect(connectionFd, reinterpret_cast<sockaddr *>(&address),
                   sizeof(address)) == 0) return startTls();
+    lastErrno = errno;
     if (errno == EINPROGRESS || errno == EWOULDBLOCK)
       return ConnectResult::Pending;
     ::close(connectionFd);
     connectionFd = -1;
   }
+  SUPLA_LOG_ERROR("%s: %s", connectionHost(), strerror(lastErrno));
+  connectionError_ = ConnectionError::CONNECTION_REFUSED;
+  setFailure(kFailedConnectToHost);
   return ConnectResult::Failed;
 }
 
@@ -227,24 +242,32 @@ Supla::Client::ConnectResult Supla::LinuxClient::startTls() {
   if (!getsockname(connectionFd, reinterpret_cast<sockaddr *>(&local), &length))
     srcIp = local.sin_addr.s_addr;
   if (!sslEnabled) return ConnectResult::Connected;
-  if (!setupSslContext()) return ConnectResult::Failed;
+  phase = Phase::Tls;
+  noteProgress();
+  tlsBytes = 0;
+  if (setupTls()) return ConnectResult::Pending;
+  setFailure(kTlsSetupFailed);
+  return ConnectResult::Failed;
+}
+
+bool Supla::LinuxClient::setupTls() {
+  if (!setupSslContext()) return false;
   ssl = SSL_new(ctx);
   // Older OpenSSL SNI macros take void*, although the hostname is read-only.
   if (!ssl || SSL_set_fd(ssl, connectionFd) != 1 ||
       SSL_set_tlsext_host_name(ssl, const_cast<char *>(connectionHost())) != 1)
-    return ConnectResult::Failed;
+    return false;
   if (isCertificateValidationEnabled()) {
     in_addr ip = {};
     if (inet_pton(AF_INET, connectionHost(), &ip) == 1) {
       if (!X509_VERIFY_PARAM_set1_ip_asc(SSL_get0_param(ssl), connectionHost()))
-        return ConnectResult::Failed;
+        return false;
     } else if (SSL_set1_host(ssl, connectionHost()) != 1) {
-      return ConnectResult::Failed;
+      return false;
     }
   }
   SSL_set_mode(ssl, SSL_MODE_ENABLE_PARTIAL_WRITE);
-  phase = Phase::Tls;
-  return ConnectResult::Pending;
+  return true;
 }
 
 Supla::Client::ConnectResult Supla::LinuxClient::pollTransport() {
@@ -263,6 +286,7 @@ Supla::Client::ConnectResult Supla::LinuxClient::pollTransport() {
           job.state = DnsJob::Free;
           dnsSlot = -1;
           pthread_mutex_unlock(&dnsMutex);
+          setFailure(kCannotResolveHostname);
           return ConnectResult::Failed;
         }
         pthread_detach(thread);
@@ -276,9 +300,16 @@ Supla::Client::ConnectResult Supla::LinuxClient::pollTransport() {
     auto &job = dnsJobs[dnsSlot];
     memcpy(addresses, job.addresses, sizeof(addresses));
     addressCount = job.count;
+    const int status = job.status;
     job.state = DnsJob::Free;
     dnsSlot = -1;
     pthread_mutex_unlock(&dnsMutex);
+    if (status) {
+      SUPLA_LOG_ERROR("%s: %s", connectionHost(), gai_strerror(status));
+      connectionError_ = ConnectionError::DNS;
+      setFailure(kCannotResolveHostname);
+      return ConnectResult::Failed;
+    }
     return startTcp();
   }
   if (phase == Phase::Tcp) {
@@ -286,12 +317,16 @@ Supla::Client::ConnectResult Supla::LinuxClient::pollTransport() {
     descriptor.fd = connectionFd;
     descriptor.events = POLLOUT;
     int ready = ::poll(&descriptor, 1, 0);
-    if (ready < 0 && errno != EINTR) return ConnectResult::Failed;
+    if (ready < 0 && errno != EINTR) {
+      setFailure(kFailedConnectToHost);
+      return ConnectResult::Failed;
+    }
     if (ready <= 0) return ConnectResult::Pending;
     int error = 0;
     socklen_t length = sizeof(error);
     if (getsockopt(connectionFd, SOL_SOCKET, SO_ERROR, &error, &length) ||
         error) {
+      lastErrno = error ? error : errno;
       ::close(connectionFd);
       connectionFd = -1;
       return startTcp();
@@ -299,14 +334,31 @@ Supla::Client::ConnectResult Supla::LinuxClient::pollTransport() {
     return startTls();
   }
   const int result = SSL_connect(ssl);
+  // Handshake bytes in either direction restart the inactivity deadline.
+  const uint64_t bytes = BIO_number_read(SSL_get_rbio(ssl)) +
+                         BIO_number_written(SSL_get_wbio(ssl));
+  if (bytes != tlsBytes) {
+    tlsBytes = bytes;
+    noteProgress();
+  }
   if (result == 1) {
-    return checkSslCerts(ssl) ? ConnectResult::Connected
-                              : ConnectResult::Failed;
+    if (checkSslCerts(ssl)) return ConnectResult::Connected;
+    connectionError_ = ConnectionError::CERTIFICATE_ERROR;
+    setFailure(kTlsHandshakeFailed, kTlsCertVerifyFailed);
+    return ConnectResult::Failed;
   }
   const int error = SSL_get_error(ssl, result);
   if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
     return ConnectResult::Pending;
   printSslError(ssl, result);
+  const int64_t verify = SSL_get_verify_result(ssl);
+  if (isCertificateValidationEnabled() && verify != X509_V_OK) {
+    SUPLA_LOG_WARNING("SSL verify result: %s",
+                      X509_verify_cert_error_string(verify));
+    setFailure(kTlsHandshakeFailed, kTlsCertVerifyFailed);
+  }
+  setFailure(kTlsHandshakeFailed, error);
+  connectionError_ = ConnectionError::TLS_ERROR;
   return ConnectResult::Failed;
 }
 
@@ -317,7 +369,8 @@ int Supla::LinuxClient::transmit(const uint8_t *buf, size_t size) {
     if (result > 0) return result;
     const int error = SSL_get_error(ssl, result);
     if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
-    return -1;
+      return -1;
+    printSslError(ssl, result);
     return 0;
   }
   const int result = ::send(connectionFd, buf, size, MSG_NOSIGNAL);

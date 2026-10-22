@@ -6,16 +6,26 @@
 #include <srpc_mock.h>
 #include <simple_time.h>
 #include <supla/network/async_client.h>
+#include <supla/device/last_state_logger.h>
 #include <supla/device/register_device.h>
 #include <supla/protocol/supla_srpc.h>
 #include <SuplaDevice.h>
 #include <string>
 #include <vector>
 
+extern "C" unsigned int supla_test_log_calls();
+
 namespace {
 using Result = Supla::Client::ConnectResult;
 class StepClient : public Supla::AsyncClient {
  public:
+  using AsyncClient::Failure;
+  using AsyncClient::kCannotResolveHostname;
+  using AsyncClient::kFailedConnectToHost;
+  using AsyncClient::kCaParseFailed;
+  using AsyncClient::kTlsSetupFailed;
+  using AsyncClient::kTlsHandshakeFailed;
+  using AsyncClient::kTlsCertVerifyFailed;
   ~StepClient() override { stop(); }
   int available() override { return 0; }
   bool isSecure() const override { return online && sslEnabled; }
@@ -29,16 +39,29 @@ class StepClient : public Supla::AsyncClient {
   SimpleTime *clock = nullptr;
   std::string written;
   std::vector<std::string> attempts;
+  uint16_t startBudget = 0;
+  bool progressOnPoll = false;
+  int pollAdvanceMs = 0;
+  // Reported with a failed next result, as transports do.
+  Failure failure = Failure(0);
+  int tlsError = 0;
+  std::string currentHost() const { return connectionHost(); }
 
  protected:
   Result startTransport(const char *, uint16_t) override {
     ++starts;
-    online = next == Result::Connected;
-    return next;
+    if (startBudget) noteProgress(startBudget);
+    return result();
   }
   Result pollTransport() override {
     ++polls;
+    if (progressOnPoll) noteProgress();
+    if (clock) clock->advance(pollAdvanceMs);
+    return result();
+  }
+  Result result() {
     online = next == Result::Connected;
+    if (next == Result::Failed && failure) setFailure(failure, tlsError);
     return next;
   }
   void closeTransport() override { ++closes; online = false; }
@@ -62,6 +85,30 @@ class StepSrpc : public Supla::Protocol::SuplaSrpc {
   explicit StepSrpc(SuplaDeviceClass *device) : SuplaSrpc(device, 29) {}
   uint16_t failures() const { return connectionFailCounter; }
   uint32_t pause() const { return waitForIterate; }
+};
+class RecordingLogger : public Supla::Device::LastStateLogger {
+ public:
+  void log(const char *text, int) override { entries.emplace_back(text); }
+  std::vector<std::string> entries;
+};
+class AsyncClientReport : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    device.setLastStateLogger(&logger);
+    client.setSdc(&device);
+    client.setTimeoutMs(50);
+  }
+  void TearDown() override { device.setLastStateLogger(nullptr); }
+  void fail(StepClient::Failure failure, int tlsError = 0) {
+    client.next = Result::Failed;
+    client.failure = failure;
+    client.tlsError = tlsError;
+    ASSERT_EQ(client.connectStep("svr.example", 2016), Result::Failed);
+  }
+  SimpleTime time;
+  RecordingLogger logger;
+  SuplaDeviceClass device;
+  StepClient client;
 };
 }  // namespace
 
@@ -230,4 +277,119 @@ TEST(AsyncClient, SrpcPendingCompletesAndRegistersWithoutNewAttempt) {
   protocol.onRegisterResult(&result);
   EXPECT_TRUE(protocol.isRegisteredAndReady());
   Supla::RegisterDevice::resetToDefaults();
+}
+
+TEST(AsyncClient, HandshakeProgressRestartsInactivityDeadline) {
+  SimpleTime time;
+  StepClient client;
+  client.setTimeoutMs(100);
+  client.progressOnPoll = true;
+  ASSERT_EQ(client.connectStep("server", 2016), Result::Pending);
+  // A slow but progressing handshake is not limited by total elapsed time.
+  for (int i = 0; i < 20; ++i) {
+    time.advance(90);
+    ASSERT_EQ(client.connectStep("server", 2016), Result::Pending) << i;
+  }
+  client.progressOnPoll = false;
+  time.advance(90);
+  EXPECT_EQ(client.connectStep("server", 2016), Result::Pending);
+  time.advance(10);
+  EXPECT_EQ(client.connectStep("server", 2016), Result::Failed);
+  EXPECT_EQ(client.getConnectionError(),
+            Supla::ConnectionError::CONNECTION_TIMEOUT);
+  EXPECT_EQ(client.starts, 1);
+}
+
+TEST(AsyncClient, ResolverPhaseKeepsTenSecondAllowance) {
+  SimpleTime time;
+  StepClient client;
+  client.setTimeoutMs(3000);
+  client.startBudget = 10000;
+  ASSERT_EQ(client.connectStep("server", 2016), Result::Pending);
+  time.advance(9999);
+  EXPECT_EQ(client.connectStep("server", 2016), Result::Pending);
+  time.advance(1);
+  EXPECT_EQ(client.connectStep("server", 2016), Result::Failed);
+  // A shorter phase budget never reduces the configured timeout.
+  client.startBudget = 10;
+  ASSERT_EQ(client.connectStep("server", 2016), Result::Pending);
+  time.advance(2999);
+  EXPECT_EQ(client.connectStep("server", 2016), Result::Pending);
+}
+
+// Texts of the former EspIdfClient::logConnReason(), shared by all backends.
+TEST_F(AsyncClientReport, FailuresUseEspIdfClientTexts) {
+  ASSERT_EQ(client.connectStep("svr.example", 2016), Result::Pending);
+  time.advance(50);
+  ASSERT_EQ(client.connectStep("svr.example", 2016), Result::Failed);
+  fail(StepClient::kCannotResolveHostname);
+  fail(StepClient::kFailedConnectToHost);
+  fail(StepClient::kCaParseFailed, 0x2180);
+  fail(StepClient::kTlsHandshakeFailed, StepClient::kTlsCertVerifyFailed);
+  fail(StepClient::kTlsHandshakeFailed, 62);
+  fail(StepClient::kTlsSetupFailed, 0x7100);
+  EXPECT_EQ(logger.entries, std::vector<std::string>({
+      "Connection: connection timeout to host \"svr.example\"",
+      "Connection: can't resolve hostname \"svr.example\"",
+      "Connection: failed connect to host \"svr.example\"",
+      "CA certificate parsing error - please provide correct one",
+      "Connection TLS: handshake fail - server certificate verification "
+      "error \"svr.example\"",
+      "Connection TLS: handshake fail (TLS 0x3E, \"svr.example\")",
+      "Connection: error 0x8017 (TLS 0x7100 \"svr.example\")",
+  }));
+}
+
+TEST_F(AsyncClientReport, RepeatedFailureIsLoggedOnce) {
+  fail(StepClient::kTlsHandshakeFailed, 62);
+  fail(StepClient::kTlsHandshakeFailed, 62);
+  // As in EspIdfClient, a successful connection does not reset the filter.
+  client.next = Result::Connected;
+  ASSERT_EQ(client.connectStep("svr.example", 2016), Result::Connected);
+  client.stop();  // Cancellation is not a failure.
+  fail(StepClient::kTlsHandshakeFailed, 62);
+  fail(StepClient::kTlsHandshakeFailed, 54);
+  fail(StepClient::kTlsHandshakeFailed, 62);
+  // A failure without a reason (e.g. waiting for NTP) is not reported.
+  fail(StepClient::Failure(0));
+  client.setSdc(nullptr);
+  fail(StepClient::kFailedConnectToHost);
+  EXPECT_EQ(logger.entries.size(), 3U);
+}
+
+TEST(AsyncClient, HostIsKeptWhileConnectedAndLimitedTo255Bytes) {
+  SimpleTime time;
+  StepClient client;
+  client.next = Result::Connected;
+  ASSERT_EQ(client.connectStep("first.example", 2016), Result::Connected);
+  EXPECT_EQ(client.currentHost(), "first.example");
+  ASSERT_EQ(client.connectStep("first.example", 2016), Result::Connected);
+  EXPECT_EQ(client.starts, 1);
+  ASSERT_EQ(client.connectStep("second.example", 2016), Result::Connected);
+  EXPECT_EQ(client.starts, 2);
+  client.stop();
+  EXPECT_EQ(client.currentHost(), "");
+  const std::string longest(255, 'h');
+  EXPECT_EQ(client.connectStep(longest.c_str(), 2015), Result::Connected);
+  EXPECT_EQ(client.connectStep(std::string(256, 'h').c_str(), 2015),
+            Result::Failed);
+}
+
+TEST(AsyncClient, LegacyConnectLogsAttemptOnceAndEndsAtDeadline) {
+  SimpleTime time;
+  StepClient client;
+  client.setTimeoutMs(20);
+  const unsigned int before = supla_test_log_calls();
+  client.next = Result::Connected;
+  ASSERT_EQ(client.connect("server", 2016), 1);
+  // "Establishing connection ..." and "Connected via IP ...".
+  EXPECT_EQ(supla_test_log_calls() - before, 2U);
+
+  client.next = Result::Pending;
+  client.clock = &time;
+  client.pollAdvanceMs = 10;
+  EXPECT_EQ(client.connect("server", 2016), 0);
+  EXPECT_EQ(client.polls, 2);
+  EXPECT_EQ(client.getConnectionError(),
+            Supla::ConnectionError::CONNECTION_TIMEOUT);
 }

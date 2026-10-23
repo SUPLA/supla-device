@@ -7,6 +7,14 @@
 #include <supla/log_wrapper.h>
 namespace Supla {
 namespace Device {
+namespace {
+// A lost requested grant may be a withdrawn Cloud decision. Allow one more
+// approval-enabled ENSURE; the Server keeps an explicit rejection sticky.
+void grantLost(RemoteChannelResource *resource, uint8_t remaining) {
+  if (resource->effective & resource->permissions & ~remaining)
+    resource->manualAttempted = false;
+}
+}  // namespace
 RemoteResourceManager::RemoteResourceManager(SupLan::PeerTable *peers,
     SupLan::Runtime *runtime, RemoteAccessPort *access)
     : RemoteChannelManager(access), peers_(peers), runtime_(runtime) {
@@ -63,6 +71,7 @@ RemoteResourceManager::PeerPresence *RemoteResourceManager::reconcilePeer(
       if (!resource.used() || resource.peerIndex != index) continue;
       if (runtime_) runtime_->removeReadDependency(index, resource.id);
       invalidate(&resource);
+      grantLost(&resource, 0);
       resource.peerIndex = 0xff;
       resource.effective = 0;
       resource.readAttempted = false;
@@ -86,6 +95,7 @@ void RemoteResourceManager::reconcile(Resource *resource) {
       if (runtime_ && resource->peerIndex != 0xff)
         runtime_->removeReadDependency(resource->peerIndex, resource->id);
       invalidate(resource);
+      grantLost(resource, 0);
       resource->readAttempted = false;
       resource->ensureAttempted = false;
       resource->access = RemoteAccess::PENDING;
@@ -103,11 +113,12 @@ void RemoteResourceManager::reconcile(Resource *resource) {
     resource->readAttempted = false;
   }
   const uint8_t previous = resource->effective;
-  resource->effective = 0;
+  uint8_t effective = 0;
   for (uint8_t right = 1; right <= 4; right <<= 1) {
-    if (peers_->authorize(peerIndex, resource->id, right))
-      resource->effective |= right;
+    if (peers_->authorize(peerIndex, resource->id, right)) effective |= right;
   }
+  grantLost(resource, effective);
+  resource->effective = effective;
   if ((previous & SupLan::kPermissionRead) &&
       !(resource->effective & resource->permissions &
         SupLan::kPermissionRead)) {

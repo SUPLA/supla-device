@@ -128,7 +128,9 @@ class RemoteChannelBackend {
 class RemoteChannelManager {
   friend class ServerStreamBackend;
  public:
-  explicit RemoteChannelManager(RemoteAccessPort *access) : access_(access) {}
+  explicit RemoteChannelManager(RemoteAccessPort *access)
+      : access_(access), admissionExhausted_(false), ensurePending_(false),
+        approvalRefreshArmed_(false), ensurePermissions_(0) {}
   RemoteChannelManager(const RemoteChannelManager &) = delete;
   RemoteChannelManager &operator=(const RemoteChannelManager &) = delete;
   // Adapters must outlive registration and unregister before destroying slots.
@@ -183,9 +185,12 @@ class RemoteChannelManager {
   RemoteAccessPort *access_;
   RemoteChannelKey ensureResource_ = {0, RemoteDelivery::SupLanPeer};
   uint32_t ensureNextMs_ = 0;
-  bool admissionExhausted_ = false;
-  bool ensurePending_ = false;
-  uint8_t ensurePermissions_ = 0;
+  // Approval refresh deadline in 1024 ms ticks; packed into former padding.
+  uint16_t approvalRefreshAt_ = 0;
+  uint8_t admissionExhausted_ : 1;
+  uint8_t ensurePending_ : 1;
+  uint8_t approvalRefreshArmed_ : 1;
+  uint8_t ensurePermissions_ : 3;
 };
 static_assert(sizeof(RemoteChannelResource) <= 56,
               "Common snapshot state exceeded its extraction baseline");

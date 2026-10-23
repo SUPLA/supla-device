@@ -256,6 +256,17 @@ bool RemoteChannelManager::usable(RemoteChannelKey key,
 }
 void RemoteChannelManager::iterate(uint32_t nowMs) {
   admissionExhausted_ = false;
+  // Cloud Remove of a PENDING/REJECTED decision is not pushed to the Device.
+  // Rarely repeat approval-enabled ENSURE (~15 min plus up to ~1 min jitter)
+  // for requested access that is still missing; the Server keeps it idempotent.
+  constexpr uint16_t kApprovalRefreshTicks = 879;  // 15 min in 1024 ms ticks.
+  const uint16_t tick = static_cast<uint16_t>(nowMs >> 10);
+  const bool refresh = approvalRefreshArmed_ &&
+      static_cast<int16_t>(tick - approvalRefreshAt_) >= 0;
+  if (refresh || !approvalRefreshArmed_) {
+    approvalRefreshArmed_ = true;
+    approvalRefreshAt_ = tick + kApprovalRefreshTicks + (nowMs & 63);
+  }
   for (int number = 0; number < 255; ++number) {
     if (auto element = Element::getElementByChannelNumber(number))
       element->reconcileChannelDependencies();
@@ -286,6 +297,9 @@ void RemoteChannelManager::iterate(uint32_t nowMs) {
       if (!resource.used()) continue;
       adapter->reconcileResource(resource);
       adapter->refreshResource(resource, nowMs);
+      if (refresh && (resource.effective & resource.manualPermissions) !=
+                         resource.manualPermissions)
+        resource.manualAttempted = false;
       const bool manual =
           resource.manualPermissions && !resource.manualAttempted;
       const bool missing =
@@ -448,6 +462,7 @@ void RemoteChannelManager::ensureResult(
 }
 void RemoteChannelManager::serverReconnected() {
   retryDeferredConsumers();
+  approvalRefreshArmed_ = false;  // Reconnect itself re-ENSUREs every request.
   ensurePending_ = false;
   ensureNextMs_ = 0;
   for (auto adapter : backends_) {

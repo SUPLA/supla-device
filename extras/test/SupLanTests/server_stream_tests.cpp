@@ -16,6 +16,7 @@
 #include <supla/suplan/owned_stack.h>
 #include <suplan_bootstrap_port.h>
 #include <cstring>
+#include <initializer_list>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -870,4 +871,132 @@ TEST_F(ServerStream,
   EXPECT_EQ(counter.count, 2);
   EXPECT_FALSE(borrowed.available());
   EXPECT_EQ(disabled.accessStatus(), ChannelAccessStatus::INVALID);
+}
+
+TEST_F(ServerStream, WithdrawnD2dGrantRequestsApprovalOnce) {
+  RemoteChannel thermometer(1001, READ), relay(1003, READ | CONTROL);
+  TSDS_SuplaSetSuplanDestinationAssociation association = {};
+  association.PeerContext = {1, 0, 1, 101, 1, 202, 7, 1};
+  association.AclRevision = 1;
+  association.PeerKeySize = 32;
+  memset(association.PeerKey, 0x42, sizeof(association.PeerKey));
+  TDS_SuplaSetSuplanDestinationAssociationResult accepted = {};
+  auto provision = [&](uint32_t revision,
+                       std::initializer_list<TSuplaSuplanAclEntry> entries) {
+    association.AclRevision = revision;
+    association.ResourceCount = 0;
+    for (const auto &entry : entries)
+      association.Resources[association.ResourceCount++] = entry;
+    ASSERT_TRUE(lan->setSuplanDestinationAssociation(association, &accepted));
+    ASSERT_EQ(accepted.Result, SUPLA_SUPLAN_RESULT_OK);
+  };
+  auto expectApprovalRequest = [&](uint32_t id, uint8_t status) {
+    tick(1000);
+    ASSERT_FALSE(requests.empty());
+    EXPECT_EQ(requests.back().Resource.ResourceId, id);
+    EXPECT_EQ(requests.back().DeliveryMode,
+              SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER);
+    EXPECT_EQ(requests.back().Flags,
+              SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL);
+    reply(status);
+  };
+  provision(1, {{1, 1001, READ}, {1, 1003, CONTROL}});
+  tick();
+  reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
+  tick(1000);
+  reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
+  ASSERT_EQ(requests.size(), 2U);
+  ASSERT_EQ(thermometer.accessStatus(), ChannelAccessStatus::PEER_UNAVAILABLE);
+  ASSERT_TRUE(relay.canControl());
+
+  // Cloud "Remove" of one decision: the peer stays for the other resource.
+  provision(2, {{1, 1003, CONTROL}});
+  expectApprovalRequest(1001, SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
+  EXPECT_EQ(thermometer.accessStatus(), ChannelAccessStatus::PENDING_APPROVAL);
+  EXPECT_TRUE(relay.canControl());
+  tick(1000);
+  tick(1000);
+  EXPECT_EQ(requests.size(), 3U);
+
+  // Losing only CONTROL is a withdrawn part of the requested access.
+  provision(3, {{1, 1003, READ}});
+  expectApprovalRequest(1003, SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
+  EXPECT_EQ(requests.back().Permissions, READ | CONTROL);
+  EXPECT_FALSE(relay.canControl());
+  EXPECT_EQ(requests.size(), 4U);
+
+  // Removing the whole association; an explicit rejection stays final.
+  provision(4, {});
+  expectApprovalRequest(1003, SUPLA_SUPLAN_ACCESS_STATUS_REJECTED);
+  EXPECT_EQ(relay.accessStatus(), ChannelAccessStatus::REJECTED);
+  tick(1000);
+  tick(1000);
+  EXPECT_EQ(requests.size(), 5U);
+  EXPECT_EQ(thermometer.accessStatus(), ChannelAccessStatus::PENDING_APPROVAL);
+}
+
+namespace {
+// Advances whole minutes until a new ENSURE is sent; returns elapsed minutes.
+template <typename Tick>
+int minutesUntilRequest(
+    Tick tick, const std::vector<TDS_SuplaEnsureResourceAccess> &requests,
+    int limit) {
+  const auto before = requests.size();
+  for (int minute = 1; minute <= limit; ++minute) {
+    tick(60000);
+    if (requests.size() != before) return minute;
+  }
+  return 0;
+}
+}  // namespace
+
+TEST_F(ServerStream, RejectedD2dRequestIsRarelyRefreshedUntilGranted) {
+  RemoteChannel thermometer(1001, READ);
+  auto advance = [&](uint32_t ms) { tick(ms); };
+  tick();
+  ASSERT_EQ(requests.size(), 1U);
+  reply(SUPLA_SUPLAN_ACCESS_STATUS_REJECTED);
+  EXPECT_EQ(thermometer.accessStatus(), ChannelAccessStatus::REJECTED);
+  // Cloud Remove of the rejection is not pushed; the refresh asks again.
+  const int elapsed = minutesUntilRequest(advance, requests, 20);
+  EXPECT_GE(elapsed, 15);
+  EXPECT_LE(elapsed, 17);
+  ASSERT_EQ(requests.size(), 2U);
+  EXPECT_EQ(requests.back().Resource.ResourceId, 1001U);
+  EXPECT_EQ(requests.back().DeliveryMode, SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER);
+  EXPECT_EQ(requests.back().Flags,
+            SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL);
+  reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
+  EXPECT_EQ(thermometer.accessStatus(), ChannelAccessStatus::PENDING_APPROVAL);
+  TSDS_SuplaSetSuplanDestinationAssociation association = {};
+  association.PeerContext = {1, 0, 1, 101, 1, 202, 7, 1};
+  association.AclRevision = 1;
+  association.PeerKeySize = 32;
+  memset(association.PeerKey, 0x42, sizeof(association.PeerKey));
+  association.ResourceCount = 1;
+  association.Resources[0] = {1, 1001, READ};
+  TDS_SuplaSetSuplanDestinationAssociationResult accepted = {};
+  ASSERT_TRUE(lan->setSuplanDestinationAssociation(association, &accepted));
+  ASSERT_EQ(accepted.Result, SUPLA_SUPLAN_RESULT_OK);
+  // Granted access is not refreshed.
+  EXPECT_EQ(minutesUntilRequest(advance, requests, 35), 0);
+}
+
+TEST_F(ServerStream, RejectedStreamRequestIsRarelyRefreshed) {
+  ServerRemoteChannel channel(1001);
+  auto advance = [&](uint32_t ms) { tick(ms); };
+  tick();
+  ASSERT_EQ(requests.size(), 1U);
+  reply(SUPLA_SUPLAN_ACCESS_STATUS_REJECTED);
+  for (int round = 0; round < 2; ++round) {
+    const int elapsed = minutesUntilRequest(advance, requests, 20);
+    EXPECT_GE(elapsed, round ? 14 : 15);
+    EXPECT_LE(elapsed, 17);
+    EXPECT_EQ(requests.back().DeliveryMode,
+              SUPLA_RESOURCE_DELIVERY_SERVER_STREAM);
+    EXPECT_EQ(requests.back().Flags,
+              SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL);
+    reply(SUPLA_SUPLAN_ACCESS_STATUS_REJECTED);
+  }
+  EXPECT_EQ(requests.size(), 3U);
 }

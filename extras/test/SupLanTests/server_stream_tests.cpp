@@ -28,7 +28,8 @@ using ::testing::Return;
 class StreamConfig : public KeyValue {
  public:
   bool init() override { return true; }
-  bool commit() override { return true; }
+  bool commit() override { return !failCommit; }
+  bool failCommit = false;
 };
 class StreamDevice : public SuplaDeviceClass {
  public:
@@ -695,7 +696,8 @@ TEST_F(ServerStream, PersistedIdentityAdmitsAfterProductionSyncOrdering) {
 }
 }  // namespace
 
-TEST_F(ServerStream, DeviceIdMigrationInvalidatesBorrowedViewAndOldDemand) {
+TEST_F(ServerStream,
+       DeviceIdMigrationInvalidatesBorrowedViewAndReconstructsDemand) {
   ServerRemoteChannel channel(1001);
   tick();
   reply();
@@ -718,6 +720,154 @@ TEST_F(ServerStream, DeviceIdMigrationInvalidatesBorrowedViewAndOldDemand) {
   EXPECT_FALSE(protocol.onRemoteChannelState(&stale));
   identity.syncDone();
   tick(1000);
-  EXPECT_EQ(requests.size(), 1u);  // No automatic approval in the new scope.
+  ASSERT_EQ(requests.size(), 2U);  // Fresh request, never reuse old approval.
+  EXPECT_EQ(requests.back().Resource.ResourceId, 1001U);
+  reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
+  EXPECT_FALSE(channel.state().available());
   EXPECT_EQ(identity.rootEpoch(), epoch);
+}
+
+TEST_F(ServerStream, ScopeChangeRetainsD2dDemandButWaitsForDurableSync) {
+  RemoteChannel thermometer(1001, READ), disabled(1002, READ);
+  RemoteChannel relay(1003, READ | CONTROL);
+  disabled.deactivate();
+  TSDS_SuplaSetSuplanDestinationAssociation association = {};
+  association.PeerContext = {1, 0, 1, 101, 1, 202, 7, 1};
+  association.AclRevision = 1;
+  association.PeerKeySize = 32;
+  memset(association.PeerKey, 0x42, sizeof(association.PeerKey));
+  association.ResourceCount = 2;
+  association.Resources[0] = {1, 1001, READ};
+  association.Resources[1] = {1, 1003, CONTROL};
+  TDS_SuplaSetSuplanDestinationAssociationResult accepted = {};
+  ASSERT_TRUE(lan->setSuplanDestinationAssociation(association, &accepted));
+  ASSERT_EQ(accepted.Result, SUPLA_SUPLAN_RESULT_OK);
+  tick();
+  ASSERT_EQ(requests.size(), 1U);
+  reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
+  tick(1000);
+  ASSERT_EQ(requests.size(), 2U);
+  reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
+  ASSERT_TRUE(relay.canControl());
+  auto oldSnapshot = snapshot(1001, 20);
+  oldSnapshot.Channel.ValueValidityTimeSec = 180;
+  manager()->receive(0, {1, 1001},
+      reinterpret_cast<const uint8_t *>(&oldSnapshot.Channel),
+      sizeof(oldSnapshot.Channel), time.value);
+  auto borrowed = thermometer.state();
+  ASSERT_TRUE(borrowed.available());
+  auto &identity = protocol.serverIdentity();
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 303;
+  ids.ChannelCount = 1;
+  ids.ChannelId[0] = 701;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  tick(1000);
+  EXPECT_EQ(requests.size(), 2U);
+  EXPECT_EQ(thermometer.accessStatus(),
+            ChannelAccessStatus::IDENTITY_UNRESOLVED);
+  EXPECT_EQ(disabled.accessStatus(), ChannelAccessStatus::INVALID);
+  EXPECT_FALSE(borrowed.available());
+  EXPECT_FALSE(thermometer.state().available());
+  EXPECT_FALSE(relay.canControl());
+  uint8_t on[8] = {1};
+  EXPECT_FALSE(relay.setValue(on));
+  storage.failCommit = true;
+  identity.syncDone();
+  ASSERT_FALSE(identity.serverSyncComplete());
+  tick(1000);
+  EXPECT_EQ(requests.size(), 2U);
+  storage.failCommit = false;
+  // Retry the authoritative identity after the failed durable installation.
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  ASSERT_TRUE(identity.serverSyncComplete());
+  tick(1000);
+  ASSERT_EQ(requests.size(), 3U);
+  EXPECT_EQ(requests.back().DeliveryMode, SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER);
+  reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
+  tick(1000);
+  ASSERT_EQ(requests.size(), 4U);
+  EXPECT_EQ(requests.back().DeliveryMode, SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER);
+  EXPECT_NE(requests[2].Resource.ResourceId, requests[3].Resource.ResourceId);
+  for (size_t i = 2; i < requests.size(); ++i) {
+    EXPECT_TRUE(requests[i].Resource.ResourceId == 1001 ||
+                requests[i].Resource.ResourceId == 1003);
+    EXPECT_TRUE(requests[i].Flags &
+                SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL);
+  }
+  EXPECT_EQ(thermometer.accessStatus(), ChannelAccessStatus::PENDING_APPROVAL);
+  EXPECT_EQ(disabled.accessStatus(), ChannelAccessStatus::INVALID);
+  EXPECT_FALSE(thermometer.state().available());
+  EXPECT_FALSE(relay.canControl());
+  EXPECT_FALSE(relay.setValue(on));
+  manager()->receive(0, {1, 1001},
+      reinterpret_cast<const uint8_t *>(&oldSnapshot.Channel),
+      sizeof(oldSnapshot.Channel), time.value);
+  EXPECT_FALSE(thermometer.state().available());
+  association.PeerContext.DestinationNodeId = 303;
+  ASSERT_TRUE(lan->setSuplanDestinationAssociation(association, &accepted));
+  ASSERT_EQ(accepted.Result, SUPLA_SUPLAN_RESULT_OK);
+  tick();
+  EXPECT_TRUE(relay.canControl());
+  EXPECT_FALSE(thermometer.state().available());
+  auto newSnapshot = snapshot(1001, 30);
+  manager()->receive(0, {1, 1001},
+      reinterpret_cast<const uint8_t *>(&newSnapshot.Channel),
+      sizeof(newSnapshot.Channel), time.value);
+  EXPECT_DOUBLE_EQ(thermometer.state().temperature(), 30);
+  EXPECT_FALSE(borrowed.available());
+}
+
+TEST_F(ServerStream,
+       ScopeChangeStreamGetsNewApprovalAndFencesOldBorrowedView) {
+  ServerRemoteChannel channel(1001), disabled(1002);
+  class Counter : public ActionHandler {
+   public:
+    void handleAction(int, int) override { ++count; }
+    int count = 0;
+  } counter;
+  channel.addAction(1, counter, ON_CHANGE);
+  disabled.deactivate();
+  tick();
+  reply();
+  publish(snapshot(1001, 20));
+  tick();
+  publish(snapshot(1001, 21));
+  tick();
+  ASSERT_EQ(counter.count, 1);
+  auto borrowed = channel.state();
+  ASSERT_TRUE(borrowed.available());
+  auto &identity = protocol.serverIdentity();
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 303;
+  ids.ChannelCount = 1;
+  ids.ChannelId[0] = 701;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  tick(1000);
+  EXPECT_EQ(requests.size(), 1U);
+  EXPECT_FALSE(borrowed.available());
+  EXPECT_FALSE(channel.state().available());
+  identity.syncDone();
+  ASSERT_TRUE(identity.serverSyncComplete());
+  tick(1000);
+  ASSERT_EQ(requests.size(), 2U);
+  EXPECT_EQ(requests.back().Resource.ResourceId, 1001U);
+  EXPECT_EQ(requests.back().DeliveryMode,
+            SUPLA_RESOURCE_DELIVERY_SERVER_STREAM);
+  EXPECT_FALSE(channel.state().available());
+  reply();
+  publish(snapshot(1001, 30));
+  EXPECT_DOUBLE_EQ(channel.state().temperature(), 30);
+  tick();
+  EXPECT_EQ(counter.count, 1);  // First new-scope sample establishes baseline.
+  publish(snapshot(1001, 31));
+  tick();
+  EXPECT_EQ(counter.count, 2);
+  EXPECT_FALSE(borrowed.available());
+  EXPECT_EQ(disabled.accessStatus(), ChannelAccessStatus::INVALID);
 }

@@ -59,10 +59,26 @@ bool ChannelHandle::configure(uint32_t id, uint8_t permissions) {
   return true;
 }
 void ChannelHandle::invalidateServerScope() {
-  // Numeric IDs belong to the old SERVER scope. The application must configure
-  // these handles explicitly again; admission retries must not recreate them.
-  for (auto handle = first_; handle; handle = handle->next_)
-    handle->deactivate();
+  // Keep caller-owned demand, but discard all old-scope runtime and baseline.
+  // Reconciliation waits for accepted identity/sync and obtains fresh access.
+  const uint32_t limit = nextToken_;
+  uint32_t token = 0;
+  while (auto handle = after(token, limit)) {
+    token = handle->token_;
+    CancelDispatch(handle);
+    DeleteActionsHandledBy(handle);
+    handle->admitted_ = false;
+    handle->baselineValid_ = false;
+    handle->baselineTimed_ = false;
+    handle->baselineExpires_ = 0;
+    handle->continuity_ = 0;
+    handle->location_ =
+        static_cast<uint8_t>(ChannelResolutionKind::kUnresolved);
+    handle->localNumber_ = 0xff;
+    // Removal can invoke a callback that destroys/reconfigures live handles.
+    // Do not access this handle again; find the next one by its owner token.
+    releaseChannelConsumer(token);
+  }
 }
 void ChannelHandle::deactivate() {
   CancelDispatch(this);

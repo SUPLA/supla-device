@@ -2001,16 +2001,15 @@ TEST(ChannelHandle, IdentityReplacementBarrierPreventsOldLocalCallbacks) {
   update.ChannelId[1] = 802;
   ASSERT_EQ(identity.accept(update).Result, SUPLA_SUPLAN_RESULT_OK);
   ASSERT_TRUE(identity.identityTransition());
-  EXPECT_EQ(old.accessStatus(), ChannelAccessStatus::INVALID);
+  EXPECT_EQ(old.accessStatus(), ChannelAccessStatus::IDENTITY_UNRESOLVED);
   EXPECT_EQ(replacement.accessStatus(),
-            ChannelAccessStatus::INVALID);
+            ChannelAccessStatus::IDENTITY_UNRESOLVED);
   env.first.getChannel()->setNewValue(21.0);
   EXPECT_EQ(counter.count, 0);
   EXPECT_EQ(env.resources.consumerCount(), 0);
   identity.syncDone();
-  EXPECT_EQ(replacement.localChannel(), nullptr);
-  // An old-scope future ID is not implicitly rebound after numeric collision.
-  ASSERT_TRUE(replacement.configure(801, kPermissionRead));
+  // The application's generic handle resolves its retained explicit ID in the
+  // new map; no old local callback or cached sample survives the transition.
   ChannelHandle::iterateAll();
   EXPECT_EQ(replacement.localChannel(), env.first.getChannel());
   EXPECT_EQ(old.localChannel(), nullptr);

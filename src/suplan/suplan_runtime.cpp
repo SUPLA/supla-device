@@ -812,7 +812,9 @@ void Runtime::startHandshake(uint8_t peerIndex) {
       return;
     }
   }
-  if (findPendingForPeer(peerIndex, true) >= 0) {
+  // An inbound attempt also owns this peer until confirmation or timeout.
+  if (findPendingForPeer(peerIndex, true) >= 0 ||
+      findPendingForPeer(peerIndex, false) >= 0) {
     return;
   }
   if (peer->endpointState == kPeerEndpointNone) {
@@ -1304,6 +1306,9 @@ bool Runtime::forgetSession(uint8_t peerIndex) {
       removed = true;
     }
   }
+  // Discarded retries must not keep an otherwise idle peer reconnecting.
+  // Existing READ/deferred/binding demand keeps recovery through this helper.
+  if (removed) cancelPeerRecoveryIfIdle(peerIndex);
   return removed;
 }
 

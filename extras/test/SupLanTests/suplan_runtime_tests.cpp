@@ -3670,3 +3670,226 @@ TEST(SupLanRuntime, PresenceDiagnosticsIgnoreEmptyPeerSlots) {
   EXPECT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 0, true));
   EXPECT_EQ(pair.appA.diagnosticEvents[static_cast<unsigned>(E::ResetTx)], 1U);
 }
+
+namespace {
+// Hold Source INIT while Destination starts its own attempt. Both actual
+// runtimes have competing initiators before Source wins role arbitration.
+void startCompetingHandshakes(RuntimePair &pair) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  pair.appA.bindingPoolEnabled = true;
+  pair.peersA.get(pair.peerA)->endpoint = pair.endpointB;
+  pair.peersA.get(pair.peerA)->endpointState = kPeerEndpointLocateCandidate;
+  pair.peersB.get(pair.peerB)->endpoint = pair.endpointA;
+  pair.peersB.get(pair.peerB)->endpointState = kPeerEndpointLocateCandidate;
+  const uint8_t empty = 0;
+  ASSERT_FALSE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  ASSERT_EQ(pair.runtimeA.diagnostics().sessionInitTx, 1U);
+  auto held = pair.network.packets;
+  pair.network.packets.clear();
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
+  ASSERT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+  pair.runtimeA.iterate();  // Source ignores the competing Destination INIT.
+  pair.network.packets.insert(pair.network.packets.end(),
+                              held.begin(), held.end());
+  pair.runtimeB.iterate();  // Destination yields and becomes a responder.
+}
+}  // namespace
+
+TEST(SupLanHandshake, SimultaneousReadWaitsForResponderAndUsesFirstSession) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  RuntimePair pair;
+  startCompetingHandshakes(pair);
+  ASSERT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+  EXPECT_FALSE(pair.runtimeB.hasSession(pair.peerB));
+  EXPECT_EQ(pair.appA.readCalls, 0U);
+  // READ recovery must keep waiting for this responder handshake, rather
+  // than starting another INIT on every loop.
+  for (int i = 0; i < 10; ++i) pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+  pair.runtimeA.iterate();  // Source receives ACCEPT and can send bindings.
+  ASSERT_TRUE(pair.runtimeA.hasSession(pair.peerA));
+  const uint8_t empty = 0;
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  pair.pump(20);
+  EXPECT_EQ(pair.appB.bindingCalls, 1);
+  EXPECT_EQ(pair.appB.lastBindings, std::vector<uint8_t>{0});
+  EXPECT_EQ(pair.appA.readCalls, 1U);
+  EXPECT_EQ(pair.appB.stateCalls, 1U);
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionInitTx, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionEstablished, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionEstablished, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionReplaced, 0U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionReplaced, 0U);
+  const auto lost = static_cast<unsigned>(DiagnosticEvent::SessionLost);
+  EXPECT_EQ(pair.appA.diagnosticEvents[lost], 0U);
+  EXPECT_EQ(pair.appB.diagnosticEvents[lost], 0U);
+  EXPECT_EQ(pair.runtimeA.poolDiagnostics().sessions.used, 1U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().sessions.used, 1U);
+}
+
+TEST(SupLanHandshake, LateLocateReplyAndDuplicateInitKeepResponderAttempt) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  RuntimePair pair;
+  pair.appA.bindingPoolEnabled = true;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();  // LOCATE remains outstanding at Destination.
+  pair.peersA.get(pair.peerA)->endpoint = pair.endpointB;
+  pair.peersA.get(pair.peerA)->endpointState = kPeerEndpointLocateCandidate;
+  const uint8_t empty = 0;
+  ASSERT_FALSE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  pair.runtimeA.iterate();  // Answer LOCATE while own INIT is outstanding.
+  std::vector<Packet> replies;
+  Packet init = {};
+  for (size_t i = 0; i < pair.network.packets.size();) {
+    const auto &packet = pair.network.packets[i];
+    if (packet.bytes.size() >= 2 && packet.bytes[1] == kFrameLocateReply) {
+      replies.push_back(packet);
+      pair.network.packets.erase(pair.network.packets.begin() + i);
+    } else {
+      if (packet.bytes.size() == kSessionInitSize &&
+          packet.bytes[1] == kFrameSessionInit) init = packet;
+      ++i;
+    }
+  }
+  ASSERT_EQ(replies.size(), 1U);
+  ASSERT_EQ(init.bytes.size(), kSessionInitSize);
+  pair.runtimeB.iterate();  // Become responder before LOCATE_REPLY arrives.
+  ASSERT_FALSE(pair.runtimeB.hasSession(pair.peerB));
+  ASSERT_EQ(pair.runtimeB.diagnostics().sessionAcceptTx, 1U);
+  pair.network.packets.insert(pair.network.packets.end(),
+                              replies.begin(), replies.end());
+  pair.network.packets.push_back(init);  // Retransmission of the same INIT.
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateReplyRx, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 0U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionAcceptTx, 2U);
+  std::vector<std::vector<uint8_t>> accepts;
+  for (const auto &packet : pair.network.history)
+    if (packet.bytes.size() == kSessionAcceptSize &&
+        packet.bytes[1] == kFrameSessionAccept) accepts.push_back(packet.bytes);
+  ASSERT_EQ(accepts.size(), 2U);
+  EXPECT_EQ(accepts[0], accepts[1]);
+  pair.runtimeA.iterate();
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  pair.pump(20);
+  EXPECT_EQ(pair.appB.stateCalls, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionReplaced, 0U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionReplaced, 0U);
+}
+
+TEST(SupLanHandshake, SilentInitiatorExpiresResponderAndReadRecovers) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  for (uint32_t start : {0U, UINT32_MAX - 1500U}) {
+    RuntimePair pair;
+    pair.network.now = start;
+    startCompetingHandshakes(pair);
+    ASSERT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+    pair.runtimeA.iterate();  // ACCEPT received, but no protected data follows.
+    ASSERT_TRUE(pair.runtimeA.hasSession(pair.peerA));
+    pair.pumpMs(kPendingHandshakeTimeoutMs - 10);
+    EXPECT_FALSE(pair.runtimeB.hasSession(pair.peerB));
+    EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+    EXPECT_EQ(pair.appA.readCalls, 0U);
+    // Existing timeout/backoff, with advancing monotonic time.
+    pair.pumpMs(10000);
+    EXPECT_GT(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+    EXPECT_GE(pair.appA.readCalls, 1U);
+    EXPECT_GE(pair.appB.stateCalls, 1U);
+    EXPECT_TRUE(pair.runtimeB.hasSession(pair.peerB));
+    EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  }
+}
+
+TEST(SupLanHandshake, LostFirstBindingsFrameConfirmsSessionOnBoundedRetry) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  RuntimePair pair;
+  startCompetingHandshakes(pair);
+  ASSERT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+  pair.runtimeA.iterate();
+  pair.network.dropNextFullData = true;
+  const uint8_t empty = 0;
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  pair.pump(1);
+  EXPECT_FALSE(pair.runtimeB.hasSession(pair.peerB));
+  EXPECT_EQ(pair.appB.bindingCalls, 0);
+  pair.pumpMs(kAckRetryMs + 200);
+  EXPECT_EQ(pair.appB.bindingCalls, 1);
+  EXPECT_EQ(pair.appA.readCalls, 1U);
+  EXPECT_EQ(pair.appB.stateCalls, 1U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionReplaced, 0U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionReplaced, 0U);
+  EXPECT_FALSE(pair.runtimeA.bindingsInFlight());
+}
+
+TEST(SupLanHandshake, SourceAlsoWaitsForItsExistingResponderAttempt) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  RuntimePair pair;
+  pair.appA.bindingPoolEnabled = true;
+  pair.peersB.get(pair.peerB)->endpoint = pair.endpointA;
+  pair.peersB.get(pair.peerB)->endpointState = kPeerEndpointLocateCandidate;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
+  pair.runtimeA.iterate();  // Source responds to Destination's first INIT.
+  ASSERT_EQ(pair.runtimeA.diagnostics().sessionAcceptTx, 1U);
+  ASSERT_FALSE(pair.runtimeA.hasSession(pair.peerA));
+  const uint8_t empty = 0;
+  ASSERT_FALSE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionInitTx, 0U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().locateTx, 0U);
+  pair.pump(20);  // Destination's READ confirms this same session.
+  ASSERT_EQ(pair.appB.stateCalls, 1U);
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  pair.pump(20);
+  EXPECT_EQ(pair.appB.bindingCalls, 1);
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionInitTx, 0U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 1U);
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionReplaced, 0U);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionReplaced, 0U);
+}
+
+TEST(SupLanHandshake, ForgetSessionCancelsRecoveryOfDiscardedAction) {
+  RuntimePair pair;
+  const ResourceId resource = {Supla::SupLan::kResourceTypeChannel, 50002};
+  ASSERT_TRUE(pair.runtimeA.requestRead(pair.actionPeerA, resource));
+  pair.pump(20);
+  uint8_t payload[15] = {0xff, 0xa5};
+  pair.runtimeA.testHooks()->dropNextAckTx = 1;
+  ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, resource,
+                                         payload, sizeof(payload)));
+  pair.pump(2);
+  ASSERT_EQ(pair.appA.actionCalls, 1U);
+  ASSERT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 1U);
+  ASSERT_TRUE(pair.runtimeB.forgetSession(pair.actionPeerB));
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
+  EXPECT_FALSE(pair.runtimeB.recoveryStatus(pair.actionPeerB).active);
+  const auto initTx = pair.runtimeB.diagnostics().sessionInitTx;
+  pair.pump(30);
+  EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, initTx);
+  EXPECT_EQ(pair.appA.actionCalls, 1U);
+}
+
+TEST(SupLanHandshake, ForgetSessionPreservesRequiredBindingRecovery) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  RuntimePair pair;
+  pair.appA.bindingPoolEnabled = true;
+  pair.peersA.get(pair.peerA)->endpoint = pair.endpointB;
+  pair.peersA.get(pair.peerA)->endpointState = kPeerEndpointLocateCandidate;
+  const uint8_t empty = 0;
+  ASSERT_FALSE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  ASSERT_TRUE(pair.runtimeA.recoveryStatus(pair.peerA).active);
+  pair.network.packets.clear();  // The first INIT never reaches Destination.
+  ASSERT_TRUE(pair.runtimeA.forgetSession(pair.peerA));
+  EXPECT_TRUE(pair.runtimeA.recoveryStatus(pair.peerA).active);
+  pair.runtimeA.iterate();
+  EXPECT_EQ(pair.runtimeA.diagnostics().sessionInitTx, 2U);
+  pair.pump(20);
+  ASSERT_TRUE(pair.runtimeA.sendBindings(pair.peerA, &empty, 1));
+  pair.pump(20);
+  EXPECT_EQ(pair.appB.bindingCalls, 1);
+  EXPECT_TRUE(pair.runtimeA.hasSession(pair.peerA));
+  EXPECT_TRUE(pair.runtimeB.hasSession(pair.peerB));
+}

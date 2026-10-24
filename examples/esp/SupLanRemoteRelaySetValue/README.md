@@ -7,7 +7,8 @@ The virtual channel has its own normal local identity; it does not represent
 the remote resource or duplicate its cache.
 
 Approve **CONTROL** for a Source power/light relay. CONTROL also holds a shared
-READ interest automatically. `canControl()` checks effective authorization,
+READ interest automatically. `hasControlPermission()` checks effective
+authorization,
 not reachability. `setValue()` returning true means bounded local admission,
 not receipt, physical completion or an updated remote value.
 

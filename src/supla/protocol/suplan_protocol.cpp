@@ -815,7 +815,7 @@ bool SupLan::hasSupLanActionPeer(uint8_t number) const {
   for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     const auto peer = peers_->get(i);
     if (peer && !peer->destination && peers_->runtimeEligible(i) &&
-        peers_->authorize(i, resource, Supla::SupLan::kPermissionAction))
+        peers_->authorize(i, resource, Supla::SupLan::kPermissionActionTrigger))
       return true;
   }
   return false;

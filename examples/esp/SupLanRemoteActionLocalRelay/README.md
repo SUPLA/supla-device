@@ -1,13 +1,22 @@
 # SupLAN remote Action Trigger -> local Relay
 
-A `ChannelHandle(ChannelId, ACTION)` binds remote CLICK_1 directly to
+A `ChannelHandle(ChannelId, ACTION_TRIGGER)` binds remote CLICK_1 directly to
 `relay.toggle()` through `addAction()`. It does not request READ, poll values,
 or subscribe to an AT event mask.
 
-Approve **ACTION** for a Source Action Trigger that physically supports CLICK_1.
+Approve **ACTION_TRIGGER** for a Source Action Trigger that physically supports
+CLICK_1.
 A click on that Source toggles the local active-high relay module on GPIO5.
 The relay starts OFF. Adjust output polarity for your module. No remote Channel
 is registered locally; the only local Channel is the actual GPIO relay.
+
+`hasActionTriggerPermission()` checks the effective permission for this handle;
+it does not indicate transport/session readiness or guarantee event delivery.
+`hasReadPermission()` and `hasControlPermission()` have the same authorization
+semantics. CONTROL includes READ; ACTION_TRIGGER is independent.
+`executeAction()` sends a CONTROL command and does not use ACTION_TRIGGER.
+These names replace `canRead()`, `canControl()` and `Supla::ACTION`; there are no
+compatibility aliases.
 
 ## Setup
 

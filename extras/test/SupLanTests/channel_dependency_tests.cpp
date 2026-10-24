@@ -1480,7 +1480,7 @@ TEST(ChannelDependency, ManualApprovalDoesNotPromoteConfigOnlyRights) {
   RemoteResourceManager manager(&peers, nullptr, &port);
   const ResourceId id = {kResourceTypeChannel, 501};
   ASSERT_TRUE(manager.consume({1, id, kPermissionRead, true}));
-  ASSERT_TRUE(manager.consume({2, id, kPermissionAction}));
+  ASSERT_TRUE(manager.consume({2, id, kPermissionActionTrigger}));
   manager.iterate(0);
   ASSERT_EQ(port.requests, 1);
   EXPECT_EQ(port.last.Permissions, kPermissionRead);
@@ -1514,7 +1514,7 @@ TEST(ChannelHandle, BeforeIdentityNoSlotsOrSpeculativeLocalChannel) {
   protocol.resources = &resources;
   ChannelHandle handle(601, kPermissionRead);
   EXPECT_EQ(handle.accessStatus(), ChannelAccessStatus::IDENTITY_UNRESOLVED);
-  EXPECT_FALSE(handle.canRead());
+  EXPECT_FALSE(handle.hasReadPermission());
   EXPECT_FALSE(handle.state().available());
   EXPECT_EQ(resources.consumerCount(), 0);
   EXPECT_EQ(port.requests, 0);
@@ -1534,9 +1534,9 @@ TEST(ChannelHandle, FutureStreamSelectorCannotConsumePeerOrLocalCache) {
   ChannelHandle invalid(1001, kPermissionRead,
                         static_cast<RemoteDelivery>(5));
   EXPECT_EQ(invalid.accessStatus(), ChannelAccessStatus::INVALID);
-  EXPECT_FALSE(invalid.canRead());
+  EXPECT_FALSE(invalid.hasReadPermission());
   ChannelHandle future(1001, kPermissionRead, RemoteDelivery::ServerStream);
-  EXPECT_FALSE(future.canRead());
+  EXPECT_FALSE(future.hasReadPermission());
   EXPECT_FALSE(future.state().available());
   EXPECT_EQ(future.accessStatus(), ChannelAccessStatus::INVALID);
   EXPECT_FALSE(future.configure(1001, kPermissionControl));
@@ -1549,7 +1549,9 @@ TEST(ChannelHandle, FutureStreamSelectorCannotConsumePeerOrLocalCache) {
   EXPECT_EQ(port.requests, 0);
   ChannelHandle local(601, kPermissionRead);
   EXPECT_EQ(local.localChannel(), first.getChannel());
-  EXPECT_TRUE(local.canRead());
+  EXPECT_TRUE(local.hasReadPermission());
+  EXPECT_FALSE(local.hasControlPermission());
+  EXPECT_FALSE(local.hasActionTriggerPermission());
 }
 TEST(ChannelHandle, LocalFacadeOwnsOnlyItsTrampolineAndNeverEnsures) {
   resetChannels();
@@ -1569,7 +1571,7 @@ TEST(ChannelHandle, LocalFacadeOwnsOnlyItsTrampolineAndNeverEnsures) {
     handle.addAction(2, throughHandle, ON_CHANGE);
     ChannelHandle::iterateAll();
     EXPECT_EQ(handle.accessStatus(), ChannelAccessStatus::LOCAL_CHANNEL);
-    EXPECT_TRUE(handle.canRead());
+    EXPECT_TRUE(handle.hasReadPermission());
     EXPECT_DOUBLE_EQ(handle.state().temperature(), 20.0);
     first.getChannel()->setNewValue(21.0);
     EXPECT_EQ(throughHandle.count, 1);
@@ -1646,14 +1648,14 @@ TEST(ChannelHandle, SharedRemoteLifetimeReconfigureAndConditionBaseline) {
   EXPECT_EQ(resources.consumerCount(), 1);
   for (int i = 0; i < 300; ++i) {
     auto temporary = new RemoteChannel(1001, kPermissionRead);
-    EXPECT_TRUE(temporary->canRead());
+    EXPECT_TRUE(temporary->hasReadPermission());
     delete temporary;
   }
   EXPECT_EQ(resources.consumerCount(), 1);
   EXPECT_EQ(resources.resourceCount(), 1);
   EXPECT_TRUE(peers.authorize(index, id, kPermissionRead));
 }
-TEST(ChannelHandle, ActionOnlyReceivesGrantDrivenEventWithoutReadDemand) {
+TEST(ChannelHandle, ActionTriggerPermissionWithoutReadDemand) {
   resetChannels();
   SimpleTime time;
   DurableHvacConfig storage;
@@ -1669,19 +1671,27 @@ TEST(ChannelHandle, ActionOnlyReceivesGrantDrivenEventWithoutReadDemand) {
   PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
                          {kNodeIdDevice, 202}, 7, 1};
   uint8_t key[32] = {1};
-  AclEntry acl = {id, kPermissionAction};
+  AclEntry acl = {id, kPermissionActionTrigger};
   uint8_t index;
   ASSERT_TRUE(peers.addPeer(&context, key, 1, &acl, 1, &index, true));
-  ChannelHandle handle(1001, kPermissionAction);
+  EXPECT_EQ(Supla::ACTION_TRIGGER, SUPLA_SUPLAN_PERMISSION_ACTION);
+  ChannelHandle handle(1001, Supla::ACTION_TRIGGER);
   HandleCounter counter;
   handle.addAction(7, counter, ON_CLICK_2);
   ChannelHandle::iterateAll();
-  EXPECT_FALSE(handle.canRead());
+  EXPECT_FALSE(handle.hasReadPermission());
+  EXPECT_FALSE(handle.hasControlPermission());
+  EXPECT_TRUE(handle.hasActionTriggerPermission());
   ChannelHandle::receiveAction(1001, SUPLA_ACTION_CAP_SHORT_PRESS_x1);
   EXPECT_EQ(counter.count, 0);
   ChannelHandle::receiveAction(1001, SUPLA_ACTION_CAP_SHORT_PRESS_x2);
   EXPECT_EQ(counter.count, 1);
+  handle.deactivate();
+  EXPECT_FALSE(handle.hasActionTriggerPermission());
+  ASSERT_TRUE(handle.configure(1001, Supla::ACTION_TRIGGER));
+  EXPECT_TRUE(handle.hasActionTriggerPermission());
   ASSERT_TRUE(peers.replaceAcl(index, 2, nullptr, 0));
+  EXPECT_FALSE(handle.hasActionTriggerPermission());
   ChannelHandle::receiveAction(1001, SUPLA_ACTION_CAP_SHORT_PRESS_x2);
   EXPECT_EQ(counter.count, 1);
 }
@@ -1736,7 +1746,7 @@ TEST(ChannelHandle, GlobalDeclarationIsResolvedAfterIdentityBootstrap) {
             ChannelAccessStatus::IDENTITY_UNRESOLVED);
   bootstrapIdentity(&protocol.serverIdentity(), &storage);
   EXPECT_EQ(globalDiyHandle.localChannel(), first.getChannel());
-  EXPECT_TRUE(globalDiyHandle.canRead());
+  EXPECT_TRUE(globalDiyHandle.hasReadPermission());
   globalDiyHandle.deactivate();
 }
 TEST(ChannelHandle, SessionLossKeepsValidCacheButRecoveryRebuildsBaseline) {
@@ -1835,8 +1845,8 @@ struct HandleLifecycleEnvironment {
     uint8_t key[32] = {1};
     AclEntry acl[] = {{{kResourceTypeChannel, 1001}, kPermissionRead},
                      {{kResourceTypeChannel, 1002}, kPermissionRead},
-                     {{kResourceTypeChannel, 1003}, kPermissionAction},
-                     {{kResourceTypeChannel, 1004}, kPermissionAction}};
+                     {{kResourceTypeChannel, 1003}, kPermissionActionTrigger},
+                     {{kResourceTypeChannel, 1004}, kPermissionActionTrigger}};
     EXPECT_TRUE(peers.addPeer(&context, key, 1, acl, 4, &peer, true));
   }
   void publish(uint32_t id, double value) {
@@ -1860,7 +1870,7 @@ TEST(ChannelHandle, CallbackDroppingReadStopsRemainingValueEvents) {
     explicit DropRead(ChannelHandle *source) : source(source) {}
     void handleAction(int, int) override {
       ++calls;
-      EXPECT_TRUE(source->configure(1001, kPermissionAction));
+      EXPECT_TRUE(source->configure(1001, kPermissionActionTrigger));
     }
     ChannelHandle *source;
     int calls = 0;
@@ -1882,7 +1892,7 @@ TEST(ChannelHandle, CallbackDroppingReadStopsRemainingValueEvents) {
   ChannelHandle::iterateAll();
   EXPECT_EQ(drop.calls, 1);
   EXPECT_EQ(turnedOn.count, 0);
-  EXPECT_FALSE(handle.canRead());
+  EXPECT_FALSE(handle.hasReadPermission());
 }
 
 TEST(ChannelHandle, LocalRemoteLocalDropsBothOldTrampolinesAndLateSnapshots) {
@@ -1966,12 +1976,12 @@ TEST(ChannelHandle, ReusedAddressCannotReceivePreviousReadOrActionCallbacks) {
   EXPECT_EQ(current.count, 1);
   EXPECT_EQ(old.count, 1);
 
-  ChannelHandle shared(1003, kPermissionAction);
+  ChannelHandle shared(1003, kPermissionActionTrigger);
   shared.addAction(3, other, ON_CLICK_2);
-  slot.replace(1003, kPermissionAction);
+  slot.replace(1003, kPermissionActionTrigger);
   slot.handle->addAction(4, old, ON_CLICK_2);
   ChannelHandle::iterateAll();
-  slot.replace(1004, kPermissionAction);
+  slot.replace(1004, kPermissionActionTrigger);
   slot.handle->addAction(5, current, ON_CLICK_2);
   ChannelHandle::iterateAll();
   ChannelHandle::receiveAction(1003, SUPLA_ACTION_CAP_SHORT_PRESS_x2);
@@ -1981,7 +1991,7 @@ TEST(ChannelHandle, ReusedAddressCannotReceivePreviousReadOrActionCallbacks) {
   ChannelHandle::receiveAction(1004, SUPLA_ACTION_CAP_SHORT_PRESS_x2);
   EXPECT_EQ(current.count, 2);
   EXPECT_TRUE(env.peers.authorize(env.peer, {kResourceTypeChannel, 1003},
-                                  kPermissionAction));
+                                  kPermissionActionTrigger));
 }
 
 TEST(ChannelHandle, IdentityReplacementBarrierPreventsOldLocalCallbacks) {
@@ -2013,7 +2023,7 @@ TEST(ChannelHandle, IdentityReplacementBarrierPreventsOldLocalCallbacks) {
   ChannelHandle::iterateAll();
   EXPECT_EQ(replacement.localChannel(), env.first.getChannel());
   EXPECT_EQ(old.localChannel(), nullptr);
-  EXPECT_FALSE(old.canRead());
+  EXPECT_FALSE(old.hasReadPermission());
   env.first.getChannel()->setNewValue(22.0);
   EXPECT_EQ(counter.count, 0);
 }
@@ -2080,7 +2090,8 @@ TEST(ChannelHandle, CancelledEnsureReplyCannotRejectReconfiguredResource) {
   result.AccessStatus = SUPLA_SUPLAN_ACCESS_STATUS_GRANTED;
   reply(902);
   EXPECT_EQ(handle.accessStatus(), ChannelAccessStatus::PROVISIONING);
-  EXPECT_FALSE(handle.canRead());  // GRANTED alone is not provisioned access.
+  // GRANTED alone is not provisioned access.
+  EXPECT_FALSE(handle.hasReadPermission());
 }
 
 TEST(ChannelHandle, ReconfigureInsideCallbackStopsRemainingOldSourceEvents) {

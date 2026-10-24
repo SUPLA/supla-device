@@ -154,16 +154,17 @@ TEST_F(ServerStream, ExplicitReadOnlySharedSnapshotWithoutUdpOrPeer) {
   EXPECT_EQ(requests[0].DeliveryMode, SUPLA_RESOURCE_DELIVERY_SERVER_STREAM);
   EXPECT_EQ(requests[0].Permissions, SUPLA_SUPLAN_PERMISSION_READ);
   EXPECT_EQ(requests[0].Flags, SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL);
-  EXPECT_FALSE(a.canRead());
+  EXPECT_FALSE(a.hasReadPermission());
   reply();
   EXPECT_FALSE(a.state().available());
   publish(snapshot());
-  EXPECT_TRUE(a.canRead());
+  EXPECT_TRUE(a.hasReadPermission());
   EXPECT_DOUBLE_EQ(a.state().temperature(), 21);
   EXPECT_DOUBLE_EQ(b.state().temperature(), 21);
   EXPECT_EQ(manager()->resourceCount(), 1);
   EXPECT_EQ(manager()->consumerCount(), 2);
-  EXPECT_FALSE(a.canControl());
+  EXPECT_FALSE(a.hasControlPermission());
+  EXPECT_FALSE(a.hasActionTriggerPermission());
   uint8_t value[8] = {};
   EXPECT_FALSE(a.setValue(value));
   EXPECT_FALSE(a.executeAction(ACTION_TOGGLE));
@@ -185,7 +186,7 @@ TEST_F(ServerStream, NonTlsTransportCannotSendStreamEnsure) {
   ON_CALL(*client, isSecure()).WillByDefault(Return(false));
   tick();
   EXPECT_TRUE(requests.empty());
-  EXPECT_FALSE(channel.canRead());
+  EXPECT_FALSE(channel.hasReadPermission());
   EXPECT_FALSE(channel.state().available());
   ON_CALL(*client, isSecure()).WillByDefault(Return(true));
   tick(1000);  // Existing failed-ENSURE backoff, no immediate retry loop.
@@ -195,13 +196,13 @@ TEST_F(ServerStream, SnapshotBeforeResultIsHiddenAndPendingActivatesByPush) {
   ServerRemoteChannel a(1001);
   tick();
   publish(snapshot());
-  EXPECT_FALSE(a.canRead());
+  EXPECT_FALSE(a.hasReadPermission());
   EXPECT_FALSE(a.state().available());
   reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
   EXPECT_EQ(a.accessStatus(), ChannelAccessStatus::PENDING_APPROVAL);
   EXPECT_FALSE(a.state().available());
   publish(snapshot(1001, 22));
-  EXPECT_TRUE(a.canRead());
+  EXPECT_TRUE(a.hasReadPermission());
   EXPECT_DOUBLE_EQ(a.state().temperature(), 22);
   EXPECT_EQ(requests.size(), 1U);
 }
@@ -219,7 +220,7 @@ TEST_F(ServerStream, RejectedUnsolicitedAndMalformedCannotExposeState) {
   tick();
   reply(SUPLA_SUPLAN_ACCESS_STATUS_REJECTED);
   publish(snapshot());
-  EXPECT_FALSE(a.canRead());
+  EXPECT_FALSE(a.hasReadPermission());
   EXPECT_EQ(a.accessStatus(), ChannelAccessStatus::REJECTED);
   EXPECT_FALSE(protocol.onRemoteChannelState(nullptr));
   a.configure(1002, READ);
@@ -304,7 +305,7 @@ TEST_F(ServerStream, CapabilityVersionAndIdentityAreMandatory) {
   ASSERT_EQ(requests.size(), 1U);
   reply();
   publish(snapshot());
-  EXPECT_TRUE(a.canRead());
+  EXPECT_TRUE(a.hasReadPermission());
   protocol.serverIdentity().disconnected();
   EXPECT_FALSE(a.state().available());
 }
@@ -448,7 +449,7 @@ TEST_F(ServerStream, LostConnectionInvalidatesAnAlreadyBorrowedView) {
   ASSERT_TRUE(view.available());
   ON_CALL(*client, connected()).WillByDefault(Return(0));
   EXPECT_FALSE(view.available());
-  EXPECT_FALSE(a.canRead());
+  EXPECT_FALSE(a.hasReadPermission());
 }
 
 TEST_F(ServerStream, ReconcileOnlyDemandNeverRequestsUserApproval) {
@@ -506,10 +507,10 @@ TEST_F(ServerStream, SameLocalChannelIdStillRequiresServerAuthorization) {
   EXPECT_EQ(a.localChannel(), nullptr);
   tick();
   ASSERT_EQ(requests.size(), 1U);
-  EXPECT_FALSE(a.canRead());
+  EXPECT_FALSE(a.hasReadPermission());
   reply();
   publish(snapshot(601));
-  EXPECT_TRUE(a.canRead());
+  EXPECT_TRUE(a.hasReadPermission());
   EXPECT_EQ(a.localChannel(), nullptr);
 }
 TEST_F(ServerStream, FunctionNoneAlsoInvalidatesBorrowedValue) {
@@ -749,7 +750,9 @@ TEST_F(ServerStream, ScopeChangeRetainsD2dDemandButWaitsForDurableSync) {
   tick(1000);
   ASSERT_EQ(requests.size(), 2U);
   reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
-  ASSERT_TRUE(relay.canControl());
+  ASSERT_TRUE(relay.hasControlPermission());
+  EXPECT_TRUE(relay.hasReadPermission());
+  EXPECT_FALSE(relay.hasActionTriggerPermission());
   auto oldSnapshot = snapshot(1001, 20);
   oldSnapshot.Channel.ValueValidityTimeSec = 180;
   manager()->receive(0, {1, 1001},
@@ -772,7 +775,7 @@ TEST_F(ServerStream, ScopeChangeRetainsD2dDemandButWaitsForDurableSync) {
   EXPECT_EQ(disabled.accessStatus(), ChannelAccessStatus::INVALID);
   EXPECT_FALSE(borrowed.available());
   EXPECT_FALSE(thermometer.state().available());
-  EXPECT_FALSE(relay.canControl());
+  EXPECT_FALSE(relay.hasControlPermission());
   uint8_t on[8] = {1};
   EXPECT_FALSE(relay.setValue(on));
   storage.failCommit = true;
@@ -802,7 +805,7 @@ TEST_F(ServerStream, ScopeChangeRetainsD2dDemandButWaitsForDurableSync) {
   EXPECT_EQ(thermometer.accessStatus(), ChannelAccessStatus::PENDING_APPROVAL);
   EXPECT_EQ(disabled.accessStatus(), ChannelAccessStatus::INVALID);
   EXPECT_FALSE(thermometer.state().available());
-  EXPECT_FALSE(relay.canControl());
+  EXPECT_FALSE(relay.hasControlPermission());
   EXPECT_FALSE(relay.setValue(on));
   manager()->receive(0, {1, 1001},
       reinterpret_cast<const uint8_t *>(&oldSnapshot.Channel),
@@ -812,7 +815,7 @@ TEST_F(ServerStream, ScopeChangeRetainsD2dDemandButWaitsForDurableSync) {
   ASSERT_TRUE(lan->setSuplanDestinationAssociation(association, &accepted));
   ASSERT_EQ(accepted.Result, SUPLA_SUPLAN_RESULT_OK);
   tick();
-  EXPECT_TRUE(relay.canControl());
+  EXPECT_TRUE(relay.hasControlPermission());
   EXPECT_FALSE(thermometer.state().available());
   auto newSnapshot = snapshot(1001, 30);
   manager()->receive(0, {1, 1001},
@@ -907,13 +910,13 @@ TEST_F(ServerStream, WithdrawnD2dGrantRequestsApprovalOnce) {
   reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
   ASSERT_EQ(requests.size(), 2U);
   ASSERT_EQ(thermometer.accessStatus(), ChannelAccessStatus::PEER_UNAVAILABLE);
-  ASSERT_TRUE(relay.canControl());
+  ASSERT_TRUE(relay.hasControlPermission());
 
   // Cloud "Remove" of one decision: the peer stays for the other resource.
   provision(2, {{1, 1003, CONTROL}});
   expectApprovalRequest(1001, SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
   EXPECT_EQ(thermometer.accessStatus(), ChannelAccessStatus::PENDING_APPROVAL);
-  EXPECT_TRUE(relay.canControl());
+  EXPECT_TRUE(relay.hasControlPermission());
   tick(1000);
   tick(1000);
   EXPECT_EQ(requests.size(), 3U);
@@ -922,7 +925,7 @@ TEST_F(ServerStream, WithdrawnD2dGrantRequestsApprovalOnce) {
   provision(3, {{1, 1003, READ}});
   expectApprovalRequest(1003, SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
   EXPECT_EQ(requests.back().Permissions, READ | CONTROL);
-  EXPECT_FALSE(relay.canControl());
+  EXPECT_FALSE(relay.hasControlPermission());
   EXPECT_EQ(requests.size(), 4U);
 
   // Removing the whole association; an explicit rejection stays final.

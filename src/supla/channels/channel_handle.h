@@ -16,7 +16,7 @@ class Condition;
 enum ChannelPermission : uint8_t {
   READ = SupLan::kPermissionRead,
   CONTROL = SupLan::kPermissionControl,
-  ACTION = SupLan::kPermissionAction
+  ACTION_TRIGGER = SupLan::kPermissionActionTrigger
 };
 // Non-owning, location-neutral facade. The application owns its lifetime.
 // Construct/delete/configure in ordinary loop context, never from an ISR.
@@ -37,8 +37,12 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   ChannelState state() override;
   ChannelState channelState() { return state(); }
   Channel *localChannel() override;
-  bool canRead();
-  bool canControl();
+  // Effective permission for this handle, independent of transport/session
+  // readiness and snapshot availability. CONTROL also grants READ.
+  bool hasReadPermission();
+  bool hasControlPermission();
+  // Permission to receive Action Trigger events, not executeAction() CONTROL.
+  bool hasActionTriggerPermission();
   ChannelAccessStatus accessStatus();
   bool setValue(const uint8_t value[8], uint32_t durationMs = 0);
   bool executeAction(uint32_t actionId, const uint8_t *params = nullptr,

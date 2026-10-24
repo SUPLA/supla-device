@@ -307,7 +307,7 @@ class AdapterFanoutPair {
     Supla::SupLan::AclEntry acl = {};
     acl.resource = resource;
     acl.permissions = Supla::SupLan::kPermissionRead |
-        Supla::SupLan::kPermissionAction;
+        Supla::SupLan::kPermissionActionTrigger;
     return peersA.addPeerFromRoot(&context, rootKey, 1, &acl, 1,
                                   sourcePeer) &&
         destinationPeers->addPeer(&context, material.peerKey, 1,

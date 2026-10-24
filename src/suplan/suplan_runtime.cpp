@@ -986,7 +986,7 @@ bool Runtime::readAuthorized(uint8_t peerIndex,
       (peer->contextBytes[0] != kAuthorityServer || peer->destination) &&
       isLocalDestination(peer) &&
       (peers_->authorize(peerIndex, resource, kPermissionRead) ||
-       peers_->authorize(peerIndex, resource, kPermissionAction));
+       peers_->authorize(peerIndex, resource, kPermissionActionTrigger));
 }
 
 bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
@@ -1256,7 +1256,7 @@ bool Runtime::publishAction(uint8_t peerIndex, const ResourceId &resource,
                             size_t payloadLength) {
   const PeerRecord *peer = peers_->get(peerIndex);
   if (!isLocalSource(peer) ||
-      !peers_->authorize(peerIndex, resource, kPermissionAction) ||
+      !peers_->authorize(peerIndex, resource, kPermissionActionTrigger) ||
       suplaPayload == nullptr || payloadLength != 15) {
     return false;
   }
@@ -1392,11 +1392,12 @@ void Runtime::authorizationChanged(uint8_t peerIndex) {
     if (!retry.isUsed() || retry.peerIndex != peerIndex) {
       continue;
     }
-    uint8_t permission = retry.actionDelivery ? kPermissionAction :
+    uint8_t permission = retry.actionDelivery ? kPermissionActionTrigger :
         retry.controlDelivery ? kPermissionControl : kPermissionRead;
     if (!peers_->authorize(peerIndex, retry.resource, permission) &&
         !((retry.flags & kRetryReadRequest) &&
-          peers_->authorize(peerIndex, retry.resource, kPermissionAction))) {
+          peers_->authorize(peerIndex, retry.resource,
+                            kPermissionActionTrigger))) {
       clearRetryEntry(&retry);
     }
   }
@@ -1414,11 +1415,12 @@ void Runtime::authorizationChanged(uint8_t peerIndex) {
     }
     uint8_t permission = isControlApplication(entry.data, entry.length) ?
         kPermissionControl : app.messageType == kSuplaCallActionTrigger ?
-        kPermissionAction : kPermissionRead;
+        kPermissionActionTrigger : kPermissionRead;
     if (!peers_->authorize(peerIndex, body.resource, permission) &&
         !(app.messageClass == kMessageClassNative &&
           app.messageType == kNativeReadResource &&
-          peers_->authorize(peerIndex, body.resource, kPermissionAction))) {
+          peers_->authorize(peerIndex, body.resource,
+                            kPermissionActionTrigger))) {
       entry = DeferredApplication();
     }
   }
@@ -1547,7 +1549,7 @@ bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
                       datagrams_->nowMs() + kActionDeliveryLifetimeMs);
   }
   // A usable session needs no recovery for an unacknowledged state update.
-  // READ, CONTROL and ACTION keep their existing operation/retry lifetime.
+  // READ, CONTROL and ACTION_TRIGGER keep their operation/retry lifetime.
   if (!state || !session) beginRecovery(peerIndex);
   updatePoolHighWater();
   if (!processing_) {
@@ -1719,7 +1721,7 @@ void Runtime::drainDeferred() {
           static_cast<int32_t>(now - actionExpiresAtMs) >= 0 ||
           !isLocalSource(peers_->get(queued->peerIndex)) ||
           !peers_->authorize(queued->peerIndex, actionResource,
-                             kPermissionAction)) {
+                             kPermissionActionTrigger)) {
         const uint8_t peerIndex = queued->peerIndex;
         queued->used = false;
         cancelPeerRecoveryIfIdle(peerIndex);
@@ -1963,7 +1965,7 @@ bool Runtime::sendProtectedToEndpoint(
   }
   if (actionDelivery &&
       (!ackRequired || !isLocalSource(peers_->get(peerIndex)) ||
-       !peers_->authorize(peerIndex, resource, kPermissionAction) ||
+       !peers_->authorize(peerIndex, resource, kPermissionActionTrigger) ||
        static_cast<int32_t>(datagrams_->nowMs() - actionExpiresAtMs) >= 0)) {
     return false;
   }
@@ -2725,7 +2727,7 @@ void Runtime::pruneInterests(uint32_t now) {
          (!peers_->authorize(interest.peerIndex, interest.resource,
                              kPermissionRead) &&
           !peers_->authorize(interest.peerIndex, interest.resource,
-                             kPermissionAction)))) {
+                             kPermissionActionTrigger)))) {
       memset(&interest, 0, sizeof(interest));
     }
   }
@@ -2943,7 +2945,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
   const bool readAuthorized = peers_->authorize(peerIndex, resource,
                                                  kPermissionRead);
   const bool actionAuthorized = peers_->authorize(peerIndex, resource,
-                                                   kPermissionAction);
+                                                   kPermissionActionTrigger);
   if (duplicate) {
     const uint8_t cacheIndex = static_cast<uint8_t>(sequence & 63U);
     const uint8_t result = session->ackResults[cacheIndex];
@@ -3101,7 +3103,7 @@ void Runtime::handleSuplaCall(uint8_t peerIndex, SessionEntry *session,
     if (application.flags != kAckRequired || payloadLength != 15 ||
         payload[0] != kChannelNumberUnresolved ||
         !isLocalDestination(peer) ||
-        !peers_->authorize(peerIndex, resource, kPermissionAction)) {
+        !peers_->authorize(peerIndex, resource, kPermissionActionTrigger)) {
       emit(DiagnosticEvent::RejectPacket);
       ++diagnostics_.invalidDataDrop;
       return;
@@ -3282,12 +3284,12 @@ void Runtime::iterate() {
       continue;
     }
     if (retry->isUsed()) {
-      uint8_t permission = retry->actionDelivery ? kPermissionAction :
+      uint8_t permission = retry->actionDelivery ? kPermissionActionTrigger :
           retry->controlDelivery ? kPermissionControl : kPermissionRead;
       if (!peers_->authorize(retry->peerIndex, retry->resource, permission) &&
           !((retry->flags & kRetryReadRequest) &&
             peers_->authorize(retry->peerIndex, retry->resource,
-                              kPermissionAction))) {
+                              kPermissionActionTrigger))) {
         clearRetryEntry(retry);
         continue;
       }
@@ -3297,7 +3299,7 @@ void Runtime::iterate() {
     if (retry->isUsed() && actionDelivery &&
         (!isLocalSource(peers_->get(retry->peerIndex)) ||
          !peers_->authorize(retry->peerIndex, retry->resource,
-                            kPermissionAction) ||
+                            kPermissionActionTrigger) ||
          static_cast<int32_t>(now - getActionDeadline(
              retry->frame, sizeof(retry->frame))) >= 0)) {
       const uint8_t peerIndex = retry->peerIndex;

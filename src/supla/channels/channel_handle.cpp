@@ -142,7 +142,7 @@ void ChannelHandle::reconcile() {
       continuity_ = resources->admissionGeneration();
   }
 }
-bool ChannelHandle::canRead() {
+bool ChannelHandle::hasReadPermission() {
   reconcile();
   if (!active_ || !(permissions_ & (SupLan::kPermissionRead |
                                    SupLan::kPermissionControl))) return false;
@@ -151,7 +151,7 @@ bool ChannelHandle::canRead() {
   return admitted_ && resources && (resources->effectivePermissions(key()) &
                                     SupLan::kPermissionRead);
 }
-bool ChannelHandle::canControl() {
+bool ChannelHandle::hasControlPermission() {
   reconcile();
   if (!active_ || !(permissions_ & SupLan::kPermissionControl)) return false;
   if (localChannel()) return true;
@@ -159,8 +159,17 @@ bool ChannelHandle::canControl() {
   return admitted_ && resources && (resources->effectivePermissions(key()) &
                                     SupLan::kPermissionControl);
 }
+bool ChannelHandle::hasActionTriggerPermission() {
+  reconcile();
+  if (!active_ || !(permissions_ & SupLan::kPermissionActionTrigger))
+    return false;
+  if (localChannel()) return true;
+  auto resources = manager();
+  return admitted_ && resources && (resources->effectivePermissions(key()) &
+                                    SupLan::kPermissionActionTrigger);
+}
 ChannelState ChannelHandle::state() {
-  if (!canRead()) return ChannelState();
+  if (!hasReadPermission()) return ChannelState();
   if (auto channel = localChannel()) return ChannelState(channel);
   auto resources = manager();
   return resources ? resources->state(key(), millis()) : ChannelState();
@@ -184,7 +193,7 @@ ChannelAccessStatus ChannelHandle::accessStatus() {
                    : ChannelAccessStatus::RESOURCE_LIMIT;
 }
 bool ChannelHandle::setValue(const uint8_t value[8], uint32_t durationMs) {
-  if (!value || !canControl()) return false;
+  if (!value || !hasControlPermission()) return false;
   TSD_SuplaChannelNewValue command = {};
   command.DurationMS = durationMs;
   memcpy(command.value, value, 8);
@@ -204,7 +213,7 @@ bool ChannelHandle::setValue(const uint8_t value[8], uint32_t durationMs) {
 bool ChannelHandle::executeAction(uint32_t actionId, const uint8_t *params,
                                    size_t length) {
   if (length > SupLan::kControlActionMaxParams || (length && !params) ||
-      !canControl()) return false;
+      !hasControlPermission()) return false;
   if (auto channel = localChannel()) {
     auto element = Element::getElementByChannelNumber(
         channel->getChannelNumber());
@@ -235,8 +244,8 @@ void ChannelHandle::handleAction(int event, int number) {
   auto channel = localChannel();
   if (!channel || number != channel->getChannelNumber() || !active_) return;
   if (channel->getChannelType() == SUPLA_CHANNELTYPE_ACTIONTRIGGER) {
-    if (permissions_ & SupLan::kPermissionAction) runAction(event);
-  } else if (baselineValid_ && canRead()) {
+    if (permissions_ & SupLan::kPermissionActionTrigger) runAction(event);
+  } else if (baselineValid_ && hasReadPermission()) {
     if (state().available()) runAction(event);
     else baselineValid_ = false;
   }
@@ -371,7 +380,8 @@ void ChannelHandle::observe() {
   for (uint8_t i = 0; i < count; ++i) {
     auto handle = after(token - 1, token);
     if (!handle || !handle->active_ || handle->id_ != sourceId ||
-        handle->continuity_ != continuity || !handle->canRead()) break;
+        handle->continuity_ != continuity ||
+        !handle->hasReadPermission()) break;
     handle->runAction(events[i]);
   }
 }
@@ -396,10 +406,10 @@ void ChannelHandle::receiveAction(uint32_t channelId, uint32_t capability) {
     if (handle->delivery() != RemoteDelivery::SupLanPeer ||
         handle->id_ != channelId || !handle->active_ || !handle->admitted_ ||
         handle->resolutionKind() != ChannelResolutionKind::kRemote ||
-        !(handle->permissions_ & SupLan::kPermissionAction)) continue;
+        !(handle->permissions_ & SupLan::kPermissionActionTrigger)) continue;
     auto resources = handle->manager();
     if (resources && (resources->effectivePermissions(
-        handle->key()) & SupLan::kPermissionAction))
+        handle->key()) & SupLan::kPermissionActionTrigger))
       handle->runAction(event);
   }
 }

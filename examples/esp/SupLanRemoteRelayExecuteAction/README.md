@@ -10,7 +10,8 @@ Approve **CONTROL** for a Source power/light relay with Native/9 support.
 them to network `ACTION_*` IDs. `executeAction()` encodes protected Native/9;
 no application-side framing or keys are required.
 
-CONTROL includes shared READ interest. `canControl()` tests effective rights;
+CONTROL includes shared READ interest. `hasControlPermission()` tests effective
+rights;
 true from `executeAction()` means local admission, not delivery or completion.
 The VirtualRelay is a command selector, not confirmed Source state. Its initial
 OFF does not send a command. Rejections/timeouts do not replay the old selection

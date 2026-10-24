@@ -26,7 +26,7 @@ bool PeerTable::validEntries(const AclEntry *entries,
     return false;
   }
   const uint8_t allowed = kPermissionRead | kPermissionControl |
-      kPermissionAction;
+      kPermissionActionTrigger;
   for (uint8_t i = 0; i < entryCount; ++i) {
     if ((entries[i].resource.type != kResourceTypeChannel &&
          entries[i].resource.type != kResourceTypeDevice) ||

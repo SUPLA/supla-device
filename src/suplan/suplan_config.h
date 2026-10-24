@@ -94,8 +94,8 @@
 #define SUPLAN_MAX_RETRY_SLOTS 2
 #endif
 #ifndef SUPLAN_MAX_RETRY_FRAME_BYTES
-// READ=43, CONTROL=60, ACTION=58 protected bytes. ACTION also needs five
-// bytes of local deadline metadata. Extended STATE is never acknowledged.
+// READ=43, CONTROL=60, ACTION_TRIGGER=58 protected bytes. Action Trigger also
+// needs five bytes of local deadline metadata. Extended STATE has no ACK.
 #define SUPLAN_MAX_RETRY_FRAME_BYTES 64
 #endif
 #ifndef SUPLAN_MAX_DEFERRED_APP_EVENTS
@@ -146,7 +146,7 @@ static const uint8_t kSessionRejectResourceLimit = 1;
 
 static const uint8_t kPermissionRead = 1 << 0;
 static const uint8_t kPermissionControl = 1 << 1;
-static const uint8_t kPermissionAction = 1 << 2;
+static const uint8_t kPermissionActionTrigger = 1 << 2;
 
 static const uint32_t kLocateReplyWindowMs = 250;
 static const uint32_t kSessionInitRetryMs = 250;

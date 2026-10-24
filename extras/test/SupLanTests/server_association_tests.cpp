@@ -1639,7 +1639,7 @@ void registerReplacement(ServerIdentity *identity) {
 }  // namespace
 
 TEST_F(ServerAssociationTests, RemovalPrunesReadControlActionBeforeIdReuse) {
-  source.Acl[0].Permissions = kPermissionControl | kPermissionAction;
+  source.Acl[0].Permissions = kPermissionControl | kPermissionActionTrigger;
   ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
   ASSERT_TRUE(channel->prepareForRemoval());
   ASSERT_NE(peers.get(0), nullptr);
@@ -1651,7 +1651,7 @@ TEST_F(ServerAssociationTests, RemovalPrunesReadControlActionBeforeIdReuse) {
   ASSERT_NE(peers.get(0), nullptr);
   EXPECT_EQ(peers.get(0)->aclCount, 0);
   for (auto permission : {kPermissionRead, kPermissionControl,
-                          kPermissionAction})
+                          kPermissionActionTrigger})
     EXPECT_FALSE(peers.authorize(0, {1, 501}, permission));
   EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_REVISION_CONFLICT);
   reboot();
@@ -1841,16 +1841,16 @@ TEST_F(ServerAssociationTests, RemovalWildcardDoesNotExpandOrExhaustAclPool) {
 
 TEST_F(ServerAssociationTests, RemovalPrunesExplicitEntryAlongsideWildcard) {
   source.AclEntryCount = 2;
-  source.Acl[0] = {1, 501, kPermissionAction};
+  source.Acl[0] = {1, 501, kPermissionActionTrigger};
   source.Acl[1] = {2, 101, kPermissionControl};
   ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
   ASSERT_TRUE(channel->prepareForRemoval());
   replaceChannel(&channel);
   registerReplacement(&identity);
   EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionControl));
-  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionAction));
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionActionTrigger));
   EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_REVISION_CONFLICT);
   reboot();
   EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionControl));
-  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionAction));
+  EXPECT_FALSE(peers.authorize(0, {1, 501}, kPermissionActionTrigger));
 }

@@ -36,7 +36,7 @@ bool deviceStarted = false;
 constexpr uint32_t REMOTE_ACTION_CHANNEL_ID = 12345;
 constexpr int RELAY_GPIO = 5;
 
-Supla::ChannelHandle remoteButton(REMOTE_ACTION_CHANNEL_ID, Supla::ACTION);
+Supla::ChannelHandle remoteButton(REMOTE_ACTION_CHANNEL_ID, Supla::ACTION_TRIGGER);
 Supla::Control::Relay relay(RELAY_GPIO, true, SUPLA_BIT_FUNC_POWERSWITCH);
 
 void setup() {

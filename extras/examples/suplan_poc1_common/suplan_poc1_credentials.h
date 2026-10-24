@@ -55,7 +55,7 @@ inline bool configurePeerTable(PeerTable *peers, bool nodeA,
       {kResourceTypeChannel, kRelayResourceId},
       static_cast<uint8_t>(kPermissionRead | kPermissionControl)};
   const AclEntry actionAcl = {{kResourceTypeChannel, kActionResourceId},
-                              kPermissionAction};
+                              kPermissionActionTrigger};
 
   const bool primaryAdded =
       nodeA ? peers->addPeerFromRoot(&primary, kRootKey, 1, &primaryAcl,

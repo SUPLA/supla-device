@@ -40,7 +40,7 @@ using Supla::SupLan::kMaxDatagramPayload;
 using Supla::SupLan::kMessageClassNative;
 using Supla::SupLan::kNativeReadResource;
 using Supla::SupLan::kNodeIdDevice;
-using Supla::SupLan::kPermissionAction;
+using Supla::SupLan::kPermissionActionTrigger;
 using Supla::SupLan::kPermissionControl;
 using Supla::SupLan::kPermissionRead;
 using Supla::SupLan::kProtectedHeaderSize;
@@ -119,7 +119,7 @@ class DirectionalPeer : public ::testing::Test {
         {kNodeIdDevice, 1002}, 1, 1};
     const AclEntry acl = {
         resource, static_cast<uint8_t>(kPermissionRead | kPermissionControl |
-                                       kPermissionAction)};
+                                       kPermissionActionTrigger)};
     uint8_t root[32] = {};
     ASSERT_TRUE(
         peers.addPeerFromRoot(&context, root, 1, &acl, 1, &peer));

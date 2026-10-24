@@ -387,7 +387,7 @@ struct RuntimePair {
     Supla::SupLan::AclEntry actionAcl = {};
     actionAcl.resource.type = Supla::SupLan::kResourceTypeChannel;
     actionAcl.resource.id = 50002;
-    actionAcl.permissions = Supla::SupLan::kPermissionAction;
+    actionAcl.permissions = Supla::SupLan::kPermissionActionTrigger;
     EXPECT_TRUE(peersA.addPeer(&actionContext, reversePeerKey, 1,
                                &actionAcl, 1, &actionPeerA, true));
     EXPECT_TRUE(peersB.addPeerFromRoot(&actionContext, rootKey, 1,
@@ -2698,7 +2698,7 @@ TEST(SupLanRuntime, QueuedActionRechecksSourceAclBeforeFirstTransmission) {
         keepRead ? resource : ResourceId{
             Supla::SupLan::kResourceTypeChannel, 50003},
         keepRead ? Supla::SupLan::kPermissionRead
-                 : Supla::SupLan::kPermissionAction};
+                 : Supla::SupLan::kPermissionActionTrigger};
     ASSERT_TRUE(pair.peersB.replaceAcl(pair.actionPeerB, 2, &acl, 1));
     pair.datagramsA.available = true;
     pair.pump(20);
@@ -2749,7 +2749,7 @@ TEST(SupLanRuntime, QueuedActionSurvivesUnrelatedAclReplacement) {
   ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, resource, payload,
                                         sizeof(payload)));
   const Supla::SupLan::AclEntry acl[] = {
-      {resource, Supla::SupLan::kPermissionAction},
+      {resource, Supla::SupLan::kPermissionActionTrigger},
       {{Supla::SupLan::kResourceTypeChannel, 50003},
        Supla::SupLan::kPermissionRead}};
   ASSERT_TRUE(pair.peersB.replaceAcl(pair.actionPeerB, 2, acl, 2));
@@ -2798,7 +2798,7 @@ TEST(SupLanRuntime, InterestRetainedWhileAnyReadControlOrActionGrantRemains) {
   uint32_t revision = 2;
   for (uint8_t permission : {Supla::SupLan::kPermissionRead,
                              Supla::SupLan::kPermissionControl,
-                             Supla::SupLan::kPermissionAction}) {
+                             Supla::SupLan::kPermissionActionTrigger}) {
     const Supla::SupLan::AclEntry acl = {pair.resource, permission};
     ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, revision++, &acl, 1));
     pair.runtimeA.iterate();
@@ -3406,7 +3406,7 @@ TEST(SupLanRuntime, ScopedActionGrantNeedsNoReadAndRevocationStopsPublication) {
   const ResourceId resource = {Supla::SupLan::kResourceTypeChannel, 50002};
   Supla::SupLan::AclEntry scope = {
       {Supla::SupLan::kResourceTypeDevice, 1002},
-      Supla::SupLan::kPermissionAction};
+      Supla::SupLan::kPermissionActionTrigger};
   ASSERT_TRUE(pair.peersB.replaceAcl(pair.actionPeerB, 2, &scope, 1));
   ASSERT_TRUE(pair.peersA.replaceAcl(pair.actionPeerA, 2, &scope, 1));
   uint8_t event[15] = {0xff, 4};
@@ -3458,7 +3458,8 @@ TEST(SupLanRuntime, UnreachableActionPeerCannotBlockHealthyRecipientOrReplay) {
       {Supla::SupLan::kNodeIdDevice, 1002},
       {Supla::SupLan::kNodeIdDevice, 1003}, 1, 1};
   uint8_t key[32] = {2};
-  Supla::SupLan::AclEntry acl = {resource, Supla::SupLan::kPermissionAction};
+  Supla::SupLan::AclEntry acl = {
+      resource, Supla::SupLan::kPermissionActionTrigger};
   uint8_t offlinePeer, destinationPeer;
   ASSERT_TRUE(pair.peersB.addPeer(&context, key, 1, &acl, 1, &offlinePeer));
   ASSERT_TRUE(peersC.addPeer(&context, key, 1, &acl, 1,
@@ -3488,7 +3489,7 @@ TEST(SupLanRuntime, UnreachableActionPeerCannotBlockHealthyRecipientOrReplay) {
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
   EXPECT_TRUE(pair.peersB.authorize(offlinePeer, resource,
-                                   Supla::SupLan::kPermissionAction));
+                                   Supla::SupLan::kPermissionActionTrigger));
 }
 
 TEST(SupLanSleepySource, SharedPeerResetRepairsOnlyAuthorizedResourceReads) {

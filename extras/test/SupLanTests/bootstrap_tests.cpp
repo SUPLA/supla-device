@@ -411,7 +411,7 @@ TEST_F(SupLanBootstrap, FactoryResetClearsRuntimeAuthorization) {
   ASSERT_EQ(result.Result, SUPLA_SUPLAN_RESULT_OK);
   Supla::ChannelHandle handle(501, Supla::READ);
   Supla::ChannelHandle::iterateAll();
-  ASSERT_TRUE(handle.canRead());
+  ASSERT_TRUE(handle.hasReadPermission());
   device.resetToFactorySettings();
   EXPECT_TRUE(protocol->isSupLanServerCapable());
   EXPECT_FALSE(protocol->isTransportOpen());
@@ -419,7 +419,7 @@ TEST_F(SupLanBootstrap, FactoryResetClearsRuntimeAuthorization) {
                    ->identityAvailable());
   EXPECT_EQ(protocol->remoteResources()->effectivePermissions(
       {Supla::SupLan::kResourceTypeChannel, 501}), 0);
-  EXPECT_FALSE(handle.canRead());
+  EXPECT_FALSE(handle.hasReadPermission());
   EXPECT_FALSE(handle.state().available());
 }
 TEST_F(SupLanBootstrap, FailedResetReportsFailureAndBlocksReactivation) {

@@ -44,7 +44,7 @@ class RemoteRelayCommands : public Supla::ActionHandler {
   void handleAction(int, int action) override {
     if (action != Supla::TURN_ON && action != Supla::TURN_OFF &&
         action != Supla::TOGGLE) return;
-    if (!remoteRelay.canControl()) {
+    if (!remoteRelay.hasControlPermission()) {
       Serial.println("Remote relay CONTROL is not provisioned");
       return;
     }

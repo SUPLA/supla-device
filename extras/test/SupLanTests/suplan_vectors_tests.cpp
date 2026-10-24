@@ -547,7 +547,7 @@ TEST(SupLanAcl, RevisionReplacementAndControlImpliesRead) {
   EXPECT_TRUE(peers.authorize(index, entry.resource,
                               Supla::SupLan::kPermissionControl));
   EXPECT_FALSE(peers.authorize(index, entry.resource,
-                               Supla::SupLan::kPermissionAction));
+                               Supla::SupLan::kPermissionActionTrigger));
   EXPECT_TRUE(peers.replaceAcl(index, 1, &entry, 1));
 
   Supla::SupLan::AclEntry readOnly = entry;

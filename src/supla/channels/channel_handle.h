@@ -43,6 +43,7 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   bool hasControlPermission();
   // Permission to receive Action Trigger events, not executeAction() CONTROL.
   bool hasActionTriggerPermission();
+  // AUTHORIZED does not imply a session, valid data or command delivery.
   ChannelAccessStatus accessStatus();
   bool setValue(const uint8_t value[8], uint32_t durationMs = 0);
   bool executeAction(uint32_t actionId, const uint8_t *params = nullptr,

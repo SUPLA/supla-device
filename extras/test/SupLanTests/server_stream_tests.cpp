@@ -156,6 +156,8 @@ TEST_F(ServerStream, ExplicitReadOnlySharedSnapshotWithoutUdpOrPeer) {
   EXPECT_EQ(requests[0].Flags, SUPLA_SUPLAN_ENSURE_ACCESS_FLAG_ALLOW_APPROVAL);
   EXPECT_FALSE(a.hasReadPermission());
   reply();
+  // STREAM activates effective READ only after the first authenticated state.
+  EXPECT_EQ(a.accessStatus(), ChannelAccessStatus::PROVISIONING);
   EXPECT_FALSE(a.state().available());
   publish(snapshot());
   EXPECT_TRUE(a.hasReadPermission());
@@ -176,6 +178,7 @@ TEST_F(ServerStream, ExplicitReadOnlySharedSnapshotWithoutUdpOrPeer) {
   offline.Channel.Offline = 1;
   publish(offline);
   EXPECT_FALSE(a.state().available());
+  EXPECT_EQ(a.accessStatus(), ChannelAccessStatus::AUTHORIZED);
   publish(snapshot(1001, 23));
   EXPECT_DOUBLE_EQ(a.state().temperature(), 23);
 }
@@ -909,7 +912,9 @@ TEST_F(ServerStream, WithdrawnD2dGrantRequestsApprovalOnce) {
   tick(1000);
   reply(SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL);
   ASSERT_EQ(requests.size(), 2U);
-  ASSERT_EQ(thermometer.accessStatus(), ChannelAccessStatus::PEER_UNAVAILABLE);
+  ASSERT_FALSE(manager()->transportAvailable(
+      {1001, RemoteDelivery::SupLanPeer}));
+  ASSERT_EQ(thermometer.accessStatus(), ChannelAccessStatus::AUTHORIZED);
   ASSERT_TRUE(relay.hasControlPermission());
 
   // Cloud "Remove" of one decision: the peer stays for the other resource.

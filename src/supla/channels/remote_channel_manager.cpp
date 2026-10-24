@@ -19,8 +19,7 @@ const char *channelAccessStatusName(ChannelAccessStatus status) {
     case ChannelAccessStatus::PENDING_APPROVAL: return "PENDING_APPROVAL";
     case ChannelAccessStatus::REJECTED: return "REJECTED";
     case ChannelAccessStatus::PROVISIONING: return "PROVISIONING";
-    case ChannelAccessStatus::READY: return "READY";
-    case ChannelAccessStatus::PEER_UNAVAILABLE: return "PEER_UNAVAILABLE";
+    case ChannelAccessStatus::AUTHORIZED: return "AUTHORIZED";
   }
   return "UNKNOWN";
 }
@@ -384,8 +383,7 @@ ChannelAccessStatus RemoteChannelManager::status(RemoteChannelKey key,
   if (permissions & SupLan::kPermissionControl)
     permissions |= SupLan::kPermissionRead;
   if ((effectivePermissions(key) & permissions) == permissions)
-    return transportAvailable(key) ? ChannelAccessStatus::READY
-                             : ChannelAccessStatus::PEER_UNAVAILABLE;
+    return ChannelAccessStatus::AUTHORIZED;
   switch (approvalStatus(key, permissions)) {
     case SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL:
       return ChannelAccessStatus::PENDING_APPROVAL;

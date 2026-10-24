@@ -50,7 +50,6 @@ class ChannelState {
   bool binary(bool *result) const;
   bool hvac(THVACValue *result) const;
   uint32_t receivedMs() const { return receivedMs_; }
-  bool offline() const;
   uint32_t type() const;
   uint32_t function() const;
   uint32_t validityTimeSec() const;

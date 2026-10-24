@@ -45,6 +45,12 @@ a previously approved Cloud grant.
 This example needs both Arduino-platform compile checks and later normal
 registration/approval/LAN acceptance. Compilation does not prove product E2E.
 
+`accessStatus()` describes authorization and admission. `AUTHORIZED` means
+that all requested permissions are granted, independently of the peer session
+or snapshot availability. Use `state().available()` to decide whether data can
+be read; `ChannelState::offline()` has been removed. A missing session can be
+established on demand and does not by itself mean the peer is offline.
+
 ## Compile checks
 
 From the SDK repository root, using unique build directories under `/tmp/codex`:

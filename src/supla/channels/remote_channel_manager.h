@@ -20,9 +20,10 @@ struct RemoteChannelKey {
     return channelId == other.channelId && delivery == other.delivery;
   }
 };
+// Authorization/admission status, independent of session and data availability.
 enum class ChannelAccessStatus : uint8_t {
   INVALID, IDENTITY_UNRESOLVED, LOCAL_CHANNEL, RESOURCE_LIMIT, PENDING_APPROVAL,
-  REJECTED, PROVISIONING, READY, PEER_UNAVAILABLE
+  REJECTED, PROVISIONING, AUTHORIZED
 };
 const char *channelAccessStatusName(ChannelAccessStatus status);
 

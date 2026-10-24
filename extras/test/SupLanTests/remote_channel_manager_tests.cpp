@@ -183,12 +183,12 @@ TEST_F(RemoteChannelManagement,
   EXPECT_DOUBLE_EQ(manager.state(stream, 0).temperature(), 12);
   EXPECT_EQ(manager.effectivePermissions(peer), 1);
   EXPECT_EQ(manager.status(peer, 2), ChannelAccessStatus::PROVISIONING);
-  EXPECT_EQ(manager.status(stream, 1), ChannelAccessStatus::READY);
+  EXPECT_EQ(manager.status(stream, 1), ChannelAccessStatus::AUTHORIZED);
   EXPECT_FALSE(manager.state(peer, 1000).available());
   EXPECT_TRUE(manager.state(stream, 1000).available());
   d2d.online = false;
-  EXPECT_EQ(manager.status(peer, 1), ChannelAccessStatus::PEER_UNAVAILABLE);
-  EXPECT_EQ(manager.status(stream, 1), ChannelAccessStatus::READY);
+  EXPECT_EQ(manager.status(peer, 1), ChannelAccessStatus::AUTHORIZED);
+  EXPECT_EQ(manager.status(stream, 1), ChannelAccessStatus::AUTHORIZED);
   manager.remove(1);
   EXPECT_EQ(manager.resourceCount(), 2);
   EXPECT_DOUBLE_EQ(manager.state(peer, 0).temperature(), 21);
@@ -198,6 +198,29 @@ TEST_F(RemoteChannelManagement,
   EXPECT_DOUBLE_EQ(manager.state(stream, 0).temperature(), 12);
   manager.remove(3);
   EXPECT_EQ(manager.resourceCount(), 0);
+}
+TEST_F(RemoteChannelManagement, AuthorizationDoesNotRequireSessionOrSnapshot) {
+  attach();
+  d2d.rights = 3;
+  ASSERT_TRUE(manager.consume(demand(1, peer, 2)));
+  ASSERT_TRUE(manager.consume(demand(2, stream)));
+  for (bool online : {false, true, false}) {
+    d2d.online = skeleton.online = online;
+    EXPECT_EQ(manager.transportAvailable(peer), online);
+    EXPECT_EQ(manager.transportAvailable(stream), online);
+    EXPECT_EQ(manager.status(peer, 2), ChannelAccessStatus::AUTHORIZED);
+    EXPECT_EQ(manager.status(stream, 1), ChannelAccessStatus::AUTHORIZED);
+    EXPECT_FALSE(manager.state(peer, 0).available());
+    EXPECT_FALSE(manager.state(stream, 0).available());
+  }
+  manager.publish(peer, 21, 0);
+  EXPECT_TRUE(manager.state(peer, 0).available());
+  EXPECT_FALSE(manager.state(peer, 1000).available());
+  EXPECT_EQ(manager.status(peer, 2), ChannelAccessStatus::AUTHORIZED);
+  // Removing CONTROL immediately changes status despite the retained READ.
+  d2d.rights = 1;
+  EXPECT_EQ(manager.status(peer, 2), ChannelAccessStatus::PROVISIONING);
+  EXPECT_EQ(manager.status(peer, 1), ChannelAccessStatus::AUTHORIZED);
 }
 TEST_F(RemoteChannelManagement, MissingStreamBackendNeverAllocatesOrEnsures) {
   ASSERT_TRUE(manager.registerBackend(RemoteDelivery::SupLanPeer, &d2d));

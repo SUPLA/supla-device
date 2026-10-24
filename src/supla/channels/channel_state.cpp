@@ -143,7 +143,6 @@ bool ChannelState::hvac(THVACValue *result) const {
   memcpy(result, bytes, sizeof(*result));
   return true;
 }
-bool ChannelState::offline() const { return !available(); }
 uint32_t ChannelState::type() const {
   return local_ ? local_->getChannelType()
                 : current() && snapshot_ ? snapshot_->Type : 0;

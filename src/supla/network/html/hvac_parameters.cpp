@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <supla/network/html/channel_reference_select.h>
 #include <supla/channels/channel.h>
 #include <supla/control/hvac_base.h>
 #include <supla/log_wrapper.h>
@@ -124,6 +125,12 @@ void HvacParameters::send(Supla::WebSender* sender) {
     return;
   }
 
+  using Field = Supla::Control::HvacBase::ReferenceField;
+  const auto remote = [&](Field field) {
+    const auto ref = hvac->channelReference(field);
+    return ref.kind == ChannelReferenceKind::SERVER_CHANNEL &&
+           localReferenceNumber(ref) < 0;
+  };
   char key[16] = {};
   int32_t channelFunc = hvac->getChannel()->getDefaultFunction();
 
@@ -201,14 +208,20 @@ void HvacParameters::send(Supla::WebSender* sender) {
     }
   }
 
-  if (hvacCount > 1 && !hvac->parameterFlags.MasterThermostatChannelNoHidden) {
+  if ((hvacCount > 1 || remote(Field::MasterThermostat)) &&
+      !hvac->parameterFlags.MasterThermostatChannelNoHidden) {
     hvac->generateKey(key, "master");
     emitSelectField(
         sender,
         key,
         "Master thermostat",
         [&]() {
-          sender->selectOption(-1, "Not set", !hvac->isMasterThermostatSet());
+          remoteReferenceOption(sender, hvac->channelReference(
+              Field::MasterThermostat));
+          sender->selectOption(
+              -1, "Not set",
+              hvac->channelReference(Field::MasterThermostat).kind ==
+                  ChannelReferenceKind::NONE);
           for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
                ch = ch->next()) {
             int channelNumber = ch->getChannelNumber();
@@ -217,8 +230,8 @@ void HvacParameters::send(Supla::WebSender* sender) {
                 channelNumber != hvac->getChannelNumber()) {
               auto el =
                   Supla::Element::getElementByChannelNumber(channelNumber);
-              auto otherHvac = reinterpret_cast<Supla::Control::HvacBase*>(el);
-              if (!otherHvac->isMasterThermostatSet()) {
+              auto otherHvac = el ? el->getHvacBase() : nullptr;
+              if (otherHvac && !otherHvac->isMasterThermostatSet()) {
                 char buf[100] = {};
                 snprintf(buf, sizeof(buf), "Thermostat #%d", channelNumber);
                 sender->selectOption(
@@ -290,10 +303,13 @@ void HvacParameters::send(Supla::WebSender* sender) {
         key,
         "Main thermometer channel number",
         [&]() {
+          remoteReferenceOption(sender, hvac->channelReference(
+              Field::MainThermometer));
           sender->selectOption(
               hvac->getChannelNumber(),
               "Not set",
-              hvac->getMainThermometerChannelNo() == hvac->getChannelNumber());
+              hvac->channelReference(Field::MainThermometer).kind ==
+                  ChannelReferenceKind::NONE);
           for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
                ch = ch->next()) {
             int channelNumber = ch->getChannelNumber();
@@ -320,10 +336,13 @@ void HvacParameters::send(Supla::WebSender* sender) {
         key,
         "Auxiliary thermometer channel number",
         [&]() {
+          remoteReferenceOption(sender, hvac->channelReference(
+              Field::AuxThermometer));
           sender->selectOption(
               hvac->getChannelNumber(),
               "Not set",
-              hvac->getAuxThermometerChannelNo() == hvac->getChannelNumber());
+              hvac->channelReference(Field::AuxThermometer).kind ==
+                  ChannelReferenceKind::NONE);
           for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
                ch = ch->next()) {
             int channelNumber = ch->getChannelNumber();
@@ -521,17 +540,21 @@ void HvacParameters::send(Supla::WebSender* sender) {
       sensorId = ch->getChannelNumber();
     }
   }
-  if (countSensors > 0 && !hvac->parameterFlags.BinarySensorChannelNoHidden) {
+  if ((countSensors > 0 || remote(Field::BinarySensor)) &&
+      !hvac->parameterFlags.BinarySensorChannelNoHidden) {
     hvac->generateKey(key, "sensor");
     emitSelectField(
         sender,
         key,
         "Turn off based on sensor state",
         [&]() {
+          remoteReferenceOption(sender, hvac->channelReference(
+              Field::BinarySensor));
           sender->selectOption(
               hvac->getChannelNumber(),
               "Disabled",
-              hvac->getBinarySensorChannelNo() == hvac->getChannelNumber());
+              hvac->channelReference(Field::BinarySensor).kind ==
+                  ChannelReferenceKind::NONE);
           if (countSensors == 1) {
             sender->selectOption(sensorId,
                                  "Enabled",
@@ -555,14 +578,20 @@ void HvacParameters::send(Supla::WebSender* sender) {
         hvac->parameterFlags.BinarySensorChannelNoReadonly);
   }
 
-  if (pumpCount > 0 && !hvac->parameterFlags.PumpSwitchHidden) {
+  if ((pumpCount > 0 || remote(Field::PumpSwitch)) &&
+      !hvac->parameterFlags.PumpSwitchHidden) {
     hvac->generateKey(key, "pump");
     emitSelectField(
         sender,
         key,
         "Pump switch",
         [&]() {
-          sender->selectOption(-1, "Not set", !hvac->isPumpSwitchSet());
+          remoteReferenceOption(sender, hvac->channelReference(
+              Field::PumpSwitch));
+          sender->selectOption(
+              -1, "Not set",
+              hvac->channelReference(Field::PumpSwitch).kind ==
+                  ChannelReferenceKind::NONE);
           for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
                ch = ch->next()) {
             int channelNumber = ch->getChannelNumber();
@@ -583,15 +612,20 @@ void HvacParameters::send(Supla::WebSender* sender) {
         hvac->parameterFlags.PumpSwitchReadonly);
   }
 
-  if (hocsCount > 0 && !hvac->parameterFlags.HeatOrColdSourceSwitchHidden) {
+  if ((hocsCount > 0 || remote(Field::HeatOrColdSourceSwitch)) &&
+      !hvac->parameterFlags.HeatOrColdSourceSwitchHidden) {
     hvac->generateKey(key, "hocs");
     emitSelectField(
         sender,
         key,
         "Heat or cold source switch",
         [&]() {
+          remoteReferenceOption(sender, hvac->channelReference(
+              Field::HeatOrColdSourceSwitch));
           sender->selectOption(
-              -1, "Not set", !hvac->isHeatOrColdSourceSwitchSet());
+              -1, "Not set",
+              hvac->channelReference(Field::HeatOrColdSourceSwitch).kind ==
+                  ChannelReferenceKind::NONE);
           for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
                ch = ch->next()) {
             int channelNumber = ch->getChannelNumber();
@@ -787,6 +821,75 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   }
 
   char keyMatch[16] = {};
+
+  // Only explicit, valid local choices edit references. Omitted, protected,
+  // keep and malformed fields retain the current canonical reference.
+  const char *referenceKeys[] = {
+      "t_main", "t_aux", "sensor", "master", "pump", "hocs"};
+  const bool protectedFields[] = {
+      hvac->parameterFlags.MainThermometerChannelNoHidden ||
+          hvac->parameterFlags.MainThermometerChannelNoReadonly,
+      hvac->parameterFlags.AuxThermometerChannelNoHidden ||
+          hvac->parameterFlags.AuxThermometerChannelNoReadonly,
+      hvac->parameterFlags.BinarySensorChannelNoHidden ||
+          hvac->parameterFlags.BinarySensorChannelNoReadonly,
+      hvac->parameterFlags.MasterThermostatChannelNoHidden ||
+          hvac->parameterFlags.MasterThermostatChannelNoReadonly,
+      hvac->parameterFlags.PumpSwitchHidden ||
+          hvac->parameterFlags.PumpSwitchReadonly,
+      hvac->parameterFlags.HeatOrColdSourceSwitchHidden ||
+          hvac->parameterFlags.HeatOrColdSourceSwitchReadonly};
+  for (uint8_t i = 0; i < 6; ++i) {
+    hvac->generateKey(keyMatch, referenceKeys[i]);
+    if (strcmp(key, keyMatch) != 0) continue;
+    if (protectedFields[i] || strcmp(value, "keep") == 0) return true;
+    int number = -1;
+    const bool unset = i < 3
+        ? parseLocalChannelNumber(value, &number) &&
+              number == hvac->getChannelNumber()
+        : strcmp(value, "-1") == 0;
+    if (!unset) {
+      if (!parseLocalChannelNumber(value, &number)) return true;
+      auto ch = Supla::Channel::GetByChannelNumber(number);
+      if (!ch || number == hvac->getChannelNumber()) return true;
+      const auto type = ch->getChannelType();
+      if (i < 2) {
+        if (type != SUPLA_CHANNELTYPE_THERMOMETER &&
+            type != SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR) return true;
+      } else if (i == 2) {
+        if (type != SUPLA_CHANNELTYPE_BINARYSENSOR) return true;
+      } else if (i == 3) {
+        auto el = Supla::Element::getElementByChannelNumber(number);
+        auto otherHvac = el ? el->getHvacBase() : nullptr;
+        if (type != SUPLA_CHANNELTYPE_HVAC || !otherHvac ||
+            otherHvac->isMasterThermostatSet()) return true;
+      } else if (type != SUPLA_CHANNELTYPE_RELAY ||
+          ch->getDefaultFunction() !=
+              (i == 4 ? SUPLA_CHANNELFNC_PUMPSWITCH
+                      : SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH)) {
+        return true;
+      }
+    }
+    switch (i) {
+      case 0: hvacConfig->MainThermometerChannelNo = number; break;
+      case 1: hvacConfig->AuxThermometerChannelNo = number; break;
+      case 2: hvacConfig->BinarySensorChannelNo = number; break;
+      case 3:
+        hvacConfig->MasterThermostatChannelNo = unset ? 0 : number;
+        hvacConfig->MasterThermostatIsSet = !unset;
+        break;
+      case 4:
+        hvacConfig->PumpSwitchChannelNo = unset ? 0 : number;
+        hvacConfig->PumpSwitchIsSet = !unset;
+        break;
+      case 5:
+        hvacConfig->HeatOrColdSourceSwitchChannelNo = unset ? 0 : number;
+        hvacConfig->HeatOrColdSourceSwitchIsSet = !unset;
+        break;
+    }
+    referenceChanges |= 1 << i;
+    return true;
+  }
   hvac->generateKey(keyMatch, "fnc");
 
   // channel function
@@ -802,46 +905,6 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     int32_t subfunction = stringToUInt(value);
     if (subfunction >= 0 && subfunction <= 2) {
       hvacConfig->Subfunction = subfunction;
-    }
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "master");
-  // master thermostat
-  if (strcmp(key, keyMatch) == 0) {
-    int32_t masterId = stringToInt(value);
-    if (masterId >= 0 && masterId <= 255) {
-      hvacConfig->MasterThermostatChannelNo = masterId;
-      hvacConfig->MasterThermostatIsSet = 1;
-    } else {
-      hvacConfig->MasterThermostatChannelNo = 0;
-      hvacConfig->MasterThermostatIsSet = 0;
-    }
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "pump");
-  if (strcmp(key, keyMatch) == 0) {
-    int32_t pumpId = stringToInt(value);
-    if (pumpId >= 0 && pumpId <= 255) {
-      hvacConfig->PumpSwitchChannelNo = pumpId;
-      hvacConfig->PumpSwitchIsSet = 1;
-    } else {
-      hvacConfig->PumpSwitchChannelNo = 0;
-      hvacConfig->PumpSwitchIsSet = 0;
-    }
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "hocs");
-  if (strcmp(key, keyMatch) == 0) {
-    int32_t hocsId = stringToInt(value);
-    if (hocsId >= 0 && hocsId <= 255) {
-      hvacConfig->HeatOrColdSourceSwitchChannelNo = hocsId;
-      hvacConfig->HeatOrColdSourceSwitchIsSet = 1;
-    } else {
-      hvacConfig->HeatOrColdSourceSwitchChannelNo = 0;
-      hvacConfig->HeatOrColdSourceSwitchIsSet = 0;
     }
     return true;
   }
@@ -876,22 +939,6 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     return true;
   }
 
-  hvac->generateKey(keyMatch, "t_main");
-  // main thermometer
-  if (strcmp(key, keyMatch) == 0) {
-    int32_t tMain = stringToUInt(value);
-    hvacConfig->MainThermometerChannelNo = tMain;
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "t_aux");
-  // aux thermometer
-  if (strcmp(key, keyMatch) == 0) {
-    int32_t tAux = stringToUInt(value);
-    hvacConfig->AuxThermometerChannelNo = tAux;
-    return true;
-  }
-
   hvac->generateKey(keyMatch, "t_aux_type");
   // aux thermometer type
   if (strcmp(key, keyMatch) == 0) {
@@ -913,14 +960,6 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   if (strcmp(key, keyMatch) == 0) {
     bool tChangeSwitch = (strcmp(value, "on") == 0);
     hvacConfig->TemperatureSetpointChangeSwitchesToManualMode = tChangeSwitch;
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "sensor");
-  // sensor
-  if (strcmp(key, keyMatch) == 0) {
-    int32_t sensor = stringToUInt(value);
-    hvacConfig->BinarySensorChannelNo = sensor;
     return true;
   }
 
@@ -1093,7 +1132,8 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
 
 void HvacParameters::onProcessingEnd() {
   if (config != nullptr) {
-    hvac->handleChannelConfig(config, true);
+    hvac->handleLocalChannelConfig(config, referenceChanges);
+    referenceChanges = 0;
 
     hvacConfig = nullptr;
     delete config;

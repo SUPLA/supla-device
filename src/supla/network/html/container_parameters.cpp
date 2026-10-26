@@ -4,6 +4,7 @@
 #ifndef ARDUINO_ARCH_AVR
 #include "container_parameters.h"
 
+#include <supla/network/html/channel_reference_select.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/network/web_sender.h>
@@ -144,14 +145,17 @@ void ContainerParameters::send(Supla::WebSender* sender) {
     auto emitSensorSelectField = [&](const char* fieldKey,
                                      const char* label,
                                      const char* cssClass,
-                                     int selectedChannel) {
+                                     ChannelReference reference) {
+      const int selectedChannel = localReferenceNumber(reference);
       sender->labeledField(fieldKey, label, [&]() {
         auto select = sender->selectTag(fieldKey, fieldKey);
         if (cssClass) {
           select.attr("class", cssClass);
         }
         select.body([&]() {
-          sender->selectOption("", "Not used", selectedChannel == 255);
+          remoteReferenceOption(sender, reference);
+          sender->selectOption("", "Not used",
+                               reference.kind == ChannelReferenceKind::NONE);
           for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
                ch = ch->next()) {
             if (ch->getChannelType() == SUPLA_CHANNELTYPE_BINARYSENSOR) {
@@ -212,7 +216,8 @@ void ContainerParameters::send(Supla::WebSender* sender) {
       sender->send("');"
             "const updateOptions = () => {"
             "const selectedValues = new Set([...selects]."
-              "map(select => select.value).filter(value => value !== ''));"
+              "map(select => select.value).filter(value => "
+              "value !== '' && value !== 'keep'));"
             "selects.forEach(select => {"
               "[...select.options].forEach(option => {"
               "if (selectedValues.has(option.value) && "
@@ -246,9 +251,7 @@ void ContainerParameters::send(Supla::WebSender* sender) {
         generateSensorKey(sensorIdKey, SensorIdKey, i);
         generateSensorKey(sensorLevelKey, SensorLevelKey, i);
         emitSensorSelectField(sensorIdKey, "Sensor channel", containerClassId,
-                              container->sensorChannelNumber(i) < 0
-                                  ? 255
-                                  : container->sensorChannelNumber(i));
+                              container->sensorReference(i));
         emitSensorLevelField(sensorLevelKey,
                              container->config.sensorData[i].fillLevel);
       }
@@ -331,18 +334,22 @@ bool ContainerParameters::handleResponse(const char* key, const char* value) {
     for (int i = 0; i < 10; i++) {
       generateSensorKey(match, SensorIdKey, i);
       if (strcmp(match, key) == 0) {
-        int val = 255;
-        if (strnlen(value, 10) > 0) {
-          val = stringToInt(value);
+        if (strcmp(value, "keep") == 0) return true;
+        int val = -1;
+        if (*value) {
+          if (!parseLocalChannelNumber(value, &val)) return true;
+          auto channel = Supla::Channel::GetByChannelNumber(val);
+          if (!channel ||
+              channel->getChannelType() != SUPLA_CHANNELTYPE_BINARYSENSOR)
+            return true;
         }
-        if (val < 0) {
-          val = 255;
-        } else if (val > 255) {
-          val = 255;
-        }
-        if (container->sensorChannelNumber(i) != (val == 255 ? -1 : val) &&
-            container->setSensorSlot(i, val,
-                                    container->config.sensorData[i].fillLevel))
+        const auto current = container->sensorReference(i);
+        const bool unchanged = *value
+            ? localReferenceNumber(current) == val
+            : current.kind == ChannelReferenceKind::NONE;
+        if (!unchanged && container->setSensorSlotReference(
+                i, *value ? ChannelReference::local(val) : ChannelReference{},
+                container->config.sensorData[i].fillLevel))
           configChanged = true;
         return true;
       }

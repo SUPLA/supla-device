@@ -28,6 +28,7 @@ class HvacParameters : public HtmlElement {
   THVACValue *hvacValue = nullptr;
   TSD_ChannelConfig *config = nullptr;
   TChannelConfig_HVAC *hvacConfig = nullptr;
+  uint8_t referenceChanges = 0;
 };
 
 };  // namespace Html

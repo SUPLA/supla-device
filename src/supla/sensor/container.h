@@ -73,6 +73,10 @@ class Container : public ChannelElement, public ActionHandler {
   void reconcileChannelDependencies() override;
   int sensorChannelNumber(uint8_t slot) const;
   bool setSensorSlot(uint8_t slot, int number, uint8_t level);
+  // Explicit typed replacement. Legacy local-number setters intentionally
+  // refuse to overwrite a remote reference inferred as an unset channel.
+  bool setSensorSlotReference(uint8_t slot, ChannelReference reference,
+                              uint8_t level);
   ChannelReference sensorReference(uint8_t slot) const;
 
   /**

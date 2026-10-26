@@ -1015,8 +1015,33 @@ bool HvacBase::isDrySupported() const {
   return false;
 }
 
+Supla::ChannelReference HvacBase::channelReference(ReferenceField field) const {
+  const HvacReferenceValue *references[] = {
+      &config.MainThermometer, &config.AuxThermometer, &config.BinarySensor,
+      &config.MasterThermostat, &config.PumpSwitch,
+      &config.HeatOrColdSourceSwitch};
+  const auto index = static_cast<uint8_t>(field);
+  return index < 6 ? config.reference(*references[index]) : ChannelReference{};
+}
+
+uint8_t HvacBase::handleLocalChannelConfig(TSD_ChannelConfig *newConfig,
+                                         uint8_t referenceChanges) {
+  if (!newConfig) return SUPLA_CONFIG_RESULT_DATA_ERROR;
+  // Func=0 is an authoritative server reset, never a local WWW choice.
+  // Reject it (including malformed POST values parsed as zero) before any
+  // mutation; the legacy/server entry point retains its reset semantics.
+  if (!isFunctionSupported(newConfig->Func))
+    return SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED;
+  return handleChannelConfigImpl(newConfig, true, referenceChanges & 0x3f);
+}
+
 uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
-                                      bool local) {
+                                     bool local) {
+  return handleChannelConfigImpl(newConfig, local, 0xff);
+}
+
+uint8_t HvacBase::handleChannelConfigImpl(TSD_ChannelConfig *newConfig,
+                                         bool local, uint8_t referenceChanges) {
   SUPLA_LOG_DEBUG("HVAC[%d]: processing channel config", getChannelNumber());
   if (newConfig == nullptr) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
@@ -1136,9 +1161,9 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   if (channelFunction != getChannel()->getDefaultFunction()) {
     SUPLA_LOG_INFO("HVAC[%d]: function changed to %d", getChannelNumber(),
                    channelFunction);
-    changeFunction(channelFunction, false);
+    changeFunction(channelFunction, false, referenceChanges != 0xff);
     triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
-    return SUPLA_CONFIG_RESULT_TRUE;
+    if (referenceChanges == 0xff) return SUPLA_CONFIG_RESULT_TRUE;
   }
 
   bool applyServerConfig = (newConfig->ConfigSize > 0);
@@ -1189,13 +1214,9 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
-  if (config.referenceNamespace == HvacReferenceNamespace::SERVER_CHANNEL_ID) {
-    auto decoded = HvacConfiguration::fromLegacy(*hvacConfig,
-                                                  getChannelNumber());
-    TChannelConfig_HVAC server;
-    if (!decoded.serverWire(referenceIdentity(), &server)) {
-      return SUPLA_CONFIG_RESULT_DATA_ERROR;
-    }
+  HvacConfiguration candidate;
+  if (!mergeLocalReferences(*hvacConfig, referenceChanges, &candidate)) {
+    return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
   const HvacConfiguration configCopy = config;
 
@@ -1213,12 +1234,12 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     registeredInRelayHvacAggregator = false;
     registerInAggregator(hvacConfig->PumpSwitchChannelNo);
     registerInAggregator(hvacConfig->HeatOrColdSourceSwitchChannelNo);
-    applyConfigWithoutValidation(hvacConfig);
+    applyConfigWithoutValidation(hvacConfig, referenceChanges);
     if (fixTempearturesConfig()) {
       additionalValidationChanged = true;
     }
     fixTemperatureSetpoints();
-    if (local) {
+    if (local && (referenceChanges & (1 << 3))) {
       // when config was changed locally, we have to verify if there is no
       // master thermostat invlid config
       for (Supla::Channel *ch = Supla::Channel::Begin(); ch != nullptr;
@@ -1286,17 +1307,48 @@ bool HvacBase::importRemoteConfig(const TChannelConfig_HVAC &remote,
   return true;
 }
 
+bool HvacBase::mergeLocalReferences(const TChannelConfig_HVAC &wire,
+                                     uint8_t changes,
+                                     HvacConfiguration *candidate) const {
+  auto local = HvacConfiguration::fromLegacy(wire, getChannelNumber());
+  if (changes == 0xff) {
+    // Preserve the existing full legacy API contract for non-WWW callers.
+    if (config.referenceNamespace ==
+        HvacReferenceNamespace::SERVER_CHANNEL_ID) {
+      TChannelConfig_HVAC server;
+      if (!local.serverWire(referenceIdentity(), &server)) return false;
+      local = HvacConfiguration::fromServer(server);
+    }
+    *candidate = local;
+    return true;
+  }
+  *candidate = config;
+  HvacReferenceValue *targets[] = {
+      &candidate->MainThermometer, &candidate->AuxThermometer,
+      &candidate->BinarySensor, &candidate->MasterThermostat,
+      &candidate->PumpSwitch, &candidate->HeatOrColdSourceSwitch};
+  const HvacReferenceValue *sources[] = {
+      &local.MainThermometer, &local.AuxThermometer, &local.BinarySensor,
+      &local.MasterThermostat, &local.PumpSwitch,
+      &local.HeatOrColdSourceSwitch};
+  for (uint8_t i = 0; i < 6; ++i) {
+    if (!(changes & (1 << i))) continue;
+    const auto reference = local.reference(*sources[i]);
+    // Posting an unchanged local projection must not normalize a SERVER ref.
+    const auto current = candidate->reference(*targets[i]);
+    if (reference.kind == ChannelReferenceKind::LOCAL_CHANNEL_NUMBER &&
+        localNumber(current) == static_cast<int>(reference.id)) continue;
+    if (!candidate->setReference(targets[i], reference, referenceIdentity()))
+      return false;
+  }
+  return true;
+}
+
 void HvacBase::applyConfigWithoutValidation(
-    const TChannelConfig_HVAC *hvacConfig) {
-  if (hvacConfig == nullptr) {
-    return;
-  }
-  auto decoded = HvacConfiguration::fromLegacy(*hvacConfig, getChannelNumber());
-  if (config.referenceNamespace == HvacReferenceNamespace::SERVER_CHANNEL_ID) {
-    TChannelConfig_HVAC server;
-    if (!decoded.serverWire(referenceIdentity(), &server)) return;
-    decoded = HvacConfiguration::fromServer(server);
-  }
+    const TChannelConfig_HVAC *hvacConfig, uint8_t referenceChanges) {
+  if (hvacConfig == nullptr) return;
+  HvacConfiguration decoded;
+  if (!mergeLocalReferences(*hvacConfig, referenceChanges, &decoded)) return;
   config.MainThermometer = decoded.MainThermometer;
   config.AuxThermometer = decoded.AuxThermometer;
   config.BinarySensor = decoded.BinarySensor;
@@ -4038,7 +4090,8 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
   return output;
 }
 
-void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
+void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally,
+                              bool preserveReferences) {
   auto currentFunction = channel.getDefaultFunction();
 #ifndef ARDUINO_ARCH_AVR
   if (changedLocally && isFunctionSupported(newFunction) &&
@@ -4072,7 +4125,23 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
   lastManualSetpointCool = INT16_MIN;
   lastManualSetpointHeat = INT16_MIN;
 
+  // Preserve canonical assignments for a local WWW function edit as well.
+  const auto previousNamespace = config.referenceNamespace;
+  const HvacReferenceValue previous[] = {
+      config.MainThermometer, config.AuxThermometer, config.BinarySensor,
+      config.MasterThermostat, config.PumpSwitch,
+      config.HeatOrColdSourceSwitch};
   initDefaultConfig();
+  if (preserveReferences) {
+    config.referenceNamespace = previousNamespace;
+    config.MainThermometer = previous[0];
+    config.AuxThermometer = previous[1];
+    config.BinarySensor = previous[2];
+    config.MasterThermostat = previous[3];
+    config.PumpSwitch = previous[4];
+    config.HeatOrColdSourceSwitch = previous[5];
+    refreshMainDependency();
+  }
 
   channel.clearHvacState();
 

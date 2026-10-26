@@ -81,6 +81,15 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *config,
                               bool local = false) override;
+  // Local WWW submits only explicit reference edits. Other references are
+  // retained from canonical configuration, not its local projection.
+  enum class ReferenceField : uint8_t {
+    MainThermometer, AuxThermometer, BinarySensor, MasterThermostat,
+    PumpSwitch, HeatOrColdSourceSwitch
+  };
+  ChannelReference channelReference(ReferenceField field) const;
+  uint8_t handleLocalChannelConfig(TSD_ChannelConfig *config,
+                                  uint8_t referenceChanges);
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;
   void handleChannelConfigFinished() override;
@@ -424,7 +433,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void copyFullChannelConfigTo(TChannelConfig_HVAC *hvac) const;
   void turnOn();
   bool turnOnWeeklySchedlue();
-  void changeFunction(uint32_t newFunction, bool changedLocally);
+  void changeFunction(uint32_t newFunction, bool changedLocally,
+                      bool preserveReferences = false);
   _supla_int_t getChannelFunction();
 
   void addPrimaryOutput(Supla::Control::OutputInterface *output);
@@ -563,7 +573,12 @@ class HvacBase : public ChannelElement, public ActionHandler {
                               bool forAux = false);
   void fixTemperatureSetpoints();
   void storeLastWorkingMode();
-  void applyConfigWithoutValidation(const TChannelConfig_HVAC *hvacConfig);
+  uint8_t handleChannelConfigImpl(TSD_ChannelConfig *config, bool local,
+                                 uint8_t referenceChanges);
+  bool mergeLocalReferences(const TChannelConfig_HVAC &wire, uint8_t changes,
+                            HvacConfiguration *candidate) const;
+  void applyConfigWithoutValidation(const TChannelConfig_HVAC *hvacConfig,
+                                   uint8_t referenceChanges = 0xff);
   bool applyFirmwareConfiguration(HvacConfiguration *candidate);
   void rememberReadonlyLocalReferences();
   int16_t localNumber(const ChannelReference &reference) const;

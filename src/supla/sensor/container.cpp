@@ -56,8 +56,15 @@ bool Container::setSensorSlot(uint8_t slot, int number, uint8_t level) {
   auto &sensor = config.sensorData[slot];
   if (sensor.source.reference().kind == ChannelReferenceKind::SERVER_CHANNEL &&
       sensorChannelNumber(slot) < 0) return false;
-  sensor.source.assign(number < 0 || number == 255 ? ChannelReference{}
-                               : ChannelReference::local(number));
+  return setSensorSlotReference(slot, number < 0 || number == 255
+      ? ChannelReference{} : ChannelReference::local(number), level);
+}
+
+bool Container::setSensorSlotReference(uint8_t slot, ChannelReference reference,
+                                       uint8_t level) {
+  if (slot >= 10 || !reference.valid()) return false;
+  auto &sensor = config.sensorData[slot];
+  sensor.source.assign(reference);
   sensor.fillLevel = sensor.source.kind ? (level > 100 ? 100 : level) : 0;
   reconcileChannelDependencies();
   return true;

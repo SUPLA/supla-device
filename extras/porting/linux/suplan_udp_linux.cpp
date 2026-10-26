@@ -5,11 +5,11 @@
 
 #include <suplan/suplan_fragment.h>
 #include <suplan/suplan_config.h>
+#include <supla/time.h>
 
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
-#include <time.h>
 
 #include <arpa/inet.h>
 #include <ifaddrs.h>
@@ -463,13 +463,8 @@ size_t LinuxUdpPort::maxDatagramPayload() const {
 }
 
 uint32_t LinuxUdpPort::nowMs() const {
-  timespec now = {};
-  if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
-    return 0;
-  }
-  const uint64_t milliseconds = static_cast<uint64_t>(now.tv_sec) * 1000 +
-      static_cast<uint64_t>(now.tv_nsec / 1000000);
-  return static_cast<uint32_t>(milliseconds);
+  // SupLAN timestamps are compared with SDK millis(); use the same epoch.
+  return millis();
 }
 
 const LinuxUdpOpenDiagnostics &LinuxUdpPort::openDiagnostics() const {

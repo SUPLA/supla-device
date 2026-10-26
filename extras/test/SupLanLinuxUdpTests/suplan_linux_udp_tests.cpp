@@ -3,6 +3,7 @@
 
 #include <suplan_udp_linux.h>
 #include <gtest/gtest.h>
+#include <supla/time.h>
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -24,6 +25,7 @@ int pinCalls = 0;
 uint32_t pinnedIndex = 0;
 bool failPin = false;
 bool failEnumeration = false;
+uint32_t sdkMillis = 0;
 
 class LinuxUdpInterfaceTests : public ::testing::Test {
  protected:
@@ -129,4 +131,15 @@ TEST_F(LinuxUdpInterfaceTests, FailedInterfaceEnumerationClosesBothSockets) {
   EXPECT_FALSE(port.open("192.168.0.177", 2018, 250));
   EXPECT_FALSE(port.isOpen());
   EXPECT_EQ(closedSockets, 2);
+}
+
+uint32_t millis() { return sdkMillis; }
+
+TEST(LinuxUdpClockTests, NowUsesSdkMillisEpoch) {
+  // Remote snapshots are stamped by the port and checked against millis().
+  Supla::SupLan::LinuxUdpPort port;
+  sdkMillis = 1234;
+  EXPECT_EQ(port.nowMs(), 1234U);
+  sdkMillis = UINT32_MAX - 5;
+  EXPECT_EQ(port.nowMs(), UINT32_MAX - 5);
 }

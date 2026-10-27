@@ -5,6 +5,9 @@ another SupLAN-capable Device and logs its temperature every five seconds.
 No local Channel is created to represent the remote thermometer. Serial at
 115200 baud is output-only; it does not accept commands.
 
+For READ delivery through SUPLA Server without a direct LAN path to the Source,
+see [ServerStreamThermometer](../ServerStreamThermometer/README.md).
+
 ## Setup
 
 1. Replace `REMOTE_THERMOMETER_CHANNEL_ID` with the thermometer's global

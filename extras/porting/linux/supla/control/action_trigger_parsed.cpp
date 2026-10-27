@@ -9,20 +9,32 @@
 
 using Supla::Control::ActionTriggerParsed;
 
+namespace {
+int parsedActionId(int action) {
+  if (action < 0 || action >= 32) {
+    return -1;
+  }
+  return Supla::Control::ActionTrigger::actionTriggerCapToActionId(
+      uint32_t{1} << action);
+}
+}  // namespace
+
 ActionTriggerParsed::ActionTriggerParsed(const std::string &name) {
   Supla::Sensor::SensorParsedBase::registerAtName(name, this);
 }
 
 void ActionTriggerParsed::sendActionTrigger(int action) {
-  uint32_t actionCap = (1 << action);
-
-  if (actionCap & activeActionsFromServer ||
-      actionHandlingType != ActionHandlingType_RelayOnSuplaServer) {
-    channel.pushAction(actionCap);
+  const int actionId = parsedActionId(action);
+  if (actionId >= 0) {
+    ActionTrigger::handleAction(0, actionId);
   }
 }
 
 void ActionTriggerParsed::activateAction(int action) {
-  SUPLA_LOG_INFO("Activating action %d", action);
-  channel.activateAction((1 << action));
+  const int actionId = parsedActionId(action);
+  if (actionId >= 0) {
+    ActionTrigger::activateAction(actionId);
+  } else {
+    SUPLA_LOG_WARNING("Invalid parsed ActionTrigger action %d", action);
+  }
 }

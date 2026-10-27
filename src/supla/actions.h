@@ -149,6 +149,10 @@ enum Action {
   UNLOCK,
   TOGGLE_LOCK,
 
+  // Append new action ids to preserve existing local action ids.
+  SEND_AT_ROTATE_RIGHT,
+  SEND_AT_ROTATE_LEFT,
+
   // Keep it as last item
   ACTION_ID_MAX
 };

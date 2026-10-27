@@ -172,6 +172,9 @@ See the `docs/` directory for a quick orientation.
 - **Quick orientation (in-repo)**  
   See the [docs/index.md](docs/index.md) file in the `docs/` directory
 
+- **RemoteChannel, ServerRemoteChannel and reading state**
+  See [Reading remote channels](docs/howto/remote-channels.md)
+
 - **Online documentation (API & concepts)**  
   https://supla.github.io/supla-device/
 

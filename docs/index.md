@@ -57,6 +57,9 @@ Practical guides for common tasks:
 - Persistent storage (EEPROM/Flash/FRAM) and when it is required  
   → [How-to: Storage](howto/storage.md)
 
+- Read remote values through SupLAN D2D or Server Stream
+  → [How-to: Remote channels and ChannelState](howto/remote-channels.md)
+
 ---
 
 ## Troubleshooting and reference

@@ -87,6 +87,7 @@ HvacBase::~HvacBase() {
     releaseChannelConsumer(0x10000 + (getChannelNumber() + 1) * 4 + field);
 #endif
   Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
+  delete initialConfig;
 }
 
 bool HvacBase::setWeeklyScheduleController(

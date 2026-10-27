@@ -96,6 +96,57 @@ class HvacTestWithChannelSetupF : public HvacTestsF {
   }
 };
 
+// Run these lifecycle cases under Memcheck as well: a leaked initial template
+// can leave all functional assertions passing while consuming heap on unlink.
+TEST_F(HvacTestsF, InitialConfigDeleteBeforeInit) {
+  OutputSimulator output;
+  for (int i = 0; i < 3; ++i) {
+    auto hvac = new Supla::Control::HvacBase(&output);
+    const int number = hvac->getChannelNumber();
+    hvac->enableInitialConfig();
+    Supla::Element *element = hvac;
+    delete element;
+    EXPECT_EQ(Supla::Channel::GetByChannelNumber(number), nullptr);
+    EXPECT_EQ(Supla::Element::getElementByChannelNumber(number), nullptr);
+  }
+}
+
+TEST_F(HvacTestsF, InitialConfigDeleteAfterInitAndFunctionChange) {
+  OutputSimulator output;
+  for (int i = 0; i < 3; ++i) {
+    auto hvac = new Supla::Control::HvacBase(&output);
+    hvac->enableInitialConfig();
+    hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
+    hvac->enableDomesticHotWaterFunctionSupport();
+    hvac->setTemperatureHisteresis(70);
+    hvac->onInit();
+    EXPECT_EQ(hvac->getTemperatureHisteresis(), 70);
+    hvac->setTemperatureHisteresis(90);
+    // The template must stay alive after onInit for subsequent defaults resets.
+    hvac->changeFunction(SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER, false);
+    EXPECT_EQ(hvac->getTemperatureHisteresis(), 70);
+    const int number = hvac->getChannelNumber();
+    Supla::Element *element = hvac;
+    delete element;
+    EXPECT_EQ(Supla::Channel::GetByChannelNumber(number), nullptr);
+    EXPECT_EQ(Supla::Element::getElementByChannelNumber(number), nullptr);
+  }
+}
+
+TEST_F(HvacTestsF, InitialConfigRepeatedEnableAndDelete) {
+  OutputSimulator output;
+  for (int i = 0; i < 3; ++i) {
+    auto hvac = new Supla::Control::HvacBase(&output);
+    hvac->enableInitialConfig();
+    hvac->enableInitialConfig();
+    const int number = hvac->getChannelNumber();
+    Supla::Element *element = hvac;
+    delete element;
+    EXPECT_EQ(Supla::Channel::GetByChannelNumber(number), nullptr);
+    EXPECT_EQ(Supla::Element::getElementByChannelNumber(number), nullptr);
+  }
+}
+
 TEST_F(HvacTestsF, BasicChannelSetup) {
   OutputSimulatorWithCheck output;
   Supla::Control::HvacBase hvac(&output);

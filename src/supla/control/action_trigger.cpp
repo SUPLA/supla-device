@@ -20,6 +20,10 @@
 
 namespace {
 
+// Protocol >= 29 also sends a 16-byte AT config with temporary-unlock fields.
+// Only the common ActiveActions prefix is supported here; ignore the extension.
+constexpr int kExtendedActionTriggerConfigSize = 16;
+
 // ActionTrigger state storage historically contains only a uint32_t with
 // active actions. Keep that layout unchanged and use its two highest bits for
 // the mutually exclusive weekly-schedule/locked state. If more state is
@@ -246,6 +250,10 @@ void Supla::Control::ActionTrigger::activateAction(int action) {
 
 int Supla::Control::ActionTrigger::getActionTriggerCap(int action) {
   switch (action) {
+    case SEND_AT_ROTATE_RIGHT:
+      return SUPLA_ACTION_CAP_ROTATE_RIGHT;
+    case SEND_AT_ROTATE_LEFT:
+      return SUPLA_ACTION_CAP_ROTATE_LEFT;
     case SEND_AT_TURN_ON: {
       return SUPLA_ACTION_CAP_TURN_ON;
     }
@@ -292,6 +300,10 @@ int Supla::Control::ActionTrigger::getActionTriggerCap(int action) {
 int Supla::Control::ActionTrigger::actionTriggerCapToActionId(
     uint32_t actionCap) {
   switch (actionCap) {
+    case SUPLA_ACTION_CAP_ROTATE_RIGHT:
+      return SEND_AT_ROTATE_RIGHT;
+    case SUPLA_ACTION_CAP_ROTATE_LEFT:
+      return SEND_AT_ROTATE_LEFT;
     case SUPLA_ACTION_CAP_TURN_ON: {
       return SEND_AT_TURN_ON;
     }
@@ -616,7 +628,8 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
   if (result->ConfigSize == 0) {
     return Supla::ApplyConfigResult::Success;
   }
-  if (result->ConfigSize != sizeof(TChannelConfig_ActionTrigger)) {
+  if (result->ConfigSize != sizeof(TChannelConfig_ActionTrigger) &&
+      result->ConfigSize != kExtendedActionTriggerConfigSize) {
     return Supla::ApplyConfigResult::DataError;
   }
 

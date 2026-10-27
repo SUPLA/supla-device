@@ -16,6 +16,7 @@
 #include <supla/crypto.h>
 #include <supla/log_wrapper.h>
 #include <new>
+#include "esp32_tcp_abort.h"
 
 struct Supla::EspAsyncClient::Tls {
   mbedtls_ssl_context ssl;
@@ -233,6 +234,9 @@ int Supla::EspAsyncClient::receiveSocket(void *context, unsigned char *data,
 
 void Supla::EspAsyncClient::closeTransport() {
   dns_.cancel();
+  // This client exclusively owns fd_, including during TCP/TLS setup.
+  // Abort before releasing TLS/socket state, then invalidate the owned fd.
+  if (fd_ >= 0) abortTcpConnection(fd_);
   delete tls_;
   tls_ = nullptr;
   if (fd_ >= 0) ::close(fd_);

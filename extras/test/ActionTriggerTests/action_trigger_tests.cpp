@@ -250,6 +250,62 @@ TEST_F(ActionTriggerTests, EmptyDefaultConfigPreservesActiveActions) {
   EXPECT_TRUE(at.isAnyActionEnabledOnServer());
 }
 
+TEST_F(ActionTriggerTests, DefaultConfigAcceptsLegacyAndExtendedFormats) {
+  Supla::Control::ActionTrigger at;
+  at.activateAction(Supla::SEND_AT_ROTATE_LEFT);
+  at.activateAction(Supla::SEND_AT_ROTATE_RIGHT);
+  auto *channel = static_cast<Supla::AtChannel *>(at.getChannel());
+
+  for (int size : {4, 16, 4}) {
+    SCOPED_TRACE(size);
+    TSD_ChannelConfig config = {};
+    config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+    config.ConfigSize = size;
+    // Nonzero extension bytes must not affect the lock mode or active actions.
+    memset(config.Config, 0xFF, size);
+    const uint32_t active = size == 16 ? SUPLA_ACTION_CAP_ROTATE_LEFT
+                                       : SUPLA_ACTION_CAP_ROTATE_RIGHT;
+    memcpy(config.Config, &active, sizeof(active));
+    ASSERT_EQ(at.handleChannelConfig(&config), SUPLA_CONFIG_RESULT_TRUE);
+    EXPECT_EQ(channel->getButtonMode(), SUPLA_BUTTON_MODE_NOT_SET);
+    EXPECT_EQ(channel->getActionTriggerCaps(),
+              SUPLA_ACTION_CAP_ROTATE_LEFT | SUPLA_ACTION_CAP_ROTATE_RIGHT);
+    at.handleAction(0, Supla::SEND_AT_ROTATE_LEFT);
+    at.handleAction(0, Supla::SEND_AT_ROTATE_RIGHT);
+    EXPECT_EQ(channel->popAction(), active);
+    EXPECT_EQ(channel->popAction(), 0);
+  }
+}
+
+TEST_F(ActionTriggerTests,
+       DefaultConfigRejectsOtherSizesWithoutChangingActions) {
+  Supla::Control::ActionTrigger at;
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_ROTATE_RIGHT);
+  auto *channel = static_cast<Supla::AtChannel *>(at.getChannel());
+  for (int size : {1, 3, 5, 8, 15, 17}) {
+    SCOPED_TRACE(size);
+    TSD_ChannelConfig config = {};
+    config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+    config.ConfigSize = size;
+    EXPECT_EQ(at.handleChannelConfig(&config), SUPLA_CONFIG_RESULT_DATA_ERROR);
+    at.handleAction(0, Supla::SEND_AT_ROTATE_RIGHT);
+    EXPECT_EQ(channel->popAction(), SUPLA_ACTION_CAP_ROTATE_RIGHT);
+  }
+}
+
+TEST_F(ActionTriggerTests, ExtendedDefaultConfigCanDisableAllActions) {
+  Supla::Control::ActionTrigger at;
+  applyActionTriggerServerConfig(&at, SUPLA_ACTION_CAP_ROTATE_RIGHT);
+  TSD_ChannelConfig config = {};
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = 16;
+  memset(config.Config + 4, 0xFF, 12);
+  ASSERT_EQ(at.handleChannelConfig(&config), SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_FALSE(at.isAnyActionEnabledOnServer());
+  at.handleAction(0, Supla::SEND_AT_ROTATE_RIGHT);
+  EXPECT_EQ(static_cast<Supla::AtChannel *>(at.getChannel())->popAction(), 0);
+}
+
 TEST_F(ActionTriggerTests, WeeklyScheduleIsOptInAndLoadedLazily) {
   Supla::Control::ActionTrigger at;
 

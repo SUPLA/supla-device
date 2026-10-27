@@ -1,0 +1,9 @@
+// SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#ifndef EXTRAS_TEST_ARDUINOESP32PLATFORMTESTS_FAKES_LWIP_SOCKETS_H_
+#define EXTRAS_TEST_ARDUINOESP32PLATFORMTESTS_FAKES_LWIP_SOCKETS_H_
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#endif  // EXTRAS_TEST_ARDUINOESP32PLATFORMTESTS_FAKES_LWIP_SOCKETS_H_

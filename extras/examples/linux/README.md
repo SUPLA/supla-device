@@ -1534,8 +1534,10 @@ trigger run when state or value changes between two selected values. Format is:
 
 It is allowed to configure multiple "on_" conditions to generate the same action.
 
-For action, please use only following numbers: 0, 1, 2, 3, 4, 5, 6, and
-10, 11, 12, 13, 14, 15.
+For action, please use only following numbers: 0, 1, 2, 3, 4, 5, 6, 7, 8, and
+10, 11, 12, 13, 14, 15. Action 7 is `ROTATE_RIGHT` and action 8 is `ROTATE_LEFT`.
+Unsupported action numbers are ignored. Events are suppressed while the action
+trigger is disabled or locked, including locks applied by its weekly schedule.
 
 When an action is used and device is registered in Cloud, there will be action
 trigger channel with actions corresponding to buttons, as defined in:
@@ -1546,8 +1548,7 @@ I.e. action 3 corresponds with:
     #define SUPLA_ACTION_CAP_TOGGLE_x2 (1 << 3)
 
 (last number in bracket is action number, please check above link to `proto.h`
- for more details). Currently in Supla only actions
-for buttons are defined, so we reuse them here.
+for more details). These action capabilities are reused for parsed events.
 
 ### `HumidityParsed`
 Add channel with "humidity" type.

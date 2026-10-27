@@ -22,6 +22,7 @@ set(SUPLA_DEVICE_PORTING_SRCS
 idf_component_register(SRCS
   ${SUPLA_DEVICE_PORTING_SRCS}
   REQUIRES
+    lwip
     esp-tls
     nvs_flash
     spiffs
@@ -34,7 +35,6 @@ idf_component_register(SRCS
     mqtt
     esp_timer
     esp_partition
-    lwip
     mbedtls
   EMBED_TXTFILES supla_org_cert.pem supla_3rd_cert.pem
 )

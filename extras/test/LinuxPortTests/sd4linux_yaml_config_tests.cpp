@@ -517,6 +517,7 @@ TEST(Sd4linuxYamlConfigTests, ReadsSupLanRoleAndUnicastPort) {
   config.config = YAML::Load(
       "suplan:\n"
       "  enabled: true\n"
+      "  mode: poc\n"
       "  role: B\n"
       "  unicast_port: 2018\n");
   ASSERT_TRUE(config.getSupLanConfig(&suplan));
@@ -529,7 +530,7 @@ TEST(Sd4linuxYamlConfigTests, SupLanCanSelectAnIPv4Interface) {
   TestLinuxYamlConfig config;
   Supla::LinuxSupLanConfig suplan;
   config.config = YAML::Load(
-      "suplan:\n  enabled: true\n  role: B\n"
+      "suplan:\n  enabled: true\n  mode: poc\n  role: B\n"
       "  bind_address: 192.168.0.177\n");
   ASSERT_TRUE(config.getSupLanConfig(&suplan));
   EXPECT_EQ(suplan.bindAddress, "192.168.0.177");
@@ -554,11 +555,31 @@ TEST(Sd4linuxYamlConfigTests, DisabledSupLanDoesNotRequireFixtureRole) {
   EXPECT_EQ(suplan.unicastPort, 2018);
 }
 
+TEST(Sd4linuxYamlConfigTests, SupLanDefaultsToServerProvisioning) {
+  TestLinuxYamlConfig config;
+  Supla::LinuxSupLanConfig suplan;
+  config.config = YAML::Load("suplan:\n  enabled: true\n");
+  ASSERT_TRUE(config.getSupLanConfig(&suplan));
+  EXPECT_TRUE(suplan.enabled);
+  EXPECT_TRUE(suplan.serverProvisioning);
+  EXPECT_EQ(suplan.role, 0);
+}
+
+TEST(Sd4linuxYamlConfigTests, FixtureRoleRequiresExplicitPocMode) {
+  TestLinuxYamlConfig config;
+  Supla::LinuxSupLanConfig suplan;
+  config.config = YAML::Load("suplan:\n  enabled: true\n  role: A\n");
+  EXPECT_FALSE(config.getSupLanConfig(&suplan));
+  config.config = YAML::Load(
+      "suplan:\n  enabled: true\n  mode: server\n  role: B\n");
+  EXPECT_FALSE(config.getSupLanConfig(&suplan));
+}
+
 TEST(Sd4linuxYamlConfigTests, RejectsInvalidEnabledSupLanConfiguration) {
   TestLinuxYamlConfig config;
   Supla::LinuxSupLanConfig suplan;
 
-  config.config = YAML::Load("suplan:\n  enabled: true\n");
+  config.config = YAML::Load("suplan:\n  enabled: true\n  mode: poc\n");
   EXPECT_FALSE(config.getSupLanConfig(&suplan));
 
   config.config = YAML::Load(
@@ -566,7 +587,8 @@ TEST(Sd4linuxYamlConfigTests, RejectsInvalidEnabledSupLanConfiguration) {
   EXPECT_FALSE(config.getSupLanConfig(&suplan));
 
   config.config = YAML::Load(
-      "suplan:\n  enabled: true\n  role: A\n  unicast_port: 65536\n");
+      "suplan:\n  enabled: true\n  mode: poc\n"
+      "  role: A\n  unicast_port: 65536\n");
   EXPECT_FALSE(config.getSupLanConfig(&suplan));
 }
 

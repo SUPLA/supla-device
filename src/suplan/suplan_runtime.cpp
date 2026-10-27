@@ -99,16 +99,15 @@ Runtime::Runtime(CryptoPort *crypto, DatagramPort *datagrams,
                  uint8_t suplaProtoVersion)
     : crypto_(crypto), datagrams_(datagrams),
       application_(application), peers_(peers), localAddress_(localAddress),
-      nextFrameId_(UINT32_C(0xC3000000)), fragmentOrdinal_(0),
+      nextFrameId_(UINT32_C(0xC3000000)),
       suplaProtoVersion_(suplaProtoVersion), processing_(false),
       iterating_(false), sessions_(),
       pending_(), locates_(),
       interests_(), retries_(), deferred_(), recovery_(), dependencies_(),
-      flood_(), fragmentSender_(),
-      fragmentReassembler_(), diagnostics_(), poolHighWater_(), hooks_(),
+      fragmentSender_(),
+      fragmentReassembler_(), diagnostics_(), poolHighWater_(),
       applicationBuffer_(), transmitFrame_(),
-      fragmentEndpoint_(), dataTransmitObserver_(nullptr),
-      dataTransmitContext_(nullptr) {
+      fragmentEndpoint_() {
   for (uint8_t i = 0; i < SUPLAN_MAX_ACTIVE_SESSIONS; ++i) {
     clearSessionEntry(&sessions_[i]);
   }
@@ -119,11 +118,11 @@ Runtime::Runtime(CryptoPort *crypto, DatagramPort *datagrams,
   memset(interests_, 0, sizeof(interests_));
   memset(retries_, 0, sizeof(retries_));
   memset(deferred_, 0, sizeof(deferred_));
-  memset(&flood_, 0, sizeof(flood_));
   memset(&diagnostics_, 0, sizeof(diagnostics_));
   memset(&poolHighWater_, 0, sizeof(poolHighWater_));
-  memset(&hooks_, 0, sizeof(hooks_));
+#ifdef SUPLAN_TESTING
   hooks_.maxDatagramPayload = static_cast<uint32_t>(kMaxDatagramPayload);
+#endif  // SUPLAN_TESTING
   updatePoolHighWater();
 }
 
@@ -166,11 +165,13 @@ void Runtime::clearRetryEntry(RetryEntry *retry) {
   }
 }
 
+#ifdef SUPLAN_TESTING
 void Runtime::setDataTransmitObserver(DataTransmitObserver observer,
                                       void *context) {
   dataTransmitObserver_ = observer;
   dataTransmitContext_ = context;
 }
+#endif  // SUPLAN_TESTING
 
 bool Runtime::sameNode(const NodeAddress &left,
                       const NodeAddress &right) const {
@@ -245,12 +246,15 @@ int Runtime::allocatePending() {
 }
 
 int Runtime::allocateSession(uint8_t peerIndex) {
+#ifdef SUPLAN_TESTING
   if (hooks_.failNextSessionAllocation != 0) {
     --hooks_.failNextSessionAllocation;
     emit(DiagnosticEvent::ResourceLimit);
     ++diagnostics_.poolReject;
     return -1;
   }
+#endif  // SUPLAN_TESTING
+
   int selected = -1;
   for (uint8_t i = 0; i < SUPLAN_MAX_ACTIVE_SESSIONS; ++i) {
     if (sessions_[i].used && sessions_[i].peerIndex == peerIndex) {
@@ -436,15 +440,18 @@ const Diagnostics &Runtime::diagnostics() const {
   return diagnostics_;
 }
 
+#ifdef SUPLAN_TESTING
 RuntimeTestHooks *Runtime::testHooks() {
   return &hooks_;
 }
+#endif  // SUPLAN_TESTING
 
 bool Runtime::sendRaw(const Endpoint &endpoint, const uint8_t *data,
                       size_t length, uint8_t frameKind) {
   if (datagrams_ == nullptr || data == nullptr || length == 0) {
     return false;
   }
+#ifdef SUPLAN_TESTING
   if ((frameKind == kTxKindAck && hooks_.dropNextAckTx != 0) ||
       (frameKind == kTxKindData && hooks_.dropNextDataTx != 0) ||
       (frameKind == kTxKindSessionAccept &&
@@ -472,6 +479,8 @@ bool Runtime::sendRaw(const Endpoint &endpoint, const uint8_t *data,
     }
     return datagrams_->sendUnicast(endpoint, scratch, length);
   }
+#endif  // SUPLAN_TESTING
+  (void)frameKind;
   return datagrams_->sendUnicast(endpoint, data, length);
 }
 
@@ -479,6 +488,7 @@ bool Runtime::fragmentDatagram(void *context, const uint8_t *data,
                                size_t length) {
   Runtime *runtime = static_cast<Runtime *>(context);
   const bool isFragment = data[0] == kAdaptationFragment;
+#ifdef SUPLAN_TESTING
   if (isFragment) {
     ++runtime->fragmentOrdinal_;
     if (runtime->hooks_.dropFragmentNumber != 0 &&
@@ -493,6 +503,7 @@ bool Runtime::fragmentDatagram(void *context, const uint8_t *data,
     ++runtime->diagnostics_.fragmentTx;
     return true;
   }
+#endif  // SUPLAN_TESTING
   if (isFragment) {
     ++runtime->diagnostics_.fragmentTx;
   }
@@ -782,10 +793,12 @@ void Runtime::startLocate(uint8_t peerIndex) {
       !encodeLocate(frame, material.peerLocator, nonce, mac)) {
     return;
   }
+#ifdef SUPLAN_TESTING
   if (hooks_.corruptNextMacTx != 0) {
     frame[sizeof(frame) - 1] ^= 1;
     --hooks_.corruptNextMacTx;
   }
+#endif  // SUPLAN_TESTING
   locates_[slot].used = true;
   locates_[slot].peerIndex = peerIndex;
   memcpy(locates_[slot].nonce, nonce, sizeof(nonce));
@@ -1360,9 +1373,11 @@ void Runtime::clearPeer(uint8_t peerIndex) {
     }
   }
   recovery_[peerIndex] = PeerRecovery();
+#ifdef SUPLAN_TESTING
   if (flood_.peerIndex == peerIndex) {
     flood_ = FloodJob();
   }
+#endif  // SUPLAN_TESTING
 }
 
 void Runtime::setLocalAddress(const NodeAddress &address) {
@@ -1427,6 +1442,7 @@ void Runtime::authorizationChanged(uint8_t peerIndex) {
   cancelPeerRecoveryIfIdle(peerIndex);
 }
 
+#ifdef SUPLAN_TESTING
 bool Runtime::startFlood(TestFloodKind kind, uint8_t peerIndex,
                          uint16_t count) {
   if (flood_.active || count > 1000 ||
@@ -1477,6 +1493,7 @@ bool Runtime::startFlood(TestFloodKind kind, uint8_t peerIndex,
   }
   return true;
 }
+#endif  // SUPLAN_TESTING
 
 void Runtime::resetDiagnostics() {
   memset(&diagnostics_, 0, sizeof(diagnostics_));
@@ -1892,7 +1909,9 @@ void Runtime::iterateBindingRetry(uint32_t now) {
     return;
   }
   fragmentEndpoint_ = peer->endpoint;
+#ifdef SUPLAN_TESTING
   fragmentOrdinal_ = 0;
+#endif  // SUPLAN_TESTING
   fragmentSender_.send(retry.frame, retry.length,
       datagrams_->maxDatagramPayload(), nextFrameId_++, fragmentDatagram, this);
   retry.lastTransmitMs = now;
@@ -2008,6 +2027,7 @@ bool Runtime::sendProtectedToEndpoint(
       retryFlags |= kRetryReadExpectsState;
     }
   }
+#ifdef SUPLAN_TESTING
   uint8_t frameKind = kTxKindData;
   if (applicationData[0] == kMessageClassNative &&
       getUint32(applicationData + 1) == 1) {
@@ -2018,6 +2038,8 @@ bool Runtime::sendProtectedToEndpoint(
     transmitFrame_[frameLength - 1] ^= 1;
     --hooks_.corruptNextDataTagTx;
   }
+#endif  // SUPLAN_TESTING
+
   if (binding) {
     auto &retry = *bindingRetry;
     retry.peerIndex = peerIndex;
@@ -2029,23 +2051,33 @@ bool Runtime::sendProtectedToEndpoint(
     memcpy(retry.frame, transmitFrame_, frameLength);
   }
   fragmentEndpoint_ = endpoint;
-  const size_t maxPayload = hooks_.maxDatagramPayload <
-          datagrams_->maxDatagramPayload()
-      ? hooks_.maxDatagramPayload : datagrams_->maxDatagramPayload();
+  const size_t portLimit = datagrams_->maxDatagramPayload();
+#ifdef SUPLAN_TESTING
+  const size_t limit = hooks_.maxDatagramPayload;
+#else
+  const size_t limit = kMaxDatagramPayload;
+#endif
+  const size_t maxPayload = limit < portLimit ? limit : portLimit;
   const uint32_t frameId = UINT32_C(0xC3000000) |
       (nextFrameId_++ & UINT32_C(0x00FFFFFF));
+#ifdef SUPLAN_TESTING
   fragmentOrdinal_ = 0;
+#endif  // SUPLAN_TESTING
   bool sent = true;
+#ifdef SUPLAN_TESTING
   if (frameKind == kTxKindData && dataTransmitObserver_ != nullptr) {
     dataTransmitObserver_(dataTransmitContext_, endpoint,
                           transmitFrame_, frameLength);
   }
+#endif  // SUPLAN_TESTING
+
   if ((retryFlags & kRetryReadRequest) != 0) {
     const int slot = findReadDependency(peerIndex, resource);
     if (slot < 0 || !dependencies_[slot].pending ||
         !readAuthorized(peerIndex, resource) ||
         findSession(sessionId, endpoint) < 0) return false;
   }
+#ifdef SUPLAN_TESTING
   if (frameKind == kTxKindData && hooks_.failNextDataTx != 0) {
     --hooks_.failNextDataTx;
     sent = false;
@@ -2057,9 +2089,12 @@ bool Runtime::sendProtectedToEndpoint(
       --hooks_.dropNextDataTx;
     }
   } else {
+#endif  // SUPLAN_TESTING
     sent = fragmentSender_.send(transmitFrame_, frameLength, maxPayload,
                                 frameId, fragmentDatagram, this);
+#ifdef SUPLAN_TESTING
   }
+#endif  // SUPLAN_TESTING
   if (!sent && !ackRequired) {
     return false;
   }
@@ -2220,10 +2255,13 @@ void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
   }
   const bool wasActive = fragmentReassembler_.active();
   const bool fragment = data[0] == kAdaptationFragment;
+#ifdef SUPLAN_TESTING
   if (fragment && hooks_.dropNextFragmentRx != 0) {
     --hooks_.dropNextFragmentRx;
     return;
   }
+#endif  // SUPLAN_TESTING
+
   if (fragment) {
     ++diagnostics_.fragmentRx;
   }
@@ -2242,6 +2280,7 @@ void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
     if (fragment) {
       ++diagnostics_.reassemblyCompleted;
     }
+#ifdef SUPLAN_TESTING
     if (adapted.length >= 2 && adapted.data[0] == kVersion &&
         adapted.data[1] == kFrameData && hooks_.dropNextDataRx != 0) {
       // Model a transport receive loss before authentication/replay handling.
@@ -2249,6 +2288,8 @@ void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
       --hooks_.dropNextDataRx;
       return;
     }
+#endif  // SUPLAN_TESTING
+
     processProtected(source, adapted.data, adapted.length);
   }
 }
@@ -2479,10 +2520,13 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
 
 void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
                                    size_t length) {
+#ifdef SUPLAN_TESTING
   if (hooks_.dropNextSessionAcceptRx != 0) {
     --hooks_.dropNextSessionAcceptRx;
     return;
   }
+#endif  // SUPLAN_TESTING
+
   if (data == nullptr || length != kSessionAcceptSize) {
     emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.invalidSessionDrop;
@@ -2702,11 +2746,14 @@ void Runtime::processApplication(SessionEntry *session, uint32_t sequence,
     ++diagnostics_.invalidDataDrop;
     return;
   }
+#ifdef SUPLAN_TESTING
   if (app.messageClass == kMessageClassNative && app.messageType == 1 &&
       hooks_.dropNextAckRx != 0) {
     --hooks_.dropNextAckRx;
     return;
   }
+#endif  // SUPLAN_TESTING
+
   if (app.messageClass == kMessageClassNative) {
     handleNative(session->peerIndex, session, sequence, app, duplicate);
   } else if (app.messageClass == kMessageClassSuplaCall) {
@@ -3165,6 +3212,7 @@ void Runtime::noteReadState(uint8_t peerIndex, const ResourceId &resource) {
   }
 }
 
+#ifdef SUPLAN_TESTING
 void Runtime::processFlood() {
   for (uint8_t sent = 0; flood_.active && sent < kMaxDatagramsPerIterate;
        ++sent) {
@@ -3214,6 +3262,7 @@ void Runtime::processFlood() {
     }
   }
 }
+#endif  // SUPLAN_TESTING
 
 void Runtime::iterate() {
   if (crypto_ == nullptr || datagrams_ == nullptr ||
@@ -3230,7 +3279,9 @@ void Runtime::iterate() {
   iterateBindingRetry(now);
   iterateRecovery(now);
   expireControls(now);
+#ifdef SUPLAN_TESTING
   processFlood();
+#endif  // SUPLAN_TESTING
   if (fragmentReassembler_.expire(now, kReassemblyTimeoutMs)) {
     ++diagnostics_.reassemblyExpired;
   }
@@ -3245,7 +3296,10 @@ void Runtime::iterate() {
     if (!attempt->used) {
       continue;
     }
-    if (attempt->initiator && !hooks_.pauseSessionInitRetries &&
+    if (attempt->initiator &&
+#ifdef SUPLAN_TESTING
+        !hooks_.pauseSessionInitRetries &&
+#endif
         attempt->attempts < kSessionInitMaxAttempts &&
         static_cast<uint32_t>(now - attempt->lastTransmitMs) >=
             kSessionInitRetryMs) {
@@ -3356,31 +3410,45 @@ void Runtime::iterate() {
     if (peer != nullptr &&
         peer->endpointState == kPeerEndpointAuthenticated) {
       fragmentEndpoint_ = peer->endpoint;
-      const size_t maxPayload = hooks_.maxDatagramPayload <
-              datagrams_->maxDatagramPayload()
-          ? hooks_.maxDatagramPayload : datagrams_->maxDatagramPayload();
+      const size_t portLimit = datagrams_->maxDatagramPayload();
+#ifdef SUPLAN_TESTING
+      const size_t limit = hooks_.maxDatagramPayload;
+#else
+      const size_t limit = kMaxDatagramPayload;
+#endif
+      const size_t maxPayload = limit < portLimit ? limit : portLimit;
+#ifdef SUPLAN_TESTING
       fragmentOrdinal_ = 0;
+#endif  // SUPLAN_TESTING
       const bool readRequest = (retry->flags & kRetryReadRequest) != 0;
       const uint32_t sequence = retry->sequence;
+#ifdef SUPLAN_TESTING
       if (dataTransmitObserver_ != nullptr) {
         dataTransmitObserver_(dataTransmitContext_, peer->endpoint,
                               retry->frame, retry->frameLength);
       }
+#endif  // SUPLAN_TESTING
       if (readRequest &&
           (!retry->isUsed() || retry->sequence != sequence ||
            (retry->flags & kRetryReadRequest) == 0 ||
            !readAuthorized(retry->peerIndex, retry->resource) ||
            findReadDependency(retry->peerIndex, retry->resource) < 0 ||
            findSession(retry->sessionId, peer->endpoint) < 0)) continue;
+#ifdef SUPLAN_TESTING
       if (hooks_.failNextDataTx != 0) {
         --hooks_.failNextDataTx;
-      } else if (fragmentSender_.send(
+      } else {  // Fault injection suppresses only this transmit attempt.
+#endif  // SUPLAN_TESTING
+        if (fragmentSender_.send(
                      retry->frame, retry->frameLength, maxPayload,
                      UINT32_C(0xC3000000) |
                          (nextFrameId_++ & UINT32_C(0x00FFFFFF)),
                      fragmentDatagram, this)) {
-        ++diagnostics_.dataTx;
+          ++diagnostics_.dataTx;
+        }
+#ifdef SUPLAN_TESTING
       }
+#endif  // SUPLAN_TESTING
       ++retry->attempts;
       retry->lastTransmitMs = now;
       ++diagnostics_.retryTx;

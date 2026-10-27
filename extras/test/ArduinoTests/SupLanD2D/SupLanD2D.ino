@@ -73,6 +73,11 @@ size_t commandSize = 0;
 ArduinoCrypto d2dCrypto;
 ArduinoUdp d2dUdp;
 Supla::SupLan::PeerTable d2dPeers;
+// Build this legacy harness with -DSUPLAN_TESTING for ALL SDK sources,
+// e.g. compiler.cpp.extra_flags=-DSUPLAN_TESTING in arduino-cli.
+#ifndef SUPLAN_TESTING
+#error "SupLanD2D requires a global SUPLAN_TESTING build"
+#endif
 const Supla::Protocol::SupLanResourceMapping d2dMapping = {50001, 7, 0, false};
 Supla::Protocol::SupLan *d2dProtocol = nullptr;
 Supla::SupLan::Runtime *d2dRuntime = nullptr;

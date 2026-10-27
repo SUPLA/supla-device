@@ -9,6 +9,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Fault injection and legacy fixture adapters are absent from normal builds.
+// Native SDK tests opt in through SUPLA_TEST; dedicated hardware harnesses
+// must define SUPLAN_TESTING consistently for every SDK translation unit.
+#if defined(SUPLA_TEST) && !defined(SUPLAN_TESTING)
+#define SUPLAN_TESTING
+#endif
+
 // Build-selected public-v1 profiles. The default preserves existing constrained
 // builds. ESP32 defaults to Standard; gateways select Large. No input growth.
 #define SUPLAN_PROFILE_CONSTRAINED 1

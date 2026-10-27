@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Exercise two ordinary sd4linux processes with SRPC unavailable.
+"""Exercise two test-harness sd4linux processes with SRPC unavailable.
 
+Build with -DSUPLAN_BUILD_TEST_HARNESS=ON.
 Requires a working local multicast interface. This is a local integration
 check, not the real Server/ESP32 final PoC2 acceptance procedure.
 """
@@ -94,7 +95,7 @@ def main():
                 f"name: SupLAN PoC2 smoke {role}\nstate_files_path: {state}\n"
                 "security_level: 0\nsupla:\n  server: 127.0.0.2\n"
                 "  mail: poc2-smoke@example.invalid\nchannels:\n" + channel +
-                f"suplan:\n  enabled: true\n  role: {role}\n"
+                f"suplan:\n  enabled: true\n  mode: poc\n  role: {role}\n"
                 f"  unicast_port: {port}\n")
             sockets[role] = run / (role + ".sock")
             log = (run / (role + ".log")).open("w")

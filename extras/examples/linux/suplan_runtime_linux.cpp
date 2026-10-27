@@ -18,7 +18,9 @@
 #include <supla/protocol/supla_srpc.h>
 #include <supla/suplan/remote_resource_manager.h>
 #include <suplan/suplan_config.h>
+#ifdef SUPLAN_TESTING
 #include <suplan_poc1_profile.h>
+#endif  // SUPLAN_TESTING
 
 #include <cinttypes>
 #include <cstdio>
@@ -44,7 +46,7 @@ class LinuxSupLanRuntime::TransportLifecycle
       : datagrams_(datagrams), port_(port), bindAddress_(bindAddress) {}
 
   bool networkReady(uint32_t nowMs) override {
-    if (!enabled_ || !Network::IsReady() || datagrams_ == nullptr) {
+    if (!isEnabled() || !Network::IsReady() || datagrams_ == nullptr) {
       haveMulticastProbe_ = false;
       return false;
     }
@@ -89,6 +91,7 @@ class LinuxSupLanRuntime::TransportLifecycle
     }
   }
 
+#ifdef SUPLAN_TESTING
   void setEnabled(bool enabled) {
     enabled_ = enabled;
     if (!enabled_) {
@@ -98,6 +101,9 @@ class LinuxSupLanRuntime::TransportLifecycle
   }
 
   bool isEnabled() const { return enabled_; }
+#else
+  bool isEnabled() const { return true; }
+#endif  // SUPLAN_TESTING
 
  private:
   SupLan::LinuxUdpPort* datagrams_;
@@ -106,7 +112,9 @@ class LinuxSupLanRuntime::TransportLifecycle
   uint32_t lastMulticastProbeMs_ = 0;
   bool haveMulticastProbe_ = false;
   bool multicastReady_ = false;
+#ifdef SUPLAN_TESTING
   bool enabled_ = true;
+#endif
 };
 
 namespace {
@@ -124,6 +132,7 @@ void putLe32(uint8_t* output, uint32_t value) {
   output[3] = static_cast<uint8_t>(value >> 24);
 }
 
+#ifdef SUPLAN_TESTING
 bool parsePeer(std::istringstream* input, uint8_t maxPeers, uint8_t* peer) {
   unsigned value = 0;
   if (input == nullptr || peer == nullptr || !(*input >> value) ||
@@ -133,11 +142,16 @@ bool parsePeer(std::istringstream* input, uint8_t maxPeers, uint8_t* peer) {
   *peer = static_cast<uint8_t>(value);
   return true;
 }
+#endif  // SUPLAN_TESTING
 
 }  // namespace
 
 LinuxSupLanRuntime::LinuxSupLanRuntime(const LinuxSupLanConfig& config)
-    : config_(config), nodeA_(config.role == 'A') {}
+    : config_(config) {
+#ifdef SUPLAN_TESTING
+  nodeA_ = config.role == 'A';
+#endif
+}
 
 LinuxSupLanRuntime::~LinuxSupLanRuntime() = default;
 
@@ -147,7 +161,7 @@ bool LinuxSupLanRuntime::initialize() {
     transport_.reset(new TransportLifecycle(
         &datagrams_, config_.unicastPort, config_.bindAddress));
     protocol_.reset(new Protocol::SupLan(
-        &SuplaDevice, &peers_, nullptr, 0, onApplicationEvent, this));
+        &SuplaDevice, &peers_, onApplicationEvent, this));
     runtime_.reset(new SupLan::Runtime(&crypto_, &datagrams_, protocol_.get(),
                                        &peers_, {SupLan::kNodeIdDevice, 0},
                                        29));
@@ -158,6 +172,7 @@ bool LinuxSupLanRuntime::initialize() {
     protocol_->attachTransportLifecycle(transport_.get());
     return protocol_->verifyConfig();
   }
+#ifdef SUPLAN_TESTING
   if (config_.role != 'A' && config_.role != 'B') {
     return false;
   }
@@ -198,6 +213,9 @@ bool LinuxSupLanRuntime::initialize() {
     return false;
   }
   return true;
+#else
+  return false;
+#endif  // SUPLAN_TESTING
 }
 
 void LinuxSupLanRuntime::onApplicationEvent(
@@ -261,10 +279,20 @@ bool LinuxSupLanRuntime::processDebugCommand(
     writeText(writer,
         "SupLAN commands: show-status, show-resources, show-counters, "
         "show-pools, read <resource>, control <resource> <0|1>, "
-        "set-resource-value <resource> <0|1>, emit-action <resource> "
-        "<action>, forget-session <peer>, clear-endpoint <peer>, "
-        "transport <on|off>, mtu <48..250> (test), "
-        "fault <drop-ack-rx|drop-fragment-tx|corrupt-data-tag> <0..3>\n");
+        "remote-state <resource>, channel-state <channel>, "
+        "hvac-config <channel>"
+#ifdef SUPLAN_TESTING
+        ", forget-session <peer>, clear-endpoint <peer>, transport <on|off>, "
+        "sleep-hint <seconds>, wake-hint <seconds>, "
+        "local-valve-open <channel>, "
+        "local-channel-function <channel> <function>, "
+        "hvac-upload <channel> <main ChannelId> <MinOnTimeS>"
+        ", set-resource-value <resource> <0|1>, "
+        "emit-action <resource> <action>, mtu <48..250>, "
+        "fault <drop-ack-rx|drop-fragment-tx|corrupt-data-tag> <0..3>"
+#endif
+        "\n");
+#ifdef SUPLAN_TESTING
   } else if (command == "fault") {
     std::string kind;
     unsigned count = 0;
@@ -293,6 +321,7 @@ bool LinuxSupLanRuntime::processDebugCommand(
       runtime_->testHooks()->maxDatagramPayload = mtu;
       writeText(writer, "OK test MTU applied\n");
     }
+#endif  // SUPLAN_TESTING
   } else if (command == "show-status") {
     writeStatus(writer);
   } else if (command == "show-resources") {
@@ -308,6 +337,7 @@ bool LinuxSupLanRuntime::processDebugCommand(
       }
       return true;
     }
+#ifdef SUPLAN_TESTING
     const char* role = nodeA_ ? "A" : "B";
     if (nodeA_) {
       auto* relay = dynamic_cast<Control::VirtualRelay*>(
@@ -350,6 +380,7 @@ bool LinuxSupLanRuntime::processDebugCommand(
     writeText(writer, element && element->setFunction(function)
                           ? "OK local function applied\n"
                           : "ERROR local function rejected\n");
+#endif  // SUPLAN_TESTING
   } else if (command == "remote-state") {
     uint32_t id = 0;
     if (!(input >> id) || !id || !protocol_->remoteResources()) {
@@ -405,6 +436,7 @@ bool LinuxSupLanRuntime::processDebugCommand(
     writeCounters(writer);
   } else if (command == "show-pools") {
     writePools(writer);
+#ifdef SUPLAN_TESTING
   } else if (command == "sleep-hint" || command == "wake-hint") {
     unsigned duration = 0;
     if (!(input >> duration) || duration == 0 || duration > UINT16_MAX) {
@@ -416,11 +448,18 @@ bool LinuxSupLanRuntime::processDebugCommand(
       protocol_->beginWake(duration, true);
       writeText(writer, "OK retained-interest wake queued\n");
     }
-  } else if (command == "hvac-config" || command == "hvac-upload") {
+#endif  // SUPLAN_TESTING
+  } else if (command == "hvac-config"
+#ifdef SUPLAN_TESTING
+             || command == "hvac-upload"
+#endif
+             ) {
     unsigned number = 0;
+#ifdef SUPLAN_TESTING
     unsigned mainId = 0;
     unsigned minOn = 0;
     auto *srpc = SuplaDevice.getSrpcLayer();
+#endif
     if (!(input >> number) || number >= SUPLA_CHANNELMAXCOUNT) {
       writeText(writer, "ERROR expected local HVAC channel number\n");
       return true;
@@ -452,6 +491,7 @@ bool LinuxSupLanRuntime::processDebugCommand(
                hvac->getChannel()->getDefaultFunction(),
                hvac->isChannelConfigDurable() ? 1U : 0U);
       writeText(writer, output);
+#ifdef SUPLAN_TESTING
     } else if (!(input >> mainId >> minOn) || mainId > INT32_MAX ||
                minOn > UINT16_MAX || srpc == nullptr || !srpc->isConnected()) {
       writeText(writer, "ERROR expected main ChannelId and MinOnTimeS\n");
@@ -465,16 +505,19 @@ bool LinuxSupLanRuntime::processDebugCommand(
           number, hvac->getChannel()->getDefaultFunction(), &config, size,
           SUPLA_CONFIG_TYPE_DEFAULT) ? "OK HVAC upload queued\n" :
                                       "ERROR HVAC upload rejected\n");
+#endif  // SUPLAN_TESTING
     }
+#ifdef SUPLAN_TESTING
   } else if (command == "transport") {
     std::string state;
     if (!(input >> state) || (state != "on" && state != "off")) {
       writeText(writer, "ERROR expected transport on or off\n");
     } else {
-      setTransportEnabledForTest(state == "on");
+      setTransportEnabled(state == "on");
       writeText(writer, state == "on" ? "OK SupLAN transport enabled\n"
                                        : "OK SupLAN transport disabled\n");
     }
+#endif  // SUPLAN_TESTING
   } else if (command == "read") {
     uint32_t resource = 0;
     if (!(input >> resource)) {
@@ -493,6 +536,7 @@ bool LinuxSupLanRuntime::processDebugCommand(
                             ? "OK control queued\n"
                             : "ERROR control rejected\n");
     }
+#ifdef SUPLAN_TESTING
   } else if (command == "set-resource-value") {
     uint32_t resource = 0;
     uint32_t value = 0;
@@ -549,6 +593,7 @@ bool LinuxSupLanRuntime::processDebugCommand(
       runtime_->clearEndpoint(peer);
       writeText(writer, "OK endpoint cleared\n");
     }
+#endif  // SUPLAN_TESTING
   } else {
     return false;
   }
@@ -556,8 +601,6 @@ bool LinuxSupLanRuntime::processDebugCommand(
 }
 
 bool LinuxSupLanRuntime::debugRead(uint32_t resourceId) {
-  const uint8_t peer = resourceId == SupLan::Poc1::kActionResourceId
-      ? actionPeer_ : primaryPeer_;
   const SupLan::ResourceId resource = {
       SupLan::kResourceTypeChannel, resourceId};
   if (config_.serverProvisioning) {
@@ -566,14 +609,19 @@ bool LinuxSupLanRuntime::debugRead(uint32_t resourceId) {
     }
     return false;
   }
+#ifdef SUPLAN_TESTING
+  const uint8_t peer = resourceId == SupLan::Poc1::kActionResourceId
+      ? actionPeer_ : primaryPeer_;
   return runtime_->requestRead(peer, resource);
+#else
+  return false;
+#endif  // SUPLAN_TESTING
 }
 
 bool LinuxSupLanRuntime::debugControl(uint32_t resourceId, uint32_t value) {
   if (value > 1) {
     return false;
   }
-  const uint8_t peer = primaryPeer_;
   const SupLan::ResourceId resource = {
       SupLan::kResourceTypeChannel, resourceId};
   uint8_t payload[17] = {};
@@ -588,7 +636,12 @@ bool LinuxSupLanRuntime::debugControl(uint32_t resourceId, uint32_t value) {
     }
     return false;
   }
+#ifdef SUPLAN_TESTING
+  const uint8_t peer = primaryPeer_;
   return runtime_->sendControl(peer, resource, payload, sizeof(payload));
+#else
+  return false;
+#endif  // SUPLAN_TESTING
 }
 
 void LinuxSupLanRuntime::writeStatus(Debug::ResponseWriter* writer) const {
@@ -598,6 +651,10 @@ void LinuxSupLanRuntime::writeStatus(Debug::ResponseWriter* writer) const {
   const bool srpcConnected = SuplaDevice.getSrpcLayer() != nullptr &&
       SuplaDevice.getSrpcLayer()->isConnected();
   const int deviceStatus = SuplaDevice.getCurrentStatus();
+  char role = 'S';
+#ifdef SUPLAN_TESTING
+  if (!config_.serverProvisioning) role = config_.role;
+#endif
   snprintf(output, sizeof(output),
            "STATUS network_ready=%u srpc_connected=%u srpc_registered=%u "
            "device_status=%d "
@@ -610,7 +667,7 @@ void LinuxSupLanRuntime::writeStatus(Debug::ResponseWriter* writer) const {
            isTransportOpen() ? "open" : "closed",
            transport_ != nullptr && transport_->isEnabled() ? 1U : 0U,
            static_cast<unsigned>(runtime_->poolDiagnostics().sessions.used),
-           config_.serverProvisioning ? 'S' : config_.role,
+           role,
            config_.unicastPort);
   writeText(writer, output);
 }
@@ -682,12 +739,14 @@ bool LinuxSupLanRuntime::isTransportOpen() const {
   return transport_ != nullptr && transport_->isOpen();
 }
 
-bool LinuxSupLanRuntime::setTransportEnabledForTest(bool enabled) {
+#ifdef SUPLAN_TESTING
+bool LinuxSupLanRuntime::setTransportEnabled(bool enabled) {
   if (transport_ == nullptr) {
     return false;
   }
   transport_->setEnabled(enabled);
   return true;
 }
+#endif  // SUPLAN_TESTING
 
 }  // namespace Supla

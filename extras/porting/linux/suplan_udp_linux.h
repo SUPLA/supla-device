@@ -23,7 +23,10 @@ struct LinuxUdpOpenDiagnostics {
 
 class LinuxUdpPort : public DatagramPort {
  public:
+#ifdef SUPLAN_TESTING
   static const size_t kSelfTestIdentifierBytes = 12;
+#endif  // SUPLAN_TESTING
+
   static const size_t kMaxMulticastInterfaces = 16;
 
   LinuxUdpPort();
@@ -47,6 +50,7 @@ class LinuxUdpPort : public DatagramPort {
   size_t joinedMulticastInterfaceCount() const;
   size_t lastMulticastSendCount() const;
   size_t lastMulticastSendAttemptCount() const;
+#ifdef SUPLAN_TESTING
   bool beginMulticastSelfTest(
       const uint8_t identifier[kSelfTestIdentifierBytes]);
   bool multicastSelfTestReceived() const;
@@ -57,6 +61,7 @@ class LinuxUdpPort : public DatagramPort {
   bool compareNextDataWithCapture();
   bool dataComparisonComplete() const;
   bool dataComparisonMatched() const;
+#endif  // SUPLAN_TESTING
 
  protected:
   // Observational only: -1 removed, 0 first join failure, 1 joined.
@@ -84,18 +89,20 @@ class LinuxUdpPort : public DatagramPort {
   uint32_t lastInterfaceRefreshMs_;
   size_t lastMulticastSendCount_;
   size_t lastMulticastSendAttemptCount_;
-  uint8_t selfTestDatagram_[16];
-  bool selfTestActive_;
-  bool selfTestReceived_;
-  uint8_t capturedData_[kMaxDatagramPayload];
-  Endpoint capturedEndpoint_;
-  size_t capturedLength_;
-  bool captureNextData_;
-  bool capturedDataValid_;
-  bool compareNextData_;
-  bool compareAfterCapture_;
-  bool dataComparisonComplete_;
-  bool dataComparisonMatched_;
+#ifdef SUPLAN_TESTING
+  uint8_t selfTestDatagram_[16] = {};
+  bool selfTestActive_ = {};
+  bool selfTestReceived_ = {};
+  uint8_t capturedData_[kMaxDatagramPayload] = {};
+  Endpoint capturedEndpoint_ = {};
+  size_t capturedLength_ = {};
+  bool captureNextData_ = {};
+  bool capturedDataValid_ = {};
+  bool compareNextData_ = {};
+  bool compareAfterCapture_ = {};
+  bool dataComparisonComplete_ = {};
+  bool dataComparisonMatched_ = {};
+#endif  // SUPLAN_TESTING
 };
 
 }  // namespace SupLan

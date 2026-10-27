@@ -28,7 +28,9 @@ class LinuxSupLanRuntime {
                            Debug::ResponseWriter* writer);
   Protocol::SupLan* protocol() const;
   bool isTransportOpen() const;
-  bool setTransportEnabledForTest(bool enabled);
+#ifdef SUPLAN_TESTING
+  bool setTransportEnabled(bool enabled);
+#endif
 
  private:
   class TransportLifecycle;
@@ -44,16 +46,24 @@ class LinuxSupLanRuntime {
   bool debugControl(uint32_t resourceId, uint32_t value);
 
   LinuxSupLanConfig config_;
+#ifdef SUPLAN_TESTING
   bool nodeA_ = false;
+#endif  // SUPLAN_TESTING
+#ifdef SUPLAN_TESTING
   uint8_t primaryPeer_ = 0;
+#endif  // SUPLAN_TESTING
+#ifdef SUPLAN_TESTING
   uint8_t actionPeer_ = 1;
+#endif  // SUPLAN_TESTING
   SupLan::OpenSslCryptoPort crypto_;
   class DiagnosticUdpPort : public SupLan::LinuxUdpPort {
     void multicastMembershipChanged(uint32_t address, int8_t result) override;
   };
   DiagnosticUdpPort datagrams_;
   SupLan::PeerTable peers_;
+#ifdef SUPLAN_TESTING
   Protocol::SupLanResourceMapping mapping_ = {};
+#endif  // SUPLAN_TESTING
   std::unique_ptr<TransportLifecycle> transport_;
   std::unique_ptr<Protocol::SupLan> protocol_;
   std::unique_ptr<SupLan::Runtime> runtime_;

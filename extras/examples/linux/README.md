@@ -147,44 +147,59 @@ You can specify your own config file:
 
     ./supla-device-linux -c /path/to/your/file/supla-cfg.yml
 
-## SupLAN PoC2
+## SupLAN
 
-The ordinary `supla-device-linux` binary can run the PoC1 SupLAN fixture in
-parallel with its normal SUPLA Server connection. Add this section to the YAML
-file to enable node A:
+Enable SupLAN using normal SERVER provisioning:
 
 ```yaml
-channels:
-  - type: VirtualRelay
-
 suplan:
   enabled: true
-  role: A
   unicast_port: 2016
 ```
+
+The Server supplies channel identities and Source/Destination associations.
+SupLAN requires TLS for the Server connection. Restored associations permit
+D2D operation without an Internet connection; they do not require static peer
+credentials in YAML.
 
 To select a specific IPv4 interface, add `bind_address: 192.168.0.177`
 using that interface's current local address. This pins the SupLAN unicast
 source address and multicast interface; SRPC networking stays independent.
 The default `0.0.0.0` keeps automatic multicast interface selection.
+UDP opens after the network is ready and joins the discovery multicast group.
+When SupLAN is absent or disabled, no SupLAN protocol layer is created.
 
-For node B, use `role: B` and make channel 0 an `ActionTriggerParsed` channel.
-The `role` selects the deterministic PoC1 identities, keys, ACL and resource
-mapping; these credentials are test fixtures and must not be used for
-deployment. The normal Linux GUID/AuthKey and Server settings continue to
-control SRPC independently. When the `suplan` section is absent or disabled,
-sd4linux does not create a SupLAN protocol layer.
+The existing Unix debug socket supports `show-status`, `show-resources`,
+`show-counters`, `show-pools`, `remote-state`, `channel-state`, `hvac-config`,
+`read` and `control`. These commands remain
+subject to the existing debug-socket configuration and current authorization.
 
-SupLAN UDP opens after the normal network is ready, binds IPv4 wildcard, and
-joins the discovery group on available multicast interfaces. `unicast_port`
-can be changed when multiple local sd4linux instances share a host.
+### Legacy PoC test harness
 
-When the existing Unix debug socket is enabled, it also accepts line commands
-`show-status`, `show-resources`, `show-counters`, `show-pools`, `read`,
-`control`, `set-resource-value`, `emit-action`, `forget-session`, and
-`clear-endpoint`. The `transport on|off` command is a fault-injection test hook
-that can stop and resume SupLAN UDP while SRPC remains connected. See
-`debug_socket/README.md` for examples.
+Only test builds configured with `-DSUPLAN_BUILD_TEST_HARNESS=ON` include fault
+injection and static PoC identities/keys. All SDK translation units must use
+the same `SUPLAN_TESTING` definition; the CMake option handles this consistently.
+Never deploy this build. To select its historical fixture explicitly:
+
+```yaml
+channels:
+  - type: VirtualRelay
+suplan:
+  enabled: true
+  mode: poc
+  role: A
+  unicast_port: 2016
+```
+
+Node B uses `role: B` and an `ActionTriggerParsed` channel 0. Roles select
+hard-coded test credentials and resource mappings. Ordinary builds reject
+`mode: poc` and `role`. The harness additionally supports `fault`, `mtu`,
+`set-resource-value`, `emit-action`, `sleep-hint`, `wake-hint`,
+`local-valve-open`, `local-channel-function`, `hvac-upload`, `forget-session`,
+`clear-endpoint` and `transport on|off`; `run_suplan_smoke.py` requires this build.
+Ordinary builds do not recognize these mutation/test commands. Read-only
+`hvac-config` remains available. For focused command-isolation tests, configure
+with `-DBUILD_TESTING=ON` and run CTest in that build directory.
 
 ## GUID, AUTHKEY and persistent state files
 

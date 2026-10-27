@@ -423,6 +423,20 @@ endforeach()
 supla_apply_warnings(suplanlinuxudptests)
 add_test(NAME suplanlinuxudptests COMMAND suplanlinuxudptests)
 
+# A separate core build proves normal headers and object code have no fault,
+# packet-capture or legacy fixture APIs. Do not link the SUPLA_TEST SDK library.
+add_executable(suplanproductiontests
+  SupLanProductionTests/suplan_production_tests.cpp
+  ../../src/supla/crypto.cpp ../../src/supla/sha256.cpp
+  ../../src/supla/tools.cpp ${SUPLAN_CORE_SRCS})
+target_include_directories(suplanproductiontests PRIVATE
+  ../../src ../porting/linux)
+target_compile_definitions(suplanproductiontests PRIVATE
+  SUPLA_LINUX SUPLA_DISABLE_LOGS)
+target_link_libraries(suplanproductiontests PRIVATE gtest_main OpenSSL::Crypto)
+supla_apply_warnings(suplanproductiontests)
+add_test(NAME suplanproductiontests COMMAND suplanproductiontests)
+
 # Only host test builds intercept provider calls; production uses the SDK API.
 target_link_options(supladevicelib PRIVATE
   -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=HMAC)

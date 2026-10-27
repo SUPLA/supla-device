@@ -613,7 +613,7 @@ TEST_F(ServerAssociationTests, SrpcDispatchesProductionSourceAndDestination) {
   SuplaDeviceClass device;
   AssociationSrpc srpc(&device);
   srpc.serverIdentity().load(&config);
-  Supla::Protocol::SupLan adapter(&device, &peers, nullptr, 0);
+  Supla::Protocol::SupLan adapter(&device, &peers);
   adapter.attachRuntime(&runtime);
   adapter.attachServerAssociations(&associations);
   int handle = 0;
@@ -794,7 +794,7 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
   OpenSslCryptoPort crypto;
   ProcessDatagrams datagrams(socket);
   int states = 0;
-  Supla::Protocol::SupLan adapter(nullptr, &peers, nullptr, 0, countState,
+  Supla::Protocol::SupLan adapter(nullptr, &peers, countState,
                                   &states);
   Runtime runtime(&crypto, &datagrams, &adapter, &peers,
                   {kNodeIdDevice, static_cast<uint32_t>(snapshot.DeviceId)},
@@ -1424,7 +1424,7 @@ int runBindingEndpoint(int socket, bool source, bool restartDestination) {
   PeerTable peers;
   OpenSslCryptoPort crypto;
   ProcessDatagrams datagrams(socket);
-  BindingProcessAdapter adapter(nullptr, &peers, nullptr, 0);
+  BindingProcessAdapter adapter(nullptr, &peers);
   Runtime runtime(&crypto, &datagrams, &adapter, &peers,
                   {kNodeIdDevice, static_cast<uint32_t>(ids.DeviceId)}, 29);
   ServerAssociations associations(&peers, &runtime);

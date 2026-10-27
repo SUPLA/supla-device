@@ -44,6 +44,15 @@ reply to the SUPLA server.
 
 With `suplan.enabled: true`, the same socket also accepts:
 
+The static resources below require a test binary built with
+`-DSUPLAN_BUILD_TEST_HARNESS=ON` and YAML `mode: poc`. Normal binaries use
+SERVER associations and exclude `set-resource-value`, `emit-action`, `fault`
+and `mtu`. Sleep/wake simulation, `local-valve-open`,
+`local-channel-function`, `hvac-upload`, `forget-session`, `clear-endpoint` and
+`transport on|off` also require this test build. Read-only `hvac-config`,
+`channel-state` and `remote-state` remain available in ordinary builds.
+Never deploy the legacy fixture build.
+
 ```sh
 printf 'show-status\n' | nc -U /tmp/sd4linux-debug.sock
 printf 'show-resources\n' | nc -U /tmp/sd4linux-debug.sock
@@ -64,8 +73,8 @@ state, active session count, fixture role and port. `set-resource-value`
 changes the role A `VirtualRelay` on channel 0 and calls its normal channel
 update path. `emit-action` accepts an Action Trigger action index from 0 to 31
 and queues it through the local channel. SupLAN commands are available only
-while the PoC2 layer is configured. The `transport on|off` fault-injection
-command controls only the SupLAN UDP transport and reports its enabled state;
+while the SupLAN layer is configured. In test builds, `transport on|off`
+controls only the SupLAN UDP transport and reports its enabled state;
 it does not disconnect the normal SRPC layer or alter the host network.
 
 ## Channel Value Commands

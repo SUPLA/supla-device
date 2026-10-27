@@ -3108,7 +3108,7 @@ TEST(SupLanSleepySource, LongIntentionalSleepRetainsAuthorizedReadRecipients) {
   RuntimePair pair;
   pair.appA.fullSnapshots = true;
   Supla::Device::ServerAssociations associations(&pair.peersA, &pair.runtimeA);
-  Supla::Protocol::SupLan source(nullptr, &pair.peersA, nullptr, 0);
+  Supla::Protocol::SupLan source(nullptr, &pair.peersA);
   source.attachRuntime(&pair.runtimeA);
   source.attachServerAssociations(&associations);
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));

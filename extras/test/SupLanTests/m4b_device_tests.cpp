@@ -422,7 +422,7 @@ class M4bDevice : public ::testing::Test {
   OpenSslCryptoPort crypto;
   Runtime runtime{&crypto, &datagrams, &adapter, &peers, {1, 202}, 29};
   ServerAssociations associations{&peers, &runtime};
-  BindingAdapter adapter{nullptr, &peers, nullptr, 0};
+  BindingAdapter adapter{nullptr, &peers};
   Sensor::VirtualBinary *sensor = nullptr;
   Sensor::Container *container = nullptr;
   Control::VirtualValve *valve = nullptr;

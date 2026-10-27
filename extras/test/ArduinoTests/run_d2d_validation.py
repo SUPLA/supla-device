@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Test ordinary sd4linux (PoC role B) against Arduino SupLanD2D role A.
+"""Test a legacy sd4linux harness (PoC role B) against Arduino SupLanD2D role A.
 
-Requires pyserial and a flashed/configured SupLanD2D fixture. Deterministic PoC
+Requires sd4linux built with -DSUPLAN_BUILD_TEST_HARNESS=ON and a
+SupLanD2D fixture built with global -DSUPLAN_TESTING, plus pyserial. Deterministic PoC
 peers are test credentials. The ESP device keeps its normal Cloud configuration;
 the temporary Linux device deliberately has no working Server connection.
 
@@ -45,7 +46,7 @@ def main():
         str(root / 'state') + '\nsecurity_level: 0\nsupla:\n' +
         '  server: 127.0.0.2\n  mail: d2d@example.invalid\nchannels:\n' +
         '  - type: ActionTriggerParsed\n    name: d2d-event\nsuplan:\n' +
-        '  enabled: true\n  role: B\n  unicast_port: 2018\n' +
+        '  enabled: true\n  mode: poc\n  role: B\n  unicast_port: 2018\n' +
         '  bind_address: ' + args.bind_address + '\n', encoding='utf-8')
     debug_socket = root / 'B.sock'
     uart = serial.Serial(port=None, baudrate=115200, timeout=0.05)

@@ -24,15 +24,13 @@ namespace SupLan {
 namespace {
 const uint16_t kDiscoveryPort = 2016;
 const char kDiscoveryGroup[] = "239.255.201.6";
+#ifdef SUPLAN_TESTING
 const uint8_t kSelfTestPrefix[] = {'S', 'U', 'P', 'T'};
+#endif  // SUPLAN_TESTING
 }  // namespace
 
 LinuxUdpPort::LinuxUdpPort()
-    : socket_(-1), multicastSocket_(-1), selfTestActive_(false),
-      selfTestReceived_(false), capturedLength_(0), captureNextData_(false),
-      capturedDataValid_(false), compareNextData_(false),
-      compareAfterCapture_(false),
-      dataComparisonComplete_(false), dataComparisonMatched_(false) {
+    : socket_(-1), multicastSocket_(-1) {
   maxDatagramPayload_ = kMaxDatagramPayload;
   localEndpoint_.address = 0;
   localEndpoint_.port = 0;
@@ -46,10 +44,6 @@ LinuxUdpPort::LinuxUdpPort()
   lastMulticastSendCount_ = 0;
   lastMulticastSendAttemptCount_ = 0;
   memset(&openDiagnostics_, 0, sizeof(openDiagnostics_));
-  memset(selfTestDatagram_, 0, sizeof(selfTestDatagram_));
-  memset(capturedData_, 0, sizeof(capturedData_));
-  capturedEndpoint_.address = 0;
-  capturedEndpoint_.port = 0;
 }
 
 LinuxUdpPort::~LinuxUdpPort() {
@@ -59,8 +53,10 @@ LinuxUdpPort::~LinuxUdpPort() {
 bool LinuxUdpPort::open(const char *bindAddress, uint16_t port,
                         size_t maxDatagramPayload) {
   memset(&openDiagnostics_, 0, sizeof(openDiagnostics_));
+#ifdef SUPLAN_TESTING
   selfTestActive_ = false;
   selfTestReceived_ = false;
+#endif  // SUPLAN_TESTING
   if (socket_ >= 0 || multicastSocket_ >= 0 || bindAddress == nullptr ||
       port == 0 ||
       maxDatagramPayload == 0 || maxDatagramPayload > kMaxDatagramPayload) {
@@ -154,7 +150,9 @@ bool LinuxUdpPort::open(const char *bindAddress, uint16_t port,
 }
 
 void LinuxUdpPort::close() {
+#ifdef SUPLAN_TESTING
   selfTestActive_ = false;
+#endif  // SUPLAN_TESTING
   if (socket_ >= 0) {
     ::close(socket_);
     socket_ = -1;
@@ -345,6 +343,7 @@ bool LinuxUdpPort::sendUnicast(const Endpoint &endpoint, const uint8_t *data,
   const ssize_t sent = sendto(socket_, data, length, 0,
                               reinterpret_cast<sockaddr *>(&destination),
                               sizeof(destination));
+#ifdef SUPLAN_TESTING
   bool capturedThisDatagram = false;
   if (sent == static_cast<ssize_t>(length) && captureNextData_ &&
       length >= 3 && length <= sizeof(capturedData_) &&
@@ -375,6 +374,7 @@ bool LinuxUdpPort::sendUnicast(const Endpoint &endpoint, const uint8_t *data,
         memcmp(data, capturedData_, length) == 0;
     compareNextData_ = false;
   }
+#endif  // SUPLAN_TESTING
   return sent == static_cast<ssize_t>(length);
 }
 
@@ -437,6 +437,7 @@ int LinuxUdpPort::pollReceive(uint8_t *buffer, size_t capacity,
     if (static_cast<size_t>(received) > capacity || received > INT32_MAX) {
       return -1;
     }
+#ifdef SUPLAN_TESTING
     if (received == static_cast<ssize_t>(sizeof(selfTestDatagram_)) &&
         memcmp(buffer, kSelfTestPrefix, sizeof(kSelfTestPrefix)) == 0) {
       if (selfTestActive_ &&
@@ -447,6 +448,8 @@ int LinuxUdpPort::pollReceive(uint8_t *buffer, size_t capacity,
       }
       continue;
     }
+#endif  // SUPLAN_TESTING
+
     if (isLocalAddress(source.sin_addr.s_addr) &&
         ntohs(source.sin_port) == localEndpoint_.port) {
       continue;
@@ -487,6 +490,7 @@ size_t LinuxUdpPort::lastMulticastSendAttemptCount() const {
   return lastMulticastSendAttemptCount_;
 }
 
+#ifdef SUPLAN_TESTING
 bool LinuxUdpPort::beginMulticastSelfTest(
     const uint8_t identifier[kSelfTestIdentifierBytes]) {
   if (!isOpen() || identifier == nullptr || selfTestActive_) {
@@ -550,6 +554,7 @@ bool LinuxUdpPort::dataComparisonComplete() const {
 bool LinuxUdpPort::dataComparisonMatched() const {
   return dataComparisonComplete_ && dataComparisonMatched_;
 }
+#endif  // SUPLAN_TESTING
 
 }  // namespace SupLan
 }  // namespace Supla

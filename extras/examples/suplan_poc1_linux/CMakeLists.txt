@@ -27,7 +27,8 @@ target_include_directories(supla-device-poc PUBLIC
   "${SUPLA_DEVICE_ROOT}/src"
   "${SUPLA_DEVICE_ROOT}/extras/porting/linux"
 )
-target_compile_definitions(supla-device-poc PUBLIC SUPLA_LINUX SUPLA_DEVICE)
+target_compile_definitions(supla-device-poc PUBLIC
+  SUPLA_LINUX SUPLA_DEVICE SUPLAN_TESTING)
 
 add_executable(suplan-poc1-linux
   main.cpp

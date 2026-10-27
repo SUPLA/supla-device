@@ -101,15 +101,23 @@ bool sourceControlAvailable(Element *element) {
 }  // namespace
 
 SupLan::SupLan(SuplaDeviceClass *sdc, Supla::SupLan::PeerTable *peers,
-               const SupLanResourceMapping *mappings, uint8_t mappingCount,
                SupLanApplicationEventHandler eventHandler,
                void *eventContext)
     : ProtocolLayer(sdc), peers_(peers), runtime_(nullptr), transport_(nullptr),
-      mappings_(mappings), eventHandler_(eventHandler),
-      eventContext_(eventContext), mappingCount_(mappingCount), enabled_(true),
+      eventHandler_(eventHandler), eventContext_(eventContext), enabled_(true),
       transportWasOpen_(false) {
   configEmpty = false;
 }
+
+#ifdef SUPLAN_TESTING
+SupLan::SupLan(SuplaDeviceClass *sdc, Supla::SupLan::PeerTable *peers,
+               const SupLanResourceMapping *mappings, uint8_t mappingCount,
+               SupLanApplicationEventHandler eventHandler, void *eventContext)
+    : SupLan(sdc, peers, eventHandler, eventContext) {
+  mappings_ = mappings;
+  mappingCount_ = mappingCount;
+}
+#endif  // SUPLAN_TESTING
 
 SupLan::~SupLan() {
   if (resources_) delete resources_->bindings;
@@ -346,6 +354,7 @@ bool SupLan::isTransportOpen() const {
   return transport_ == nullptr || transport_->isOpen();
 }
 
+#ifdef SUPLAN_TESTING
 const SupLanResourceMapping *SupLan::findResource(uint32_t resourceId) const {
   for (uint8_t i = 0; i < mappingCount_; ++i) {
     if (mappings_[i].resourceId == resourceId) {
@@ -354,8 +363,10 @@ const SupLanResourceMapping *SupLan::findResource(uint32_t resourceId) const {
   }
   return nullptr;
 }
+#endif  // SUPLAN_TESTING
 
 bool SupLan::mapIsValid() const {
+#ifdef SUPLAN_TESTING
   if (associations() && !mappings_ && !mappingCount_) return true;
   if (mappings_ == nullptr || mappingCount_ == 0 ||
       mappingCount_ > kMaxResourceMappings) {
@@ -374,6 +385,9 @@ bool SupLan::mapIsValid() const {
     }
   }
   return true;
+#else
+  return associations() != nullptr;
+#endif
 }
 
 bool SupLan::localChannel(uint32_t id, uint8_t *number,
@@ -389,11 +403,15 @@ bool SupLan::localChannel(uint32_t id, uint8_t *number,
         SUPLA_CHANNELTYPE_ACTIONTRIGGER;
     return channel != nullptr;
   }
+#ifdef SUPLAN_TESTING
   auto mapping = findResource(id);
   if (!mapping) return false;
   *number = mapping->channelNumber;
   *eventOnly = mapping->eventOnly;
   return true;
+#else
+  return false;
+#endif  // SUPLAN_TESTING
 }
 
 void SupLan::putSuplaUint32(uint8_t output[4], uint32_t value) {
@@ -455,6 +473,7 @@ bool SupLan::readResource(const Supla::SupLan::ResourceId &resource,
     *payloadLength = sizeof(snapshot);
     return true;
   }
+#ifdef SUPLAN_TESTING
   payload[0] = Supla::SupLan::kChannelNumberUnresolved;
   TDS_SuplaDeviceChannel_E snapshot;
   if (!buildD2dSnapshot(channel, &snapshot)) return false;
@@ -463,6 +482,9 @@ bool SupLan::readResource(const Supla::SupLan::ResourceId &resource,
   channel->fillRawValue(payload + 6);
   *payloadLength = 14;
   return true;
+#else
+  return false;
+#endif  // SUPLAN_TESTING
 }
 
 uint8_t SupLan::dispatchControlAction(
@@ -838,6 +860,7 @@ void SupLan::sendActionTrigger(uint8_t channelNumber, uint32_t actionId) {
     }
     return;
   }
+#ifdef SUPLAN_TESTING
   for (uint8_t i = 0; i < mappingCount_; ++i) {
     const SupLanResourceMapping *mapping = &mappings_[i];
     if (mapping->channelNumber != channelNumber) {
@@ -848,6 +871,7 @@ void SupLan::sendActionTrigger(uint8_t channelNumber, uint32_t actionId) {
     (void)runtime_->publishAction(mapping->peerIndex, resource, payload,
                                   sizeof(payload));
   }
+#endif  // SUPLAN_TESTING
 }
 
 void SupLan::sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
@@ -855,6 +879,7 @@ void SupLan::sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
                                      uint32_t validityTimeSec) {
   // D2S fan-out argument; D2D owns an independent lease.
   (void)validityTimeSec;
+  (void)offline;
   if (!isRegisteredAndReady() || value == nullptr) {
     return;
   }
@@ -873,6 +898,7 @@ void SupLan::sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
     }
     return;
   }
+#ifdef SUPLAN_TESTING
   uint8_t payload[14] = {};
   payload[0] = Supla::SupLan::kChannelNumberUnresolved;
   payload[1] = offline;
@@ -911,6 +937,7 @@ void SupLan::sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
         Supla::SupLan::kSuplaCallDeviceChannelValueChangedC,
         payload, sizeof(payload));
   }
+#endif  // SUPLAN_TESTING
 }
 
 void SupLan::sendExtendedChannelValueChanged(
@@ -939,6 +966,7 @@ void SupLan::sendExtendedChannelValueChanged(
     }
     return;
   }
+#ifdef SUPLAN_TESTING
   for (uint8_t i = 0; i < mappingCount_; ++i) {
     const SupLanResourceMapping *mapping = &mappings_[i];
     if (mapping->channelNumber != channelNumber || mapping->eventOnly) {
@@ -952,6 +980,7 @@ void SupLan::sendExtendedChannelValueChanged(
         prefix, sizeof(prefix),
         reinterpret_cast<const uint8_t *>(value->value), value->size);
   }
+#endif  // SUPLAN_TESTING
 }
 
 void SupLan::sendChannelMetadataChanged(uint8_t number) {

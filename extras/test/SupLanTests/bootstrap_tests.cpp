@@ -322,7 +322,7 @@ TEST_F(SupLanBootstrap, ManualRegisteredAfterEnableDoesNotDuplicate) {
 TEST_F(SupLanBootstrap, IncompleteOrDuplicateManualStackFailsExplicitly) {
   SuplaDeviceClass device;
   Supla::SupLan::PeerTable peers;
-  Supla::Protocol::SupLan incomplete(&device, &peers, nullptr, 0);
+  Supla::Protocol::SupLan incomplete(&device, &peers);
   EXPECT_FALSE(device.enableSupLan());
   Stack manual(&device, 29);
   ASSERT_TRUE(manual.initialize());
@@ -333,7 +333,7 @@ TEST_F(SupLanBootstrap, ConflictIntroducedAfterEnableCannotStartAuto) {
   SuplaDeviceClass device;
   ASSERT_TRUE(device.enableSupLan());
   Supla::SupLan::PeerTable peers;
-  Supla::Protocol::SupLan incomplete(&device, &peers, nullptr, 0);
+  Supla::Protocol::SupLan incomplete(&device, &peers);
   EXPECT_FALSE(device.begin(29));
   EXPECT_EQ(creates, 0);
 }

@@ -501,19 +501,31 @@ bool Supla::LinuxYamlConfig::getSupLanConfig(
     }
     if (section["mode"]) {
       const auto mode = section["mode"].as<std::string>();
-      if (mode != "server" && mode != "poc") {
-        SUPLA_LOG_ERROR("Config: suplan.mode must be server or poc");
+      if (mode != "server") {
+#ifdef SUPLAN_TESTING
+        if (mode != "poc") {
+          SUPLA_LOG_ERROR("Config: unsupported suplan.mode");
+          return false;
+        }
+        result->serverProvisioning = false;
+#else
+        SUPLA_LOG_ERROR("Config: only SERVER provisioning is supported");
         return false;
+#endif
       }
-      result->serverProvisioning = mode == "server";
     }
     if (section["role"]) {
-      const std::string role = section["role"].as<std::string>();
-      if (role != "A" && role != "B") {
-        SUPLA_LOG_ERROR("Config: suplan.role must be A or B");
+#ifdef SUPLAN_TESTING
+      const auto role = section["role"].as<std::string>();
+      if (result->serverProvisioning || (role != "A" && role != "B")) {
+        SUPLA_LOG_ERROR("Config: suplan.role requires explicit test mode poc");
         return false;
       }
       result->role = role[0];
+#else
+      SUPLA_LOG_ERROR("Config: suplan.role belongs to the retired PoC fixture");
+      return false;
+#endif
     }
     if (section["bind_address"]) {
       result->bindAddress = section["bind_address"].as<std::string>();

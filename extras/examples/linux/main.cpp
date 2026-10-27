@@ -201,9 +201,11 @@ int main(int argc, char *argv[]) {
       if (suplanConfig.serverProvisioning) {
         SUPLA_LOG_INFO("SupLAN SERVER provisioning enabled port=%u",
                        suplanConfig.unicastPort);
+#ifdef SUPLAN_TESTING
       } else {
         SUPLA_LOG_INFO("SupLAN PoC fixture enabled role=%c port=%u",
                        suplanConfig.role, suplanConfig.unicastPort);
+#endif  // SUPLAN_TESTING
       }
     }
 

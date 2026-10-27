@@ -57,9 +57,13 @@ target_include_directories(suplalinuxlib PUBLIC
   "${SUPLA_DEVICE_PATH}/extras/porting/linux"
 )
 
-target_include_directories(supla-device-linux PRIVATE
-  "${SUPLA_DEVICE_PATH}/extras/examples/suplan_poc1_common"
-)
+option(SUPLAN_BUILD_TEST_HARNESS
+  "Enable legacy SupLAN fixtures and fault injection (never for production)" OFF)
+if(SUPLAN_BUILD_TEST_HARNESS)
+  target_compile_definitions(supladevicelib PUBLIC SUPLAN_TESTING)
+  target_include_directories(supla-device-linux PRIVATE
+    "${SUPLA_DEVICE_PATH}/extras/examples/suplan_poc1_common")
+endif()
 
 target_link_libraries(supladevicelib PRIVATE OpenSSL::Crypto)
 target_link_libraries(suplalinuxlib PUBLIC supladevicelib)
@@ -79,3 +83,23 @@ install(TARGETS supla-device-linux)
 
 # Linux/gateway production peer/ACL capacity profile applies to every TU.
 target_compile_definitions(supladevicelib PUBLIC SUPLAN_PROFILE=3)
+
+# Optional focused host test; absent from ordinary application builds.
+if(BUILD_TESTING)
+  enable_testing()
+  add_executable(suplan-linux-command-tests
+    "${SUPLA_DEVICE_PATH}/extras/test/SupLanProductionTests/suplan_linux_commands_tests.cpp"
+    suplan_runtime_linux.cpp)
+  target_include_directories(suplan-linux-command-tests PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}")
+  target_compile_definitions(suplan-linux-command-tests PRIVATE
+    MQTT_USE_BIO SUPLA_SUPLET_ENABLED=1 SUPLA_INSECURE_DEBUG_INTERFACE=1)
+  if(SUPLAN_BUILD_TEST_HARNESS)
+    target_include_directories(suplan-linux-command-tests PRIVATE
+      "${SUPLA_DEVICE_PATH}/extras/examples/suplan_poc1_common")
+  endif()
+  target_link_libraries(suplan-linux-command-tests PRIVATE
+    supladevicelib suplalinuxlib)
+  supla_apply_warnings(suplan-linux-command-tests)
+  add_test(NAME suplan-linux-command-tests COMMAND suplan-linux-command-tests)
+endif()

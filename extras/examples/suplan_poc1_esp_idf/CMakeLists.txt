@@ -10,4 +10,7 @@ set(EXTRA_COMPONENT_DIRS
 )
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+# Dedicated legacy regression harness; not an SDK production default.
+add_compile_definitions(SUPLAN_TESTING)
+
 project(suplan_poc1_esp_idf)

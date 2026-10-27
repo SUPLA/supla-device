@@ -26,13 +26,14 @@ class ServerAssociations;
 namespace Supla {
 namespace Protocol {
 
+#ifdef SUPLAN_TESTING
 struct SupLanResourceMapping {
   uint32_t resourceId;
   uint8_t channelNumber;
   uint8_t peerIndex;
   bool eventOnly;
 };
-
+#endif  // SUPLAN_TESTING
 enum SupLanApplicationEvent : uint8_t {
   kSupLanRemoteState = 1,
   kSupLanRemoteAction = 2,
@@ -90,12 +91,17 @@ class SupLanTransportLifecycle {
 // through a callback because supla-device has no client-side channel cache.
 class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
  public:
+  SupLan(SuplaDeviceClass *sdc, Supla::SupLan::PeerTable *peers,
+         SupLanApplicationEventHandler eventHandler = nullptr,
+         void *eventContext = nullptr);
+#ifdef SUPLAN_TESTING
   static const uint8_t kMaxResourceMappings = 8;
 
   SupLan(SuplaDeviceClass *sdc, Supla::SupLan::PeerTable *peers,
          const SupLanResourceMapping *mappings, uint8_t mappingCount,
          SupLanApplicationEventHandler eventHandler = nullptr,
          void *eventContext = nullptr);
+#endif  // SUPLAN_TESTING
   ~SupLan() override;
   Device::RemoteResourceManager *remoteResources() override {
     return resources_;
@@ -137,7 +143,7 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   }
 
   // Production SERVER mode: caller owns one bounded manager, peers and runtime.
-  // With no PoC mappings, resource resolution uses the M1B SERVER identity.
+  // Resource resolution uses the accepted SERVER identity.
   void attachServerAssociations(Supla::Device::ServerAssociations *state);
   bool setSuplanSourceAssociation(
       const TSDS_SuplaSetSuplanSourceAssociation &request,
@@ -207,7 +213,9 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
 
  private:
   bool localChannel(uint32_t id, uint8_t *number, bool *eventOnly) const;
+#ifdef SUPLAN_TESTING
   const SupLanResourceMapping *findResource(uint32_t resourceId) const;
+#endif  // SUPLAN_TESTING
   bool mapIsValid() const;
   void clearPeerTransportState();
   static void putSuplaUint32(uint8_t output[4], uint32_t value);
@@ -221,12 +229,16 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   Supla::SupLan::PeerTable *peers_;
   Supla::SupLan::Runtime *runtime_;
   SupLanTransportLifecycle *transport_;
-  const SupLanResourceMapping *mappings_;
+#ifdef SUPLAN_TESTING
+  const SupLanResourceMapping *mappings_ = nullptr;
+#endif  // SUPLAN_TESTING
   SupLanApplicationEventHandler eventHandler_;
   void *eventContext_;
   uint32_t diagnosticLastMs_ = 0;
   uint32_t diagnosticSuppressed_ = 0;
-  uint8_t mappingCount_;
+#ifdef SUPLAN_TESTING
+  uint8_t mappingCount_ = 0;
+#endif  // SUPLAN_TESTING
   bool enabled_;
   bool transportWasOpen_;
   bool serverAssociationRequired_ = false;

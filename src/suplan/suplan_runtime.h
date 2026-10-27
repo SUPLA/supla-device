@@ -82,6 +82,7 @@ class ApplicationPort {
   virtual void readInterestRefreshed(uint8_t, const ResourceId &, bool) {}
 };
 
+#ifdef SUPLAN_TESTING
 struct RuntimeTestHooks {
   uint32_t maxDatagramPayload;
   uint8_t dropNextAckTx;
@@ -106,7 +107,7 @@ enum TestFloodKind : uint8_t {
   kFloodInvalidSession = 2,
   kFloodInvalidData = 3,
 };
-
+#endif  // SUPLAN_TESTING
 class Runtime {
  public:
   struct RecoveryStatus {
@@ -159,7 +160,9 @@ class Runtime {
   void clearPeer(uint8_t peerIndex);
   void authorizationChanged(uint8_t peerIndex);
   void setLocalAddress(const NodeAddress &address);
+#ifdef SUPLAN_TESTING
   bool startFlood(TestFloodKind kind, uint8_t peerIndex, uint16_t count);
+#endif  // SUPLAN_TESTING
   void resetDiagnostics();
   void iterate();
   uint32_t nowMs() const { return datagrams_->nowMs(); }
@@ -177,13 +180,17 @@ class Runtime {
   void publishCurrentInterests(uint8_t peerIndex = 0xff);
   void resumeRetainedInterests();
   void clearInterests();
+#ifdef SUPLAN_TESTING
   typedef void (*DataTransmitObserver)(void *, const Endpoint &,
                                        const uint8_t *, size_t);
   void setDataTransmitObserver(DataTransmitObserver observer, void *context);
+#endif  // SUPLAN_TESTING
 
   const Diagnostics &diagnostics() const;
   PoolDiagnostics poolDiagnostics() const;
+#ifdef SUPLAN_TESTING
   RuntimeTestHooks *testHooks();
+#endif  // SUPLAN_TESTING
 
  private:
   void iterateBindingRetry(uint32_t now);
@@ -302,6 +309,7 @@ class Runtime {
                     kProtectedHeaderSize + 32 + kAeadTagSize,
                 "Native/9 must fit the protected retry queue");
 
+#ifdef SUPLAN_TESTING
   struct FloodJob {
     bool active;
     TestFloodKind kind;
@@ -309,6 +317,7 @@ class Runtime {
     uint16_t remaining;
     uint8_t invalidSessionFrame[kSessionInitSize];
   };
+#endif  // SUPLAN_TESTING
 
   static void clearSessionEntry(SessionEntry *session);
   static void clearPendingHandshake(PendingHandshake *pending);
@@ -372,7 +381,9 @@ class Runtime {
   void expireControls(uint32_t now);
   void processDatagram(const Endpoint &source, const uint8_t *data,
                        size_t length);
+#ifdef SUPLAN_TESTING
   void processFlood();
+#endif  // SUPLAN_TESTING
   void processLocate(const Endpoint &source, const uint8_t *data,
                     size_t length);
   void processLocateReply(const Endpoint &source, const uint8_t *data,
@@ -415,7 +426,9 @@ class Runtime {
   NodeAddress localAddress_;
   uint32_t nextFrameId_;
   uint32_t presenceBudgetEpochMs_ = 0;
-  uint16_t fragmentOrdinal_;
+#ifdef SUPLAN_TESTING
+  uint16_t fragmentOrdinal_ = 0;
+#endif  // SUPLAN_TESTING
   uint16_t presenceAttempts_ = 0;
   uint8_t suplaProtoVersion_;
   bool processing_ : 1;
@@ -429,20 +442,26 @@ class Runtime {
   DeferredApplication deferred_[SUPLAN_MAX_DEFERRED_APP_EVENTS];
   PeerRecovery recovery_[SUPLAN_MAX_PEER_RECOVERY_STATES];
   ReadDependency dependencies_[SUPLAN_MAX_READ_DEPENDENCIES];
-  FloodJob flood_;
+#ifdef SUPLAN_TESTING
+  FloodJob flood_ = {};
+#endif  // SUPLAN_TESTING
   FragmentSender fragmentSender_;
   FragmentReassembler fragmentReassembler_;
   Diagnostics diagnostics_;
   PoolDiagnostics poolHighWater_;
-  RuntimeTestHooks hooks_;
+#ifdef SUPLAN_TESTING
+  RuntimeTestHooks hooks_ = {};
+#endif  // SUPLAN_TESTING
   uint8_t applicationBuffer_[SUPLAN_MAX_APPLICATION_BYTES];
   // Outbound application frames are bounded by MAX_APPLICATION_BYTES. The
   // larger reassembly limit only applies to received frames.
   uint8_t transmitFrame_[SUPLAN_MAX_APPLICATION_BYTES +
                          kProtectedHeaderSize + kAeadTagSize];
   Endpoint fragmentEndpoint_;
-  DataTransmitObserver dataTransmitObserver_;
-  void *dataTransmitContext_;
+#ifdef SUPLAN_TESTING
+  DataTransmitObserver dataTransmitObserver_ = nullptr;
+  void *dataTransmitContext_ = nullptr;
+#endif  // SUPLAN_TESTING
 };
 
 }  // namespace SupLan

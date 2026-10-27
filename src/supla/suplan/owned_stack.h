@@ -14,7 +14,7 @@ class OwnedSupLanStack : public SupLanStack {
  public:
   OwnedSupLanStack(SuplaDeviceClass *device, uint8_t version)
       : protocol_(allocateSupLan<Protocol::SupLan>(
-            device, &peers_, nullptr, 0)),
+            device, &peers_)),
         runtime_(&crypto_, &udp_, protocol_.get(), &peers_,
                   {SupLan::kNodeIdDevice, 0}, version) {}
   ~OwnedSupLanStack() override {

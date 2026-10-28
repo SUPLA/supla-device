@@ -7,6 +7,7 @@
 #include <supla/channels/channel.h>
 #include <supla/crc16.h>
 #include <supla/channels/channel_handle.h>
+#include <supla/control/action_trigger.h>
 #include <supla/control/hvac_config.h>
 #include <supla/control/valve_base.h>
 #include <supla/sensor/container.h>
@@ -507,4 +508,29 @@ TEST_F(ServerMigrationTests,
   another.DeviceId = 303;
   EXPECT_EQ(accept(another), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
   EXPECT_FALSE(identity.serverSyncComplete());
+}
+
+TEST_F(ServerMigrationTests, TemporaryUnlockReferenceMigratesWithServerScope) {
+  Control::ActionTriggerStoredConfig stored;
+  stored.duration = 123;
+  stored.edge = SUPLA_AT_SENSOR_EDGE_RISING;
+  stored.sensor.assign(ChannelReference::server(501));
+  config.put("4_at_tmp", stored);
+  ASSERT_TRUE(config.commit());
+  EXPECT_TRUE(ServerMigration::hasServerState(&config));
+  ASSERT_EQ(accept(next()), SUPLA_SUPLAN_RESULT_OK);
+  auto after = config.get<Control::ActionTriggerStoredConfig>("4_at_tmp");
+  EXPECT_EQ(after.sensor.reference(), ChannelReference::local(0));
+  EXPECT_EQ(after.duration, 123u);
+  EXPECT_EQ(after.edge, SUPLA_AT_SENSOR_EDGE_RISING);
+}
+
+TEST_F(ServerMigrationTests, TemporaryUnlockForeignReferenceIsCleared) {
+  Control::ActionTriggerStoredConfig stored;
+  stored.sensor.assign(ChannelReference::server(901));
+  config.put("4_at_tmp", stored);
+  ASSERT_TRUE(config.commit());
+  ASSERT_EQ(accept(next()), SUPLA_SUPLAN_RESULT_OK);
+  auto after = config.get<Control::ActionTriggerStoredConfig>("4_at_tmp");
+  EXPECT_EQ(after.sensor.reference(), ChannelReference());
 }

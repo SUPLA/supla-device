@@ -8,6 +8,7 @@
 #include <supla/channels/channel.h>
 #include <supla/crc16.h>
 #include <supla/crypto.h>
+#include <supla/control/action_trigger.h>
 #include <supla/control/hvac_config.h>
 #include <supla/control/valve_base.h>
 #include <supla/sensor/container.h>
@@ -118,10 +119,10 @@ bool pruneBindings(Config *cfg, const char *key,
   return saved && cfg->commit();
 }
 
-// Short-lived key snapshot: 5 record families x 255 slots, no retained index.
+// Short-lived key snapshot: 6 record families x 255 slots, no retained index.
 // Callbacks only inspect metadata; Config reads/writes happen after iteration.
 struct Inventory {
-  uint8_t present[5][32] = {};
+  uint8_t present[6][32] = {};
   bool has(int family, int slot) const {
     return present[family][slot / 8] & (1u << (slot % 8));
   }
@@ -134,8 +135,8 @@ struct Inventory {
     const auto slot = strtol(number, nullptr, 10);
     if (slot < 0 || slot >= 255) return true;
     char expected[SUPLA_CONFIG_MAX_KEY_SIZE];
-    for (int family = 0; family < 5; ++family) {
-      // Five fixed formats only; no untrusted formatting input.
+    for (int family = 0; family < 6; ++family) {
+      // Six fixed formats only; no untrusted formatting input.
       switch (family) {
         case 0: snprintf(expected, sizeof(expected), "%d_hvac_cfg2",
                          static_cast<int>(slot)); break;
@@ -145,7 +146,9 @@ struct Inventory {
                          static_cast<int>(slot)); break;
         case 3: snprintf(expected, sizeof(expected), "sl-peer-%d",
                          static_cast<int>(slot)); break;
-        default: snprintf(expected, sizeof(expected), "slb_%d",
+        case 4: snprintf(expected, sizeof(expected), "slb_%d",
+                         static_cast<int>(slot)); break;
+        default: snprintf(expected, sizeof(expected), "%d_at_tmp",
                           static_cast<int>(slot)); break;
       }
       if (strcmp(key, expected)) continue;
@@ -204,6 +207,16 @@ bool ServerMigration::hasServerState(Config *cfg) {
         if (slot.kind ==
             static_cast<uint8_t>(ChannelReferenceKind::SERVER_CHANNEL))
           return true;
+    }
+    snprintf(key, sizeof(key), "%d_at_tmp", n);
+    size = keys.has(5, n) ? cfg->getBlobSize(key) : -1;
+    if (keys.has(5, n) && size < 0) return true;
+    if (size >= 0) {
+      Control::ActionTriggerStoredConfig record;
+      if (size != sizeof(record) ||
+          !cfg->getBlob(key, reinterpret_cast<char *>(&record), size) ||
+          !record.valid() || record.sensor.reference().kind ==
+              ChannelReferenceKind::SERVER_CHANNEL) return true;
     }
     snprintf(key, sizeof(key), "sl-peer-%d", n);
     if (keys.has(3, n)) return true;
@@ -294,6 +307,19 @@ bool ServerMigration::migrate(Config *cfg) const {
       auto next = stored;
       for (auto &slot : next.config.sensorData)
         slot.assign(translate(slot.reference()));
+      if (memcmp(&stored, &next, sizeof(next)) &&
+          !save(cfg, key, &next, sizeof(next))) return false;
+    }
+    snprintf(key, sizeof(key), "%d_at_tmp", number);
+    size = keys.has(5, number) ? cfg->getBlobSize(key) : -1;
+    if (keys.has(5, number) && size < 0) return false;
+    if (size >= 0) {
+      Control::ActionTriggerStoredConfig stored;
+      if (size != sizeof(stored) ||
+          !cfg->getBlob(key, reinterpret_cast<char *>(&stored), size) ||
+          !stored.valid()) return false;
+      auto next = stored;
+      next.sensor.assign(translate(stored.sensor.reference()));
       if (memcmp(&stored, &next, sizeof(next)) &&
           !save(cfg, key, &next, sizeof(next))) return false;
     }

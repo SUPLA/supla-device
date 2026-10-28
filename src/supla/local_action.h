@@ -121,6 +121,8 @@ class LocalAction {
       const ActionHandler *client,
       const ActionAllowList &preservedActions);
   static void DeleteActionsTriggeredBy(const LocalAction *action);
+  static void DeleteActionsBetween(const LocalAction *trigger,
+                                   const ActionHandler *client);
   static void DeleteAction(const LocalAction *trigger,
                            const ActionHandler *client,
                            uint16_t event,

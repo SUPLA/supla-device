@@ -631,6 +631,29 @@ void ResourceBindingManager::iterate(uint32_t now) {
   }
   sendDesired(now);
 }
+RelayBindingStatus ResourceBindingManager::relayBindingStatus(
+    uint8_t target) const {
+  if (!loaded_ || !associations_ || !associations_->available() ||
+      !associations_->identity()->identityAvailable() ||
+      associations_->identity()->identityTransition()) {
+    return RelayBindingStatus::Unknown;
+  }
+  uint32_t targetId = 0;
+  if (!associations_->identity()->reverse(target, &targetId) ||
+      targetNumber(targetId) != target) {
+    return RelayBindingStatus::None;
+  }
+  for (const auto &entry : contributors_) {
+    if (!entry.source || entry.target != targetId) continue;
+    const auto peer = peerForSet(entry.set);
+    if (peer >= 0 && peers_->authorize(
+        peer, {SupLan::kResourceTypeChannel, entry.source},
+        SupLan::kPermissionRead)) {
+      return RelayBindingStatus::Configured;
+    }
+  }
+  return RelayBindingStatus::None;
+}
 bool ResourceBindingManager::relayDemand(uint8_t target, bool *configured) {
   bool demand = false;
   if (configured) *configured = false;

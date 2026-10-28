@@ -13,6 +13,8 @@ class ServerIdentity;
 struct ServerMigration;
 class RemoteResourceManager;
 // Destination topology is durable; Source routing is derived volatile state.
+enum class RelayBindingStatus : uint8_t { Unknown, None, Configured };
+
 class ResourceBindingManager {
  public:
   ResourceBindingManager(SupLan::PeerTable *peers,
@@ -28,6 +30,7 @@ class ResourceBindingManager {
   bool authorizationReplacing(const SupLan::PeerContext &context,
       const SupLan::AclEntry *expected, uint16_t count);
   bool relayDemand(uint8_t target, bool *configured);
+  RelayBindingStatus relayBindingStatus(uint8_t target) const;
   void acknowledged(uint8_t peer, uint8_t result);
   void serverReconnected();
   void invalidateServerScope();

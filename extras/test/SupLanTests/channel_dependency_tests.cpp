@@ -14,6 +14,7 @@
 #include <supla/condition.h>
 #include <supla/events.h>
 #include <supla/control/relay.h>
+#include <supla/control/action_trigger.h>
 #include <supla/channels/channel_state.h>
 #include <supla/control/hvac_base.h>
 #include <supla/control/hvac_config.h>
@@ -2409,5 +2410,141 @@ TEST_F(R1PeerPresence, LargestCanonicalIdAndBinaryFalseRemainDistinct) {
     EXPECT_FALSE(view.available());
     snapshot.Default = SUPLA_CHANNELFNC_BINARY_SENSOR;
   }
+}
+
+TEST(ChannelDependency, TemporaryUnlockServerUnionAndLocalZeroAreDistinct) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualBinary sensor;
+  Control::ActionTrigger at;
+  ServerIdentity identity;
+  bootstrapIdentity(&identity, &storage);
+  ASSERT_TRUE(usesServerReferences());
+  at.onServerIdentityTransition();
+  EXPECT_FALSE(at.isChannelConfigDurable());
+  TChannelConfig_ActionTrigger wire = {};
+  wire.TemporaryUnlockDurationSec = 10;
+  wire.TemporaryUnlockSensorEdge = SUPLA_AT_SENSOR_EDGE_RISING;
+  // The ID's low byte is not a valid local IsSet field.
+  wire.TemporaryUnlockSensorChannelId = 12345;
+  TSD_ChannelConfig request = {};
+  request.ConfigSize = sizeof(wire);
+  memcpy(request.Config, &wire, sizeof(wire));
+  ASSERT_EQ(at.handleChannelConfig(&request, false), SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_TRUE(at.isChannelConfigDurable());
+  TChannelConfig_ActionTrigger result = {};
+  int size = 0;
+  at.fillChannelConfig(&result, &size, 0);
+  ASSERT_EQ(size, 16);
+  EXPECT_EQ(result.TemporaryUnlockSensorChannelId, 12345);
+  at.fillLocalChannelConfig(&wire);
+  ASSERT_EQ(wire.TemporaryUnlockSensorIsSet, 255);
+  wire.TemporaryUnlockDurationSec = 15;
+  memcpy(request.Config, &wire, sizeof(wire));
+  ASSERT_EQ(at.handleChannelConfig(&request, true), SUPLA_CONFIG_RESULT_TRUE);
+  at.fillChannelConfig(&result, &size, 0);
+  EXPECT_EQ(result.TemporaryUnlockSensorChannelId, 12345);
+  EXPECT_EQ(result.TemporaryUnlockDurationSec, 15);
+  wire.TemporaryUnlockSensorChannelId = 0;
+  wire.TemporaryUnlockSensorIsSet = 1;
+  wire.TemporaryUnlockSensorChannelNo = 0;
+  memcpy(request.Config, &wire, sizeof(wire));
+  ASSERT_EQ(at.handleChannelConfig(&request, true), SUPLA_CONFIG_RESULT_TRUE);
+  at.fillLocalChannelConfig(&result);
+  EXPECT_EQ(result.TemporaryUnlockSensorIsSet, 1);
+  EXPECT_EQ(result.TemporaryUnlockSensorChannelNo, 0);
+  wire.TemporaryUnlockSensorChannelId = 0;
+  memcpy(request.Config, &wire, sizeof(wire));
+  ASSERT_EQ(at.handleChannelConfig(&request, true), SUPLA_CONFIG_RESULT_TRUE);
+  at.fillLocalChannelConfig(&result);
+  EXPECT_EQ(result.TemporaryUnlockSensorIsSet, 0);
+}
+
+TEST(ChannelDependency, TemporaryUnlockUsesReadAclAndRecoveryBaseline) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualBinary sensor;
+  SuplaDeviceClass device;
+  DependencySrpc protocol(&device);
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager resources(&peers, nullptr, &port);
+  protocol.resources = &resources;
+  // Outlive AT so its destructor can release the demand safely.
+  ServerIdentity identity;
+  const ResourceId id = {kResourceTypeChannel, 0x101};
+  PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
+                         {kNodeIdDevice, 202}, 7, 1};
+  uint8_t key[32] = {1};
+  AclEntry acl = {id, kPermissionRead};
+  uint8_t peer;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &acl, 1, &peer, true));
+  {
+    Control::ActionTrigger at;
+    bootstrapIdentity(&identity, &storage);
+    TChannelConfig_ActionTrigger wire = {};
+    wire.TemporaryUnlockDurationSec = 5;
+    wire.TemporaryUnlockSensorEdge = SUPLA_AT_SENSOR_EDGE_RISING;
+    wire.TemporaryUnlockSensorChannelId = 0x101;
+    TSD_ChannelConfig config = {};
+    config.ConfigSize = sizeof(wire);
+    memcpy(config.Config, &wire, sizeof(wire));
+    ASSERT_EQ(at.handleChannelConfig(&config), SUPLA_CONFIG_RESULT_TRUE);
+    TSD_SuplaChannelNewValue command = {};
+    reinterpret_cast<TActionTriggerProperties *>(command.value)->ButtonMode = 6;
+    ASSERT_EQ(at.handleNewValueFromServer(&command), 1);
+    ASSERT_EQ(resources.consumerCount(), 1);
+    TDS_SuplaDeviceChannel_E snapshot = {};
+    snapshot.Number = 0xff;
+    snapshot.Type = SUPLA_CHANNELTYPE_SENSORNO;
+    snapshot.Default = SUPLA_CHANNELFNC_BINARY_SENSOR;
+    snapshot.ValueValidityTimeSec = 60;
+    const auto publish = [&](bool value) {
+      snapshot.value[0] = value;
+      resources.receive(peer, id, reinterpret_cast<uint8_t *>(&snapshot),
+                        sizeof(snapshot), time.value);
+      at.iterateAlways();
+    };
+    publish(true);
+    EXPECT_FALSE(at.isTemporaryUnlockActive());
+    publish(false);
+    publish(true);
+    EXPECT_TRUE(at.isTemporaryUnlockActive());
+    time.advance(5000);
+    at.iterateAlways();
+    EXPECT_TRUE(at.isEffectivelyLocked());
+    const uint8_t unavailableStates[] = {
+        SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE,
+        SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE,
+        SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING};
+    for (uint8_t offline : unavailableStates) {
+      publish(false);
+      snapshot.Offline = offline;
+      publish(true);
+      EXPECT_FALSE(at.isTemporaryUnlockActive());
+      snapshot.Offline = SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
+      publish(true);  // Recovery is baseline, even when the value changed.
+      EXPECT_FALSE(at.isTemporaryUnlockActive());
+      publish(false);
+      publish(true);
+      ASSERT_TRUE(at.isTemporaryUnlockActive());
+      time.advance(5000);
+      at.iterateAlways();
+      EXPECT_TRUE(at.isEffectivelyLocked());
+    }
+    ASSERT_TRUE(peers.replaceAcl(peer, 2, nullptr, 0));
+    at.iterateAlways();
+    publish(false);  // No READ right: this value cannot update the baseline.
+    EXPECT_FALSE(at.isTemporaryUnlockActive());
+    ASSERT_TRUE(peers.replaceAcl(peer, 3, &acl, 1));
+    publish(true);  // Restored availability is baseline only.
+    EXPECT_FALSE(at.isTemporaryUnlockActive());
+    publish(false);
+    publish(true);
+    EXPECT_TRUE(at.isTemporaryUnlockActive());
+  }
+  EXPECT_EQ(resources.consumerCount(), 0);
 }
 }  // namespace

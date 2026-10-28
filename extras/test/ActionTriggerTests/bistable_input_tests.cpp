@@ -49,7 +49,10 @@ class BistableInputTest : public testing::TestWithParam<bool> {
 
   testing::NiceMock<DigitalInterfaceMock> io;
   SimpleTime time;
-  ConfigSimulator config;
+  class WritableConfig : public ConfigSimulator {
+   public:
+    bool commit() override { return true; }
+  } config;
   ConfigEntryObserver device;
   std::array<int, 8> gpio{};
   std::vector<std::pair<int, int>> outputChanges;

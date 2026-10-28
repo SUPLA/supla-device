@@ -553,6 +553,25 @@ TEST_F(M4bDevice, LocalUpdatePreservesRemoteReferenceAndNoFallback) {
   EXPECT_EQ(valve->sensorReference(0), ChannelReference::server(1001));
 }
 
+TEST_F(M4bDevice, RelayBindingStatusDistinguishesUnknownAndConfigured) {
+  auto manager = adapter.resourceBindings();
+  manager->attachAssociations(&associations);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Unknown);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::None);
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  // Configuration remains visible with no session and no received value.
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  EXPECT_EQ(manager->relayBindingStatus(4), RelayBindingStatus::None);
+  const uint8_t empty = 0;
+  ASSERT_EQ(manager->accept(0, &empty, 1), 3);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::None);
+  manager->attachAssociations(nullptr);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Unknown);
+  manager->attachAssociations(&associations);
+}
+
 TEST_F(M4bDevice, BindingDurabilityRebootRevocationAndEmpty) {
   auto body = binding();
   auto manager = adapter.resourceBindings();

@@ -9,6 +9,7 @@
 #include <supla/action_handler.h>
 #include <supla/actions.h>
 #include <supla/at_channel.h>
+#include <supla/channels/channel_reference.h>
 #include <supla/control/weekly_schedule_component.h>
 #include <supla/element_with_channel_actions.h>
 
@@ -29,9 +30,29 @@ namespace Control {
 class Button;
 class ActionTriggerWeeklySchedule;
 
+#pragma pack(push, 1)
+struct ActionTriggerStoredConfig {
+  uint8_t version = 1;
+  uint32_t function = SUPLA_CHANNELFNC_ACTIONTRIGGER;
+  uint32_t duration = 0;
+  uint8_t edge = SUPLA_AT_SENSOR_EDGE_NONE;
+  StoredChannelReference sensor;
+  // Disambiguates mode 6 from the legacy all-actions state sentinel.
+  uint32_t escapedActions = 0;
+  bool valid() const {
+    return version == 1 && function == SUPLA_CHANNELFNC_ACTIONTRIGGER &&
+        duration <= 64800 && edge <= SUPLA_AT_SENSOR_EDGE_BOTH &&
+        (escapedActions == 0 ||
+         (escapedActions & 0x3FFFFFFFUL) == 0x3FFFFFFFUL) &&
+        sensor.reference().valid();
+  }
+};
+#pragma pack(pop)
+
 class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
  public:
   friend class ActionTriggerWeeklySchedule;
+  friend class Button;
 
   union ActionTriggerFlags {
     struct {
@@ -52,6 +73,8 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   // Use below methods to attach button instance to ActionTrigger.
   // It will automatically register to all supported button actions
   // during onInit() call on action trigger instance.
+  // One AT per Button. An occupied target is rejected, keeping this binding.
+  // Passing nullptr releases this AT's binding.
   void attach(Supla::Control::Button *);
   void attach(Supla::Control::Button &);
 
@@ -74,11 +97,22 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   void onSaveState() override;
   void iterateAlways() override;
   void refreshSupLanRecognition();
+  void reconcileChannelDependencies() override;
+  bool isChannelConfigDurable() const override;
+  void onServerIdentityTransition() override;
+#ifndef ARDUINO_ARCH_AVR
+  void onServerScopeMigration() override;
+#endif
+  bool isEffectivelyLocked() const;
+  bool isTemporaryUnlockActive() const;
   int32_t handleNewValueFromServer(
       TSD_SuplaChannelNewValue *newValue) override;
   void fillChannelConfig(void *channelConfig,
                          int *size,
                          uint8_t configType) override;
+  // Local editing uses local channel numbers. A remote sensor is represented
+  // by IsSet=255, meaning preserve the current assignment on local apply.
+  void fillLocalChannelConfig(TChannelConfig_ActionTrigger *config);
   void purgeConfig() override;
 
   void rebuildForAttachedButton();
@@ -134,6 +168,32 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   bool requiresClickMode() const;
   static void synchronizeDirectionalButtonModes();
 
+  bool startTemporaryUnlock(uint32_t seconds);
+  void updateTemporaryUnlock();
+  void updateUnlockSensor();
+  void syncEffectiveButtonLock();
+  uint32_t unlockSensorConsumer() const;
+
+  using TemporaryUnlockConfig = ActionTriggerStoredConfig;
+  struct TemporaryUnlockState {
+    TemporaryUnlockConfig config;
+    uint32_t startMs = 0;
+    uint32_t durationMs = 0;
+    uint16_t weeklyDurationS = 0;
+    bool baselineKnown = false;
+    bool baseline = false;
+    bool persistenceUncertain = false;
+    bool manualModeTransition = false;
+    bool hasStoredActiveActions = false;
+  };
+  bool ensureTemporaryUnlockState();
+  bool persistTemporaryUnlockConfig(const TemporaryUnlockConfig &config,
+                                    bool localChange = false,
+                                    const uint32_t *activeActions = nullptr);
+  bool prepareTemporaryUnlockState();
+  TemporaryUnlockConfig currentTemporaryUnlockConfig() const;
+  TemporaryUnlockState *temporaryUnlock = nullptr;
+
   Supla::Control::Button *attachedButton = nullptr;
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;
   Supla::ActionHandlerClient *localHandlerForDisabledAt = nullptr;
@@ -151,8 +211,11 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   // Integer storage avoids old-GCC warnings about the enum's full uint8_t
   // range, while retaining the same two-bit encoding and RAM layout.
   uint8_t actionHandlingType : 2;
+  uint8_t buttonBindingsInitialized : 1;
 #ifndef ARDUINO_ARCH_AVR
   uint8_t suplanRecognitionActive : 1;
+  uint8_t suplanConfigDurable : 1;
+  uint8_t destroying : 1;
 #else
   static constexpr bool suplanRecognitionActive = false;
 #endif

@@ -55,12 +55,12 @@
       "name": "Supla::Control::ActionTrigger",
       "header": "supla/control/action_trigger.h",
       "limits": {
-        "host": 192,
-        "avr": 98,
+        "host": 200,
+        "avr": 100,
         "esp8266": 144,
         "esp32": 144
       },
-      "reason": "Includes the accepted main 2fbd72a3 layout correction; SupLAN recognition adds no object bytes."
+      "reason": "Temporary unlock adds one lazy-state pointer; target measurements are host 200, AVR 100, ESP8266/ESP32 144 bytes."
     },
     {
       "name": "Supla::Control::Relay",

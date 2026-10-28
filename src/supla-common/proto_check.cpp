@@ -210,7 +210,16 @@ static_assert(sizeof(TChannelConfig_StaircaseTimer) <=
 static_assert(sizeof(TChannelConfig_RollerShutter) == 44);
 static_assert(sizeof(TChannelConfig_RollerShutter) <=
               (unsigned int)SUPLA_CHANNEL_CONFIG_MAXSIZE);
-static_assert(sizeof(TChannelConfig_ActionTrigger) == 4);
+static_assert(sizeof(TChannelConfig_ActionTrigger) == 16);
+static_assert(offsetof(TChannelConfig_ActionTrigger,
+                      TemporaryUnlockDurationSec) == 4);
+static_assert(offsetof(TChannelConfig_ActionTrigger,
+                      TemporaryUnlockSensorEdge) == 8);
+static_assert(offsetof(TChannelConfig_ActionTrigger,
+                      TemporaryUnlockSensorChannelId) == 9);
+static_assert(offsetof(TChannelConfig_ActionTrigger, Reserved) == 13);
+static_assert(sizeof(TWeeklyScheduleProgram) == 5);
+
 static_assert(sizeof(TChannelConfig_ActionTrigger) <=
               (unsigned int)SUPLA_CHANNEL_CONFIG_MAXSIZE);
 static_assert((unsigned int)539 == sizeof(TSDS_SetDeviceConfig));
@@ -258,6 +267,8 @@ static_assert((unsigned int)16 == sizeof(TAction_ShadingSystem_Parameters));
 static_assert((unsigned int)16 == sizeof(TAction_RGBW_Parameters));
 static_assert(sizeof(TAction_HVAC_Parameters) == 11);
 static_assert((unsigned int)16 == sizeof(TAction_AT_Parameters));
+static_assert(offsetof(TAction_AT_Parameters, DurationSec) == 1);
+static_assert(offsetof(TAction_AT_Parameters, Reserved) == 5);
 static_assert((unsigned int)16 == sizeof(TAction_Relay_Parameters));
 static_assert(sizeof(TAction_ShadingSystem_Parameters) <=
               (unsigned int)SUPLA_ACTION_PARAM_MAXSIZE);

@@ -369,6 +369,20 @@ void LocalAction::DeleteActionsTriggeredBy(const LocalAction *trigger) {
   }
 }
 
+void LocalAction::DeleteActionsBetween(const LocalAction *trigger,
+                                       const ActionHandler *client) {
+  auto ptr = ActionHandlerClient::begin;
+  while (ptr) {
+    auto next = ptr->next;
+    if (!ptr->deletePending && ptr->trigger == trigger && ptr->client &&
+        ptr->client->getRealClient() == client) {
+      retire(ptr);
+      next = ActionHandlerClient::begin;
+    }
+    ptr = next;
+  }
+}
+
 void LocalAction::DeleteAction(const LocalAction *trigger,
                                const ActionHandler *client,
                                uint16_t event,

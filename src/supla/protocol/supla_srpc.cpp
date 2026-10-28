@@ -3075,6 +3075,22 @@ bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
     return false;
   }
 
+  // Older servers accept only the four-byte AT action bitmap. Never mark a
+  // non-default v29 temporary-unlock configuration as sent to such a server.
+  if (effectiveSrpcVersion(version) < 29 &&
+      channelFunction == SUPLA_CHANNELFNC_ACTIONTRIGGER &&
+      configType == SUPLA_CONFIG_TYPE_DEFAULT &&
+      size == sizeof(TChannelConfig_ActionTrigger)) {
+    TChannelConfig_ActionTrigger atConfig = {};
+    memcpy(&atConfig, channelConfig, sizeof(atConfig));
+    if (atConfig.TemporaryUnlockDurationSec ||
+        atConfig.TemporaryUnlockSensorEdge ||
+        atConfig.TemporaryUnlockSensorChannelId) {
+      return false;
+    }
+    size = sizeof(atConfig.ActiveActions);
+  }
+
   TSDS_SetChannelConfig request = {};
   request.ChannelNumber = channelNumber;
   request.Func = channelFunction;

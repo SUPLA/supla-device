@@ -78,6 +78,41 @@ class SuplaSrpcDeviceConfigTests : public ::testing::Test {
 
 }  // namespace
 
+
+TEST_F(SuplaSrpcDeviceConfigTests, ActionTriggerConfigUsesWireVersion) {
+  NiceMock<SrpcMock> srpcMock;
+  SuplaDeviceClass device;
+  TestSrpc protocol(&device);
+  protocol.setRegisteredForTest(true);
+  TChannelConfig_ActionTrigger atConfig = {};
+  atConfig.ActiveActions = SUPLA_ACTION_CAP_ROTATE_LEFT;
+  protocol.setVersion(28);
+  EXPECT_CALL(srpcMock, setChannelConfigRequest(_))
+      .WillOnce(Invoke([](TSDS_SetChannelConfig *request) {
+        EXPECT_EQ(request->ConfigSize, 4);
+        uint32_t active = 0;
+        memcpy(&active, request->Config, 4);
+        EXPECT_EQ(active, SUPLA_ACTION_CAP_ROTATE_LEFT);
+        return 1;
+      }));
+  EXPECT_TRUE(protocol.setChannelConfig(0, SUPLA_CHANNELFNC_ACTIONTRIGGER,
+      &atConfig, sizeof(atConfig), SUPLA_CONFIG_TYPE_DEFAULT));
+  atConfig.TemporaryUnlockDurationSec = 1;
+  EXPECT_FALSE(protocol.setChannelConfig(0, SUPLA_CHANNELFNC_ACTIONTRIGGER,
+      &atConfig, sizeof(atConfig), SUPLA_CONFIG_TYPE_DEFAULT));
+  protocol.setVersion(29);
+  EXPECT_CALL(srpcMock, setChannelConfigRequest(_))
+      .WillOnce(Invoke([](TSDS_SetChannelConfig *request) {
+        EXPECT_EQ(request->ConfigSize, 16);
+        TChannelConfig_ActionTrigger config = {};
+        memcpy(&config, request->Config, sizeof(config));
+        EXPECT_EQ(config.TemporaryUnlockDurationSec, 1u);
+        return 1;
+      }));
+  EXPECT_TRUE(protocol.setChannelConfig(0, SUPLA_CHANNELFNC_ACTIONTRIGGER,
+      &atConfig, sizeof(atConfig), SUPLA_CONFIG_TYPE_DEFAULT));
+}
+
 TEST_F(SuplaSrpcDeviceConfigTests,
        ResponseSerializationFailureFinishesFirstTransaction) {
   NiceMock<SrpcMock> srpcMock;

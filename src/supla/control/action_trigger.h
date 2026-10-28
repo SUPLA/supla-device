@@ -29,6 +29,7 @@ namespace Control {
 class Button;
 class ActionTriggerWeeklySchedule;
 
+
 class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
  public:
   friend class ActionTriggerWeeklySchedule;
@@ -73,6 +74,8 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   void onLoadState() override;
   void onSaveState() override;
   void iterateAlways() override;
+  bool isEffectivelyLocked() const;
+  bool isTemporaryUnlockActive() const;
   int32_t handleNewValueFromServer(
       TSD_SuplaChannelNewValue *newValue) override;
   void fillChannelConfig(void *channelConfig,
@@ -132,6 +135,41 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   bool hasDirectionalPair() const;
   bool requiresClickMode() const;
   static void synchronizeDirectionalButtonModes();
+
+  bool startTemporaryUnlock(uint32_t seconds);
+  void updateTemporaryUnlock();
+  void updateUnlockSensor();
+  void syncEffectiveButtonLock();
+
+#pragma pack(push, 1)
+  struct TemporaryUnlockConfig {
+    uint8_t version = 1;
+    uint32_t function = SUPLA_CHANNELFNC_ACTIONTRIGGER;
+    uint32_t duration = 0;
+    uint8_t edge = SUPLA_AT_SENSOR_EDGE_NONE;
+    uint8_t sensor = 255;
+    // Disambiguates mode 6 from the legacy all-actions state sentinel.
+    uint32_t escapedActions = 0;
+  };
+#pragma pack(pop)
+  struct TemporaryUnlockState {
+    TemporaryUnlockConfig config;
+    uint32_t startMs = 0;
+    uint32_t durationMs = 0;
+    uint16_t weeklyDurationS = 0;
+    bool baselineKnown = false;
+    bool baseline = false;
+    bool persistenceUncertain = false;
+    bool manualModeTransition = false;
+    bool hasStoredActiveActions = false;
+  };
+  bool ensureTemporaryUnlockState();
+  bool persistTemporaryUnlockConfig(const TemporaryUnlockConfig &config,
+                                    bool localChange = false,
+                                    const uint32_t *activeActions = nullptr);
+  bool prepareTemporaryUnlockState();
+  TemporaryUnlockConfig currentTemporaryUnlockConfig() const;
+  TemporaryUnlockState *temporaryUnlock = nullptr;
 
   Supla::Control::Button *attachedButton = nullptr;
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;

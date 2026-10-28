@@ -74,6 +74,17 @@ void AtChannel::setButtonMode(uint8_t mode) {
   setActionTriggerProperties(properties);
 }
 
+void AtChannel::setButtonModeAndTemporaryUnlock(uint8_t mode, bool active) {
+  TActionTriggerProperties properties = actionTriggerProperties;
+  properties.ButtonMode = mode;
+  if (active) {
+    properties.Flags |= SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE;
+  } else {
+    properties.Flags &= ~SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE;
+  }
+  setActionTriggerProperties(properties);
+}
+
 uint8_t AtChannel::getButtonMode() const {
   return actionTriggerProperties.ButtonMode;
 }
@@ -116,3 +127,13 @@ void AtChannel::setActionTriggerProperties(
 }
 
 };  // namespace Supla
+
+void Supla::AtChannel::setTemporaryUnlockActive(bool active) {
+  TActionTriggerProperties properties = actionTriggerProperties;
+  if (active) {
+    properties.Flags |= SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE;
+  } else {
+    properties.Flags &= ~SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE;
+  }
+  setActionTriggerProperties(properties);
+}

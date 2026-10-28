@@ -54,11 +54,12 @@
       "name": "Supla::Control::ActionTrigger",
       "header": "supla/control/action_trigger.h",
       "limits": {
-        "host": 192,
-        "avr": 94,
+        "host": 200,
+        "avr": 96,
         "esp8266": 136,
         "esp32": 136
-      }
+      },
+      "reason": "Temporary unlock adds one pointer to lazily allocated state: +8 B on host, +2 B on AVR; ESP targets use existing padding."
     },
     {
       "name": "Supla::Control::Relay",

@@ -18,6 +18,7 @@
 #include <supla/protocol/supla_srpc.h>
 #include <supla/device/register_device.h>
 #include <storage_mock.h>
+#include <supla/storage/key_value.h>
 #include <vector>
 #include "clock_stub.h"
 #include "supla/actions.h"
@@ -146,6 +147,8 @@ void expectActionTriggerConfigStorage(ConfigMock *cfg,
                                       int weeklyScheduleBlobSize = -1,
                                       bool expectLegacyWeeklyChangeFlag =
                                           false) {
+  EXPECT_CALL(*cfg, getBlobSize(testing::StrEq("0_at_tmp")))
+      .WillRepeatedly(Return(-1));
   if (weeklyScheduleBlobSize >= 0) {
     EXPECT_CALL(*cfg, getBlobSize(testing::StrEq("0_at_weekly")))
         .WillOnce(Return(weeklyScheduleBlobSize));
@@ -260,8 +263,8 @@ TEST_F(ActionTriggerTests, DefaultConfigAcceptsLegacyAndExtendedFormats) {
     TSD_ChannelConfig config = {};
     config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
     config.ConfigSize = size;
-    // Nonzero extension bytes must not affect the lock mode or active actions.
-    memset(config.Config, 0xFF, size);
+    // Both wire layouts preserve action selection and capabilities.
+    memset(config.Config, 0, size);
     const uint32_t active = size == 16 ? SUPLA_ACTION_CAP_ROTATE_LEFT
                                        : SUPLA_ACTION_CAP_ROTATE_RIGHT;
     memcpy(config.Config, &active, sizeof(active));
@@ -298,7 +301,7 @@ TEST_F(ActionTriggerTests, ExtendedDefaultConfigCanDisableAllActions) {
   TSD_ChannelConfig config = {};
   config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
   config.ConfigSize = 16;
-  memset(config.Config + 4, 0xFF, 12);
+  // The default extension disables automatic temporary unlock.
   ASSERT_EQ(at.handleChannelConfig(&config), SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_FALSE(at.isAnyActionEnabledOnServer());
   at.handleAction(0, Supla::SEND_AT_ROTATE_RIGHT);
@@ -2780,23 +2783,16 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   SrpcMock srpc;
   ignoreAtValueUpdates(&srpc);
   StorageMock storage;
-  ConfigMock cfg;
+  class PublishAllConfig : public Supla::KeyValue {
+   public:
+    bool init() override { return true; }
+  } cfg;
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   Supla::Control::ActionTrigger at;
   ActionHandlerMock ah;
 
-  EXPECT_CALL(cfg, init());
-  EXPECT_CALL(cfg, getInt32(_, _)).WillRepeatedly([](const char *key,
-                                                      int32_t *buf) {
-    if (strcmp(key, "0_mqtt_at") == 0) {
-      *buf = 2;
-      return true;
-    }
-    EXPECT_STREQ(key, "0_at_unlock");
-    return false;
-  });
-  expectActionTriggerConfigStorage(&cfg);
+  ASSERT_TRUE(cfg.setInt32("0_mqtt_at", 2));
 
   // initial configuration
   b1.addAction(Supla::TOGGLE, ah, Supla::ON_PRESS);

@@ -22,10 +22,12 @@ class AtChannel : public Channel {
   }
   void setDisablesLocalOperation(uint32_t actions);
   void setButtonMode(uint8_t mode);
+  void setButtonModeAndTemporaryUnlock(uint8_t mode, bool active);
   uint8_t getButtonMode() const;
   void setWeeklyScheduleEnabled(bool enabled);
   bool isWeeklyScheduleEnabled() const;
   void enableValueUpdates();
+  void setTemporaryUnlockActive(bool active);
 
  protected:
   void setActionTriggerProperties(const TActionTriggerProperties &properties);

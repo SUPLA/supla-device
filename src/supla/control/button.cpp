@@ -122,7 +122,22 @@ bool Button::runActionWithActionTriggerPolicy(uint16_t event) {
   return runtimeFlags.actionTriggerSuppressActionsUntilRelease;
 }
 
+void Button::setTemporaryUnlockDeadline(uint32_t startMs, uint32_t durationMs) {
+  temporaryUnlockDeadlineMs = startMs + durationMs;
+  runtimeFlags.temporaryUnlockDeadlineActive = durationMs != 0;
+}
+
 void Button::onTimer() {
+  // Durations are below half of the uint32_t range, allowing a wrap-safe
+  // deadline comparison without converting an out-of-range value to signed.
+  if (runtimeFlags.temporaryUnlockDeadlineActive &&
+      static_cast<uint32_t>(millis() - temporaryUnlockDeadlineMs) <
+          UINT32_C(0x80000000)) {
+    runtimeFlags.temporaryUnlockDeadlineActive = false;
+    setActionTriggerModeLocked(
+        true, runtimeFlags.actionTriggerLocalUnlockAllowed,
+        runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
+  }
   int stateResult = state.update();
   if (!state.isReady()) {
     return;

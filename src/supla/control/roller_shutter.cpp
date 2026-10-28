@@ -155,8 +155,12 @@ void RollerShutter::switchOffRelays() {
   relayDownOff();
 }
 
+bool RollerShutter::isOutputReady() const {
+  return pinUp.isSet() && pinDown.isSet();
+}
+
 void RollerShutter::onTimer() {
-  if (!pinUp.isSet() || !pinDown.isSet()) {
+  if (!isOutputReady()) {
     switchOffRelays();
     return;
   }

@@ -21,6 +21,11 @@ void Supla::Control::CmdRollerShutter::relayUpOn() {
   }
 }
 
+bool Supla::Control::CmdRollerShutter::isOutputReady() const {
+  return !cmdUpOn.empty() && !cmdUpOff.empty() &&
+      !cmdDownOn.empty() && !cmdDownOff.empty();
+}
+
 void Supla::Control::CmdRollerShutter::relayDownOn() {
   if (cmdDownOn.length() > 0) {
     Supla::Linux::executeCommand(cmdDownOn, "CmdRollerShutter.cmd_down_on");

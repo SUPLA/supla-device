@@ -28,6 +28,8 @@ class CmdRollerShutter : public Sensor::SensorParsed<RollerShutter> {
   void setCmdDownOff(const std::string &);
 
  protected:
+  bool isOutputReady() const override;
+
   std::string cmdUpOn;
   std::string cmdUpOff;
   std::string cmdDownOn;

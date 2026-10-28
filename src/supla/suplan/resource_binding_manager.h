@@ -62,7 +62,7 @@ class ResourceBindingManager {
     bool retained = false;
     bool attempted = false;
     bool blocked = false;
-  } intents_[SUPLAN_MAX_RESOURCE_BINDINGS];
+  } intents_[SUPLAN_MAX_BINDING_INTENTS];
   struct Sent {
     uint32_t hash = 0;
     uint32_t time = 0;
@@ -99,7 +99,8 @@ class ResourceBindingManager {
 // Round the final bound to class alignment, including odd custom peer counts.
 static_assert(sizeof(ResourceBindingManager) <=
                   ((41 * SUPLAN_MAX_PERSISTENT_PEERS +
-                  36 * SUPLAN_MAX_RESOURCE_BINDINGS +
+                  16 * SUPLAN_MAX_RESOURCE_BINDINGS +
+                  20 * SUPLAN_MAX_BINDING_INTENTS +
                   sizeof(SupLan::BindingRetry) +
                   2 * (29 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER) + 64 +
                   alignof(ResourceBindingManager) - 1) /

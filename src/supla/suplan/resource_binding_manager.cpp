@@ -82,6 +82,8 @@ void ResourceBindingManager::migrate(const ServerIdentity *identity,
       if (resources_) resources_->remove(0x40000 + i);
       entry = {};
     }
+  }
+  for (int i = 0; i < SUPLAN_MAX_BINDING_INTENTS; ++i) {
     auto &intent = intents_[i];
     if (intent.source && (removed(intent.source) || removed(intent.target))) {
       if (pendingIntent_ == i) {
@@ -415,7 +417,7 @@ bool ResourceBindingManager::collectIntents() {
         addIntent(source, reference.id);
     }
   }
-  for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS; ++i) {
+  for (int i = 0; i < SUPLAN_MAX_BINDING_INTENTS; ++i) {
     if (intents_[i].source && !intents_[i].retained && i != pendingIntent_)
       intents_[i] = {};
   }
@@ -608,7 +610,7 @@ void ResourceBindingManager::iterate(uint32_t now) {
     pendingIntent_ = -1;
   }
   if (pendingIntent_ < 0 && port_) {
-    for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS; ++i) {
+    for (int i = 0; i < SUPLAN_MAX_BINDING_INTENTS; ++i) {
       auto &intent = intents_[i];
       if (!intent.source || !intent.retained || intent.destination ||
           intent.attempted || static_cast<int32_t>(now - intent.nextEnsure) < 0)

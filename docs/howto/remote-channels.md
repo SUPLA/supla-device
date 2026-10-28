@@ -5,6 +5,21 @@ by its global **ChannelId** from Cloud. This is not
 the device-local ChannelNumber. A handle does not create a local SUPLA Channel
 or duplicate the remote value cache. These APIs are not available on AVR.
 
+## Binding pool capacities
+
+For HVAC output bindings, `SUPLAN_MAX_RESOURCE_BINDINGS` limits received edges
+from remote HVAC Channels to local outputs. `SUPLAN_MAX_BINDING_INTENTS` limits
+outgoing pairs from local HVAC Channels to remote outputs. These are separate
+pools; neither limit changes the number of remote value resources or consumers.
+
+By default, the intent limit equals `SUPLAN_MAX_RESOURCE_BINDINGS`, preserving
+the existing profile capacities. A gateway can explicitly build with, for example,
+`SUPLAN_MAX_RESOURCE_BINDINGS=400` and `SUPLAN_MAX_BINDING_INTENTS=32`.
+Both limits must be positive. Define overrides consistently for all SDK sources.
+`SUPLAN_MAX_BINDINGS_PER_PEER` remains a separate wire/transport bound; changing
+the intent limit does not change it. On the ESP32 ABI, 400/32 instead of 400/400
+reduces the manager's retained size by 7360 bytes, without heap allocation.
+
 ## Choose the delivery mode
 
 | Handle | Delivery | Permissions |

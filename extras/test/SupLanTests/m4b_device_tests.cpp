@@ -1315,12 +1315,17 @@ TEST_F(M4bDevice, BlockedShareDoesNotStarveProvisionedBinding) {
 }
 
 TEST_F(M4bDevice, OverflowingBindingIntentsDoNotStarveIndependentPeer) {
-  if (SUPLAN_MAX_RESOURCE_BINDINGS / 2 + 5 > SUPLA_CHANNELMAXCOUNT) {
+  if (SUPLAN_MAX_BINDING_INTENTS < 2) {
+    GTEST_SKIP() << "Independent peer progress and reclamation require "
+                   "at least two intent slots";
+  }
+  const int extraHvacCount = (SUPLAN_MAX_BINDING_INTENTS + 2) / 2;
+  if (extraHvacCount + 5 > SUPLA_CHANNELMAXCOUNT) {
     GTEST_SKIP() << "The default Large intent pool exceeds this topology's "
                    "two references per HVAC within the 128-channel limit";
   }
   std::vector<std::unique_ptr<FollowupHvac>> extra;
-  for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS / 2; ++i) {
+  for (int i = 0; i < extraHvacCount; ++i) {
     extra.emplace_back(new FollowupHvac(&output));
     extra.back()->onLoadConfig(nullptr);
     extra.back()->onInit();
@@ -1364,12 +1369,17 @@ TEST_F(M4bDevice, OverflowingBindingIntentsDoNotStarveIndependentPeer) {
   auto config = bindingConfig(9001, 0);
   ASSERT_EQ(hvac->handleChannelConfig(&config, false),
             SUPLA_CONFIG_RESULT_TRUE);
+  int requestedIntents = 1;
   for (size_t i = 0; i < extra.size(); ++i) {
-    config = bindingConfig(9002 + 2 * i, 9003 + 2 * i);
+    const bool singleTarget = i + 1 == extra.size() &&
+        SUPLAN_MAX_BINDING_INTENTS % 2 == 0;
+    config = bindingConfig(9002 + 2 * i, singleTarget ? 0 : 9003 + 2 * i);
+    requestedIntents += singleTarget ? 1 : 2;
     ASSERT_EQ(extra[i]->handleChannelConfig(&config, false),
               SUPLA_CONFIG_RESULT_TRUE);
   }
   auto manager = adapter.resourceBindings();
+  ASSERT_GT(requestedIntents, SUPLAN_MAX_BINDING_INTENTS);
   int completed = 0;
   for (int i = 0; i < 300; ++i) {
     time.advance(10);
@@ -1385,7 +1395,7 @@ TEST_F(M4bDevice, OverflowingBindingIntentsDoNotStarveIndependentPeer) {
     runtime.iterate();
     destination.iterate();
   }
-  EXPECT_EQ(completed, SUPLAN_MAX_RESOURCE_BINDINGS);
+  EXPECT_EQ(completed, SUPLAN_MAX_BINDING_INTENTS);
   ASSERT_EQ(receiver.snapshots.size(), 1U);
   ASSERT_EQ(receiver.snapshots.front().size(), 13U);
   EXPECT_EQ(getUint32(receiver.snapshots.front().data() + 3), 605U);
@@ -1394,7 +1404,8 @@ TEST_F(M4bDevice, OverflowingBindingIntentsDoNotStarveIndependentPeer) {
   const auto locates = datagrams.locates;
   config = bindingConfig(0, 0);
   const int released = std::max(1,
-      (SUPLAN_MAX_RESOURCE_BINDINGS - SUPLAN_MAX_BINDINGS_PER_PEER + 1) / 2);
+      (SUPLAN_MAX_BINDING_INTENTS - SUPLAN_MAX_BINDINGS_PER_PEER + 2) / 2);
+  ASSERT_LE(static_cast<size_t>(released), extra.size());
   for (int i = 0; i < released; ++i)
     ASSERT_EQ(extra[i]->handleChannelConfig(&config, false),
               SUPLA_CONFIG_RESULT_TRUE);
@@ -1411,7 +1422,7 @@ TEST_F(M4bDevice, OverflowingBindingIntentsDoNotStarveIndependentPeer) {
     runtime.iterate();
     destination.iterate();
   }
-  EXPECT_GT(completed, SUPLAN_MAX_RESOURCE_BINDINGS);
+  EXPECT_GT(completed, SUPLAN_MAX_BINDING_INTENTS);
   EXPECT_GT(datagrams.locates, locates);
   EXPECT_EQ(receiver.snapshots.size(), 1U);
   datagrams.linked = nullptr;

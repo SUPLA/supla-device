@@ -46,6 +46,7 @@
 #else
 #error Invalid SUPLAN_PROFILE
 #endif
+// Incoming durable binding edges (remote HVAC -> local output).
 #ifndef SUPLAN_MAX_RESOURCE_BINDINGS
 #if SUPLAN_PROFILE == SUPLAN_PROFILE_CONSTRAINED
 #define SUPLAN_MAX_RESOURCE_BINDINGS 8
@@ -54,6 +55,10 @@
 #else
 #define SUPLAN_MAX_RESOURCE_BINDINGS 256
 #endif
+#endif
+#ifndef SUPLAN_MAX_BINDING_INTENTS
+// Outgoing local HVAC -> remote output pairs; keep legacy capacity by default.
+#define SUPLAN_MAX_BINDING_INTENTS SUPLAN_MAX_RESOURCE_BINDINGS
 #endif
 #ifndef SUPLAN_MAX_BINDINGS_PER_PEER
 #define SUPLAN_MAX_BINDINGS_PER_PEER \
@@ -182,6 +187,12 @@ static_assert(SUPLAN_MAX_RUNTIME_INTERESTS > 0 &&
 static_assert(SUPLAN_MAX_BINDINGS_PER_PEER > 0 &&
                   SUPLAN_MAX_BINDINGS_PER_PEER <= UINT8_MAX,
               "RESOURCE_BINDINGS count uses one byte");
+static_assert(SUPLAN_MAX_RESOURCE_BINDINGS > 0 &&
+                  SUPLAN_MAX_RESOURCE_BINDINGS <= UINT16_MAX,
+              "Incoming bindings must have a bounded positive capacity");
+static_assert(SUPLAN_MAX_BINDING_INTENTS > 0 &&
+                  SUPLAN_MAX_BINDING_INTENTS <= UINT16_MAX,
+              "Outgoing binding intents must have a bounded positive capacity");
 static_assert(SUPLAN_MAX_TOTAL_ACL_ENTRIES +
                   SUPLAN_MAX_TOTAL_EXPECTED_ENTRIES <= UINT16_MAX,
               "ACL and Expected totals use 16-bit counters");

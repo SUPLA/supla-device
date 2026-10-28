@@ -266,7 +266,7 @@ class HvacMqttHandler : public MqttChannelHandler {
     int16_t tempMin = hvac->getTemperatureRoomMin();
     int16_t tempMax = hvac->getTemperatureRoomMax();
 
-    const char cfg[] =
+    static const char cfg[] SUPLA_MQTT_PROGMEM =
         "{"
         "%s"
         "\"~\":\"%s/channels/%i\","
@@ -306,7 +306,7 @@ class HvacMqttHandler : public MqttChannelHandler {
     char *payload = {};
     for (int i = 0; i < 2; i++) {
       bufferSize =
-          snprintf(
+          SUPLA_MQTT_SNPRINTF(
               i ? payload : &c,
               i ? bufferSize : 1,
               cfg,

@@ -612,6 +612,7 @@ void SupLan::diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
     count = diagnosticSuppressed_ ? diagnosticSuppressed_ - 1 : 0;
     diagnosticSuppressed_ = 1;
   }
+  (void)count;  // Log arguments are compiled out with SUPLA_DISABLE_LOGS.
   // Literal formats use the SDK's flash-string logging on Arduino.
   switch (event) {
     case E::RecoveryBegin:

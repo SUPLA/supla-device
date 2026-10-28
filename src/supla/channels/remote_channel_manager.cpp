@@ -446,6 +446,8 @@ void RemoteChannelManager::ensureResult(
       approval = "PENDING_APPROVAL"; break;
     case SUPLA_SUPLAN_ACCESS_STATUS_REJECTED: approval = "REJECTED"; break;
   }
+  (void)mode;  // Log arguments are compiled out with SUPLA_DISABLE_LOGS.
+  (void)approval;
   SUPLA_LOG_DEBUG("SupLAN %s ChannelId=%" PRIu32
       " ENSURE access=%s result=%s code=%u", mode, resource->id.id, approval,
       result.Result == SUPLA_SUPLAN_RESULT_OK ? "OK" :

@@ -151,6 +151,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setDisablesLocalOpera
 <tr class="memitem:a56eb31def869996fb71f71e44154dcad" id="r_a56eb31def869996fb71f71e44154dcad"><td class="memItemLeft" align="right" valign="top"><a id="a56eb31def869996fb71f71e44154dcad" name="a56eb31def869996fb71f71e44154dcad"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setButtonMode</b> (uint8_t mode)</td></tr>
 <tr class="separator:a56eb31def869996fb71f71e44154dcad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d2a3a30c36134bcb29386e1e9416bc4" id="r_a7d2a3a30c36134bcb29386e1e9416bc4"><td class="memItemLeft" align="right" valign="top"><a id="a7d2a3a30c36134bcb29386e1e9416bc4" name="a7d2a3a30c36134bcb29386e1e9416bc4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setButtonModeAndTemporaryUnlock</b> (uint8_t mode, bool active)</td></tr>
+<tr class="separator:a7d2a3a30c36134bcb29386e1e9416bc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f2ac61733b10436399506c44e985fa8" id="r_a3f2ac61733b10436399506c44e985fa8"><td class="memItemLeft" align="right" valign="top"><a id="a3f2ac61733b10436399506c44e985fa8" name="a3f2ac61733b10436399506c44e985fa8"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getButtonMode</b> () const</td></tr>
 <tr class="separator:a3f2ac61733b10436399506c44e985fa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -163,6 +166,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>isWeeklyScheduleEnabl
 <tr class="memitem:a60c0b9bfeb587b2ab2d8a0cd313db291" id="r_a60c0b9bfeb587b2ab2d8a0cd313db291"><td class="memItemLeft" align="right" valign="top"><a id="a60c0b9bfeb587b2ab2d8a0cd313db291" name="a60c0b9bfeb587b2ab2d8a0cd313db291"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>enableValueUpdates</b> ()</td></tr>
 <tr class="separator:a60c0b9bfeb587b2ab2d8a0cd313db291"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8bb4dd635f51731f880b41c868cfd450" id="r_a8bb4dd635f51731f880b41c868cfd450"><td class="memItemLeft" align="right" valign="top"><a id="a8bb4dd635f51731f880b41c868cfd450" name="a8bb4dd635f51731f880b41c868cfd450"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setTemporaryUnlockActive</b> (bool active)</td></tr>
+<tr class="separator:a8bb4dd635f51731f880b41c868cfd450"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1Channel"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1Channel')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1Channel.html">Supla::Channel</a></td></tr>
 <tr class="memitem:ac88d0cfa40cc98eed6bfbf1ba7ea9fe3 inherit pub_methods_classSupla_1_1Channel" id="r_ac88d0cfa40cc98eed6bfbf1ba7ea9fe3"><td class="memItemLeft" align="right" valign="top">
 &#160;</td><td class="memItemRight" valign="bottom"><b>Channel</b> (int number=-1)</td></tr>
@@ -805,20 +811,20 @@ uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>defaultIcon</b> = 
 <tr class="memitem:acd3547ef23ade4eb362dee3696931535 inherit pro_attribs_classSupla_1_1Channel" id="r_acd3547ef23ade4eb362dee3696931535"><td class="memItemLeft" align="right" valign="top">
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>subDeviceId</b> = 0</td></tr>
 <tr class="separator:acd3547ef23ade4eb362dee3696931535 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a49f7c3c4e71808f4725e8ea177c35ea0 inherit pro_attribs_classSupla_1_1Channel" id="r_a49f7c3c4e71808f4725e8ea177c35ea0"><td class="memItemLeft" >
+<tr class="memitem:ac34ba5825d1635321bb326daf84ccdf7 inherit pro_attribs_classSupla_1_1Channel" id="r_ac34ba5825d1635321bb326daf84ccdf7"><td class="memItemLeft" >
 union {&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
 <tr class="separator: inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a274f754268cc3247d5df24f88b362020 inherit pro_attribs_classSupla_1_1Channel" id="r_a274f754268cc3247d5df24f88b362020"><td class="memItemLeft" >
+<tr class="memitem:abbca4bb734f8e910c27859af6e07aa6e inherit pro_attribs_classSupla_1_1Channel" id="r_abbca4bb734f8e910c27859af6e07aa6e"><td class="memItemLeft" >
 &#160;&#160;&#160;int8_t&#160;&#160;&#160;<b>value</b> [SUPLA_CHANNELVALUE_SIZE] = {}&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
-<tr class="separator:a274f754268cc3247d5df24f88b362020 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe11be9e41c134b029ed135216920206 inherit pro_attribs_classSupla_1_1Channel" id="r_afe11be9e41c134b029ed135216920206"><td class="memItemLeft" >
+<tr class="separator:abbca4bb734f8e910c27859af6e07aa6e inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a367fcbc6835bd7ddef4a5065fad304e4 inherit pro_attribs_classSupla_1_1Channel" id="r_a367fcbc6835bd7ddef4a5065fad304e4"><td class="memItemLeft" >
 &#160;&#160;&#160;<a class="el" href="structTActionTriggerProperties.html">TActionTriggerProperties</a>&#160;&#160;&#160;<b>actionTriggerProperties</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
-<tr class="separator:afe11be9e41c134b029ed135216920206 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a56c0dbaa5cf66538512121a049409517 inherit pro_attribs_classSupla_1_1Channel" id="r_a56c0dbaa5cf66538512121a049409517"><td class="memItemLeft" >
+<tr class="separator:a367fcbc6835bd7ddef4a5065fad304e4 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a712a0504140283511b2f86e7197b8e40 inherit pro_attribs_classSupla_1_1Channel" id="r_a712a0504140283511b2f86e7197b8e40"><td class="memItemLeft" >
 &#160;&#160;&#160;<a class="el" href="structTHVACValue.html">THVACValue</a>&#160;&#160;&#160;<b>hvacValue</b>&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
-<tr class="separator:a56c0dbaa5cf66538512121a049409517 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a49f7c3c4e71808f4725e8ea177c35ea0 inherit pro_attribs_classSupla_1_1Channel" id="r_a49f7c3c4e71808f4725e8ea177c35ea0"><td class="memItemLeft" valign="top">};&#160;</td><td class="memItemRight" valign="bottom">&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
-<tr class="separator:a49f7c3c4e71808f4725e8ea177c35ea0 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a712a0504140283511b2f86e7197b8e40 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac34ba5825d1635321bb326daf84ccdf7 inherit pro_attribs_classSupla_1_1Channel" id="r_ac34ba5825d1635321bb326daf84ccdf7"><td class="memItemLeft" valign="top">};&#160;</td><td class="memItemRight" valign="bottom">&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr class="separator:ac34ba5825d1635321bb326daf84ccdf7 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>

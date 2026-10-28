@@ -209,6 +209,18 @@ Supla::Control::ActionTrigger::~ActionTrigger() {
 }
 
 void Supla::Control::ActionTrigger::attach(Supla::Control::Button *button) {
+  if (button != nullptr) {
+    for (auto element = Supla::Element::begin(); element;
+         element = element->next()) {
+      auto peer = element->getActionTrigger();
+      if (peer && peer != this && peer->attachedButton == button) {
+        SUPLA_LOG_WARNING(
+            "AT[%d]: button already attached to AT[%d]",
+            getChannelNumber(), peer->getChannelNumber());
+        return;
+      }
+    }
+  }
   if (attachedButton != nullptr && attachedButton != button) {
     attachedButton->setTemporaryUnlockDeadline(0, 0);
     attachedButton->setActionTriggerModeLocked(false, false, false);

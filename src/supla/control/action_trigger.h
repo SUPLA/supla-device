@@ -53,6 +53,8 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   // Use below methods to attach button instance to ActionTrigger.
   // It will automatically register to all supported button actions
   // during onInit() call on action trigger instance.
+  // One AT per Button. An occupied target is rejected, keeping this binding.
+  // Passing nullptr releases this AT's binding.
   void attach(Supla::Control::Button *);
   void attach(Supla::Control::Button &);
 

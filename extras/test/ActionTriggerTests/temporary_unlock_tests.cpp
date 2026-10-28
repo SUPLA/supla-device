@@ -50,6 +50,7 @@ class DurableMemoryConfig : public MemoryConfig {
 };
 class InspectableTrigger : public ActionTrigger {
  public:
+  Supla::Control::Button *getAttachedButton() const { return attachedButton; }
   bool hasTemporaryState() const { return temporaryUnlock != nullptr; }
   bool hasPendingLocalConfig() const {
     return isLocalChannelConfigChangePending(SUPLA_CONFIG_TYPE_DEFAULT);
@@ -108,6 +109,53 @@ class TemporaryUnlock : public testing::Test {
         Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
   }
 };
+
+TEST_F(TemporaryUnlock, OccupiedButtonRejectsAnotherTriggerWithoutChanges) {
+  testing::NiceMock<DigitalInterfaceMock> io;
+  PhysicalButton firstButton;
+  PhysicalButton secondButton;
+  InspectableTrigger first;
+  InspectableTrigger second;
+  first.attach(firstButton);
+  second.attach(secondButton);
+  ASSERT_EQ(configure(first), SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_EQ(command(first, 6), 1);
+  ASSERT_EQ(command(second, 1), 1);
+  second.attach(firstButton);
+  EXPECT_EQ(first.getAttachedButton(), &firstButton);
+  EXPECT_EQ(second.getAttachedButton(), &secondButton);
+  EXPECT_TRUE(firstButton.locked());
+  EXPECT_TRUE(secondButton.locked());
+
+  ASSERT_EQ(command(first, 7), 1);
+  time.advance(1000);
+  // Repeating the owner's attachment is allowed; a second AT cannot change
+  // its unlock deadline or lock the shared target with its own policy.
+  first.attach(firstButton);
+  second.attach(firstButton);
+  EXPECT_FALSE(firstButton.locked());
+  EXPECT_TRUE(secondButton.locked());
+  time.advance(4000);
+  firstButton.onTimer();
+  EXPECT_TRUE(firstButton.locked());
+}
+
+TEST_F(TemporaryUnlock, DetachedButtonCanBeAttachedToAnotherTrigger) {
+  testing::NiceMock<DigitalInterfaceMock> io;
+  PhysicalButton button;
+  InspectableTrigger first;
+  InspectableTrigger second;
+  first.attach(button);
+  ASSERT_EQ(command(first, 6), 1);
+  ASSERT_EQ(command(first, 7, 5), 1);
+  first.attach(nullptr);
+  second.attach(button);
+  EXPECT_EQ(first.getAttachedButton(), nullptr);
+  EXPECT_EQ(second.getAttachedButton(), &button);
+  time.advance(5000);
+  button.onTimer();
+  EXPECT_FALSE(button.locked());
+}
 
 TEST_F(TemporaryUnlock,
        ManualTimerReportsModeSixAndRestartsWithoutFlashWrites) {

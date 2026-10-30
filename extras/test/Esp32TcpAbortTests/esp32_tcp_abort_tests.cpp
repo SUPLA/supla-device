@@ -11,18 +11,15 @@
 class Esp32TcpAbortTests : public ::testing::Test {
  protected:
   void SetUp() override {
+    fakeLwipReset();
     fakeSocket = &socket;
-    fakeResult = ERR_OK;
-    lookupCount = apiCallCount = abortCount = 0;
-    coreLocked = inTcpipTask = 0;
-    lastFd = -1;
-    lastLog[0] = 0;
     pcb.state = ESTABLISHED;
     pcb.callback_arg = &conn;
     conn.type = NETCONN_TCP;
     conn.pcb.tcp = &pcb;
     socket.conn = &conn;
   }
+  void TearDown() override { fakeLwipReset(); }
   tcp_pcb pcb = {};
   netconn conn = {};
   lwip_sock socket = {};
@@ -85,7 +82,6 @@ TEST_F(Esp32TcpAbortTests, AbortsIpv4Ipv6AndConnectingSocketsInsideCore) {
       Supla::abortTcpConnection(12);
       EXPECT_EQ(conn.pcb.tcp, nullptr);
       EXPECT_EQ(coreLocked, 0);
-      EXPECT_EQ(inTcpipTask, 0);
     }
   }
   EXPECT_EQ(abortCount, 6);

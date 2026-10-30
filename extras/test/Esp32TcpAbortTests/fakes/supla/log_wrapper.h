@@ -7,5 +7,7 @@
 extern "C" void fakeLwipLog(const char *format, ...);
 #define SUPLA_LOG_DEBUG(...) fakeLwipLog(__VA_ARGS__)
 #define SUPLA_LOG_WARNING(...) fakeLwipLog(__VA_ARGS__)
+#define SUPLA_LOG_ERROR(...) fakeLwipLog(__VA_ARGS__)
+#define SUPLA_LOG_INFO(...) fakeLwipLog(__VA_ARGS__)
 
 #endif  // EXTRAS_TEST_ESP32TCPABORTTESTS_FAKES_SUPLA_LOG_WRAPPER_H_

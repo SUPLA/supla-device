@@ -5,13 +5,14 @@
 #define EXTRAS_TEST_ARDUINOESP32PLATFORMTESTS_FAKES_NETWORKCLIENT_H_
 
 #include <Arduino.h>
+#include <fake_lwip.h>
 #include <string>
 #include <vector>
 
 class NetworkClient {
  public:
   inline static std::vector<std::string> events;
-  inline static int nextFd = 42;
+  inline static int nextFd = 12;
   inline static bool failConnect = false;
   inline static bool failWrite = false;
   inline static bool failRead = false;
@@ -23,6 +24,7 @@ class NetworkClient {
   virtual ~NetworkClient() { events.push_back("socket-destroy"); }
   virtual int connect(const char *, uint16_t) {
     socketFd = nextFd;
+    fakeLwipConnect();
     if (directCloseOnConnect) {
       events.push_back("raw-close");
       socketFd = -1;

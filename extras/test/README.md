@@ -6,7 +6,9 @@ SPDX-License-Identifier: GPL-2.0-or-later
 # Host tests
 
 Run commands from the repository root. By default, CTest registers
-`supladevicetests`, `sd4linuxtests` and `arduinoesp8266_tls_lifetime_tests`.
+`supladevicetests`, `sd4linuxtests`, `arduinoesp8266_tls_lifetime_tests` and
+`esp32_tcp_abort_tests`. The ESP32 binary combines client cleanup and TCP abort
+helper tests using shared lwIP doubles.
 These tests do not require network access at runtime. The HTTP source unit tests
 use fake transports or local `file://` inputs; MQTT uses a simulated transport.
 

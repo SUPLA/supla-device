@@ -3,6 +3,7 @@
 
 #include "action_trigger.h"
 
+#include <inttypes.h>
 #include <SuplaDevice.h>
 #include <supla/auto_lock.h>
 #include <supla/log_wrapper.h>
@@ -34,6 +35,19 @@ constexpr uint32_t kActionTriggerStateModeMask = 0xC0000000UL;
 constexpr uint32_t kActionTriggerStateWeeklySchedule = 0x40000000UL;
 constexpr uint32_t kActionTriggerStateLocked = 0x80000000UL;
 constexpr uint32_t kActionTriggerLegacyAllActions = 0xFFFFFFFFUL;
+
+[[maybe_unused]] const char *buttonModeName(uint8_t mode) {
+  switch (mode) {
+    case SUPLA_BUTTON_MODE_NOT_SET:
+      return "UNLOCKED";
+    case SUPLA_BUTTON_MODE_LOCKED:
+      return "LOCKED";
+    case SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED:
+      return "LOCKED_TEMPORARY_UNLOCK_ALLOWED";
+    default:
+      return "UNKNOWN";
+  }
+}
 
 }  // namespace
 
@@ -1449,6 +1463,7 @@ void Supla::Control::ActionTrigger::purgeConfig() {
 }
 
 void Supla::Control::ActionTrigger::applyButtonMode(uint8_t mode) {
+  [[maybe_unused]] const uint8_t previousMode = channel.getButtonMode();
   if (temporaryUnlock) {
     if (mode != channel.getButtonMode()) temporaryUnlock->baselineKnown = false;
     if (mode != SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED) {
@@ -1457,6 +1472,13 @@ void Supla::Control::ActionTrigger::applyButtonMode(uint8_t mode) {
   }
   channel.setButtonModeAndTemporaryUnlock(mode, isTemporaryUnlockActive());
   syncEffectiveButtonLock();
+  if (previousMode != mode) {
+    SUPLA_LOG_INFO("AT[%d] mode %s(%u) -> %s(%u), effective=%s, weekly=%d",
+        getChannelNumber(), buttonModeName(previousMode), previousMode,
+        buttonModeName(mode), mode,
+        isEffectivelyLocked() ? "LOCKED" : "UNLOCKED",
+        channel.isWeeklyScheduleEnabled());
+  }
 }
 
 void Supla::Control::ActionTrigger::applyManualButtonMode(uint8_t mode) {
@@ -1632,9 +1654,12 @@ bool Supla::Control::ActionTrigger::startTemporaryUnlock(uint32_t seconds) {
   if (seconds == 0) seconds = temporaryUnlock->weeklyDurationS
       ? temporaryUnlock->weeklyDurationS : temporaryUnlock->config.duration;
   if (seconds == 0) return false;
+  [[maybe_unused]] const bool restart = isTemporaryUnlockActive();
   temporaryUnlock->startMs = millis();
   temporaryUnlock->durationMs = seconds * 1000;
   syncEffectiveButtonLock();
+  SUPLA_LOG_INFO("AT[%d] temporary unlock %s, duration=%" PRIu32 " s",
+      getChannelNumber(), restart ? "restarted" : "started", seconds);
   return true;
 }
 
@@ -1645,6 +1670,8 @@ void Supla::Control::ActionTrigger::updateTemporaryUnlock() {
     // A transition may have arrived during the timer but not yet been read.
     temporaryUnlock->baselineKnown = false;
     syncEffectiveButtonLock();
+    SUPLA_LOG_INFO("AT[%d] temporary unlock expired, effective=LOCKED",
+        getChannelNumber());
   }
 }
 

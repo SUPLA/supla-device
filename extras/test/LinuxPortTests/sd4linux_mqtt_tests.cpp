@@ -61,6 +61,7 @@ void mqtt_client_free() {
 
 class LinuxMqttTests : public ::testing::Test {
  protected:
+  SimpleTime time;
   MqttTestConfig config;
   std::shared_ptr<Supla::LinuxMqttClient> client =
       Supla::LinuxMqttClient::getInstance(config);
@@ -261,13 +262,48 @@ TEST_F(LinuxMqttTests, DocumentSnapshotsPreserveIdentityContentAndReceipt) {
   EXPECT_EQ(source.getContent(), "4.2\n" + documents[1].content);
 }
 
+TEST_F(LinuxMqttTests, ExpirationIncludesExactDeadlineAndRecoversOnReceive) {
+  Supla::Source::Mqtt source(config, {"expiry/boundary"}, {}, 1);
+  receive("expiry/boundary", "first");
+  time.advance(1000);
+  EXPECT_TRUE(source.getDocuments()[0].fresh);
+  time.advance(1);
+  EXPECT_FALSE(source.getDocuments()[0].fresh);
+  EXPECT_TRUE(source.getContent().empty());
+  receive("expiry/boundary", "second");
+  EXPECT_TRUE(source.getDocuments()[0].fresh);
+  EXPECT_EQ(source.getContent(), "second");
+}
+
+TEST_F(LinuxMqttTests, ExpirationHandlesMillisRollover) {
+  Supla::Source::Mqtt source(config, {"expiry/wrap"}, {}, 1);
+  time.value = UINT32_MAX - 500;
+  receive("expiry/wrap", "before-wrap");
+  time.advance(1000);
+  EXPECT_TRUE(source.getDocuments()[0].fresh);
+  time.advance(1);
+  EXPECT_FALSE(source.getDocuments()[0].fresh);
+  receive("expiry/wrap", "after-wrap");
+  EXPECT_TRUE(source.getDocuments()[0].fresh);
+  EXPECT_EQ(source.getContent(), "after-wrap");
+}
+
+TEST_F(LinuxMqttTests, LargeExpirationDoesNotOverflowWhenConvertingToMillis) {
+  Supla::Source::Mqtt source(config, {"expiry/large"}, {},
+      UINT32_MAX / 1000 + 1);
+  receive("expiry/large", "current");
+  time.advance(1000);
+  EXPECT_TRUE(source.getDocuments()[0].fresh);
+  EXPECT_EQ(source.getContent(), "current");
+}
+
 TEST_F(LinuxMqttTests, DocumentsExpireIndependentlyAndRecover) {
   Supla::Source::Mqtt source(config,
       {"expiry/a", "expiry/b"}, {"a", "b"}, 1);
   Supla::Source::Mqtt unlimited(config,
       {"expiry/a", "expiry/b"}, {"a", "b"});
   receive("expiry/a", "old");
-  std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+  time.advance(1100);
   receive("expiry/b", "new");
   auto documents = source.getDocuments();
   EXPECT_TRUE(documents[0].received);
@@ -330,7 +366,6 @@ TEST_F(LinuxMqttTests, SimpleParserKeepsLegacyIndicesWithMissingMessages) {
 
 TEST_F(LinuxMqttTests,
        YamlMeterReadsIndependentDocumentsAndRejectsIncompleteData) {
-  SimpleTime time;
   mqtt_client transport = {};
   transport.error = MQTT_OK;
   client->mq_client = &transport;
@@ -427,7 +462,7 @@ TEST_F(LinuxMqttTests, ExpirationNeverShiftsSimpleParserIndices) {
   EXPECT_DOUBLE_EQ(parser.getValue("b"), 20);
   EXPECT_TRUE(parser.isValid());
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+  time.advance(1100);
   receive("expiry-index/a", "11");
   receive("expiry-index/c", "31");
   const auto documents = source.getDocuments();

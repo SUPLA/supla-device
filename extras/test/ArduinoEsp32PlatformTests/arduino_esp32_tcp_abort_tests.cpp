@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gtest/gtest.h>
+#include <fake_lwip.h>
 
 #include <algorithm>
 #include <string>
@@ -9,30 +10,23 @@
 
 #include "../../../src/supla/arduino_esp_platform.cpp"  // NOLINT(build/include)
 
-namespace {
-bool synchronizationFails = false;
-}
-
-void Supla::abortTcpConnection(int fd) {
-  EXPECT_GE(fd, 0);
-  NetworkClient::events.push_back("abort:" + std::to_string(fd));
-  if (synchronizationFails) {
-    NetworkClient::events.push_back("sync-failed");
-  }
-}
-
 class ArduinoEsp32TcpAbortTests : public ::testing::TestWithParam<bool> {
  protected:
   void SetUp() override {
+    fakeLwipReset();
+    fakeAbortObserver = [](int fd) {
+      NetworkClient::events.push_back("abort:" + std::to_string(fd));
+    };
     NetworkClient::events.clear();
     NetworkClientSecure::closedSockets.clear();
-    NetworkClient::nextFd = 42;
+    NetworkClient::nextFd = 12;
     NetworkClient::failConnect = NetworkClient::failWrite = false;
     NetworkClient::failRead = NetworkClient::failAvailable = false;
     NetworkClient::directCloseOnConnect = false;
     NetworkClient::lastCreated = nullptr;
-    synchronizationFails = false;
   }
+  void TearDown() override { fakeLwipReset(); }
+
   void connect(Supla::ArduinoEspClient *client) {
     client->setSSLEnabled(GetParam());
     ASSERT_EQ(client->connect("server", GetParam() ? 2016 : 2015), 1);
@@ -40,7 +34,7 @@ class ArduinoEsp32TcpAbortTests : public ::testing::TestWithParam<bool> {
   }
   void expectAbortThenStop() {
     ASSERT_GE(NetworkClient::events.size(), 2u);
-    EXPECT_EQ(NetworkClient::events[0], "abort:42");
+    EXPECT_EQ(NetworkClient::events[0], "abort:12");
     EXPECT_EQ(NetworkClient::events[1], stopEvent());
   }
   int abortCalls() {
@@ -140,11 +134,13 @@ TEST_P(ArduinoEsp32TcpAbortTests,
        BaseCleanupStillRunsAfterSynchronizationFailure) {
   Supla::ArduinoEspClient client;
   connect(&client);
-  synchronizationFails = true;
+  fakeResult = ERR_MEM;
   client.stop();
   EXPECT_EQ(NetworkClient::events,
-            (std::vector<std::string>{"abort:42", "sync-failed", stopEvent()}));
+            (std::vector<std::string>{stopEvent()}));
   EXPECT_EQ(NetworkClient::lastCreated->fd(), -1);
+  EXPECT_EQ(apiCallCount, 1);
+  EXPECT_EQ(abortCount, 0);
 }
 
 TEST_P(ArduinoEsp32TcpAbortTests, ReconnectDoesNotAbortStoppedFd) {
@@ -158,7 +154,7 @@ TEST_P(ArduinoEsp32TcpAbortTests, ReconnectDoesNotAbortStoppedFd) {
   client.stop();
   EXPECT_EQ(abortCalls(), 1);
   EXPECT_NE(std::find(NetworkClient::events.begin(),
-                      NetworkClient::events.end(), "abort:42"),
+                      NetworkClient::events.end(), "abort:12"),
             NetworkClient::events.end());
 }
 
@@ -211,7 +207,13 @@ TEST_P(ArduinoEsp32TcpAbortTests, UnconnectedAdapterDoesNotAbort) {
   EXPECT_EQ(abortCalls(), 0);
 }
 
-TEST(ArduinoEsp32SecureCleanupTests, CoreStopAndDeleterBothCloseTheStoredFd) {
+class ArduinoEsp32SecureCleanupTests : public ::testing::Test {
+ protected:
+  void SetUp() override { fakeLwipReset(); }
+  void TearDown() override { fakeLwipReset(); }
+};
+
+TEST_F(ArduinoEsp32SecureCleanupTests, CoreStopAndDeleterBothCloseTheStoredFd) {
   NetworkClientSecure::closedSockets.clear();
   {
     NetworkClientSecure client;
@@ -223,8 +225,8 @@ TEST(ArduinoEsp32SecureCleanupTests, CoreStopAndDeleterBothCloseTheStoredFd) {
   EXPECT_EQ(NetworkClientSecure::closedSockets, (std::vector<int>{0}));
 }
 
-TEST(ArduinoEsp32SecureCleanupTests, AdapterNeverClosesStaleFdOnDestruction) {
-  for (int fd : {0, 42}) {
+TEST_F(ArduinoEsp32SecureCleanupTests, AdapterNeverClosesStaleFdOnDestruction) {
+  for (int fd : {0, 12}) {
     NetworkClientSecure::closedSockets.clear();
     NetworkClient::events.clear();
     NetworkClient::nextFd = fd;
@@ -243,7 +245,7 @@ TEST(ArduinoEsp32SecureCleanupTests, AdapterNeverClosesStaleFdOnDestruction) {
   }
 }
 
-TEST(ArduinoEsp32SecureCleanupTests, UnconnectedAdapterClosesNoSocket) {
+TEST_F(ArduinoEsp32SecureCleanupTests, UnconnectedAdapterClosesNoSocket) {
   NetworkClientSecure::closedSockets.clear();
   {
     Supla::AbortableNetworkClientSecure client;

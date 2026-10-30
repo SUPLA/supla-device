@@ -6,9 +6,9 @@
 #include <linux_mqtt_client.h>
 #include <linux_yaml_config.h>
 #include <supla/log_wrapper.h>
+#include <supla/time.h>
 
 #include <vector>
-#include <chrono>
 #include <stdexcept>
 #include <set>
 #include <string>
@@ -56,12 +56,13 @@ std::vector<std::string> Mqtt::getDocumentIds() const {
 
 std::vector<Document> Mqtt::getDocuments() {
   const auto messages = client->getMessages(topics);
-  const auto now = std::chrono::steady_clock::now();
+  const uint32_t now = millis();
   std::vector<Document> documents;
   for (size_t i = 0; i < messages.size(); ++i) {
     const auto& message = messages[i];
     const bool fresh = !expirationTimeSec ||
-        now - message.updated <= std::chrono::seconds(expirationTimeSec);
+        static_cast<uint32_t>(now - message.updatedMs) <=
+            static_cast<uint64_t>(expirationTimeSec) * 1000;
     documents.push_back({documentIds[i], message.content,
                          message.received, fresh});
   }

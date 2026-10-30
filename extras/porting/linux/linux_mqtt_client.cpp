@@ -144,7 +144,7 @@ void Supla::LinuxMqttClient::publishCallback(void**,
   {
     std::lock_guard<std::mutex> lock(topicsMutex);
     topics[topic_name_string] = {application_message_string, true,
-                                 std::chrono::steady_clock::now()};
+                                 millis()};
   }
 
   SUPLA_LOG_DEBUG("Linux MQTT client received message from %s",

@@ -8,9 +8,9 @@
 #include <mqtt.h>
 #include <mqtt_pal.h>
 #include <yaml-cpp/yaml.h>
+#include <stdint.h>
 
 #include <memory>
-#include <chrono>
 #include <vector>
 #include <mutex>
 #include <string>
@@ -37,7 +37,7 @@ class LinuxMqttClient {
   struct Message {
     std::string content;
     bool received = false;
-    std::chrono::steady_clock::time_point updated;
+    uint32_t updatedMs = 0;
   };
   // Copies all requested topics under one lock; parsing happens after return.
   std::vector<Message> getMessages(

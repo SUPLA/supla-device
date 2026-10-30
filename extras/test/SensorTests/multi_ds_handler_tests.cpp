@@ -185,28 +185,40 @@ TEST_F(MultiDsHandlerTests, NewSensorsUseGlobalSubdeviceIdsNotSlots) {
 }
 
 TEST_F(MultiDsHandlerTests, OfflineSensorReturnsOnlineOnlyAfterValidReading) {
+  SimpleTime time;
   TestMultiDsHandler handler;
   auto sensor = handler.add(1);
   ASSERT_NE(sensor, nullptr);
 
+  EXPECT_DOUBLE_EQ(sensor->getValue(), TEMPERATURE_NOT_AVAILABLE);
+
+  handler.onInit();
   handler.setTemperature(28.0);
+  time.advance(750);
+  handler.iterateAlways();
   EXPECT_DOUBLE_EQ(sensor->getValue(), 28.0);
   EXPECT_TRUE(sensor->getChannel()->isStateOnline());
 
-  handler.setTemperature(-127.0);
-  EXPECT_DOUBLE_EQ(sensor->getValue(), TEMPERATURE_NOT_AVAILABLE);
+  auto readNextConversion = [&](double temperature) {
+    handler.setTemperature(temperature);
+    time.advance(10001);
+    handler.iterateAlways();
+    time.advance(750);
+    handler.iterateAlways();
+    return sensor->getValue();
+  };
+
+  EXPECT_DOUBLE_EQ(readNextConversion(-127.0), TEMPERATURE_NOT_AVAILABLE);
   EXPECT_FALSE(sensor->getChannel()->isStateOnline());
 
-  handler.setTemperature(TEMPERATURE_NOT_AVAILABLE);
-  EXPECT_DOUBLE_EQ(sensor->getValue(), TEMPERATURE_NOT_AVAILABLE);
+  EXPECT_DOUBLE_EQ(readNextConversion(TEMPERATURE_NOT_AVAILABLE),
+                   TEMPERATURE_NOT_AVAILABLE);
   EXPECT_FALSE(sensor->getChannel()->isStateOnline());
 
-  handler.setTemperature(-127.0);
-  EXPECT_DOUBLE_EQ(sensor->getValue(), TEMPERATURE_NOT_AVAILABLE);
+  EXPECT_DOUBLE_EQ(readNextConversion(-127.0), TEMPERATURE_NOT_AVAILABLE);
   EXPECT_FALSE(sensor->getChannel()->isStateOnline());
 
-  handler.setTemperature(28.5);
-  EXPECT_DOUBLE_EQ(sensor->getValue(), 28.5);
+  EXPECT_DOUBLE_EQ(readNextConversion(28.5), 28.5);
   EXPECT_TRUE(sensor->getChannel()->isStateOnline());
 }
 

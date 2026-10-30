@@ -5,6 +5,7 @@
 #define EXTRAS_PORTING_LINUX_SUPLA_SOURCE_MQTT_SRC_H_
 
 #include <linux_yaml_config.h>
+#include <stdint.h>
 
 #include <memory>
 #include <string>
@@ -20,6 +21,8 @@ namespace Supla::Source {
 
 class Mqtt : public Source {
  public:
+  static constexpr uint32_t MaximumExpirationTimeSec = INT32_MAX / 1000;
+
   Mqtt(const Supla::LinuxYamlConfig& yamlConfig,
        const std::vector<std::string>& topics,
        const std::vector<std::string>& documentIds = {},
@@ -33,6 +36,12 @@ class Mqtt : public Source {
 
 
  protected:
+  struct Freshness {
+    uint32_t revision = 0;
+    uint32_t timestamp = 0;  // Zero means missing or expired for this source.
+  };
+  std::vector<Freshness> freshness;
+
   std::shared_ptr<Supla::LinuxMqttClient> client;
   std::string latestMessage;
   std::vector<std::string> topics;

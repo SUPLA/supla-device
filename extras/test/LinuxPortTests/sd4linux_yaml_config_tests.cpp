@@ -1133,6 +1133,8 @@ TEST(Sd4linuxYamlConfigTests, RejectsInvalidMultiDocumentConfiguration) {
   for (const char* fields : {
            "sub_topics: [a, a]",
            "expiration_time_sec: -1",
+           "expiration_time_sec: 2147484",
+           "expiration_time_sec: 4294967295",
            "expiration_time_sec: 4294967296",
            "expiration_time_sec: 99999999999999999999999",
            "expiration_time_sec: broken",

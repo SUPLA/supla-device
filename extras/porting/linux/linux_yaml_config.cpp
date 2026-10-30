@@ -2294,7 +2294,8 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       unsigned int expirationTimeSec = 0;
       if (source["expiration_time_sec"]) {
         const auto expiration = source["expiration_time_sec"].as<int64_t>();
-        if (expiration < 0 || expiration > UINT_MAX) {
+        if (expiration < 0 ||
+            expiration > Supla::Source::Mqtt::MaximumExpirationTimeSec) {
           SUPLA_LOG_ERROR("Config: MQTT expiration_time_sec out of range");
           return nullptr;
         }

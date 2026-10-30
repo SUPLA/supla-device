@@ -38,6 +38,7 @@ class LinuxMqttClient {
     std::string content;
     bool received = false;
     uint32_t updatedMs = 0;
+    uint32_t revision = 0;
   };
   // Copies all requested topics under one lock; parsing happens after return.
   std::vector<Message> getMessages(
@@ -60,6 +61,7 @@ class LinuxMqttClient {
  private:
   static std::mutex topicsMutex;
   static std::unordered_map<std::string, Message> topics;
+  static uint32_t messageRevision;
 
   explicit LinuxMqttClient(const LinuxYamlConfig& yamlConfig);
 

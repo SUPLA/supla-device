@@ -1087,6 +1087,9 @@ In order to disable time expiration check, please set `expiration_time_sec` to 0
    we can define them as a `sub_topics` array and assign them an index in this array
    in the parameters, just like with the `Simple` parser (index counting starts with 0).
    I.e. please take a look at `th5` channel above.
+   Optional `expiration_time_sec` defaults to `0` (no expiration).
+   The maximum is `2147483` seconds (about 24.8 days). Each source expires its
+   documents independently, even when other sources subscribe to the same topic.
    If source was already defined earlier, and you want to reuse it, you can specify
    `use` parameter with proper name of previously defined source. When `use`
    parameter is used, then no other source configuration parameters are allowed.

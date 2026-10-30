@@ -17,6 +17,7 @@
 std::mutex Supla::LinuxMqttClient::topicsMutex;
 std::unordered_map<std::string, Supla::LinuxMqttClient::Message>
     Supla::LinuxMqttClient::topics;
+uint32_t Supla::LinuxMqttClient::messageRevision = 0;
 
 std::shared_ptr<Supla::LinuxMqttClient> Supla::LinuxMqttClient::instance =
     nullptr;
@@ -143,8 +144,13 @@ void Supla::LinuxMqttClient::publishCallback(void**,
 
   {
     std::lock_guard<std::mutex> lock(topicsMutex);
-    topics[topic_name_string] = {application_message_string, true,
-                                 millis()};
+    auto& message = topics[topic_name_string];
+    message.content = application_message_string;
+    message.received = true;
+    message.updatedMs = millis();
+    if (message.updatedMs == 0) message.updatedMs = 1;
+    if (++messageRevision == 0) ++messageRevision;
+    message.revision = messageRevision;
   }
 
   SUPLA_LOG_DEBUG("Linux MQTT client received message from %s",

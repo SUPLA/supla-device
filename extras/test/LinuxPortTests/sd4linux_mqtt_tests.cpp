@@ -65,6 +65,7 @@ class LinuxMqttTests : public ::testing::Test {
   MqttTestConfig config;
   std::shared_ptr<Supla::LinuxMqttClient> client =
       Supla::LinuxMqttClient::getInstance(config);
+  void SetUp() override { time.advance(1); }
   void TearDown() override {
     client.reset();
     Supla::LinuxMqttClient::getInstance().reset();
@@ -288,13 +289,78 @@ TEST_F(LinuxMqttTests, ExpirationHandlesMillisRollover) {
   EXPECT_EQ(source.getContent(), "after-wrap");
 }
 
-TEST_F(LinuxMqttTests, LargeExpirationDoesNotOverflowWhenConvertingToMillis) {
-  Supla::Source::Mqtt source(config, {"expiry/large"}, {},
-      UINT32_MAX / 1000 + 1);
-  receive("expiry/large", "current");
-  time.advance(1000);
+TEST_F(LinuxMqttTests, MaximumExpirationEventuallyExpires) {
+  Supla::Source::Mqtt source(config, {"expiry/maximum"}, {},
+      Supla::Source::Mqtt::MaximumExpirationTimeSec);
+  receive("expiry/maximum", "current");
+  time.advance(Supla::Source::Mqtt::MaximumExpirationTimeSec * 1000u);
   EXPECT_TRUE(source.getDocuments()[0].fresh);
-  EXPECT_EQ(source.getContent(), "current");
+  time.advance(1);
+  EXPECT_FALSE(source.getDocuments()[0].fresh);
+}
+
+TEST_F(LinuxMqttTests, RejectsExpirationOutsideMillisRange) {
+  EXPECT_THROW((Supla::Source::Mqtt(config, {"expiry/invalid"}, {},
+      Supla::Source::Mqtt::MaximumExpirationTimeSec + 1)),
+      std::invalid_argument);
+}
+
+TEST_F(LinuxMqttTests, ExpiredMessageStaysInvalidAcrossAFullMillisCycle) {
+  Supla::Source::Mqtt source(config, {"expiry/cycle"}, {}, 1);
+  receive("expiry/cycle", "same-payload");
+  time.advance(1001);
+  ASSERT_FALSE(source.getDocuments()[0].fresh);
+  time.advance(INT32_MAX);
+  ASSERT_FALSE(source.getDocuments()[0].fresh);
+  time.advance(INT32_MAX - 999);
+  ASSERT_EQ(time.value, 1u);  // Same timestamp as the original receipt.
+  EXPECT_FALSE(source.getDocuments()[0].fresh);
+  EXPECT_TRUE(source.getContent().empty());
+  receive("expiry/cycle", "same-payload");
+  EXPECT_TRUE(source.getDocuments()[0].fresh);
+  EXPECT_EQ(source.getContent(), "same-payload");
+}
+
+TEST_F(LinuxMqttTests, SharedTopicHasIndependentExpirationPerSource) {
+  Supla::Source::Mqtt shortLived(config, {"expiry/shared"}, {}, 1);
+  Supla::Source::Mqtt longLived(config, {"expiry/shared"}, {}, 3);
+  Supla::Source::Mqtt unlimited(config, {"expiry/shared"});
+  receive("expiry/shared", "current");
+  time.advance(1001);
+  EXPECT_FALSE(shortLived.getDocuments()[0].fresh);
+  EXPECT_TRUE(longLived.getDocuments()[0].fresh);
+  EXPECT_EQ(unlimited.getContent(), "current");
+  time.advance(2000);
+  EXPECT_FALSE(longLived.getDocuments()[0].fresh);
+  EXPECT_EQ(unlimited.getContent(), "current");
+  receive("expiry/shared", "new");
+  EXPECT_TRUE(shortLived.getDocuments()[0].fresh);
+  EXPECT_TRUE(longLived.getDocuments()[0].fresh);
+}
+
+TEST_F(LinuxMqttTests, RecreatedTopicRevivesExpiredSource) {
+  Supla::Source::Mqtt source(config, {"expiry/recreated"}, {}, 1);
+  receive("expiry/recreated", "same-payload");
+  time.advance(1001);
+  ASSERT_FALSE(source.getDocuments()[0].fresh);
+  client->unsubscribeTopic("expiry/recreated");
+  client->subscribeTopic("expiry/recreated");
+  receive("expiry/recreated", "same-payload");
+  EXPECT_TRUE(source.getDocuments()[0].fresh);
+  EXPECT_EQ(source.getContent(), "same-payload");
+}
+
+TEST_F(LinuxMqttTests, ReceiptAtMillisZeroIsValid) {
+  Supla::Source::Mqtt source(config, {"expiry/zero"}, {}, 1);
+  for (uint32_t timestamp : {UINT32_C(0), UINT32_MAX}) {
+    time.value = timestamp;
+    receive("expiry/zero", "current");
+    EXPECT_TRUE(source.getDocuments()[0].fresh);
+    time.advance(1);
+    EXPECT_TRUE(source.getDocuments()[0].fresh);
+    time.advance(1001);
+    EXPECT_FALSE(source.getDocuments()[0].fresh);
+  }
 }
 
 TEST_F(LinuxMqttTests, DocumentsExpireIndependentlyAndRecover) {

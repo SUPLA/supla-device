@@ -21,6 +21,9 @@ Mqtt::Mqtt(const Supla::LinuxYamlConfig& yamlConfig,
            unsigned int expirationTimeSec)
     : topics(topics), documentIds(documentIds),
       expirationTimeSec(expirationTimeSec) {
+  if (expirationTimeSec > MaximumExpirationTimeSec) {
+    throw std::invalid_argument("MQTT expiration exceeds millis range");
+  }
   if (this->documentIds.empty()) {
     this->documentIds = topics.size() == 1 ?
         std::vector<std::string>{"default"} : topics;
@@ -30,6 +33,7 @@ Mqtt::Mqtt(const Supla::LinuxYamlConfig& yamlConfig,
                             this->documentIds.end()).size() != topics.size()) {
     throw std::invalid_argument("Invalid or duplicate MQTT document ids");
   }
+  freshness.resize(topics.size());
   client = Supla::LinuxMqttClient::getInstance(yamlConfig);
   for (auto& topic : topics) {
     SUPLA_LOG_DEBUG("Mark topic %s to subscribe", topic.c_str());
@@ -56,13 +60,24 @@ std::vector<std::string> Mqtt::getDocumentIds() const {
 
 std::vector<Document> Mqtt::getDocuments() {
   const auto messages = client->getMessages(topics);
-  const uint32_t now = millis();
+  uint32_t now = millis();
+  if (now == 0) now = 1;
   std::vector<Document> documents;
   for (size_t i = 0; i < messages.size(); ++i) {
     const auto& message = messages[i];
-    const bool fresh = !expirationTimeSec ||
-        static_cast<uint32_t>(now - message.updatedMs) <=
-            static_cast<uint64_t>(expirationTimeSec) * 1000;
+    auto& state = freshness[i];
+    if (!message.received) {
+      state = {};
+    } else if (state.revision != message.revision) {
+      state.revision = message.revision;
+      state.timestamp = message.updatedMs;
+    }
+    if (expirationTimeSec && state.timestamp != 0 &&
+        static_cast<uint32_t>(now - state.timestamp) >
+            expirationTimeSec * 1000u) {
+      state.timestamp = 0;
+    }
+    const bool fresh = !expirationTimeSec || state.timestamp != 0;
     documents.push_back({documentIds[i], message.content,
                          message.received, fresh});
   }

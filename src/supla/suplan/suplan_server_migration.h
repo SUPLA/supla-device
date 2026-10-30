@@ -4,11 +4,14 @@
 #define SRC_SUPLA_SUPLAN_SUPLAN_SERVER_MIGRATION_H_
 #ifndef ARDUINO_ARCH_AVR
 #include <stdint.h>
+#include <stddef.h>
 #include <supla-common/proto.h>
 #include <supla/channels/channel_reference.h>
 namespace Supla {
 class Config;
 namespace Device {
+// Stored binding shape only: no live authority, identity or owner pool checks.
+bool validBindingRecord(const uint8_t *bytes, size_t size);
 // Transient view of the durable old-map fence. No second retained directory.
 struct ServerMigration {
   static const int kPrefix = 44;

@@ -149,8 +149,7 @@ int ResourceBindingManager::targetNumber(uint32_t id) const {
   return -1;
 }
 bool ResourceBindingManager::validateBody(uint8_t peer, const uint8_t *body,
-                                         size_t size,
-                                         bool authorization) const {
+                                         size_t size) const {
   if (!body || !size || size != 1U + body[0] * 12U) return false;
   for (uint16_t i = 0; i < body[0]; ++i) {
     const auto entry = body + 1 + 12 * i;
@@ -158,8 +157,7 @@ bool ResourceBindingManager::validateBody(uint8_t peer, const uint8_t *body,
     if (entry[0] != 1 || entry[11] != 0 ||
         source.type != SupLan::kResourceTypeChannel || !source.id ||
         source.id > INT32_MAX || entry[6] != SupLan::kResourceTypeChannel ||
-        (authorization &&
-         !peers_->authorize(peer, source, SupLan::kPermissionRead)) ||
+        !peers_->authorize(peer, source, SupLan::kPermissionRead) ||
         targetNumber(SupLan::getUint32(entry + 7)) < 0) return false;
     for (uint16_t j = 0; j < i; ++j)
       if (!memcmp(entry, body + 1 + 12 * j, 12)) return false;
@@ -252,7 +250,7 @@ bool ResourceBindingManager::persist(uint8_t set, const uint8_t *record,
 }
 uint8_t ResourceBindingManager::accept(uint8_t peer, const uint8_t *body,
                                       size_t size) {
-  if (!loaded_ && !load()) return kRejected;
+  if (!loaded_ && !loadRecords()) return kRejected;
   const auto owner = peers_->get(peer);
   if (!owner || !owner->destination || !validateBody(peer, body, size))
     return kRejected;
@@ -287,11 +285,11 @@ uint8_t ResourceBindingManager::accept(uint8_t peer, const uint8_t *body,
   activate(slot, body, size);
   return kInstalled;
 }
-bool ResourceBindingManager::load() {
-  if (!associations_ || !associations_->available() ||
-      !associations_->identity()->identityAvailable()) return true;
+bool ResourceBindingManager::loadRecords() {
+  if (!associations_ || !associations_->identity() ||
+      associations_->identity()->fullScopeFenced()) return false;
   auto cfg = Storage::ConfigInstance();
-  if (!cfg) return true;
+  if (!cfg) return false;
   uint8_t present[(SUPLAN_MAX_PERSISTENT_PEERS + 7) / 8] = {};
   const auto enumerated = cfg->forEachKey("slb_",
       [](const char *key, ConfigValueType type, void *context) {
@@ -308,7 +306,11 @@ bool ResourceBindingManager::load() {
         return true;
       }, present);
   if (enumerated != ConfigIterationResult::COMPLETED) return false;
-  loaded_ = true;
+  // Rebuild from storage only after a complete inventory.
+  for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+    detach(i);
+    sets_[i] = {};
+  }
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     if (!(present[i / 8] & (1u << (i % 8)))) continue;
     char key[16];
@@ -316,25 +318,19 @@ bool ResourceBindingManager::load() {
     const auto size = cfg->getBlobSize(key);
     if (size < 29 || size > kRecordCapacity ||
         !cfg->getBlob(key, reinterpret_cast<char *>(record_), size) ||
-        record_[0] != 1 || size != 29 + 12 * record_[28]) continue;
+        !validBindingRecord(record_, size) ||
+        bindingCount() + record_[28] > SUPLAN_MAX_RESOURCE_BINDINGS) continue;
     memcpy(sets_[i].context, record_ + 1, 27);
-    sets_[i].used = true;
-    const auto peer = peerForSet(i);
-    if (peer >= 0 && record_[28] <= SUPLAN_MAX_BINDINGS_PER_PEER &&
-        bindingCount() + record_[28] <= SUPLAN_MAX_RESOURCE_BINDINGS &&
-        validateBody(peer, record_ + 28, size - 28, false)) {
-      activate(i, record_ + 28, size - 28);
-    } else {
-      // Stale context or revoked authorization never gains runtime authority.
-      if (persist(i, nullptr, 0)) sets_[i].used = false;
-    }
+    sets_[i].used = record_[28] != 0;
+    activate(i, record_ + 28, size - 28);
   }
+  loaded_ = true;
   return true;
 }
 bool ResourceBindingManager::authorizationReplacing(
     const SupLan::PeerContext &context, const SupLan::AclEntry *expected,
     uint16_t count) {
-  if (!loaded_ && !load()) return false;
+  if (!loaded_ && !loadRecords()) return false;
   uint8_t encoded[27];
   SupLan::encodePeerContext(&context, encoded);
   for (int slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
@@ -540,41 +536,9 @@ void ResourceBindingManager::serverReconnected() {
 }
 
 void ResourceBindingManager::iterate(uint32_t now) {
-  if (!loaded_ && !load()) return;
+  if (!loaded_ && !loadRecords()) return;
   if (!loaded_) return;
   const auto identity = associations_->identity();
-  if (identity && !identity->identityTransition() &&
-      static_cast<int32_t>(now - cleanupNextMs_) >= 0) {
-    cleanupNextMs_ = now + 1000;
-    for (int setIndex = 0; setIndex < SUPLAN_MAX_PERSISTENT_PEERS; ++setIndex) {
-      if (!sets_[setIndex].used) continue;
-      const auto peer = peerForSet(setIndex);
-      uint8_t body[1 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER] = {};
-      int oldCount = 0;
-      for (const auto &entry : contributors_) {
-        if (!entry.source || entry.set != setIndex) continue;
-        ++oldCount;
-        if (peer < 0 || targetNumber(entry.target) < 0 ||
-            !peers_->authorize(peer,
-                {SupLan::kResourceTypeChannel, entry.source},
-                SupLan::kPermissionRead)) continue;
-        auto wire = body + 1 + 12 * body[0]++;
-        wire[0] = 1;
-        wire[1] = wire[6] = SupLan::kResourceTypeChannel;
-        SupLan::putUint32(wire + 2, entry.source);
-        SupLan::putUint32(wire + 7, entry.target);
-      }
-      if (oldCount != body[0] || !oldCount) {
-        record_[0] = 1;
-        memcpy(record_ + 1, sets_[setIndex].context, 27);
-        memcpy(record_ + 28, body, 1 + 12 * body[0]);
-        if (persist(setIndex, record_, body[0] ? 29 + 12 * body[0] : 0)) {
-          activate(setIndex, body, 1 + 12 * body[0]);
-          sets_[setIndex].used = body[0] != 0;
-        }
-      }
-    }
-  }
   // Restore intents even without Server; binding persistence is not a value.
   for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS; ++i) {
     auto &entry = contributors_[i];
@@ -635,24 +599,34 @@ void ResourceBindingManager::iterate(uint32_t now) {
 }
 RelayBindingStatus ResourceBindingManager::relayBindingStatus(
     uint8_t target) const {
-  if (!loaded_ || !associations_ || !associations_->available() ||
-      !associations_->identity()->identityAvailable() ||
-      associations_->identity()->identityTransition()) {
+  if (!loaded_ || !associations_ || !associations_->identity() ||
+      associations_->identity()->fullScopeFenced()) {
     return RelayBindingStatus::Unknown;
   }
-  uint32_t targetId = 0;
-  if (!associations_->identity()->reverse(target, &targetId) ||
-      targetNumber(targetId) != target) {
+  const auto channel = Channel::GetByChannelNumber(target);
+  if (!channel) return RelayBindingStatus::None;
+  if (channel->getChannelType() != SUPLA_CHANNELTYPE_RELAY ||
+      (channel->getDefaultFunction() != SUPLA_CHANNELFNC_PUMPSWITCH &&
+       channel->getDefaultFunction() !=
+           SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH))
     return RelayBindingStatus::None;
-  }
+  const uint32_t targetId = channel->getServerChannelId();
+  // With no mapping, an empty durable topology proves None. Otherwise its
+  // provenance is uncertain; never guess a binding from a reused local number.
+  if (!targetId) return bindingCount() ? RelayBindingStatus::Unknown
+                                      : RelayBindingStatus::None;
   for (const auto &entry : contributors_) {
     if (!entry.source || entry.target != targetId) continue;
-    const auto peer = peerForSet(entry.set);
-    if (peer >= 0 && peers_->authorize(
-        peer, {SupLan::kResourceTypeChannel, entry.source},
-        SupLan::kPermissionRead)) {
-      return RelayBindingStatus::Configured;
+    SupLan::PeerContext context;
+    if (!SupLan::decodePeerContext(sets_[entry.set].context, &context))
+      return RelayBindingStatus::Unknown;
+    if (context.authorityType == SupLan::kAuthorityServer) {
+      if (!associations_->identity()->identityAvailable())
+        return RelayBindingStatus::Unknown;
+      if (context.destination.nodeId != static_cast<uint32_t>(
+              associations_->identity()->serverDeviceId())) continue;
     }
+    return RelayBindingStatus::Configured;
   }
   return RelayBindingStatus::None;
 }

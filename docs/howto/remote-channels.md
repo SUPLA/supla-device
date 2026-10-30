@@ -7,6 +7,26 @@ or duplicate the remote value cache. These APIs are not available on AVR.
 
 ## Binding pool capacities
 
+`ResourceBindingManager::relayBindingStatus()` reports the stored assignment of a
+local PumpSwitch/HOCS relay, independently of peer sessions, values and temporary
+authorization availability. `Configured` does not authorize actuation;
+`relayDemand()` still applies the live permission and identity-transition checks.
+Before storage is loaded, after failed key enumeration or during a full SERVER
+scope fence, the status is `Unknown`. With no channel identity mapping, an empty
+stored topology proves `None`; a nonempty topology remains `Unknown` rather than
+guessing from a reused local channel number. Explicit revoke, empty binding sets
+and identity migration remove the corresponding stored assignments. Missing
+SERVER identity also means `Unknown` for a matching stored SERVER binding.
+Loading binding records starts from an empty runtime set and never writes
+storage. Invalid, unreadable or over-capacity records are skipped without retry;
+other records still load. Reloading also discards LOCAL sample history, which
+returns after a new snapshot.
+Explicit migration can remove malformed records, but unreadable records or
+records exceeding the compiled per-peer limit keep the migration pending.
+Changing an output's function leaves its binding stored and inactive; restoring
+PumpSwitch/HOCS can reactivate it under current authority and the existing
+value-validity rules. Peer/session loss does not delete bindings.
+
 For HVAC output bindings, `SUPLAN_MAX_RESOURCE_BINDINGS` limits received edges
 from remote HVAC Channels to local outputs. `SUPLAN_MAX_BINDING_INTENTS` limits
 outgoing pairs from local HVAC Channels to remote outputs. These are separate

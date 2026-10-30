@@ -18,7 +18,26 @@
 #include <suplan/suplan_wire.h>
 namespace Supla {
 namespace Device {
+bool validBindingRecord(const uint8_t *bytes, size_t size) {
+  SupLan::PeerContext context;
+  if (!bytes || size < 29 || bytes[0] != 1 ||
+      size != 29U + 12U * bytes[28] ||
+      !SupLan::decodePeerContext(bytes + 1, &context)) return false;
+  for (uint16_t i = 0; i < bytes[28]; ++i) {
+    const auto entry = bytes + 29 + 12 * i;
+    const auto source = SupLan::getUint32(entry + 2);
+    const auto target = SupLan::getUint32(entry + 7);
+    if (entry[0] != 1 || entry[1] != SupLan::kResourceTypeChannel ||
+        !source || source > INT32_MAX ||
+        entry[6] != SupLan::kResourceTypeChannel ||
+        !target || target > INT32_MAX || entry[11] != 0) return false;
+    for (uint16_t j = 0; j < i; ++j)
+      if (!memcmp(entry, bytes + 29 + 12 * j, 12)) return false;
+  }
+  return true;
+}
 namespace {
+const int kBindingRecordCapacity = 29 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER;
 uint32_t word(const uint8_t *p) {
   return p[0] | (static_cast<uint32_t>(p[1]) << 8) |
       (static_cast<uint32_t>(p[2]) << 16) |
@@ -88,20 +107,18 @@ bool pruneSource(Config *cfg, const char *key, const uint8_t *fence) {
 // channels; preserve unrelated edges and their peer context.
 bool pruneBindings(Config *cfg, const char *key,
                    const ServerMigration &migration) {
-  const int capacity = 29 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER;
-  auto bytes = static_cast<uint8_t *>(calloc(capacity, 1));
+  const int size = cfg->getBlobSize(key);
+  if (size < 0 || size > kBindingRecordCapacity) return false;
+  if (size < 29) return cfg->eraseKey(key) && cfg->commit();
+  auto bytes = static_cast<uint8_t *>(calloc(size, 1));
   if (!bytes) return false;
   struct Release {
     uint8_t *data;
     ~Release() { free(data); }
   } release{bytes};
-  const int size = cfg->getBlobSize(key);
-  SupLan::PeerContext context = {};
-  if (size < 29 || size > capacity ||
-      !cfg->getBlob(key, reinterpret_cast<char *>(bytes), size) ||
-      bytes[0] != 1 || !SupLan::decodePeerContext(bytes + 1, &context) ||
-      bytes[28] > SUPLAN_MAX_BINDINGS_PER_PEER ||
-      size != 29 + 12 * bytes[28]) return false;
+  if (!cfg->getBlob(key, reinterpret_cast<char *>(bytes), size)) return false;
+  if (!validBindingRecord(bytes, size))
+    return cfg->eraseKey(key) && cfg->commit();
   int output = 0;
   for (int i = 0; i < bytes[28]; ++i) {
     const auto entry = bytes + 29 + 12 * i;
@@ -123,8 +140,12 @@ bool pruneBindings(Config *cfg, const char *key,
 // Callbacks only inspect metadata; Config reads/writes happen after iteration.
 struct Inventory {
   uint8_t present[6][32] = {};
+  uint8_t invalidBindings[32] = {};
   bool has(int family, int slot) const {
     return present[family][slot / 8] & (1u << (slot % 8));
+  }
+  bool invalidBinding(int slot) const {
+    return invalidBindings[slot / 8] & (1u << (slot % 8));
   }
   static bool visit(const char *key, ConfigValueType type, void *context) {
     auto self = static_cast<Inventory *>(context);
@@ -153,7 +174,10 @@ struct Inventory {
       }
       if (strcmp(key, expected)) continue;
       // A known name with another type is damaged storage, not absent state.
-      if (type != ConfigValueType::BLOB) return false;
+      if (type != ConfigValueType::BLOB) {
+        if (family != 4) return false;
+        self->invalidBindings[slot / 8] |= 1u << (slot % 8);
+      }
       self->present[family][slot / 8] |= 1u << (slot % 8);
       break;
     }
@@ -336,7 +360,11 @@ bool ServerMigration::migrate(Config *cfg) const {
       }
       if (keys.has(4, slot)) {
         snprintf(key, sizeof(key), "slb_%d", slot);
-        if (!pruneBindings(cfg, key, *this)) return false;
+        if (keys.invalidBinding(slot)) {
+          if (!cfg->eraseKey(key) || !cfg->commit()) return false;
+        } else if (!pruneBindings(cfg, key, *this)) {
+          return false;
+        }
       }
     }
     return true;
@@ -352,20 +380,28 @@ bool ServerMigration::migrate(Config *cfg) const {
     }
     snprintf(key, sizeof(key), "slb_%d", slot);
     if (!keys.has(4, slot)) continue;
-    const int size = cfg->getBlobSize(key);
-    if (size < 0) return false;
-    SupLan::PeerContext context = {};
-    // Config::getBlob requires the complete blob, not an arbitrary prefix.
-    // Binding records are bounded by the compiled wire envelope.
-    const int capacity = 29 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER;
-    auto body = static_cast<uint8_t *>(calloc(capacity, 1));
-    if (!body) return false;
-    bool local = false;
-    if (size <= capacity && size >= 29 &&
-        cfg->getBlob(key, reinterpret_cast<char *>(body), size)) {
-      local = SupLan::decodePeerContext(body + 1, &context) &&
-          context.authorityType == SupLan::kAuthorityLocal;
+    if (keys.invalidBinding(slot)) {
+      if (!cfg->eraseKey(key)) return false;
+      erased = true;
+      continue;
     }
+    const int size = cfg->getBlobSize(key);
+    if (size < 0 || size > kBindingRecordCapacity) return false;
+    if (size < 29) {
+      if (!cfg->eraseKey(key)) return false;
+      erased = true;
+      continue;
+    }
+    auto body = static_cast<uint8_t *>(calloc(size, 1));
+    if (!body) return false;
+    if (!cfg->getBlob(key, reinterpret_cast<char *>(body), size)) {
+      free(body);
+      return false;
+    }
+    SupLan::PeerContext context = {};
+    const bool local = validBindingRecord(body, size) &&
+        SupLan::decodePeerContext(body + 1, &context) &&
+        context.authorityType == SupLan::kAuthorityLocal;
     free(body);
     if (local) continue;
     if (!cfg->eraseKey(key)) return false;

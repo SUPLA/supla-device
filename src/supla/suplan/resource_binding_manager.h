@@ -30,6 +30,8 @@ class ResourceBindingManager {
   bool authorizationReplacing(const SupLan::PeerContext &context,
       const SupLan::AclEntry *expected, uint16_t count);
   bool relayDemand(uint8_t target, bool *configured);
+  // Stored assignment only, not permission to actuate. Unknown means storage
+  // or SERVER-scope provenance cannot currently be established.
   RelayBindingStatus relayBindingStatus(uint8_t target) const;
   void acknowledged(uint8_t peer, uint8_t result);
   void serverReconnected();
@@ -80,11 +82,9 @@ class ResourceBindingManager {
   uint32_t ensureDeadline_ = 0;
   bool loaded_ = false;
   bool intentOverflow_ = false;
-  uint32_t cleanupNextMs_ = 0;
-  bool load();
+  bool loadRecords();
   bool persist(uint8_t set, const uint8_t *record, size_t length);
-  bool validateBody(uint8_t peer, const uint8_t *body, size_t size,
-                    bool authorization = true) const;
+  bool validateBody(uint8_t peer, const uint8_t *body, size_t size) const;
   void activate(uint8_t set, const uint8_t *body, size_t size);
   void detach(uint8_t set);
   int peerForSet(uint8_t set) const;

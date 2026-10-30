@@ -26,6 +26,7 @@
 #include <supla/suplan/resource_binding_manager.h>
 #include <supla/suplan/suplan_server_associations.h>
 #include <supla/suplan/suplan_server_identity.h>
+#include <supla/suplan/suplan_server_migration.h>
 #include <suplan/suplan_wire.h>
 #include <suplan_crypto_openssl.h>
 
@@ -46,6 +47,10 @@ class DurableConfig : public KeyValue {
  public:
   using KeyValue::getBlobSize;
   int getBlobSize(const char *key) override {
+    if (enumerating) {
+      ++readsDuringEnumeration;
+      return -1;
+    }
     const int size = KeyValue::getBlobSize(key);
     if (size < 0 && (!strncmp(key, "slb_", 4) ||
                      !strncmp(key, "sl-peer-", 8))) ++missingSlotReads;
@@ -53,9 +58,15 @@ class DurableConfig : public KeyValue {
   }
   ConfigIterationResult forEachKey(const char *filter,
       ConfigKeyCallback callback, void *context) override {
-    return failEnumeration ? ConfigIterationResult::ERROR
-                           : KeyValue::forEachKey(filter, callback, context);
+    if (failEnumeration) return ConfigIterationResult::ERROR;
+    EXPECT_FALSE(enumerating);
+    enumerating = true;
+    const auto result = KeyValue::forEachKey(filter, callback, context);
+    enumerating = false;
+    return result;
   }
+  bool enumerating = false;
+  int readsDuringEnumeration = 0;
   bool failEnumeration = false;
   int missingSlotReads = 0;
   bool init() override { return true; }
@@ -84,7 +95,12 @@ class DurableConfig : public KeyValue {
     return KeyValue::getInt32(key, value);
   }
   bool getBlob(const char *key, char *data, size_t size) override {
-    if (readbackArmed && failBlobReadback) return false;
+    if (enumerating) {
+      ++readsDuringEnumeration;
+      return false;
+    }
+    if ((readbackArmed && failBlobReadback) ||
+        (!failedBlobKey.empty() && failedBlobKey == key)) return false;
     return KeyValue::getBlob(key, data, size);
   }
   bool eraseKey(const char *key) override {
@@ -98,6 +114,7 @@ class DurableConfig : public KeyValue {
   bool failFunction = false;
   bool failFunctionReadback = false;
   bool failBlobReadback = false;
+  std::string failedBlobKey;
   bool readbackArmed = false;
   bool failCommit = false;
   int commits = 0;
@@ -570,6 +587,382 @@ TEST_F(M4bDevice, RelayBindingStatusDistinguishesUnknownAndConfigured) {
   manager->attachAssociations(nullptr);
   EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Unknown);
   manager->attachAssociations(&associations);
+}
+
+TEST_F(M4bDevice, BindingStatusWithoutFirstServerIdentityIsNone) {
+  ASSERT_TRUE(storage.eraseKey("sl-identity"));
+  ASSERT_TRUE(storage.commit());
+  identity.load(&storage);
+  ASSERT_FALSE(identity.identityAvailable());
+  auto manager = adapter.resourceBindings();
+  manager->attachAssociations(&associations);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Unknown);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::None);
+}
+
+TEST_F(M4bDevice, BindingStatusRestoresBeforeSessionAndDuringTransition) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  // Remove an unrelated channel: the relay's old map remains trustworthy.
+  ASSERT_TRUE(sensor->getChannel()->prepareForRemoval());
+  ASSERT_TRUE(identity.identityTransition());
+  storage.reboot();
+  identity.load(&storage);
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  EXPECT_GT(storage.getBlobSize("slb_0"), 0);
+  bool configured = true;
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_FALSE(configured);
+}
+
+TEST_F(M4bDevice,
+       BindingStatusRestoresWithoutSessionAndUnknownMapIsConservative) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  storage.reboot();
+  identity.load(&storage);
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  Control::VirtualRelay added;
+  added.getChannel()->setDefault(SUPLA_CHANNELFNC_PUMPSWITCH);
+  EXPECT_EQ(manager->relayBindingStatus(added.getChannelNumber()),
+            RelayBindingStatus::Unknown);
+}
+
+TEST_F(M4bDevice, BindingStatusSurvivesTemporaryAuthorityLoss) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  peers.get(0)->destination = false;
+  time.advance(2000);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  EXPECT_GT(storage.getBlobSize("slb_0"), 0);
+  bool configured = true;
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_FALSE(configured);
+  storage.reboot();
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  peers.get(0)->destination = true;
+}
+
+TEST_F(M4bDevice, BindingLoadSkipsUnreadableRecordAndDoesNotBlockRevoke) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  std::vector<char> record(storage.getBlobSize("slb_0"));
+  ASSERT_TRUE(storage.getBlob("slb_0", record.data(), record.size()));
+  ASSERT_TRUE(storage.setBlob("slb_1", record.data(), record.size()));
+  ASSERT_TRUE(storage.commit());
+  manager->attachAssociations(&associations);
+  storage.failedBlobKey = "slb_1";
+  const auto events = storage.events.size();
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  EXPECT_EQ(manager->bindingCount(), 1);
+  EXPECT_EQ(storage.events.size(), events);
+  storage.failedBlobKey.clear();
+  time.advance(2000);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->bindingCount(), 1);  // No automatic retry of slb_1.
+  storage.failedBlobKey = "slb_1";
+  request.AclRevision++;
+  request.ResourceCount = 0;
+  EXPECT_EQ(associations.accept(request).Result, SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(manager->bindingCount(), 0);
+}
+
+TEST_F(M4bDevice, BindingStatusSkipsInvalidRecordsWithoutWriting) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  std::vector<char> record(storage.getBlobSize("slb_0"));
+  ASSERT_TRUE(storage.getBlob("slb_0", record.data(), record.size()));
+  ASSERT_TRUE(storage.setBlob("slb_1", record.data(), record.size()));
+  // Invalid version, wrong type and a record above the current per-peer limit.
+  record[0] = 42;
+  ASSERT_TRUE(storage.setBlob("slb_0", record.data(), record.size()));
+  ASSERT_TRUE(storage.setInt32("slb_2", 123));
+  record.resize(29 + 12 * (SUPLAN_MAX_BINDINGS_PER_PEER + 1));
+  record[0] = 1;
+  record[28] = SUPLAN_MAX_BINDINGS_PER_PEER + 1;
+  ASSERT_TRUE(storage.setBlob("slb_3", record.data(), record.size()));
+  ASSERT_TRUE(storage.commit());
+  manager->attachAssociations(&associations);
+  const auto events = storage.events.size();
+  manager->iterate(time.value);
+  EXPECT_EQ(storage.events.size(), events);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  EXPECT_EQ(manager->bindingCount(), 1);
+  EXPECT_GT(storage.getBlobSize("slb_0"), 0);
+  int32_t wrongType;
+  EXPECT_TRUE(storage.getInt32("slb_2", &wrongType));
+  EXPECT_GT(storage.getBlobSize("slb_3"), 0);
+  request.AclRevision++;
+  EXPECT_EQ(associations.accept(request).Result, SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  storage.reboot();
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+}
+
+TEST_F(M4bDevice, BindingStatusMissingIdentityWithRetainedMapIsUnknown) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  ASSERT_TRUE(storage.eraseKey("sl-identity"));
+  ASSERT_TRUE(storage.commit());
+  identity.load(&storage);
+  ASSERT_FALSE(identity.identityAvailable());
+  class RetainedMapChannel : public Channel {
+   public:
+    explicit RetainedMapChannel(uint32_t id) {
+      serverChannelId = id;
+      setType(SUPLA_CHANNELTYPE_RELAY);
+      setDefault(SUPLA_CHANNELFNC_PUMPSWITCH);
+    }
+  } retainedMap(604), unrelatedMap(999);
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(retainedMap.getChannelNumber()),
+            RelayBindingStatus::Unknown);
+  EXPECT_EQ(manager->relayBindingStatus(unrelatedMap.getChannelNumber()),
+            RelayBindingStatus::None);
+  EXPECT_GT(storage.getBlobSize("slb_0"), 0);
+}
+
+TEST_F(M4bDevice, BindingStatusMissingPeerDoesNotDeleteStoredAssignment) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  runtime.clearPeer(0);
+  peers.removePeer(0);
+  ASSERT_TRUE(storage.eraseKey("sl-peer-0"));
+  ASSERT_TRUE(storage.commit());
+  const auto events = storage.events.size();
+  storage.failEnumeration = true;
+  time.advance(2000);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->bindingCount(), 1);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  EXPECT_EQ(storage.events.size(), events);
+  EXPECT_GT(storage.getBlobSize("slb_0"), 0);
+  bool configured = true;
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_FALSE(configured);
+}
+
+TEST_F(M4bDevice, BindingFunctionChangeKeepsInactiveAssignment) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  manager->iterate(time.value);
+  hvacSample(true);
+  manager->iterate(time.value);
+  bool configured = false;
+  ASSERT_TRUE(manager->relayDemand(3, &configured));
+  relay->getChannel()->setDefault(SUPLA_CHANNELFNC_POWERSWITCH);
+  time.advance(2000);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::None);
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_EQ(manager->bindingCount(), 1);
+  relay->getChannel()->setDefault(SUPLA_CHANNELFNC_PUMPSWITCH);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  // No Source response means no new demand after the function change.
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  hvacSample(true);
+  manager->iterate(time.value);
+  EXPECT_TRUE(manager->relayDemand(3, &configured));
+}
+
+TEST_F(M4bDevice, BindingStatusKeepsLocalAuthoritySetWithoutPeer) {
+  PeerContext context = {kAuthorityLocal, 0x1234,
+      {kNodeIdLocal, 1}, {kNodeIdLocal, 2}, 123, 1};
+  uint8_t key[32];
+  std::memset(key, 0x61, sizeof(key));
+  AclEntry expected = {{kResourceTypeChannel, (1u << 16) | 7},
+                       kPermissionRead};
+  uint8_t peer = 0xff;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &expected, 1, &peer, true));
+  auto body = binding();
+  putUint32(body.data() + 3, expected.resource.id);
+  auto manager = adapter.resourceBindings();
+  ASSERT_EQ(manager->accept(peer, body.data(), body.size()), 3);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  runtime.clearPeer(peer);
+  peers.removePeer(peer);
+  time.advance(2000);
+  manager->iterate(time.value);
+  // A missing LOCAL peer is not a durable unlink; keep the stored set.
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+  EXPECT_EQ(manager->bindingCount(), 1);
+  EXPECT_GT(storage.getBlobSize("slb_0"), 0);
+}
+
+TEST_F(M4bDevice, BindingReloadDropsPreviousConsumer) {
+  PeerContext context = {kAuthorityLocal, 0x1234,
+      {kNodeIdLocal, 1}, {kNodeIdLocal, 2}, 123, 1};
+  uint8_t key[32];
+  std::memset(key, 0x61, sizeof(key));
+  AclEntry expected = {{kResourceTypeChannel, (1u << 16) | 7},
+                       kPermissionRead};
+  uint8_t peer = 0xff;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &expected, 1, &peer, true));
+  auto body = binding();
+  putUint32(body.data() + 3, expected.resource.id);
+  auto manager = adapter.resourceBindings();
+  ASSERT_EQ(manager->accept(peer, body.data(), body.size()), 3);
+  manager->iterate(time.value);
+  const uint32_t consumer = 0x40000 + SUPLAN_MAX_RESOURCE_BINDINGS - 1;
+  ASSERT_TRUE(adapter.remoteResources()->hasConsumer(consumer));
+  manager->invalidateServerScope();  // LOCAL sets survive, but must reload.
+  std::vector<uint8_t> record(storage.getBlobSize("slb_0"));
+  ASSERT_TRUE(storage.getBlob("slb_0",
+      reinterpret_cast<char *>(record.data()), record.size()));
+  ASSERT_TRUE(encodePeerContext(&context, record.data() + 1));
+  ASSERT_TRUE(storage.setBlob("slb_0",
+      reinterpret_cast<const char *>(record.data()), record.size()));
+  ASSERT_TRUE(storage.commit());
+  ASSERT_TRUE(manager->authorizationReplacing(context, &expected, 1));
+  EXPECT_FALSE(adapter.remoteResources()->hasConsumer(consumer));
+  EXPECT_EQ(manager->bindingCount(), 1);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
+}
+
+TEST_F(M4bDevice, BindingMigrationRejectsIoFailureAndPreservesLocalRecord) {
+  auto body = binding();
+  std::array<uint8_t, 41> record = {};
+  record[0] = 1;
+  PeerContext context = {kAuthorityLocal, 0x1234,
+      {kNodeIdLocal, 1}, {kNodeIdLocal, 2}, 123, 1};
+  ASSERT_TRUE(encodePeerContext(&context, record.data() + 1));
+  std::memcpy(record.data() + 28, body.data(), body.size());
+  ASSERT_TRUE(validBindingRecord(record.data(), record.size()));
+  ASSERT_TRUE(storage.setBlob("slb_0",
+      reinterpret_cast<const char *>(record.data()), record.size()));
+  ASSERT_TRUE(storage.commit());
+  std::array<uint8_t, ServerMigration::kPrefix> fence = {};
+  fence[2] = 1;  // Full SERVER-scope change, LOCAL binding must survive.
+  ServerMigration migration = {fence.data()};
+  storage.failedBlobKey = "slb_0";
+  EXPECT_FALSE(migration.migrate(&storage));
+  storage.failedBlobKey.clear();
+  EXPECT_EQ(storage.getBlobSize("slb_0"), static_cast<int>(record.size()));
+  ASSERT_TRUE(migration.migrate(&storage));
+  storage.reboot();
+  std::array<uint8_t, 41> restored = {};
+  ASSERT_TRUE(storage.getBlob("slb_0",
+      reinterpret_cast<char *>(restored.data()), restored.size()));
+  EXPECT_EQ(restored, record);
+}
+
+TEST_F(M4bDevice, MigrationLeavesOversizedBindingUntouched) {
+  const int count = SUPLAN_MAX_BINDINGS_PER_PEER + 1;
+  ASSERT_LE(count, UINT8_MAX);
+  std::vector<uint8_t> record(29 + 12 * count);
+  record[0] = 1;
+  record[28] = count;
+  PeerContext context = {kAuthorityLocal, 0x1234,
+      {kNodeIdLocal, 1}, {kNodeIdLocal, 2}, 123, 1};
+  ASSERT_TRUE(encodePeerContext(&context, record.data() + 1));
+  for (int i = 0; i < count; ++i) {
+    auto entry = record.data() + 29 + 12 * i;
+    entry[0] = entry[1] = entry[6] = 1;
+    putUint32(entry + 2, 1001 + i);
+    putUint32(entry + 7, 604);
+  }
+  ASSERT_TRUE(validBindingRecord(record.data(), record.size()));
+  ASSERT_TRUE(storage.setBlob("slb_0",
+      reinterpret_cast<const char *>(record.data()), record.size()));
+  ASSERT_TRUE(storage.commit());
+  std::array<uint8_t, ServerMigration::kPrefix + 6> fence = {};
+  fence[3] = 1;
+  putUint32(fence.data() + ServerMigration::kPrefix + 1, 604);
+  for (uint8_t full : {0, 1}) {
+    fence[2] = full;
+    ServerMigration migration = {fence.data()};
+    EXPECT_FALSE(migration.migrate(&storage));
+    EXPECT_EQ(storage.getBlobSize("slb_0"), static_cast<int>(record.size()));
+    std::vector<uint8_t> restored(record.size());
+    ASSERT_TRUE(storage.getBlob("slb_0",
+        reinterpret_cast<char *>(restored.data()), restored.size()));
+    EXPECT_EQ(restored, record);
+  }
+}
+
+TEST(M4bFollowup, WrongTypeBindingRemainsVisibleToMigrationInventory) {
+  DurableConfig config;
+  ASSERT_TRUE(config.setInt32("ordinary", 1));
+  EXPECT_FALSE(ServerMigration::hasServerState(&config));
+  ASSERT_TRUE(config.setInt32("slb_0", 42));
+  ASSERT_TRUE(config.commit());
+  EXPECT_TRUE(ServerMigration::hasServerState(&config));
+  std::array<uint8_t, ServerMigration::kPrefix + 6> fence = {};
+  fence[3] = 1;
+  putUint32(fence.data() + ServerMigration::kPrefix + 1, 604);
+  ServerMigration migration = {fence.data()};
+  ASSERT_TRUE(migration.migrate(&config));
+  config.reboot();
+  EXPECT_FALSE(ServerMigration::hasServerState(&config));
+}
+
+TEST_F(M4bDevice, BindingMigrationCleansMalformedAndWrongTypeRecords) {
+  const char invalid = 42;
+  ASSERT_TRUE(storage.setBlob("slb_0", &invalid, 1));
+  ASSERT_TRUE(storage.setInt32("slb_1", 42));
+  ASSERT_TRUE(storage.commit());
+  EXPECT_TRUE(ServerMigration::hasServerState(&storage));
+  std::array<uint8_t, ServerMigration::kPrefix + 6> fence = {};
+  fence[3] = 1;  // Selective removal, with a departed own target.
+  putUint32(fence.data() + ServerMigration::kPrefix + 1, 604);
+  ServerMigration migration = {fence.data()};
+  storage.failErase = true;
+  EXPECT_FALSE(migration.migrate(&storage));
+  storage.failErase = false;
+  storage.failCommit = true;
+  EXPECT_FALSE(migration.migrate(&storage));
+  storage.failCommit = false;
+  ASSERT_TRUE(migration.migrate(&storage));
+  ASSERT_TRUE(storage.commit());
+  storage.reboot();
+  EXPECT_LT(storage.getBlobSize("slb_0"), 0);
+  int32_t value;
+  EXPECT_FALSE(storage.getInt32("slb_1", &value));
+}
+
+TEST_F(M4bDevice, BindingStatusEmptySurvivesRestartAndScopeFenceIsUnknown) {
+  auto manager = adapter.resourceBindings();
+  auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  std::vector<char> oldRecord(storage.getBlobSize("slb_0"));
+  ASSERT_TRUE(storage.getBlob("slb_0", oldRecord.data(), oldRecord.size()));
+  const uint8_t empty = 0;
+  ASSERT_EQ(manager->accept(0, &empty, 1), 3);
+  storage.reboot();
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::None);
+  ASSERT_TRUE(ServerIdentity::configuredServerChanged(&storage));
+  // Physical leftovers must not resurrect a binding from the old scope.
+  ASSERT_TRUE(storage.setBlob("slb_0", oldRecord.data(), oldRecord.size()));
+  ASSERT_TRUE(storage.commit());
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Unknown);
+  EXPECT_EQ(manager->bindingCount(), 0);
+  bool configured = true;
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_FALSE(configured);
 }
 
 TEST_F(M4bDevice, BindingDurabilityRebootRevocationAndEmpty) {
@@ -2622,6 +3015,7 @@ TEST_F(M4bDevice, RemovedTargetBindingCannotActuateReusedChannelId) {
   ASSERT_TRUE(manager->relayDemand(3, &configured));
   ASSERT_TRUE(relay->getChannel()->prepareForRemoval());
   EXPECT_EQ(manager->bindingCount(), 0);
+  EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::None);
   EXPECT_EQ(storage.getBlobSize("slb_0"), -1);
   delete relay;
   relay = new Control::Relay(1);

@@ -120,10 +120,31 @@ class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
     }
   }
 
+  void onNativeScheduleApplied(bool alt, bool local, bool changed) override {
+    const auto *schedule = getSchedule(alt, false);
+    if (changed && schedule != nullptr) {
+      SUPLA_LOG_INFO("AT[%d] weekly schedule updated (%s), programs:",
+          owner_->getChannelNumber(), local ? "local" : "server");
+      for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE; ++i) {
+        [[maybe_unused]] const auto &program = schedule->Program[i];
+        SUPLA_LOG_INFO(
+            "AT[%d] weekly program %d: mode=%s(%u), "
+            "temporary_unlock=%u s%s",
+            owner_->getChannelNumber(), i + 1,
+            buttonModeName(program.Mode), program.Mode,
+            program.ButtonTemporaryUnlockDurationS,
+            program.Mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
+                program.ButtonTemporaryUnlockDurationS == 0
+                    ? " (default from AT config)" : "");
+      }
+    }
+    NativeWeeklyScheduleController::onNativeScheduleApplied(
+        alt, local, changed);
+  }
+
   bool applyResolvedWeeklyScheduleProgram(
       const TWeeklyScheduleProgram &program, int programId,
       bool programChanged) override {
-    (void)programChanged;
     if (programId > 0 &&
         program.Mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
         !owner_->prepareTemporaryUnlockState()) {
@@ -138,6 +159,12 @@ class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
               ? program.ButtonTemporaryUnlockDurationS : 0;
     }
     syncWeeklyScheduleMode(programId > 0 ? program.Mode : 0);
+    if (programChanged) {
+      SUPLA_LOG_INFO("AT[%d] weekly schedule active program=%d, mode=%s(%u)",
+          owner_->getChannelNumber(), programId,
+          buttonModeName(programId > 0 ? program.Mode : 0),
+          programId > 0 ? program.Mode : 0);
+    }
     return true;
   }
 

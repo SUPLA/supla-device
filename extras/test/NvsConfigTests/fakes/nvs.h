@@ -104,7 +104,11 @@ inline esp_err_t nvs_erase_all(nvs_handle_t handle) {
   fakeNvsEraseHandle = handle;
   return fakeNvsEraseResult;
 }
-inline esp_err_t nvs_erase_key(...) { return ESP_ERR_NOT_FOUND; }
+inline esp_err_t nvs_erase_key(nvs_handle_t handle, const char *) {
+  ++fakeNvsEraseCalls;
+  fakeNvsEraseHandle = handle;
+  return fakeNvsEraseResult;
+}
 inline esp_err_t nvs_get_str(...) { return ESP_ERR_NOT_FOUND; }
 inline esp_err_t nvs_get_blob(...) { return ESP_ERR_NOT_FOUND; }
 inline esp_err_t nvs_get_i8(...) { return ESP_ERR_NOT_FOUND; }

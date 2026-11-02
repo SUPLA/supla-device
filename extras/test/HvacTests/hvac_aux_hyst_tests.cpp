@@ -39,10 +39,8 @@ class HvacAuxTestsF : public ::testing::Test {
 
   void SetUp() override {
     cfg.expectLegacyHvacBlobSizes(0);
-    // These runtime tests deliberately reject V2 writes below. Require the
-    // corresponding rollback of the new staging key; never allow other erases.
-    EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2")))
-        .Times(AtLeast(1)).WillRepeatedly(Return(false));
+    // Failed V2 writes must not trigger staging rollback.
+    EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2"))).Times(0);
     Supla::Channel::resetToDefaults();
     EXPECT_CALL(cfg, init());
     EXPECT_CALL(cfg, getUInt32(StrEq("0_cfg_chng_t"), _))

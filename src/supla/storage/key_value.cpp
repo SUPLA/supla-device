@@ -600,9 +600,10 @@ size_t KeyValueElement::serialize(uint8_t* destination, size_t maxSize) {
 }
 
 bool KeyValue::eraseKey(const char* key) {
+  if (!key || !key[0]) return false;
   auto elementToDelete = find(key);
   if (elementToDelete == nullptr) {
-    return false;
+    return true;
   }
 
   if (first == elementToDelete) {

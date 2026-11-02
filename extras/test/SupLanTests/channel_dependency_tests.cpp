@@ -621,7 +621,8 @@ TEST(ChannelDependency, LegacyChannelZeroMigrationConfirmsBeforeCleanup) {
   storage.events.clear();
   storage.failCommit = true;
   hvac.onLoadConfig(nullptr);
-  EXPECT_EQ(storage.getBlobSize("1_hvac_cfg2"), -1);
+  EXPECT_EQ(storage.getBlobSize("1_hvac_cfg2"),
+            sizeof(Control::HvacStoredConfigV2));
   EXPECT_EQ(storage.getBlobSize("1_hvac_cfg"), sizeof(legacy));
   for (const auto &event : storage.events)
     EXPECT_NE(event, "erase:1_hvac_cfg");
@@ -1004,7 +1005,8 @@ TEST(ChannelDependency, FailedMigrationKeepsLegacyAndV2WinsAfterCrash) {
   storage.failCommit = true;
   hvac.onLoadConfig(nullptr);
   EXPECT_EQ(storage.getBlobSize("0_hvac_cfg"), sizeof(legacy));
-  EXPECT_EQ(storage.getBlobSize("0_hvac_cfg2"), -1);
+  EXPECT_EQ(storage.getBlobSize("0_hvac_cfg2"),
+            sizeof(Control::HvacStoredConfigV2));
   storage.reboot();
   storage.failCommit = false;
   storage.failErase = true;
@@ -1163,7 +1165,7 @@ TEST(ChannelDependency, ServerConfigPersistenceFailurePreventsActivation) {
   const int commits = storage.commits;
   ASSERT_EQ(hvac.handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_EQ(storage.commits, commits);
+  EXPECT_EQ(storage.commits, commits + 1);
   Control::HvacStoredConfigV2 record;
   ASSERT_TRUE(storage.getBlob("0_hvac_cfg2", reinterpret_cast<char *>(&record),
                               sizeof(record)));
@@ -1360,7 +1362,7 @@ class AmbiguousCommitConfig : public DurableHvacConfig {
   bool reportFailure = false;
 };
 TEST(ChannelDependency,
-     ReplayAfterFailedCommitMustConfirmDurablePreviousRecord) {
+     RetryAfterFailedCommitRewritesPreviousRecord) {
   resetChannels();
   SimpleTime time;
   AmbiguousCommitConfig storage;
@@ -1395,13 +1397,13 @@ TEST(ChannelDependency,
   storage.reportFailure = false;
   wire.MainThermometerChannelId = 1001;
   memcpy(request.Config, &wire, sizeof(wire));
-  // The attempted durability repair also fails. Success must remain blocked.
+  // The normal retry also fails. Success must remain blocked.
   storage.failCommit = true;
   EXPECT_EQ(hvac.handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
   EXPECT_FALSE(hvac.isChannelConfigDurable());
   storage.reboot();
-  // Failure was ambiguous: B really reached flash, although active config
+  // Storage reported failure after B reached flash, although active config
   // stayed A. Failed replay must not pretend that A is durable again.
   EXPECT_EQ(hvac.configuration().MainThermometer.channelId, 1002u);
   storage.failCommit = false;
@@ -1413,7 +1415,7 @@ TEST(ChannelDependency,
   const int commits = storage.commits;
   ASSERT_EQ(hvac.handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_EQ(storage.commits, commits);
+  EXPECT_EQ(storage.commits, commits + 1);
 }
 }  // namespace
 

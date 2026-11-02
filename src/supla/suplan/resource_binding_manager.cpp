@@ -56,7 +56,6 @@ void ResourceBindingManager::invalidateServerScope() {
   if (!retryPeer || retryPeer->contextBytes[0] == SupLan::kAuthorityServer)
     retry_.length = 0;
   memset(record_, 0, sizeof(record_));
-  memset(previous_, 0, sizeof(previous_));
   for (auto &intent : intents_) intent = {};
   for (auto &sent : sent_) sent = {};
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
@@ -216,37 +215,10 @@ bool ResourceBindingManager::persist(uint8_t set, const uint8_t *record,
   if (!cfg) return false;
   char key[16];
   bindingKey(set, key, sizeof(key));
-  const int oldSize = cfg->getBlobSize(key);
-  const bool previous =
-      oldSize > 0 && oldSize <= kRecordCapacity &&
-      cfg->getBlob(key, reinterpret_cast<char *>(previous_), oldSize);
-  if (!sets_[set].uncertain && previous &&
-      oldSize == static_cast<int>(length) && !memcmp(previous_, record, length))
-    return true;
-  bool saved =
-      length ? cfg->setBlob(key, reinterpret_cast<const char *>(record), length)
-             : (oldSize < 0 || cfg->eraseKey(key));
-  saved = saved && cfg->commit();
-  if (saved && length) {
-    uint8_t confirmed[kRecordCapacity];
-    saved = cfg->getBlobSize(key) == static_cast<int>(length) &&
-        cfg->getBlob(key, reinterpret_cast<char *>(confirmed), length) &&
-        !memcmp(confirmed, record, length);
-  } else if (saved) {
-    saved = cfg->getBlobSize(key) < 0;
-  }
-  sets_[set].uncertain = !saved;
-  // Keep unrelated Config commits from flushing an unacknowledged candidate.
-  // Flash may already contain the complete candidate; uncertain replay still
-  // requires a commit, never an equality-only durability claim.
-  if (!saved) {
-    if (previous) {
-      cfg->setBlob(key, reinterpret_cast<char *>(previous_), oldSize);
-    } else {
-      cfg->eraseKey(key);
-    }
-  }
-  return saved;
+  return (length
+      ? cfg->setBlob(key, reinterpret_cast<const char *>(record), length)
+      : cfg->eraseKey(key)) &&
+      cfg->commit();
 }
 uint8_t ResourceBindingManager::accept(uint8_t peer, const uint8_t *body,
                                       size_t size) {

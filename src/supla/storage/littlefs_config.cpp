@@ -146,39 +146,8 @@ bool Supla::LittleFsConfig::commit() {
     }
   }
   LittleFS.end();
-  bool verified = verifyFile(ConfigFileName, buf, dataSize) &&
-                  verifyFile(BackupConfigFileName, buf, dataSize);
   delete[] buf;
-  return verified;
-}
-
-bool Supla::LittleFsConfig::verifyFile(const char* filename,
-                                       const uint8_t* data, size_t size) {
-  // Arduino File::close/flush hide backend errors. Remount before reading to
-  // verify persisted bytes, rather than accepting data still in the FS cache.
-  // A verification failure must not format the partition.
-  if (!initLittleFs(false)) {
-    return false;
-  }
-  File file = LittleFS.open(filename, "r");
-  bool verified = file && file.size() == size;
-  uint8_t buffer[64];
-  for (size_t offset = 0; verified && offset < size;) {
-    size_t chunk = size - offset;
-    if (chunk > sizeof(buffer)) {
-      chunk = sizeof(buffer);
-    }
-    verified = file.read(buffer, chunk) == static_cast<int>(chunk) &&
-               memcmp(buffer, data + offset, chunk) == 0;
-    offset += chunk;
-  }
-  file.close();
-  LittleFS.end();
-  if (!verified) {
-    SUPLA_LOG_ERROR("LittleFsConfig: persisted file verification failed: %s",
-                    filename);
-  }
-  return verified;
+  return true;
 }
 
 bool Supla::LittleFsConfig::getCustomCA(char* customCA, int maxSize) {
@@ -445,9 +414,7 @@ bool Supla::LittleFsConfig::setBlob(const char* key,
       reinterpret_cast<const uint8_t*>(value), blobSize);
   file.close();
   LittleFS.end();
-  return written == blobSize &&
-         verifyFile(filename, reinterpret_cast<const uint8_t*>(value),
-                    blobSize);
+  return written == blobSize;
 }
 
 bool Supla::LittleFsConfig::getBlob(const char* key,
@@ -529,11 +496,11 @@ int Supla::LittleFsConfig::getBlobSize(const char* key) {
 }
 
 bool Supla::LittleFsConfig::eraseKey(const char* key) {
-  if (key == nullptr) {
+  if (key == nullptr || !key[0]) {
     return false;
   }
 
-  bool removed = Supla::KeyValue::eraseKey(key);
+  if (!Supla::KeyValue::eraseKey(key)) return false;
 
   if (!initLittleFs(false)) {
     return false;
@@ -546,16 +513,9 @@ bool Supla::LittleFsConfig::eraseKey(const char* key) {
       LittleFS.end();
       return false;
     }
-    removed = true;
   }
   LittleFS.end();
-  // SERVER empty replacement must not acknowledge a cached/stale blob delete.
-  if (!initLittleFs(false)) {
-    return false;
-  }
-  bool absent = !LittleFS.exists(filename);
-  LittleFS.end();
-  return removed && absent;
+  return true;
 }
 
 

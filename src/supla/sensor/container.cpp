@@ -77,11 +77,9 @@ void Container::reconcileChannelDependencies() {
 }
 
 void Container::cleanupLegacy() {
-  lastCleanupMs = millis();
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, Supla::ConfigTag::ContainerTag);
-  cleanupPending =
-      !Supla::StorageDetail::cleanupLegacyConfig(key, cleanupPending);
+  Supla::StorageDetail::cleanupLegacyConfig(key);
 }
 
 bool Container::persistConfig(const ContainerConfiguration &candidate,
@@ -93,7 +91,7 @@ bool Container::persistConfig(const ContainerConfiguration &candidate,
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, "cnt_cfg2");
   return Supla::StorageDetail::persistCanonicalConfig(
-      key, record, &persistenceUncertain, getChannelNumber());
+      key, record, getChannelNumber());
 }
 
 void Container::setInternalLevelReporting(bool internalLevelReporting) {
@@ -113,7 +111,6 @@ bool Container::isInternalLevelReporting() const {
 
 void Container::iterateAlways() {
   reconcileChannelDependencies();
-  if (cleanupPending && millis() - lastCleanupMs >= 60000) cleanupLegacy();
   if (lastReadTime == 0 || millis() - lastReadTime >= readIntervalMs) {
     lastReadTime = millis();
     int sensorValue = -1;
@@ -453,7 +450,6 @@ void Container::onServerScopeMigration() {
 void Container::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) return;
-  const bool wasUncertain = persistenceUncertain;
   const int32_t storedFunction = cfg->getChannelFunction(getChannelNumber());
   if ((storedFunction == 0 ||
       storedFunction == SUPLA_CHANNELFNC_CONTAINER ||
@@ -478,8 +474,6 @@ void Container::onLoadConfig(SuplaDeviceClass *) {
       return;
     }
     config = record.config;
-    persistenceUncertain = wasUncertain ||
-        storedFunction != static_cast<int32_t>(record.function);
     configDurable = true;
     cleanupLegacy();
   } else {

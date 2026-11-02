@@ -259,8 +259,8 @@ TEST_F(SupLanBootstrap, UnsupportedHostIsExplicitAndNoAutomaticStack) {
   EXPECT_FALSE(hasSupLanServerStack(&device));
 }
 TEST_F(SupLanBootstrap, EveryAllocationFailureRollsBackRegisteredLayer) {
-  // Request, owned tables, ProtocolLayer, associations, resource and bindings.
-  for (int allowed = 0; allowed < 6; ++allowed) {
+  // Request, owned tables, ProtocolLayer, associations and remote resources.
+  for (int allowed = 0; allowed < 5; ++allowed) {
     SuplaDeviceClass device;
     failSupLanAllocationAfter(allowed);
     if (!allowed) {
@@ -273,6 +273,25 @@ TEST_F(SupLanBootstrap, EveryAllocationFailureRollsBackRegisteredLayer) {
     EXPECT_FALSE(hasSupLanServerStack(&device)) << allowed;
   }
 }
+TEST_F(SupLanBootstrap, StartsWithoutAllocatingUnusedBindingOwner) {
+  SuplaDeviceClass device;
+  failSupLanAllocationAfter(5);
+  ASSERT_TRUE(device.enableSupLan());
+  ASSERT_TRUE(device.begin(29));
+  auto protocol = protocolFor(&device);
+  ASSERT_NE(protocol, nullptr);
+  ASSERT_NE(protocol->remoteResources(), nullptr);
+  EXPECT_EQ(protocol->remoteResources()->bindings, nullptr);
+  EXPECT_TRUE(hasSupLanServerStack(&device));
+  // Lazy feature allocation may fail without disabling ordinary SupLAN.
+  EXPECT_EQ(protocol->resourceBindings(), nullptr);
+  EXPECT_TRUE(hasSupLanServerStack(&device));
+  failSupLanAllocationAfter(-1);
+  auto bindings = protocol->resourceBindings();
+  ASSERT_NE(bindings, nullptr);
+  EXPECT_EQ(protocol->resourceBindings(), bindings);
+}
+
 TEST_F(SupLanBootstrap, FailedRandomInitializationCannotAdvertise) {
   SuplaDeviceClass device;
   ASSERT_TRUE(device.enableSupLan());

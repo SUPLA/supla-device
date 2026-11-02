@@ -18,7 +18,6 @@
 #ifndef ARDUINO_ARCH_AVR
 #include <new>
 #endif
-#include <supla/storage/canonical_config.h>
 
 #include "weekly_schedule_common.h"
 #include "weekly_schedule_storage.h"
@@ -781,8 +780,7 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
   if (configChanged && !ensureTemporaryUnlockState()) {
     return Supla::ApplyConfigResult::DataError;
   }
-  if ((configChanged || localChange || storeActiveActions ||
-       (temporaryUnlock && temporaryUnlock->persistenceUncertain)) &&
+  if ((configChanged || localChange || storeActiveActions) &&
       !persistTemporaryUnlockConfig(candidate, localChange, &activeActions)) {
 #ifndef ARDUINO_ARCH_AVR
     suplanConfigDurable = false;
@@ -1645,88 +1643,23 @@ bool Supla::Control::ActionTrigger::persistTemporaryUnlockConfig(
   if (!cfg) return true;
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, "at_tmp");
-  if (!localChange && !activeActions) {
-    return Supla::StorageDetail::persistCanonicalConfig(
-        key, config, &temporaryUnlock->persistenceUncertain);
-  }
-  TemporaryUnlockConfig previous;
-  const bool existed = cfg->getBlobSize(key) == sizeof(previous) &&
-      cfg->getBlob(key, reinterpret_cast<char *>(&previous), sizeof(previous));
-  const bool recordChanged = !existed ||
-      memcmp(&config, &previous, sizeof(config)) != 0;
-  char changedTypesKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  uint32_t previousTypes = 0;
-  uint32_t pendingTypes = 0;
-  bool typesExisted = false;
-  bool typesChanged = false;
-  char actionsKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  uint32_t previousActions = 0;
-  bool actionsExisted = false;
-  bool actionsChanged = false;
-  if (activeActions) {
-    generateKey(actionsKey, "at_actions");
-    actionsExisted = cfg->getUInt32(actionsKey, &previousActions);
-    actionsChanged = !actionsExisted || previousActions != *activeActions;
-  }
   if (localChange) {
+    char changedTypesKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     generateKey(changedTypesKey,
                 Supla::ConfigTag::ChannelConfigChangedTypesTag);
-    typesExisted = cfg->getUInt32(changedTypesKey, &previousTypes);
     auto types = locallyChangedConfigTypes;
     types.set(SUPLA_CONFIG_TYPE_DEFAULT);
-    pendingTypes = types.getAll();
-    typesChanged = !typesExisted || previousTypes != pendingTypes;
+    if (!cfg->setUInt32(changedTypesKey, types.getAll())) return false;
   }
-  if (!temporaryUnlock->persistenceUncertain &&
-      !recordChanged && !typesChanged && !actionsChanged) {
-    if (activeActions) temporaryUnlock->hasStoredActiveActions = true;
-    return true;
+  if (activeActions) {
+    char actionsKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(actionsKey, "at_actions");
+    if (!cfg->setUInt32(actionsKey, *activeActions)) return false;
   }
-  // Persist settings, original actions and the pending marker together.
-  // Only then may the caller publish either change to the running element.
-  if ((!typesChanged || cfg->setUInt32(changedTypesKey, pendingTypes)) &&
-      (!actionsChanged || cfg->setUInt32(actionsKey, *activeActions)) &&
-      (!recordChanged || cfg->setBlob(key,
-          reinterpret_cast<const char *>(&config), sizeof(config))) &&
-      cfg->commit()) {
-    TemporaryUnlockConfig confirmed;
-    uint32_t confirmedTypes = 0;
-    uint32_t confirmedActions = 0;
-    if (cfg->getBlobSize(key) == sizeof(confirmed) &&
-        cfg->getBlob(key, reinterpret_cast<char *>(&confirmed),
-                     sizeof(confirmed)) &&
-        !memcmp(&config, &confirmed, sizeof(config)) &&
-        (!activeActions || (cfg->getUInt32(actionsKey, &confirmedActions) &&
-                            confirmedActions == *activeActions)) &&
-        (!localChange || (cfg->getUInt32(changedTypesKey, &confirmedTypes) &&
-                         confirmedTypes == pendingTypes))) {
-      temporaryUnlock->persistenceUncertain = false;
-      if (activeActions) temporaryUnlock->hasStoredActiveActions = true;
-      return true;
-    }
-  }
-  temporaryUnlock->persistenceUncertain = true;
-  if (actionsChanged) {
-    if (actionsExisted) {
-      cfg->setUInt32(actionsKey, previousActions);
-    } else {
-      cfg->eraseKey(actionsKey);
-    }
-  }
-  if (typesChanged) {
-    if (typesExisted) {
-      cfg->setUInt32(changedTypesKey, previousTypes);
-    } else {
-      cfg->eraseKey(changedTypesKey);
-    }
-  }
-  if (existed) {
-    cfg->setBlob(key, reinterpret_cast<const char *>(&previous),
-                 sizeof(previous));
-  } else {
-    cfg->eraseKey(key);
-  }
-  return false;
+  if (!cfg->setBlob(key, reinterpret_cast<const char *>(&config),
+                    sizeof(config)) || !cfg->commit()) return false;
+  if (activeActions) temporaryUnlock->hasStoredActiveActions = true;
+  return true;
 }
 
 bool Supla::Control::ActionTrigger::prepareTemporaryUnlockState() {
@@ -1735,8 +1668,7 @@ bool Supla::Control::ActionTrigger::prepareTemporaryUnlockState() {
   config.escapedActions =
       (activeActionsFromServer & ~kActionTriggerStateModeMask) == 0x3FFFFFFFUL
           ? activeActionsFromServer : 0;
-  if (config.escapedActions != temporaryUnlock->config.escapedActions ||
-      temporaryUnlock->persistenceUncertain) {
+  if (config.escapedActions != temporaryUnlock->config.escapedActions) {
     if (!persistTemporaryUnlockConfig(config)) return false;
     temporaryUnlock->config = config;
   }
@@ -1756,7 +1688,7 @@ bool Supla::Control::ActionTrigger::isChannelConfigDurable() const {
 #ifndef ARDUINO_ARCH_AVR
   if (!suplanConfigDurable) return false;
 #endif
-  return !temporaryUnlock || !temporaryUnlock->persistenceUncertain;
+  return true;
 }
 
 void Supla::Control::ActionTrigger::onServerIdentityTransition() {

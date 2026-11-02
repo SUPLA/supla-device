@@ -46,12 +46,8 @@ uint32_t word(const uint8_t *p) {
 bool save(Config *cfg, const char *key, const void *data, int size) {
   // The fence remains durable on a failed/partial feature write. A later
   // commit may install this sanitized value, which is safe and replayable.
-  if (!cfg->setBlob(key, static_cast<const char *>(data), size) ||
-      !cfg->commit()) return false;
-  char confirmed[sizeof(Control::ValveStoredConfigV2)];
-  return size <= static_cast<int>(sizeof(confirmed)) &&
-      cfg->getBlobSize(key) == size && cfg->getBlob(key, confirmed, size) &&
-      !memcmp(confirmed, data, size);
+  return cfg->setBlob(key, static_cast<const char *>(data), size) &&
+      cfg->commit();
 }
 // Existing sl-peer encoding; pruning retains its revision, even with zero ACL.
 // This makes an old same-revision association conflict rather than regrant.

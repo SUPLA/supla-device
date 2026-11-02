@@ -190,19 +190,12 @@ class ValveBase : public ChannelElement, public ActionHandler {
   void setDefaultCloseValveOnFloodType(uint8_t type);
 
  protected:
-  void onFunctionChange(uint32_t, uint32_t) override {
-    // Local UI can stage ChannelFunction before the owning V2 is saved.
-    persistenceUncertain = true;
-  }
   bool shouldProcessChannelFunctionFromConfig() const override {
     return false;
   }
   bool persistConfig(const ValveConfiguration &candidate, uint32_t function);
   void cleanupLegacy();
   ValveConfiguration config = {};
-  uint32_t lastCleanupMs = 0;
-  bool cleanupPending = false;
-  bool persistenceUncertain = false;
   bool configDurable = true;
   uint32_t lastSensorsCheckTimestamp = 0;
   uint32_t lastUpdateTimestamp = 0;

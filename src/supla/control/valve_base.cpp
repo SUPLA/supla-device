@@ -48,11 +48,9 @@ void ValveBase::reconcileChannelDependencies() {
 }
 
 void ValveBase::cleanupLegacy() {
-  lastCleanupMs = millis();
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, Supla::ConfigTag::ValveCfgTag);
-  cleanupPending =
-      !Supla::StorageDetail::cleanupLegacyConfig(key, cleanupPending);
+  Supla::StorageDetail::cleanupLegacyConfig(key);
 }
 
 bool ValveBase::persistConfig(const ValveConfiguration &candidate,
@@ -64,7 +62,7 @@ bool ValveBase::persistConfig(const ValveConfiguration &candidate,
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, "valve_cfg2");
   return Supla::StorageDetail::persistCanonicalConfig(
-      key, record, &persistenceUncertain, getChannelNumber());
+      key, record, getChannelNumber());
 }
 
 ValveBase::ValveBase(bool openClose) {
@@ -86,7 +84,6 @@ void ValveBase::onInit() {
 
 void ValveBase::iterateAlways() {
   reconcileChannelDependencies();
-  if (cleanupPending && millis() - lastCleanupMs >= 60000) cleanupLegacy();
   if (millis() - lastUpdateTimestamp > 200) {
     lastUpdateTimestamp = millis();
     auto currentState = getValueOpenStateFromDevice();
@@ -206,7 +203,6 @@ void ValveBase::onServerScopeMigration() {
 void ValveBase::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) return;
-  const bool wasUncertain = persistenceUncertain;
   const int32_t storedFunction = cfg->getChannelFunction(getChannelNumber());
   if ((storedFunction == 0 ||
       storedFunction == SUPLA_CHANNELFNC_VALVE_OPENCLOSE ||
@@ -230,8 +226,6 @@ void ValveBase::onLoadConfig(SuplaDeviceClass *) {
       return;
     }
     config = record.config;
-    persistenceUncertain = wasUncertain ||
-        storedFunction != static_cast<int32_t>(record.function);
     configDurable = true;
     cleanupLegacy();
   } else {

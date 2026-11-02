@@ -24,6 +24,7 @@
 #include <supla/storage/key_value.h>
 #include <supla/storage/storage.h>
 #include <supla/suplan/resource_binding_manager.h>
+#include <supla/suplan/bootstrap.h>
 #include <supla/suplan/suplan_server_associations.h>
 #include <supla/suplan/suplan_server_identity.h>
 #include <supla/suplan/suplan_server_migration.h>
@@ -47,6 +48,7 @@ class DurableConfig : public KeyValue {
  public:
   using KeyValue::getBlobSize;
   int getBlobSize(const char *key) override {
+    if (failedBlobSizeKey == key) return -1;
     if (enumerating) {
       ++readsDuringEnumeration;
       return -1;
@@ -78,7 +80,6 @@ class DurableConfig : public KeyValue {
     const auto count = serializeToMemory(buffer.data(), buffer.size());
     if (count == SIZE_MAX) return false;
     disk.assign(buffer.begin(), buffer.begin() + count);
-    readbackArmed = failFunctionReadback || failBlobReadback;
     return true;
   }
   bool setBlob(const char *key, const char *data, size_t size) override {
@@ -91,7 +92,6 @@ class DurableConfig : public KeyValue {
     return !failFunction && KeyValue::setInt32(key, value);
   }
   bool getInt32(const char *key, int32_t *value) override {
-    if (readbackArmed && failFunctionReadback) return false;
     return KeyValue::getInt32(key, value);
   }
   bool getBlob(const char *key, char *data, size_t size) override {
@@ -99,8 +99,7 @@ class DurableConfig : public KeyValue {
       ++readsDuringEnumeration;
       return false;
     }
-    if ((readbackArmed && failBlobReadback) ||
-        (!failedBlobKey.empty() && failedBlobKey == key)) return false;
+    if (!failedBlobKey.empty() && failedBlobKey == key) return false;
     return KeyValue::getBlob(key, data, size);
   }
   bool eraseKey(const char *key) override {
@@ -112,10 +111,8 @@ class DurableConfig : public KeyValue {
     ASSERT_TRUE(initFromMemory(disk.data(), disk.size()));
   }
   bool failFunction = false;
-  bool failFunctionReadback = false;
-  bool failBlobReadback = false;
   std::string failedBlobKey;
-  bool readbackArmed = false;
+  std::string failedBlobSizeKey;
   bool failCommit = false;
   int commits = 0;
   int failCommitNumber = 0;
@@ -534,7 +531,7 @@ TEST_F(M4bDevice, FullSlotsAndUnavailableInputsAreRetained) {
   EXPECT_GT(adapter.remoteResources()->consumerCount(), 0);
 }
 
-TEST_F(M4bDevice, PersistenceFailureBlocksActivationAndIdenticalReplayIsQuiet) {
+TEST_F(M4bDevice, PersistenceFailureBlocksActivationAndReplayCommits) {
   auto c = containerWire();
   storage.failCommit = true;
   EXPECT_EQ(container->applyChannelConfig(&c), ApplyConfigResult::DataError);
@@ -545,7 +542,7 @@ TEST_F(M4bDevice, PersistenceFailureBlocksActivationAndIdenticalReplayIsQuiet) {
   ASSERT_EQ(container->applyChannelConfig(&c), ApplyConfigResult::Success);
   const auto events = storage.events.size();
   ASSERT_EQ(container->applyChannelConfig(&c), ApplyConfigResult::Success);
-  EXPECT_EQ(storage.events.size(), events);
+  EXPECT_GT(storage.events.size(), events);
   auto v = valveWire();
   storage.failWrite = true;
   EXPECT_EQ(valve->applyChannelConfig(&v), ApplyConfigResult::DataError);
@@ -570,6 +567,142 @@ TEST_F(M4bDevice, LocalUpdatePreservesRemoteReferenceAndNoFallback) {
   EXPECT_EQ(valve->sensorReference(0), ChannelReference::server(1001));
 }
 
+TEST_F(M4bDevice, OrdinaryReadDoesNotAllocateBindingOwner) {
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  ASSERT_TRUE(adapter.remoteResources()->consume(
+      {77, {kResourceTypeChannel, 1001}, kPermissionRead}));
+  for (int i = 0; i < 3; ++i) {
+    adapter.iterate(time.value);
+    time.advance(10);
+  }
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  adapter.remoteResources()->remove(77);
+}
+
+TEST_F(M4bDevice, IdentityMigrationDoesNotAllocateUnusedBindingOwner) {
+  ASSERT_EQ(adapter.remoteResources()->bindings, nullptr);
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 203;
+  ids.ChannelCount = 5;
+  for (int i = 0; i < 5; ++i) ids.ChannelId[i] = 701 + i;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  identity.syncDone();
+  adapter.iterate(time.value);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+}
+
+TEST_F(M4bDevice, FirstBindingCreatesOwnerAndOomRejectsInstallation) {
+  ASSERT_EQ(adapter.remoteResources()->bindings, nullptr);
+  auto body = binding();
+  failSupLanAllocationAfter(0);
+  const auto result = adapter.receiveBindings(0, body.data(), body.size());
+  failSupLanAllocationAfter(-1);
+  EXPECT_EQ(result, SUPLA_RESULTCODE_UNKNOWN_ERROR);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  EXPECT_LT(storage.getBlobSize("slb_0"), 0);
+  ASSERT_EQ(adapter.receiveBindings(0, body.data(), body.size()), 3);
+  ASSERT_NE(adapter.remoteResources()->bindings, nullptr);
+  EXPECT_EQ(adapter.remoteResources()->bindings->bindingCount(), 1);
+}
+
+TEST_F(M4bDevice, RetainedBindingRestoresWithoutServerOrExplicitGetter) {
+  auto body = binding();
+  uint8_t record[41] = {1};
+  memcpy(record + 1, peers.get(0)->contextBytes, 27);
+  memcpy(record + 28, body.data(), body.size());
+  ASSERT_TRUE(storage.setBlob("slb_0", reinterpret_cast<char *>(record),
+                              sizeof(record)));
+  ASSERT_TRUE(storage.commit());
+  storage.reboot();
+  adapter.attachServerAssociations(&associations);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  adapter.iterate(time.value);
+  ASSERT_NE(adapter.remoteResources()->bindings, nullptr);
+  EXPECT_EQ(adapter.remoteResources()->bindings->bindingCount(), 1);
+  EXPECT_EQ(adapter.remoteResources()->bindings->relayBindingStatus(3),
+            RelayBindingStatus::Configured);
+}
+
+TEST_F(M4bDevice, LazyInventoryFailureBlocksRevokeWithoutAllocating) {
+  adapter.attachServerAssociations(&associations);
+  storage.failEnumeration = true;
+  auto revoke = request;
+  revoke.AclRevision = 2;
+  revoke.ResourceCount = 0;
+  EXPECT_EQ(associations.accept(revoke).Result,
+            SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
+  ASSERT_NE(peers.get(0), nullptr);
+  EXPECT_TRUE(peers.authorize(0, {kResourceTypeChannel, 1001},
+                              kPermissionRead));
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  storage.failEnumeration = false;
+  EXPECT_EQ(associations.accept(revoke).Result, SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+}
+
+TEST_F(M4bDevice, RetainedBindingOomCannotAcknowledgeRevoke) {
+  auto body = binding();
+  uint8_t record[41] = {1};
+  memcpy(record + 1, peers.get(0)->contextBytes, 27);
+  memcpy(record + 28, body.data(), body.size());
+  ASSERT_TRUE(storage.setBlob("slb_0", reinterpret_cast<char *>(record),
+                              sizeof(record)));
+  ASSERT_TRUE(storage.commit());
+  adapter.attachServerAssociations(&associations);
+  auto revoke = request;
+  revoke.AclRevision = 2;
+  revoke.ResourceCount = 0;
+  failSupLanAllocationAfter(0);
+  const auto result = associations.accept(revoke).Result;
+  failSupLanAllocationAfter(-1);
+  EXPECT_EQ(result, SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
+  ASSERT_NE(peers.get(0), nullptr);
+  EXPECT_TRUE(peers.authorize(0, {kResourceTypeChannel, 1001},
+                              kPermissionRead));
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  ASSERT_EQ(associations.accept(revoke).Result, SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_LT(storage.getBlobSize("slb_0"), 0);
+  EXPECT_EQ(adapter.remoteResources()->bindings->bindingCount(), 0);
+}
+
+TEST_F(M4bDevice, LateHvacTargetCreatesBindingOwner) {
+  ASSERT_EQ(adapter.remoteResources()->bindings, nullptr);
+  auto candidate = bindingConfig(9001, 0);
+  ASSERT_EQ(hvac->handleChannelConfig(&candidate, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_NE(adapter.remoteResources()->bindings, nullptr);
+}
+
+TEST_F(M4bDevice, DynamicallyAddedHvacStartsBindingFeature) {
+  ASSERT_EQ(adapter.remoteResources()->bindings, nullptr);
+  auto candidate = bindingConfig(9001, 0);
+  FollowupHvac added(&output);
+  added.getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  added.onLoadConfig(nullptr);
+  added.onInit();
+  ASSERT_EQ(added.handleChannelConfig(&candidate, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_NE(adapter.remoteResources()->bindings, nullptr);
+}
+
+TEST_F(M4bDevice, SourceGrantStillRequestsSessionForEmptyBindingSet) {
+  ASSERT_EQ(adapter.remoteResources()->bindings, nullptr);
+  TSDS_SuplaSetSuplanSourceAssociation source = {};
+  source.PeerContext = {1, 0, 1, 202, 1, 303, identity.rootEpoch(), 1};
+  source.AclRevision = 1;
+  source.AclEntryCount = 1;
+  source.Acl[0] = {1, 605, 1};
+  ASSERT_EQ(associations.accept(source).Result, SUPLA_SUPLAN_RESULT_OK);
+  Supla::Device::failSupLanAllocationAfter(0);
+  adapter.iterate(time.value);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  Supla::Device::failSupLanAllocationAfter(-1);
+  adapter.iterate(++time.value);
+  ASSERT_NE(adapter.remoteResources()->bindings, nullptr);
+  EXPECT_TRUE(adapter.bindingSessionNeeded(1));
+}
+
 TEST_F(M4bDevice, RelayBindingStatusDistinguishesUnknownAndConfigured) {
   auto manager = adapter.resourceBindings();
   manager->attachAssociations(&associations);
@@ -587,6 +720,48 @@ TEST_F(M4bDevice, RelayBindingStatusDistinguishesUnknownAndConfigured) {
   manager->attachAssociations(nullptr);
   EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Unknown);
   manager->attachAssociations(&associations);
+}
+
+TEST_F(M4bDevice, BindingWriteFailuresRejectWithoutChangingRuntimeAndRetry) {
+  auto manager = adapter.resourceBindings();
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  auto body = binding();
+  storage.failWrite = true;
+  EXPECT_EQ(manager->accept(0, body.data(), body.size()), 0);
+  EXPECT_EQ(manager->bindingCount(), 0);
+  storage.failWrite = false;
+  storage.failCommit = true;
+  EXPECT_EQ(manager->accept(0, body.data(), body.size()), 0);
+  EXPECT_EQ(manager->bindingCount(), 0);
+  storage.failCommit = false;
+  const int commits = storage.commits;
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  EXPECT_EQ(storage.commits, commits + 1);
+  EXPECT_EQ(manager->bindingCount(), 1);
+  storage.reboot();
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->bindingCount(), 1);
+
+  const uint8_t empty = 0;
+  storage.failedBlobSizeKey = "slb_0";
+  storage.failErase = true;
+  EXPECT_EQ(manager->accept(0, &empty, 1), 0);
+  EXPECT_EQ(manager->bindingCount(), 1);
+  storage.failErase = false;
+  storage.failCommit = true;
+  EXPECT_EQ(manager->accept(0, &empty, 1), 0);
+  EXPECT_EQ(manager->bindingCount(), 1);
+  storage.failCommit = false;
+  ASSERT_EQ(manager->accept(0, &empty, 1), 3);
+  EXPECT_EQ(manager->bindingCount(), 0);
+  storage.failedBlobSizeKey.clear();
+  storage.reboot();
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  EXPECT_EQ(manager->bindingCount(), 0);
+  manager->attachAssociations(nullptr);
 }
 
 TEST_F(M4bDevice, BindingStatusWithoutFirstServerIdentityIsNone) {
@@ -976,7 +1151,7 @@ TEST_F(M4bDevice, BindingDurabilityRebootRevocationAndEmpty) {
   EXPECT_EQ(manager->bindingCount(), 1);
   const auto events = storage.events.size();
   EXPECT_EQ(manager->accept(0, body.data(), body.size()), 3);
-  EXPECT_EQ(storage.events.size(), events);
+  EXPECT_EQ(storage.events.size(), events + 2);
   manager->iterate(time.value);
   hvacSample(true);
   manager->iterate(time.value);
@@ -1440,7 +1615,7 @@ TEST_F(M4bDevice, HvacAcceptedNoneSurvivesReplayRebootAndKeepsLocalFunction) {
   const int commits = storage.commits;
   ASSERT_EQ(hvac->handleChannelConfig(&none, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_EQ(storage.commits, commits);
+  EXPECT_EQ(storage.commits, commits + 2);
   auto active = bindingConfig(0, 0);
   active.Func = internal;
   active.ConfigSize = 0;
@@ -1570,6 +1745,9 @@ TEST_F(M4bDevice, OriginalV2PrefixLoadsWithoutEagerRewrite) {
   TSD_ChannelConfig none = {};
   EXPECT_EQ(hvac->handleChannelConfig(&none, false),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_EQ(storage.getBlobSize("4_hvac_cfg2"), sizeof(record));
+  EXPECT_NE(hvac->supLanFunction(), 0);
+  storage.reboot();
   EXPECT_EQ(storage.getBlobSize("4_hvac_cfg2"), prefixSize);
   storage.failCommit = false;
   ASSERT_EQ(hvac->handleChannelConfig(&none, false),
@@ -1976,7 +2154,7 @@ TEST_F(M4bDevice, FailedHvacPersistenceDoesNotPublishEmptyBindings) {
   datagrams.linked = nullptr;
 }
 
-TEST_F(M4bDevice, LegacyCleanupRetriesFailedCommitForContainerAndValve) {
+TEST_F(M4bDevice, FailedLegacyCleanupDoesNotScheduleBackgroundCommits) {
   Sensor::ContainerConfig legacy;
   legacy.sensorData[0].channelNumber = 0;
   legacy.sensorData[0].fillLevel = 80;
@@ -1988,32 +2166,25 @@ TEST_F(M4bDevice, LegacyCleanupRetriesFailedCommitForContainerAndValve) {
   ASSERT_TRUE(storage.setBlob("2_valve_cfg",
       reinterpret_cast<char *>(&oldValve), sizeof(oldValve)));
   ASSERT_TRUE(storage.commit());
-  // The V2 commit succeeds; only the subsequent legacy erase commit fails.
   storage.failCommitNumber = storage.commits + 2;
   container->onLoadConfig(nullptr);
-  ASSERT_GE(storage.getBlobSize("1_cnt_cfg2"), 0);
-  ASSERT_EQ(storage.getBlobSize("1_container"), -1);
   const int commits = storage.commits;
-  storage.failCommit = true;
   time.advance(60000);
   container->iterateAlways();
-  EXPECT_GT(storage.commits, commits);
-  storage.failCommit = false;
-  time.advance(60000);
-  container->iterateAlways();
+  EXPECT_EQ(storage.commits, commits);
   storage.reboot();
-  EXPECT_EQ(storage.getBlobSize("1_container"), -1);
-  ASSERT_GE(storage.getBlobSize("2_valve_cfg"), 0);
+  // V2 is durable. Failed cleanup may leave the harmless legacy record.
+  ASSERT_GE(storage.getBlobSize("1_cnt_cfg2"), 0);
+  ASSERT_GE(storage.getBlobSize("1_container"), 0);
   storage.failCommitNumber = storage.commits + 2;
   valve->onLoadConfig(nullptr);
-  ASSERT_GE(storage.getBlobSize("2_valve_cfg2"), 0);
-  ASSERT_EQ(storage.getBlobSize("2_valve_cfg"), -1);
   const int valveCommits = storage.commits;
   time.advance(60000);
   valve->iterateAlways();
-  EXPECT_GT(storage.commits, valveCommits);
+  EXPECT_EQ(storage.commits, valveCommits);
   storage.reboot();
-  EXPECT_EQ(storage.getBlobSize("2_valve_cfg"), -1);
+  ASSERT_GE(storage.getBlobSize("2_valve_cfg2"), 0);
+  ASSERT_GE(storage.getBlobSize("2_valve_cfg"), 0);
 }
 
 TEST(M4bPersistence, NeverRegisteredZeroMigrationCleanupFailureAndCorruption) {
@@ -2057,6 +2228,11 @@ TEST(M4bPersistence, NeverRegisteredZeroMigrationCleanupFailureAndCorruption) {
   time.advance(60001);
   container.iterateAlways();
   valve.iterateAlways();
+  // No timer repairs failed cleanup; normal config loading may try again.
+  EXPECT_GE(storage.getBlobSize("1_container"), 0);
+  EXPECT_GE(storage.getBlobSize("2_valve_cfg"), 0);
+  container.onLoadConfig(nullptr);
+  valve.onLoadConfig(nullptr);
   EXPECT_EQ(storage.getBlobSize("1_container"), -1);
   EXPECT_EQ(storage.getBlobSize("2_valve_cfg"), -1);
   Sensor::ContainerStoredConfigV2 record;
@@ -2161,7 +2337,7 @@ TEST_F(M4bDevice, CoherenceMissingUnsupportedAndZeroMarkerNeverSelectFunction) {
   }
 }
 
-TEST_F(M4bDevice, CoherenceFunctionChangeCommitsBothAndReplayIsQuiet) {
+TEST_F(M4bDevice, CoherenceFunctionChangeAndReplayCommitBothKeys) {
   for (int family = 0; family < 3; ++family) {
     auto request = familyRequest(family, true);
     auto element = familyElement(family);
@@ -2173,7 +2349,7 @@ TEST_F(M4bDevice, CoherenceFunctionChangeCommitsBothAndReplayIsQuiet) {
     const auto commits = storage.commits;
     ASSERT_EQ(element->handleChannelConfig(&request, false),
               SUPLA_CONFIG_RESULT_TRUE);
-    EXPECT_EQ(storage.commits, commits);
+    EXPECT_EQ(storage.commits, commits + 1);
     storage.reboot();
     loadFamily(family);
     EXPECT_EQ(element->getChannel()->getDefaultFunction(), request.Func);
@@ -2181,9 +2357,9 @@ TEST_F(M4bDevice, CoherenceFunctionChangeCommitsBothAndReplayIsQuiet) {
   }
 }
 
-TEST_F(M4bDevice, CoherenceWriteCommitAndReadbackFailuresBlockActivation) {
+TEST_F(M4bDevice, CoherenceWriteAndCommitFailuresBlockActivation) {
   for (int family = 0; family < 3; ++family) {
-    for (int failure = 0; failure < 5; ++failure) {
+    for (int failure = 0; failure < 3; ++failure) {
       SCOPED_TRACE(family);
       SCOPED_TRACE(failure);
       auto initial = familyRequest(family);
@@ -2196,16 +2372,12 @@ TEST_F(M4bDevice, CoherenceWriteCommitAndReadbackFailuresBlockActivation) {
       storage.failFunction = failure == 0;
       storage.failWrite = failure == 1;
       storage.failCommit = failure == 2;
-      storage.failFunctionReadback = failure == 3;
-      storage.failBlobReadback = failure == 4;
       EXPECT_EQ(element->handleChannelConfig(&request, false),
                 SUPLA_CONFIG_RESULT_DATA_ERROR);
       EXPECT_EQ(element->getChannel()->getDefaultFunction(), function);
       EXPECT_EQ(familyReference(family), reference);
       EXPECT_FALSE(element->isChannelConfigDurable());
       storage.failFunction = storage.failWrite = storage.failCommit = false;
-      storage.failFunctionReadback = storage.failBlobReadback = false;
-      storage.readbackArmed = false;
       // A retry must confirm durability even when staging matches old bytes.
       ASSERT_EQ(element->handleChannelConfig(&initial, false),
                 SUPLA_CONFIG_RESULT_TRUE);
@@ -2375,25 +2547,6 @@ TEST_F(M4bDevice, CoherenceFullActiveFunctionReplacementSurvivesReboot) {
     if (family == 2) {
       EXPECT_EQ(storedHvac().scalars.OutputValueOnError, 50);
     }
-  }
-}
-
-TEST_F(M4bDevice, CoherenceReadbackErrorCanRebootIntoNewCompleteState) {
-  for (int family = 0; family < 3; ++family) {
-    auto element = familyElement(family);
-    const auto before = element->getChannel()->getDefaultFunction();
-    auto request = familyRequest(family, true);
-    storage.failBlobReadback = true;
-    EXPECT_EQ(element->handleChannelConfig(&request, false),
-              SUPLA_CONFIG_RESULT_DATA_ERROR);
-    EXPECT_EQ(element->getChannel()->getDefaultFunction(), before);
-    storage.failBlobReadback = false;
-    storage.readbackArmed = false;
-    // The commit succeeded: rollback of staging cannot undo durable storage.
-    storage.reboot();
-    loadFamily(family);
-    EXPECT_EQ(element->getChannel()->getDefaultFunction(), request.Func);
-    EXPECT_TRUE(element->isChannelConfigDurable());
   }
 }
 
@@ -2783,14 +2936,17 @@ TEST_F(M4bDevice, FencedIdleLoopsDoNotRepeatIdentityTeardown) {
 TEST_F(M4bDevice, LoadersDoNotProbeAbsentPeerOrBindingSlots) {
   storage.missingSlotReads = 0;
   associations.load(&storage, &identity);
-  adapter.remoteResources()->bindings->attachAssociations(&associations);
+  auto bindings = adapter.resourceBindings();
+  ASSERT_NE(bindings, nullptr);
+  bindings->attachAssociations(&associations);
   adapter.iterate(1);
   EXPECT_EQ(storage.missingSlotReads, 0);
   ASSERT_NE(peers.get(0), nullptr);  // Existing persisted peer was restored.
 }
 
 TEST_F(M4bDevice, BindingEnumerationFailureDoesNotAcceptNewPersistentSet) {
-  auto bindings = adapter.remoteResources()->bindings;
+  auto bindings = adapter.resourceBindings();
+  ASSERT_NE(bindings, nullptr);
   bindings->attachAssociations(&associations);
   storage.failEnumeration = true;
   const uint8_t empty[] = {0};

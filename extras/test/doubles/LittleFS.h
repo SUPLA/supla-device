@@ -54,14 +54,12 @@ class File {
   File(FakeLittleFs *filesystem,
        std::string path,
        bool directory,
-       std::string name,
-       bool writable = false)
+       std::string name)
       : filesystem_(filesystem),
         path_(std::move(path)),
         name_(std::move(name)),
         directory_(directory),
-        valid_(true),
-        writable_(writable) {
+        valid_(true) {
   }
 
   FakeLittleFs *filesystem_ = nullptr;
@@ -71,7 +69,6 @@ class File {
   size_t position_ = 0;
   bool directory_ = false;
   bool valid_ = false;
-  bool writable_ = false;
 };
 
 class FakeLittleFs {
@@ -87,17 +84,8 @@ class FakeLittleFs {
     }
     return result;
   }
-  void end() {
-    // Failed close/sync can leave readable cached bytes until unmount.
-    for (const auto &entry : lostWrites_) {
-      files_[entry.first] = entry.second;
-    }
-    lostWrites_.clear();
-  }
-  void format() {
-    files_.clear();
-    lostWrites_.clear();
-  }
+  void end() {}
+  void format() { files_.clear(); }
   void reset() {
     format();
     beginResult = true;
@@ -105,9 +93,6 @@ class FakeLittleFs {
     failOpenPath.clear();
     failReadPath.clear();
     failRemovePath.clear();
-    failClosePath.clear();
-    failSyncPath.clear();
-    corruptClosePath.clear();
     beginCalls = 0;
     failBeginCall = -1;
     failDirectoryReadCall = -1;
@@ -129,9 +114,6 @@ class FakeLittleFs {
   std::string failOpenPath;
   std::string failReadPath;
   std::string failRemovePath;
-  std::string failClosePath;
-  std::string failSyncPath;
-  std::string corruptClosePath;
   int beginCalls = 0;
   int failBeginCall = -1;
   size_t maxWrite = SIZE_MAX;
@@ -161,11 +143,8 @@ class FakeLittleFs {
     }
 
     if (mode[0] == 'w') {
-      if (pathString == failClosePath || pathString == failSyncPath) {
-        lostWrites_[pathString] = files_[pathString];
-      }
       files_[pathString].clear();
-      return File(this, pathString, false, pathString, true);
+      return File(this, pathString, false, pathString);
     }
 
     if (mode[0] == 'r' && pathString != failReadPath && exists(path)) {
@@ -181,16 +160,9 @@ class FakeLittleFs {
 
   bool autoFormat_ = true;
   std::map<std::string, std::vector<uint8_t>> files_;
-  std::map<std::string, std::vector<uint8_t>> lostWrites_;
 };
 
 inline void File::close() {
-  if (valid_ && writable_ && path_ == filesystem_->corruptClosePath) {
-    auto &data = filesystem_->files_[path_];
-    if (!data.empty()) {
-      data.back() ^= 1;
-    }
-  }
   valid_ = false;
 }
 

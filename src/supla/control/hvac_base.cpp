@@ -304,7 +304,6 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
 #endif
 
     // Read last set channel function
-    const bool wasUncertain = configurationPersistenceUncertain;
     const int32_t storedFunction = cfg->getChannelFunction(getChannelNumber());
     if (isFunctionSupported(storedFunction)) setFunction(storedFunction);
     initDefaultFunction();
@@ -330,8 +329,6 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
         auto wire = loaded.localWire(referenceIdentity(), getChannelNumber());
         if (isConfigValid(&wire, record.function)) {
           config = loaded;
-          configurationPersistenceUncertain = wasUncertain ||
-              storedFunction != static_cast<int32_t>(record.function);
 #ifndef ARDUINO_ARCH_AVR
           synchronizedConfigDurable = !referenceIdentity() ||
               !referenceIdentity()->identityTransition();
@@ -666,10 +663,6 @@ void HvacBase::fillChannelConfig(void *channelConfig,
 
 void HvacBase::iterateAlways() {
   refreshMainDependency();
-  if (legacyCleanupPending &&
-      static_cast<uint32_t>(millis() - legacyCleanupLastMs) >= 60000) {
-    cleanupLegacyConfig();
-  }
   if (getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     if (config.Subfunction == SUPLA_HVAC_SUBFUNCTION_NOT_SET) {
       setSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
@@ -6383,7 +6376,7 @@ bool HvacBase::persistConfiguration(const HvacConfiguration &candidate,
   // Local setters retain the existing function API and staged save ordering.
   // Authoritative Server acceptance explicitly includes both required keys.
   const bool persisted = Supla::StorageDetail::persistCanonicalConfig(
-      key, record, &configurationPersistenceUncertain,
+      key, record,
       serverNone < 0 ? -1 : getChannelNumber());
   if (!persisted) return false;
 #ifndef ARDUINO_ARCH_AVR
@@ -6393,17 +6386,11 @@ bool HvacBase::persistConfiguration(const HvacConfiguration &candidate,
 }
 
 void HvacBase::cleanupLegacyConfig() {
-  legacyCleanupLastMs = millis();
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) return;
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, Supla::ConfigTag::HvacCfgTag);
-  const bool present = cfg->getBlobSize(key) >= 0;
-  legacyCleanupPending = legacyCleanupPending || present;
-  if (legacyCleanupPending && (!present || cfg->eraseKey(key)) &&
-      cfg->commit()) {
-    legacyCleanupPending = false;
-  }
+  Supla::StorageDetail::cleanupLegacyConfig(key);
 }
 
 #ifndef ARDUINO_ARCH_AVR
@@ -6438,6 +6425,25 @@ void HvacBase::refreshMainDependency() {
                           config.AuxThermometer), 1);
   dependencyState(config.reference(config.BinarySensor), 2);
   dependencyState(config.reference(config.MasterThermostat), 3);
+#ifndef ARDUINO_ARCH_AVR
+  // Outgoing targets can appear after boot or on a newly added HVAC. Reuse
+  // dependency reconciliation; no new polling pass over all Elements.
+  const auto manager = remoteManager();
+  if (manager && !manager->bindings) {
+    for (uint8_t field = 0; field < 2; ++field) {
+      if (resolveChannelReference(bindingTarget(field), referenceIdentity())
+              .kind != ChannelResolutionKind::kRemote) continue;
+      for (auto layer = Protocol::ProtocolLayer::first(); layer;
+           layer = layer->next()) {
+        if (layer->remoteResources() == manager) {
+          layer->resourceBindings();
+          break;
+        }
+      }
+      break;
+    }
+  }
+#endif
 }
 
 Supla::ChannelState HvacBase::mainThermometerState() {

@@ -49,10 +49,18 @@ using Supla::Device::ServerIdentity;
 class AssociationConfig : public Supla::KeyValue {
  public:
   using Supla::KeyValue::getBlobSize;
+  int getBlobSize(const char *key) override {
+    if (failBlobSize) return -1;
+    return KeyValue::getBlobSize(key);
+  }
   bool init() override { return true; }
   bool setBlob(const char *key, const char *value, size_t size) override {
     if (failWrite) return false;
     return KeyValue::setBlob(key, value, size);
+  }
+  bool eraseKey(const char *key) override {
+    ++erases;
+    return !failErase && KeyValue::eraseKey(key);
   }
   bool commit() override {
     ++writes;
@@ -78,6 +86,9 @@ class AssociationConfig : public Supla::KeyValue {
   }
   int writes = 0;
   bool failWrite = false;
+  bool failErase = false;
+  bool failBlobSize = false;
+  int erases = 0;
   bool failCommit = false;
   int failAtWrite = -1;
   std::vector<uint8_t> disk;
@@ -330,7 +341,7 @@ TEST_F(ServerAssociationTests, DestinationRebootRestoresCredentialAndExpected) {
   EXPECT_EQ(dst(), 0);
 }
 TEST_F(ServerAssociationTests,
-       CommitFailurePreservesPreviousRuntimeAndStaging) {
+       CommitFailurePreservesRuntimeButLaterCommitCanSaveCandidate) {
   ASSERT_EQ(dst(), 0);
   auto before = config.blob("sl-peer-0");
   destination.AclRevision = 2;
@@ -340,11 +351,12 @@ TEST_F(ServerAssociationTests,
   EXPECT_EQ(peers.get(0)->aclRevision, 1u);
   EXPECT_TRUE(peers.authorize(0, {1, 601}, 1));
   EXPECT_FALSE(peers.authorize(0, {1, 601}, 4));
-  EXPECT_EQ(config.blob("sl-peer-0"), before);
+  EXPECT_NE(config.blob("sl-peer-0"), before);
   config.failCommit = false;
   ASSERT_TRUE(config.commit());
   reboot();
-  EXPECT_EQ(peers.get(0)->aclRevision, 1u);
+  EXPECT_EQ(peers.get(0)->aclRevision, 2u);
+  EXPECT_TRUE(peers.authorize(0, {1, 601}, 4));
 }
 TEST_F(ServerAssociationTests, FirstWriteFailureDoesNotActivateAssociation) {
   config.failWrite = true;
@@ -354,21 +366,68 @@ TEST_F(ServerAssociationTests, FirstWriteFailureDoesNotActivateAssociation) {
   config.failWrite = false;
   EXPECT_EQ(src(), 0);
 }
-TEST_F(ServerAssociationTests,
-       FailedCommitIdenticalReplayRequiresDurabilityRepair) {
+TEST_F(ServerAssociationTests, FailedCommitRetriesThroughNormalWritePath) {
   ASSERT_EQ(src(), 0);
   source.AclRevision = 2;
   config.failCommit = true;
   EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
-  source.AclRevision = 1;
-  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
+  EXPECT_EQ(peers.get(0)->aclRevision, 1u);
+  const int writes = config.writes;
   config.failCommit = false;
-  int writes = config.writes;
+  ASSERT_EQ(src(), 0);
+  EXPECT_EQ(config.writes, writes + 1);
+  EXPECT_EQ(peers.get(0)->aclRevision, 2u);
   EXPECT_EQ(src(), 0);
   EXPECT_EQ(config.writes, writes + 1);
-  EXPECT_EQ(src(), 0);
-  EXPECT_EQ(config.writes, writes + 1);
+  reboot();
+  EXPECT_EQ(peers.get(0)->aclRevision, 2u);
 }
+
+TEST_F(ServerAssociationTests, RevokeNeverInfersAbsenceFromFailedSizeRead) {
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  source.AclRevision = 2;
+  source.AclEntryCount = 0;
+  config.failBlobSize = true;
+  config.failErase = true;
+  const int commits = config.writes;
+  const int erases = config.erases;
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
+  EXPECT_EQ(config.erases, erases + 1);
+  EXPECT_EQ(config.writes, commits);
+  ASSERT_EQ(peers.size(), 1);
+  EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionRead));
+  config.failBlobSize = false;
+  reboot();
+  ASSERT_EQ(peers.size(), 1);
+  // Retry works even while the size query still fails; removal owns its result.
+  config.failBlobSize = true;
+  config.failErase = false;
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(peers.size(), 0);
+  config.failBlobSize = false;
+  reboot();
+  EXPECT_EQ(peers.size(), 0);
+}
+
+TEST_F(ServerAssociationTests, FailedEraseRetainsRightsAndRetryRemovesRecord) {
+  ASSERT_EQ(dst(), 0);
+  destination.AclRevision = 2;
+  destination.ResourceCount = 0;
+  config.failErase = true;
+  EXPECT_EQ(dst(), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
+  ASSERT_EQ(peers.size(), 1);
+  EXPECT_EQ(peers.get(0)->aclRevision, 1u);
+  config.failErase = false;
+  config.failCommit = true;
+  EXPECT_EQ(dst(), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
+  ASSERT_EQ(peers.size(), 1);
+  config.failCommit = false;
+  EXPECT_EQ(dst(), SUPLA_SUPLAN_RESULT_OK);
+  EXPECT_EQ(peers.size(), 0);
+  reboot();
+  EXPECT_EQ(peers.size(), 0);
+}
+
 TEST_F(ServerAssociationTests,
        SourceEmptyCleanupReclaimsAndReplayDoesNotAllocate) {
   ASSERT_EQ(src(), 0);

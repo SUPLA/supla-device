@@ -2000,8 +2000,9 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
            layer = layer->next()) {
         if (layer->getSdc() == sdc && layer->remoteChannels()) {
           layer->remoteChannels()->serverReconnected();
-          if (layer->resourceBindings())
-            layer->resourceBindings()->serverReconnected();
+          const auto resources = layer->remoteResources();
+          if (resources && resources->bindings)
+            resources->bindings->serverReconnected();
         }
       }
 #endif  // !ARDUINO_ARCH_AVR

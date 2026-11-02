@@ -199,3 +199,20 @@ TEST_F(NvsConfigIterationTests, EmptyStopAndBackendErrorsAreDistinct) {
   EXPECT_EQ(found.visits, 1);  // partial visits do not imply completion
   EXPECT_FALSE(fakeNvsIteratorActive);
 }
+
+TEST(NvsConfigCommitTests, KeyRemovalAcceptsAbsenceButPropagatesOtherErrors) {
+  TestNvsConfig config;
+  fakeNvsEraseCalls = 0;
+  fakeNvsEraseResult = ESP_OK;
+  EXPECT_TRUE(config.eraseKey("key"));
+  fakeNvsEraseResult = ESP_ERR_NVS_NOT_FOUND;
+  EXPECT_TRUE(config.eraseKey("key"));
+  fakeNvsEraseResult = ESP_FAIL;
+  EXPECT_FALSE(config.eraseKey("key"));
+  EXPECT_EQ(fakeNvsEraseCalls, 3);
+  EXPECT_EQ(fakeNvsEraseHandle, 42u);
+  EXPECT_FALSE(config.eraseKey(nullptr));
+  EXPECT_FALSE(config.eraseKey(""));
+  EXPECT_EQ(fakeNvsEraseCalls, 3);
+  fakeNvsEraseResult = ESP_OK;
+}

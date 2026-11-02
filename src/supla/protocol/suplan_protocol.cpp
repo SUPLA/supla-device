@@ -22,6 +22,7 @@
 #include <supla/element.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/storage/storage.h>
+#include <supla/storage/config.h>
 #include <supla/suplan/suplan_server_associations.h>
 #include <supla/suplan/bootstrap.h>
 #include <supla/suplan/suplan_server_identity.h>
@@ -160,6 +161,7 @@ void SupLan::onInit() {
     associations()->load(Supla::Storage::ConfigInstance(),
                          &sdc->getSrpcLayer()->serverIdentity());
   }
+  if (associations()) (void)restoreBindings();
 }
 
 void SupLan::attachServerAssociations(
@@ -170,12 +172,54 @@ void SupLan::attachServerAssociations(
         peers_, runtime_, this);
   }
   if (resources_) resources_->associations = state;
-  if (state && resources_ && !resources_->bindings) {
-    resources_->bindings = Device::allocateSupLan<
-        Device::ResourceBindingManager>(peers_, runtime_, resources_, this);
-  }
+  bindingInventoryChecked_ = false;
   if (resources_ && resources_->bindings)
     resources_->bindings->attachAssociations(state);
+}
+
+Device::ResourceBindingManager *SupLan::resourceBindings() {
+  if (!resources_ || !associations()) return nullptr;
+  if (!resources_->bindings) {
+    resources_->bindings = Device::allocateSupLan<
+        Device::ResourceBindingManager>(peers_, runtime_, resources_, this);
+    if (resources_->bindings)
+      resources_->bindings->attachAssociations(associations());
+  }
+  return resources_->bindings;
+}
+
+bool SupLan::restoreBindings() {
+  if (!resources_ || !associations()) return false;
+  if (resources_->bindings || bindingInventoryChecked_) return true;
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) return false;
+  bool found = false;
+  const auto result = cfg->forEachKey("slb_",
+      [](const char *key, ConfigValueType, void *context) {
+        // Enumeration callbacks inspect metadata only; never reopen Config.
+        for (uint16_t slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
+          char expected[16];
+          snprintf(expected, sizeof(expected), "slb_%u", slot);
+          if (!strcmp(key, expected)) {
+            *static_cast<bool *>(context) = true;
+            return false;
+          }
+        }
+        return true;
+      }, &found);
+  if (result != ConfigIterationResult::COMPLETED &&
+      !(found && result == ConfigIterationResult::STOPPED)) return false;
+  if (found && !resourceBindings()) return false;
+  bindingInventoryChecked_ = true;
+  return true;
+}
+
+bool SupLan::authorizationReplacing(const Supla::SupLan::PeerContext &context,
+    const Supla::SupLan::AclEntry *expected, uint16_t count) {
+  // Before acknowledging revoke, account for topology retained across reboot.
+  if (!restoreBindings()) return false;
+  return !resources_->bindings ||
+      resources_->bindings->authorizationReplacing(context, expected, count);
 }
 
 bool SupLan::setSuplanSourceAssociation(
@@ -213,11 +257,12 @@ void SupLan::suplanIdentityChanged() {
 
 bool SupLan::isSupLanServerCapable() const {
   return enabled_ && peers_ && runtime_ && runtime_->initialized() &&
-      associations() && resources_->bindings && mapIsValid();
+      associations() && mapIsValid();
 }
 
 void SupLan::onFactoryReset() {
   disconnect();
+  bindingInventoryChecked_ = false;
   if (!associations() || !sdc || !sdc->getSrpcLayer()) return;
   if (resources_->bindings) resources_->bindings->attachAssociations(nullptr);
   associations()->load(Supla::Storage::ConfigInstance(),
@@ -278,6 +323,13 @@ bool SupLan::iterate(uint32_t nowMs) {
   const auto identity = associations() ? associations()->identity() : nullptr;
   if (associations() && (!identity || !identity->fullScopeFenced()))
     associations()->identityChanged();
+  if (associations()) (void)restoreBindings();
+  // A Source must also advertise an authoritative empty binding set. Without
+  // its owner no sendDesired() would start that first peer session.
+  if (resources_ && !resources_->bindings && identity &&
+      identity->serverSyncComplete() && peers_ && peers_->aclEntryCount() &&
+      peers_->entryCount(false))
+    (void)resourceBindings();
   if (resources_) resources_->iterate(nowMs);
   if (transport_ != nullptr) {
     if (!transport_->networkReady(nowMs)) {
@@ -570,13 +622,18 @@ void SupLan::receiveAction(uint8_t peerIndex,
 
 uint8_t SupLan::receiveBindings(uint8_t peer, const uint8_t *body,
                                 size_t length) {
-  return resources_ && resources_->bindings
-             ? resources_->bindings->accept(peer, body, length)
-             : 24;
+  auto bindings = resourceBindings();
+  return bindings ? bindings->accept(peer, body, length)
+                  : SUPLA_RESULTCODE_UNKNOWN_ERROR;
 }
 bool SupLan::bindingSessionNeeded(uint8_t peer) {
-  return resources_ && resources_->bindings &&
-      resources_->bindings->sessionNeeded(peer);
+  const auto identity = associations() ? associations()->identity() : nullptr;
+  const auto owner = peers_ ? peers_->get(peer) : nullptr;
+  if (!identity || !identity->serverSyncComplete() || !owner ||
+      owner->destination || !peers_->hasActiveGrants(peer)) return false;
+  // Source must also send authoritative empty sets to withdraw old bindings.
+  const auto bindings = resourceBindings();
+  return bindings && bindings->sessionNeeded(peer);
 }
 bool SupLan::share(const TDS_SuplaEnsureResourceShare &request) {
   return sdc && sdc->getSrpcLayer() &&

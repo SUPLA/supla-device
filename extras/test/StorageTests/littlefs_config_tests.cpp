@@ -208,82 +208,23 @@ TEST_F(LittleFsConfigTests, CommitReportsMountOpenShortWriteAndBufferFailures) {
   EXPECT_FALSE(tooSmall.commit());
 }
 
-TEST_F(LittleFsConfigTests, CommitRejectsLostCloseAndSyncOnBothFiles) {
+// Arduino File::close() does not expose an error result. Config trusts the
+// write result and does not reopen files to detect hidden finalization faults.
+TEST_F(LittleFsConfigTests, ConfigWritesDoNotPerformReadback) {
   Supla::LittleFsConfig config(64);
   ASSERT_TRUE(config.setUInt32("test", 42));
-  for (const char *path : {"/supla-dev.cfg", "/supla-dev.cfg.bak"}) {
-    for (bool syncFailure : {false, true}) {
-      LittleFS.reset();
-      if (syncFailure) {
-        LittleFS.failSyncPath = path;
-      } else {
-        LittleFS.failClosePath = path;
-      }
-      EXPECT_FALSE(config.commit()) << path << ": sync=" << syncFailure;
-      LittleFS.failSyncPath.clear();
-      LittleFS.failClosePath.clear();
-      EXPECT_TRUE(config.commit());
-    }
-  }
+  LittleFS.failBeginCall = LittleFS.beginCalls + 2;
+  LittleFS.failReadPath = "/supla-dev.cfg";
+  EXPECT_TRUE(config.commit());
+  EXPECT_EQ(LittleFS.beginCalls, 1);
+  LittleFS.failBeginCall = 0;
+  LittleFS.failReadPath = "/supla/blob";
+  std::array<char, 100> data = {};
+  EXPECT_TRUE(config.setBlob(BlobKey, data.data(), data.size()));
+  EXPECT_EQ(LittleFS.beginCalls, 2);
 }
 
-TEST_F(LittleFsConfigTests, BlobRejectsLostFinalizationWithSameSizeOldFile) {
-  Supla::LittleFsConfig config;
-  std::array<char, 39> old = {};
-  std::array<char, 39> changed;
-  changed.fill('x');
-  for (bool syncFailure : {false, true}) {
-    ASSERT_TRUE(config.setBlob(BlobKey, old.data(), old.size()));
-    if (syncFailure) {
-      LittleFS.failSyncPath = "/supla/blob";
-    } else {
-      LittleFS.failClosePath = "/supla/blob";
-    }
-    EXPECT_FALSE(config.setBlob(BlobKey, changed.data(), changed.size()));
-    std::array<char, 39> loaded;
-    ASSERT_TRUE(config.getBlob(BlobKey, loaded.data(), loaded.size()));
-    EXPECT_EQ(loaded, old);
-    LittleFS.failSyncPath.clear();
-    LittleFS.failClosePath.clear();
-    ASSERT_TRUE(config.setBlob(BlobKey, changed.data(), changed.size()));
-    ASSERT_TRUE(config.getBlob(BlobKey, loaded.data(), loaded.size()));
-    EXPECT_EQ(loaded, changed);
-  }
-}
-
-TEST_F(LittleFsConfigTests, VerificationRejectsMountReadAndContentFailures) {
-  Supla::LittleFsConfig config;
-  std::array<char, 100> data;
-  data.fill('x');
-  for (int failure = 0; failure < 4; ++failure) {
-    LittleFS.reset();
-    if (failure == 0) {
-      // Verification mount, after successful write.
-      LittleFS.failBeginCall = 2;
-    } else if (failure == 1) {
-      LittleFS.failReadPath = "/supla/blob";
-    } else if (failure == 2) {
-      LittleFS.maxRead = 1;
-    } else {
-      LittleFS.corruptClosePath = "/supla/blob";
-    }
-    EXPECT_FALSE(config.setBlob(BlobKey, data.data(), data.size())) << failure;
-    // No format on verification failure.
-    EXPECT_TRUE(LittleFS.exists("/supla/blob"));
-  }
-}
-
-TEST_F(LittleFsConfigTests, CommitRejectsSameSizeCorruptionAfterClose) {
-  Supla::LittleFsConfig config(64);
-  ASSERT_TRUE(config.setUInt32("test", 42));
-  for (const char *path : {"/supla-dev.cfg", "/supla-dev.cfg.bak"}) {
-    LittleFS.reset();
-    LittleFS.corruptClosePath = path;
-    EXPECT_FALSE(config.commit()) << path;
-  }
-}
-
-TEST_F(LittleFsConfigTests, EraseKeyConfirmsFileDeletionAcrossRemount) {
+TEST_F(LittleFsConfigTests, EraseKeyChecksRemoveResult) {
   Supla::LittleFsConfig config;
   std::array<char, 60> stored = {};
   ASSERT_TRUE(config.setBlob(BlobKey, stored.data(), stored.size()));
@@ -296,15 +237,16 @@ TEST_F(LittleFsConfigTests, EraseKeyConfirmsFileDeletionAcrossRemount) {
   ASSERT_TRUE(LittleFS.begin());
   EXPECT_FALSE(LittleFS.exists("/supla/blob"));
 }
-TEST_F(LittleFsConfigTests, EraseKeyVerificationFailureDoesNotAutoFormat) {
+TEST_F(LittleFsConfigTests, EraseKeyDoesNotRemountToVerifyDeletion) {
   Supla::LittleFsConfig config;
   std::array<char, 60> stored = {};
   ASSERT_TRUE(config.setBlob(BlobKey, stored.data(), stored.size()));
-  ASSERT_TRUE(config.setBlob("other", stored.data(), stored.size()));
-  LittleFS.failBeginCall = LittleFS.beginCalls + 2;
-  EXPECT_FALSE(config.eraseKey(BlobKey));
-  EXPECT_TRUE(LittleFS.exists("/supla/other"));
+  const int mounts = LittleFS.beginCalls;
+  LittleFS.failBeginCall = mounts + 2;
+  EXPECT_TRUE(config.eraseKey(BlobKey));
+  EXPECT_EQ(LittleFS.beginCalls, mounts + 1);
 }
+
 
 TEST_F(LittleFsConfigTests, IteratesMemoryAndFilesOnceWithSubstringFilter) {
   Supla::LittleFsConfig config;
@@ -440,4 +382,29 @@ TEST_F(LittleFsConfigTests,
             Supla::ConfigIterationResult::STOPPED);
   EXPECT_EQ(found.visits, 1);
   EXPECT_EQ(LittleFS.openDirectories, 0);
+}
+
+TEST_F(LittleFsConfigTests, RemovalIgnoresBlobReadFailureAndIsIdempotent) {
+  Supla::LittleFsConfig config;
+  std::array<char, 60> data = {};
+  ASSERT_TRUE(config.setBlob(BlobKey, data.data(), data.size()));
+  LittleFS.failReadPath = "/supla/blob";
+  LittleFS.failRemovePath = "/supla/blob";
+  EXPECT_FALSE(config.eraseKey(BlobKey));
+  EXPECT_TRUE(LittleFS.exists("/supla/blob"));
+  LittleFS.failRemovePath.clear();
+  ASSERT_TRUE(config.eraseKey(BlobKey));
+  ASSERT_TRUE(config.commit());
+  EXPECT_TRUE(config.eraseKey(BlobKey));
+  EXPECT_FALSE(LittleFS.exists("/supla/blob"));
+  EXPECT_FALSE(config.eraseKey(nullptr));
+  EXPECT_FALSE(config.eraseKey(""));
+}
+
+TEST_F(LittleFsConfigTests, MissingKeyDoesNotHideMountFailure) {
+  Supla::LittleFsConfig config;
+  LittleFS.beginResult = false;
+  EXPECT_FALSE(config.eraseKey("missing"));
+  LittleFS.beginResult = true;
+  EXPECT_TRUE(config.eraseKey("missing"));
 }

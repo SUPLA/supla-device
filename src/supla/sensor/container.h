@@ -222,10 +222,6 @@ class Container : public ChannelElement, public ActionHandler {
   void setExternalSoundAlarmOff();
 
  protected:
-  void onFunctionChange(uint32_t, uint32_t) override {
-    // Local UI can stage ChannelFunction before the owning V2 is saved.
-    persistenceUncertain = true;
-  }
   bool shouldProcessChannelFunctionFromConfig() const override {
     return false;
   }
@@ -267,9 +263,6 @@ class Container : public ChannelElement, public ActionHandler {
   bool sensorOfflineReported = false;
 
   ContainerConfiguration config = {};
-  uint32_t lastCleanupMs = 0;
-  bool cleanupPending = false;
-  bool persistenceUncertain = false;
   bool configDurable = true;
 };
 

@@ -14,6 +14,7 @@
 #include <supla/suplan/bootstrap.h>
 #include <supla/suplan/suplan_server_migration.h>
 #include <supla/suplan/resource_binding_manager.h>
+#include <supla/suplan/remote_resource_manager.h>
 #include <supla/element.h>
 #include <supla/protocol/protocol_layer.h>
 #include <supla/channels/channel_handle.h>
@@ -878,8 +879,9 @@ bool Supla::Device::ServerIdentity::resumeMigration(bool reload) {
     if (!fence[2]) {
       for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
            layer = layer->next()) {
-        const auto bindings = layer->resourceBindings();
-        if (bindings) bindings->migrate(this, migration);
+        const auto resources = layer->remoteResources();
+        if (resources && resources->bindings)
+          resources->bindings->migrate(this, migration);
       }
     }
     if (!ServerAssociations::reloadSourceRights(this)) return false;

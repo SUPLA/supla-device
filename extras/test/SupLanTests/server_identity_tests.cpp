@@ -556,25 +556,25 @@ TEST_F(ServerIdentityTests, LittleFsShortBlobWriteCannotReturnProvisioningOk) {
   LittleFS.reset();
 }
 
-TEST_F(ServerIdentityTests, LittleFsRootFinalizationFailureCannotReturnOk) {
-  for (bool syncFailure : {false, true}) {
+TEST_F(ServerIdentityTests, LittleFsRootReportedWriteFailureCannotReturnOk) {
+  for (bool shortWrite : {false, true}) {
     LittleFS.reset();
     Supla::LittleFsConfig fs(64);
     ServerIdentity local;
     local.load(&fs);
     ASSERT_TRUE(local.registrationStarted());
     local.registrationSucceeded();
-    if (syncFailure) {
-      LittleFS.failSyncPath = "/supla/sl-root";
+    if (shortWrite) {
+      LittleFS.maxWrite = 0;
     } else {
-      LittleFS.failClosePath = "/supla/sl-root";
+      LittleFS.failOpenPath = "/supla/sl-root";
     }
     auto result = local.accept(snapshot());
     EXPECT_EQ(result.Result, SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
     EXPECT_EQ(result.RootEpoch, 0u);
     EXPECT_FALSE(local.identityAvailable());
-    LittleFS.failSyncPath.clear();
-    LittleFS.failClosePath.clear();
+    LittleFS.maxWrite = SIZE_MAX;
+    LittleFS.failOpenPath.clear();
     ASSERT_EQ(local.accept(snapshot()).Result, SUPLA_SUPLAN_RESULT_OK);
     ServerIdentity restarted;
     restarted.load(&fs);
@@ -584,25 +584,35 @@ TEST_F(ServerIdentityTests, LittleFsRootFinalizationFailureCannotReturnOk) {
   LittleFS.reset();
 }
 
-TEST_F(ServerIdentityTests, LittleFsConfigFinalizationFailureCannotReturnOk) {
+TEST_F(ServerIdentityTests, LittleFsConfigOpenFailureCannotReturnOk) {
   LittleFS.reset();
   Supla::LittleFsConfig fs(64);
+  // Keep an already committed root while testing the identity commit failure.
+  {
+    ServerIdentity bootstrap;
+    bootstrap.load(&fs);
+    ASSERT_TRUE(bootstrap.registrationStarted());
+    bootstrap.registrationSucceeded();
+    ASSERT_EQ(bootstrap.accept(snapshot()).Result, SUPLA_SUPLAN_RESULT_OK);
+  }
+  ASSERT_TRUE(fs.eraseKey("sl-identity"));
+  ASSERT_TRUE(fs.commit());
   ServerIdentity local;
   local.load(&fs);
   ASSERT_TRUE(local.registrationStarted());
   local.registrationSucceeded();
-  LittleFS.failClosePath = "/supla-dev.cfg";
+  LittleFS.failOpenPath = "/supla-dev.cfg";
   EXPECT_EQ(local.accept(snapshot()).Result,
             SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
   EXPECT_NE(local.rootEpoch(), 0u);
   EXPECT_FALSE(local.identityAvailable());
-  LittleFS.failClosePath.clear();
+  LittleFS.failOpenPath.clear();
   EXPECT_EQ(local.accept(snapshot()).Result, SUPLA_SUPLAN_RESULT_OK);
   LittleFS.reset();
 }
 
 TEST_F(ServerIdentityTests,
-       LittleFsIdentityFinalizationFailurePreservesAcceptedRuntime) {
+       LittleFsIdentityOpenFailurePreservesAcceptedRuntime) {
   LittleFS.reset();
   std::vector<std::unique_ptr<Supla::Channel>> extra;
   for (int n = 0; n < 3; ++n) {
@@ -623,7 +633,7 @@ TEST_F(ServerIdentityTests,
   const auto epoch = local.rootEpoch();
   auto changed = initial;
   changed.ChannelId[0] = 600;
-  LittleFS.failSyncPath = "/supla/sl-identity";
+  LittleFS.failOpenPath = "/supla/sl-identity";
   EXPECT_EQ(local.accept(changed).Result,
             SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
   EXPECT_EQ(local.rootEpoch(), epoch);
@@ -631,7 +641,7 @@ TEST_F(ServerIdentityTests,
   EXPECT_EQ(local.resolve(600).location, ServerChannelLocation::kUnresolved);
   EXPECT_TRUE(local.identityTransition());
   EXPECT_FALSE(local.serverSyncComplete());
-  LittleFS.failSyncPath.clear();
+  LittleFS.failOpenPath.clear();
   ASSERT_EQ(local.accept(initial).Result, SUPLA_SUPLAN_RESULT_OK);
   local.syncDone();  // An installed fence needs authoritative sync completion.
   ServerIdentity restarted;

@@ -38,7 +38,6 @@ class LittleFsConfig : public KeyValue {
  protected:
   int getBlobSize(const char* key) override;
   bool initLittleFs(bool allowFormat = true);
-  bool verifyFile(const char* filename, const uint8_t* data, size_t size);
   int configMaxSize = SUPLA_LITTLEFS_CONFIG_BUF_SIZE;
 };
 };  // namespace Supla

@@ -47,7 +47,6 @@ class ResourceBindingManager {
   struct Set {
     uint8_t context[27] = {};
     bool used = false;
-    bool uncertain = false;
   } sets_[SUPLAN_MAX_PERSISTENT_PEERS];
   struct Contributor {
     uint32_t source = 0;
@@ -77,7 +76,6 @@ class ResourceBindingManager {
   RemoteAccessPort *port_;
   ServerAssociations *associations_ = nullptr;
   uint8_t record_[kRecordCapacity] = {};
-  uint8_t previous_[kRecordCapacity] = {};
   int pendingIntent_ = -1;
   uint32_t ensureDeadline_ = 0;
   bool loaded_ = false;

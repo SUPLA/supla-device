@@ -62,10 +62,8 @@ class ServerAssociations {
   SupLan::Runtime *runtime_;
   // 0xff means unmanaged/free; persistent slot numbers never escape this class.
   uint8_t slots_[SUPLAN_MAX_PERSISTENT_PEERS];
-  bool durable_[SUPLAN_MAX_PERSISTENT_PEERS] = {};
   bool busy_ = false;
   uint8_t record_[kMaxRecordSize] = {};
-  uint8_t previous_[kMaxRecordSize] = {};
   TSuplaSuplanAclEntry wireEntries_[kMaxEntries] = {};
   SupLan::AclEntry entries_[kMaxEntries] = {};
 };

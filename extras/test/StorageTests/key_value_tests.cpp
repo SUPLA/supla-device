@@ -6,6 +6,7 @@
 #include <config_mock.h>
 #include <gtest/gtest.h>
 #include <supla/storage/key_value.h>
+#include <supla/storage/canonical_config.h>
 #include <supla-common/proto.h>
 #include <stdio.h>
 #include <array>
@@ -753,4 +754,117 @@ TEST(KeyValueIterationTests, UnsupportedBackendCannotMasqueradeAsEmptyStorage) {
   EXPECT_EQ(config.forEachKey("", found.collect, &found),
             Supla::ConfigIterationResult::UNSUPPORTED);
   EXPECT_EQ(found.visits, 0);
+}
+
+namespace {
+struct CommitRecord {
+  uint32_t function = SUPLA_CHANNELFNC_POWERSWITCH;
+  uint32_t value = 42;
+};
+class CommitConfig : public Supla::KeyValue {
+ public:
+  bool init() override { return true; }
+  bool setBlob(const char *key, const char *data, size_t size) override {
+    return !failBlob && KeyValue::setBlob(key, data, size);
+  }
+  bool setInt32(const char *key, int32_t value) override {
+    return !failFunction && KeyValue::setInt32(key, value);
+  }
+  int getBlobSize(const char *key) override {
+    ++reads;
+    return KeyValue::getBlobSize(key);
+  }
+  bool getBlob(const char *key, char *data, size_t size) override {
+    ++reads;
+    return KeyValue::getBlob(key, data, size);
+  }
+  bool getInt32(const char *key, int32_t *value) override {
+    ++reads;
+    return KeyValue::getInt32(key, value);
+  }
+  bool commit() override {
+    ++commits;
+    if (failCommit) return false;
+    diskSize = serializeToMemory(disk.data(), disk.size());
+    return diskSize != SIZE_MAX;
+  }
+  void reboot() {
+    removeAllMemory();
+    ASSERT_TRUE(initFromMemory(disk.data(), diskSize));
+  }
+  bool failBlob = false;
+  bool failFunction = false;
+  bool failCommit = false;
+  int reads = 0;
+  int commits = 0;
+  std::array<uint8_t, 256> disk = {};
+  size_t diskSize = 0;
+};
+}  // namespace
+
+TEST(CanonicalConfigTests, WritesAndCommitsWithoutReadingBack) {
+  CommitConfig cfg;
+  CommitRecord record;
+  ASSERT_TRUE(Supla::StorageDetail::persistCanonicalConfig(
+      "record", record, 0));
+  EXPECT_EQ(cfg.reads, 0);
+  EXPECT_EQ(cfg.commits, 1);
+  cfg.reboot();
+  CommitRecord restored;
+  ASSERT_TRUE(cfg.getBlob("record", reinterpret_cast<char *>(&restored),
+                          sizeof(restored)));
+  EXPECT_EQ(restored.function, record.function);
+  EXPECT_EQ(restored.value, record.value);
+  EXPECT_EQ(cfg.getChannelFunction(0), record.function);
+}
+
+TEST(CanonicalConfigTests, FailedWriteOrCommitHasNoRollbackAndRetrySavesAgain) {
+  for (int failure = 0; failure < 3; ++failure) {
+    CommitConfig cfg;
+    CommitRecord record;
+    cfg.failFunction = failure == 0;
+    cfg.failBlob = failure == 1;
+    cfg.failCommit = failure == 2;
+    EXPECT_FALSE(Supla::StorageDetail::persistCanonicalConfig("record", record,
+                                                            0));
+    EXPECT_EQ(cfg.reads, 0);
+    cfg.failFunction = cfg.failBlob = cfg.failCommit = false;
+    const int commits = cfg.commits;
+    ASSERT_TRUE(Supla::StorageDetail::persistCanonicalConfig("record", record,
+                                                           0));
+    EXPECT_EQ(cfg.commits, commits + 1);
+    EXPECT_EQ(cfg.reads, 0);
+    cfg.reboot();
+    CommitRecord restored;
+    ASSERT_TRUE(cfg.getBlob("record", reinterpret_cast<char *>(&restored),
+                            sizeof(restored)));
+    EXPECT_EQ(restored.value, record.value);
+    EXPECT_EQ(cfg.getChannelFunction(0), record.function);
+  }
+}
+
+TEST(CanonicalConfigTests, LaterCommitCanPersistPreviouslyRejectedCandidate) {
+  CommitConfig cfg;
+  CommitRecord record;
+  cfg.failCommit = true;
+  EXPECT_FALSE(Supla::StorageDetail::persistCanonicalConfig(
+      "record", record, 0));
+  cfg.failCommit = false;
+  ASSERT_TRUE(cfg.setUInt32("other", 7));
+  ASSERT_TRUE(cfg.commit());
+  cfg.reboot();
+  CommitRecord restored;
+  ASSERT_TRUE(cfg.getBlob("record", reinterpret_cast<char *>(&restored),
+                          sizeof(restored)));
+  EXPECT_EQ(restored.value, record.value);
+}
+
+TEST(KeyValueResetTests, KeyRemovalIsIdempotentAndRejectsInvalidKeys) {
+  KeyValueTest config;
+  EXPECT_FALSE(config.eraseKey(nullptr));
+  EXPECT_FALSE(config.eraseKey(""));
+  EXPECT_TRUE(config.eraseKey("missing"));
+  ASSERT_TRUE(config.setUInt32("key", 7));
+  EXPECT_TRUE(config.eraseKey("key"));
+  EXPECT_TRUE(config.eraseKey("key"));
 }

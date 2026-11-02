@@ -282,9 +282,10 @@ bool NvsConfig::removeAllChecked() {
 }
 
 bool NvsConfig::eraseKey(const char* key) {
+  if (!key || !key[0]) return false;
   SUPLA_LOG_DEBUG("NvsConfig: erase key %s", key);
   esp_err_t err = nvs_erase_key(nvsHandle, key);
-  return err == ESP_OK;
+  return err == ESP_OK || err == ESP_ERR_NVS_NOT_FOUND;
 }
 
 // Generic getters and setters

@@ -77,14 +77,12 @@ ServerAssociations::~ServerAssociations() {
     peers_->setOwnershipCheck(nullptr, nullptr);
   }
   memset(record_, 0, sizeof(record_));
-  memset(previous_, 0, sizeof(previous_));
 }
 void ServerAssociations::clear(uint8_t index) {
   if (slots_[index] != 0xff) {
     runtime_->clearPeer(index);
     peers_->removePeer(index);
     slots_[index] = 0xff;
-    durable_[index] = false;
   }
 }
 
@@ -189,28 +187,10 @@ bool ServerAssociations::persist(uint8_t slot, const uint8_t *record,
                                  int size) {
   char key[16];
   slotKey(slot, key);
-  int oldSize = config_->getBlobSize(key);
-  bool saved = oldSize >= 0 && oldSize <= kMaxRecordSize;
-  if (saved &&
-      !config_->getBlob(key, reinterpret_cast<char *>(previous_), oldSize))
-    return false;
-  // Empty replacement deletes the complete logical record. No tombstone.
-  bool written =
-      size ? config_->setBlob(key, reinterpret_cast<const char *>(record), size)
-           : config_->eraseKey(key);
-  if (written && config_->commit()) {
-    memset(previous_, 0, sizeof(previous_));
-    return true;
-  }
-  // Config backends may stage writes. Restore before any unrelated commit.
-  if (saved) {
-    config_->setBlob(key, reinterpret_cast<const char *>(previous_), oldSize);
-  } else {
-    config_->eraseKey(key);
-  }
-  memset(previous_, 0, sizeof(previous_));
-  memset(durable_, 0, sizeof(durable_));
-  return false;
+  return (size
+      ? config_->setBlob(key, reinterpret_cast<const char *>(record), size)
+      : config_->eraseKey(key)) &&
+      config_->commit();
 }
 
 bool ServerAssociations::readRecord(uint8_t slot, PeerContext *context,
@@ -287,7 +267,6 @@ void ServerAssociations::load(Config *config, ServerIdentity *identity) {
                                       entries_, count, &index);
     if (added) {
       slots_[index] = slot;
-      durable_[index] = true;
     }
     SUPLA_LOG_INFO("SupLAN association restored peer=%u role=%s revision=%"
         PRIu32 " resources=%u result=%s", index,
@@ -318,7 +297,6 @@ bool ServerAssociations::reloadSourceRights(ServerIdentity *identity) {
       // Cancel pending operations, keeping credential/revision and slot stable.
       state->runtime_->clearPeer(i);
       if (!state->peers_->restrictAcl(i, state->entries_, count)) return false;
-      state->durable_[i] = true;
     }
     memset(state->record_, 0, sizeof(state->record_));
   }
@@ -339,7 +317,6 @@ void ServerAssociations::identityChanged() {
       runtime_->clearPeer(i);
       peers_->removePeer(i);
       slots_[i] = 0xff;
-      durable_[i] = false;
       continue;
     }
     if (slots_[i] == 0xff) continue;
@@ -357,7 +334,6 @@ void ServerAssociations::identityChanged() {
   }
   if (identity_->fullScopeFenced()) {
     memset(record_, 0, sizeof(record_));
-    memset(previous_, 0, sizeof(previous_));
     memset(entries_, 0, sizeof(entries_));
     memset(wireEntries_, 0, sizeof(wireEntries_));
   }
@@ -404,7 +380,6 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
     identical = peers_->sameAcl(index, entries_, count);
     if (!identical ||
         (destination && key && memcmp(key, old->peerKey, kKeySize))) {
-      memset(previous_, 0, sizeof(previous_));
       return SUPLA_SUPLAN_RESULT_REVISION_CONFLICT;
     }
   }
@@ -417,8 +392,7 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
   if (exact && destination && key && memcmp(key, old->peerKey, kKeySize)) {
     return SUPLA_SUPLAN_RESULT_REVISION_CONFLICT;
   }
-  if (identical && durable_[index]) {
-    memset(previous_, 0, sizeof(previous_));
+  if (identical) {
     return SUPLA_SUPLAN_RESULT_OK;
   }
   if (!count && index < 0) return SUPLA_SUPLAN_RESULT_OK;
@@ -496,7 +470,6 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
     clear(index);
   } else if (exact) {
     activated = peers_->replaceAcl(index, revision, entries_, count);
-    durable_[index] = activated;
     runtime_->authorizationChanged(index);
   } else {
     if (index >= 0) clear(index);
@@ -505,7 +478,6 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
                                 count, &added, destination);
     if (activated) {
       slots_[added] = slot;
-      durable_[added] = true;
     }
   }
   identityChanged();

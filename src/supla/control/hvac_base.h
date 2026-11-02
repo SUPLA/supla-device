@@ -582,10 +582,6 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool applyFirmwareConfiguration(HvacConfiguration *candidate);
   void rememberReadonlyLocalReferences();
   int16_t localNumber(const ChannelReference &reference) const;
-  void onFunctionChange(uint32_t, uint32_t) override {
-    // Local UI can stage ChannelFunction before the owning V2 is saved.
-    configurationPersistenceUncertain = true;
-  }
   void initDefaultFunction();
   HvacConfiguration defaultConfiguration(uint32_t function = 0);
   bool persistConfiguration(const HvacConfiguration &candidate,
@@ -594,10 +590,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   HvacServerNoneScope serverNoneProjection;
 #endif
   void cleanupLegacyConfig();
-  bool legacyCleanupPending = false;
-  uint32_t legacyCleanupLastMs = 0;
   bool synchronizedConfigDurable = true;
-  bool configurationPersistenceUncertain = false;
   // Volatile firmware readonly bindings, not canonical config references.
   // 0xff means no proven local binding; remote IDs are never rebound.
   uint8_t readonlyLocalChannels[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};

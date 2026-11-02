@@ -182,7 +182,6 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
     uint16_t weeklyDurationS = 0;
     bool baselineKnown = false;
     bool baseline = false;
-    bool persistenceUncertain = false;
     bool manualModeTransition = false;
     bool hasStoredActiveActions = false;
   };

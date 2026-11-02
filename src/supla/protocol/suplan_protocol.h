@@ -107,14 +107,10 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
     return resources_;
   }
   void sendChannelMetadataChanged(uint8_t number) override;
-  Device::ResourceBindingManager *resourceBindings() override {
-    return resources_ ? resources_->bindings : nullptr;
-  }
+  // Explicit binding-feature access allocates its full bounded owner on demand.
+  Device::ResourceBindingManager *resourceBindings() override;
   bool authorizationReplacing(const Supla::SupLan::PeerContext &context,
-      const Supla::SupLan::AclEntry *expected, uint16_t count) override {
-    return !resources_ || !resources_->bindings ||
-        resources_->bindings->authorizationReplacing(context, expected, count);
-  }
+      const Supla::SupLan::AclEntry *expected, uint16_t count) override;
   Supla::SupLan::BindingRetry *bindingRetry() override {
     return resources_ && resources_->bindings
         ? resources_->bindings->retryStorage() : nullptr;
@@ -218,6 +214,7 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
 #endif  // SUPLAN_TESTING
   bool mapIsValid() const;
   void clearPeerTransportState();
+  bool restoreBindings();
   static void putSuplaUint32(uint8_t output[4], uint32_t value);
   static uint32_t getSuplaUint32(const uint8_t input[4]);
   static uint8_t channelOfflineState(const Supla::Channel *channel);
@@ -242,6 +239,7 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   bool enabled_;
   bool transportWasOpen_;
   bool serverAssociationRequired_ = false;
+  bool bindingInventoryChecked_ = false;
 };
 
 }  // namespace Protocol

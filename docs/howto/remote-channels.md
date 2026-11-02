@@ -209,3 +209,25 @@ Server Stream is READ-only.
 - [Server Stream thermometer](../../examples/esp/ServerStreamThermometer/README.md)
 - [D2D relay via setValue()](../../examples/esp/SupLanRemoteRelaySetValue/README.md)
 - [D2D relay via executeAction()](../../examples/esp/SupLanRemoteRelayExecuteAction/README.md)
+
+### Configuration persistence
+
+The SDK accepts a configuration write when its Config setters (or key removal)
+and `commit()` succeed; it does not read data back to verify the write or restore
+previous staged values after failure. A failed candidate may therefore reach
+storage during a later unrelated commit and appear after restart; binding and
+association senders can retry their idempotent requests normally. SERVER identity,
+root and migration-fence records retain their staging rollback protection.
+
+### Binding storage allocation
+
+Ordinary RemoteChannel READ/CONTROL does not allocate the HVAC binding manager
+at startup. Its complete, fixed-capacity storage is allocated on first binding
+use, explicit `resourceBindings()` access, or discovery of retained binding
+records. Existing records are considered without an Internet connection and
+before an association replacement can acknowledge removal of related topology.
+A Source also uses the manager to send authoritative empty binding sets, so a
+Source association can activate it even when the current desired set is empty.
+The manager remains allocated until its protocol owner is destroyed; all binding
+and consumer capacities are unchanged. If allocation fails, binding operations
+fail without acknowledging installation or revocation, and can be retried.

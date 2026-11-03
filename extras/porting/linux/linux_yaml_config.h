@@ -253,6 +253,8 @@ class LinuxYamlConfig : public KeyValue {
                                Supla::Sensor::SensorParsedBase* sensor,
                                bool mandatory);
   bool addActionTriggerParsed(const YAML::Node& ch, int channnelNumber);
+  bool resolveActionTriggerRelatedChannels();
+  void registerChannelName(const YAML::Node& ch, Supla::Element* element);
   bool addGeneralPurposeMeasurementParsed(const YAML::Node& ch,
                                           int channelNumber,
                                           Supla::Parser::Parser* parser);

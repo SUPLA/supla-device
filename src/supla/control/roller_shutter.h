@@ -73,6 +73,10 @@ class RollerShutter : public RollerShutterInterface {
                          int newTilt = UNKNOWN_POSITION) override;
 
  protected:
+  // GPIO outputs must be configured before the movement engine can run.
+  // Command-driven implementations provide their own readiness check.
+  virtual bool isOutputReady() const;
+
   RollerShutter(Supla::Io::IoPin pinUp,
                 Supla::Io::IoPin pinDown,
                 bool tiltFunctionsEnabled,

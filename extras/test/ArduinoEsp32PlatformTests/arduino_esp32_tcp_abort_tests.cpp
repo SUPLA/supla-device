@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gtest/gtest.h>
+#include <fake_lwip.h>
 #include <supla/crypto.h>
 #include <supla/network/async_dns.h>
 #include <supla/network/esp_async_client.h>
@@ -20,7 +21,7 @@ bool fakeReadFailure = false;
 bool fakeWriteFailure = false;
 namespace {
 std::vector<std::string> events;
-int nextFd = 42;
+int nextFd = 12;
 bool failConnect = false;
 uint32_t now = 0;
 using Result = Supla::Client::ConnectResult;
@@ -33,11 +34,11 @@ bool Supla::Crypto::fillRandom(uint8_t *, size_t) { return true; }
 bool Supla::AsyncDns::start(const char *) { return true; }
 int Supla::AsyncDns::poll(uint32_t *address) { *address = 1; return 1; }
 void Supla::AsyncDns::cancel() {}
-void Supla::abortTcpConnection(int fd) {
-  events.push_back("abort:" + std::to_string(fd));
-}
 extern "C" {
-int __wrap_socket(int, int, int) { return nextFd; }
+int __wrap_socket(int, int, int) {
+  if (nextFd >= 0) fakeLwipConnect();
+  return nextFd;
+}
 int __wrap_fcntl(int, int, ...) { return 0; }
 int __wrap_connect(int, const sockaddr *, socklen_t) {
   errno = ECONNREFUSED;
@@ -66,12 +67,17 @@ int __wrap_close(int fd) {
 class ArduinoEsp32TcpAbortTests : public ::testing::TestWithParam<bool> {
  protected:
   void SetUp() override {
+    fakeLwipReset();
+    fakeAbortObserver = [](int fd) {
+      events.push_back("abort:" + std::to_string(fd));
+    };
     events.clear();
-    nextFd = 42;
+    nextFd = 12;
     now = 0;
     failConnect = fakeParseFailure = fakeReadFailure = fakeWriteFailure = false;
     fakeHandshakeResult = 0;
   }
+  void TearDown() override { fakeLwipReset(); }
   void connect(Supla::EspAsyncClient *client) {
     client->setSSLEnabled(GetParam());
     Result result = Result::Pending;
@@ -89,9 +95,9 @@ class ArduinoEsp32TcpAbortTests : public ::testing::TestWithParam<bool> {
   void expectCleanup() {
     if (GetParam()) {
       EXPECT_EQ(events, (std::vector<std::string>{
-          "abort:42", "tls-free", "close:42"}));
+          "abort:12", "tls-free", "close:12"}));
     } else {
-      EXPECT_EQ(events, (std::vector<std::string>{"abort:42", "close:42"}));
+      EXPECT_EQ(events, (std::vector<std::string>{"abort:12", "close:12"}));
     }
   }
 };
@@ -116,7 +122,7 @@ TEST_P(ArduinoEsp32TcpAbortTests, PendingTcpIsAborted) {
   ASSERT_EQ(client.connectStep("server", 2016), Result::Pending);
   ASSERT_EQ(client.connectStep("server", 2016), Result::Pending);
   client.stop();
-  EXPECT_EQ(events, (std::vector<std::string>{"abort:42", "close:42"}));
+  EXPECT_EQ(events, (std::vector<std::string>{"abort:12", "close:12"}));
 }
 TEST_P(ArduinoEsp32TcpAbortTests, RefusedConnectAbortsAndDoesNotReuseFd) {
   Supla::EspAsyncClient client;
@@ -125,7 +131,7 @@ TEST_P(ArduinoEsp32TcpAbortTests, RefusedConnectAbortsAndDoesNotReuseFd) {
   ASSERT_EQ(client.connectStep("server", 2016), Result::Pending);
   EXPECT_EQ(client.connectStep("server", 2016), Result::Failed);
   client.stop();
-  EXPECT_EQ(events, (std::vector<std::string>{"abort:42", "close:42"}));
+  EXPECT_EQ(events, (std::vector<std::string>{"abort:12", "close:12"}));
 }
 TEST_P(ArduinoEsp32TcpAbortTests, FatalWriteAbortsOnce) {
   Supla::EspAsyncClient client;
@@ -156,13 +162,29 @@ TEST_P(ArduinoEsp32TcpAbortTests, SocketZeroIsOwnedButNotAbortedTwice) {
   client.stop();
   EXPECT_EQ(events, first);
 }
+TEST_P(ArduinoEsp32TcpAbortTests,
+       BaseCleanupStillRunsAfterSynchronizationFailure) {
+  Supla::EspAsyncClient client;
+  connect(&client);
+  fakeResult = ERR_MEM;
+  client.stop();
+  if (GetParam()) {
+    EXPECT_EQ(events, (std::vector<std::string>{"tls-free", "close:12"}));
+  } else {
+    EXPECT_EQ(events, (std::vector<std::string>{"close:12"}));
+  }
+  EXPECT_EQ(apiCallCount, 1);
+  EXPECT_EQ(abortCount, 0);
+  client.stop();
+  EXPECT_EQ(apiCallCount, 1);
+}
 TEST_P(ArduinoEsp32TcpAbortTests, ReconnectAbortsOnlyCurrentOwner) {
   Supla::EspAsyncClient client;
   connect(&client);
   client.stop();
   EXPECT_EQ(abortCalls(), 1);
   events.clear();
-  nextFd = 43;
+  nextFd = 13;
   Result result = Result::Pending;
   for (int i = 0; i < 8 && result == Result::Pending; ++i)
     result = client.connectStep("server", 2016);
@@ -171,10 +193,14 @@ TEST_P(ArduinoEsp32TcpAbortTests, ReconnectAbortsOnlyCurrentOwner) {
   EXPECT_TRUE(events.empty());
   client.stop();
   EXPECT_EQ(abortCalls(), 1);
-  EXPECT_EQ(events.front(), "abort:43");
-  EXPECT_EQ(events.back(), "close:43");
+  EXPECT_EQ(events.front(), "abort:13");
+  EXPECT_EQ(events.back(), "close:13");
 }
 TEST(ArduinoEsp32AsyncAbort, CancelDnsWithoutSocketDoesNotAbort) {
+  fakeLwipReset();
+  fakeAbortObserver = [](int fd) {
+    events.push_back("abort:" + std::to_string(fd));
+  };
   events.clear();
   Supla::EspAsyncClient client;
   ASSERT_EQ(client.connectStep("server", 2016), Result::Pending);
@@ -182,10 +208,14 @@ TEST(ArduinoEsp32AsyncAbort, CancelDnsWithoutSocketDoesNotAbort) {
   EXPECT_TRUE(events.empty());
 }
 TEST(ArduinoEsp32AsyncAbort, PendingTlsTimeoutAbortsBeforeTlsCleanup) {
+  fakeLwipReset();
+  fakeAbortObserver = [](int fd) {
+    events.push_back("abort:" + std::to_string(fd));
+  };
   events.clear();
   fakeHandshakeResult = MBEDTLS_ERR_SSL_WANT_READ;
   failConnect = false;
-  nextFd = 42;
+  nextFd = 12;
   Supla::EspAsyncClient client;
   client.setSSLEnabled(true);
   client.setTimeoutMs(100);
@@ -194,10 +224,14 @@ TEST(ArduinoEsp32AsyncAbort, PendingTlsTimeoutAbortsBeforeTlsCleanup) {
   now += 101;
   EXPECT_EQ(client.connectStep("server", 2016), Result::Failed);
   EXPECT_EQ(events, (std::vector<std::string>{
-      "abort:42", "tls-free", "close:42"}));
+      "abort:12", "tls-free", "close:12"}));
   fakeHandshakeResult = 0;
 }
 TEST(ArduinoEsp32AsyncAbort, InvalidSocketNeverAbortsOrClosesAnotherOwner) {
+  fakeLwipReset();
+  fakeAbortObserver = [](int fd) {
+    events.push_back("abort:" + std::to_string(fd));
+  };
   events.clear();
   nextFd = -1;
   Supla::EspAsyncClient client;
@@ -205,13 +239,17 @@ TEST(ArduinoEsp32AsyncAbort, InvalidSocketNeverAbortsOrClosesAnotherOwner) {
   EXPECT_EQ(client.connectStep("server", 2016), Result::Failed);
   client.stop();
   EXPECT_TRUE(events.empty());
-  nextFd = 42;
+  nextFd = 12;
 }
 TEST(ArduinoEsp32AsyncAbort, FailedTlsHandshakeAbortsBeforeTlsCleanup) {
+  fakeLwipReset();
+  fakeAbortObserver = [](int fd) {
+    events.push_back("abort:" + std::to_string(fd));
+  };
   events.clear();
   fakeHandshakeResult = MBEDTLS_ERR_SSL_INTERNAL_ERROR;
   failConnect = false;
-  nextFd = 42;
+  nextFd = 12;
   Supla::EspAsyncClient client;
   client.setSSLEnabled(true);
   Result result = Result::Pending;
@@ -219,7 +257,7 @@ TEST(ArduinoEsp32AsyncAbort, FailedTlsHandshakeAbortsBeforeTlsCleanup) {
     result = client.connectStep("server", 2016);
   EXPECT_EQ(result, Result::Failed);
   EXPECT_EQ(events, (std::vector<std::string>{
-      "abort:42", "tls-free", "close:42"}));
+      "abort:12", "tls-free", "close:12"}));
   fakeHandshakeResult = 0;
 }
 INSTANTIATE_TEST_SUITE_P(PlainAndTls, ArduinoEsp32TcpAbortTests,

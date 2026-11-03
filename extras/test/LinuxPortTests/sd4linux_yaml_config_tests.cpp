@@ -447,6 +447,138 @@ TEST(Sd4linuxYamlConfigTests,
   deleteCreatedElement(previousElement);
 }
 
+class Sd4linuxAtRelatedChannelTests : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    ASSERT_EQ(Supla::Element::begin(), nullptr);
+    Supla::Channel::resetToDefaults();
+  }
+  void clearElements() {
+    while (auto element = Supla::Element::last()) delete element;
+    Supla::Channel::resetToDefaults();
+  }
+  void TearDown() override { clearElements(); }
+  uint8_t relatedChannel(int channelNumber) {
+    auto element = Supla::Element::getElementByChannelNumber(channelNumber);
+    auto at = element ? element->getActionTrigger() : nullptr;
+    EXPECT_NE(at, nullptr);
+    return at ? static_cast<Supla::AtChannel*>(at->getChannel())
+                    ->getRelatedChannelNumber() : 255;
+  }
+  TestLinuxYamlConfig config;
+};
+
+TEST_F(Sd4linuxAtRelatedChannelTests,
+       TwoTriggersResolveForwardAndBackwardToZero) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: ActionTriggerParsed, name: up, channel_number: 11, related_channel: motor}
+- {type: VirtualRelay, name: motor, channel_number: 0}
+- {type: ActionTriggerParsed, name: down, channel_number: 12, related_channel: motor}
+)");
+  ASSERT_TRUE(config.loadChannels());
+  EXPECT_EQ(relatedChannel(11), 1);  // Protocol stores channel number + 1.
+  EXPECT_EQ(relatedChannel(12), 1);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests,
+       AnyChannelTypeAndActualNumbersAreSupported) {
+  // An element created before YAML shifts automatically allocated numbers.
+  new Supla::Control::VirtualRelay();
+  config.config = YAML::Load(R"(
+channels:
+- {type: CustomChannel, name: contact, channel_type: 1000}
+- {type: ActionTriggerParsed, name: at, related_channel: contact}
+)");
+  ASSERT_TRUE(config.loadChannels());
+  EXPECT_EQ(relatedChannel(2), 2);  // contact is channel 1, not YAML index 0.
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, MissingParameterLeavesTriggerUnrelated) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: ActionTriggerParsed, name: at}
+)");
+  ASSERT_TRUE(config.loadChannels());
+  EXPECT_EQ(relatedChannel(0), 0);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests,
+       UnknownReferenceDoesNotApplyEarlierLinks) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: VirtualRelay, name: motor}
+- {type: ActionTriggerParsed, name: good, related_channel: motor}
+- {type: ActionTriggerParsed, name: bad, related_channel: missing}
+)");
+  EXPECT_FALSE(config.loadChannels());
+  EXPECT_EQ(relatedChannel(1), 0);
+  EXPECT_EQ(relatedChannel(2), 0);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, AmbiguousTargetNameIsRejected) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: VirtualRelay, name: motor}
+- {type: VirtualRelay, name: motor}
+- {type: ActionTriggerParsed, name: at, related_channel: motor}
+)");
+  EXPECT_FALSE(config.loadChannels());
+  EXPECT_STREQ(supla_test_get_last_log(),
+      "AT \"at\": unknown or ambiguous related_channel \"motor\"");
+  EXPECT_EQ(relatedChannel(2), 0);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, SelfReferenceDoesNotApplyEarlierLinks) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: VirtualRelay, name: motor}
+- {type: ActionTriggerParsed, name: good, related_channel: motor}
+- {type: ActionTriggerParsed, name: self, related_channel: self}
+)");
+  EXPECT_FALSE(config.loadChannels());
+  EXPECT_STREQ(supla_test_get_last_log(),
+      "AT \"self\": invalid related channel \"self\"");
+  EXPECT_EQ(relatedChannel(1), 0);
+  EXPECT_EQ(relatedChannel(2), 0);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, AmbiguousTriggerNameIsReportedCorrectly) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: VirtualRelay, name: motor}
+- {type: ActionTriggerParsed, name: duplicate, related_channel: motor}
+- {type: ActionTriggerParsed, name: duplicate}
+)");
+  EXPECT_FALSE(config.loadChannels());
+  EXPECT_STREQ(supla_test_get_last_log(),
+      "AT: unknown or ambiguous trigger name \"duplicate\"");
+  EXPECT_EQ(relatedChannel(1), 0);
+  EXPECT_EQ(relatedChannel(2), 0);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, InvalidReferenceShapesAreRejected) {
+  for (const char* value : {"null", "''", "[]", "{}"}) {
+    SCOPED_TRACE(value);
+    config.config = YAML::Load(std::string(
+        "channels: [{type: ActionTriggerParsed, name: at, related_channel: ") +
+        value + "}]");
+    EXPECT_FALSE(config.loadChannels());
+    clearElements();
+  }
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, NamesFromEarlierLoadAreNotReused) {
+  config.config = YAML::Load(
+      "channels: [{type: VirtualRelay, name: old}]");
+  ASSERT_TRUE(config.loadChannels());
+  clearElements();
+  config.config = YAML::Load(
+      "channels: [{type: ActionTriggerParsed, name: at, "
+      "related_channel: old}]");
+  EXPECT_FALSE(config.loadChannels());
+}
+
 TEST(Sd4linuxYamlConfigTests,
      ParsedRelayWeeklyScheduleCanBeEnabledFromYaml) {
   TestLinuxYamlConfig config;
@@ -1289,6 +1421,8 @@ TEST(Sd4linuxYamlConfigTests, RejectsInvalidMultiDocumentConfiguration) {
   for (const char* fields : {
            "sub_topics: [a, a]",
            "expiration_time_sec: -1",
+           "expiration_time_sec: 2147484",
+           "expiration_time_sec: 4294967295",
            "expiration_time_sec: 4294967296",
            "expiration_time_sec: 99999999999999999999999",
            "expiration_time_sec: broken",

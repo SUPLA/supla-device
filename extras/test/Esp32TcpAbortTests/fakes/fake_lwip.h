@@ -16,9 +16,11 @@ extern int lookupCount;
 extern int apiCallCount;
 extern int abortCount;
 extern int coreLocked;
-extern int inTcpipTask;
 extern int lastFd;
 extern char lastLog[256];
+extern void (*fakeAbortObserver)(int fd);
+void fakeLwipReset(void);
+void fakeLwipConnect(void);
 #ifdef __cplusplus
 }
 #endif

@@ -36,6 +36,52 @@ class ActionHandlerMock : public Supla::ActionHandler {
 
 using ::testing::ElementsAreArray;
 
+TEST_F(ChannelTestsFixture, ShadingValuesDoNotProduceRelayDiagnostics) {
+  Supla::Channel channel;
+  channel.setType(SUPLA_CHANNELTYPE_RELAY);
+  for (auto function : {SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER,
+                        SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND,
+                        SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW,
+                        SUPLA_BIT_FUNC_TERRACE_AWNING,
+                        SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR,
+                        SUPLA_BIT_FUNC_CURTAIN,
+                        SUPLA_BIT_FUNC_PROJECTOR_SCREEN,
+                        SUPLA_BIT_FUNC_VERTICAL_BLIND}) {
+    SCOPED_TRACE(function);
+    channel.setFuncList(function);
+    channel.clearValue();
+    TDSC_FacadeBlindValue shading = {};
+    shading.position = -1;
+    shading.tilt = -1;
+    shading.flags = RS_VALUE_FLAG_TILT_IS_SET;
+    supla_test_clear_last_log();
+    ASSERT_TRUE(channel.setNewValue(reinterpret_cast<const char *>(&shading)));
+    EXPECT_STREQ(supla_test_get_last_log(), "");
+    channel.sendUpdate();
+    EXPECT_STREQ(supla_test_get_last_log(), "");
+    EXPECT_EQ(memcmp(channel.getValuePtr(), &shading, sizeof(shading)), 0);
+  }
+}
+
+TEST_F(ChannelTestsFixture, PlainRelayKeepsValueAndUpdateDiagnostics) {
+  Supla::Channel channel;
+  channel.setType(SUPLA_CHANNELTYPE_RELAY);
+  channel.setFuncList(SUPLA_BIT_FUNC_POWERSWITCH);
+  char rawValue[SUPLA_CHANNELVALUE_SIZE] = {};
+  auto *relay = reinterpret_cast<TRelayChannel_Value *>(rawValue);
+  relay->hi = 1;
+  relay->RelayMode = SUPLA_RELAY_MODE_FORCED_ON;
+  relay->flags = SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED;
+  supla_test_clear_last_log();
+  ASSERT_TRUE(channel.setNewValue(rawValue));
+  EXPECT_THAT(supla_test_get_last_log(), testing::HasSubstr(
+      "relay value changed: value=1 mode=3"));
+  supla_test_clear_last_log();
+  channel.sendUpdate();
+  EXPECT_THAT(supla_test_get_last_log(), testing::HasSubstr(
+      "relay sending update: value=1 mode=3"));
+}
+
 TEST_F(ChannelTestsFixture, ClearValueClearsPayloadAndValidity) {
   Supla::Channel channel;
   int8_t rawValue[SUPLA_CHANNELVALUE_SIZE] = {1, 2, 3, 4, 5, 6, 7, 8};

@@ -261,26 +261,32 @@ target_link_libraries(arduinoesp8266_client_factory_tests PRIVATE
   gtest_main
 )
 
-add_executable(arduinoesp32_tcp_abort_tests
+# Exercise the real ESP32 client and TCP abort helper with shared lwIP doubles.
+# Exercise the asynchronous ESP32 client and the real abort helper together.
+add_executable(esp32_tcp_abort_tests
   ArduinoEsp32PlatformTests/arduino_esp32_tcp_abort_tests.cpp
+  Esp32TcpAbortTests/esp32_tcp_abort_tests.cpp
+  Esp32TcpAbortTests/fake_lwip.c
   ../../src/supla/network/async_client.cpp
   ../../src/supla/network/esp_async_client.cpp
   ../../src/supla/network/client.cpp
   ../../src/supla/network/ip_address.cpp
+  ../../src/supla/network/esp32_tcp_abort.cpp
 )
-target_include_directories(arduinoesp32_tcp_abort_tests BEFORE PRIVATE
+target_include_directories(esp32_tcp_abort_tests BEFORE PRIVATE
+  Esp32TcpAbortTests/fakes
   ArduinoEsp32PlatformTests/fakes
   ArduinoEspPlatformTests/fakes
 )
-target_include_directories(arduinoesp32_tcp_abort_tests PRIVATE ../../src)
-target_compile_definitions(arduinoesp32_tcp_abort_tests PRIVATE
-  ARDUINO_ARCH_ESP32)
-target_link_libraries(arduinoesp32_tcp_abort_tests PRIVATE gtest gtest_main)
+target_include_directories(esp32_tcp_abort_tests PRIVATE ../../src)
+target_compile_definitions(esp32_tcp_abort_tests PRIVATE
+  ARDUINO_ARCH_ESP32 LWIP_SOCKET_OFFSET=0)
+target_link_libraries(esp32_tcp_abort_tests PRIVATE gtest gtest_main)
 foreach(wrapper socket fcntl connect select getsockopt getsockname recv send close)
-  target_link_options(arduinoesp32_tcp_abort_tests PRIVATE "-Wl,--wrap=${wrapper}")
+  target_link_options(esp32_tcp_abort_tests PRIVATE "-Wl,--wrap=${wrapper}")
 endforeach()
-supla_apply_warnings(arduinoesp32_tcp_abort_tests)
-add_test(NAME arduinoesp32_tcp_abort_tests COMMAND arduinoesp32_tcp_abort_tests)
+supla_apply_warnings(esp32_tcp_abort_tests)
+add_test(NAME esp32_tcp_abort_tests COMMAND esp32_tcp_abort_tests)
 
 # Compile the real helper against C lwIP doubles in both synchronization modes.
 # The ordinary host library still compiles this source as an empty translation

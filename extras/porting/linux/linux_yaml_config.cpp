@@ -67,6 +67,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "linux_channel_factory.h"
@@ -728,6 +729,7 @@ bool Supla::LinuxYamlConfig::getMqttClientFileCA(char* result) const {
 }
 
 bool Supla::LinuxYamlConfig::loadChannels() {
+  channelNames.clear();
   try {
     Supla::Linux::initExtensions();
     if (!loadTopLevelSources(config["sources"])) {
@@ -777,7 +779,7 @@ bool Supla::LinuxYamlConfig::loadChannels() {
         SUPLA_LOG_ERROR("Config: \"channels\" section missing in file");
         return false;
       }
-      return true;
+      return resolveActionTriggerRelatedChannels();
     } else {
       SUPLA_LOG_ERROR("Config: \"channels\" section missing in file");
       return false;
@@ -961,10 +963,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return false;
     }
 
-    if (auto nameParameter = getAndMarkChannelParameter(ch, "name")) {
-      std::string name = nameParameter.as<std::string>();
-      channelNames[name] = channelNumber;
-    }
+    getAndMarkChannelParameter(ch, "name");
 
     if (type == "VirtualRelay") {
       return addVirtualRelay(ch, channelNumber);
@@ -2389,7 +2388,8 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       unsigned int expirationTimeSec = 0;
       if (source["expiration_time_sec"]) {
         const auto expiration = source["expiration_time_sec"].as<int64_t>();
-        if (expiration < 0 || expiration > UINT_MAX) {
+        if (expiration < 0 ||
+            expiration > Supla::Source::Mqtt::MaximumExpirationTimeSec) {
           SUPLA_LOG_ERROR("Config: MQTT expiration_time_sec out of range");
           return nullptr;
         }
@@ -2997,6 +2997,13 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
                                                     int channelNumber) {
   SUPLA_LOG_INFO("Channel[%d] config: adding ActionTriggerParsed",
                  channelNumber);
+  if (auto related = getAndMarkChannelParameter(ch, "related_channel")) {
+    if (!related.IsScalar() || related.as<std::string>().empty()) {
+      SUPLA_LOG_ERROR("Channel[%d]: related_channel must be a channel name",
+          channelNumber);
+      return false;
+    }
+  }
   if (auto nameParameter = getAndMarkChannelParameter(ch, "name")) {
     auto name = nameParameter.as<std::string>();
     auto at = new Supla::Control::ActionTriggerParsed(name);
@@ -3006,6 +3013,46 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
                     channelNumber);
     return false;
   }
+}
+
+bool Supla::LinuxYamlConfig::resolveActionTriggerRelatedChannels() {
+  std::vector<std::pair<Supla::Control::ActionTrigger*, Supla::Channel*>> links;
+  for (const auto& entry : config["channels"]) {
+    if (entry["type"].as<std::string>() != "ActionTriggerParsed" ||
+        !entry["related_channel"]) {
+      continue;
+    }
+    const auto sourceName = entry["name"].as<std::string>();
+    const auto targetName = entry["related_channel"].as<std::string>();
+    auto source = channelNames.find(sourceName);
+    auto target = channelNames.find(targetName);
+    if (source == channelNames.end() || source->second < 0) {
+      SUPLA_LOG_ERROR("AT: unknown or ambiguous trigger name \"%s\"",
+          sourceName.c_str());
+      return false;
+    }
+    if (target == channelNames.end() || target->second < 0) {
+      SUPLA_LOG_ERROR(
+          "AT \"%s\": unknown or ambiguous related_channel \"%s\"",
+          sourceName.c_str(), targetName.c_str());
+      return false;
+    }
+    auto element = Supla::Element::getElementByChannelNumber(source->second);
+    auto at = element ? element->getActionTrigger() : nullptr;
+    auto channel = Supla::Channel::GetByChannelNumber(target->second);
+    if (!at || !channel || target->second >= 255 ||
+        source->second == target->second) {
+      SUPLA_LOG_ERROR("AT \"%s\": invalid related channel \"%s\"",
+          sourceName.c_str(), targetName.c_str());
+      return false;
+    }
+    links.emplace_back(at, channel);
+  }
+  // Validate every reference before applying any relationship.
+  for (const auto& link : links) {
+    link.first->setRelatedChannel(link.second);
+  }
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
@@ -3234,8 +3281,12 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
   if (!addWeeklyScheduleParameter(ch, dynamic_cast<Supla::Element*>(sensor))) {
     return false;
   }
-  return addDefaultFunctionNumber(
-      ch, dynamic_cast<Supla::Element*>(sensor));
+  auto element = dynamic_cast<Supla::Element*>(sensor);
+  if (!addDefaultFunctionNumber(ch, element)) {
+    return false;
+  }
+  registerChannelName(ch, element);
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
@@ -3284,7 +3335,28 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
       ch->setDefaultIcon(static_cast<uint8_t>(iconId));
     }
   }
-  return addDefaultFunctionNumber(ch, element);
+  if (!addDefaultFunctionNumber(ch, element)) {
+    return false;
+  }
+  registerChannelName(ch, element);
+  return true;
+}
+
+void Supla::LinuxYamlConfig::registerChannelName(const YAML::Node& ch,
+                                                Supla::Element* element) {
+  if (auto name = getAndMarkChannelParameter(ch, "name")) {
+    auto channel = element ? element->getChannel() : nullptr;
+    if (channel) {
+      // Record the final channel number, including explicit numbering and
+      // channels created by elements with more than one channel.
+      auto result = channelNames.emplace(name.as<std::string>(),
+          channel->getChannelNumber());
+      if (!result.second &&
+          result.first->second != channel->getChannelNumber()) {
+        result.first->second = -1;  // Ambiguous name; reject references to it.
+      }
+    }
+  }
 }
 
 bool Supla::LinuxYamlConfig::addWeeklyScheduleParameter(

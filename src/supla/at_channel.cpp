@@ -4,6 +4,7 @@
 #include "at_channel.h"
 
 #include <supla/channels/channel.h>
+#include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
 
 #include <string.h>
@@ -106,6 +107,7 @@ uint8_t AtChannel::getButtonMode() const {
 }
 
 void AtChannel::setWeeklyScheduleEnabled(bool enabled) {
+  [[maybe_unused]] const bool changed = isWeeklyScheduleEnabled() != enabled;
   TActionTriggerProperties properties = actionTriggerProperties;
   if (enabled) {
     properties.Flags |= SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED;
@@ -115,6 +117,10 @@ void AtChannel::setWeeklyScheduleEnabled(bool enabled) {
     properties.Flags &= static_cast<uint8_t>(~weeklyScheduleFlag);
   }
   setActionTriggerProperties(properties);
+  if (changed) {
+    SUPLA_LOG_INFO("AT[%d] weekly schedule %s", getChannelNumber(),
+        enabled ? "enabled" : "disabled (manual mode)");
+  }
 }
 
 bool AtChannel::isWeeklyScheduleEnabled() const {

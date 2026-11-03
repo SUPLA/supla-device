@@ -394,7 +394,7 @@ void Channel::setNewValue(
 bool Channel::setNewValue(const char *newValue) {
   if (memcmp(value, newValue, SUPLA_CHANNELVALUE_SIZE) != 0) {
     memcpy(value, newValue, SUPLA_CHANNELVALUE_SIZE);
-    if (channelType == ChannelType::RELAY) {
+    if (channelType == ChannelType::RELAY && !isRollerShutterRelayType()) {
       logRelayChannelValue(channelNumber, "value changed",
           reinterpret_cast<const TRelayChannel_Value *>(value));
     }
@@ -529,7 +529,7 @@ bool Channel::isStateInfoUpdateReady() const {
 
 void Channel::sendUpdate() {
   if (isValueUpdateReady()) {
-    if (channelType == ChannelType::RELAY) {
+    if (channelType == ChannelType::RELAY && !isRollerShutterRelayType()) {
       logRelayChannelValue(channelNumber, "sending update",
           reinterpret_cast<const TRelayChannel_Value *>(value));
     }

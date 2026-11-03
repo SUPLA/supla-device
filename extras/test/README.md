@@ -6,7 +6,10 @@ SPDX-License-Identifier: GPL-2.0-or-later
 # Host tests
 
 Run commands from the repository root. By default, CTest registers
-`supladevicetests`, `sd4linuxtests` and `arduinoesp8266_client_factory_tests`.
+`supladevicetests`, `sd4linuxtests`, `arduinoesp8266_client_factory_tests`
+and `esp32_tcp_abort_tests`, among other platform suites. The ESP32 binary
+combines asynchronous client cleanup and real TCP abort helper tests with shared
+lwIP doubles; separate helper targets retain core-locking/socket-offset coverage.
 The Arduino factory suite uses a fake transport and production AsyncClient
 lifecycle; it does not verify actual ESP TLS certificate handling.
 These tests do not require network access at runtime. The HTTP source unit tests

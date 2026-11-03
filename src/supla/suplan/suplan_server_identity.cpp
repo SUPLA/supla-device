@@ -13,6 +13,7 @@
 #include <supla/suplan/suplan_server_associations.h>
 #include <supla/suplan/bootstrap.h>
 #include <supla/suplan/suplan_server_migration.h>
+#include <supla/suplan/suplan_peer_store.h>
 #include <supla/suplan/resource_binding_manager.h>
 #include <supla/suplan/remote_resource_manager.h>
 #include <supla/element.h>
@@ -117,6 +118,7 @@ Supla::Device::ServerIdentity::ServerIdentity() {
   registrationPrepared = registrationValid = transition = syncComplete = false;
   identitiesAccepted = contextInvalidated = false;
   migrationPending = fullMigration = false;
+  legacyCleanupPending = false;
   topologyReady = true;
 }
 
@@ -172,6 +174,7 @@ void Supla::Device::ServerIdentity::factoryReset() {
 }
 
 bool Supla::Device::ServerIdentity::rotateRoot() {
+  if (legacyCleanupPending) return false;
   bool previousValid = rootValid;
   rootValid = false;
   if (!ensureRoot()) {
@@ -202,6 +205,7 @@ void Supla::Device::ServerIdentity::abandonRegistration() {
 void Supla::Device::ServerIdentity::load(Config *cfg) {
   abandonRegistration();
   active = cfg ? this : nullptr;
+  if (config != cfg) legacyCleanupPending = false;
   config = cfg;
   epoch = 0;
   memset(root, 0, sizeof(root));
@@ -215,6 +219,9 @@ void Supla::Device::ServerIdentity::load(Config *cfg) {
   if (!config) {
     return;
   }
+  legacyCleanupPending = !SupLanPeerStore::cleanupLegacy(
+      config, &legacyCleanupPending);
+  if (legacyCleanupPending) return;
   migrationPending = config->getBlobSize(kMigrationKey) >= 0;
   // Unknown/damaged fences remain fenced; never infer that migration finished.
   fullMigration = migrationPending;
@@ -290,6 +297,11 @@ void Supla::Device::ServerIdentity::load(Config *cfg) {
       "SupLAN SERVER identity loaded: device=%" PRId32
       ", channels=%u, rootEpoch=%" PRIu32,
       deviceId, static_cast<unsigned>(count), rootEpoch());
+}
+
+bool Supla::Device::ServerIdentity::retryLegacyCleanup() {
+  if (legacyCleanupPending) load(config);
+  return !legacyCleanupPending;
 }
 
 bool Supla::Device::ServerIdentity::registrationStarted() {
@@ -447,6 +459,7 @@ bool Supla::Device::ServerIdentity::persist(const char *key,
 }
 
 bool Supla::Device::ServerIdentity::ensureRoot() {
+  if (legacyCleanupPending) return false;
   if (rootValid && rootDurable) {
     return true;
   }
@@ -498,6 +511,10 @@ TDS_SuplaDeviceIdentitiesResult Supla::Device::ServerIdentity::accept(
   TDS_SuplaDeviceIdentitiesResult result = {};
   result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
   result.RootEpoch = rootEpoch();
+  if (legacyCleanupPending) {
+    result.Result = SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR;
+    return result;
+  }
   if (!registrationValid || !registrationContextValid() ||
       !validIds(snapshot) || snapshot.ChannelCount != registrationCount) {
     return result;

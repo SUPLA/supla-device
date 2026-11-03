@@ -29,6 +29,7 @@ class ServerIdentity {
   ServerIdentity(const ServerIdentity &) = delete;
   ServerIdentity &operator=(const ServerIdentity &) = delete;
   void load(Config *config);
+  bool retryLegacyCleanup();
   bool capable() const;
   static const ServerIdentity *current() { return active; }
   bool rotateRoot();
@@ -83,6 +84,7 @@ class ServerIdentity {
   void abandonRegistration();
   bool persist(const char *key, const uint8_t *data, int size);
 
+  bool legacyCleanupPending = false;
   Config *config = nullptr;
   uint8_t *registrationNumbers = nullptr;
   uint8_t root[32] = {};

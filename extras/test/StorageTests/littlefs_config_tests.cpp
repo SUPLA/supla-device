@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gtest/gtest.h>
+#include <supla/suplan/suplan_peer_store.h>
+#include <supla/crc16.h>
+#include <suplan/suplan_wire.h>
 #include <config_key_collector.h>
 #include <LittleFS.h>
 #include <supla/storage/littlefs_config.h>
@@ -221,7 +224,7 @@ TEST_F(LittleFsConfigTests, ConfigWritesDoNotPerformReadback) {
   LittleFS.failReadPath = "/supla/blob";
   std::array<char, 100> data = {};
   EXPECT_TRUE(config.setBlob(BlobKey, data.data(), data.size()));
-  EXPECT_EQ(LittleFS.beginCalls, 2);
+  EXPECT_EQ(LittleFS.beginCalls, 1);
 }
 
 TEST_F(LittleFsConfigTests, EraseKeyChecksRemoveResult) {
@@ -244,7 +247,7 @@ TEST_F(LittleFsConfigTests, EraseKeyDoesNotRemountToVerifyDeletion) {
   const int mounts = LittleFS.beginCalls;
   LittleFS.failBeginCall = mounts + 2;
   EXPECT_TRUE(config.eraseKey(BlobKey));
-  EXPECT_EQ(LittleFS.beginCalls, mounts + 1);
+  EXPECT_EQ(LittleFS.beginCalls, mounts);
 }
 
 
@@ -262,7 +265,7 @@ TEST_F(LittleFsConfigTests, IteratesMemoryAndFilesOnceWithSubstringFilter) {
   ConfigKeyCollector found;
   EXPECT_EQ(config.forEachKey("hvac_", found.collect, &found),
             Supla::ConfigIterationResult::COMPLETED);
-  EXPECT_EQ(LittleFS.beginCalls, mounts + 1);
+  EXPECT_EQ(LittleFS.beginCalls, mounts);
   EXPECT_EQ(found.visits, 2);
   EXPECT_EQ(found.keys.size(), 2u);
   EXPECT_EQ(found.keys.at("254_hvac_cfg2"), Supla::ConfigValueType::BLOB);
@@ -303,6 +306,7 @@ TEST_F(LittleFsConfigTests, EmptyFailureAndInvalidArgumentsAreDistinct) {
   EXPECT_EQ(config.forEachKey("", nullptr, &found), Result::ERROR);
   const uint8_t data[] = {42};
   writeFile("/supla/preserved", data, sizeof(data));
+  LittleFS.end();  // Simulate external unmount before testing mount failure.
   LittleFS.beginResult = false;
   EXPECT_EQ(config.forEachKey("", found.collect, &found), Result::ERROR);
   EXPECT_TRUE(LittleFS.exists("/supla/preserved"));  // no implicit format
@@ -312,7 +316,7 @@ TEST_F(LittleFsConfigTests, EmptyFailureAndInvalidArgumentsAreDistinct) {
 }
 
 TEST_F(LittleFsConfigTests,
-       MigrationDetectionMountsOnceInsteadOfProbing1275Keys) {
+       MigrationDetectionDoesNotProbeLegacyPeerSlots) {
   Supla::LittleFsConfig config;
   int mounts = LittleFS.beginCalls;
   EXPECT_FALSE(Supla::Device::ServerMigration::hasServerState(&config));
@@ -320,25 +324,56 @@ TEST_F(LittleFsConfigTests,
   const std::array<char, 60> peer = {};
   ASSERT_TRUE(config.setBlob("sl-peer-254", peer.data(), peer.size()));
   mounts = LittleFS.beginCalls;
-  EXPECT_TRUE(Supla::Device::ServerMigration::hasServerState(&config));
-  EXPECT_EQ(LittleFS.beginCalls, mounts + 1);
+  EXPECT_FALSE(Supla::Device::ServerMigration::hasServerState(&config));
+  EXPECT_EQ(LittleFS.beginCalls, mounts);
 }
 
-TEST_F(LittleFsConfigTests, UnreadableUnrelatedFileDoesNotHideServerPeer) {
+TEST_F(LittleFsConfigTests, UnreadableUnrelatedFileDoesNotHidePeerStore) {
   Supla::LittleFsConfig config;
   const std::array<char, 60> blob = {};
   ASSERT_TRUE(config.setBlob("aaa", blob.data(), blob.size()));
-  ASSERT_TRUE(config.setBlob("sl-peer-254", blob.data(), blob.size()));
+  uint8_t record[42] = {1, 1};
+  Supla::SupLan::PeerContext context = {1, 0, {1, 101}, {1, 202}, 123, 1};
+  ASSERT_TRUE(Supla::SupLan::encodePeerContext(&context, record + 2));
+  Supla::SupLan::putUint32(record + 29, 1);
+  record[33] = record[34] = record[39] = 1;
+  Supla::SupLan::putUint32(record + 35, 501);
+  const auto crc = calculateCrc16(record, 40);
+  record[40] = crc;
+  record[41] = crc >> 8;
+  {
+    Supla::Device::SupLanPeerStore store(&config);
+    ASSERT_TRUE(store.load(sizeof(record) + 4));
+    ASSERT_TRUE(store.replace(Supla::Device::SupLanPeerStore::Source,
+                               0, record, sizeof(record)));
+    ASSERT_TRUE(store.save());
+  }
   LittleFS.failOpenPath = "/supla/aaa";
   ConfigKeyCollector found;
   EXPECT_EQ(config.forEachKey("", found.collect, &found),
             Supla::ConfigIterationResult::COMPLETED);
   EXPECT_EQ(found.visits, 2);
-  EXPECT_EQ(found.keys.at("sl-peer-254"), Supla::ConfigValueType::BLOB);
+  EXPECT_EQ(found.keys.at("sl-peers"), Supla::ConfigValueType::BLOB);
   EXPECT_TRUE(Supla::Device::ServerMigration::hasServerState(&config));
   EXPECT_EQ(LittleFS.openDirectories, 0);
-  std::array<char, 60> readable = {};
-  EXPECT_TRUE(config.getBlob("sl-peer-254", readable.data(), readable.size()));
+  LittleFS.end();
+  LittleFS.beginResult = false;
+  Supla::Device::SupLanPeerStore failed(&config);
+  EXPECT_FALSE(failed.load());
+  EXPECT_TRUE(LittleFS.exists("/supla/sl-peers"));
+  EXPECT_TRUE(LittleFS.exists("/supla/aaa"));
+  LittleFS.beginResult = true;
+  Supla::Device::SupLanPeerStore recovered(&config);
+  EXPECT_TRUE(recovered.load());
+  Supla::Device::SupLanPeerStore writer(&config);
+  ASSERT_TRUE(writer.load());
+  LittleFS.end();
+  LittleFS.beginResult = false;
+  EXPECT_FALSE(writer.save());
+  EXPECT_TRUE(LittleFS.exists("/supla/sl-peers"));
+  EXPECT_TRUE(LittleFS.exists("/supla/aaa"));
+  EXPECT_EQ(LittleFS.formatCalls, 0);
+  LittleFS.beginResult = true;
 }
 
 TEST_F(LittleFsConfigTests, DirectoryReadAndCloseErrorsCannotReportCompletion) {
@@ -407,4 +442,135 @@ TEST_F(LittleFsConfigTests, MissingKeyDoesNotHideMountFailure) {
   EXPECT_FALSE(config.eraseKey("missing"));
   LittleFS.beginResult = true;
   EXPECT_TRUE(config.eraseKey("missing"));
+}
+
+TEST_F(LittleFsConfigTests, ShrinkingPeerBlobReportsFailedFileRemoval) {
+  Supla::LittleFsConfig config;
+  std::array<char, 60> old = {};
+  ASSERT_TRUE(config.setBlob("sl-peers", old.data(), old.size()));
+  const char empty[] = {1, 0, 0, 9, 0, 0, 0, 0, 0};
+  LittleFS.failRemovePath = "/supla/sl-peers";
+  EXPECT_FALSE(config.setBlob("sl-peers", empty, sizeof(empty)));
+  EXPECT_TRUE(LittleFS.exists("/supla/sl-peers"));
+  LittleFS.failRemovePath.clear();
+  ASSERT_TRUE(config.setBlob("sl-peers", empty, sizeof(empty)));
+  ASSERT_TRUE(config.commit());
+  EXPECT_FALSE(LittleFS.exists("/supla/sl-peers"));
+  std::array<char, sizeof(empty)> actual = {};
+  EXPECT_TRUE(config.getBlob("sl-peers", actual.data(), actual.size()));
+  EXPECT_EQ(memcmp(actual.data(), empty, sizeof(empty)), 0);
+}
+
+TEST_F(LittleFsConfigTests, RejectedSmallBlobKeepsPreviousFile) {
+  Supla::LittleFsConfig config;
+  std::array<char, 60> old;
+  old.fill(0x42);
+  ASSERT_TRUE(config.setBlob("sl-peers", old.data(), old.size()));
+  // Make KeyValue reject the new blob without changing the existing file.
+  ASSERT_TRUE(config.setUInt32("sl-peers", 42));
+  const char small[] = {1, 2, 3};
+  EXPECT_FALSE(config.setBlob("sl-peers", small, sizeof(small)));
+  EXPECT_TRUE(LittleFS.exists("/supla/sl-peers"));
+  File file = LittleFS.open("/supla/sl-peers", "r");
+  ASSERT_TRUE(static_cast<bool>(file));
+  std::array<char, 60> actual = {};
+  ASSERT_EQ(file.read(reinterpret_cast<uint8_t *>(actual.data()),
+                      actual.size()), actual.size());
+  EXPECT_EQ(actual, old);
+  file.close();
+}
+
+TEST_F(LittleFsConfigTests, ReusesMountAcrossConfigOperationsAndOwners) {
+  Supla::LittleFsConfig config;
+  std::array<char, 60> blob = {};
+  ASSERT_TRUE(config.setBlob(BlobKey, blob.data(), blob.size()));
+  ASSERT_EQ(LittleFS.beginCalls, 1);
+  EXPECT_TRUE(LittleFS.mounted);
+  Supla::LittleFsConfig other;
+  EXPECT_TRUE(other.getBlob(BlobKey, blob.data(), blob.size()));
+  EXPECT_TRUE(config.commit());
+  EXPECT_TRUE(config.setCustomCA("certificate"));
+  EXPECT_TRUE(config.setMqttCA("mqtt certificate"));
+  ConfigKeyCollector found;
+  EXPECT_EQ(config.forEachKey("", found.collect, &found),
+            Supla::ConfigIterationResult::COMPLETED);
+  EXPECT_EQ(LittleFS.openDirectories, 0);
+  EXPECT_TRUE(config.eraseKey(BlobKey));
+  EXPECT_EQ(LittleFS.beginCalls, 1);
+  EXPECT_EQ(LittleFS.endCalls, 0);
+  EXPECT_TRUE(LittleFS.mounted);
+  EXPECT_TRUE(config.removeAllChecked());
+  EXPECT_EQ(LittleFS.beginCalls, 1);
+  EXPECT_EQ(LittleFS.endCalls, 0);
+  EXPECT_EQ(LittleFS.openFiles, 0);
+}
+
+TEST_F(LittleFsConfigTests, OperationErrorsKeepSharedMountUsable) {
+  ASSERT_TRUE(LittleFS.begin());  // An application already owns this mount.
+  const int mounts = LittleFS.beginCalls;
+  {
+    Supla::LittleFsConfig config;
+    std::array<char, 60> blob = {};
+    LittleFS.failOpenPath = "/supla/blob";
+    EXPECT_FALSE(config.setBlob(BlobKey, blob.data(), blob.size()));
+    EXPECT_TRUE(LittleFS.mounted);
+    LittleFS.failOpenPath.clear();
+    ASSERT_TRUE(config.setBlob(BlobKey, blob.data(), blob.size()));
+    ASSERT_TRUE(config.setUInt32("setting", 42));
+    LittleFS.maxWrite = 1;
+    EXPECT_FALSE(config.commit());
+    LittleFS.maxWrite = SIZE_MAX;
+    EXPECT_TRUE(config.commit());
+    LittleFS.failDirectoryClose = true;
+    ConfigKeyCollector found;
+    EXPECT_EQ(config.forEachKey("", found.collect, &found),
+              Supla::ConfigIterationResult::ERROR);
+    LittleFS.failDirectoryClose = false;
+    EXPECT_TRUE(config.getBlob(BlobKey, blob.data(), blob.size()));
+  }
+  // Config destruction does not own the shared mount.
+  EXPECT_TRUE(LittleFS.mounted);
+  EXPECT_EQ(LittleFS.endCalls, 0);
+  EXPECT_EQ(LittleFS.beginCalls, mounts);
+  EXPECT_EQ(LittleFS.openFiles, 0);
+}
+
+TEST_F(LittleFsConfigTests,
+       RemountsAfterExternalEndWithoutAutomaticFormatting) {
+  Supla::LittleFsConfig config;
+  std::array<char, 60> blob = {};
+  ASSERT_TRUE(config.setBlob(BlobKey, blob.data(), blob.size()));
+  LittleFS.end();
+  LittleFS.beginResult = false;
+  EXPECT_FALSE(config.getBlob(BlobKey, blob.data(), blob.size()));
+  EXPECT_EQ(LittleFS.formatCalls, 0);
+  EXPECT_TRUE(LittleFS.exists("/supla/blob"));
+  LittleFS.beginResult = true;
+  EXPECT_TRUE(config.getBlob(BlobKey, blob.data(), blob.size()));
+  EXPECT_TRUE(LittleFS.mounted);
+  EXPECT_EQ(LittleFS.beginCalls, 3);
+  EXPECT_EQ(LittleFS.endCalls, 1);  // Only the application's explicit end.
+}
+
+TEST_F(LittleFsConfigTests, CertificateAccessNeverFormatsAfterMountFailure) {
+  Supla::LittleFsConfig config;
+  std::array<char, 60> saved;
+  saved.fill(0x42);
+  ASSERT_TRUE(config.setBlob("preserved", saved.data(), saved.size()));
+  LittleFS.end();
+  LittleFS.beginResult = false;
+  char ca[64] = {};
+  EXPECT_FALSE(config.getCustomCA(ca, sizeof(ca)));
+  EXPECT_EQ(config.getCustomCASize(), 0);
+  EXPECT_FALSE(config.setCustomCA("custom certificate"));
+  EXPECT_FALSE(config.getMqttCA(ca, sizeof(ca)));
+  EXPECT_EQ(config.getMqttCASize(), 0);
+  EXPECT_FALSE(config.setMqttCA("mqtt certificate"));
+  EXPECT_FALSE(config.removeAllChecked());
+  EXPECT_EQ(LittleFS.formatCalls, 0);
+  EXPECT_TRUE(LittleFS.exists("/supla/preserved"));
+  LittleFS.beginResult = true;
+  std::array<char, 60> actual = {};
+  ASSERT_TRUE(config.getBlob("preserved", actual.data(), actual.size()));
+  EXPECT_EQ(actual, saved);
 }

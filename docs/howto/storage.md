@@ -42,6 +42,36 @@ configuration storage, depending on the device design and provisioning process.
 
 ---
 
+### LittleFS mount lifetime
+
+`Supla::LittleFsConfig` reuses the shared LittleFS mount. Configuration operations
+and destruction of a Config object leave the filesystem mounted; each file and
+directory iterator is still closed after use. Multiple Config objects and
+application code can therefore use the mount without Config unmounting it.
+This does not add synchronization for concurrent filesystem access.
+
+The SDK detects the backend's mounted state instead of caching its own flag.
+After application code explicitly calls `LittleFS.end()`, the next operation
+attempts to mount again. Avoid unmounting or formatting while files or iterators
+are in use. Ordinary operation failures leave the filesystem mounted; an
+application that needs an explicit remount must arrange it when access is idle.
+Formatting on mount failure is allowed only during explicit Config `init()`.
+Compared with the previous backend, ordinary Config operations now return an
+error instead of formatting: this includes blob access, commit, certificate CA
+access for SUPLA/MQTT and removal. A failed operation cannot erase the partition
+as an attempted recovery. An explicit filesystem format is an application
+maintenance operation.
+
+Keeping the mount retains its caches in heap between operations. In ESP8266
+Arduino core 3.1.2 the mount uses three 64-byte buffers (192 bytes plus allocator
+overhead); per-file buffers are separate and released when files close. This
+is a source-derived allocation count, not a physical free-heap measurement.
+Config write buffers and persisted formats are unchanged. Files are closed on
+write completion; leaving the mount active does not defer Config commits until
+unmount.
+
+---
+
 ## State storage
 
 **State storage** is used to store runtime state that should survive restarts.

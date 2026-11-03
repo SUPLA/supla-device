@@ -50,8 +50,8 @@ class ApplicationPort {
   virtual ~ApplicationPort() {}
   virtual void diagnostic(DiagnosticEvent, uint8_t, const ResourceId &,
                           uint32_t) {}
-  virtual bool authorizationReplacing(const PeerContext &, const AclEntry *,
-                                      uint16_t) { return true; }
+  virtual void authorizationReplacing(const PeerContext &, const AclEntry *,
+                                      uint16_t) {}
   virtual BindingRetry *bindingRetry() { return nullptr; }
   virtual bool bindingSessionNeeded(uint8_t) { return false; }
   virtual uint8_t receiveBindings(uint8_t, const uint8_t *, size_t) {
@@ -123,10 +123,10 @@ class Runtime {
           const NodeAddress &localAddress, uint8_t suplaProtoVersion);
 
   bool sendBindings(uint8_t peerIndex, const uint8_t *body, size_t length);
-  bool authorizationReplacing(const PeerContext &context,
+  void authorizationReplacing(const PeerContext &context,
                               const AclEntry *expected, uint16_t count) {
-    return !application_ ||
-           application_->authorizationReplacing(context, expected, count);
+    if (application_)
+      application_->authorizationReplacing(context, expected, count);
   }
   bool bindingsInFlight() const {
     const auto retry = application_ ? application_->bindingRetry() : nullptr;

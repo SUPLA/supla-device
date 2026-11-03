@@ -12,15 +12,13 @@
 #include <supla/storage/config.h>
 #include <supla/suplan/suplan_server_associations.h>
 #include <supla/suplan/suplan_server_identity.h>
+#include <supla/suplan/suplan_peer_store.h>
 #include <suplan/suplan_crypto.h>
 #include <suplan/suplan_wire.h>
 
 namespace {
 using Supla::SupLan::PeerContext;
 using Supla::SupLan::ResourceId;
-void slotKey(uint8_t slot, char (&key)[16]) {
-  snprintf(key, sizeof(key), "sl-peer-%u", static_cast<unsigned>(slot));
-}
 PeerContext fromWire(const TSuplaSuplanPeerContext &wire) {
   return {wire.AuthorityType,
           wire.AuthorityId,
@@ -61,6 +59,10 @@ ServerAssociations *ServerAssociations::first_ = nullptr;
 void ServerAssociations::scopeChanged(ServerIdentity *identity) {
   for (auto state = first_; state; state = state->next_)
     if (state->identity_ == identity) state->identityChanged();
+}
+void ServerAssociations::storageChanged(Config *config, bool bindings) {
+  for (auto state = first_; state; state = state->next_)
+    if (state->config_ == config) state->bindingsStored_ = bindings;
 }
 ServerAssociations::ServerAssociations(PeerTable *peers, Runtime *runtime)
     : peers_(peers), runtime_(runtime) {
@@ -183,37 +185,54 @@ uint8_t ServerAssociations::validate(const PeerContext &context,
   return SUPLA_SUPLAN_RESULT_OK;
 }
 
-bool ServerAssociations::persist(uint8_t slot, const uint8_t *record,
+bool ServerAssociations::persist(int &slot, const uint8_t *record,
                                  int size) {
-  char key[16];
-  slotKey(slot, key);
-  return (size
-      ? config_->setBlob(key, reinterpret_cast<const char *>(record), size)
-      : config_->eraseKey(key)) &&
-      config_->commit();
+  SupLanPeerStore store(config_);
+  if (!store.load(size ? size + 4 : 0)) return false;
+  PeerContext context;
+  if (!decodePeerContext(record + 2, &context)) return false;
+  const auto type = record[1] == 2 ? SupLanPeerStore::Destination
+                                  : SupLanPeerStore::Source;
+  if (type == SupLanPeerStore::Destination &&
+      !store.prune(context, entries_, record[33])) return false;
+  store.discardAssociations(identity_->serverDeviceId(), identity_->rootEpoch(),
+                            context);
+  if (slot < 0) {
+    for (uint16_t candidate = 0; candidate < SUPLAN_MAX_PERSISTENT_PEERS;
+         ++candidate) {
+      size_t length = 0;
+      if (store.get(SupLanPeerStore::Source, candidate, &length)) continue;
+      bool used = false;
+      for (const auto occupied : slots_) used = used || occupied == candidate;
+      if (!used) {
+        slot = candidate;
+        break;
+      }
+    }
+  }
+  if (slot < 0 || !store.replace(type, slot, record, size) || !store.save())
+    return false;
+  return true;
 }
 
 bool ServerAssociations::readRecord(uint8_t slot, PeerContext *context,
                                     uint32_t *revision, uint8_t *count,
-                                    bool *destination) {
-  char key[16];
-  slotKey(slot, key);
-  int size = config_->getBlobSize(key);
-  if (size < kSourcePrefix + 2 || size > kMaxRecordSize ||
-      !config_->getBlob(key, reinterpret_cast<char *>(record_), size) ||
-      record_[0] != 1 || (record_[1] != 1 && record_[1] != 2) ||
-      calculateCrc16(record_, size - 2) !=
-          (record_[size - 2] | (record_[size - 1] << 8)) ||
-      !decodePeerContext(record_ + 2, context))
-    return false;
+                                    bool *destination,
+                                    const SupLanPeerStore *loaded) {
+  SupLanPeerStore store(config_);
+  if (!loaded && !store.load()) return false;
+  size_t length = 0;
+  const auto bytes = (loaded ? loaded : &store)->get(
+      SupLanPeerStore::Source, slot, &length);
+  if (!bytes || length > sizeof(record_)) return false;
+  memcpy(record_, bytes, length);
+  // The store already checked record structure, CRC and profile totals.
+  // Keep the live identity/ownership validation below.
+  decodePeerContext(record_ + 2, context);
   *destination = record_[1] == 2;
   *revision = getUint32(record_ + 29);
   *count = record_[33];
-  int prefix = *destination ? kDestinationPrefix : kSourcePrefix;
-  if ((*destination && *count == 0) || *count > kMaxEntries ||
-      size != prefix + 6 * *count + 2 ||
-      (*destination && !keyValid(record_ + kSourcePrefix)))
-    return false;
+  const int prefix = *destination ? kDestinationPrefix : kSourcePrefix;
   // Decode entries explicitly; never serialize C++ object memory.
   auto wire = wireEntries_;
   for (uint8_t i = 0; i < *count; ++i) {
@@ -230,34 +249,27 @@ void ServerAssociations::load(Config *config, ServerIdentity *identity) {
   for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) clear(i);
   config_ = config;
   identity_ = identity;
-  if (!available()) return;
+  storageReady_ = false;
+  loadAttempted_ = true;
+  loadRetryMs_ = runtime_ ? runtime_->nowMs() : 0;
+  if (!available() || !identity_->retryLegacyCleanup()) return;
   peers_->setOwnershipCheck(owns, this);
   runtime_->setLocalAddress(
       {kNodeIdDevice, static_cast<uint32_t>(identity_->serverDeviceId())});
+  SupLanPeerStore store(config_);
+  if (!store.load()) return;
+  storageReady_ = true;
+  bindingsStored_ = store.hasBindings();
   if (identity_->fullScopeFenced()) return;
-  uint8_t present[(SUPLAN_MAX_PERSISTENT_PEERS + 7) / 8] = {};
-  const auto enumerated = config_->forEachKey("sl-peer-",
-      [](const char *key, ConfigValueType type, void *context) {
-        if (type != ConfigValueType::BLOB) return true;
-        auto slots = static_cast<uint8_t *>(context);
-        for (uint16_t slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
-          char expected[16];
-          slotKey(slot, expected);
-          if (!strcmp(key, expected)) {
-            slots[slot / 8] |= 1u << (slot % 8);
-            break;
-          }
-        }
-        return true;
-      }, present);
-  if (enumerated != ConfigIterationResult::COMPLETED) return;
   for (uint16_t slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
-    if (!(present[slot / 8] & (1u << (slot % 8)))) continue;
+    size_t length = 0;
+    if (!store.get(SupLanPeerStore::Source, slot, &length)) continue;
     PeerContext context = {};
     uint32_t revision = 0;
     uint8_t count = 0;
     bool destination = false;
-    if (!readRecord(slot, &context, &revision, &count, &destination)) continue;
+    if (!readRecord(slot, &context, &revision, &count, &destination, &store))
+      continue;
     uint8_t index = 0;
     bool added =
         destination
@@ -276,10 +288,20 @@ void ServerAssociations::load(Config *config, ServerIdentity *identity) {
   memset(record_, 0, sizeof(record_));
 }
 
+void ServerAssociations::retryLoad(uint32_t now) {
+  if (storageReady_) return;
+  // Use the same live monotonic clock as load(), not an older loop timestamp.
+  if (runtime_) now = runtime_->nowMs();
+  if (!loadAttempted_ || static_cast<uint32_t>(now - loadRetryMs_) >= 1000)
+    load(config_, identity_);
+}
+
 bool ServerAssociations::reloadSourceRights(ServerIdentity *identity) {
   for (auto state = first_; state; state = state->next_) {
     if (state->identity_ != identity || !state->available()) continue;
     if (state->busy_) return false;
+    SupLanPeerStore store(state->config_);
+    if (!store.load()) return false;
     for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
       const auto peer = state->peers_->get(i);
       if (!peer || state->slots_[i] == 0xff) continue;
@@ -288,7 +310,8 @@ bool ServerAssociations::reloadSourceRights(ServerIdentity *identity) {
       uint8_t count = 0;
       bool destination = false;
       const auto slot = state->slots_[i];
-      if (!state->readRecord(slot, &context, &revision, &count, &destination) ||
+      if (!state->readRecord(slot, &context, &revision, &count, &destination,
+                             &store) ||
           revision != peer->aclRevision ||
           memcmp(peer->contextBytes, state->record_ + 2, kPeerContextSize))
         return false;
@@ -345,6 +368,7 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
                                   uint16_t count, bool destination,
                                   const uint8_t *key) {
   if (!available()) return SUPLA_SUPLAN_RESULT_UNSUPPORTED;
+  if (!storageReady_) return SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR;
   if (busy_) return SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
   PeerContext context = fromWire(wire);
   uint8_t result = validate(context, revision, entries, count, destination);
@@ -405,19 +429,6 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
     return SUPLA_SUPLAN_RESULT_CAPACITY_EXCEEDED;
   }
   int slot = index < 0 ? -1 : slots_[index];
-  if (slot < 0) {
-    for (uint16_t candidate = 0; candidate < SUPLAN_MAX_PERSISTENT_PEERS;
-         ++candidate) {
-      bool used = false;
-      for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
-        used = used || slots_[i] == candidate;
-      }
-      if (!used) {
-        slot = candidate;
-        break;
-      }
-    }
-  }
   // Precompute cryptographic material before the persistence boundary.
   PeerMaterial material = {};
   Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
@@ -446,14 +457,6 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
     entry[5] = entries[i].Permissions;
   }
   seal(record_, size);
-  // Delete/invalidate dependent topology first. A crash or later association
-  // write failure may leave less topology, never unauthorized mixed state.
-  if (destination &&
-      !runtime_->authorizationReplacing(context, entries_, count)) {
-    memset(record_, 0, sizeof(record_));
-    memset(&material, 0, sizeof(material));
-    return SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR;
-  }
   busy_ = true;
   bool saved = persist(slot, record_, count ? size : 0);
   memset(record_, 0, sizeof(record_));
@@ -465,6 +468,10 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
     memset(&material, 0, sizeof(material));
     return SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR;
   }
+  // The complete topology and association are durable together. Only now
+  // detach obsolete runtime contributors; no second persistent write.
+  if (destination)
+    runtime_->authorizationReplacing(context, entries_, count);
   bool activated = true;
   if (!count) {
     clear(index);

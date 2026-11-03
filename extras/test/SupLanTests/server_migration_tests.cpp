@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include "peer_store_test_helpers.h"
+
 namespace {
 using namespace Supla;  // NOLINT(build/namespaces)
 using namespace Supla::Device;  // NOLINT(build/namespaces)
@@ -359,18 +361,23 @@ TEST_F(ServerMigrationTests, MissingOldMapClearsServerRefsWithoutNumericGuess) {
             ChannelReference());
 }
 
-TEST_F(ServerMigrationTests, PeerEraseFailureStaysFencedAcrossReboot) {
+TEST_F(ServerMigrationTests,
+       LegacyCleanupFailureBlocksLoadUntilSuccessfulRetry) {
   install();
   const uint8_t opaque[] = {1, 1, 2};
   config.put("sl-peer-0", opaque);
   ASSERT_TRUE(config.commit());
+  config.reboot();
   config.failErase = true;
-  EXPECT_NE(accept(next()), SUPLA_SUPLAN_RESULT_OK);
-  EXPECT_TRUE(identity.fullScopeFenced());
+  identity.load(&config);
+  EXPECT_FALSE(identity.identityAvailable());
+  EXPECT_TRUE(identity.registrationStarted());
+  EXPECT_NE(identity.accept(initial).Result, SUPLA_SUPLAN_RESULT_OK);
   config.reboot();
   identity.load(&config);
   EXPECT_FALSE(identity.identityAvailable());
   config.failErase = false;
+  ASSERT_TRUE(identity.retryLegacyCleanup());
   ASSERT_EQ(accept(next()), SUPLA_SUPLAN_RESULT_OK);
   EXPECT_LT(config.getBlobSize("sl-peer-0"), 0);
   sanitized();
@@ -480,7 +487,8 @@ TEST_F(ServerMigrationTests, InventoryDoesNotProbeMissingKeysAndCoversSlot254) {
   auto hvac = config.get<Control::HvacStoredConfigV2>("1_hvac_cfg2");
   config.put("254_hvac_cfg2", hvac);
   const char oldPeer[] = {1, 2, 3};
-  ASSERT_TRUE(config.setBlob("sl-peer-254", oldPeer, sizeof(oldPeer)));
+  ASSERT_TRUE(
+      PeerStoreTest::write(config, "sl-peer-254", oldPeer, sizeof(oldPeer)));
   ASSERT_TRUE(config.commit());
   config.missingRecordQueries = 0;
   ASSERT_EQ(accept(next()), SUPLA_SUPLAN_RESULT_OK);
@@ -489,7 +497,7 @@ TEST_F(ServerMigrationTests, InventoryDoesNotProbeMissingKeysAndCoversSlot254) {
   EXPECT_EQ(migrated.referenceNamespace,
             Control::HvacReferenceNamespace::LOCAL_CHANNEL_NUMBER);
   EXPECT_EQ(migrated.references[1].local.isSet, 0);
-  EXPECT_LT(config.getBlobSize("sl-peer-254"), 0);
+  EXPECT_LT(PeerStoreTest::size(config, "sl-peer-254"), 0);
 }
 
 TEST_F(ServerMigrationTests,

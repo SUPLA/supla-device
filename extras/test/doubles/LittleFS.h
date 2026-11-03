@@ -74,26 +74,33 @@ class File {
 class FakeLittleFs {
  public:
   bool setConfig(const LittleFSConfig &config) {
+    if (mounted) return false;  // ESP8266 contract.
     autoFormat_ = config.autoFormat;
     return true;
   }
   bool begin() {
+    ++beginInvocations;
+    if (mounted) return true;
     bool result = ++beginCalls != failBeginCall && beginResult;
     if (!result && autoFormat_) {
       format();
     }
+    mounted = result;
     return result;
   }
-  void end() {}
-  void format() { files_.clear(); }
+  void end() { ++endCalls; mounted = false; }
+  void format() { ++formatCalls; files_.clear(); }
   void reset() {
     format();
     beginResult = true;
+    mounted = false;
+    endCalls = formatCalls = 0;
+    openFiles = 0;
     autoFormat_ = true;
     failOpenPath.clear();
     failReadPath.clear();
     failRemovePath.clear();
-    beginCalls = 0;
+    beginCalls = beginInvocations = 0;
     failBeginCall = -1;
     failDirectoryReadCall = -1;
     directoryReadCalls = 0;
@@ -114,7 +121,12 @@ class FakeLittleFs {
   std::string failOpenPath;
   std::string failReadPath;
   std::string failRemovePath;
+  bool mounted = false;
+  int endCalls = 0;
+  int openFiles = 0;
+  int formatCalls = 0;
   int beginCalls = 0;
+  int beginInvocations = 0;
   int failBeginCall = -1;
   size_t maxWrite = SIZE_MAX;
   size_t maxRead = SIZE_MAX;
@@ -139,15 +151,18 @@ class FakeLittleFs {
 
     std::string pathString(path);
     if (pathString == "/supla" && mode[0] == 'r') {
+      ++openFiles;
       return File(this, pathString, true, pathString);
     }
 
     if (mode[0] == 'w') {
       files_[pathString].clear();
+      ++openFiles;
       return File(this, pathString, false, pathString);
     }
 
     if (mode[0] == 'r' && pathString != failReadPath && exists(path)) {
+      ++openFiles;
       return File(this, pathString, false, pathString);
     }
 
@@ -163,6 +178,7 @@ class FakeLittleFs {
 };
 
 inline void File::close() {
+  if (valid_) --filesystem_->openFiles;
   valid_ = false;
 }
 

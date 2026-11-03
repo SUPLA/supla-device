@@ -13,6 +13,7 @@
 #include <supla/suplan/remote_resource_manager.h>
 #include <supla/suplan/suplan_server_associations.h>
 #include <supla/suplan/suplan_server_identity.h>
+#include <supla/suplan/suplan_peer_store.h>
 #include <supla/suplan/suplan_server_migration.h>
 #include <supla/time.h>
 #include <suplan/suplan_wire.h>
@@ -20,9 +21,6 @@
 namespace Supla {
 namespace Device {
 namespace {
-void bindingKey(uint8_t slot, char *key, size_t size) {
-  snprintf(key, size, "slb_%u", slot);
-}
 bool sameRelation(const SupLan::PeerContext &a,
                   const SupLan::PeerContext &b) {
   return a.authorityType == b.authorityType && a.authorityId == b.authorityId &&
@@ -67,6 +65,7 @@ void ResourceBindingManager::invalidateServerScope() {
     sets_[i] = {};
   }
   loaded_ = false;
+  loadAttempted_ = false;
 }
 void ResourceBindingManager::migrate(const ServerIdentity *identity,
                                      const ServerMigration &migration) {
@@ -77,7 +76,10 @@ void ResourceBindingManager::migrate(const ServerIdentity *identity,
   };
   for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS; ++i) {
     auto &entry = contributors_[i];
-    if (entry.source && removed(entry.target)) {
+    const bool local = entry.source &&
+        sets_[entry.set].context[0] == SupLan::kAuthorityLocal;
+    if (entry.source && !(migration.record[2] && local) &&
+        removed(entry.target)) {
       if (resources_) resources_->remove(0x40000 + i);
       entry = {};
     }
@@ -109,6 +111,7 @@ void ResourceBindingManager::attachAssociations(ServerAssociations *state) {
   }
   associations_ = state;
   loaded_ = false;
+  loadAttempted_ = false;
 }
 int ResourceBindingManager::bindingCount() const {
   int count = 0;
@@ -211,14 +214,10 @@ void ResourceBindingManager::activate(uint8_t set, const uint8_t *body,
 }
 bool ResourceBindingManager::persist(uint8_t set, const uint8_t *record,
                                      size_t length) {
-  auto cfg = Storage::ConfigInstance();
-  if (!cfg) return false;
-  char key[16];
-  bindingKey(set, key, sizeof(key));
-  return (length
-      ? cfg->setBlob(key, reinterpret_cast<const char *>(record), length)
-      : cfg->eraseKey(key)) &&
-      cfg->commit();
+  SupLanPeerStore store(Storage::ConfigInstance());
+  return store.load(length ? length + 4 : 0) &&
+      store.replace(SupLanPeerStore::Bindings, set, record, length) &&
+      store.save();
 }
 uint8_t ResourceBindingManager::accept(uint8_t peer, const uint8_t *body,
                                       size_t size) {
@@ -260,38 +259,23 @@ uint8_t ResourceBindingManager::accept(uint8_t peer, const uint8_t *body,
 bool ResourceBindingManager::loadRecords() {
   if (!associations_ || !associations_->identity() ||
       associations_->identity()->fullScopeFenced()) return false;
-  auto cfg = Storage::ConfigInstance();
-  if (!cfg) return false;
-  uint8_t present[(SUPLAN_MAX_PERSISTENT_PEERS + 7) / 8] = {};
-  const auto enumerated = cfg->forEachKey("slb_",
-      [](const char *key, ConfigValueType type, void *context) {
-        if (type != ConfigValueType::BLOB) return true;
-        auto slots = static_cast<uint8_t *>(context);
-        for (uint16_t slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
-          char expected[16];
-          bindingKey(slot, expected, sizeof(expected));
-          if (!strcmp(key, expected)) {
-            slots[slot / 8] |= 1u << (slot % 8);
-            break;
-          }
-        }
-        return true;
-      }, present);
-  if (enumerated != ConfigIterationResult::COMPLETED) return false;
+  const auto now = millis();
+  if (loadAttempted_ && static_cast<uint32_t>(now - loadRetryMs_) < 1000)
+    return false;
+  loadAttempted_ = true;
+  loadRetryMs_ = now;
+  SupLanPeerStore store(Storage::ConfigInstance());
+  if (!store.load()) return false;
   // Rebuild from storage only after a complete inventory.
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     detach(i);
     sets_[i] = {};
   }
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
-    if (!(present[i / 8] & (1u << (i % 8)))) continue;
-    char key[16];
-    bindingKey(i, key, sizeof(key));
-    const auto size = cfg->getBlobSize(key);
-    if (size < 29 || size > kRecordCapacity ||
-        !cfg->getBlob(key, reinterpret_cast<char *>(record_), size) ||
-        !validBindingRecord(record_, size) ||
-        bindingCount() + record_[28] > SUPLAN_MAX_RESOURCE_BINDINGS) continue;
+    size_t size = 0;
+    const auto bytes = store.get(SupLanPeerStore::Bindings, i, &size);
+    if (!bytes) continue;
+    memcpy(record_, bytes, size);
     memcpy(sets_[i].context, record_ + 1, 27);
     sets_[i].used = record_[28] != 0;
     activate(i, record_ + 28, size - 28);
@@ -299,10 +283,11 @@ bool ResourceBindingManager::loadRecords() {
   loaded_ = true;
   return true;
 }
-bool ResourceBindingManager::authorizationReplacing(
+void ResourceBindingManager::authorizationReplacing(
     const SupLan::PeerContext &context, const SupLan::AclEntry *expected,
     uint16_t count) {
-  if (!loaded_ && !loadRecords()) return false;
+  // Persistence already committed. Prune existing RAM only: reconstruction
+  // belongs to iterate(), and cannot make this post-commit step fail.
   uint8_t encoded[27];
   SupLan::encodePeerContext(&context, encoded);
   for (int slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
@@ -310,8 +295,9 @@ bool ResourceBindingManager::authorizationReplacing(
     SupLan::PeerContext old;
     if (!SupLan::decodePeerContext(sets_[slot].context, &old) ||
         !sameRelation(context, old)) continue;
-    uint8_t body[1 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER] = {};
-    for (const auto &entry : contributors_) {
+    bool retained = false;
+    for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS; ++i) {
+      auto &entry = contributors_[i];
       if (!entry.source || entry.set != slot) continue;
       bool allowed = false;
       if (!memcmp(encoded, sets_[slot].context, 27)) {
@@ -326,21 +312,14 @@ bool ResourceBindingManager::authorizationReplacing(
         }
       }
       if (allowed) {
-        auto wire = body + 1 + 12 * body[0]++;
-        wire[0] = 1;
-        wire[1] = wire[6] = SupLan::kResourceTypeChannel;
-        SupLan::putUint32(wire + 2, entry.source);
-        SupLan::putUint32(wire + 7, entry.target);
+        retained = true;
+      } else {
+        if (resources_) resources_->remove(0x40000 + i);
+        entry = {};
       }
     }
-    record_[0] = 1;
-    memcpy(record_ + 1, sets_[slot].context, 27);
-    memcpy(record_ + 28, body, 1 + 12 * body[0]);
-    if (!persist(slot, record_, body[0] ? 29 + 12 * body[0] : 0)) return false;
-    activate(slot, body, 1 + 12 * body[0]);
-    sets_[slot].used = body[0] != 0;
+    sets_[slot].used = retained;
   }
-  return true;
 }
 void ResourceBindingManager::addIntent(uint32_t source, uint32_t target) {
   Intent *slot = nullptr;

@@ -14,6 +14,7 @@
 #include <supla/sensor/container.h>
 #include <supla/storage/config.h>
 #include <supla/suplan/suplan_server_associations.h>
+#include <supla/suplan/suplan_peer_store.h>
 #include <suplan/suplan_config.h>
 #include <suplan/suplan_wire.h>
 namespace Supla {
@@ -37,7 +38,6 @@ bool validBindingRecord(const uint8_t *bytes, size_t size) {
   return true;
 }
 namespace {
-const int kBindingRecordCapacity = 29 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER;
 uint32_t word(const uint8_t *p) {
   return p[0] | (static_cast<uint32_t>(p[1]) << 8) |
       (static_cast<uint32_t>(p[2]) << 16) |
@@ -49,111 +49,22 @@ bool save(Config *cfg, const char *key, const void *data, int size) {
   return cfg->setBlob(key, static_cast<const char *>(data), size) &&
       cfg->commit();
 }
-// Existing sl-peer encoding; pruning retains its revision, even with zero ACL.
-// This makes an old same-revision association conflict rather than regrant.
-bool pruneSource(Config *cfg, const char *key, const uint8_t *fence) {
-  using namespace SupLan;  // NOLINT(build/namespaces)
-  const int capacity = ServerAssociations::kMaxRecordSize;
-  auto bytes = static_cast<uint8_t *>(calloc(capacity, 1));
-  if (!bytes) return false;
-  struct Release {
-    uint8_t *data;
-    ~Release() {
-      Crypto::secureClear(data, ServerAssociations::kMaxRecordSize);
-      free(data);
-    }
-  } release{bytes};
-  const int size = cfg->getBlobSize(key);
-  if (size < ServerAssociations::kSourcePrefix + 2 || size > capacity ||
-      !cfg->getBlob(key, reinterpret_cast<char *>(bytes), size) ||
-      bytes[0] != 1 || (bytes[1] != 1 && bytes[1] != 2) ||
-      calculateCrc16(bytes, size - 2) !=
-          (bytes[size - 2] | (bytes[size - 1] << 8))) return false;
-  if (bytes[1] == 2) return true;  // Remote-source Expected is independent.
-  const int prefix = ServerAssociations::kSourcePrefix;
-  const int count = bytes[33];
-  if (count > ServerAssociations::kMaxEntries || size != prefix + 6 * count + 2)
-    return false;
-  int output = 0;
-  for (int i = 0; i < count; ++i) {
-    const auto entry = bytes + prefix + 6 * i;
-    // Explicit allow-all also covers future channels; retain it verbatim.
-    if (entry[0] != kResourceTypeChannel &&
-        entry[0] != kResourceTypeDevice) return false;
-    bool removed = false;
-    for (int j = 0; j < fence[3]; ++j) {
-      const auto old = fence + ServerMigration::kPrefix + 6 * j;
-      removed = removed || (entry[0] == kResourceTypeChannel && !old[5] &&
-          word(old + 1) == getUint32(entry + 1));
-    }
-    if (!removed) memmove(bytes + prefix + 6 * output++, entry, 6);
-  }
-  if (output == count) return true;
-  bytes[33] = output;
-  const int length = prefix + 6 * output + 2;
-  const auto crc = calculateCrc16(bytes, length - 2);
-  bytes[length - 2] = crc;
-  bytes[length - 1] = crc >> 8;
-  // The existing migration fence already makes interrupted writes fail closed.
-  return cfg->setBlob(key, reinterpret_cast<char *>(bytes), length) &&
-         cfg->commit();
-}
-
-// Binding targets use SERVER ChannelIds. Remove only edges to departed own
-// channels; preserve unrelated edges and their peer context.
-bool pruneBindings(Config *cfg, const char *key,
-                   const ServerMigration &migration) {
-  const int size = cfg->getBlobSize(key);
-  if (size < 0 || size > kBindingRecordCapacity) return false;
-  if (size < 29) return cfg->eraseKey(key) && cfg->commit();
-  auto bytes = static_cast<uint8_t *>(calloc(size, 1));
-  if (!bytes) return false;
-  struct Release {
-    uint8_t *data;
-    ~Release() { free(data); }
-  } release{bytes};
-  if (!cfg->getBlob(key, reinterpret_cast<char *>(bytes), size)) return false;
-  if (!validBindingRecord(bytes, size))
-    return cfg->eraseKey(key) && cfg->commit();
-  int output = 0;
-  for (int i = 0; i < bytes[28]; ++i) {
-    const auto entry = bytes + 29 + 12 * i;
-    if (entry[6] != SupLan::kResourceTypeChannel) return false;
-    const auto target = SupLan::getUint32(entry + 7);
-    if (migration.translate(ChannelReference::server(target)).kind ==
-        ChannelReferenceKind::NONE) continue;
-    memmove(bytes + 29 + 12 * output++, entry, 12);
-  }
-  if (output == bytes[28]) return true;
-  bytes[28] = output;
-  const bool saved = output
-      ? cfg->setBlob(key, reinterpret_cast<char *>(bytes), 29 + 12 * output)
-      : cfg->eraseKey(key);
-  return saved && cfg->commit();
-}
-
-// Short-lived key snapshot: 6 record families x 255 slots, no retained index.
+// Short-lived feature-key snapshot: four families x 255 slots.
 // Callbacks only inspect metadata; Config reads/writes happen after iteration.
 struct Inventory {
-  uint8_t present[6][32] = {};
-  uint8_t invalidBindings[32] = {};
+  uint8_t present[4][32] = {};
   bool has(int family, int slot) const {
     return present[family][slot / 8] & (1u << (slot % 8));
-  }
-  bool invalidBinding(int slot) const {
-    return invalidBindings[slot / 8] & (1u << (slot % 8));
   }
   static bool visit(const char *key, ConfigValueType type, void *context) {
     auto self = static_cast<Inventory *>(context);
     const char *number = key;
-    if (!strncmp(key, "sl-peer-", 8)) number += 8;
-    else if (!strncmp(key, "slb_", 4)) number += 4;
     if (*number < '0' || *number > '9') return true;
     const auto slot = strtol(number, nullptr, 10);
     if (slot < 0 || slot >= 255) return true;
     char expected[SUPLA_CONFIG_MAX_KEY_SIZE];
-    for (int family = 0; family < 6; ++family) {
-      // Six fixed formats only; no untrusted formatting input.
+    for (int family = 0; family < 4; ++family) {
+      // Four fixed formats only; no untrusted formatting input.
       switch (family) {
         case 0: snprintf(expected, sizeof(expected), "%d_hvac_cfg2",
                          static_cast<int>(slot)); break;
@@ -161,19 +72,12 @@ struct Inventory {
                          static_cast<int>(slot)); break;
         case 2: snprintf(expected, sizeof(expected), "%d_valve_cfg2",
                          static_cast<int>(slot)); break;
-        case 3: snprintf(expected, sizeof(expected), "sl-peer-%d",
-                         static_cast<int>(slot)); break;
-        case 4: snprintf(expected, sizeof(expected), "slb_%d",
-                         static_cast<int>(slot)); break;
         default: snprintf(expected, sizeof(expected), "%d_at_tmp",
                           static_cast<int>(slot)); break;
       }
       if (strcmp(key, expected)) continue;
       // A known name with another type is damaged storage, not absent state.
-      if (type != ConfigValueType::BLOB) {
-        if (family != 4) return false;
-        self->invalidBindings[slot / 8] |= 1u << (slot % 8);
-      }
+      if (type != ConfigValueType::BLOB) return false;
       self->present[family][slot / 8] |= 1u << (slot % 8);
       break;
     }
@@ -229,8 +133,8 @@ bool ServerMigration::hasServerState(Config *cfg) {
           return true;
     }
     snprintf(key, sizeof(key), "%d_at_tmp", n);
-    size = keys.has(5, n) ? cfg->getBlobSize(key) : -1;
-    if (keys.has(5, n) && size < 0) return true;
+    size = keys.has(3, n) ? cfg->getBlobSize(key) : -1;
+    if (keys.has(3, n) && size < 0) return true;
     if (size >= 0) {
       Control::ActionTriggerStoredConfig record;
       if (size != sizeof(record) ||
@@ -238,12 +142,10 @@ bool ServerMigration::hasServerState(Config *cfg) {
           !record.valid() || record.sensor.reference().kind ==
               ChannelReferenceKind::SERVER_CHANNEL) return true;
     }
-    snprintf(key, sizeof(key), "sl-peer-%d", n);
-    if (keys.has(3, n)) return true;
-    snprintf(key, sizeof(key), "slb_%d", n);
-    if (keys.has(4, n)) return true;
   }
-  return false;
+  SupLanPeerStore store(cfg);
+  // Inspection never repairs storage; unknown/corrupt data remains fenced.
+  return !store.load(0, false) || store.hasServerState();
 }
 ChannelReference ServerMigration::translate(ChannelReference ref) const {
   if (!ref.valid()) return {};
@@ -331,8 +233,8 @@ bool ServerMigration::migrate(Config *cfg) const {
           !save(cfg, key, &next, sizeof(next))) return false;
     }
     snprintf(key, sizeof(key), "%d_at_tmp", number);
-    size = keys.has(5, number) ? cfg->getBlobSize(key) : -1;
-    if (keys.has(5, number) && size < 0) return false;
+    size = keys.has(3, number) ? cfg->getBlobSize(key) : -1;
+    if (keys.has(3, number) && size < 0) return false;
     if (size >= 0) {
       Control::ActionTriggerStoredConfig stored;
       if (size != sizeof(stored) ||
@@ -344,66 +246,8 @@ bool ServerMigration::migrate(Config *cfg) const {
           !save(cfg, key, &next, sizeof(next))) return false;
     }
   }
-  if (!record[2]) {
-    bool removed = false;
-    for (int i = 0; i < record[3]; ++i)
-      removed = removed || !record[kPrefix + 6 * i + 5];
-    if (!removed) return true;
-    for (int slot = 0; slot < 255; ++slot) {
-      if (keys.has(3, slot)) {
-        snprintf(key, sizeof(key), "sl-peer-%d", slot);
-        if (!pruneSource(cfg, key, record)) return false;
-      }
-      if (keys.has(4, slot)) {
-        snprintf(key, sizeof(key), "slb_%d", slot);
-        if (keys.invalidBinding(slot)) {
-          if (!cfg->eraseKey(key) || !cfg->commit()) return false;
-        } else if (!pruneBindings(cfg, key, *this)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-  // These slots belong exclusively to SERVER provisioning. ResourceBinding
-  // records can also describe LOCAL peers; preserve those explicitly.
-  bool erased = false;
-  for (int slot = 0; slot < 255; ++slot) {
-    snprintf(key, sizeof(key), "sl-peer-%d", slot);
-    if (keys.has(3, slot)) {
-      if (!cfg->eraseKey(key)) return false;
-      erased = true;
-    }
-    snprintf(key, sizeof(key), "slb_%d", slot);
-    if (!keys.has(4, slot)) continue;
-    if (keys.invalidBinding(slot)) {
-      if (!cfg->eraseKey(key)) return false;
-      erased = true;
-      continue;
-    }
-    const int size = cfg->getBlobSize(key);
-    if (size < 0 || size > kBindingRecordCapacity) return false;
-    if (size < 29) {
-      if (!cfg->eraseKey(key)) return false;
-      erased = true;
-      continue;
-    }
-    auto body = static_cast<uint8_t *>(calloc(size, 1));
-    if (!body) return false;
-    if (!cfg->getBlob(key, reinterpret_cast<char *>(body), size)) {
-      free(body);
-      return false;
-    }
-    SupLan::PeerContext context = {};
-    const bool local = validBindingRecord(body, size) &&
-        SupLan::decodePeerContext(body + 1, &context) &&
-        context.authorityType == SupLan::kAuthorityLocal;
-    free(body);
-    if (local) continue;
-    if (!cfg->eraseKey(key)) return false;
-    erased = true;
-  }
-  return !erased || cfg->commit();
+  SupLanPeerStore store(cfg);
+  return store.load() && store.migrate(*this);
 }
 }  // namespace Device
 }  // namespace Supla

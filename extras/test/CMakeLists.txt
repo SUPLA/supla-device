@@ -455,6 +455,26 @@ target_compile_definitions(nvsconfigtests PRIVATE SUPLA_TEST)
 supla_apply_warnings(nvsconfigtests)
 add_test(NAME nvsconfigtests COMMAND nvsconfigtests)
 
+# Compile the real Config backend through its ESP32 branch, separately from
+# the ordinary SUPLA_TEST/ESP8266 path. Only the platform API is doubled.
+add_library(littlefsesp32config OBJECT ../../src/supla/storage/littlefs_config.cpp)
+target_include_directories(littlefsesp32config BEFORE PRIVATE
+  LittleFsEsp32Tests/fakes doubles ../../src)
+target_compile_definitions(littlefsesp32config PRIVATE
+  SUPLA_TEST ARDUINO_ARCH_ESP32)
+supla_apply_warnings(littlefsesp32config)
+add_executable(littlefsesp32tests
+  ${DOUBLE_SRC}
+  LittleFsEsp32Tests/littlefs_esp32_tests.cpp
+  $<TARGET_OBJECTS:littlefsesp32config>)
+target_include_directories(littlefsesp32tests BEFORE PRIVATE
+  LittleFsEsp32Tests/fakes doubles ../../src)
+target_compile_definitions(littlefsesp32tests PRIVATE SUPLA_TEST)
+target_link_libraries(littlefsesp32tests PRIVATE
+  supladevicelib nlohmann_json::nlohmann_json gmock gtest_main)
+supla_apply_warnings(littlefsesp32tests)
+add_test(NAME littlefsesp32tests COMMAND littlefsesp32tests)
+
 # Verify explicit Linux UDP interface selection without host socket access.
 add_executable(suplanlinuxudptests
   SupLanLinuxUdpTests/suplan_linux_udp_tests.cpp
@@ -487,7 +507,7 @@ add_test(NAME suplanproductiontests COMMAND suplanproductiontests)
 target_link_options(supladevicelib PRIVATE
   -Wl,--wrap=RAND_bytes -Wl,--wrap=EVP_DigestInit_ex -Wl,--wrap=HMAC)
 foreach(crypto_test_target supladevicetests sd4linuxtests nvsconfigtests
-                          suplandirectionaltests)
+                          littlefsesp32tests suplandirectionaltests)
   target_sources(${crypto_test_target} PRIVATE doubles/crypto_test_hooks.cpp)
   target_link_libraries(${crypto_test_target} PRIVATE OpenSSL::Crypto)
   target_link_options(${crypto_test_target} PRIVATE
@@ -500,6 +520,7 @@ target_include_directories(suplandirectionaltests PRIVATE doubles)
 option(SUPLAN_ASSOCIATION_PROFILE_TESTS "Build focused M2/M3 profile tests" OFF)
 if(SUPLAN_ASSOCIATION_PROFILE_TESTS)
   add_executable(suplanassociationprofiletests
+    SupLanTests/peer_store_tests.cpp
     SupLanTests/server_migration_tests.cpp
     SupLanTests/server_association_tests.cpp
     SupLanTests/m4b_device_tests.cpp

@@ -224,10 +224,33 @@ root and migration-fence records retain their staging rollback protection.
 Ordinary RemoteChannel READ/CONTROL does not allocate the HVAC binding manager
 at startup. Its complete, fixed-capacity storage is allocated on first binding
 use, explicit `resourceBindings()` access, or discovery of retained binding
-records. Existing records are considered without an Internet connection and
+records in `sl-peers`. Existing records are considered without an Internet connection and
 before an association replacement can acknowledge removal of related topology.
 A Source also uses the manager to send authoritative empty binding sets, so a
 Source association can activate it even when the current desired set is empty.
 The manager remains allocated until its protocol owner is destroyed; all binding
 and consumer capacities are unchanged. If allocation fails, binding operations
 fail without acknowledging installation or revocation, and can be retried.
+
+### Peer and binding persistence
+
+SERVER associations and received binding sets share the versioned, CRC-protected
+`sl-peers` blob. An association update and its mandatory binding removal are one
+Config write and commit; runtime changes follow only after success. The SDK
+trusts the Config result without readback. A rejected candidate can still become
+visible after restart on backends that wrote it before reporting a commit error.
+
+Unreleased `sl-peer-*` and `slb_*` records are discarded before SERVER identity
+is read; they are never converted. A failed cleanup or store read leaves peer
+state unloaded and retries at most once per second. Invalid blob structure,
+version, checksum or capacity is removed through Config and starts empty;
+read/allocation errors leave the stored blob untouched. Full SERVER scope
+migration preserves LOCAL binding records. Bindings still require live authority
+to act, and their configured status is independent of transport availability.
+
+The whole-store update uses one temporary buffer for the existing blob plus
+the incoming record, capped by the profile maximum. It does not reserve the
+profile maximum for small configurations. NVS also needs room for the old and new blob during
+replacement; the Standard maximum is not guaranteed to fit alongside other
+settings in a 16 KiB NVS partition. Board partition sizing remains a product
+choice, and failed writes are reported rather than increasing storage limits.

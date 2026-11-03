@@ -109,7 +109,7 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   void sendChannelMetadataChanged(uint8_t number) override;
   // Explicit binding-feature access allocates its full bounded owner on demand.
   Device::ResourceBindingManager *resourceBindings() override;
-  bool authorizationReplacing(const Supla::SupLan::PeerContext &context,
+  void authorizationReplacing(const Supla::SupLan::PeerContext &context,
       const Supla::SupLan::AclEntry *expected, uint16_t count) override;
   Supla::SupLan::BindingRetry *bindingRetry() override {
     return resources_ && resources_->bindings
@@ -239,7 +239,6 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   bool enabled_;
   bool transportWasOpen_;
   bool serverAssociationRequired_ = false;
-  bool bindingInventoryChecked_ = false;
 };
 
 }  // namespace Protocol

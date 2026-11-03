@@ -12,6 +12,7 @@
 #if defined(ARDUINO_ARCH_ESP32) || defined(ESP32)
 #include <dirent.h>
 #include <errno.h>
+#include <esp_littlefs.h>
 #endif
 #include <stdio.h>
 #include <string.h>
@@ -46,7 +47,7 @@ bool Supla::LittleFsConfig::init() {
     return false;
   }
 
-  if (!initLittleFs()) {
+  if (!initLittleFs(true)) {
     initResult = false;
     return false;
   }
@@ -104,7 +105,6 @@ bool Supla::LittleFsConfig::init() {
       SUPLA_LOG_DEBUG("LittleFsConfig:: config file \"%s\" missing", file);
     }
   }
-  LittleFS.end();
   return initResult;
 }
 
@@ -119,7 +119,7 @@ bool Supla::LittleFsConfig::commit() {
 
   size_t dataSize = serializeToMemory(buf, configMaxSize);
 
-  if (dataSize == SIZE_MAX || !initLittleFs()) {
+  if (dataSize == SIZE_MAX || !initLittleFs(false)) {
     delete[] buf;
     return false;
   }
@@ -132,7 +132,6 @@ bool Supla::LittleFsConfig::commit() {
     if (!cfg) {
       SUPLA_LOG_ERROR(
           "LittleFsConfig: failed to open config file \"%s\" for write", file);
-      LittleFS.end();
       delete[] buf;
       return false;
     }
@@ -140,18 +139,16 @@ bool Supla::LittleFsConfig::commit() {
     size_t written = cfg.write(buf, dataSize);
     cfg.close();
     if (written != dataSize) {
-      LittleFS.end();
       delete[] buf;
       return false;
     }
   }
-  LittleFS.end();
   delete[] buf;
   return true;
 }
 
 bool Supla::LittleFsConfig::getCustomCA(char* customCA, int maxSize) {
-  if (!initLittleFs()) {
+  if (!initLittleFs(false)) {
     return false;
   }
 
@@ -159,7 +156,6 @@ bool Supla::LittleFsConfig::getCustomCA(char* customCA, int maxSize) {
     File file = LittleFS.open(CustomCAFileName, "r");
     if (!file) {
       SUPLA_LOG_ERROR("LittleFsConfig: failed to open custom CA file");
-      LittleFS.end();
       return false;
     }
 
@@ -168,14 +164,12 @@ bool Supla::LittleFsConfig::getCustomCA(char* customCA, int maxSize) {
     if (fileSize > maxSize) {
       SUPLA_LOG_ERROR("LittleFsConfig: custom CA file is too big");
       file.close();
-      LittleFS.end();
       return false;
     }
 
     int bytesRead = file.read(reinterpret_cast<uint8_t*>(customCA), fileSize);
 
     file.close();
-    LittleFS.end();
     if (bytesRead != fileSize) {
       SUPLA_LOG_DEBUG("LittleFsConfig: read bytes %d, while file is %d bytes",
                       bytesRead,
@@ -187,12 +181,11 @@ bool Supla::LittleFsConfig::getCustomCA(char* customCA, int maxSize) {
   } else {
     SUPLA_LOG_DEBUG("LittleFsConfig:: custom ca file missing");
   }
-  LittleFS.end();
   return true;
 }
 
 int Supla::LittleFsConfig::getCustomCASize() {
-  if (!initLittleFs()) {
+  if (!initLittleFs(false)) {
     return 0;
   }
 
@@ -200,54 +193,47 @@ int Supla::LittleFsConfig::getCustomCASize() {
     File file = LittleFS.open(CustomCAFileName, "r");
     if (!file) {
       SUPLA_LOG_ERROR("LittleFsConfig: failed to open custom CA file");
-      LittleFS.end();
       return false;
     }
 
     int fileSize = file.size();
 
     file.close();
-    LittleFS.end();
     return fileSize;
   }
-  LittleFS.end();
   return 0;
 }
 
 bool Supla::LittleFsConfig::setCustomCA(const char* customCA) {
   size_t dataSize = strlen(customCA);
 
-  if (!initLittleFs()) {
+  if (!initLittleFs(false)) {
     return false;
   }
 
   File file = LittleFS.open(CustomCAFileName, "w");
   if (!file) {
     SUPLA_LOG_ERROR("LittleFsConfig: failed to open custom CA file for write");
-    LittleFS.end();
     return false;
   }
 
   file.write(reinterpret_cast<const uint8_t*>(customCA), dataSize);
   file.close();
-  LittleFS.end();
   return true;
 }
 
 bool Supla::LittleFsConfig::getMqttCA(char* mqttCA, int maxSize) {
-  if (!initLittleFs()) {
+  if (!initLittleFs(false)) {
     return false;
   }
 
   if (!LittleFS.exists(MqttCAFileName)) {
-    LittleFS.end();
     return false;
   }
 
   File file = LittleFS.open(MqttCAFileName, "r");
   if (!file) {
     SUPLA_LOG_ERROR("LittleFsConfig: failed to open MQTT CA file");
-    LittleFS.end();
     return false;
   }
 
@@ -255,13 +241,11 @@ bool Supla::LittleFsConfig::getMqttCA(char* mqttCA, int maxSize) {
   if (fileSize >= maxSize) {
     SUPLA_LOG_ERROR("LittleFsConfig: MQTT CA file is too big");
     file.close();
-    LittleFS.end();
     return false;
   }
 
   int bytesRead = file.read(reinterpret_cast<uint8_t*>(mqttCA), fileSize);
   file.close();
-  LittleFS.end();
   if (bytesRead != fileSize) {
     return false;
   }
@@ -270,7 +254,7 @@ bool Supla::LittleFsConfig::getMqttCA(char* mqttCA, int maxSize) {
 }
 
 int Supla::LittleFsConfig::getMqttCASize() {
-  if (!initLittleFs()) {
+  if (!initLittleFs(false)) {
     return 0;
   }
 
@@ -284,19 +268,17 @@ int Supla::LittleFsConfig::getMqttCASize() {
       SUPLA_LOG_ERROR("LittleFsConfig: failed to open MQTT CA file");
     }
   }
-  LittleFS.end();
   return fileSize;
 }
 
 bool Supla::LittleFsConfig::setMqttCA(const char* mqttCA) {
-  if (mqttCA == nullptr || !initLittleFs()) {
+  if (mqttCA == nullptr || !initLittleFs(false)) {
     return false;
   }
 
   File file = LittleFS.open(MqttCAFileName, "w");
   if (!file) {
     SUPLA_LOG_ERROR("LittleFsConfig: failed to open MQTT CA file for write");
-    LittleFS.end();
     return false;
   }
 
@@ -304,17 +286,18 @@ bool Supla::LittleFsConfig::setMqttCA(const char* mqttCA) {
   size_t bytesWritten = file.write(
       reinterpret_cast<const uint8_t*>(mqttCA), dataSize);
   file.close();
-  LittleFS.end();
   return bytesWritten == dataSize;
 }
 
 bool Supla::LittleFsConfig::initLittleFs(bool allowFormat) {
-#if defined(ARDUINO_ARCH_ESP8266) || defined(SUPLA_TEST)
-  // ESP8266 enables automatic formatting by default. Keep formatting under
-  // this method's control, particularly during persistence verification.
-  if (!LittleFS.setConfig(LittleFSConfig(false))) {
-    return false;
-  }
+#if defined(ARDUINO_ARCH_ESP8266) || \
+    (defined(SUPLA_TEST) && !defined(ARDUINO_ARCH_ESP32) && !defined(ESP32))
+  // ESP8266 rejects setConfig only when already mounted (the config type
+  // below is fixed). Reuse that mount, including one owned by the application.
+  // Before mounting, disable the core's implicit autoformat policy.
+  if (!LittleFS.setConfig(LittleFSConfig(false))) return true;
+#elif defined(ARDUINO_ARCH_ESP32) || defined(ESP32)
+  if (esp_littlefs_mounted("spiffs")) return true;
 #endif
   bool result = LittleFS.begin();
   if (!result && allowFormat) {
@@ -336,7 +319,7 @@ void Supla::LittleFsConfig::removeAll() {
 bool Supla::LittleFsConfig::removeAllChecked() {
   SUPLA_LOG_DEBUG("LittleFsConfig remove all called");
 
-  if (!initLittleFs()) {
+  if (!initLittleFs(false)) {
     return false;
   }
   bool removed = true;
@@ -365,8 +348,7 @@ bool Supla::LittleFsConfig::removeAllChecked() {
     SUPLA_LOG_DEBUG("LittleFsConfig: failed to open supla directory");
     if (LittleFS.exists("/supla")) removed = false;
   }
-
-  LittleFS.end();
+  suplaDir.close();
 
   removeAllMemory();
   return removed && commit();
@@ -380,21 +362,21 @@ bool Supla::LittleFsConfig::setBlob(const char* key,
   }
 
   if (blobSize < BIG_BLOG_SIZE_TO_BE_STORED_IN_FILE) {
-    bool result = Supla::KeyValue::setBlob(key, value, blobSize);
-    if (result && initLittleFs()) {
-      char filename[50] = {};
-      snprintf(filename, sizeof(filename), "/supla/%s", key);
-      if (LittleFS.exists(filename)) {
-        LittleFS.remove(filename);
-      }
-      LittleFS.end();
+    if (!initLittleFs(false)) return false;
+    if (!Supla::KeyValue::setBlob(key, value, blobSize)) {
+      return false;
     }
-    return result;
+    char filename[50] = {};
+    snprintf(filename, sizeof(filename), "/supla/%s", key);
+    if (LittleFS.exists(filename) && !LittleFS.remove(filename)) {
+      return false;
+    }
+    return true;
   }
 
   Supla::KeyValue::eraseKey(key);
   SUPLA_LOG_DEBUG("LittleFS: writing file %s", key);
-  if (!initLittleFs()) {
+  if (!initLittleFs(false)) {
     return false;
   }
 
@@ -406,14 +388,12 @@ bool Supla::LittleFsConfig::setBlob(const char* key,
   if (!file) {
     SUPLA_LOG_ERROR("LittleFsConfig: failed to open blob file \"%s\" for write",
                     key);
-    LittleFS.end();
     return false;
   }
 
   size_t written = file.write(
       reinterpret_cast<const uint8_t*>(value), blobSize);
   file.close();
-  LittleFS.end();
   return written == blobSize;
 }
 
@@ -433,35 +413,31 @@ bool Supla::LittleFsConfig::getBlob(const char* key,
         key, value, static_cast<size_t>(keyValueBlobSize));
   }
 
-  if (!initLittleFs()) {
+  if (!initLittleFs(false)) {
     return false;
   }
 
   char filename[50] = {};
   snprintf(filename, sizeof(filename), "/supla/%s", key);
   if (!LittleFS.exists(filename)) {
-    LittleFS.end();
     return false;
   }
   File file = LittleFS.open(filename, "r");
   if (!file) {
     SUPLA_LOG_ERROR("LittleFsConfig: failed to open blob file \"%s\" for read",
                     key);
-    LittleFS.end();
     return false;
   }
   size_t fileSize = file.size();
   if (fileSize > blobSize) {
     SUPLA_LOG_ERROR("LittleFsConfig: blob file does not fit in buffer");
     file.close();
-    LittleFS.end();
     return false;
   }
 
   int bytesRead = file.read(reinterpret_cast<uint8_t*>(value), fileSize);
 
   file.close();
-  LittleFS.end();
   return (bytesRead < 0) ? false : static_cast<size_t>(bytesRead) == fileSize;
 }
 
@@ -475,7 +451,7 @@ int Supla::LittleFsConfig::getBlobSize(const char* key) {
     return keyValueBlobSize;
   }
 
-  if (!initLittleFs()) {
+  if (!initLittleFs(false)) {
     return -1;
   }
 
@@ -485,13 +461,11 @@ int Supla::LittleFsConfig::getBlobSize(const char* key) {
   if (!file) {
     SUPLA_LOG_DEBUG(
         "LittleFsConfig: failed to open blob file \"%s\", blob not found", key);
-    LittleFS.end();
     return -1;
   }
   int fileSize = file.size();
 
   file.close();
-  LittleFS.end();
   return fileSize;
 }
 
@@ -510,11 +484,9 @@ bool Supla::LittleFsConfig::eraseKey(const char* key) {
   snprintf(filename, sizeof(filename), "/supla/%s", key);
   if (LittleFS.exists(filename)) {
     if (!LittleFS.remove(filename)) {
-      LittleFS.end();
       return false;
     }
   }
-  LittleFS.end();
   return true;
 }
 
@@ -630,7 +602,6 @@ Supla::ConfigIterationResult Supla::LittleFsConfig::forEachKey(
       return ConfigIterationResult::STOPPED;
     return ConfigIterationResult::COMPLETED;
   });
-  LittleFS.end();
   return result;
 }
 

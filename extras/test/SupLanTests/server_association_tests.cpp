@@ -41,6 +41,8 @@
 #include <memory>
 #include <vector>
 
+#include "peer_store_test_helpers.h"
+
 namespace {
 using namespace Supla::SupLan;  // NOLINT(build/namespaces)
 using Supla::Device::ServerAssociations;
@@ -53,6 +55,11 @@ class AssociationConfig : public Supla::KeyValue {
     if (failBlobSize) return -1;
     return KeyValue::getBlobSize(key);
   }
+  bool getBlob(const char *key, char *value, size_t size) override {
+    if (!strcmp(key, "sl-peers")) ++peerReads;
+    return KeyValue::getBlob(key, value, size);
+  }
+  int peerReads = 0;
   bool init() override { return true; }
   bool setBlob(const char *key, const char *value, size_t size) override {
     if (failWrite) return false;
@@ -78,6 +85,7 @@ class AssociationConfig : public Supla::KeyValue {
     }
   }
   std::vector<uint8_t> blob(const char *key) {
+    if (!strncmp(key, "sl-peer-", 8)) return PeerStoreTest::record(*this, key);
     int size = getBlobSize(key);
     if (size < 0) return {};
     std::vector<uint8_t> value(size);
@@ -362,7 +370,7 @@ TEST_F(ServerAssociationTests, FirstWriteFailureDoesNotActivateAssociation) {
   config.failWrite = true;
   EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
   EXPECT_EQ(peers.size(), 0);
-  EXPECT_EQ(config.getBlobSize("sl-peer-0"), -1);
+  EXPECT_EQ(PeerStoreTest::size(config, "sl-peer-0"), -1);
   config.failWrite = false;
   EXPECT_EQ(src(), 0);
 }
@@ -383,7 +391,7 @@ TEST_F(ServerAssociationTests, FailedCommitRetriesThroughNormalWritePath) {
   EXPECT_EQ(peers.get(0)->aclRevision, 2u);
 }
 
-TEST_F(ServerAssociationTests, RevokeNeverInfersAbsenceFromFailedSizeRead) {
+TEST_F(ServerAssociationTests, RevokeCannotIgnoreUnreadableWholeStore) {
   ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
   source.AclRevision = 2;
   source.AclEntryCount = 0;
@@ -392,7 +400,7 @@ TEST_F(ServerAssociationTests, RevokeNeverInfersAbsenceFromFailedSizeRead) {
   const int commits = config.writes;
   const int erases = config.erases;
   EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
-  EXPECT_EQ(config.erases, erases + 1);
+  EXPECT_EQ(config.erases, erases);
   EXPECT_EQ(config.writes, commits);
   ASSERT_EQ(peers.size(), 1);
   EXPECT_TRUE(peers.authorize(0, {1, 501}, kPermissionRead));
@@ -402,6 +410,8 @@ TEST_F(ServerAssociationTests, RevokeNeverInfersAbsenceFromFailedSizeRead) {
   // Retry works even while the size query still fails; removal owns its result.
   config.failBlobSize = true;
   config.failErase = false;
+  EXPECT_EQ(src(), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
+  config.failBlobSize = false;
   ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
   EXPECT_EQ(peers.size(), 0);
   config.failBlobSize = false;
@@ -409,15 +419,16 @@ TEST_F(ServerAssociationTests, RevokeNeverInfersAbsenceFromFailedSizeRead) {
   EXPECT_EQ(peers.size(), 0);
 }
 
-TEST_F(ServerAssociationTests, FailedEraseRetainsRightsAndRetryRemovesRecord) {
+TEST_F(ServerAssociationTests,
+       FailedReplacementWriteRetainsRightsAndRetryRemovesRecord) {
   ASSERT_EQ(dst(), 0);
   destination.AclRevision = 2;
   destination.ResourceCount = 0;
-  config.failErase = true;
+  config.failWrite = true;
   EXPECT_EQ(dst(), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
   ASSERT_EQ(peers.size(), 1);
   EXPECT_EQ(peers.get(0)->aclRevision, 1u);
-  config.failErase = false;
+  config.failWrite = false;
   config.failCommit = true;
   EXPECT_EQ(dst(), SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR);
   ASSERT_EQ(peers.size(), 1);
@@ -435,7 +446,7 @@ TEST_F(ServerAssociationTests,
   source.AclEntryCount = 0;
   EXPECT_EQ(src(), 0);
   EXPECT_EQ(peers.size(), 0);
-  EXPECT_EQ(config.getBlobSize("sl-peer-0"), -1);
+  EXPECT_EQ(PeerStoreTest::size(config, "sl-peer-0"), -1);
   int writes = config.writes;
   EXPECT_EQ(src(), 0);
   EXPECT_EQ(config.writes, writes);
@@ -454,7 +465,7 @@ TEST_F(ServerAssociationTests, DestinationEmptyCleanupWithoutCredential) {
   destination.ResourceCount = 0;
   EXPECT_EQ(dst(), 0);
   EXPECT_EQ(peers.size(), 0);
-  EXPECT_EQ(config.getBlobSize("sl-peer-0"), -1);
+  EXPECT_EQ(PeerStoreTest::size(config, "sl-peer-0"), -1);
   int writes = config.writes;
   EXPECT_EQ(dst(), 0);
   EXPECT_EQ(config.writes, writes);
@@ -620,8 +631,10 @@ TEST_F(ServerAssociationTests, CorruptOrUnknownRecordDoesNotRestore) {
   ASSERT_EQ(dst(), 0);
   auto blob = config.blob("sl-peer-0");
   blob[0] = 99;
-  ASSERT_TRUE(config.setBlob(
-      "sl-peer-0", reinterpret_cast<const char *>(blob.data()), blob.size()));
+  ASSERT_TRUE(PeerStoreTest::write(config,
+                                   "sl-peer-0",
+                                   reinterpret_cast<const char *>(blob.data()),
+                                   blob.size()));
   ASSERT_TRUE(config.commit());
   reboot();
   EXPECT_EQ(peers.size(), 0);
@@ -641,6 +654,38 @@ TEST_F(ServerAssociationTests, RootRotationMakesSourceRuntimeIneligible) {
   reboot();
   EXPECT_EQ(peers.size(), 0);
 }
+TEST_F(ServerAssociationTests, RootRotationRegrantsFullPoolInReverseOrder) {
+  source.AclEntryCount = 2;
+  source.Acl[1] = {2, 101, 1};
+  for (int peer = 0; peer < SUPLAN_MAX_PERSISTENT_PEERS; ++peer) {
+    source.PeerContext.DestinationNodeId = 202 + peer;
+    ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  }
+  ASSERT_TRUE(identity.rotateRoot());
+  associations.identityChanged();
+  EXPECT_EQ(peers.size(), 0);
+  reboot();  // Old records are valid storage but ineligible for the new root.
+  source.PeerContext.RootEpoch = identity.rootEpoch();
+  source.PeerContext.PeerGeneration++;
+  for (int peer = SUPLAN_MAX_PERSISTENT_PEERS - 1; peer >= 0; --peer) {
+    source.PeerContext.DestinationNodeId = 202 + peer;
+    ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK) << peer;
+  }
+  EXPECT_EQ(peers.size(), SUPLAN_MAX_PERSISTENT_PEERS);
+  reboot();
+  EXPECT_EQ(peers.size(), SUPLAN_MAX_PERSISTENT_PEERS);
+}
+
+TEST_F(ServerAssociationTests, ReloadSourceRightsReadsWholeStoreOnce) {
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  source.PeerContext.DestinationNodeId++;
+  ASSERT_EQ(src(), SUPLA_SUPLAN_RESULT_OK);
+  ASSERT_EQ(dst(), SUPLA_SUPLAN_RESULT_OK);
+  config.peerReads = 0;
+  ASSERT_TRUE(ServerAssociations::reloadSourceRights(&identity));
+  EXPECT_EQ(config.peerReads, 1);
+}
+
 TEST_F(ServerAssociationTests,
        TransitionBlocksDataButAllowsNewMapProvisioning) {
   ASSERT_EQ(src(), 0);
@@ -1630,8 +1675,8 @@ TEST_F(ServerAssociationTests, DeviceIdMigrationCannotReloadOldPeers) {
   changed.ChannelId[0] = 701;
   ASSERT_EQ(identity.accept(changed).Result, SUPLA_SUPLAN_RESULT_OK);
   associations.identityChanged();
-  EXPECT_LT(config.getBlobSize("sl-peer-0"), 0);
-  EXPECT_LT(config.getBlobSize("sl-peer-1"), 0);
+  EXPECT_LT(PeerStoreTest::size(config, "sl-peer-0"), 0);
+  EXPECT_LT(PeerStoreTest::size(config, "sl-peer-1"), 0);
   identity.syncDone();
   reboot();
   EXPECT_EQ(identity.rootEpoch(), epoch);

@@ -65,6 +65,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/register_device.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplan/suplan_server_identity.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplan/suplan_server_migration.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplan/suplan_peer_store.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplan/suplan_server_associations.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/factory_test.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/security_logger.cpp

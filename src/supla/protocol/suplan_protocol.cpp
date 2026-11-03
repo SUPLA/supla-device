@@ -172,7 +172,6 @@ void SupLan::attachServerAssociations(
         peers_, runtime_, this);
   }
   if (resources_) resources_->associations = state;
-  bindingInventoryChecked_ = false;
   if (resources_ && resources_->bindings)
     resources_->bindings->attachAssociations(state);
 }
@@ -189,37 +188,18 @@ Device::ResourceBindingManager *SupLan::resourceBindings() {
 }
 
 bool SupLan::restoreBindings() {
-  if (!resources_ || !associations()) return false;
-  if (resources_->bindings || bindingInventoryChecked_) return true;
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg) return false;
-  bool found = false;
-  const auto result = cfg->forEachKey("slb_",
-      [](const char *key, ConfigValueType, void *context) {
-        // Enumeration callbacks inspect metadata only; never reopen Config.
-        for (uint16_t slot = 0; slot < SUPLAN_MAX_PERSISTENT_PEERS; ++slot) {
-          char expected[16];
-          snprintf(expected, sizeof(expected), "slb_%u", slot);
-          if (!strcmp(key, expected)) {
-            *static_cast<bool *>(context) = true;
-            return false;
-          }
-        }
-        return true;
-      }, &found);
-  if (result != ConfigIterationResult::COMPLETED &&
-      !(found && result == ConfigIterationResult::STOPPED)) return false;
-  if (found && !resourceBindings()) return false;
-  bindingInventoryChecked_ = true;
-  return true;
+  if (!resources_ || !associations() || !associations()->storageReady())
+    return false;
+  return resources_->bindings || !associations()->bindingsStored() ||
+      resourceBindings();
 }
 
-bool SupLan::authorizationReplacing(const Supla::SupLan::PeerContext &context,
+void SupLan::authorizationReplacing(const Supla::SupLan::PeerContext &context,
     const Supla::SupLan::AclEntry *expected, uint16_t count) {
-  // Before acknowledging revoke, account for topology retained across reboot.
-  if (!restoreBindings()) return false;
-  return !resources_->bindings ||
-      resources_->bindings->authorizationReplacing(context, expected, count);
+  // The peer store committed topology and authority together. Only detach
+  // already active RAM state; an unused binding owner need not be created.
+  if (resources_ && resources_->bindings)
+    resources_->bindings->authorizationReplacing(context, expected, count);
 }
 
 bool SupLan::setSuplanSourceAssociation(
@@ -262,7 +242,6 @@ bool SupLan::isSupLanServerCapable() const {
 
 void SupLan::onFactoryReset() {
   disconnect();
-  bindingInventoryChecked_ = false;
   if (!associations() || !sdc || !sdc->getSrpcLayer()) return;
   if (resources_->bindings) resources_->bindings->attachAssociations(nullptr);
   associations()->load(Supla::Storage::ConfigInstance(),
@@ -320,6 +299,7 @@ bool SupLan::iterate(uint32_t nowMs) {
   // Full-scope invalidation runs synchronously at migration notifications.
   // While fenced no SERVER peer can be admitted; repeating teardown here
   // cannot add safety. Keep ordinary live identity reconciliation otherwise.
+  if (associations()) associations()->retryLoad(nowMs);
   const auto identity = associations() ? associations()->identity() : nullptr;
   if (associations() && (!identity || !identity->fullScopeFenced()))
     associations()->identityChanged();

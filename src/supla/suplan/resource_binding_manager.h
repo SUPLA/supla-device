@@ -27,7 +27,7 @@ class ResourceBindingManager {
   void iterate(uint32_t now);
   void ensureShareResult(const TSD_SuplaEnsureResourceShareResult &result);
   uint8_t accept(uint8_t peer, const uint8_t *body, size_t size);
-  bool authorizationReplacing(const SupLan::PeerContext &context,
+  void authorizationReplacing(const SupLan::PeerContext &context,
       const SupLan::AclEntry *expected, uint16_t count);
   bool relayDemand(uint8_t target, bool *configured);
   // Stored assignment only, not permission to actuate. Unknown means storage
@@ -79,6 +79,8 @@ class ResourceBindingManager {
   int pendingIntent_ = -1;
   uint32_t ensureDeadline_ = 0;
   bool loaded_ = false;
+  bool loadAttempted_ = false;
+  uint32_t loadRetryMs_ = 0;
   bool intentOverflow_ = false;
   bool loadRecords();
   bool persist(uint8_t set, const uint8_t *record, size_t length);

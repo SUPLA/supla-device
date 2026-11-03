@@ -12,6 +12,8 @@
 
 namespace Supla {
 
+// Uses the shared LittleFS mount without unmounting it between operations.
+// Files and iterators are closed normally; the mount outlives this object.
 class LittleFsConfig : public KeyValue {
  public:
   ConfigIterationResult forEachKey(const char *filter,
@@ -37,7 +39,7 @@ class LittleFsConfig : public KeyValue {
 
  protected:
   int getBlobSize(const char* key) override;
-  bool initLittleFs(bool allowFormat = true);
+  bool initLittleFs(bool allowFormat = false);
   int configMaxSize = SUPLA_LITTLEFS_CONFIG_BUF_SIZE;
 };
 };  // namespace Supla

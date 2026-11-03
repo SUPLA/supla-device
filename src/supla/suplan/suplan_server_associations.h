@@ -12,6 +12,7 @@ namespace Supla {
 class Config;
 namespace Device {
 class ServerIdentity;
+class SupLanPeerStore;
 
 // Caller-owned bounded provisioning workspace. No feature intent/config copy.
 class ServerAssociations {
@@ -32,7 +33,11 @@ class ServerAssociations {
   ServerAssociations &operator=(const ServerAssociations &) = delete;
   void load(Config *config, ServerIdentity *identity);
   void identityChanged();
+  void retryLoad(uint32_t now);
+  bool storageReady() const { return storageReady_; }
+  bool bindingsStored() const { return bindingsStored_; }
   static void scopeChanged(ServerIdentity *identity);
+  static void storageChanged(Config *config, bool bindings);
   static bool reloadSourceRights(ServerIdentity *identity);
   TDS_SuplaSetSuplanSourceAssociationResult accept(
       const TSDS_SuplaSetSuplanSourceAssociation &request);
@@ -48,9 +53,10 @@ class ServerAssociations {
   uint8_t validate(const SupLan::PeerContext &context, uint32_t revision,
                    const TSuplaSuplanAclEntry *entries, uint16_t count,
                    bool destination) const;
-  bool persist(uint8_t slot, const uint8_t *record, int size);
+  bool persist(int &slot, const uint8_t *record, int size);
   bool readRecord(uint8_t slot, SupLan::PeerContext *context,
-                  uint32_t *revision, uint8_t *count, bool *destination);
+                  uint32_t *revision, uint8_t *count, bool *destination,
+                  const SupLanPeerStore *loaded = nullptr);
   static bool owns(void *self, const SupLan::PeerContext &context,
                    const SupLan::ResourceId &resource);
   void clear(uint8_t index);
@@ -63,6 +69,10 @@ class ServerAssociations {
   // 0xff means unmanaged/free; persistent slot numbers never escape this class.
   uint8_t slots_[SUPLAN_MAX_PERSISTENT_PEERS];
   bool busy_ = false;
+  bool storageReady_ = false;
+  bool bindingsStored_ = false;
+  bool loadAttempted_ = false;
+  uint32_t loadRetryMs_ = 0;
   uint8_t record_[kMaxRecordSize] = {};
   TSuplaSuplanAclEntry wireEntries_[kMaxEntries] = {};
   SupLan::AclEntry entries_[kMaxEntries] = {};

@@ -1438,6 +1438,24 @@ AMIplus meter on standard single tariff:
 Creates instance of "action trigger" channel. There is only one mandatory
 parameter `name` which is used in other channels to reference this channel.
 
+Optional `related_channel` names another channel in the same YAML configuration.
+It accepts any channel type, including a relay, roller shutter or sensor. Several
+action triggers can reference the same channel. The target may appear before or
+after the action trigger; channel names used in these references must be unique.
+This declares a channel relationship and does not add local control actions.
+
+```yaml
+channels:
+  - type: VirtualRelay
+    name: motor
+  - type: ActionTriggerParsed
+    name: button_up
+    related_channel: motor
+  - type: ActionTriggerParsed
+    name: button_down
+    related_channel: motor
+```
+
 Action trigger can be used in `BinaryParsed`, `CmdRelay`, and `CustomRelay`
 channels.
 Here is example configuration of action trigger for `BinaryParsed` channel:

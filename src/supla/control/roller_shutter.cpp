@@ -270,15 +270,19 @@ void RollerShutter::onTimer() {
       calculateCurrentPositionAndTilt();
       // no new command available and it is moving, just handle movement/status
       if (currentDirection == Directions::UP_DIR) {
-        // check if target position is reached
-        if (targetPosition >= 0 &&
-            currentPosition <= static_cast<int>(targetPosition) * 100) {
+        // Directional movement uses only the margin once position and tilt
+        // reach the endpoint, including corrective runs starting there.
+        if ((targetPosition == MOVE_UP_POSITION && isTopReached()) ||
+            (targetPosition >= 0 &&
+             currentPosition <= static_cast<int>(targetPosition) * 100)) {
           if (targetTilt >= 0 && targetTilt > getCurrentTilt()) {
             stopMovement();
             setTargetPosition(UNKNOWN_POSITION, targetTilt);
-          } else if (invalidTiltConfigurationFallbackActive) {
+          } else if (invalidTiltConfigurationFallbackActive &&
+                     targetPosition >= 0) {
             stopMovement();
-          } else if (targetPosition == 0 &&
+          } else if ((targetPosition == 0 ||
+                      targetPosition == MOVE_UP_POSITION) &&
                      (targetTilt == UNKNOWN_POSITION ||
                       (targetTilt == 0 && getCurrentTilt() == 0))) {
             targetPosition = UNKNOWN_POSITION;
@@ -297,15 +301,18 @@ void RollerShutter::onTimer() {
           stopMovement();
         }
       } else if (currentDirection == Directions::DOWN_DIR) {
-        // check if target position is reached
-        if (targetPosition >= 0 &&
-            currentPosition >= static_cast<int>(targetPosition) * 100) {
+        // Start the closing margin only after position and tilt are complete.
+        if ((targetPosition == MOVE_DOWN_POSITION && isBottomReached()) ||
+            (targetPosition >= 0 &&
+             currentPosition >= static_cast<int>(targetPosition) * 100)) {
           if (targetTilt >= 0 && targetTilt < getCurrentTilt()) {
             stopMovement();
             setTargetPosition(UNKNOWN_POSITION, targetTilt);
-          } else if (invalidTiltConfigurationFallbackActive) {
+          } else if (invalidTiltConfigurationFallbackActive &&
+                     targetPosition >= 0) {
             stopMovement();
-          } else if (targetPosition == 100 &&
+          } else if ((targetPosition == 100 ||
+                      targetPosition == MOVE_DOWN_POSITION) &&
                      (targetTilt == UNKNOWN_POSITION ||
                       (targetTilt == 100 && getCurrentTilt() == 100))) {
             targetPosition = UNKNOWN_POSITION;

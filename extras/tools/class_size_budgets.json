@@ -490,11 +490,12 @@
       "name": "Supla::Protocol::SuplaSrpc",
       "header": "supla/protocol/supla_srpc.h",
       "limits": {
-        "host": 224,
+        "host": 232,
         "avr": 121,
-        "esp8266": 156,
-        "esp32": 156
-      }
+        "esp8266": 160,
+        "esp32": 160
+      },
+      "reason": "Legacy peer-store cleanup state in the embedded ServerIdentity increases padding: host +8 B, ESP8266/ESP32 +4 B. AVR has no ServerIdentity member."
     },
     {
       "name": "Supla::WebServer",

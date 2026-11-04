@@ -18,6 +18,16 @@
 #define MQTT_CLIENTID_MAX_SIZE 23
 #define MQTT_MAX_PAYLOAD_LEN 50
 
+// Home Assistant discovery templates are kept in flash on ESP8266
+#if defined(ARDUINO_ARCH_ESP8266)
+#include <pgmspace.h>
+#define SUPLA_MQTT_PROGMEM PROGMEM
+#define SUPLA_MQTT_SNPRINTF snprintf_P
+#else
+#define SUPLA_MQTT_PROGMEM
+#define SUPLA_MQTT_SNPRINTF snprintf
+#endif
+
 namespace Supla {
 
 namespace Protocol {

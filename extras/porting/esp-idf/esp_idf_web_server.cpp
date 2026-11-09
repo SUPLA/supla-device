@@ -1850,7 +1850,11 @@ void Supla::EspIdfWebServer::start() {
           httpsServerCertLen == 0 || httpsPrvtKeyLen == 0) {
         SUPLA_LOG_ERROR("Failed to select HTTPS certificates for startup");
       } else {
+        // ESP-IDF 6.1 omits use_secure_element from this default initializer.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
         httpd_ssl_config_t configHttps = HTTPD_SSL_CONFIG_DEFAULT();
+#pragma GCC diagnostic pop
         configHttps.httpd.max_resp_headers = WEB_RESPONSE_HEADER_COUNT;
         configHttps.httpd.lru_purge_enable = true;
         configHttps.httpd.max_open_sockets = 5;

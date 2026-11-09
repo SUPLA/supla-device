@@ -27,8 +27,20 @@ class Wifi : public Supla::Network {
   bool iterate() override;
 
   void onLoadConfig() override;
+  void setWifiConnected(bool connected);
+  void logWifiReason(int reason);
+  // Recover a connection established before event handlers were registered.
+  void syncWifiState(bool connected, uint32_t ip);
+  // A manual disconnect may be delivered after the next setup has begun.
+  void expectWifiDisconnect();
+  // Returns false for an expected local disconnect (no log or reconnect).
+  bool handleWifiDisconnect(int reason);
 
  protected:
+  static constexpr int LastReasonCount = 2;
+  int lastReasons[LastReasonCount] = {};
+  int lastReasonIdx = 0;
+  bool wifiDisconnectExpected = false;
   void requestConfigModeScanIfDue();
   virtual bool isConfigModeScanInProgress() const;
   char ssid[MAX_SSID_SIZE] = {};

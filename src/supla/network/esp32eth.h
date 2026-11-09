@@ -86,6 +86,18 @@ class ESPETH : public Supla::LAN {
 
   static void networkEventHandler(arduino_event_id_t event) {
     switch (event) {
+      case ARDUINO_EVENT_ETH_CONNECTED: {
+        if (thisEth) {
+          thisEth->setLinkConnected(true);
+        }
+        break;
+      }
+      case ARDUINO_EVENT_ETH_LOST_IP: {
+        if (thisEth) {
+          thisEth->setIpv4Addr(0);
+        }
+        break;
+      }
       case ARDUINO_EVENT_ETH_GOT_IP: {
         if (thisEth) {
           thisEth->setIpv4Addr(ETH.localIP());
@@ -126,7 +138,7 @@ class ESPETH : public Supla::LAN {
       case ARDUINO_EVENT_ETH_DISCONNECTED: {
         if (thisEth) {
           SUPLA_LOG_INFO("[%s] Disconnected", thisEth->getIntfName());
-          thisEth->setIpv4Addr(0);
+          thisEth->setLinkConnected(false);
         }
         break;
       }
@@ -135,8 +147,13 @@ class ESPETH : public Supla::LAN {
 
 
   void setup() override {
-    allowDisable = true;
+    setAllowDisable(true);
     if (initDone) {
+      // The Arduino driver stays running while protocols are disabled.
+      setLinkConnected(ETH.linkUp());
+      if (ETH.linkUp()) {
+        setIpv4Addr(ETH.localIP());
+      }
       return;
     }
 
@@ -152,7 +169,11 @@ class ESPETH : public Supla::LAN {
         mdioPin,
         powerPin,
         clkMode);
-    ETH.begin(ethType, ethAddress, mdcPin, mdioPin, powerPin, clkMode);
+    const bool started =
+        ETH.begin(ethType, ethAddress, mdcPin, mdioPin, powerPin, clkMode);
+    reportStartResult(started);
+
+    setStaticIpApplied(false);
     if (hasStaticIpConfig()) {
       const auto &cfg = getNetifConfig();
       IPAddress localIp = toArduinoIpAddress(cfg.ip);
@@ -160,7 +181,10 @@ class ESPETH : public Supla::LAN {
       IPAddress subnet = toArduinoIpAddress(cfg.netmask);
       IPAddress dns1 = toArduinoIpAddress(cfg.dns1);
       IPAddress dns2 = toArduinoIpAddress(cfg.dns2);
-      if (!ETH.config(localIp, gateway, subnet, dns1, dns2)) {
+      const bool applied =
+          ETH.config(localIp, gateway, subnet, dns1, dns2);
+      setStaticIpApplied(applied);
+      if (!applied) {
         SUPLA_LOG_WARNING("ETH static IP config failed, continuing");
       }
     }
@@ -175,11 +199,11 @@ class ESPETH : public Supla::LAN {
   }
 
   void disable() override {
-    if (!allowDisable) {
+    if (!takeAllowDisable()) {
       return;
     }
 
-    allowDisable = false;
+    resetLinkState();
     SUPLA_LOG_DEBUG("[%s] disabling ETH connection", getIntfName());
     DisconnectProtocols();
   }
@@ -203,7 +227,6 @@ class ESPETH : public Supla::LAN {
   }
 
  protected:
-  bool allowDisable = false;
   int macSizeForHostname = 0;
   bool initDone = false;
   eth_phy_type_t ethType = ETH_PHY_LAN8720;

@@ -35,7 +35,8 @@ void GeneralPurposeText::setValue(const char *text) {
     text = "";
   }
   size_t len = strnlen(text, SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE);
-  bool same = (strncmp(this->text, text, SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE) == 0);
+  bool same =
+      strncmp(this->text, text, SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE) == 0;
   if (!same) {
     memset(this->text, 0, sizeof(this->text));
     memcpy(this->text, text, len);

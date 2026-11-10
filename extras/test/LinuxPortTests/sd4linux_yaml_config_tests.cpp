@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include <array>
+#include <cstring>
 #include <fstream>
 #include <filesystem>  // NOLINT(build/c++17)
 #include <iterator>
@@ -442,6 +443,108 @@ TEST(Sd4linuxYamlConfigTests,
   EXPECT_TRUE(at->isWeeklyScheduleSupported());
   EXPECT_TRUE(at->getChannel()->isWeeklyScheduleAvailable());
   deleteCreatedElement(previousElement);
+}
+
+class AtDurationYamlConfig : public TestLinuxYamlConfig {
+ public:
+  AtDurationYamlConfig() { setConfigInitDone(true); }
+  bool commitWithResult() override { return commitAllowed; }
+  bool commitAllowed = true;
+};
+
+class Sd4linuxAtDurationTests : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    ASSERT_EQ(Supla::Element::begin(), nullptr);
+    Supla::Channel::resetToDefaults();
+  }
+  void TearDown() override {
+    while (auto element = Supla::Element::last()) delete element;
+    Supla::Channel::resetToDefaults();
+  }
+  Supla::Control::ActionTriggerParsed *create(const std::string& extra) {
+    if (!config.parseChannel(YAML::Load(
+            "type: ActionTriggerParsed\nname: duration_test\n" + extra), 0)) {
+      return nullptr;
+    }
+    return dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+        Supla::Element::last());
+  }
+  TChannelConfig_ActionTrigger read(Supla::Control::ActionTriggerParsed *at) {
+    TChannelConfig_ActionTrigger value = {};
+    int size = 0;
+    at->fillChannelConfig(&value, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+    EXPECT_EQ(size, sizeof(value));
+    return value;
+  }
+  void seed(Supla::Control::ActionTriggerParsed *at) {
+    TSD_ChannelConfig wire = {};
+    wire.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+    wire.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+    TChannelConfig_ActionTrigger value = {};
+    value.ActiveActions = SUPLA_ACTION_CAP_HOLD;
+    value.TemporaryUnlockDurationSec = 7;
+    value.TemporaryUnlockSensorIsSet = 1;
+    value.TemporaryUnlockSensorChannelNo = 4;
+    value.TemporaryUnlockSensorEdge = SUPLA_AT_SENSOR_EDGE_BOTH;
+    memcpy(wire.Config, &value, sizeof(value));
+    ASSERT_EQ(at->handleChannelConfig(&wire), SUPLA_CONFIG_RESULT_TRUE);
+  }
+  AtDurationYamlConfig config;
+};
+
+TEST_F(Sd4linuxAtDurationTests, StartupOverridesOnlyDurationAndPersistsIt) {
+  auto at = create("temporary_unlock_duration_sec: 30");
+  ASSERT_NE(at, nullptr);
+  seed(at);
+  at->onLoadConfig(nullptr);
+  const auto value = read(at);
+  EXPECT_EQ(value.TemporaryUnlockDurationSec, 30U);
+  EXPECT_EQ(value.ActiveActions, SUPLA_ACTION_CAP_HOLD);
+  EXPECT_EQ(value.TemporaryUnlockSensorIsSet, 1);
+  EXPECT_EQ(value.TemporaryUnlockSensorChannelNo, 4);
+  EXPECT_EQ(value.TemporaryUnlockSensorEdge, SUPLA_AT_SENSOR_EDGE_BOTH);
+  at->onLoadConfig(nullptr);
+  EXPECT_EQ(read(at).TemporaryUnlockDurationSec, 30U);
+}
+
+TEST_F(Sd4linuxAtDurationTests, OmissionPreservesSavedDuration) {
+  auto at = create("");
+  ASSERT_NE(at, nullptr);
+  seed(at);
+  at->onLoadConfig(nullptr);
+  EXPECT_EQ(read(at).TemporaryUnlockDurationSec, 7U);
+}
+
+TEST_F(Sd4linuxAtDurationTests, ZeroAndMaximumAreAccepted) {
+  for (auto seconds : {0, 64800}) {
+    auto at = create("temporary_unlock_duration_sec: " +
+                     std::to_string(seconds));
+    ASSERT_NE(at, nullptr);
+    at->onLoadConfig(nullptr);
+    EXPECT_EQ(read(at).TemporaryUnlockDurationSec,
+              static_cast<uint32_t>(seconds));
+    delete at;
+  }
+}
+
+TEST_F(Sd4linuxAtDurationTests, InvalidDurationsAreRejectedBeforeCreation) {
+  for (const auto *value : {"-1", "64801", "4294967296", "text", "1.5",
+                             "[]", "{}", "null", "18446744073709551616"}) {
+    SCOPED_TRACE(value);
+    EXPECT_EQ(create(std::string("temporary_unlock_duration_sec: ") + value),
+              nullptr);
+    EXPECT_EQ(Supla::Element::begin(), nullptr);
+  }
+}
+
+TEST_F(Sd4linuxAtDurationTests, FailedPersistenceKeepsSavedDuration) {
+  auto at = create("temporary_unlock_duration_sec: 30");
+  ASSERT_NE(at, nullptr);
+  seed(at);
+  config.commitAllowed = false;
+  at->onLoadConfig(nullptr);
+  EXPECT_EQ(read(at).TemporaryUnlockDurationSec, 7U);
 }
 
 class Sd4linuxAtRelatedChannelTests : public ::testing::Test {

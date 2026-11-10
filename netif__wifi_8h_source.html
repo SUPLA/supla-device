@@ -121,21 +121,33 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>  <span class="keywordtype">bool</span> iterate() <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>  <span class="keywordtype">void</span> onLoadConfig() <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>  <span class="keywordtype">void</span> requestConfigModeScanIfDue();</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>  <span class="keyword">virtual</span> <span class="keywordtype">bool</span> isConfigModeScanInProgress() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>  <span class="keywordtype">char</span> ssid[MAX_SSID_SIZE] = {};</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  <span class="keywordtype">char</span> password[MAX_WIFI_PASSWORD_SIZE] = {};</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  uint32_t lastConfigModeScanStartMs = 0;</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">bool</span> configModeScanStartRecorded = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>};</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>  <span class="keywordtype">void</span> setWifiConnected(<span class="keywordtype">bool</span> connected);</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>  <span class="keywordtype">void</span> logWifiReason(<span class="keywordtype">int</span> reason);</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>  <span class="comment">// Recover a connection established before event handlers were registered.</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>  <span class="keywordtype">void</span> syncWifiState(<span class="keywordtype">bool</span> connected, uint32_t ip);</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>  <span class="comment">// A manual disconnect may be delivered after the next setup has begun.</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  <span class="keywordtype">void</span> expectWifiDisconnect();</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <span class="comment">// Returns false for an expected local disconnect (no log or reconnect).</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">bool</span> handleWifiDisconnect(<span class="keywordtype">int</span> reason);</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> <span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">int</span> LastReasonCount = 2;</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>  <span class="keywordtype">int</span> lastReasons[LastReasonCount] = {};</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  <span class="keywordtype">int</span> lastReasonIdx = 0;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  <span class="keywordtype">bool</span> wifiDisconnectExpected = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  <span class="keywordtype">void</span> requestConfigModeScanIfDue();</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>  <span class="keyword">virtual</span> <span class="keywordtype">bool</span> isConfigModeScanInProgress() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  <span class="keywordtype">char</span> ssid[MAX_SSID_SIZE] = {};</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  <span class="keywordtype">char</span> password[MAX_WIFI_PASSWORD_SIZE] = {};</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  uint32_t lastConfigModeScanStartMs = 0;</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>  <span class="keywordtype">bool</span> configModeScanStartRecorded = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>};</div>
 </div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>};  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_NETWORK_NETIF_WIFI_H_</span></div>
-<div class="ttc" id="aclassSupla_1_1Network_html"><div class="ttname"><a href="classSupla_1_1Network.html">Supla::Network</a></div><div class="ttdef"><b>Definition</b> network.h:21</div></div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_NETWORK_NETIF_WIFI_H_</span></div>
+<div class="ttc" id="aclassSupla_1_1Network_html"><div class="ttname"><a href="classSupla_1_1Network.html">Supla::Network</a></div><div class="ttdef"><b>Definition</b> network.h:22</div></div>
 <div class="ttc" id="aclassSupla_1_1Wifi_html"><div class="ttname"><a href="classSupla_1_1Wifi.html">Supla::Wifi</a></div><div class="ttdef"><b>Definition</b> netif_wifi.h:16</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

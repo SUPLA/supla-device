@@ -742,19 +742,20 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
   if (localChange) {
     triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
   }
-  if (!activeActionsChanged) {
-    return Supla::ApplyConfigResult::Success;
+  if (activeActionsChanged) {
+    lastReceivedActiveActions = activeActions;
+    runtimeFlags.channelConfigReceived = true;
+    activeActionsFromServer = activeActions;
+    rebuildForAttachedButton();
+    // Schedule save in 2 s after state change
+    scheduleStateSave(2000, 0);
   }
-  lastReceivedActiveActions = activeActions;
-  runtimeFlags.channelConfigReceived = true;
-  activeActionsFromServer = activeActions;
-  SUPLA_LOG_DEBUG(
-      "AT[%d] received config with active actions: 0x%X",
-      channel.getChannelNumber(),
-      activeActionsFromServer);
-  rebuildForAttachedButton();
-  // Schedule save in 2 s after state change
-  scheduleStateSave(2000, 0);
+  SUPLA_LOG_INFO(
+      "AT[%d] config applied (%s): actions=0x%08" PRIX32
+      ", temporary_unlock=%" PRIu32 " s, sensor=%d, edge=%u",
+      getChannelNumber(), local ? "local" : "server", activeActions,
+      candidate.duration, candidate.sensor == 255 ? -1 : candidate.sensor,
+      candidate.edge);
   return Supla::ApplyConfigResult::Success;
 }
 

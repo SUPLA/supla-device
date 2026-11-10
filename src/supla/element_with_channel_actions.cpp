@@ -658,12 +658,17 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
 
   bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
 
-  SUPLA_LOG_INFO("Channel[%d] setChannelConfig %s (%d) for type %s (%d)",
-                 getChannelNumber(),
-                 success ? "succeeded" : "failed",
-                 result->Result,
-                 configTypeToString(result->ConfigType),
-                 result->ConfigType);
+  if (success) {
+    SUPLA_LOG_INFO(
+        "Channel[%d] setChannelConfig succeeded (%d) for type %s (%d)",
+        getChannelNumber(), result->Result,
+        configTypeToString(result->ConfigType), result->ConfigType);
+  } else {
+    SUPLA_LOG_WARNING(
+        "Channel[%d] setChannelConfig failed (%d) for type %s (%d)",
+        getChannelNumber(), result->Result,
+        configTypeToString(result->ConfigType), result->ConfigType);
+  }
 
   const bool weeklyReply = sentWeeklyConfigType != 0 &&
       sentWeeklyConfigType == result->ConfigType &&

@@ -41,6 +41,93 @@ class SrpcPacketLogTests : public ::testing::Test {
 
 }  // namespace
 
+TEST_F(SrpcPacketLogTests, CompactRawReplyKeepsDirectionCallIdAndSize) {
+  TSDS_SetChannelConfigResult result = {};
+  result.Result = SUPLA_CONFIG_RESULT_NOT_ALLOWED;
+  result.ChannelNumber = 8;
+  srpc->logSrpcPacket(false, SUPLA_SD_CALL_SET_CHANNEL_CONFIG_RESULT,
+                      reinterpret_cast<const uint8_t *>(&result),
+                      sizeof(result));
+  EXPECT_STREQ(supla_test_get_last_log(),
+               "SRPC RX SET_CH_CFG_RES(691) size=3 raw=[06 00 08 ]");
+}
+
+TEST_F(SrpcPacketLogTests, CompactDecodedPacketOmitsPayloadLabel) {
+  TDS_SuplaDeviceChannel_E channel = {};
+  channel.Number = 8;
+  channel.Type = SUPLA_CHANNELTYPE_ACTIONTRIGGER;
+  channel.ActionTriggerCaps = 0xC;
+  channel.Default = SUPLA_CHANNELFNC_ACTIONTRIGGER;
+  channel.ValueValidityTimeSec = 30;
+  channel.DefaultIcon = 7;
+  channel.SubDeviceId = 3;
+  srpc->logSrpcPacket(true, SUPLA_DS_CALL_REGISTER_DEVICE_G,
+                      reinterpret_cast<const uint8_t *>(&channel),
+                      sizeof(channel));
+  const std::string log = supla_test_get_last_log();
+  const std::string prefix = "SRPC TX REG_DEV_G(76) size=" +
+      std::to_string(sizeof(channel)) + " {Ch=8, ";
+  EXPECT_EQ(log.find(prefix), 0U);
+  EXPECT_EQ(log.find("call="), std::string::npos);
+  EXPECT_EQ(log.find("payload="), std::string::npos);
+  EXPECT_EQ(log.find(" s="), std::string::npos);
+  EXPECT_NE(log.find("ATCaps=0xC, DefFunc=700"), std::string::npos);
+  EXPECT_NE(log.find("ValidSec=30, Val[8]="), std::string::npos);
+  EXPECT_NE(log.find("DefIcon=7, SubDevId=3}"), std::string::npos);
+}
+
+TEST_F(SrpcPacketLogTests, ShortChannelConfigFieldsKeepRedaction) {
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = 8;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = 16;
+  srpc->logSrpcPacket(false, SUPLA_SD_CALL_SET_CHANNEL_CONFIG,
+                      reinterpret_cast<const uint8_t *>(&config),
+                      offsetof(TSD_ChannelConfig, Config) + config.ConfigSize);
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("{Ch=8, Func=0, CfgType=0(default), CfgSize=16, "
+                     "Cfg=<redacted>}"), std::string::npos);
+  EXPECT_EQ(log.find("raw=["), std::string::npos);
+}
+
+TEST_F(SrpcPacketLogTests, ShortFunctionFieldsDistinguishRelayAndRgbw) {
+  TDS_SuplaDeviceChannel_E channel = {};
+  channel.Type = SUPLA_CHANNELTYPE_RELAY;
+  channel.FuncList = 0x12;
+  srpc->logSrpcPacket(true, SUPLA_DS_CALL_REGISTER_DEVICE_G,
+                      reinterpret_cast<const uint8_t *>(&channel),
+                      sizeof(channel));
+  EXPECT_NE(std::string(supla_test_get_last_log()).find("Funcs=0x12"),
+            std::string::npos);
+  channel.Type = SUPLA_CHANNELTYPE_DIMMER;
+  channel.RGBW_FuncList = 0x34;
+  srpc->logSrpcPacket(true, SUPLA_DS_CALL_REGISTER_DEVICE_G,
+                      reinterpret_cast<const uint8_t *>(&channel),
+                      sizeof(channel));
+  EXPECT_NE(std::string(supla_test_get_last_log()).find("RGBWFuncs=0x34"),
+            std::string::npos);
+}
+
+TEST_F(SrpcPacketLogTests, CompactPingKeepsMetadataWithoutPayload) {
+  supla_log_set_level(LOG_VERBOSE);
+  srpc->logSrpcPacket(true, SUPLA_DCS_CALL_PING_SERVER, nullptr, 0);
+  const std::string expected = "SRPC TX PING(" +
+      std::to_string(SUPLA_DCS_CALL_PING_SERVER) + ") size=0";
+  EXPECT_STREQ(supla_test_get_last_log(), expected.c_str());
+}
+
+TEST_F(SrpcPacketLogTests, CompactRegistrationStillRedactsSensitiveData) {
+  const char secret[] = "private-data";
+  srpc->logSrpcPacket(true, SUPLA_DS_CALL_REGISTER_DEVICE,
+                      reinterpret_cast<const uint8_t *>(secret),
+                      sizeof(secret) - 1);
+  const std::string log = supla_test_get_last_log();
+  EXPECT_EQ(log.find("SRPC TX REG_DEV("), 0U);
+  EXPECT_NE(log.find(" size=12 {<redacted>}"), std::string::npos);
+  EXPECT_EQ(log.find(secret), std::string::npos);
+  EXPECT_EQ(log.find("raw=["), std::string::npos);
+}
+
 TEST_F(SrpcPacketLogTests, CalcfgPasswordRedactionLogsRealMetadata) {
   TSD_DeviceCalCfgRequest request = {};
   request.SenderID = 123;
@@ -58,7 +145,8 @@ TEST_F(SrpcPacketLogTests, CalcfgPasswordRedactionLogsRealMetadata) {
                           request.DataSize);
   std::string log = supla_test_get_last_log();
 
-  EXPECT_NE(log.find("SuperUserAuthorized=1"), std::string::npos);
+  EXPECT_EQ(log.find("SRPC RX DEV_CALCFG_REQ("), 0U);
+  EXPECT_NE(log.find("SuperAuth=1"), std::string::npos);
   EXPECT_NE(log.find("DataType=222"), std::string::npos);
   EXPECT_NE(log.find("DataSize=5"), std::string::npos);
   EXPECT_NE(log.find("Data=<redacted>"), std::string::npos);
@@ -130,9 +218,10 @@ TEST_F(SrpcPacketLogTests, RegisterDeviceHeaderUsesContinuationLog) {
                       packetSize);
   std::string log = supla_test_get_last_log();
 
-  EXPECT_NE(log.find("SRPC cont=[ServerName=\"server.example\""),
+  EXPECT_NE(log.find("SRPC cont=[Server=\"server.example\""),
             std::string::npos);
-  EXPECT_NE(log.find("channel_count=10]"), std::string::npos);
+  EXPECT_NE(log.find("MfrId=21, ProdId=10"), std::string::npos);
+  EXPECT_NE(log.find("ChCount=10]"), std::string::npos);
 }
 
 #endif  // SUPLA_SRPC_PACKET_LOG_ENABLED && !SUPLA_DISABLE_LOGS

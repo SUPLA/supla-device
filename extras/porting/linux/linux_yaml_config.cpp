@@ -1856,13 +1856,14 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeTextParsed(
   SUPLA_LOG_INFO("Channel[%d] config: adding GeneralPurposeText",
                  channelNumber);
   auto gpt = new Supla::Sensor::GeneralPurposeTextParsed(parser);
-  if (ch[Supla::Parser::Value]) {
-    paramCount++;
+  auto valueParameter =
+      getAndMarkChannelParameter(ch, Supla::Parser::Value);
+  if (valueParameter) {
     if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Parser::Value].as<int>();
+      int index = valueParameter.as<int>();
       gpt->setMapping(Supla::Parser::Value, index);
     } else {
-      std::string key = ch[Supla::Parser::Value].as<std::string>();
+      std::string key = valueParameter.as<std::string>();
       gpt->setMapping(Supla::Parser::Value, key);
     }
   } else {

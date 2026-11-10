@@ -32,7 +32,7 @@ void Supla::Control::RgbCctParsed::setRGBCCTValueOnDevice(uint32_t output[5],
   (void)usedOutputs;
   (void)output;
 
-  //  SUPLA_LOG_DEBUG("RGBCCT[%d]: R %d G %d B %d C %d W1 %d W2 %d",
+  //  SUPLA_LOG_DEBUG("RGBCCT[%d] R %d G %d B %d C %d W1 %d W2 %d",
   //                  getChannelNumber(),
   //                  red,
   //                  green,

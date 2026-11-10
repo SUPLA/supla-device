@@ -43,10 +43,17 @@ constexpr uint32_t kActionTriggerLegacyAllActions = 0xFFFFFFFFUL;
     case SUPLA_BUTTON_MODE_LOCKED:
       return "LOCKED";
     case SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED:
-      return "LOCKED_TEMPORARY_UNLOCK_ALLOWED";
+      return "TEMP";
     default:
       return "UNKNOWN";
   }
+}
+
+[[maybe_unused]] const char *buttonProgramDefaultSuffix(
+    const TWeeklyScheduleProgram &program) {
+  return program.Mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
+                 program.ButtonTemporaryUnlockDurationS == 0
+             ? "(default)" : "";
 }
 
 }  // namespace
@@ -86,7 +93,7 @@ class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
            (program.Value2 != 0 || program.ButtonTemporaryUnlockDurationS >
                kMaximumTemporaryUnlockDurationS))) {
         SUPLA_LOG_WARNING(
-            "ActionTrigger[%d]: invalid weekly schedule program %d",
+            "ActionTrigger[%d] invalid weekly schedule program %d",
             owner_->getChannelNumber(),
             i);
         return false;
@@ -97,7 +104,7 @@ class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
       if (programId < 0 ||
           programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
         SUPLA_LOG_WARNING(
-            "ActionTrigger[%d]: weekly schedule references invalid program %d",
+            "ActionTrigger[%d] weekly schedule references invalid program %d",
             owner_->getChannelNumber(),
             programId);
         return false;
@@ -123,20 +130,21 @@ class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
   void onNativeScheduleApplied(bool alt, bool local, bool changed) override {
     const auto *schedule = getSchedule(alt, false);
     if (changed && schedule != nullptr) {
-      SUPLA_LOG_INFO("AT[%d] weekly schedule updated (%s), programs:",
-          owner_->getChannelNumber(), local ? "local" : "server");
-      for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE; ++i) {
-        [[maybe_unused]] const auto &program = schedule->Program[i];
-        SUPLA_LOG_INFO(
-            "AT[%d] weekly program %d: mode=%s(%u), "
-            "temporary_unlock=%u s%s",
-            owner_->getChannelNumber(), i + 1,
-            buttonModeName(program.Mode), program.Mode,
-            program.ButtonTemporaryUnlockDurationS,
-            program.Mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
-                program.ButtonTemporaryUnlockDurationS == 0
-                    ? " (default from AT config)" : "");
-      }
+      static_assert(SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE == 4,
+                    "Update the compact weekly schedule log for more programs");
+      [[maybe_unused]] const auto &p = schedule->Program;
+      SUPLA_LOG_INFO(
+          "AT[%d] weekly(%s): P1=%s/%us%s P2=%s/%us%s "
+          "P3=%s/%us%s P4=%s/%us%s",
+          owner_->getChannelNumber(), local ? "local" : "server",
+          buttonModeName(p[0].Mode), p[0].ButtonTemporaryUnlockDurationS,
+          buttonProgramDefaultSuffix(p[0]),
+          buttonModeName(p[1].Mode), p[1].ButtonTemporaryUnlockDurationS,
+          buttonProgramDefaultSuffix(p[1]),
+          buttonModeName(p[2].Mode), p[2].ButtonTemporaryUnlockDurationS,
+          buttonProgramDefaultSuffix(p[2]),
+          buttonModeName(p[3].Mode), p[3].ButtonTemporaryUnlockDurationS,
+          buttonProgramDefaultSuffix(p[3]));
     }
     NativeWeeklyScheduleController::onNativeScheduleApplied(
         alt, local, changed);
@@ -256,7 +264,7 @@ void Supla::Control::ActionTrigger::attach(Supla::Control::Button *button) {
       auto peer = element->getActionTrigger();
       if (peer && peer != this && peer->attachedButton == button) {
         SUPLA_LOG_WARNING(
-            "AT[%d]: button already attached to AT[%d]",
+            "AT[%d] button already attached to AT[%d]",
             getChannelNumber(), peer->getChannelNumber());
         return;
       }
@@ -478,7 +486,6 @@ void Supla::Control::ActionTrigger::onRegistered(
   }
 
   channel.enableValueUpdates();
-  channel.setSendGetConfig();
 }
 
 void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
@@ -1223,7 +1230,7 @@ void Supla::Control::ActionTrigger::onLoadState() {
 
   if (activeActionsFromServer) {
     SUPLA_LOG_INFO(
-        "AT[%d]: restored activeActionsFromServer: 0x%X",
+        "AT[%d] restored activeActionsFromServer: 0x%X",
         channel.getChannelNumber(),
         activeActionsFromServer);
   }

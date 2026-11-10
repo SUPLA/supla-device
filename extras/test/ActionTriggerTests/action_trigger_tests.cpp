@@ -553,7 +553,7 @@ TEST_F(ActionTriggerTests, WeeklyScheduleAndManualCommandsControlButtonMode) {
 
 TEST_F(ActionTriggerTests, ManualLockIsReportedAsChannelValue) {
   SrpcMock srpc;
-  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(AnyNumber());
+  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(0);
   TimeInterfaceStub time;
   Supla::Control::ActionTrigger at;
   at.onRegistered(suplaSrpc);
@@ -1230,7 +1230,6 @@ TEST_F(ActionTriggerTests, RelatedChannel) {
 TEST_F(ActionTriggerTests, RelatedChannelChangeSendsChannelValueUpdate) {
   SrpcMock srpc;
   ignoreAtValueUpdates(&srpc);
-  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(AnyNumber());
   TimeInterfaceStub time;
   Supla::Channel ch0;
   Supla::Channel ch1;
@@ -1259,7 +1258,6 @@ TEST_F(ActionTriggerTests, RelatedChannelChangeSendsChannelValueUpdate) {
 TEST_F(ActionTriggerTests,
        InitialRelatedChannelDoesNotSendChannelValueAfterRegistration) {
   SrpcMock srpc;
-  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(AnyNumber());
   TimeInterfaceStub time;
   Supla::Channel ch0;
   Supla::Control::ActionTrigger at;
@@ -1274,7 +1272,6 @@ TEST_F(ActionTriggerTests,
 TEST_F(ActionTriggerTests,
        ServerConfigRebuildWithSameValueDoesNotSendChannelValue) {
   SrpcMock srpc;
-  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(AnyNumber());
   TimeInterfaceStub time;
   Supla::Channel relatedChannel;
   Supla::Control::Button button(10);
@@ -1304,7 +1301,6 @@ TEST_F(ActionTriggerTests,
 TEST_F(ActionTriggerTests, PendingActionDoesNotDropChannelValueUpdate) {
   SrpcMock srpc;
   ignoreAtValueUpdates(&srpc);
-  EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(AnyNumber());
   TimeInterfaceStub time;
   Supla::Channel relatedChannel;
   Supla::Control::ActionTrigger at;

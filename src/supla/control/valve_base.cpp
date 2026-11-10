@@ -42,11 +42,11 @@ void ValveBase::iterateAlways() {
     if (currentState != lastOpenLevelState) {
       if (lastCmdTimestamp == 0 || millis() - lastCmdTimestamp > 30000) {
         if (currentState == 0) {
-          SUPLA_LOG_DEBUG("Valve[%d]: manually closed", getChannelNumber());
+          SUPLA_LOG_DEBUG("Valve[%d] manually closed", getChannelNumber());
           channel.setValveManuallyClosedFlag(true);
         }
         if (currentState != 0) {
-          SUPLA_LOG_DEBUG("Valve[%d]: manually opened", getChannelNumber());
+          SUPLA_LOG_DEBUG("Valve[%d] manually opened", getChannelNumber());
           channel.setValveManuallyClosedFlag(false);
         }
       }
@@ -117,7 +117,7 @@ bool ValveBase::isFloodDetected() {
 int32_t ValveBase::handleNewValueFromServer(
     TSD_SuplaChannelNewValue *newValue) {
   // TODO(klew): update below logic for percentage variant
-  SUPLA_LOG_DEBUG("Valve[%d]: handleNewValueFromServer, value[0] %d",
+  SUPLA_LOG_DEBUG("Valve[%d] handleNewValueFromServer, value[0] %d",
                   getChannelNumber(),
                   newValue->value[0]);
   switch (newValue->value[0]) {
@@ -130,7 +130,7 @@ int32_t ValveBase::handleNewValueFromServer(
       break;
     }
     default: {
-      SUPLA_LOG_WARNING("Valve[%d]: value[0] not supported",
+      SUPLA_LOG_WARNING("Valve[%d] value[0] not supported",
                         getChannelNumber());
       return SUPLA_RESULT_FALSE;
     }
@@ -168,7 +168,7 @@ void ValveBase::purgeConfig() {
 }
 
 void ValveBase::printConfig() const {
-  SUPLA_LOG_DEBUG("Valve[%d]: close on flood type: %s (%d)",
+  SUPLA_LOG_DEBUG("Valve[%d] close on flood type: %s (%d)",
                   getChannelNumber(),
                   config.closeValveOnFloodType == 0   ? "N/A"
                   : config.closeValveOnFloodType == 1 ? "always"
@@ -178,7 +178,7 @@ void ValveBase::printConfig() const {
     if (sensor == 255) {
       continue;
     }
-    SUPLA_LOG_DEBUG("Valve[%d]: sensor channel %d", getChannelNumber(), sensor);
+    SUPLA_LOG_DEBUG("Valve[%d] sensor channel %d", getChannelNumber(), sensor);
   }
 }
 
@@ -200,7 +200,7 @@ void ValveBase::onLoadState() {
   }
 
   SUPLA_LOG_DEBUG(
-      "Valve[%d]: restored state %d (%s), flooding %d, manually closed %d",
+      "Valve[%d] restored state %d (%s), flooding %d, manually closed %d",
       getChannelNumber(),
       state,
       (state == 0 ? "closed" : "open"),
@@ -225,8 +225,8 @@ void ValveBase::onSaveState() {
 
 Supla::ApplyConfigResult ValveBase::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
-  SUPLA_LOG_DEBUG(
-      "Valve[%d]:applyChannelConfig, func %d, configtype %d, configsize "
+  SUPLA_LOG_VERBOSE(
+      "Valve[%d] applyChannelConfig, func %d, configtype %d, configsize "
       "%d",
       getChannelNumber(),
       result->Func,
@@ -258,7 +258,7 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
         if (defaultCloseValveOnFloodType != 0 &&
             cfg->CloseValveOnFloodType == 0) {
           SUPLA_LOG_DEBUG(
-              "Valve[%d]: close on flood type missing on server: %d",
+              "Valve[%d] close on flood type missing on server: %d",
               getChannelNumber(),
               defaultCloseValveOnFloodType);
           if (config.closeValveOnFloodType == 0) {
@@ -278,7 +278,7 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
       break;
     }
     default: {
-      SUPLA_LOG_WARNING("Valve[%d]: unsupported func %d", getChannelNumber(),
+      SUPLA_LOG_WARNING("Valve[%d] unsupported func %d", getChannelNumber(),
                         result->Func);
       break;
     }
@@ -324,7 +324,7 @@ void ValveBase::fillChannelConfig(void *channelConfig,
     }
     default:
       SUPLA_LOG_WARNING(
-          "Valve[%d]: fill channel config for unknown function %d",
+          "Valve[%d] fill channel config for unknown function %d",
           channel.getChannelNumber(),
           channel.getDefaultFunction());
       return;
@@ -340,7 +340,7 @@ void ValveBase::openValve() {
 }
 
 void ValveBase::setValve(uint8_t openLevel) {
-  SUPLA_LOG_INFO("Valve[%d]: setValve %d (%s)",
+  SUPLA_LOG_INFO("Valve[%d] setValve %d (%s)",
                  getChannelNumber(),
                  openLevel,
                  openLevel > 0 ? "open" : "close");
@@ -368,10 +368,10 @@ void ValveBase::saveConfig(bool local) {
     if (cfg->setBlob(key,
                      reinterpret_cast<const char *>(&config),
                      sizeof(ValveConfig))) {
-      SUPLA_LOG_INFO("Valve[%d]: config saved successfully",
+      SUPLA_LOG_INFO("Valve[%d] config saved successfully",
                      getChannelNumber());
     } else {
-      SUPLA_LOG_WARNING("Valve[%d]: failed to save config", getChannelNumber());
+      SUPLA_LOG_WARNING("Valve[%d] failed to save config", getChannelNumber());
     }
 
     if (local) {
@@ -450,7 +450,7 @@ bool ValveBase::removeSensor(uint8_t channelNumber) {
 }
 
 uint8_t ValveBase::getValueOpenStateFromDevice() {
-  SUPLA_LOG_ERROR("Valve[%d]: getValueOpenStateFromDevice not implemented",
+  SUPLA_LOG_ERROR("Valve[%d] getValueOpenStateFromDevice not implemented",
                   getChannelNumber());
   return 0;
 }
@@ -458,7 +458,7 @@ uint8_t ValveBase::getValueOpenStateFromDevice() {
 void ValveBase::setValueOnDevice(uint8_t openLevel) {
   SUPLA_LOG_WARNING("Valve::setValueOnDevice not implemented");
   SUPLA_LOG_DEBUG(
-      "Valve[%d]: setValueOnDevice: %d", getChannelNumber(), openLevel);
+      "Valve[%d] setValueOnDevice: %d", getChannelNumber(), openLevel);
 }
 
 void ValveBase::setIgnoreManuallyOpenedTimeMs(uint32_t timeMs) {

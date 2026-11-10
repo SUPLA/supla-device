@@ -115,7 +115,7 @@ void HvacWeeklySchedule::unloadSchedulesIfPossible() {
     return;
   }
 
-  SUPLA_LOG_DEBUG("HVAC[%d]: unloading weekly schedule cache",
+  SUPLA_LOG_DEBUG("HVAC[%d] unloading weekly schedule cache",
                   owner_->getChannelNumber());
   unloadSchedule(false);
   unloadSchedule(true);
@@ -153,7 +153,7 @@ bool HvacWeeklySchedule::isWeeklyScheduleValid(
     HvacBase::debugPrintProgram(&(newSchedule->Program[i]), i);
     if (!isProgramValid(newSchedule->Program[i], isAltWeeklySchedule)) {
       SUPLA_LOG_WARNING(
-          "HVAC[%d]: weekly schedule validation failed: invalid program %d",
+          "HVAC[%d] weekly schedule validation failed: invalid program %d",
           owner_->getChannelNumber(),
           i);
       return false;
@@ -168,7 +168,7 @@ bool HvacWeeklySchedule::isWeeklyScheduleValid(
     if (programId < 0 ||
         programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
       SUPLA_LOG_WARNING(
-          "HVAC[%d]: weekly schedule validation failed: invalid program %d "
+          "HVAC[%d] weekly schedule validation failed: invalid program %d "
           "used in schedule %d",
           owner_->getChannelNumber(),
           programId,
@@ -177,7 +177,7 @@ bool HvacWeeklySchedule::isWeeklyScheduleValid(
     }
     if (programId != 0 && !programIsUsed[programId - 1]) {
       SUPLA_LOG_WARNING(
-          "HVAC[%d]: weekly schedule validation failed: not configured program "
+          "HVAC[%d] weekly schedule validation failed: not configured program "
           "used in schedule %d",
           owner_->getChannelNumber(),
           i);
@@ -211,11 +211,11 @@ bool HvacWeeklySchedule::setWeeklySchedule(int index,
                                            bool isAltWeeklySchedule) {
   if (index < 0 || index >= SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) {
     SUPLA_LOG_DEBUG(
-        "HVAC[%d]: invalid index %d", owner_->getChannelNumber(), index);
+        "HVAC[%d] invalid index %d", owner_->getChannelNumber(), index);
     return false;
   }
   if (programId < 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: invalid programId %d",
+    SUPLA_LOG_DEBUG("HVAC[%d] invalid programId %d",
                     owner_->getChannelNumber(),
                     programId);
     return false;
@@ -229,7 +229,7 @@ bool HvacWeeklySchedule::setWeeklySchedule(int index,
   if (programId > 0 &&
       (schedule->Program[programId - 1].Mode == SUPLA_HVAC_MODE_NOT_SET ||
        schedule->Program[programId - 1].Mode > SUPLA_HVAC_MODE_DRY)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: invalid mode %d for programId %d",
+    SUPLA_LOG_DEBUG("HVAC[%d] invalid mode %d for programId %d",
                     owner_->getChannelNumber(),
                     schedule->Program[programId - 1].Mode,
                     programId);
@@ -260,7 +260,7 @@ bool HvacWeeklySchedule::setProgram(int programId,
                                     _supla_int16_t tHeat,
                                     _supla_int16_t tCool,
                                     bool isAltWeeklySchedule) {
-  SUPLA_LOG_DEBUG("HVAC[%d]: set %s program(%d, %d, %d, %d)",
+  SUPLA_LOG_DEBUG("HVAC[%d] set %s program(%d, %d, %d, %d)",
                   owner_->getChannelNumber(),
                   isAltWeeklySchedule ? "Alt" : "Main",
                   programId,
@@ -387,7 +387,7 @@ void HvacWeeklySchedule::onWeeklyScheduleClockState(
     WeeklyScheduleClockState state) {
   if (state == WeeklyScheduleClockState::Waiting) {
     SUPLA_LOG_DEBUG(
-        "HVAC[%d]: Weekly schedule enabled, clock not ready -> startup "
+        "HVAC[%d] Weekly schedule enabled, clock not ready -> startup "
         "delay...",
         owner_->getChannelNumber());
     return;
@@ -395,7 +395,7 @@ void HvacWeeklySchedule::onWeeklyScheduleClockState(
   if (state == WeeklyScheduleClockState::TimedOut) {
     if (!owner_->isWeeklyScheduleClockError()) {
       SUPLA_LOG_WARNING(
-          "HVAC[%d]: processs weekly schedule failed - clock is not ready",
+          "HVAC[%d] processs weekly schedule failed - clock is not ready",
           owner_->getChannelNumber());
     }
     owner_->setWeeklyScheduleClockError(true);
@@ -423,7 +423,7 @@ bool HvacWeeklySchedule::processWeeklySchedule() {
   touchCache(true, millis());
   if (!owner_->isWeeklyScheduleEnabled()) {
     SUPLA_LOG_WARNING(
-        "HVAC[%d]: processs weekly schedule failed - it is not enabled",
+        "HVAC[%d] processs weekly schedule failed - it is not enabled",
         owner_->getChannelNumber());
     return false;
   }

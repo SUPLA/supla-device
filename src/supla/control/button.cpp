@@ -618,7 +618,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
 }
 
 void Button::configureAsConfigButton(SuplaDeviceClass *sdc) {
-  SUPLA_LOG_DEBUG("Button[%d]::configureAsConfigButton", getButtonNumber());
+  SUPLA_LOG_DEBUG("Button[%d] configureAsConfigButton", getButtonNumber());
   runtimeFlags.configButton = true;
   dontUseOnLoadConfig();
   setHoldTime(CFG_MODE_ON_HOLD_TIME);
@@ -674,12 +674,12 @@ void Button::enableRepeatOnHold() {
 }
 
 void Button::disableButton() {
-  SUPLA_LOG_DEBUG("Button[%d]: disabling button", getButtonNumber());
+  SUPLA_LOG_DEBUG("Button[%d] disabling button", getButtonNumber());
   runtimeFlags.disabled = true;
 }
 
 void Button::enableButton() {
-  SUPLA_LOG_DEBUG("Button[%d]: enabling button", getButtonNumber());
+  SUPLA_LOG_DEBUG("Button[%d] enabling button", getButtonNumber());
   runtimeFlags.disabled = false;
   runtimeFlags.suppressActionsUntilRelease = state.isPressedOrPending();
   clickCounter = 0;

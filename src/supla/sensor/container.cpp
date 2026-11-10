@@ -238,7 +238,7 @@ bool Container::setSensorData(uint8_t channelNumber, uint8_t fillLevel) {
 
   if (channelNumber == 255) {
     SUPLA_LOG_WARNING(
-        "Container[%d]::setSensorData: invalid channelNumber == 255",
+        "Container[%d] setSensorData: invalid channelNumber == 255",
         channelNumber);
     return false;
   }
@@ -347,7 +347,7 @@ enum Supla::Sensor::SensorState Container::getSensorState(
   auto ch = Supla::Channel::GetByChannelNumber(channelNumber);
   if (ch == nullptr) {
     SUPLA_LOG_WARNING(
-        "Container[%d]::getSensorLevel: "
+        "Container[%d] getSensorLevel: "
         "channel %d not found",
         getChannelNumber(),
         channelNumber);
@@ -356,7 +356,7 @@ enum Supla::Sensor::SensorState Container::getSensorState(
 
   if (ch->getChannelType() != SUPLA_CHANNELTYPE_BINARYSENSOR) {
     SUPLA_LOG_WARNING(
-        "Container[%d]::getSensorLevel: "
+        "Container[%d] getSensorLevel: "
         "channel %d is not a binary sensor",
         getChannelNumber(),
         channelNumber);
@@ -416,19 +416,19 @@ void Container::onLoadConfig(SuplaDeviceClass *) {
       config = tempConfig;
       printConfig();
     } else {
-      SUPLA_LOG_WARNING("Container[%d]: invalid config values",
+      SUPLA_LOG_WARNING("Container[%d] invalid config values",
                         getChannelNumber());
     }
   } else {
-    SUPLA_LOG_DEBUG("Container[%d]: no saved config found", getChannelNumber());
+    SUPLA_LOG_DEBUG("Container[%d] no saved config found", getChannelNumber());
   }
   loadConfigChangeFlag();
 }
 
 Supla::ApplyConfigResult Container::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
-  SUPLA_LOG_DEBUG(
-      "Contaier[%d]:applyChannelConfig, func %d, configtype %d, "
+  SUPLA_LOG_VERBOSE(
+      "Container[%d] applyChannelConfig, func %d, configtype %d, "
       "configsize %d",
       getChannelNumber(),
       result->Func,
@@ -482,7 +482,7 @@ Supla::ApplyConfigResult Container::applyChannelConfig(
       break;
     }
     default: {
-      SUPLA_LOG_WARNING("Container[%d]: unsupported func %d",
+      SUPLA_LOG_WARNING("Container[%d] unsupported func %d",
                         getChannelNumber(), result->Func);
       break;
     }
@@ -492,7 +492,7 @@ Supla::ApplyConfigResult Container::applyChannelConfig(
 
 void Container::printConfig() const {
   SUPLA_LOG_DEBUG(
-      "Container[%d]: warning above: %d, alarm above: %d, warning below: "
+      "Container[%d] warning above: %d, alarm above: %d, warning below: "
       "%d, alarm below: %d, mute by any user: %d",
       getChannelNumber(),
       config.warningAboveLevel - 1,
@@ -505,7 +505,7 @@ void Container::printConfig() const {
     if (sensor.channelNumber == 255) {
       continue;
     }
-    SUPLA_LOG_DEBUG("Container[%d]: sensor channel %d, fill level: %d",
+    SUPLA_LOG_DEBUG("Container[%d] sensor channel %d, fill level: %d",
                     getChannelNumber(),
                     sensor.channelNumber,
                     sensor.fillLevel);
@@ -560,7 +560,7 @@ void Container::fillChannelConfig(void *channelConfig,
     }
     default:
       SUPLA_LOG_WARNING(
-          "Container[%d]: fill channel config for unknown function %d",
+          "Container[%d] fill channel config for unknown function %d",
           channel.getChannelNumber(),
           channel.getDefaultFunction());
       return;
@@ -575,10 +575,10 @@ void Container::saveConfig() {
     if (cfg->setBlob(key,
                      reinterpret_cast<const char *>(&config),
                      sizeof(ContainerConfig))) {
-      SUPLA_LOG_INFO("Container[%d]: config saved successfully",
+      SUPLA_LOG_INFO("Container[%d] config saved successfully",
                      getChannelNumber());
     } else {
-      SUPLA_LOG_WARNING("Container[%d]: failed to save config",
+      SUPLA_LOG_WARNING("Container[%d] failed to save config",
                         getChannelNumber());
     }
 

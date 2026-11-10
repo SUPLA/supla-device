@@ -273,7 +273,7 @@ void FactoryTest::iterateAlways() {
   }
 
   if (!checkTestStep()) {
-    SUPLA_LOG_ERROR("TEST[%d,%d]: check test step failed", testStage, testStep);
+    SUPLA_LOG_ERROR("TEST[%d,%d] check test step failed", testStage, testStep);
     testFailed = true;
     // failReason should be set in checkTestStep
     // if it wasn't, fill it with default value
@@ -285,7 +285,7 @@ void FactoryTest::iterateAlways() {
   if (!testFinished) {
     // check timeout
     if (millis() - initTimestamp > timeoutS * 1000) {
-      SUPLA_LOG_ERROR("TEST[%d,%d]: timeout %d s elapsed. Failing...",
+      SUPLA_LOG_ERROR("TEST[%d,%d] timeout %d s elapsed. Failing...",
                       testStage,
                       testStep,
                       timeoutS);
@@ -295,7 +295,7 @@ void FactoryTest::iterateAlways() {
     //
     if (testFailed) {
       SUPLA_LOG_ERROR(
-          "TEST[%d,%d]: failed, schedule reset", testStage, testStep);
+          "TEST[%d,%d] failed, schedule reset", testStage, testStep);
       sdc->scheduleSoftRestart(2000);
       testFinished = true;
       testingMachineEnabled = false;
@@ -303,7 +303,7 @@ void FactoryTest::iterateAlways() {
   } else if (!testFailed) {
     // test finished successfully
     SUPLA_LOG_INFO(
-        "TEST[%d,%d]: testing done - SUCCESS!!!", testStage, testStep);
+        "TEST[%d,%d] testing done - SUCCESS!!!", testStage, testStep);
     sdc->handleAction(0, Supla::RESET_TO_FACTORY_SETTINGS);
     sdc->resetToFactorySettings();
     sdc->scheduleSoftRestart(1000);
@@ -323,7 +323,7 @@ void FactoryTest::handleAction(int event, int action) {
           waitForRegisteredAndReady = false;
           if (testStage != Supla::TestStage_Init) {
             SUPLA_LOG_ERROR(
-                "TEST[%d,%d]: invalid test stage for registered "
+                "TEST[%d,%d] invalid test stage for registered "
                 "and ready event",
                 testStage,
                 testStep);
@@ -338,11 +338,11 @@ void FactoryTest::handleAction(int event, int action) {
     }
     case Supla::TestAction_CfgButtonOnPress: {
       if (testStage < Supla::TestStage_RegisteredAndReady) {
-        SUPLA_LOG_INFO("TEST[%d,%d]: cfg button press received, but ignored",
+        SUPLA_LOG_INFO("TEST[%d,%d] cfg button press received, but ignored",
                        testStage,
                        testStep);
       } else if (testStage != Supla::TestStage_WaitForCfgButton) {
-        SUPLA_LOG_ERROR("TEST[%d,%d]: unexpected cfg button press received",
+        SUPLA_LOG_ERROR("TEST[%d,%d] unexpected cfg button press received",
                         testStage,
                         testStep);
         testFailed = true;
@@ -354,7 +354,7 @@ void FactoryTest::handleAction(int event, int action) {
     }
     default: {
       SUPLA_LOG_ERROR(
-          "TEST[%d,%d]: failed, received unexpected action %d from event %d",
+          "TEST[%d,%d] failed, received unexpected action %d from event %d",
           testStage,
           testStep,
           action,
@@ -368,7 +368,7 @@ void FactoryTest::handleAction(int event, int action) {
 void FactoryTest::waitForConfigButtonPress() {
   if (testStage != Supla::TestStage_RegisteredAndReady) {
     SUPLA_LOG_ERROR(
-        "TEST[%d,%d]: failed, waitForConfigButtonPress called"
+        "TEST[%d,%d] failed, waitForConfigButtonPress called"
         " in invalid stage",
         testStage,
         testStep);
@@ -376,7 +376,7 @@ void FactoryTest::waitForConfigButtonPress() {
     return;
   }
   SUPLA_LOG_INFO(
-      "TEST[%d,%d]: waiting for config button press", testStage, testStep);
+      "TEST[%d,%d] waiting for config button press", testStage, testStep);
   // led blink
   testStage = Supla::TestStage_WaitForCfgButton;
   sdc->status(STATUS_TEST_WAIT_FOR_CFG_BUTTON, F("Wait for config button"));

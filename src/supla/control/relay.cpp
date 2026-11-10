@@ -333,7 +333,7 @@ void Relay::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
 
 Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
                                                    bool local) {
-  SUPLA_LOG_DEBUG(
+  SUPLA_LOG_VERBOSE(
       "Relay[%d] applyChannelConfig, func %d, configtype %d, configsize "
       "%d",
       getChannelNumber(),
@@ -1365,7 +1365,7 @@ void Relay::updateTimerValue() {
     }
   }
 
-  SUPLA_LOG_DEBUG("Relay[%d] updating timer value: remainingTime=%d state=%d",
+  SUPLA_LOG_DEBUG("Relay[%d] timer=%dms state=%d",
                   channel.getChannelNumber(),
                   remainingTime,
                   state);
@@ -1852,10 +1852,10 @@ void Relay::saveConfig() const {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     generateKey(key, Supla::ConfigTag::RelayOvercurrentThreshold);
     if (cfg->setUInt32(key, overcurrentThreshold)) {
-      SUPLA_LOG_INFO("Relay[%d]: config saved successfully",
+      SUPLA_LOG_INFO("Relay[%d] config saved successfully",
                      getChannelNumber());
     } else {
-      SUPLA_LOG_WARNING("Relay[%d]: failed to save config", getChannelNumber());
+      SUPLA_LOG_WARNING("Relay[%d] failed to save config", getChannelNumber());
     }
 
     saveConfigChangeFlag();

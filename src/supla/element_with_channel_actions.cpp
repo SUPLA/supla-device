@@ -103,8 +103,9 @@ void ConfigTypesBitmap::clearAll() {
   all = 0;
 }
 
-void ConfigTypesBitmap::setAll(uint8_t values) {
-  SUPLA_LOG_DEBUG("ConfigTypesBitmap: Set all to 0x%X", values);
+void ConfigTypesBitmap::setAll(uint8_t values, int channelNumber) {
+  SUPLA_LOG_VERBOSE("Channel[%d] ConfigTypesBitmap set all to 0x%X",
+                    channelNumber, values);
   all = values;
 }
 
@@ -266,7 +267,8 @@ bool Supla::ElementWithChannelActions::loadConfigChangeFlag() {
             storedTypes);
       }
       locallyChangedConfigTypes.setAll(
-          static_cast<uint8_t>(storedTypes) & getUsedLocalConfigTypes());
+          static_cast<uint8_t>(storedTypes) & getUsedLocalConfigTypes(),
+          getChannelNumber());
       if (storedTypes !=
           static_cast<uint32_t>(locallyChangedConfigTypes.getAll())) {
         saveConfigChangeFlag();
@@ -295,12 +297,12 @@ bool Supla::ElementWithChannelActions::loadConfigChangeFlag() {
       if (legacyConfigChanged) {
         locallyChangedConfigTypes.setAll(
             locallyChangedConfigTypes.getAll() |
-            (usedLocalTypes & legacyConfigTypes));
+            (usedLocalTypes & legacyConfigTypes), getChannelNumber());
       }
       if (legacyWeeklyScheduleChanged) {
         locallyChangedConfigTypes.setAll(
             locallyChangedConfigTypes.getAll() |
-            (usedLocalTypes & legacyWeeklyTypes));
+            (usedLocalTypes & legacyWeeklyTypes), getChannelNumber());
       }
 
       if (legacyConfigChanged || legacyWeeklyScheduleChanged) {
@@ -321,9 +323,11 @@ bool Supla::ElementWithChannelActions::loadConfigChangeFlag() {
     setChannelConfigState(locallyChangedConfigTypes.getAll()
         ? Supla::ChannelConfigState::LocalChangePending
         : Supla::ChannelConfigState::None);
-    SUPLA_LOG_INFO("Channel[%d] locally changed config types: 0x%X",
-                   getChannelNumber(),
-                   locallyChangedConfigTypes.getAll());
+    if (locallyChangedConfigTypes.getAll() != 0) {
+      SUPLA_LOG_INFO("Channel[%d] locally changed config types: 0x%X",
+                     getChannelNumber(),
+                     locallyChangedConfigTypes.getAll());
+    }
     return true;
   }
   return false;
@@ -518,7 +522,7 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
 
 uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     TSD_ChannelConfig *result, bool local) {
-  SUPLA_LOG_DEBUG(
+  SUPLA_LOG_VERBOSE(
       "Channel[%d] handleChannelConfig, func %d, configtype %d, "
       "configsize %d",
       getChannelNumber(),
@@ -595,9 +599,11 @@ uint8_t Supla::ElementWithChannelActions::finishChannelConfig(
     TSD_ChannelConfig *result, ApplyConfigResult applyResult, bool local) {
   switch (applyResult) {
     case ApplyConfigResult::Success: {
-      SUPLA_LOG_INFO("Channel[%d] ConfigType %d applied",
-                     getChannelNumber(),
-                     result->ConfigType);
+      if (getActionTrigger() == nullptr) {
+        SUPLA_LOG_INFO("Channel[%d] ConfigType %d applied",
+                       getChannelNumber(),
+                       result->ConfigType);
+      }
       receivedConfigTypes.set(result->ConfigType);
       return SUPLA_CONFIG_RESULT_TRUE;
     }
@@ -814,7 +820,8 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
   auto usedLocalConfigTypes = getUsedLocalConfigTypes();
   if ((locallyChangedConfigTypes.getAll() & ~usedLocalConfigTypes) != 0) {
     locallyChangedConfigTypes.setAll(
-        locallyChangedConfigTypes.getAll() & usedLocalConfigTypes);
+        locallyChangedConfigTypes.getAll() & usedLocalConfigTypes,
+        getChannelNumber());
     saveConfigChangeFlag();
   }
 
@@ -874,7 +881,7 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
                                       reinterpret_cast<void *>(channelConfig),
                                       channelConfigSize,
                                       nextConfigType)) {
-            SUPLA_LOG_INFO(
+            SUPLA_LOG_VERBOSE(
                 "Channel[%d] SetChannelConfig send, func %d, type %s (%d)",
                 getChannelNumber(),
                 defaultFunction,
@@ -959,7 +966,7 @@ void Supla::ElementWithChannelActions::clearLocalConfigChanges(
 
   locallyChangedConfigTypes.setAll(
       locallyChangedConfigTypes.getAll() &
-      static_cast<uint8_t>(~typesToClear));
+      static_cast<uint8_t>(~typesToClear), getChannelNumber());
   if (getChannelConfigState() ==
       Supla::ChannelConfigState::LocalChangePending) {
     if (locallyChangedConfigTypes.getAll() != 0) {
@@ -989,7 +996,7 @@ int Supla::ElementWithChannelActions::getNextConfigType() const {
   if (receivedConfigTypes != usedConfigTypes) {
     ConfigTypesBitmap notRecieved;
     notRecieved.setAll((~receivedConfigTypes.getAll()) &
-                       usedConfigTypes.getAll());
+                       usedConfigTypes.getAll(), getChannelNumber());
     for (uint8_t i = 0; i < 8; i++) {
       if (notRecieved.isSet(i)) {
         return i;

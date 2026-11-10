@@ -1121,7 +1121,7 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
     auto cmdOpen = cmdOpenParameter.as<std::string>();
     cv->setCmdOpen(cmdOpen);
   } else {
-    SUPLA_LOG_ERROR("CmdValve[%d]: missing \"cmd_open\" parameter",
+    SUPLA_LOG_ERROR("CmdValve[%d] missing \"cmd_open\" parameter",
                     channelNumber);
     return false;
   }
@@ -1129,7 +1129,7 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
     auto cmdClose = cmdCloseParameter.as<std::string>();
     cv->setCmdClose(cmdClose);
   } else {
-    SUPLA_LOG_ERROR("CmdValve[%d]: missing \"cmd_close\" parameter",
+    SUPLA_LOG_ERROR("CmdValve[%d] missing \"cmd_close\" parameter",
                     channelNumber);
     return false;
   }
@@ -1179,7 +1179,7 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
     cr->setCmdUpOn(cmdUpOn);
   } else {
     SUPLA_LOG_ERROR(
-        "CmdRollerShutter[%d]: missing \"cmd_up_on\" parameter",
+        "CmdRollerShutter[%d] missing \"cmd_up_on\" parameter",
         channelNumber);
     return false;
   }
@@ -1188,7 +1188,7 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
     cr->setCmdUpOff(cmdUpOff);
   } else {
     SUPLA_LOG_ERROR(
-        "CmdRollerShutter[%d]: missing \"cmd_up_off\" parameter",
+        "CmdRollerShutter[%d] missing \"cmd_up_off\" parameter",
         channelNumber);
     return false;
   }
@@ -1198,7 +1198,7 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
     cr->setCmdDownOn(cmdDownOn);
   } else {
     SUPLA_LOG_ERROR(
-        "CmdRollerShutter[%d]: missing \"cmd_down_on\" parameter",
+        "CmdRollerShutter[%d] missing \"cmd_down_on\" parameter",
         channelNumber);
     return false;
   }
@@ -1208,7 +1208,7 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
     cr->setCmdDownOff(cmdDownOff);
   } else {
     SUPLA_LOG_ERROR(
-        "CmdRollerShutter[%d]: missing \"cmd_down_off\" parameter",
+        "CmdRollerShutter[%d] missing \"cmd_down_off\" parameter",
         channelNumber);
     return false;
   }
@@ -2883,7 +2883,9 @@ bool Supla::LinuxYamlConfig::addActionTriggerActions(
           return false;
         }
       } else if (el["use"]) {
-        SUPLA_LOG_INFO("Channel config: using action trigger \"%s\"",
+        SUPLA_LOG_INFO("Channel[%d] config: using action trigger \"%s\"",
+                       sensor->getChannel()
+                           ? sensor->getChannel()->getChannelNumber() : -1,
                        el["use"].as<std::string>().c_str());
         sensor->setAtName(el["use"].as<std::string>());
         atNameFound = true;
@@ -2905,7 +2907,7 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
                  channelNumber);
   if (auto related = getAndMarkChannelParameter(ch, "related_channel")) {
     if (!related.IsScalar() || related.as<std::string>().empty()) {
-      SUPLA_LOG_ERROR("Channel[%d]: related_channel must be a channel name",
+      SUPLA_LOG_ERROR("Channel[%d] related_channel must be a channel name",
           channelNumber);
       return false;
     }
@@ -2918,14 +2920,14 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
       seconds = parameter.as<int64_t>();
     } catch (const YAML::Exception&) {
       SUPLA_LOG_ERROR(
-          "Channel[%d]: temporary_unlock_duration_sec must be an integer",
+          "Channel[%d] temporary_unlock_duration_sec must be an integer",
           channelNumber);
       return false;
     }
     if (seconds < 0 || seconds > Supla::Control::ActionTriggerParsed::
                                    MaximumTemporaryUnlockDurationSec) {
       SUPLA_LOG_ERROR(
-          "Channel[%d]: temporary_unlock_duration_sec must be in 0..64800",
+          "Channel[%d] temporary_unlock_duration_sec must be in 0..64800",
           channelNumber);
       return false;
     }

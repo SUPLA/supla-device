@@ -38,7 +38,7 @@ struct ConfigTypesBitmap {
   bool isSet(int configType) const;
   void clear(int configType);
   void clearAll();
-  void setAll(uint8_t values);
+  void setAll(uint8_t values, int channelNumber = -1);
   uint8_t getAll() const;
   void set(int configType, bool value = true);
   bool operator!=(const ConfigTypesBitmap &other) const;

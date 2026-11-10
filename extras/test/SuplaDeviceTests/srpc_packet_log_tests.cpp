@@ -41,7 +41,7 @@ class SrpcPacketLogTests : public ::testing::Test {
 
 }  // namespace
 
-TEST_F(SrpcPacketLogTests, CompactRawReplyKeepsDirectionCallIdAndSize) {
+TEST_F(SrpcPacketLogTests, CompactConfigReplyKeepsDirectionCallIdAndSize) {
   TSDS_SetChannelConfigResult result = {};
   result.Result = SUPLA_CONFIG_RESULT_NOT_ALLOWED;
   result.ChannelNumber = 8;
@@ -49,7 +49,15 @@ TEST_F(SrpcPacketLogTests, CompactRawReplyKeepsDirectionCallIdAndSize) {
                       reinterpret_cast<const uint8_t *>(&result),
                       sizeof(result));
   EXPECT_STREQ(supla_test_get_last_log(),
-               "SRPC RX SET_CH_CFG_RES(691) size=3 raw=[06 00 08 ]");
+               "SRPC RX SET_CH_CFG_RES(691) size=3 "
+               "{Ch=8, CfgType=0(default), Res=6(NOT_ALLOWED)}");
+  result.Result = SUPLA_CONFIG_RESULT_TRUE;
+  srpc->logSrpcPacket(true, SUPLA_DS_CALL_SET_CHANNEL_CONFIG_RESULT,
+                      reinterpret_cast<const uint8_t *>(&result),
+                      sizeof(result));
+  EXPECT_STREQ(supla_test_get_last_log(),
+               "SRPC TX SET_CH_CFG_RES(692) size=3 "
+               "{Ch=8, CfgType=0(default), Res=1(OK)}");
 }
 
 TEST_F(SrpcPacketLogTests, CompactDecodedPacketOmitsPayloadLabel) {
@@ -88,6 +96,28 @@ TEST_F(SrpcPacketLogTests, ShortChannelConfigFieldsKeepRedaction) {
   EXPECT_NE(log.find("{Ch=8, Func=0, CfgType=0(default), CfgSize=16, "
                      "Cfg=<redacted>}"), std::string::npos);
   EXPECT_EQ(log.find("raw=["), std::string::npos);
+}
+
+TEST_F(SrpcPacketLogTests, ChannelConfigRawPayloadRequiresVerboseLogging) {
+  TSD_ChannelConfig config = {};
+  config.ChannelNumber = 8;
+  config.Func = SUPLA_CHANNELFNC_ACTIONTRIGGER;
+  config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  config.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  const auto size = offsetof(TSD_ChannelConfig, Config) + config.ConfigSize;
+  srpc->logSrpcPacket(false, SUPLA_SD_CALL_SET_CHANNEL_CONFIG,
+                      reinterpret_cast<const uint8_t *>(&config), size);
+  std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("{Ch=8, Func=700, CfgType=0(default), CfgSize=16}"),
+            std::string::npos);
+  EXPECT_EQ(log.find("raw=["), std::string::npos);
+
+  supla_log_set_level(LOG_VERBOSE);
+  srpc->logSrpcPacket(false, SUPLA_SD_CALL_SET_CHANNEL_CONFIG,
+                      reinterpret_cast<const uint8_t *>(&config), size);
+  log = supla_test_get_last_log();
+  EXPECT_NE(log.find("SRPC RX SET_CH_CFG(682) size=16 raw=["),
+            std::string::npos);
 }
 
 TEST_F(SrpcPacketLogTests, ShortFunctionFieldsDistinguishRelayAndRgbw) {

@@ -25,12 +25,12 @@ ImpulseCounter::ImpulseCounter(Supla::Io::IoPin impulsePin,
   prevState = (detectLowToHigh == true ? LOW : HIGH);
   newStateCandidate = prevState;
 
-  SUPLA_LOG_DEBUG("IC[%d]: impulsePin(%d), delay(%d ms)",
+  SUPLA_LOG_DEBUG("IC[%d] impulsePin(%d), delay(%d ms)",
                   getChannelNumber(),
                   this->impulsePin.getPin(),
                   debounceDelayMs);
   if (this->impulsePin.getPin() < 0) {
-    SUPLA_LOG_ERROR("IC[%d]: incorrect impulse pin number", getChannelNumber());
+    SUPLA_LOG_ERROR("IC[%d] incorrect impulse pin number", getChannelNumber());
   }
 }
 

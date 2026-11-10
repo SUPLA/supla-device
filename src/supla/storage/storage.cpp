@@ -327,7 +327,7 @@ bool Storage::readSection(int sectionId, unsigned char *data, int size) {
         int offset = ptr->offset;
         offset += entry * (ptr->size + (ptr->addCrc ? sizeof(uint16_t) : 0));
 
-        SUPLA_LOG_DEBUG("Storage special section[%d]: reading data from"
+        SUPLA_LOG_DEBUG("Storage special section[%d] reading data from"
             " entry %d at offset %d, size %d",
             sectionId, entry, offset, ptr->size);
 
@@ -390,7 +390,7 @@ bool Storage::writeSection(int sectionId, const unsigned char *data, int size) {
         delete[] currentData;
 
         if (isDataDifferent) {
-          SUPLA_LOG_DEBUG("Storage special section[%d]: writing data to"
+          SUPLA_LOG_DEBUG("Storage special section[%d] writing data to"
               " entry %d at offset %d, size %d",
               sectionId, entry, offset, ptr->size);
           auto wroteBytes = writeStorage(offset, data, size);
@@ -427,7 +427,7 @@ bool Storage::deleteSection(int sectionId) {
         int offset = ptr->offset;
         offset += entry * (ptr->size + (ptr->addCrc ? sizeof(uint16_t) : 0));
 
-        SUPLA_LOG_DEBUG("Storage special section[%d]: deleting data from"
+        SUPLA_LOG_DEBUG("Storage special section[%d] deleting data from"
             " entry %d at offset %d, size %d",
             sectionId, entry, offset, ptr->size);
 

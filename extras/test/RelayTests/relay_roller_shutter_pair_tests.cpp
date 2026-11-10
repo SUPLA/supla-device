@@ -689,7 +689,7 @@ TEST_F(RelayRollerShutterPairFixture,
   ProtocolLayerMock protoMock;
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _))
       .Times(AnyNumber());
-  EXPECT_CALL(protoMock, getChannelConfig(_, _)).Times(AnyNumber());
+  EXPECT_CALL(protoMock, getChannelConfig(_, _)).Times(0);
 
   Supla::Control::Button primaryButton(button0Gpio);
   Supla::Control::Button secondaryButton(button1Gpio);

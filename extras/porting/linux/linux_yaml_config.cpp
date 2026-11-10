@@ -59,6 +59,7 @@
 #include <algorithm>
 #include <cmath>
 #include <climits>
+#include <optional>
 #include <set>
 #include <cstring>
 #include <filesystem>  // NOLINT(build/c++17)
@@ -3004,9 +3005,33 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
       return false;
     }
   }
+  std::optional<uint32_t> temporaryUnlockDuration;
+  if (auto parameter =
+          getAndMarkChannelParameter(ch, "temporary_unlock_duration_sec")) {
+    int64_t seconds = -1;
+    try {
+      seconds = parameter.as<int64_t>();
+    } catch (const YAML::Exception&) {
+      SUPLA_LOG_ERROR(
+          "Channel[%d]: temporary_unlock_duration_sec must be an integer",
+          channelNumber);
+      return false;
+    }
+    if (seconds < 0 || seconds > Supla::Control::ActionTriggerParsed::
+                                   MaximumTemporaryUnlockDurationSec) {
+      SUPLA_LOG_ERROR(
+          "Channel[%d]: temporary_unlock_duration_sec must be in 0..64800",
+          channelNumber);
+      return false;
+    }
+    temporaryUnlockDuration = static_cast<uint32_t>(seconds);
+  }
   if (auto nameParameter = getAndMarkChannelParameter(ch, "name")) {
     auto name = nameParameter.as<std::string>();
     auto at = new Supla::Control::ActionTriggerParsed(name);
+    if (temporaryUnlockDuration.has_value()) {
+      at->setTemporaryUnlockDurationSec(*temporaryUnlockDuration);
+    }
     return addCommonParameters(ch, at);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: mandatory \"name\" parameter missing",

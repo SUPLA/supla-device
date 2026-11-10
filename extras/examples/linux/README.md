@@ -1492,6 +1492,20 @@ AMIplus meter on standard single tariff:
 Creates instance of "action trigger" channel. There is only one mandatory
 parameter `name` which is used in other channels to reference this channel.
 
+Optional `temporary_unlock_duration_sec` sets the default temporary unlock
+duration (`TemporaryUnlockDurationSec` in the Action Trigger channel config).
+It accepts an integer from `0` to `64800` seconds. When present, it is applied
+at each startup as a local channel config change and synchronized with the
+SUPLA server. Other Action Trigger config fields are preserved. When omitted,
+the saved/server configuration is used. For example, to test a 30-second unlock:
+
+```yaml
+channels:
+  - type: ActionTriggerParsed
+    name: test_button
+    temporary_unlock_duration_sec: 30
+```
+
 Optional `related_channel` names another channel in the same YAML configuration.
 It accepts any channel type, including a relay, roller shutter or sensor. Several
 action triggers can reference the same channel. The target may appear before or

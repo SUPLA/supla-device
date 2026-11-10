@@ -43,6 +43,18 @@ class ESPETHSPI : public Supla::LAN {
 
     static void networkEventHandler(arduino_event_id_t event) {
       switch (event) {
+        case ARDUINO_EVENT_ETH_CONNECTED: {
+          if (thisSpiEth) {
+            thisSpiEth->setLinkConnected(true);
+          }
+          break;
+        }
+        case ARDUINO_EVENT_ETH_LOST_IP: {
+          if (thisSpiEth) {
+            thisSpiEth->setIpv4Addr(0);
+          }
+          break;
+        }
         case ARDUINO_EVENT_ETH_GOT_IP: {
             IPAddress localIP = ETH.localIP();
             IPAddress subnetMaskIP = ETH.subnetMask();
@@ -83,7 +95,7 @@ class ESPETHSPI : public Supla::LAN {
         case ARDUINO_EVENT_ETH_DISCONNECTED: {
             SUPLA_LOG_INFO("[Ethernet] Disconnected");
             if (thisSpiEth) {
-              thisSpiEth->setIpv4Addr(0);
+              thisSpiEth->setLinkConnected(false);
             }
             break;
           }
@@ -91,15 +103,20 @@ class ESPETHSPI : public Supla::LAN {
     }
 
     void setup() override {
-      allowDisable = true;
+      setAllowDisable(true);
       if (initDone) {
+        // The Arduino driver stays running while protocols are disabled.
+        setLinkConnected(ETH.linkUp());
+        if (ETH.linkUp()) {
+          setIpv4Addr(ETH.localIP());
+        }
         return;
       }
 
       ::Network.onEvent(Supla::ESPETHSPI::networkEventHandler);
 
       SUPLA_LOG_INFO("[Ethernet] establishing LAN connection");
-      ETH.begin(ethspi_type,
+      const bool started = ETH.begin(ethspi_type,
                 ethspi_phy_addr,
                 cs_pin,
                 irq_pin,
@@ -108,6 +125,9 @@ class ESPETHSPI : public Supla::LAN {
                 sck_pin,
                 miso_pin,
                 mosi_pin);
+      reportStartResult(started);
+
+      setStaticIpApplied(false);
       if (hasStaticIpConfig()) {
         const auto &cfg = getNetifConfig();
         IPAddress localIp = toArduinoIpAddress(cfg.ip);
@@ -115,7 +135,10 @@ class ESPETHSPI : public Supla::LAN {
         IPAddress subnet = toArduinoIpAddress(cfg.netmask);
         IPAddress dns1 = toArduinoIpAddress(cfg.dns1);
         IPAddress dns2 = toArduinoIpAddress(cfg.dns2);
-        if (!ETH.config(localIp, gateway, subnet, dns1, dns2)) {
+        const bool applied =
+            ETH.config(localIp, gateway, subnet, dns1, dns2);
+        setStaticIpApplied(applied);
+        if (!applied) {
           SUPLA_LOG_WARNING("ETH SPI static IP config failed, continuing");
         }
       }
@@ -129,11 +152,11 @@ class ESPETHSPI : public Supla::LAN {
     }
 
     void disable() override {
-      if (!allowDisable) {
+      if (!takeAllowDisable()) {
         return;
       }
 
-      allowDisable = false;
+      resetLinkState();
       SUPLA_LOG_DEBUG("[%s] disabling ETH connection", getIntfName());
       DisconnectProtocols();
       //    ETH.end();
@@ -166,7 +189,6 @@ class ESPETHSPI : public Supla::LAN {
     int sck_pin;
     int miso_pin;
     int mosi_pin;
-    bool allowDisable = false;
     int macSizeForHostname = 0;
     bool initDone = false;
 };

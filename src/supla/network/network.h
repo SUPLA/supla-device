@@ -17,6 +17,7 @@ const char WifiDisableTag[] = "wifi_dis";
 const char EthDisableTag[] = "eth_dis";
 
 class Client;
+class Mutex;
 
 class Network {
  public:
@@ -70,12 +71,18 @@ class Network {
   void generateHostname(const char *prefix, int macSize, char *output);
   virtual bool isIpSetupTimeout();
   virtual uint32_t getIP();
+  // Event adapters update these through the shared state machine.
+  void setIpv4Addr(uint32_t ip);
+  void setLinkConnected(bool connected, const char *reason = "disconnected");
+  bool isLinkConnected() const;
+  bool isStaticIpApplied() const;
+  bool isStateLoggingAllowed() const;
   bool hasStaticIpConfig() const;
   const NetifConfigBlob& getNetifConfig() const;
 
   virtual Supla::Client *createClient();
 
-  virtual bool isReady() = 0;
+  virtual bool isReady();
   virtual bool iterate();
 
   virtual void fillStateData(TDSC_ChannelState *channelState);
@@ -100,6 +107,18 @@ class Network {
   bool isIntfDisabledInConfig() const;
 
  protected:
+  // Messages are suffixes; the interface name is prepended here.
+  // Deliberate shutdown suppresses diagnostics until the next setup.
+  void logLastState(const char *message);
+  void reportStartResult(bool success);
+  void resetLinkState();
+  void setAllowDisable(bool value);
+  bool takeAllowDisable();
+  void setStaticIpApplied(bool applied);
+  // Requires stateMutex. Returns false if the event is rejected.
+  bool applyLinkConnectedLocked(bool connected);
+  Supla::Mutex *stateMutex = nullptr;
+
   static Network *netIntf;
   static Network *firstNetIntf;
 
@@ -118,6 +137,15 @@ class Network {
   bool intfDisabledInConfig = false;
   bool testMode = false;
   NetifConfigBlob netifConfig = {};
+
+ private:
+  void applyIpv4AddrLocked(uint32_t ip);
+  bool allowDisable = false;
+  bool staticIpApplied = false;
+  bool linkConnected = false;
+  bool startFailureLogged = false;
+  bool isIpReady = false;
+  uint32_t ipv4 = 0;
 };
 
 };  // namespace Supla

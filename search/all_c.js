@@ -12,5 +12,6 @@ var searchData=
   ['lightrelaystatedata_9',['LightRelayStateData',['../structSupla_1_1Control_1_1LightRelayStateData.html',1,'Supla::Control']]],
   ['list_10',['Deprecated List',['../deprecated.html',1,'']]],
   ['littlefsconfig_11',['LittleFsConfig',['../classSupla_1_1LittleFsConfig.html',1,'Supla']]],
-  ['localaction_12',['LocalAction',['../classSupla_1_1LocalAction.html',1,'Supla']]]
+  ['localaction_12',['LocalAction',['../classSupla_1_1LocalAction.html',1,'Supla']]],
+  ['logindent_13',['LogIndent',['../classSupla_1_1LogIndent.html',1,'Supla']]]
 ];

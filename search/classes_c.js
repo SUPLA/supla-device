@@ -8,5 +8,6 @@ var searchData=
   ['lightrelay_5',['LightRelay',['../classSupla_1_1Control_1_1LightRelay.html',1,'Supla::Control']]],
   ['lightrelaystatedata_6',['LightRelayStateData',['../structSupla_1_1Control_1_1LightRelayStateData.html',1,'Supla::Control']]],
   ['littlefsconfig_7',['LittleFsConfig',['../classSupla_1_1LittleFsConfig.html',1,'Supla']]],
-  ['localaction_8',['LocalAction',['../classSupla_1_1LocalAction.html',1,'Supla']]]
+  ['localaction_8',['LocalAction',['../classSupla_1_1LocalAction.html',1,'Supla']]],
+  ['logindent_9',['LogIndent',['../classSupla_1_1LogIndent.html',1,'Supla']]]
 ];

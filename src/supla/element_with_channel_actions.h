@@ -127,6 +127,8 @@ class ElementWithChannelActions : public Element, public LocalAction {
       bool localChange = false);
 
  protected:
+  // Config handlers with their own summary suppress the generic success log.
+  virtual bool hasChannelConfigSummary(uint8_t) const { return false; }
   // returns true if function was changed (previous one was different)
   virtual bool setAndSaveFunction(uint32_t channelFunction);
   virtual bool loadFunctionFromConfig();

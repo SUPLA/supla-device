@@ -36,6 +36,10 @@ void supla_log(int, const char *fmt, ...) {
   va_end(args);
 }
 
+extern "C" void supla_vlog(int, const char *message) {
+  snprintf(lastLog, sizeof(lastLog), "%s", message ? message : "");
+}
+
 extern "C" const char *supla_test_get_last_log() {
   return lastLog;
 }

@@ -141,11 +141,16 @@ int main(int argc, char *argv[]) {
 
     std::string cfgFile = result["config"].as<std::string>();
     auto config = std::make_unique<Supla::LinuxYamlConfig>(cfgFile);
+    SUPLA_LOG_INFO("Startup: sd4linux config");
     // we init it earlier than in SuplaDevice.begin, because it is needed
     // earlier
-    if (!config->init()) {
-      SUPLA_LOG_ERROR("Configuration initialization failed. Exit");
-      exit(1);
+    {
+      Supla::LogIndent configIndent;
+      SUPLA_LOG_INFO("Config file: %s", cfgFile.c_str());
+      if (!config->init()) {
+        SUPLA_LOG_ERROR("Configuration initialization failed. Exit");
+        exit(1);
+      }
     }
 
     if (result.count("debug") || config->isDebug()) {
@@ -165,17 +170,22 @@ int main(int argc, char *argv[]) {
     }
     SuplaDevice.setLogLevel(logLevel);
 
-    SUPLA_LOG_INFO(" *** Starting supla-device ***");
-    SUPLA_LOG_INFO("Using config file %s", cfgFile.c_str());
-
     st_hook_signals();
 
-    auto clock = std::make_unique<Supla::LinuxClock>();
-    (void)(clock);
+    SUPLA_LOG_INFO("Startup: clock");
+    std::unique_ptr<Supla::LinuxClock> clock;
+    {
+      Supla::LogIndent clockIndent;
+      clock = std::make_unique<Supla::LinuxClock>();
+    }
 
-    if (!config->loadChannels()) {
-      SUPLA_LOG_ERROR("Loading channels failed. Exit");
-      exit(1);
+    SUPLA_LOG_INFO("Startup: channel setup");
+    {
+      Supla::LogIndent channelsIndent;
+      if (!config->loadChannels()) {
+        SUPLA_LOG_ERROR("Loading channels failed. Exit");
+        exit(1);
+      }
     }
 
     Supla::LinuxFileStorage storage(config->getStateFilesPath());
@@ -184,9 +194,13 @@ int main(int argc, char *argv[]) {
         new Supla::Device::FileStateLogger(config->getStateFilesPath()));
     Supla::LinuxNetwork network;
 
-    if (!setupLinuxSupletRuntime(config.get())) {
-      SUPLA_LOG_ERROR("Suplet runtime setup failed. Exit");
-      exit(1);
+    SUPLA_LOG_INFO("Startup: suplet setup");
+    {
+      Supla::LogIndent supletsIndent;
+      if (!setupLinuxSupletRuntime(config.get())) {
+        SUPLA_LOG_ERROR("Suplet runtime setup failed. Exit");
+        exit(1);
+      }
     }
 
     SuplaDevice.setProtoVerboseLog(config->isProtoVerboseLog());
@@ -197,15 +211,27 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
-    if (!initLinuxDebugSocket(result["debug-socket"].as<std::string>())) {
-      SUPLA_LOG_ERROR("Debug socket init failed. Exit");
-      exit(1);
+    SUPLA_LOG_INFO("Startup: debug interfaces");
+    {
+      Supla::LogIndent debugIndent;
+      if (!initLinuxDebugSocket(result["debug-socket"].as<std::string>())) {
+        SUPLA_LOG_ERROR("Debug socket init failed. Exit");
+        exit(1);
+      }
     }
     Supla::Debug::DebugLogTcpServer debugLogServer(
         result["debug-log-port"].as<uint16_t>());
-    debugLogServer.begin();
+    {
+      Supla::LogIndent debugIndent;
+      debugLogServer.begin();
+    }
 
-    Supla::LinuxMqttClient::start();
+    SUPLA_LOG_INFO("Startup: MQTT");
+    {
+      Supla::LogIndent mqttIndent;
+      Supla::LinuxMqttClient::start();
+    }
+    SUPLA_LOG_INFO("Startup: sd4linux ready");
 
     while (st_app_terminate == 0) {
       iterateLinuxDebugSocket();

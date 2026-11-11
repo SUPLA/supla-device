@@ -484,6 +484,7 @@ void logRegisterDeviceHeader(int callId,
       size,
       static_cast<unsigned int>(packet->version));
 
+  Supla::LogIndent headerDetailsIndent;
   SUPLA_LOG_DEBUG("SRPC cont=[Name=\"%s\", SoftVer=\"%s\"]",
                   escapedName,
                   escapedSoftVer);
@@ -674,6 +675,7 @@ void logChannelConfigRawPayload(int callId,
   if (!supla_log_is_enabled(LOG_VERBOSE)) {
     return;
   }
+  Supla::LogIndent payloadIndent;
   logRawHexDump(direction,
                 callId,
                 callName,
@@ -816,7 +818,7 @@ void logRegisterDeviceChannelChunk(int callId,
           : static_cast<uint32_t>(channel->FuncList);
   (void)funcFieldValue;
 
-  SUPLA_LOG_DEBUG(
+  SUPLA_LOG_VERBOSE(
       "SRPC %s %s(%d) size=%zu {Ch=%u, Type=%" PRId32
       ", %s=0x%" PRIX32 ", DefFunc=%" PRId32 ", Flags=0x%" PRIX32 "%08" PRIX32
       ", Offline=%u(%s), ValidSec=%" PRIu32 ", "
@@ -864,7 +866,7 @@ void logRegisterDeviceChannelChunk(int callId,
     funcFieldValue = channel->FuncList;
   }
 
-  SUPLA_LOG_DEBUG(
+  SUPLA_LOG_VERBOSE(
       "SRPC %s %s(%d) size=%zu {Ch=%u, Type=%" PRId32
       ", %s=0x%" PRIX32 ", DefFunc=%" PRId32 ", Flags=0x%" PRIX32 "%08" PRIX32
       ", Offline=%u(%s), ValidSec=%" PRIu32 ", "
@@ -1116,6 +1118,9 @@ void Supla::Protocol::SuplaSrpc::logSrpcPacket(bool send,
   }
 
   if (looksLikeRegisterDeviceChannelChunk(callId, buf, size)) {
+    if (!supla_log_is_enabled(LOG_VERBOSE)) {
+      return;
+    }
     if (callId == SUPLA_DS_CALL_REGISTER_DEVICE_F) {
       logRegisterDeviceChannelChunk(
           callId,
@@ -1505,6 +1510,7 @@ void Supla::messageReceived(void *srpc,
   suplaSrpc->updateLastResponseTime();
 
   if (SUPLA_RESULT_TRUE == (getDataResult = srpc_getdata(srpc, &rd, 0))) {
+    Supla::LogIndent messageIndent;
     switch (rd.call_id) {
       case SUPLA_SDC_CALL_VERSIONERROR:
         suplaSrpc->onVersionError(rd.data.sdc_version_error);
@@ -1688,13 +1694,6 @@ void Supla::messageReceived(void *srpc,
           result.Result = SUPLA_RESULTCODE_CHANNELNOTFOUND;
           auto element =
               Supla::Element::getElementByChannelNumber(request->ChannelNumber);
-          SUPLA_LOG_VERBOSE(
-              "Channel[%d] Received SetChannelConfig: fnc %d"
-              ", config type %d, config size %d",
-              request->ChannelNumber,
-              request->Func,
-              request->ConfigType,
-              request->ConfigSize);
 
           if (element) {
             switch (request->ConfigType) {
@@ -1719,10 +1718,7 @@ void Supla::messageReceived(void *srpc,
                 "Error: couldn't find element for a requested channel [%d]",
                 request->ChannelNumber);
           }
-          if (result.Result == SUPLA_CONFIG_RESULT_TRUE) {
-            SUPLA_LOG_VERBOSE("Channel[%d] config reply OK, type=%u",
-                              request->ChannelNumber, request->ConfigType);
-          } else {
+          if (result.Result != SUPLA_CONFIG_RESULT_TRUE) {
             SUPLA_LOG_WARNING("Channel[%d] config reply %s (%d), type=%u",
                 request->ChannelNumber,
                 Supla::Protocol::SuplaSrpc::configResultToCStr(result.Result),
@@ -1893,9 +1889,8 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
       // A TCP connection alone is not enough to end the failure sequence.
       // Reset backoff only after the server accepts registration.
       reconnectAttemptCounter = 0;
-      SUPLA_LOG_DEBUG(
-          "Device registered (activity timeout %d s, server version: %d, "
-          "server min version: %d)",
+      SUPLA_LOG_INFO(
+          "SUPLA: registered, TimeoutSec=%d, Proto=%d, MinProto=%d",
           registerDeviceResult->activity_timeout,
           registerDeviceResult->version,
           registerDeviceResult->version_min);
@@ -2272,7 +2267,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       sdc->uptime.resetConnectionUptime();
       connectionFailCounter = 0;
       //      lastConnectionResetCounter = 0;
-      SUPLA_LOG_INFO("Connected to Supla Server");
+      SUPLA_LOG_INFO("SUPLA: connected");
       initializeSrpc();
     } else {
       if (!firstConnectionAttempt) {
@@ -2318,7 +2313,6 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   if (registered == 0) {
     // Perform registration if we are not yet registered
     registered = -1;
-    sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
     auto *registerHeader = Supla::RegisterDevice::getRegDevHeaderPtr();
     if (Supla::RegisterDevice::isSleepingDeviceEnabled() &&
         effectiveSrpcVersion(version) >= 29) {
@@ -2327,13 +2321,15 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       registerHeader->Flags &= ~SUPLA_DEVICE_FLAG_SYNC_DONE_SUPPORTED;
     }
     SUPLA_LOG_INFO(
-        "Registering device: wire_proto=%u, MfrId=%d, ProdId=%d, "
+        "SUPLA: registering, wire_proto=%u, MfrId=%d, ProdId=%d, "
         "Flags=0x%" PRIX32 ", ChCount=%u",
         static_cast<unsigned int>(effectiveSrpcVersion(version)),
         static_cast<int>(registerHeader->ManufacturerID),
         static_cast<int>(registerHeader->ProductID),
         static_cast<uint32_t>(registerHeader->Flags),
         static_cast<unsigned int>(registerHeader->channel_count));
+    Supla::LogIndent registrationIndent;
+    sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
     if (version <= 24) {
       if (!srpc_ds_async_registerdevice_in_chunks(
               srpc,
@@ -2755,7 +2751,6 @@ bool Supla::Protocol::SuplaSrpc::setInitialCaption(uint8_t channelNumber,
 
 void Supla::Protocol::SuplaSrpc::handleDeviceConfig(
     TSDS_SetDeviceConfig *request) {
-  SUPLA_LOG_INFO("Received new device config");
   if (remoteDeviceConfig == nullptr) {
     remoteDeviceConfig = new Supla::Device::RemoteDeviceConfig(
         !setDeviceConfigReceivedAfterRegistration);
@@ -2767,9 +2762,12 @@ void Supla::Protocol::SuplaSrpc::handleDeviceConfig(
     {
       TSDS_SetDeviceConfigResult result = {};
       result.Result = remoteDeviceConfig->getResultCode();
-      SUPLA_LOG_INFO("Sending device config result %s (%d)",
-                     configResultToCStr(result.Result),
-                     result.Result);
+      if (result.Result == SUPLA_CONFIG_RESULT_TRUE) {
+        SUPLA_LOG_INFO("Device config processed: OK");
+      } else {
+        SUPLA_LOG_WARNING("Device config rejected: %s (%d)",
+                          configResultToCStr(result.Result), result.Result);
+      }
       srpc_ds_async_set_device_config_result(srpc, &result);
     }
 
@@ -3153,7 +3151,7 @@ void Supla::Protocol::SuplaSrpc::initializeSrpc() {
 
   // Set Supla protocol interface version
   srpc_set_proto_version(srpc, version);
-  SUPLA_LOG_INFO("SRPC init: requested=%d, wire=%u, supported=%u..%u",
+  SUPLA_LOG_DEBUG("SRPC: requested=%d, wire=%u, supported=%u..%u",
                  version,
                  static_cast<unsigned int>(effectiveSrpcVersion(version)),
                  static_cast<unsigned int>(SUPLA_PROTO_VERSION_MIN),

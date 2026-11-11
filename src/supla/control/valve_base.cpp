@@ -225,14 +225,6 @@ void ValveBase::onSaveState() {
 
 Supla::ApplyConfigResult ValveBase::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
-  SUPLA_LOG_VERBOSE(
-      "Valve[%d] applyChannelConfig, func %d, configtype %d, configsize "
-      "%d",
-      getChannelNumber(),
-      result->Func,
-      result->ConfigType,
-      result->ConfigSize);
-
   if (result->ConfigSize == 0) {
     return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }

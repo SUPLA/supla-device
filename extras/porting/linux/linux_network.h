@@ -17,6 +17,7 @@ class LinuxNetwork : public Network {
   void setup() override;
   bool iterate() override;
   void disable() override;
+  const char *getIntfName() const override;
   void fillStateData(TDSC_ChannelState *channelState) override;
 
  protected:

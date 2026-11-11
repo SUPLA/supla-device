@@ -893,7 +893,6 @@ bool HvacBase::isDrySupported() const {
 
 uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
                                       bool local) {
-  SUPLA_LOG_VERBOSE("HVAC[%d] processing channel config", getChannelNumber());
   if (newConfig == nullptr) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }

@@ -286,12 +286,7 @@ bool NativeWeeklyScheduleConfigHandler::saveSchedule(bool alt, bool notify) {
       cfg->setBlob(key,
                    reinterpret_cast<const char *>(schedule),
                    sizeof(TChannelConfig_WeeklySchedule));
-  if (persisted_[alt ? 1 : 0]) {
-    SUPLA_LOG_VERBOSE("%s[%d] %s saved successfully",
-                   getDeviceLabel(),
-                   owner->getChannelNumber(),
-                   getScheduleLabel(alt));
-  } else {
+  if (!persisted_[alt ? 1 : 0]) {
     SUPLA_LOG_WARNING("%s[%d] failed to save %s",
                       getDeviceLabel(),
                       owner->getChannelNumber(),

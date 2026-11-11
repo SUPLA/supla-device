@@ -522,14 +522,6 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
 
 uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     TSD_ChannelConfig *result, bool local) {
-  SUPLA_LOG_VERBOSE(
-      "Channel[%d] handleChannelConfig, func %d, configtype %d, "
-      "configsize %d",
-      getChannelNumber(),
-      result->Func,
-      result->ConfigType,
-      result->ConfigSize);
-
   if (shouldProcessChannelFunctionFromConfig()) {
     // Apply channel function setting
     auto newFunction = static_cast<uint32_t>(result->Func);
@@ -565,7 +557,7 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
   if (result->ConfigType != SUPLA_CONFIG_TYPE_OCR) {
     if (isLocalChannelConfigChangePending(result->ConfigType) && !local) {
       SUPLA_LOG_INFO(
-          "Channel[%d] Ignoring config (local config changed offline)",
+          "Channel[%d] config deferred: local changes pending",
           getChannelNumber());
       return SUPLA_CONFIG_RESULT_TRUE;
     }
@@ -599,7 +591,8 @@ uint8_t Supla::ElementWithChannelActions::finishChannelConfig(
     TSD_ChannelConfig *result, ApplyConfigResult applyResult, bool local) {
   switch (applyResult) {
     case ApplyConfigResult::Success: {
-      if (getActionTrigger() == nullptr) {
+      if (getActionTrigger() == nullptr &&
+          !hasChannelConfigSummary(result->ConfigType)) {
         SUPLA_LOG_INFO("Channel[%d] ConfigType %d applied",
                        getChannelNumber(),
                        result->ConfigType);
@@ -664,12 +657,7 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
 
   bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
 
-  if (success) {
-    SUPLA_LOG_INFO(
-        "Channel[%d] setChannelConfig succeeded (%d) for type %s (%d)",
-        getChannelNumber(), result->Result,
-        configTypeToString(result->ConfigType), result->ConfigType);
-  } else {
+  if (!success) {
     SUPLA_LOG_WARNING(
         "Channel[%d] setChannelConfig failed (%d) for type %s (%d)",
         getChannelNumber(), result->Result,
@@ -881,12 +869,6 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
                                       reinterpret_cast<void *>(channelConfig),
                                       channelConfigSize,
                                       nextConfigType)) {
-            SUPLA_LOG_VERBOSE(
-                "Channel[%d] SetChannelConfig send, func %d, type %s (%d)",
-                getChannelNumber(),
-                defaultFunction,
-                configTypeToString(nextConfigType),
-                nextConfigType);
             if (isLocalChannelConfigChangePending(nextConfigType)) {
               setChannelConfigState(Supla::ChannelConfigState::LocalChangeSent);
             } else {

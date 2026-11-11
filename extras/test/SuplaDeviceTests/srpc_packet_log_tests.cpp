@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <SuplaDevice.h>
 #include <supla-common/log.h>
+#include <supla/log_indent.h>
 #include <supla/protocol/supla_srpc.h>
 #include <string>
 #include <vector>
@@ -61,6 +62,7 @@ TEST_F(SrpcPacketLogTests, CompactConfigReplyKeepsDirectionCallIdAndSize) {
 }
 
 TEST_F(SrpcPacketLogTests, CompactDecodedPacketOmitsPayloadLabel) {
+  supla_log_set_level(LOG_VERBOSE);
   TDS_SuplaDeviceChannel_E channel = {};
   channel.Number = 8;
   channel.Type = SUPLA_CHANNELTYPE_ACTIONTRIGGER;
@@ -116,11 +118,12 @@ TEST_F(SrpcPacketLogTests, ChannelConfigRawPayloadRequiresVerboseLogging) {
   srpc->logSrpcPacket(false, SUPLA_SD_CALL_SET_CHANNEL_CONFIG,
                       reinterpret_cast<const uint8_t *>(&config), size);
   log = supla_test_get_last_log();
-  EXPECT_NE(log.find("SRPC RX SET_CH_CFG(682) size=16 raw=["),
-            std::string::npos);
+  EXPECT_EQ(log.find("  SRPC RX SET_CH_CFG(682) size=16 raw=["), 0U);
+  EXPECT_EQ(Supla::LogIndent::spaces(), 0);
 }
 
 TEST_F(SrpcPacketLogTests, ShortFunctionFieldsDistinguishRelayAndRgbw) {
+  supla_log_set_level(LOG_VERBOSE);
   TDS_SuplaDeviceChannel_E channel = {};
   channel.Type = SUPLA_CHANNELTYPE_RELAY;
   channel.FuncList = 0x12;
@@ -144,6 +147,22 @@ TEST_F(SrpcPacketLogTests, CompactPingKeepsMetadataWithoutPayload) {
   const std::string expected = "SRPC TX PING(" +
       std::to_string(SUPLA_DCS_CALL_PING_SERVER) + ") size=0";
   EXPECT_STREQ(supla_test_get_last_log(), expected.c_str());
+}
+
+TEST_F(SrpcPacketLogTests, RegistrationChannelDetailsRequireVerboseLogging) {
+  TDS_SuplaDeviceChannel_E channel = {};
+  channel.Type = SUPLA_CHANNELTYPE_ACTIONTRIGGER;
+  srpc->logSrpcPacket(true, SUPLA_DS_CALL_REGISTER_DEVICE_G,
+                      reinterpret_cast<const uint8_t *>(&channel),
+                      sizeof(channel));
+  EXPECT_STREQ(supla_test_get_last_log(), "");
+  supla_log_set_level(LOG_VERBOSE);
+  srpc->logSrpcPacket(true, SUPLA_DS_CALL_REGISTER_DEVICE_G,
+                      reinterpret_cast<const uint8_t *>(&channel),
+                      sizeof(channel));
+  EXPECT_NE(std::string(supla_test_get_last_log()).find("ATCaps="),
+            std::string::npos);
+  EXPECT_EQ(Supla::LogIndent::spaces(), 0);
 }
 
 TEST_F(SrpcPacketLogTests, CompactRegistrationStillRedactsSensitiveData) {

@@ -7,6 +7,7 @@
 #include <supla/supla_lib_config.h>
 #include <string.h>
 #include <supla/log_wrapper.h>
+#include <supla/log_indent.h>
 #include <SuplaDevice.h>
 #include <stdio.h>
 
@@ -33,18 +34,16 @@ int Supla::Client::connect(IPAddress ip, uint16_t port) {
 }
 
 int Supla::Client::connect(const char *host, uint16_t port) {
+  SUPLA_LOG_INFO("Connecting to %s:%u (%s)", host,
+                 static_cast<unsigned int>(port),
+                 sslEnabled ? "TLS" : "plain TCP");
+  Supla::LogIndent connectionIndent;
   if (sslEnabled) {
     if (!isCertificateValidationEnabled()) {
       SUPLA_LOG_WARNING(
-              "Connecting without certificate validation (INSECURE)");
+              "TLS: certificate verification disabled (INSECURE)");
     }
   }
-
-  SUPLA_LOG_INFO(
-            "Establishing %sencrypted connection with: %s (port: %d)",
-            sslEnabled ? "" : "NOT ",
-            host,
-            port);
 
   return connectImp(host, port);
 }

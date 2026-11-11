@@ -157,81 +157,100 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   }
   initializationDone = true;
 
-  SUPLA_LOG_INFO("Init: platform=%d",
+  SUPLA_LOG_INFO("Startup: platform=%d",
                  Supla::getPlatformId());
 
-  if (getClock() == nullptr) {
-    SUPLA_LOG_DEBUG("Clock not configured, using default clock");
-    new Supla::Clock();
+  {
+    Supla::LogIndent platformIndent;
+    if (getClock() == nullptr) {
+      SUPLA_LOG_DEBUG("Clock not configured, using default clock");
+      new Supla::Clock();
+    }
+
+    if (protoVersion < 23) {
+      SUPLA_LOG_ERROR(
+          "Minimum supported protocol version is 23! Setting to 23 anyway");
+      protoVersion = 23;
+    }
+    if (protoVersion >= 21) {
+      SUPLA_LOG_DEBUG("SD: add flag DEVICE_CONFIG_SUPPORTED");
+      addFlags(SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED);
+    }
+    if (isDeviceSoftwareResetSupported()) {
+      SUPLA_LOG_DEBUG("SD: add flag CALCFG_RESTART_DEVICE");
+      addFlags(SUPLA_DEVICE_FLAG_CALCFG_RESTART_DEVICE);
+    }
+
+    // Initialize protocol layers
+    createSrpcLayerIfNeeded();
+    srpcLayer->setVersion(protoVersion);
   }
 
-  if (protoVersion < 23) {
-    SUPLA_LOG_ERROR(
-        "Minimum supported protocol version is 23! Setting to 23 anyway");
-    protoVersion = 23;
+  SUPLA_LOG_INFO("Startup: storage");
+  {
+    Supla::LogIndent storageInitIndent;
+    storageInitResult = Supla::Storage::Init();
   }
-  if (protoVersion >= 21) {
-    SUPLA_LOG_DEBUG("SD: add flag DEVICE_CONFIG_SUPPORTED");
-    addFlags(SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED);
-  }
-  if (isDeviceSoftwareResetSupported()) {
-    SUPLA_LOG_DEBUG("SD: add flag CALCFG_RESTART_DEVICE");
-    addFlags(SUPLA_DEVICE_FLAG_CALCFG_RESTART_DEVICE);
-  }
-
-  // Initialize protocol layers
-  createSrpcLayerIfNeeded();
-  srpcLayer->setVersion(protoVersion);
-
-  storageInitResult = Supla::Storage::Init();
 
   if (Supla::Storage::IsConfigStorageAvailable()) {
-    SUPLA_LOG_INFO("Init: config");
+    SUPLA_LOG_INFO("Startup: device config");
 
-    if (!lastStateLogger) {
-      lastStateLogger = new Supla::Device::LastStateLogger();
-    }
-
-    if (Supla::Storage::ConfigInstance()->isConfigModeSupported()) {
-      SUPLA_LOG_DEBUG("SD: add flag CALCFG_ENTER_CFG_MODE");
-      addFlags(SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE);
-      SUPLA_LOG_DEBUG("SD: add flag CALCFG_FACTORY_RESET_SUPPORTED");
-      addFlags(SUPLA_DEVICE_FLAG_CALCFG_FACTORY_RESET_SUPPORTED);
-    }
-
-    // Load device and network related configuration
-    if (!loadDeviceConfig()) {
-      configurationState.configNotComplete = 1;
-    }
-
-    // Load protocol layer configuration
-    for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-         proto = proto->next()) {
-      if (!proto->onLoadConfig()) {
-        if (deviceMode != Supla::DEVICE_MODE_TEST) {
-          configurationState.configNotComplete = 1;
-        }
+    {
+      Supla::LogIndent deviceConfigIndent;
+      if (!lastStateLogger) {
+        lastStateLogger = new Supla::Device::LastStateLogger();
       }
-      if (!proto->isConfigEmpty()) {
-        configurationState.protocolNotEmpty = 1;
-      }
-      if (proto->isEnabled()) {
-        configurationState.atLeastOneProtoIsEnabled = 1;
-      }
-      delay(0);
-    }
 
-    if (!configurationState.atLeastOneProtoIsEnabled) {
-      status(STATUS_ALL_PROTOCOLS_DISABLED,
-             F("All communication protocols are disabled"));
-      if (deviceMode != Supla::DEVICE_MODE_TEST) {
+      if (Supla::Storage::ConfigInstance()->isConfigModeSupported()) {
+        SUPLA_LOG_DEBUG("SD: add flag CALCFG_ENTER_CFG_MODE");
+        addFlags(SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE);
+        SUPLA_LOG_DEBUG("SD: add flag CALCFG_FACTORY_RESET_SUPPORTED");
+        addFlags(SUPLA_DEVICE_FLAG_CALCFG_FACTORY_RESET_SUPPORTED);
+      }
+
+      // Load device and network related configuration
+      if (!loadDeviceConfig()) {
         configurationState.configNotComplete = 1;
       }
     }
 
-    loadSupletRuntime();
+    SUPLA_LOG_INFO("Startup: protocol config");
+    {
+      Supla::LogIndent protocolConfigIndent;
+      // Load protocol layer configuration
+      for (auto proto = Supla::Protocol::ProtocolLayer::first();
+           proto != nullptr; proto = proto->next()) {
+        if (!proto->onLoadConfig()) {
+          if (deviceMode != Supla::DEVICE_MODE_TEST) {
+            configurationState.configNotComplete = 1;
+          }
+        }
+        if (!proto->isConfigEmpty()) {
+          configurationState.protocolNotEmpty = 1;
+        }
+        if (proto->isEnabled()) {
+          configurationState.atLeastOneProtoIsEnabled = 1;
+        }
+        delay(0);
+      }
 
-    SUPLA_LOG_INFO("Init: element config");
+      if (!configurationState.atLeastOneProtoIsEnabled) {
+        status(STATUS_ALL_PROTOCOLS_DISABLED,
+               F("All communication protocols are disabled"));
+        if (deviceMode != Supla::DEVICE_MODE_TEST) {
+          configurationState.configNotComplete = 1;
+        }
+      }
+    }
+
+    SUPLA_LOG_INFO("Startup: suplets");
+    {
+      Supla::LogIndent supletsIndent;
+      loadSupletRuntime();
+    }
+
+    SUPLA_LOG_INFO("Startup: element config");
+    Supla::LogIndent configIndent;
     // Load elements configuration
     for (auto element = Supla::Element::begin(); element != nullptr;
          element = element->next()) {
@@ -241,7 +260,8 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   }
 
   if (Supla::Storage::Instance()) {
-    SUPLA_LOG_INFO("Init: state storage");
+    SUPLA_LOG_INFO("Startup: restore state");
+    Supla::LogIndent storageIndent;
     // Pefrorm dry run of write state to validate stored state section with
     // current device configuration
     if (Supla::Storage::IsStateStorageValid()) {
@@ -249,20 +269,24 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     }
   }
 
-  SUPLA_LOG_INFO("Init: elements");
+  SUPLA_LOG_INFO("Startup: element init");
   // Initialize elements
   bool isStateStorageMigrationNeeded = false;
-  for (auto element = Supla::Element::begin(); element != nullptr;
-       element = element->next()) {
-    element->onInit();
-    if (element->isStateStorageMigrationNeeded()) {
-      isStateStorageMigrationNeeded = true;
+  {
+    Supla::LogIndent elementsIndent;
+    for (auto element = Supla::Element::begin(); element != nullptr;
+         element = element->next()) {
+      element->onInit();
+      if (element->isStateStorageMigrationNeeded()) {
+        isStateStorageMigrationNeeded = true;
+      }
+      delay(0);
     }
-    delay(0);
   }
 
   if (Supla::Storage::Instance() && isStateStorageMigrationNeeded) {
-    SUPLA_LOG_INFO("Init: state migration");
+    SUPLA_LOG_INFO("Startup: state migration");
+    Supla::LogIndent migrationIndent;
     if (Supla::Storage::IsConfigStorageAvailable()) {
       Supla::Storage::ConfigInstance()->commit();
     }
@@ -272,109 +296,134 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     Supla::Storage::WriteStateStorage();
   }
 
-  // Enable timers
-  Supla::initTimers();
-
-  if (Supla::Network::Instance() == nullptr) {
-    status(STATUS_MISSING_NETWORK_INTERFACE,
-           F("Network Interface not defined!"));
-    return false;
+  SUPLA_LOG_INFO("Startup: timers");
+  {
+    Supla::LogIndent timersIndent;
+    Supla::initTimers();
   }
 
-  for (auto net = Supla::Network::FirstInstance(); net != nullptr;
-       net = Supla::Network::NextInstance(net)) {
-    net->setSuplaDeviceClass(this);
-  }
+  SUPLA_LOG_INFO("Startup: validation");
 
-  if (auto webServer = Supla::WebServer::Instance()) {
-    webServer->setSuplaDeviceClass(this);
-    if (webServer->resolveWebServerMode() ==
-        Supla::WebServer::WebServerMode::HttpsOnly) {
-      // web password is used only when https is used
-      SUPLA_LOG_DEBUG("SD: add flag CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED");
-      addFlags(SUPLA_DEVICE_FLAG_CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED);
+  {
+    Supla::LogIndent validationIndent;
+    if (Supla::Network::Instance() == nullptr) {
+      status(STATUS_MISSING_NETWORK_INTERFACE,
+             F("Network Interface not defined!"));
+      return false;
+    }
+
+    for (auto net = Supla::Network::FirstInstance(); net != nullptr;
+         net = Supla::Network::NextInstance(net)) {
+      net->setSuplaDeviceClass(this);
+    }
+
+    if (auto webServer = Supla::WebServer::Instance()) {
+      webServer->setSuplaDeviceClass(this);
+      if (webServer->resolveWebServerMode() ==
+          Supla::WebServer::WebServerMode::HttpsOnly) {
+        // web password is used only when https is used
+        SUPLA_LOG_DEBUG("SD: add flag CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED");
+        addFlags(SUPLA_DEVICE_FLAG_CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED);
+      }
+    }
+
+    if (Supla::RegisterDevice::isGUIDEmpty()) {
+      status(STATUS_INVALID_GUID, F("Missing GUID"));
+      return false;
+    }
+
+    if (Supla::RegisterDevice::isAuthKeyEmpty()) {
+      status(STATUS_INVALID_AUTHKEY, F("Missing AuthKey"));
+      return false;
+    }
+
+    if (configurationState.configNotComplete) {
+      SUPLA_LOG_INFO("Config incomplete: deviceMode = CONFIG");
+      deviceMode = Supla::DEVICE_MODE_CONFIG;
+    }
+
+    // Verify if configuration is complete for each protocol
+    // Verification adds last state log. It returns false only in "normal mode".
+    bool verificationSuccess = true;
+    for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+         proto = proto->next()) {
+      if (!proto->verifyConfig()) {
+        verificationSuccess = false;
+      }
+      delay(0);
+    }
+
+    if (verificationSuccess == false) {
+      // this may happen only when Supla::Storage::Config is not used
+      return false;
     }
   }
 
-  if (Supla::RegisterDevice::isGUIDEmpty()) {
-    status(STATUS_INVALID_GUID, F("Missing GUID"));
-    return false;
-  }
+  SUPLA_LOG_INFO("Startup: device identity");
+  {
+    Supla::LogIndent identityIndent;
+    char buf[SUPLA_GUID_SIZE * 2 + 1] = {};
+    generateHexString(Supla::RegisterDevice::getGUID(), buf, SUPLA_GUID_SIZE);
+    SUPLA_LOG_INFO("GUID: %s", buf);
 
-  if (Supla::RegisterDevice::isAuthKeyEmpty()) {
-    status(STATUS_INVALID_AUTHKEY, F("Missing AuthKey"));
-    return false;
-  }
-
-  if (configurationState.configNotComplete) {
-    SUPLA_LOG_INFO("Config incomplete: deviceMode = CONFIG");
-    deviceMode = Supla::DEVICE_MODE_CONFIG;
-  }
-
-  // Verify if configuration is complete for each protocol
-  // Verification adds last state log. It returns false only in "normal mode".
-  bool verificationSuccess = true;
-  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-       proto = proto->next()) {
-    if (!proto->verifyConfig()) {
-      verificationSuccess = false;
-    }
-    delay(0);
-  }
-
-  if (verificationSuccess == false) {
-    // this may happen only when Supla::Storage::Config is not used
-    return false;
-  }
-
-  char buf[SUPLA_GUID_SIZE * 2 + 1] = {};
-  generateHexString(Supla::RegisterDevice::getGUID(), buf, SUPLA_GUID_SIZE);
-  SUPLA_LOG_INFO("GUID: %s", buf);
-
-  if (Supla::RegisterDevice::isNameEmpty()) {
+    if (Supla::RegisterDevice::isNameEmpty()) {
 #if defined(ARDUINO_ARCH_ESP8266)
-    setName("SUPLA-ESP8266");
+      setName("SUPLA-ESP8266");
 #elif defined(ARDUINO_ARCH_ESP32)
-    setName("SUPLA-ESP32");
+      setName("SUPLA-ESP32");
 #elif defined(ARDUINO_ARCH_AVR)
-    setName("SUPLA-ARDUINO");
+      setName("SUPLA-ARDUINO");
 #else
-    setName("SUPLA-DEVICE");
+      setName("SUPLA-DEVICE");
 #endif
+    }
+
+    if (Supla::RegisterDevice::isSoftVerEmpty()) {
+      setSwVersion(suplaDeviceVersion);
+    }
+    SUPLA_LOG_INFO("Name: %s", Supla::RegisterDevice::getName());
+    SUPLA_LOG_INFO("Version: %s",
+                   Supla::RegisterDevice::getSoftVer());
   }
 
-  if (Supla::RegisterDevice::isSoftVerEmpty()) {
-    setSwVersion(suplaDeviceVersion);
-  }
-  SUPLA_LOG_INFO("Device name: %s", Supla::RegisterDevice::getName());
-  SUPLA_LOG_INFO("Device software version: %s",
-                 Supla::RegisterDevice::getSoftVer());
-
-  SUPLA_LOG_INFO("Init: network");
-  char hostname[32] = {};
-  generateHostname(hostname, macLengthInHostname);
-  Supla::Network::SetHostname(hostname, macLengthInHostname);
-
-  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-       proto = proto->next()) {
-    proto->onInit();
-    delay(0);
+  SUPLA_LOG_INFO("Startup: network");
+  {
+    Supla::LogIndent networkIndent;
+    char hostname[32] = {};
+    generateHostname(hostname, macLengthInHostname);
+    Supla::Network::SetHostname(hostname, macLengthInHostname);
   }
 
-  status(STATUS_INITIALIZED, F("SuplaDevice initialized"));
+  SUPLA_LOG_INFO("Startup: protocols");
+  {
+    Supla::LogIndent protocolsIndent;
+    for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+         proto = proto->next()) {
+      proto->onInit();
+      delay(0);
+    }
+  }
 
-  setupDeviceMode();
+  SUPLA_LOG_INFO("Startup: device mode");
+  {
+    Supla::LogIndent deviceModeIndent;
+    status(STATUS_INITIALIZED, F("SuplaDevice initialized"));
 
-  SUPLA_LOG_INFO("Init: done");
+    setupDeviceMode();
+  }
+
   if (deviceMode != Supla::DEVICE_MODE_TEST) {
-    SUPLA_LOG_INFO(" *** Self-test ***");
-    auto tester = new Supla::Device::FactoryTest(this, 0);
-    tester->onInit();
-    selfTestFailed = tester->hasFailed();
-    selfTestFailureReason = tester->getFailReason();
-    delete tester;
-    SUPLA_LOG_INFO(" *** Self-test done ***");
+    SUPLA_LOG_INFO("Startup: self-test");
+    {
+      Supla::LogIndent selfTestIndent;
+      auto tester = new Supla::Device::FactoryTest(this, 0);
+      tester->onInit();
+      selfTestFailed = tester->hasFailed();
+      selfTestFailureReason = tester->getFailReason();
+      delete tester;
+    }
   }
+  SUPLA_LOG_INFO("Startup: complete");
   return true;
 }
 

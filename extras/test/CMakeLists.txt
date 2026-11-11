@@ -252,6 +252,7 @@ target_link_libraries(arduinoesp8266_tls_lifetime_tests PRIVATE
 # Exercise the real ESP32 client and TCP abort helper with shared lwIP doubles.
 add_executable(esp32_tcp_abort_tests
   ArduinoEsp32PlatformTests/arduino_esp32_tcp_abort_tests.cpp
+  ArduinoEsp32PlatformTests/log_indent_tests.cpp
   Esp32TcpAbortTests/esp32_tcp_abort_tests.cpp
   Esp32TcpAbortTests/fake_lwip.c
   ../../src/supla/network/client.cpp
@@ -320,6 +321,7 @@ if(SUPLA_TEST_ENABLE_HTTP_INTEGRATION)
   find_package(Threads REQUIRED)
   add_executable(sd4linux_http_integration_tests
     LinuxPortIntegrationTests/sd4linux_http_redirect_tests.cpp
+    ../../src/supla/log_wrapper.cpp
     ../porting/linux/supla/source/http.cpp
     doubles/arduino_mock.cpp
     doubles/log.cpp

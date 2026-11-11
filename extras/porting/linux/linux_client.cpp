@@ -277,8 +277,8 @@ int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
       return 0;
     }
 
-    SUPLA_LOG_DEBUG("TLS version: %s", SSL_get_version(ssl));
-    SUPLA_LOG_DEBUG("Cipher suite: %s", SSL_get_cipher(ssl));
+    SUPLA_LOG_DEBUG("TLS: %s, cipher=%s",
+                    SSL_get_version(ssl), SSL_get_cipher(ssl));
     if (!checkSslCerts(ssl)) {
       stop();
       return 0;
@@ -306,7 +306,7 @@ int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
     ipArr[i] = (srcIp >> (i * 8)) & 0xFF;
   }
 
-  SUPLA_LOG_DEBUG("Connected via IP %d.%d.%d.%d", ipArr[0], ipArr[1],
+  SUPLA_LOG_DEBUG("Local IP: %d.%d.%d.%d", ipArr[0], ipArr[1],
       ipArr[2], ipArr[3]);
 
   return 1;
@@ -594,16 +594,19 @@ bool Supla::LinuxClient::checkSslCerts(SSL *ssl) {
       X509_free(cert);
       return false;
     }
-    SUPLA_LOG_DEBUG("Server certificates:");
-    line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-    SUPLA_LOG_DEBUG("Subject: %s", line ? line : "(null)");
-    if (line) {
-      free(line);
-    }
-    line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-    SUPLA_LOG_DEBUG("Issuer: %s", line ? line : "(null)");
-    if (line) {
-      free(line);
+    if (SUPLA_LOG_IS_ENABLED(LOG_VERBOSE)) {
+      SUPLA_LOG_VERBOSE("TLS certificate:");
+      Supla::LogIndent certificateIndent;
+      line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+      SUPLA_LOG_VERBOSE("Subject: %s", line ? line : "(null)");
+      if (line) {
+        free(line);
+      }
+      line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+      SUPLA_LOG_VERBOSE("Issuer: %s", line ? line : "(null)");
+      if (line) {
+        free(line);
+      }
     }
     X509_free(cert);
     return true;

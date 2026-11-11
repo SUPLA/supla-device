@@ -333,14 +333,6 @@ void Relay::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
 
 Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
                                                    bool local) {
-  SUPLA_LOG_VERBOSE(
-      "Relay[%d] applyChannelConfig, func %d, configtype %d, configsize "
-      "%d",
-      getChannelNumber(),
-      result->Func,
-      result->ConfigType,
-      result->ConfigSize);
-
   updateRelayHvacAggregator();
 
   auto *configHandler = weeklyScheduleComponents.getConfigHandler();

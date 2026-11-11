@@ -135,11 +135,7 @@ void BinaryBase::purgeConfig() {
 }
 
 Supla::ApplyConfigResult BinaryBase::applyChannelConfig(
-    TSD_ChannelConfig *newConfig, bool local) {
-  SUPLA_LOG_VERBOSE("Binary[%d] processing%s channel config",
-                  getChannelNumber(),
-                  local ? " local" : "");
-
+    TSD_ChannelConfig *newConfig, bool) {
   if (newConfig->ConfigSize == 0) {
     SUPLA_LOG_DEBUG("Binary[%d] config missing on server",
         getChannelNumber());

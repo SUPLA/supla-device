@@ -427,14 +427,6 @@ void Container::onLoadConfig(SuplaDeviceClass *) {
 
 Supla::ApplyConfigResult Container::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
-  SUPLA_LOG_VERBOSE(
-      "Container[%d] applyChannelConfig, func %d, configtype %d, "
-      "configsize %d",
-      getChannelNumber(),
-      result->Func,
-      result->ConfigType,
-      result->ConfigSize);
-
   if (result->ConfigSize == 0) {
     return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }

@@ -48,6 +48,11 @@ const Channel *GeneralPurposeText::getChannel() const {
   return static_cast<const ChannelExtended *>(this);
 }
 
+void GeneralPurposeText::setInitialCaption(const char *caption,
+                                           bool secondaryChannel) {
+  Element::setInitialCaption(caption, secondaryChannel);
+}
+
 void GeneralPurposeText::onInit() {
   initDone = true;
   ChannelExtended::setType(SUPLA_CHANNELTYPE_GENERAL_PURPOSE_TEXT);

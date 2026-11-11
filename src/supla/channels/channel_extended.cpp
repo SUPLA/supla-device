@@ -38,7 +38,8 @@ bool ChannelExtended::setNewTextValue(const char *text) {
     memset(extValue.value + size, 0, sizeof(extValue.value) - size);
   }
 
-  setNewValue(++textSequence);
+  // Reuse the channel's existing 64-bit value as the text sequence counter.
+  setNewValue(getValueInt64() + 1);
   return true;
 }
 
@@ -47,7 +48,7 @@ bool ChannelExtended::refreshTextValue() {
     return false;
   }
 
-  setNewValue(++textSequence);
+  setNewValue(getValueInt64() + 1);
   return true;
 }
 

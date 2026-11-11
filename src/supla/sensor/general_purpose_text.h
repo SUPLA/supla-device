@@ -46,6 +46,9 @@ class GeneralPurposeText : public ChannelExtended,
  public:
   GeneralPurposeText();
 
+  void setInitialCaption(const char *caption,
+                         bool secondaryChannel = false);
+
   /**
    * Set the text value that will be sent to the server.
    * @param text  Null-terminated UTF-8 string (max 255 bytes).

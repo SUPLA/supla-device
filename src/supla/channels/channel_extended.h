@@ -18,9 +18,6 @@ class ChannelExtended : public Channel {
 
  protected:
   TSuplaChannelExtendedValue extValue = {};
-
- private:
-  uint64_t textSequence = 0;
 };
 
 };  // namespace Supla

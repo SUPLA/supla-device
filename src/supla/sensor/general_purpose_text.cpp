@@ -18,69 +18,59 @@
 
 #include "general_purpose_text.h"
 
-#include <string.h>
 #include <supla-common/proto.h>
 #include <supla/log_wrapper.h>
+#include <supla/time.h>
 
 namespace Supla {
 namespace Sensor {
 
-GeneralPurposeText::GeneralPurposeText() {
-  channel.setType(SUPLA_CHANNELTYPE_GENERAL_PURPOSE_TEXT);
-  channel.setDefault(SUPLA_CHANNELFNC_GENERAL_PURPOSE_TEXT);
+GeneralPurposeText::GeneralPurposeText()
+    : GeneralPurposeChannelBase(static_cast<Channel &>(*this), nullptr,
+                                false) {
+  ChannelExtended::setType(SUPLA_CHANNELTYPE_GENERAL_PURPOSE_TEXT);
+  ChannelExtended::setDefaultFunction(SUPLA_CHANNELFNC_GENERAL_PURPOSE_TEXT);
 }
 
 void GeneralPurposeText::setValue(const char *text) {
-  if (text == nullptr) {
-    text = "";
+  bool changed = ChannelExtended::setNewTextValue(text);
+  if (changed || !hasTextValue) {
+    lastReadTime = millis();
   }
-  size_t len = strnlen(text, SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE);
-  bool same =
-      strncmp(this->text, text, SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE) == 0;
-  if (!same) {
-    memset(this->text, 0, sizeof(this->text));
-    memcpy(this->text, text, len);
-    valueChanged = true;
-  }
+  hasTextValue = true;
 }
 
 Channel *GeneralPurposeText::getChannel() {
-  return &channel;
+  return static_cast<ChannelExtended *>(this);
 }
 
 const Channel *GeneralPurposeText::getChannel() const {
-  return &channel;
+  return static_cast<const ChannelExtended *>(this);
 }
 
 void GeneralPurposeText::onInit() {
-  channel.setType(SUPLA_CHANNELTYPE_GENERAL_PURPOSE_TEXT);
-  channel.setDefault(SUPLA_CHANNELFNC_GENERAL_PURPOSE_TEXT);
+  initDone = true;
+  ChannelExtended::setType(SUPLA_CHANNELTYPE_GENERAL_PURPOSE_TEXT);
+  ChannelExtended::setDefaultFunction(SUPLA_CHANNELFNC_GENERAL_PURPOSE_TEXT);
+}
+
+void GeneralPurposeText::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)sdc;
 }
 
 void GeneralPurposeText::iterateAlways() {
-  if (!valueChanged) {
+  if (!hasTextValue) {
     return;
   }
-  valueChanged = false;
 
-  // Build extended value carrying the text
-  TSuplaChannelExtendedValue ev = {};
-  ev.type = EV_TYPE_GENERAL_PURPOSE_TEXT;
-  size_t len = strnlen(text, SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE);
-  ev.size = static_cast<unsigned int>(len);
-  if (len > 0) {
-    memcpy(ev.value, text, len);
-  }
-  // Write directly into the ChannelExtended's extValue field.
-  auto *dest = channel.getExtValue();
-  if (dest) {
-    *dest = ev;
+  uint32_t now = millis();
+  if (now - lastReadTime < refreshIntervalMs) {
+    return;
   }
 
-  // Increment a persistent 64-bit sequence counter stored in the 8-byte
-  // channel value so the server always sees a changed value and sends it.
-  ++seqCounter;
-  channel.setNewValue(reinterpret_cast<const char *>(&seqCounter));
+  if (ChannelExtended::refreshTextValue()) {
+    lastReadTime = now;
+  }
 }
 
 ApplyConfigResult GeneralPurposeText::applyChannelConfig(
@@ -93,15 +83,36 @@ ApplyConfigResult GeneralPurposeText::applyChannelConfig(
     return ApplyConfigResult::NotSupported;
   }
   if (newConfig->ConfigSize < sizeof(TChannelConfig_GeneralPurposeText)) {
-    SUPLA_LOG_WARNING("GPT[%d]: config too short", getChannelNumber());
+    SUPLA_LOG_WARNING("GPT[%d]: config too short",
+                      GeneralPurposeChannelBase::getChannelNumber());
     return ApplyConfigResult::NotSupported;
   }
   auto cfg = reinterpret_cast<TChannelConfig_GeneralPurposeText *>(
       newConfig->Config);
-  refreshIntervalMs = cfg->RefreshIntervalMs;
+  GeneralPurposeChannelBase::setRefreshIntervalMs(cfg->RefreshIntervalMs,
+                                                  false);
   SUPLA_LOG_INFO("GPT[%d]: config applied: refreshIntervalMs=%u",
-                 getChannelNumber(), refreshIntervalMs);
+                 GeneralPurposeChannelBase::getChannelNumber(),
+                 GeneralPurposeChannelBase::getRefreshIntervalMs());
   return ApplyConfigResult::Success;
+}
+
+void GeneralPurposeText::fillChannelConfig(void *channelConfig, int *size,
+                                           uint8_t configType) {
+  if (size == nullptr) {
+    return;
+  }
+  *size = 0;
+  if (channelConfig == nullptr ||
+      configType != SUPLA_CONFIG_TYPE_DEFAULT) {
+    return;
+  }
+
+  auto config =
+      reinterpret_cast<TChannelConfig_GeneralPurposeText *>(channelConfig);
+  *config = {};
+  config->RefreshIntervalMs = GeneralPurposeChannelBase::getRefreshIntervalMs();
+  *size = sizeof(*config);
 }
 
 };  // namespace Sensor

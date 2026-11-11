@@ -21,8 +21,7 @@
 
 #include <supla-common/proto.h>
 #include <supla/channel_extended.h>
-#include <supla/element_with_channel_actions.h>
-#include <supla/channels/channel.h>
+#include <supla/sensor/general_purpose_channel_base.h>
 
 namespace Supla {
 namespace Sensor {
@@ -30,17 +29,20 @@ namespace Sensor {
 /**
  * General Purpose Text channel (read-only).
  *
- * The device pushes a UTF-8 text string (up to 255 bytes) which is sent to
+ * The device publishes a UTF-8 text string (up to 255 bytes) which is sent to
  * the server as a TSuplaChannelExtendedValue with type
- * EV_TYPE_GENERAL_PURPOSE_TEXT.  The 8-byte channel value carries a
- * monotonically increasing sequence counter so the server can detect that
- * the value has changed.
+ * EV_TYPE_GENERAL_PURPOSE_TEXT. This channel is read-only from the server.
+ * The 8-byte channel value carries a monotonically increasing sequence counter
+ * so the server receives the text when it changes and on periodic refresh.
+ *
+ * A refresh interval of 0 uses the 5-second default.
  *
  * Usage example:
  *   auto *gpt = new Supla::Sensor::GeneralPurposeText();
  *   gpt->setValue("Hello, world!");
  */
-class GeneralPurposeText : public ElementWithChannelActions {
+class GeneralPurposeText : public ChannelExtended,
+                           public GeneralPurposeChannelBase {
  public:
   GeneralPurposeText();
 
@@ -54,16 +56,16 @@ class GeneralPurposeText : public ElementWithChannelActions {
   const Channel *getChannel() const override;
 
   void onInit() override;
+  void onLoadConfig(SuplaDeviceClass *sdc) override;
   void iterateAlways() override;
   ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
                                        bool local) override;
+  void fillChannelConfig(void *channelConfig, int *size,
+                         uint8_t configType) override;
 
  private:
-  ChannelExtended channel;
-  char text[SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE + 1] = {};
-  bool valueChanged = false;
-  uint16_t refreshIntervalMs = 0;
-  uint64_t seqCounter = 0;
+  using GeneralPurposeChannelBase::setValue;
+  bool hasTextValue = false;
 };
 
 };  // namespace Sensor

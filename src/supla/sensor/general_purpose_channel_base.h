@@ -443,6 +443,9 @@ class GeneralPurposeChannelBase : public ChannelElement {
   ///@}
 
  protected:
+  GeneralPurposeChannelBase(Channel &externalChannel,
+                            MeasurementDriver *driver,
+                            bool addMemoryVariableDriver);
   void saveConfig();
   virtual void setChannelRefreshIntervalMs(uint16_t intervalMs);
 
@@ -463,6 +466,9 @@ class GeneralPurposeChannelBase : public ChannelElement {
   char defaultUnitAfterValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE] = {};
 
   GPMCommonConfig commonConfig = {};
+
+ private:
+  void initialize(bool addMemoryVariableDriver);
 };
 
 };  // namespace Sensor

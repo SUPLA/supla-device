@@ -133,6 +133,9 @@ static_assert(sizeof(TElectricityMeter_ExtendedValue_V2) <=
 #endif
 static_assert(sizeof(TElectricityMeter_ExtendedValue_V3) <=
               (unsigned int)SUPLA_CHANNELEXTENDEDVALUE_SIZE);
+static_assert(SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE <=
+              SUPLA_CHANNELEXTENDEDVALUE_SIZE);
+static_assert(sizeof(TChannelConfig_GeneralPurposeText) == 16);
 static_assert((unsigned int)4 == sizeof(TThermostat_Time));
 static_assert((unsigned int)246 == sizeof(TThermostat_ExtendedValue));
 static_assert((unsigned int)6 == sizeof(TThermostat_Value));

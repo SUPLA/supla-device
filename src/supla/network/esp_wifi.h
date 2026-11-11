@@ -37,8 +37,15 @@ class ESPWifi : public Supla::Wifi {
   }
 
 
-  bool isReady() override {
-    return WiFi.status() == WL_CONNECTED;
+  ~ESPWifi() override {
+#ifndef ARDUINO_ARCH_ESP8266
+    if (wifiConfigured) {
+      WiFi.removeEvent(connectedEventId);
+      WiFi.removeEvent(gotIpEventId);
+      WiFi.removeEvent(disconnectedEventId);
+      WiFi.removeEvent(lostIpEventId);
+    }
+#endif
   }
 
   static void printConnectionDetails() {
@@ -51,49 +58,77 @@ class ESPWifi : public Supla::Wifi {
   }
 
   void setup() override {
+    const bool firstSetup = !wifiConfigured;
+    setAllowDisable(false);
+    resetLinkState();
+    setStaticIpApplied(false);
     // ESP8266: for some reason when hostname is longer than 30 bytes, Wi-Fi
     // connection can't be esablished. So as a workaround, we truncate hostname
     // to 30 bytes
     hostname[30] = '\0';
-    if (!wifiConfigured) {
+    if (firstSetup) {
       // ESP32 requires setHostname to be called before begin...
       WiFi.setHostname(hostname);
       wifiConfigured = true;
 #ifdef ARDUINO_ARCH_ESP8266
-      gotIpEventHandler =
-        WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP &event) {
+      connectedEventHandler = WiFi.onStationModeConnected(
+          [this](const WiFiEventStationModeConnected &event) {
             (void)(event);
+            setWifiConnected(true);
+          });
+      dhcpTimeoutEventHandler = WiFi.onStationModeDHCPTimeout(
+          [this]() { setIpv4Addr(0); });
+      gotIpEventHandler =
+        WiFi.onStationModeGotIP([this](const WiFiEventStationModeGotIP &event) {
+            syncWifiState(true, event.ip);
             ESPWifi::printConnectionDetails();
             });
       disconnectedEventHandler = WiFi.onStationModeDisconnected(
-          [](const WiFiEventStationModeDisconnected &event) {
-          (void)(event);
+          [this](const WiFiEventStationModeDisconnected &event) {
+          handleWifiDisconnect(event.reason);
           SUPLA_LOG_INFO("WiFi station disconnected");
           });
 #else
-      WiFiEventId_t event_gotIP = WiFi.onEvent(
-          [](WiFiEvent_t event, WiFiEventInfo_t info) {
+      connectedEventId = WiFi.onEvent(
+          [this](WiFiEvent_t event, WiFiEventInfo_t info) {
+            (void)(event);
+            (void)(info);
+            setWifiConnected(true);
+          }, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
+      lostIpEventId = WiFi.onEvent(
+          [this](WiFiEvent_t event, WiFiEventInfo_t info) {
+            (void)(event);
+            (void)(info);
+            setIpv4Addr(0);
+          }, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_LOST_IP);
+      gotIpEventId = WiFi.onEvent(
+          [this](WiFiEvent_t event, WiFiEventInfo_t info) {
+          (void)(event);
+          (void)(info);
+          syncWifiState(true, WiFi.localIP());
           Supla::InputNoiseGuard::NotifyWifiStaConnected();
           ESPWifi::printConnectionDetails();
           },
           WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_GOT_IP);
 
-      (void)(event_gotIP);
-
-      WiFiEventId_t event_disconnected = WiFi.onEvent(
-          [](WiFiEvent_t event, WiFiEventInfo_t info) {
+      disconnectedEventId = WiFi.onEvent(
+          [this](WiFiEvent_t event, WiFiEventInfo_t info) {
+            (void)(event);
+            const bool unexpected =
+                handleWifiDisconnect(info.wifi_sta_disconnected.reason);
             SUPLA_LOG_INFO("WiFi Station disconnected");
             // ESP32 doesn't reconnect automatically after lost connection
             Supla::InputNoiseGuard::NotifyWifiStaDisconnected();
-            if (mode != Supla::DEVICE_MODE_CONFIG) {
+            if (unexpected && mode != Supla::DEVICE_MODE_CONFIG &&
+                isStateLoggingAllowed()) {
               WiFi.reconnect();
             }
           },
           WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
-      (void)(event_disconnected);
 #endif
     } else {
+      expectWifiDisconnect();
       if (mode == Supla::DEVICE_MODE_CONFIG) {
         Supla::InputNoiseGuard::NotifyWifiTransition();
         WiFi.mode(WIFI_MODE_AP);
@@ -110,15 +145,19 @@ class ESPWifi : public Supla::Wifi {
     if (mode == Supla::DEVICE_MODE_CONFIG) {
       SUPLA_LOG_INFO("WiFi: enter config mode with SSID: \"%s\"", hostname);
       Supla::InputNoiseGuard::NotifyWifiTransition();
-      WiFi.mode(WIFI_AP_STA);
+      setAllowDisable(true);
+      const bool modeStarted = WiFi.mode(WIFI_AP_STA);
       Supla::InputNoiseGuard::NotifyWifiTransition();
-      WiFi.softAP(hostname, nullptr, 6);
+      const bool apStarted = WiFi.softAP(hostname, nullptr, 6);
+      reportStartResult(modeStarted && apStarted);
       startConfigModeScan();
 
     } else {
       SUPLA_LOG_INFO("WiFi: establishing connection with SSID: \"%s\"", ssid);
       Supla::InputNoiseGuard::NotifyWifiTransition();
-      WiFi.mode(WIFI_MODE_STA);
+      setAllowDisable(true);
+      const bool started = WiFi.mode(WIFI_MODE_STA);
+      reportStartResult(started);
       if (hasStaticIpConfig()) {
         const auto &cfg = getNetifConfig();
         IPAddress localIp = toArduinoIpAddress(cfg.ip);
@@ -126,7 +165,10 @@ class ESPWifi : public Supla::Wifi {
         IPAddress subnet = toArduinoIpAddress(cfg.netmask);
         IPAddress dns1 = toArduinoIpAddress(cfg.dns1);
         IPAddress dns2 = toArduinoIpAddress(cfg.dns2);
-        if (!WiFi.config(localIp, gateway, subnet, dns1, dns2)) {
+        const bool applied =
+            WiFi.config(localIp, gateway, subnet, dns1, dns2);
+        setStaticIpApplied(applied);
+        if (!applied) {
           SUPLA_LOG_WARNING("WiFi static IP config failed, continuing");
         }
       }
@@ -137,7 +179,10 @@ class ESPWifi : public Supla::Wifi {
     }
 
     yield();
-    allowDisable = true;
+    setAllowDisable(true);
+    if (firstSetup && mode != Supla::DEVICE_MODE_CONFIG) {
+      syncWifiState(WiFi.status() == WL_CONNECTED, WiFi.localIP());
+    }
   }
 
   bool iterate() override {
@@ -197,11 +242,13 @@ class ESPWifi : public Supla::Wifi {
   }
 
   void disable() override {
-    if (!allowDisable) {
+    if (!takeAllowDisable()) {
       return;
     }
 
-    allowDisable = false;
+    expectWifiDisconnect();
+    resetLinkState();
+    setStaticIpApplied(false);
     configModeScanInProgress = false;
     SUPLA_LOG_DEBUG("[%s] disabling WiFi connection", getIntfName());
     DisconnectProtocols();
@@ -224,7 +271,7 @@ class ESPWifi : public Supla::Wifi {
                             SUPLA_CHANNELSTATE_FIELD_MAC |
                             SUPLA_CHANNELSTATE_FIELD_WIFIRSSI |
                             SUPLA_CHANNELSTATE_FIELD_WIFISIGNALSTRENGTH;
-    channelState->IPv4 = WiFi.localIP();
+    channelState->IPv4 = getIP();
     getMacAddr(channelState->MAC);
     int rssi = WiFi.RSSI();
     channelState->WiFiRSSI = rssi;
@@ -252,10 +299,6 @@ class ESPWifi : public Supla::Wifi {
     disable();
   }
 
-  uint32_t getIP() override {
-    return WiFi.localIP();
-  }
-
   const char *getIntfName() const override {
     return "Wi-Fi";
   }
@@ -263,10 +306,16 @@ class ESPWifi : public Supla::Wifi {
  protected:
   bool wifiConfigured = false;
   bool configModeScanInProgress = false;
-  bool allowDisable = false;
 
 #ifdef ARDUINO_ARCH_ESP8266
+  WiFiEventHandler connectedEventHandler;
+  WiFiEventHandler dhcpTimeoutEventHandler;
   WiFiEventHandler gotIpEventHandler, disconnectedEventHandler;
+#else
+  WiFiEventId_t connectedEventId = 0;
+  WiFiEventId_t gotIpEventId = 0;
+  WiFiEventId_t disconnectedEventId = 0;
+  WiFiEventId_t lostIpEventId = 0;
 #endif
 
   bool isConfigModeScanInProgress() const override {

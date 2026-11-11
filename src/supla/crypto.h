@@ -15,6 +15,11 @@ namespace Supla {
 
 namespace Crypto {
 
+// Compares all size bytes without stopping at the first difference.
+// Both buffers must contain at least size bytes; NULL is rejected.
+// Timing may depend on size, which must not depend on secret contents.
+bool constantTimeEqual(const void *left, const void *right, size_t size);
+
   /**
    * PBKDF2-SHA256 key derivation for password
    *

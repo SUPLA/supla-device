@@ -28,6 +28,15 @@ Supla::Sensor::Binary::Binary(int pin, bool pullUp, bool invertLogic)
 bool Supla::Sensor::Binary::getValue() {
   auto value = inputPin.readActive(channel.getChannelNumber());
 
+  if (!filterInitialized || config.filteringTimeMs == 0) {
+    prevValue = value;
+    newStateCandidateValue = value;
+    lastStateChangeMs = millis();
+    filterInitialized = true;
+    inputStateCandidatePending = false;
+    return value;
+  }
+
   if (config.filteringTimeMs > 0) {
     if (value != newStateCandidateValue) {
       newStateCandidateValue = value;
@@ -37,6 +46,7 @@ bool Supla::Sensor::Binary::getValue() {
     } else if (millis() - lastStateChangeMs > config.filteringTimeMs) {
       value = newStateCandidateValue;
       prevValue = value;
+      inputStateCandidatePending = false;
       return value;
     } else {
       return prevValue;
@@ -48,6 +58,7 @@ bool Supla::Sensor::Binary::getValue() {
 
 void Supla::Sensor::Binary::onInit() {
   inputPin.pinMode(channel.getChannelNumber());
+  filterInitialized = false;
   beginInitialChannelValueRead();
   setInitialChannelValue(getValue());
 }

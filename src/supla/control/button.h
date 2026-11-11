@@ -90,6 +90,8 @@ class Button : public SimpleButton, public ActionHandler {
   }
 
  protected:
+  // A local copy of the active AT expiry guards timer-driven button events.
+  void setTemporaryUnlockDeadline(uint32_t startMs, uint32_t durationMs);
   struct RuntimeFlags {
     uint16_t actionTriggerModeLocked : 1;
     uint16_t actionTriggerLocalUnlockAllowed : 1;
@@ -103,7 +105,8 @@ class Button : public SimpleButton, public ActionHandler {
     uint16_t allowHoldOnPowerOn : 1;
     uint16_t waitingForRelease : 1;
     uint16_t conditionalActionsOnClick1 : 1;
-    uint16_t reserved : 4;
+    uint16_t temporaryUnlockDeadlineActive : 1;
+    uint16_t reserved : 3;
   };
 
   static_assert(sizeof(RuntimeFlags) == sizeof(uint16_t),
@@ -125,6 +128,7 @@ class Button : public SimpleButton, public ActionHandler {
   void enableRepeatOnHold();
   const char *getButtonTypeName(ButtonType type) const;
   uint32_t lastStateChangeMs = 0;
+  uint32_t temporaryUnlockDeadlineMs = 0;
   uint16_t repeatOnHoldMs = 0;
   uint16_t holdSend = 0;
   uint16_t holdTimeMs = 0;

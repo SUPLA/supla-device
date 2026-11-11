@@ -275,7 +275,8 @@ void Supla::Protocol::Mqtt::onInit() {
     SUPLA_LOG_ERROR("Mqtt: failed to generate prefix");
   }
 
-  channelsCount = Supla::RegisterDevice::getChannelCount();
+  // channel numbers may have gaps, so use the highest number instead of count
+  channelsCount = Supla::RegisterDevice::getMaxChannelNumberUsed() + 1;
 }
 
 void Supla::Protocol::Mqtt::publishDeviceStatus(bool onRegistration) {
@@ -1136,10 +1137,16 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
     return false;
   }
 
+  int topicLen = strnlen(topic, MAX_TOPIC_LEN);
+  if (topicLen >= MAX_TOPIC_LEN ||
+      strnlen(payload, MQTT_MAX_PAYLOAD_LEN) >= MQTT_MAX_PAYLOAD_LEN) {
+    SUPLA_LOG_WARNING("Mqtt: ignoring oversized topic or payload");
+    return false;
+  }
+
   SUPLA_LOG_DEBUG(
       "Mqtt data received, topic: \"%s\", payload: \"%s\"", topic, payload);
 
-  int topicLen = strlen(topic);
   char channelsString[] = "/channels/";
   int channelsStringLen = strlen(channelsString);
 
@@ -1155,7 +1162,8 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
   }
 
   char topicCopy[MAX_TOPIC_LEN] = {};
-  strncpy(topicCopy, topic, MAX_TOPIC_LEN);
+  memcpy(topicCopy, topic, topicLen);
+  topicCopy[topicLen] = '\0';
 
   char *savePtr;
   char *part =
@@ -1382,7 +1390,7 @@ void Mqtt::publishHADiscoveryBinarySensor(Supla::Element *element) {
 
   MqttTopic topic = getHADiscoveryTopic("binary_sensor", objectId);
 
-  const char cfg[] =
+  static const char cfg[] SUPLA_MQTT_PROGMEM =
       "{"
       "%s"
       "\"~\":\"%s/channels/%i\","
@@ -1412,24 +1420,25 @@ void Mqtt::publishHADiscoveryBinarySensor(Supla::Element *element) {
 
   for (int i = 0; i < 2; i++) {
     bufferSize =
-        snprintf(i ? payload : &c,
-                 i ? bufferSize : 1,
-                 cfg,
-                 getHAAvailability(ch),
-                 prefix,
-                 ch->getChannelNumber(),
-                 hostname,
-                 getManufacturer(Supla::RegisterDevice::getManufacturerId()),
-                 Supla::RegisterDevice::getName(),
-                 Supla::RegisterDevice::getSoftVer(),
-                 element->getChannelNumber(),
-                 Supla::getBinarySensorChannelName(chFunction),
-                 objectId,
-                 expireAfter,
-                 getDeviceClassStr(deviceClass),
-                 isOpenClosedBinarySensorFunction(chFunction)
-                     ? ",\"payload_on\":\"open\",\"payload_off\":\"closed\""
-                     : "") +
+        SUPLA_MQTT_SNPRINTF(
+            i ? payload : &c,
+            i ? bufferSize : 1,
+            cfg,
+            getHAAvailability(ch),
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
+            element->getChannelNumber(),
+            Supla::getBinarySensorChannelName(chFunction),
+            objectId,
+            expireAfter,
+            getDeviceClassStr(deviceClass),
+            isOpenClosedBinarySensorFunction(chFunction)
+                ? ",\"payload_on\":\"open\",\"payload_off\":\"closed\""
+                : "") +
         1;
 
     if (i == 0) {
@@ -1499,7 +1508,7 @@ void Mqtt::publishHADiscoveryRelayImpulse(Supla::Element *element,
     }
   }
 
-  const char cfg[] =
+  static const char cfg[] SUPLA_MQTT_PROGMEM =
       "{"
       "%s"
       "\"~\":\"%s/channels/%i\","
@@ -1529,20 +1538,21 @@ void Mqtt::publishHADiscoveryRelayImpulse(Supla::Element *element,
 
   for (int i = 0; i < 2; i++) {
     bufferSize =
-        snprintf(i ? payload : &c,
-                 i ? bufferSize : 1,
-                 cfg,
-                 getHAAvailability(ch),
-                 prefix,
-                 ch->getChannelNumber(),
-                 hostname,
-                 getManufacturer(Supla::RegisterDevice::getManufacturerId()),
-                 Supla::RegisterDevice::getName(),
-                 Supla::RegisterDevice::getSoftVer(),
-                 ch->getChannelNumber(),
-                 Supla::getRelayChannelName(chFunction),
-                 objectId,
-                 getDeviceClassStr(deviceClass)) +
+        SUPLA_MQTT_SNPRINTF(
+            i ? payload : &c,
+            i ? bufferSize : 1,
+            cfg,
+            getHAAvailability(ch),
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
+            ch->getChannelNumber(),
+            Supla::getRelayChannelName(chFunction),
+            objectId,
+            getDeviceClassStr(deviceClass)) +
         1;
 
     if (i == 0) {
@@ -1606,7 +1616,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element,
   }
   clearHADiscoveryRelayAlternativeTypes(ch, currentType);
 
-  const char cfg[] =
+  static const char cfg[] SUPLA_MQTT_PROGMEM =
       "{"
       "%s"
       "\"~\":\"%s/channels/%i\","
@@ -1635,20 +1645,21 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element,
 
   for (int i = 0; i < 2; i++) {
     bufferSize =
-        snprintf(i ? payload : &c,
-                 i ? bufferSize : 1,
-                 cfg,
-                 getHAAvailability(ch),
-                 prefix,
-                 ch->getChannelNumber(),
-                 hostname,
-                 getManufacturer(Supla::RegisterDevice::getManufacturerId()),
-                 Supla::RegisterDevice::getName(),
-                 Supla::RegisterDevice::getSoftVer(),
-                 ch->getChannelNumber(),
-                 Supla::getRelayChannelName(chFunction),
-                 objectId,
-                 getDeviceClassStr(deviceClass)) +
+        SUPLA_MQTT_SNPRINTF(
+            i ? payload : &c,
+            i ? bufferSize : 1,
+            cfg,
+            getHAAvailability(ch),
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
+            ch->getChannelNumber(),
+            Supla::getRelayChannelName(chFunction),
+            objectId,
+            getDeviceClassStr(deviceClass)) +
         1;
 
     if (i == 0) {
@@ -1719,7 +1730,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRollerShutter(
 
   topic = getHADiscoveryTopic("cover", objectId);
 
-  const char cfg[] =
+  static const char cfg[] SUPLA_MQTT_PROGMEM =
       "{"
       "%s"
       "\"~\":\"%s/channels/%i\","
@@ -1765,30 +1776,31 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRollerShutter(
 
   for (int i = 0; i < 2; i++) {
     bufferSize =
-        snprintf(i ? payload : &c,
-                 i ? bufferSize : 1,
-                 cfg,
-                 getHAAvailability(ch),
-                 prefix,
-                 ch->getChannelNumber(),
-                 hostname,
-                 getManufacturer(Supla::RegisterDevice::getManufacturerId()),
-                 Supla::RegisterDevice::getName(),
-                 Supla::RegisterDevice::getSoftVer(),
-                 element->getChannelNumber(),
-                 Supla::getRelayChannelName(chFunction),
-                 objectId,
-                 addTiltSupport ? ",\"tilt_cmd_t\":\"~/set/tilt\","
-                                  "\"tilt_status_t\":\"~/state/tilt\","
-                                  "\"tilt_min\":100,\"tilt_max\":0,"
-                                  "\"tilt_opened_value\":0,"
-                                  "\"tilt_closed_value\":100,"
-                                  "\"tilt_status_tpl\":\""
-                                  "{% if int(value, default=0) <= 0 %}0"
-                                  "{% elif value | int > 100 %}100"
-                                  "{% else %}{{value | int}}{% endif %}\""
-                                : "",
-                 getDeviceClassStr(deviceClass)) +
+        SUPLA_MQTT_SNPRINTF(
+            i ? payload : &c,
+            i ? bufferSize : 1,
+            cfg,
+            getHAAvailability(ch),
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
+            element->getChannelNumber(),
+            Supla::getRelayChannelName(chFunction),
+            objectId,
+            addTiltSupport ? ",\"tilt_cmd_t\":\"~/set/tilt\","
+                             "\"tilt_status_t\":\"~/state/tilt\","
+                             "\"tilt_min\":100,\"tilt_max\":0,"
+                             "\"tilt_opened_value\":0,"
+                             "\"tilt_closed_value\":100,"
+                             "\"tilt_status_tpl\":\""
+                             "{% if int(value, default=0) <= 0 %}0"
+                             "{% elif value | int > 100 %}100"
+                             "{% else %}{{value | int}}{% endif %}\""
+                           : "",
+            getDeviceClassStr(deviceClass)) +
         1;
 
     if (i == 0) {
@@ -1956,7 +1968,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryThermometer(
 
   auto topic = getHADiscoveryTopic("sensor", objectId);
 
-  const char cfg[] =
+  static const char cfg[] SUPLA_MQTT_PROGMEM =
       "{"
       "%s"
       "\"~\":\"%s/channels/%i\","
@@ -1987,20 +1999,21 @@ void Supla::Protocol::Mqtt::publishHADiscoveryThermometer(
 
   for (int i = 0; i < 2; i++) {
     bufferSize =
-        snprintf(i ? payload : &c,
-                 i ? bufferSize : 1,
-                 cfg,
-                 getHAAvailability(ch),
-                 prefix,
-                 ch->getChannelNumber(),
-                 hostname,
-                 getManufacturer(Supla::RegisterDevice::getManufacturerId()),
-                 Supla::RegisterDevice::getName(),
-                 Supla::RegisterDevice::getSoftVer(),
-                 element->getChannelNumber(),
+        SUPLA_MQTT_SNPRINTF(
+            i ? payload : &c,
+            i ? bufferSize : 1,
+            cfg,
+            getHAAvailability(ch),
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
+            element->getChannelNumber(),
 
-                 objectId,
-                 expireAfter) +
+            objectId,
+            expireAfter) +
         1;
 
     if (i == 0) {
@@ -2020,7 +2033,8 @@ void Supla::Protocol::Mqtt::generateObjectId(char *result,
                                              int channelNumber,
                                              int subId) {
   uint8_t mac[6] = {};
-  if (channelNumber >= 100 || subId >= 100 || channelNumber < 0 || subId < 0) {
+  if (channelNumber >= SUPLA_CHANNELMAXCOUNT || subId >= 100 ||
+      channelNumber < 0 || subId < 0) {
     SUPLA_LOG_DEBUG("Mqtt: invalid channel number");
     return;
   }
@@ -2029,7 +2043,7 @@ void Supla::Protocol::Mqtt::generateObjectId(char *result,
   for (int i = 0; i < 12; i++) {
     result[i] = static_cast<char>(tolower(result[i]));
   }
-  int size = 7;
+  int size = 8;
 
   snprintf(result + 12, size, "_%d_%d", channelNumber, subId);
 }
@@ -2058,7 +2072,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryHumidity(
 
   auto topic = getHADiscoveryTopic("sensor", objectId);
 
-  const char cfg[] =
+  static const char cfg[] SUPLA_MQTT_PROGMEM =
       "{"
       "%s"
       "\"~\":\"%s/channels/%i\","
@@ -2089,19 +2103,20 @@ void Supla::Protocol::Mqtt::publishHADiscoveryHumidity(
 
   for (int i = 0; i < 2; i++) {
     bufferSize =
-        snprintf(i ? payload : &c,
-                 i ? bufferSize : 1,
-                 cfg,
-                 getHAAvailability(ch),
-                 prefix,
-                 ch->getChannelNumber(),
-                 hostname,
-                 getManufacturer(Supla::RegisterDevice::getManufacturerId()),
-                 Supla::RegisterDevice::getName(),
-                 Supla::RegisterDevice::getSoftVer(),
-                 element->getChannelNumber(),
-                 objectId,
-                 expireAfter) +
+        SUPLA_MQTT_SNPRINTF(
+            i ? payload : &c,
+            i ? bufferSize : 1,
+            cfg,
+            getHAAvailability(ch),
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
+            element->getChannelNumber(),
+            objectId,
+            expireAfter) +
         1;
 
     if (i == 0) {
@@ -2199,7 +2214,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryActionTrigger(
     bool enabled = isActionTriggerEnabled(ch, actionIdx);
 
     if (enabled) {
-      const char cfg[] =
+      static const char cfg[] SUPLA_MQTT_PROGMEM =
           "{"
           "\"dev\":{"
           "\"ids\":\"%s\","
@@ -2224,7 +2239,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryActionTrigger(
 
       for (int i = 0; i < 2; i++) {
         bufferSize =
-            snprintf(
+            SUPLA_MQTT_SNPRINTF(
                 i ? payload : &c,
                 i ? bufferSize : 1,
                 cfg,
@@ -2355,7 +2370,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryEMParameter(
 
   auto topic = getHADiscoveryTopic("sensor", objectId);
 
-  const char cfg[] =
+  static const char cfg[] SUPLA_MQTT_PROGMEM =
       "{"
       "%s"
       "\"~\":\"%s/channels/%i\","
@@ -2383,25 +2398,26 @@ void Supla::Protocol::Mqtt::publishHADiscoveryEMParameter(
 
   for (int i = 0; i < 2; i++) {
     bufferSize =
-        snprintf(i ? payload : &c,
-                 i ? bufferSize : 1,
-                 cfg,
-                 getHAAvailability(ch),
-                 prefix,
-                 ch->getChannelNumber(),
-                 hostname,
-                 getManufacturer(Supla::RegisterDevice::getManufacturerId()),
-                 Supla::RegisterDevice::getName(),
-                 Supla::RegisterDevice::getSoftVer(),
-                 element->getChannelNumber(),
-                 humanReadableParameterName,
-                 objectId,
-                 units,
-                 expireAfter,
-                 phaseTopicPart,
-                 parameterName,
-                 getStateClassStr(stateClass),
-                 getDeviceClassStr(deviceClass)) +
+        SUPLA_MQTT_SNPRINTF(
+            i ? payload : &c,
+            i ? bufferSize : 1,
+            cfg,
+            getHAAvailability(ch),
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
+            element->getChannelNumber(),
+            humanReadableParameterName,
+            objectId,
+            units,
+            expireAfter,
+            phaseTopicPart,
+            parameterName,
+            getStateClassStr(stateClass),
+            getDeviceClassStr(deviceClass)) +
         1;
 
     if (i == 0) {
@@ -2773,7 +2789,7 @@ void Mqtt::publishHADiscoveryRGB(Supla::Element *element) {
 
   auto topic = getHADiscoveryTopic("light", objectId);
 
-  const char cfg[] =
+  static const char cfg[] SUPLA_MQTT_PROGMEM =
       "{"
       "%s"
       "\"~\":\"%s/channels/%i\","
@@ -2809,19 +2825,20 @@ void Mqtt::publishHADiscoveryRGB(Supla::Element *element) {
 
   for (int i = 0; i < 2; i++) {
     bufferSize =
-        snprintf(i ? payload : &c,
-                 i ? bufferSize : 1,
-                 cfg,
-                 getHAAvailability(ch),
-                 prefix,
-                 ch->getChannelNumber(),
-                 hostname,
-                 getManufacturer(Supla::RegisterDevice::getManufacturerId()),
-                 Supla::RegisterDevice::getName(),
-                 Supla::RegisterDevice::getSoftVer(),
-                 objectId,
-                 subId == 1 ? "/rgb" : "",
-                 subId == 1 ? "/rgb" : "") +
+        SUPLA_MQTT_SNPRINTF(
+            i ? payload : &c,
+            i ? bufferSize : 1,
+            cfg,
+            getHAAvailability(ch),
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
+            objectId,
+            subId == 1 ? "/rgb" : "",
+            subId == 1 ? "/rgb" : "") +
         1;
 
     if (i == 0) {
@@ -2853,7 +2870,7 @@ void Mqtt::publishHADiscoveryDimmer(Supla::Element *element) {
 
   auto topic = getHADiscoveryTopic("light", objectId);
 
-  const char cfg[] =
+  static const char cfg[] SUPLA_MQTT_PROGMEM =
       "{"
       "%s"
       "\"~\":\"%s/channels/%i\","
@@ -2887,19 +2904,20 @@ void Mqtt::publishHADiscoveryDimmer(Supla::Element *element) {
 
   for (int i = 0; i < 2; i++) {
     bufferSize =
-        snprintf(i ? payload : &c,
-                 i ? bufferSize : 1,
-                 cfg,
-                 getHAAvailability(ch),
-                 prefix,
-                 ch->getChannelNumber(),
-                 hostname,
-                 getManufacturer(Supla::RegisterDevice::getManufacturerId()),
-                 Supla::RegisterDevice::getName(),
-                 Supla::RegisterDevice::getSoftVer(),
-                 objectId,
-                 subchannels ? "/dimmer" : "",
-                 subchannels ? "/dimmer" : "") +
+        SUPLA_MQTT_SNPRINTF(
+            i ? payload : &c,
+            i ? bufferSize : 1,
+            cfg,
+            getHAAvailability(ch),
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
+            objectId,
+            subchannels ? "/dimmer" : "",
+            subchannels ? "/dimmer" : "") +
         1;
 
     if (i == 0) {
@@ -3147,6 +3165,10 @@ void Mqtt::notifyConfigChange(int channelNumber) {
 }
 void Mqtt::publishChannelSetup(int channelNumber) {
   if (channelNumber < 0 || channelNumber >= channelsCount) {
+    return;
+  }
+  if (Supla::Element::getElementByChannelNumber(channelNumber) == nullptr) {
+    configChangedBit[channelNumber / 8] &= ~(1U << (channelNumber % 8));
     return;
   }
   publishChannelAvailability(channelNumber, true);

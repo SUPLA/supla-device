@@ -37,12 +37,12 @@ void ClockPCF85063A::onInit() {
   devHandle = driver->addDevice(RTC_ADDRESS, I2C_FREQUENCY);
   driver->release();
   if (devHandle == nullptr) {
-    SUPLA_LOG_WARNING("ClockPCF85063A[0x%02X]: failed to add I2C device",
+    SUPLA_LOG_WARNING("ClockPCF85063A[0x%02X] failed to add I2C device",
                       RTC_ADDRESS);
     return;
   }
 
-  SUPLA_LOG_DEBUG("ClockPCF85063A[0x%02X]: I2C device added", RTC_ADDRESS);
+  SUPLA_LOG_DEBUG("ClockPCF85063A[0x%02X] I2C device added", RTC_ADDRESS);
   setRtcTimeToSystem();
   initialized = true;
   SUPLA_LOG_DEBUG("ClockPCF85063A initialized");

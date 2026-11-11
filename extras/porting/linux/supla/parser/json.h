@@ -17,7 +17,8 @@ namespace Supla {
 namespace Parser {
 class Json : public Parser {
  public:
-  explicit Json(Supla::Source::Source *);
+  explicit Json(Supla::Source::Source *, bool multiDocument = false);
+  void addKey(const std::string &key, int index) override;
   virtual ~Json();
 
   bool refreshSource() override;
@@ -31,9 +32,10 @@ class Json : public Parser {
   bool isSourceValid() override;
 
  protected:
-  bool valid = false;
+  const nlohmann::json& valueAt(const std::string& key) const;
   bool sourceValid = false;
-  std::map<std::string, int> keys;
+  bool multiDocument = false;
+  std::map<std::string, nlohmann::json> documents;
 
   nlohmann::json json;
 };

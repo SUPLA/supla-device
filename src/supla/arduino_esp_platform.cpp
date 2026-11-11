@@ -11,6 +11,9 @@
 #include <supla/log_wrapper.h>
 #if defined(ARDUINO_ARCH_ESP32)
 #include <esp_system.h>
+#include <NetworkClient.h>
+#include <NetworkClientSecure.h>
+#include <supla/network/esp32_tcp_abort.h>
 #endif
 #include <WiFiClient.h>
 #include <WiFiClientSecure.h>
@@ -20,6 +23,81 @@
 #include "supla/network/client.h"
 
 namespace Supla {
+#ifdef ARDUINO_ARCH_ESP32
+// Override the core's virtual stop(), including internal write/read error paths
+// which can close the socket before ArduinoEspClient::stop() is reached.
+class AbortableNetworkClient : public NetworkClient {
+ public:
+  ~AbortableNetworkClient() override { stop(); }
+
+  // Only the host/port overload used by ArduinoEspClient arms abort.
+  // Other inherited overloads do not guarantee abort on stop().
+  using NetworkClient::connect;
+  int connect(const char *host, uint16_t port) override {
+    // Arm before connect: a failed handshake can call virtual stop() before
+    // connect returns. ArduinoEspClient stops the previous connection first.
+    abortPending = true;
+    const int result = NetworkClient::connect(host, port);
+    if (result != 1) {
+      abortPending = false;
+    }
+    return result;
+  }
+
+  void stop() override {
+    const int socketFd = fd();
+    const bool shouldAbort = abortPending;
+    abortPending = false;
+    if (shouldAbort && socketFd >= 0) {
+      abortTcpConnection(socketFd);
+    }
+    NetworkClient::stop();
+  }
+
+ private:
+  // Secure stop resets fd() to 0 in core 3.3.12. Never infer ownership from
+  // that value; fd 0 can also be a real socket when LWIP_SOCKET_OFFSET is 0.
+  bool abortPending = false;
+};
+
+class AbortableNetworkClientSecure : public NetworkClientSecure {
+ public:
+  ~AbortableNetworkClientSecure() override { stop(); }
+
+  // Only the host/port overload used by ArduinoEspClient arms abort.
+  // Other inherited overloads do not guarantee abort on stop().
+  using NetworkClientSecure::connect;
+  int connect(const char *host, uint16_t port) override {
+    // Arm before connect: a failed handshake can call virtual stop() before
+    // connect returns. ArduinoEspClient stops the previous connection first.
+    abortPending = true;
+    const int result = NetworkClientSecure::connect(host, port);
+    if (result != 1) {
+      abortPending = false;
+    }
+    return result;
+  }
+
+  void stop() override {
+    const int socketFd = fd();
+    const bool shouldAbort = abortPending;
+    abortPending = false;
+    if (shouldAbort && socketFd >= 0) {
+      abortTcpConnection(socketFd);
+    }
+    NetworkClientSecure::stop();
+    // Core 3.3.12 zeroes the context. Restore its constructor sentinel so
+    // repeated stop() and the context deleter cannot close another socket 0.
+    sslclient->socket = -1;
+  }
+
+ private:
+  // Secure stop resets fd() to 0 in core 3.3.12. Never infer ownership from
+  // that value; fd 0 can also be a real socket when LWIP_SOCKET_OFFSET is 0.
+  bool abortPending = false;
+};
+#endif
+
 #ifdef ARDUINO_ARCH_ESP8266
 class ArduinoEspCaStore : public BearSSL::CertStoreBase {
  public:
@@ -222,7 +300,11 @@ class ArduinoEspClient : public Client {
           delete wifiClient;
           wifiClient = nullptr;
         }
+#ifdef ARDUINO_ARCH_ESP32
+        clientSec = new AbortableNetworkClientSecure();
+#else
         clientSec = new WiFiClientSecure();
+#endif
       }
       wifiClient = clientSec;
 
@@ -278,7 +360,11 @@ class ArduinoEspClient : public Client {
     } else {
       destroySecureClient();
       if (wifiClient == nullptr) {
+#ifdef ARDUINO_ARCH_ESP32
+        wifiClient = new AbortableNetworkClient();
+#else
         wifiClient = new WiFiClient();
+#endif
       }
     }
 

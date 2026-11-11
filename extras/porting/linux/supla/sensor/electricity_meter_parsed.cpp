@@ -14,7 +14,22 @@ void Supla::Sensor::ElectricityMeterParsed::onInit() {
 }
 
 void Supla::Sensor::ElectricityMeterParsed::readValuesFromDevice() {
-  if (refreshParserSource()) {
+  bool measurementsValid = refreshParserSource();
+  if (measurementsValid) {
+    for (const auto& mapping : parameterToKey) {
+      if (mapping.first == Supla::Sensor::BatteryState ||
+          mapping.first == Supla::Sensor::BatteryLevel ||
+          mapping.first == Supla::Sensor::BatteryPowered) {
+        continue;
+      }
+      getParameterValue(mapping.first);
+      if (!parser->isValid()) {
+        measurementsValid = false;
+        break;
+      }
+    }
+  }
+  if (measurementsValid) {
     if (isParameterConfigured(Supla::Parser::FwdActEnergy1)) {
       setFwdActEnergy(0,
           getParameterValue(Supla::Parser::FwdActEnergy1) * 100000);

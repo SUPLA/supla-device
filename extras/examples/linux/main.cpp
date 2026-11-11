@@ -214,8 +214,11 @@ int main(int argc, char *argv[]) {
       delay(10);
     }
     SUPLA_LOG_INFO("Exit");
-
-    exit(0);
+    bool saved = SuplaDevice.prepareForShutdown();
+    if (!saved) {
+      SUPLA_LOG_ERROR("Configuration save failed during shutdown");
+    }
+    exit(saved ? 0 : 1);
   } catch (const cxxopts::exceptions::exception &e) {
     std::cout << "error parsing options: " << e.what() << std::endl;
     exit(1);

@@ -5,6 +5,9 @@
 
 #include <simple_time.h>
 #include <supla/parser/json.h>
+#include <supla/sensor/electricity_meter_parsed.h>
+#include <supla/control/custom_relay.h>
+#include <supla/payload/simple.h>
 #include <supla/sensor/binary_parsed.h>
 #include <supla/sensor/container_parsed.h>
 #include <supla/sensor/impulse_counter_parsed.h>
@@ -374,4 +377,170 @@ TEST_F(Sd4linuxJsonParserTests,
   EXPECT_TRUE(channel->isContainerAlarmActive());
   EXPECT_TRUE(channel->isContainerInvalidSensorStateActive());
   EXPECT_TRUE(channel->isContainerSoundAlarmOn());
+}
+
+namespace {
+class DocumentSource : public Supla::Source::Source {
+ public:
+  std::vector<Supla::Source::Document> documents = {
+      {"0508", "", false, true}, {"0505", "", false, true}};
+  std::string getContent() override { return "must not be parsed"; }
+  std::vector<Supla::Source::Document> getDocuments() override {
+    return documents;
+  }
+  std::vector<std::string> getDocumentIds() const override {
+    return {"0508", "0505"};
+  }
+};
+}  // namespace
+
+TEST_F(Sd4linuxJsonParserTests, MultipleDocumentsRecoverWithoutMixingValues) {
+  SimpleTime time;
+  DocumentSource source;
+  Supla::Parser::Json parser(&source, true);
+  parser.addKey("0505:/data/val", -1);
+  parser.addKey("0508:/data/val", -1);
+  EXPECT_FALSE(parser.refreshParserSource());
+  EXPECT_FALSE(parser.isSourceValid());
+  EXPECT_EQ(parser.getValue("0505:/data/val"), 0);
+  EXPECT_FALSE(parser.isValid());
+  source.documents[1] = {"0505", R"({"data":{"val":"230.5"}})", true, true};
+  EXPECT_FALSE(parser.refreshSource());
+  source.documents[0] = {"0508", R"({"data":{"val":4.2}})", true, true};
+  ASSERT_TRUE(parser.refreshSource());
+  EXPECT_DOUBLE_EQ(parser.getValue("0505:/data/val"), 230.5);
+  EXPECT_DOUBLE_EQ(parser.getValue("0508:/data/val"), 4.2);
+  std::swap(source.documents[0], source.documents[1]);
+  ASSERT_TRUE(parser.refreshSource());
+  EXPECT_DOUBLE_EQ(parser.getValue("0505:/data/val"), 230.5);
+  source.documents[1].content = "invalid";
+  EXPECT_FALSE(parser.refreshSource());
+  EXPECT_FALSE(parser.isSourceValid());
+  EXPECT_EQ(parser.getValue("0505:/data/val"), 0);
+  EXPECT_FALSE(parser.isValid());
+  source.documents[1].content = R"({"data":{"val":"5.1"}})";
+  ASSERT_TRUE(parser.refreshSource());
+  EXPECT_DOUBLE_EQ(parser.getValue("0508:/data/val"), 5.1);
+  EXPECT_DOUBLE_EQ(parser.getValue("0505:/data/val"), 230.5);
+  source.documents[1].fresh = false;
+  EXPECT_FALSE(parser.refreshSource());
+  source.documents[1].fresh = true;
+  source.documents[1].content = "";
+  EXPECT_FALSE(parser.refreshSource());
+  source.documents.pop_back();
+  EXPECT_FALSE(parser.refreshSource());
+}
+
+TEST_F(Sd4linuxJsonParserTests, MultipleDocumentPointersStatesAndValidation) {
+  DocumentSource source;
+  source.documents[0] = {"0508", R"({"data":{"val":4.2}})", true, true};
+  source.documents[1] = {"0505",
+      R"({"a/b":{"~nested":[{"val":"231.5"}]},"data":{"val":"ON"}})",
+      true, true};
+  Supla::Parser::Json parser(&source, true);
+  parser.addKey("0505:/a~1b/~0nested/0/val", -1);
+  parser.addKey("0508:/data/val", -1);
+  ASSERT_TRUE(parser.refreshSource());
+  EXPECT_DOUBLE_EQ(parser.getValue("0505:/a~1b/~0nested/0/val"), 231.5);
+  EXPECT_EQ(std::get<std::string>(parser.getStateValue("0505:/data/val")),
+            "ON");
+  EXPECT_EQ(parser.getValue("0508:/missing"), 0);
+  EXPECT_FALSE(parser.isValid());
+  EXPECT_TRUE(parser.isSourceValid());
+  EXPECT_DOUBLE_EQ(parser.getValue("0508:/data/val"), 4.2);
+  EXPECT_TRUE(parser.isValid());
+  EXPECT_EQ(parser.getValue("505:/data/val"), 0);
+  EXPECT_FALSE(parser.isValid());
+  for (const auto* key : {"505:/data/val", "0505:data/val", ":/val",
+                          "0505:/bad~2escape", "0505"}) {
+    EXPECT_THROW(parser.addKey(key, -1), std::invalid_argument);
+  }
+}
+
+TEST_F(Sd4linuxJsonParserTests, ExplicitSingleDocumentModeKeepsLiteralKeys) {
+  source.content = R"({"0505:/data/val":"12.5","data":{"val":"230.5"}})";
+  Supla::Parser::Json parser(&source, false);
+  parser.addKey("0505:/data/val", -1);
+  ASSERT_TRUE(parser.refreshSource());
+  EXPECT_DOUBLE_EQ(parser.getValue("0505:/data/val"), 12.5);
+  EXPECT_DOUBLE_EQ(parser.getValue("/data/val"), 230.5);
+  EXPECT_EQ(source.getDocumentIds(), std::vector<std::string>{"default"});
+  EXPECT_EQ(source.getDocuments()[0].content, source.content);
+}
+
+TEST_F(Sd4linuxJsonParserTests, SingleJsonMeterPreservesUnitsAndMultipliers) {
+  SimpleTime time;
+  source.content = R"({"voltage":"230.5","current":4200,"energy":12.345})";
+  Supla::Parser::Json parser(&source);
+  Supla::Sensor::ElectricityMeterParsed meter(&parser);
+  meter.setMapping(Supla::Parser::Voltage1, "voltage");
+  meter.setMapping(Supla::Parser::Current1, "current");
+  meter.setMultiplier(Supla::Parser::Current1, 0.001);
+  meter.setMapping(Supla::Parser::FwdActEnergy1, "energy");
+  meter.onInit();
+  EXPECT_EQ(meter.getVoltage(0), 23050);
+  EXPECT_EQ(meter.getCurrent(0), 4200u);
+  EXPECT_EQ(meter.getFwdActEnergy(0), 1234500u);
+  source.content = R"({"voltage":"invalid","current":0,"energy":0})";
+  time.advance(5001);
+  meter.readValuesFromDevice();
+  meter.updateChannelValues();
+  const auto* value = reinterpret_cast<TElectricityMeter_ExtendedValue_V3*>(
+      meter.getChannel()->getExtValue()->value);
+  EXPECT_EQ(value->m_count, 0);
+  EXPECT_FALSE(parser.isValid());
+  EXPECT_TRUE(parser.isSourceValid());
+  EXPECT_EQ(meter.getFwdActEnergy(0), 1234500u);
+}
+
+namespace {
+class CapturingJsonOutput : public Supla::Output::Output {
+ public:
+  std::string content;
+  bool putContent(int) override { return false; }
+  bool putContent(bool) override { return false; }
+  bool putContent(const std::vector<int>&) override { return false; }
+  bool putContent(const std::string& value) override {
+    content = value;
+    return true;
+  }
+};
+}  // namespace
+
+TEST_F(Sd4linuxJsonParserTests,
+       CustomRelayReadsNestedStateAndSendsExactSimpleJson) {
+  SimpleTime time;
+  source.content = R"({"data":{"val":"ON"}})";
+  Supla::Parser::Json parser(&source);
+  CapturingJsonOutput output;
+  Supla::Payload::Simple payload(&output);
+  Supla::Control::CustomRelay relay(&parser, &payload);
+  relay.Supla::Sensor::SensorParsedBase::setMapping(Supla::Parser::State,
+                                                  "/data/val");
+  relay.setOnValues({std::string("ON")});
+  relay.setSetOnValue(std::string(R"({"data":{"val":"ON"}})"));
+  relay.setSetOffValue(std::string(R"({"data":{"val":"OFF"}})"));
+  EXPECT_TRUE(relay.isOn());
+  relay.turnOn();
+  EXPECT_EQ(output.content, R"({"data":{"val":"ON"}})");
+  relay.turnOff();
+  EXPECT_EQ(output.content, R"({"data":{"val":"OFF"}})");
+}
+
+TEST_F(Sd4linuxJsonParserTests, OnlyRequiredDocumentsDetermineSourceValidity) {
+  DocumentSource source;
+  source.documents[0] = {"0508", "broken-unused-document", true, true};
+  source.documents[1] = {"0505", R"({"data":{"val":230}})", true, true};
+  Supla::Parser::Json parser(&source, true);
+  parser.addKey("0505:/data/val", -1);
+  ASSERT_TRUE(parser.refreshSource());
+  EXPECT_DOUBLE_EQ(parser.getValue("0505:/data/val"), 230);
+  for (const auto* content : {"", "invalid", "{", R"({"data":{"val":1e999}})"}) {
+    source.documents[1].content = content;
+    EXPECT_FALSE(parser.refreshSource());
+    EXPECT_FALSE(parser.isSourceValid());
+  }
+  source.documents[1].content = R"({"data":{"val":231}})";
+  ASSERT_TRUE(parser.refreshSource());
+  EXPECT_DOUBLE_EQ(parser.getValue("0505:/data/val"), 231);
 }

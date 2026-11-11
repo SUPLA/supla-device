@@ -23,6 +23,8 @@ class EspIdfClient : public Client {
   void setTimeoutMs(uint16_t _timeoutMs) override;
 
  protected:
+  // Caller holds mutex, including error cleanup during connectImp().
+  void destroyConnection();
   int connectImp(const char *host, uint16_t port) override;
   std::size_t writeImp(const uint8_t *buf, std::size_t size) override;
   int readImp(uint8_t *buf, std::size_t size) override;

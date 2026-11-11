@@ -19,6 +19,7 @@
 #include <supla/time.h>
 
 #include "supla/network/client.h"
+#include "supla/network/esp32_tcp_abort.h"
 
 namespace {
 Supla::ConnectionError mapConnectionError(int error,
@@ -61,6 +62,7 @@ Supla::EspIdfClient::EspIdfClient() {
 }
 
 Supla::EspIdfClient::~EspIdfClient() {
+  EspIdfClient::stop();
 }
 
 #if !defined(MBEDTLS_PK_HAVE_PRIVATE_HEADER)
@@ -168,8 +170,7 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
                     host);
     }
     isConnected = false;
-    esp_tls_conn_destroy(client);
-    client = nullptr;
+    destroyConnection();
   }
 
   // SuplaDevice expects 1 on success, which is the same
@@ -271,7 +272,18 @@ int Supla::EspIdfClient::readImp(uint8_t *buf, std::size_t size) {
 void Supla::EspIdfClient::stop() {
   Supla::AutoLock autoLock(mutex);
   isConnected = false;
+  destroyConnection();
+}
+
+void Supla::EspIdfClient::destroyConnection() {
   if (client != nullptr) {
+    // esp-tls initializes sockfd to -1; it does not zero it on stop like
+    // Arduino Secure. A live fd can also belong to a failed TLS handshake
+    // or an in-progress nonblocking TCP connection.
+    int socketFd = -1;
+    if (esp_tls_get_conn_sockfd(client, &socketFd) == ESP_OK) {
+      abortTcpConnection(socketFd);
+    }
     esp_tls_conn_destroy(client);
     client = nullptr;
   }

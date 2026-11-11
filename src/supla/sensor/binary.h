@@ -26,6 +26,7 @@ class Binary : public BinaryBase {
 
  protected:
   Supla::Io::IoPin inputPin;
+  bool filterInitialized = false;
   bool newStateCandidateValue = false;
   bool prevValue = false;
   uint32_t lastStateChangeMs = 0;

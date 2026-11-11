@@ -65,6 +65,7 @@ class SrpcCalcfgTimeoutTests : public ::testing::Test {
   void TearDown() override {
     if (srpcLayer) {
       srpcLayer->deinitializeSrpc();
+      client->expectStopOnDestruction();
       delete srpcLayer;
       srpcLayer = nullptr;
     }

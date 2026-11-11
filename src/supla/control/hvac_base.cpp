@@ -30,7 +30,9 @@
 using Supla::Control::HvacBase;
 
 HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
-                   Supla::Control::OutputInterface *secondaryOutput) {
+                   Supla::Control::OutputInterface *secondaryOutput,
+                   int channelNumber)
+    : ChannelElement(channelNumber) {
   auto *nativeWeeklySchedule = new HvacWeeklySchedule(this);
   setWeeklyScheduleController(
       nativeWeeklySchedule, nativeWeeklySchedule, nativeWeeklySchedule);
@@ -197,7 +199,7 @@ bool HvacBase::iterateConnected() {
 
   if (!result) {
     SUPLA_LOG_DEBUG(
-        "HVAC[%d]: send: IsOn %d, Mode %s, tHeat %d, tCool %d, flags 0x%x",
+        "HVAC[%d] send: IsOn %d, Mode %s, tHeat %d, tCool %d, flags 0x%x",
         getChannelNumber(),
         channel.getHvacIsOnRaw(),
         channel.getHvacModeCstr(),
@@ -247,27 +249,27 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&storedConfig),
                      sizeof(TChannelConfig_HVAC))) {
-      SUPLA_LOG_DEBUG("HVAC[%d]: config in storage:", getChannelNumber());
+      SUPLA_LOG_DEBUG("HVAC[%d] config in storage:", getChannelNumber());
       debugPrintConfigStruct(&storedConfig, getChannelNumber());
       if (isConfigValid(&storedConfig)) {
         fixReadonlyParameters(&storedConfig);
         applyAdditionalValidation(&storedConfig);
         applyConfigWithoutValidation(&storedConfig);
         fixTemperatureSetpoints();
-        SUPLA_LOG_INFO("HVAC[%d]: config loaded successfully",
+        SUPLA_LOG_INFO("HVAC[%d] config loaded successfully",
                        getChannelNumber());
       } else {
         SUPLA_LOG_WARNING(
-            "HVAC[%d]: config invalid in storage. Using SW defaults",
+            "HVAC[%d] config invalid in storage. Using SW defaults",
             getChannelNumber());
       }
     } else {
-      SUPLA_LOG_INFO("HVAC[%d]: config missing. Using SW defaults",
+      SUPLA_LOG_INFO("HVAC[%d] config missing. Using SW defaults",
                      getChannelNumber());
     }
 
   } else {
-    SUPLA_LOG_ERROR("HVAC[%d]: can't work without config storage",
+    SUPLA_LOG_ERROR("HVAC[%d] can't work without config storage",
                     getChannelNumber());
   }
   updateWeeklyScheduleConfigTypes();
@@ -288,7 +290,7 @@ void HvacBase::onLoadState() {
       memcpy(hvacValue, &hvacValueState, sizeof(THVACValue));
     }
     if (!Supla::Channel::isHvacValueValid(hvacValue)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid HVAC value in state",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid HVAC value in state",
                         getChannelNumber());
     }
     auto *weeklyScheduleProvider = weeklyScheduleComponents.getController();
@@ -302,7 +304,7 @@ void HvacBase::onLoadState() {
         reinterpret_cast<unsigned char *>(&lastWorkingMode),
         sizeof(lastWorkingMode));
     if (!Supla::Channel::isHvacValueValid(&lastWorkingMode)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid lastWorkingMode HVAC value in state",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid lastWorkingMode HVAC value in state",
                         getChannelNumber());
     }
 
@@ -330,7 +332,7 @@ void HvacBase::onLoadState() {
         sizeof(lastManualMode));
     if (lastManualMode > SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL) {
       SUPLA_LOG_WARNING(
-          "HVAC[%d]: invalid lastManualMode HVAC value in state: %d",
+          "HVAC[%d] invalid lastManualMode HVAC value in state: %d",
           getChannelNumber(),
           lastManualMode);
     }
@@ -420,25 +422,25 @@ void HvacBase::onInit() {
   // validate thermometers channel numbers
   if (!setMainThermometerChannelNo(getMainThermometerChannelNo())) {
     SUPLA_LOG_WARNING(
-        "HVAC[%d]: main thermometer channel number %d is invalid. Clearing.",
+        "HVAC[%d] main thermometer channel number %d is invalid. Clearing.",
         getChannelNumber(),
         getMainThermometerChannelNo());
     setMainThermometerChannelNo(getChannelNumber());
   }
   if (!setAuxThermometerChannelNo(getAuxThermometerChannelNo())) {
     SUPLA_LOG_WARNING(
-        "HVAC[%d]: aux thermomter channel number %d is invalid. Clearing.",
+        "HVAC[%d] aux thermomter channel number %d is invalid. Clearing.",
         getChannelNumber(),
         getAuxThermometerChannelNo());
     setAuxThermometerChannelNo(getChannelNumber());
   }
   if (!setBinarySensorChannelNo(getBinarySensorChannelNo())) {
     if (getBinarySensorChannelNo() == getChannelNumber()) {
-      SUPLA_LOG_DEBUG("HVAC[%d]: binary sensor function disabled",
+      SUPLA_LOG_DEBUG("HVAC[%d] binary sensor function disabled",
                       getChannelNumber());
     } else {
       SUPLA_LOG_WARNING(
-          "HVAC[%d]: binary sensor channel number %d is invalid. Clearing.",
+          "HVAC[%d] binary sensor channel number %d is invalid. Clearing.",
           getChannelNumber(),
           getBinarySensorChannelNo());
       setBinarySensorChannelNo(getChannelNumber());
@@ -446,7 +448,7 @@ void HvacBase::onInit() {
   }
   if (!setPumpSwitchChannelNo(getPumpSwitchChannelNo())) {
     SUPLA_LOG_WARNING(
-        "HVAC[%d]: pump switch channel number %d is invalid. Clearing.",
+        "HVAC[%d] pump switch channel number %d is invalid. Clearing.",
         getChannelNumber(),
         getPumpSwitchChannelNo());
     clearPumpSwitchChannelNo();
@@ -454,7 +456,7 @@ void HvacBase::onInit() {
   if (!setHeatOrColdSourceSwitchChannelNo(
           getHeatOrColdSourceSwitchChannelNo())) {
     SUPLA_LOG_WARNING(
-        "HVAC[%d]: heat or cold source switch channel number %d is invalid. "
+        "HVAC[%d] heat or cold source switch channel number %d is invalid. "
         "Clearing.",
         getChannelNumber(),
         getHeatOrColdSourceSwitchChannelNo());
@@ -462,7 +464,7 @@ void HvacBase::onInit() {
   }
   if (!setMasterThermostatChannelNo(getMasterThermostatChannelNo())) {
     SUPLA_LOG_WARNING(
-        "HVAC[%d]: master thermostat channel number %d is invalid. "
+        "HVAC[%d] master thermostat channel number %d is invalid. "
         "Clearing.",
         getChannelNumber(),
         getMasterThermostatChannelNo());
@@ -490,7 +492,7 @@ void HvacBase::onInit() {
 
 void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   SUPLA_LOG_DEBUG(
-      "HVAC[%d]: onRegistered send: IsOn %d, Mode %s, tHeat %d, tCool %d, "
+      "HVAC[%d] onRegistered send: IsOn %d, Mode %s, tHeat %d, tCool %d, "
       "flags 0x%x",
       getChannelNumber(),
       channel.getHvacIsOnRaw(),
@@ -555,7 +557,7 @@ void HvacBase::iterateAlways() {
   }
 
   if (previousSubfunction != config.Subfunction) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: subfunction changed from %d to %d",
+    SUPLA_LOG_DEBUG("HVAC[%d] subfunction changed from %d to %d",
                     getChannelNumber(),
                     previousSubfunction,
                     config.Subfunction);
@@ -636,7 +638,7 @@ void HvacBase::iterateAlways() {
       if (myMode != masterMode || mySetpointHeat != masterSetpointHeat ||
           mySetpointCool != masterSetpointCool) {
         SUPLA_LOG_INFO(
-            "HVAC[%d]: Master thermostat settings changed "
+            "HVAC[%d] Master thermostat settings changed "
             "mode %d->%d, heat %d->%d, cool %d->%d",
             getChannelNumber(),
             myMode,
@@ -674,7 +676,7 @@ void HvacBase::iterateAlways() {
   // wait with reaction to new settings
   if (lastConfigChangeTimestampMs &&
       millis() - lastConfigChangeTimestampMs < 5000) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: waiting with reaction to new settings",
+    SUPLA_LOG_DEBUG("HVAC[%d] waiting with reaction to new settings",
                     getChannelNumber());
     return;
   }
@@ -719,7 +721,7 @@ void HvacBase::iterateAlways() {
     setOutput(getOutputValueOnError(), true);
     if (lastTemperature != INT16_MIN) {
       SUPLA_LOG_WARNING(
-          "HVAC[%d]: invalid temperature readout - check if your thermometer "
+          "HVAC[%d] invalid temperature readout - check if your thermometer "
           "is "
           "correctly connected and configured",
           getChannelNumber());
@@ -746,13 +748,13 @@ void HvacBase::iterateAlways() {
   forcedByAux = false;
 
   if (checkOverheatProtection(tMain, tAux)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: overheat protection exit", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] overheat protection exit", getChannelNumber());
     updateChannelState();
     return;
   }
 
   if (checkAntifreezeProtection(tMain, tAux)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: antifreeze protection exit", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] antifreeze protection exit", getChannelNumber());
     updateChannelState();
     return;
   }
@@ -760,7 +762,7 @@ void HvacBase::iterateAlways() {
   channel.setHvacFlagAntifreezeOverheatActive(false);
 
   if (getForcedOffSensorState()) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: forced off by sensor exit", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] forced off by sensor exit", getChannelNumber());
     channel.setHvacFlagForcedOffBySensor(true);
     if (isOutputControlledInternally()) {
       setOutput(0, false);
@@ -783,7 +785,7 @@ void HvacBase::iterateAlways() {
   // allowed to hide the higher-priority forced-off and OFF handling above.
   forcedByAux = auxWasForcingOutput;
   if (checkAuxProtection(tAux)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler auxiliary regulation exit",
+    SUPLA_LOG_DEBUG("HVAC[%d] heater/cooler auxiliary regulation exit",
                     getChannelNumber());
     updateChannelState();
     return;
@@ -891,7 +893,7 @@ bool HvacBase::isDrySupported() const {
 
 uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
                                       bool local) {
-  SUPLA_LOG_DEBUG("HVAC[%d]: processing channel config", getChannelNumber());
+  SUPLA_LOG_VERBOSE("HVAC[%d] processing channel config", getChannelNumber());
   if (newConfig == nullptr) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
@@ -911,7 +913,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
 
   if (isLocalConfigChangePending(SUPLA_CONFIG_TYPE_DEFAULT) && !local) {
     SUPLA_LOG_INFO(
-        "HVAC[%d]: Ignoring channel config (local config changed offline)",
+        "HVAC[%d] Ignoring channel config (local config changed offline)",
         getChannelNumber());
     return SUPLA_CONFIG_RESULT_TRUE;
   }
@@ -921,7 +923,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   }
 
   if (channelFunction != getChannel()->getDefaultFunction()) {
-    SUPLA_LOG_INFO("HVAC[%d]: function changed to %d", getChannelNumber(),
+    SUPLA_LOG_INFO("HVAC[%d] function changed to %d", getChannelNumber(),
                    channelFunction);
     changeFunction(channelFunction, false);
     triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
@@ -951,7 +953,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   }
 
   if (applyServerConfig && !isConfigValid(hvacConfig)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: invalid config", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] invalid config", getChannelNumber());
     // server have invalid channel config
     if (!isChannelConfigFinishedReceived()) {
       // if first config after register is invalid, we try to send out config
@@ -960,6 +962,15 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
       // message infinite loop
       triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
     }
+    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+  }
+
+  auto preparation =
+      prepareChannelConfig(hvacConfig, local, additionalValidationChanged);
+  if (preparation != ApplyConfigResult::Success) {
+    return finishChannelConfig(newConfig, preparation, local);
+  }
+  if (!isConfigValid(hvacConfig)) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
@@ -1021,14 +1032,36 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
       configFixAttempt++;
       triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
     } else {
-      SUPLA_LOG_WARNING("HVAC[%d]: failed to fix config", getChannelNumber());
+      SUPLA_LOG_WARNING("HVAC[%d] failed to fix config", getChannelNumber());
     }
   }
 
   return SUPLA_CONFIG_RESULT_TRUE;
 }
 
-void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
+Supla::ApplyConfigResult HvacBase::prepareChannelConfig(
+    TChannelConfig_HVAC *hvacConfig, bool local, bool &changed) {
+  (void)hvacConfig;
+  (void)local;
+  (void)changed;
+  return ApplyConfigResult::Success;
+}
+
+bool HvacBase::importRemoteConfig(const TChannelConfig_HVAC &remote,
+                                 bool persist) {
+  if (!isConfigValid(&remote)) {
+    return false;
+  }
+  auto before = config;
+  applyConfigWithoutValidation(&remote);
+  if (persist && memcmp(&before, &config, sizeof(before)) != 0) {
+    saveConfig();
+  }
+  return true;
+}
+
+void HvacBase::applyConfigWithoutValidation(
+    const TChannelConfig_HVAC *hvacConfig) {
   if (hvacConfig == nullptr) {
     return;
   }
@@ -1166,14 +1199,22 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   }
 }
 
-bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
+bool HvacBase::isConfigValid(const TChannelConfig_HVAC *newConfig) const {
   if (newConfig == nullptr) {
+    return false;
+  }
+
+  if (newConfig->AntiFreezeAndOverheatProtectionEnabled > 1 ||
+      newConfig->TemperatureSetpointChangeSwitchesToManualMode > 1 ||
+      newConfig->AuxMinMaxSetpointEnabled > 1) {
+    SUPLA_LOG_WARNING("HVAC[%d] invalid boolean configuration",
+                      channel.getChannelNumber());
     return false;
   }
 
   if (newConfig->TemperatureControlType >
       SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE) {
-    SUPLA_LOG_WARNING("HVAC[%d]: invalid temperature control type %d",
+    SUPLA_LOG_WARNING("HVAC[%d] invalid temperature control type %d",
                       channel.getChannelNumber(),
                       newConfig->TemperatureControlType);
     return false;
@@ -1186,7 +1227,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
     if (!isChannelThermometer(newConfig->AuxThermometerChannelNo) &&
         newConfig->AuxThermometerChannelNo != getChannelNumber()) {
       SUPLA_LOG_WARNING(
-          "HVAC[%d]: aux thermometer channel %d is not a thermometer",
+          "HVAC[%d] aux thermometer channel %d is not a thermometer",
           channel.getChannelNumber(),
           newConfig->AuxThermometerChannelNo);
       return false;
@@ -1195,7 +1236,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
             newConfig->MainThermometerChannelNo &&
         newConfig->AuxThermometerChannelNo != getChannelNumber()) {
       SUPLA_LOG_WARNING(
-          "HVAC[%d]: aux thermometer channel %d is the same as main "
+          "HVAC[%d] aux thermometer channel %d is the same as main "
           "thermometer channel %d",
           channel.getChannelNumber(),
           newConfig->AuxThermometerChannelNo,
@@ -1213,7 +1254,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
     case SUPLA_HVAC_AUX_THERMOMETER_TYPE_GENERIC_HEATER:
       break;
     default:
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid aux thermometer type %d",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid aux thermometer type %d",
                         channel.getChannelNumber(),
                         newConfig->AuxThermometerType);
       return false;
@@ -1221,7 +1262,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
 
   if (newConfig->BinarySensorChannelNo != channel.getChannelNumber()) {
     if (!isChannelBinarySensor(newConfig->BinarySensorChannelNo)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid binary sensor %d",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid binary sensor %d",
                         channel.getChannelNumber(),
                         newConfig->BinarySensorChannelNo);
       return false;
@@ -1230,7 +1271,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
 
   if (newConfig->MasterThermostatIsSet != 0 &&
       newConfig->MasterThermostatIsSet != 1) {
-    SUPLA_LOG_WARNING("HVAC[%d]: invalid master thermostat IsSet value %d",
+    SUPLA_LOG_WARNING("HVAC[%d] invalid master thermostat IsSet value %d",
                       channel.getChannelNumber(),
                       newConfig->MasterThermostatIsSet);
     return false;
@@ -1238,7 +1279,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
 
   if (newConfig->MasterThermostatIsSet == 1 &&
       !isChannelHvac(newConfig->MasterThermostatChannelNo)) {
-    SUPLA_LOG_WARNING("HVAC[%d]: invalid master thermostat channel %d",
+    SUPLA_LOG_WARNING("HVAC[%d] invalid master thermostat channel %d",
                       channel.getChannelNumber(),
                       newConfig->MasterThermostatChannelNo);
     return false;
@@ -1251,7 +1292,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
       case SUPLA_HVAC_SUBFUNCTION_HEAT:
         break;
       default: {
-        SUPLA_LOG_WARNING("HVAC[%d]: invalid subfunction %d",
+        SUPLA_LOG_WARNING("HVAC[%d] invalid subfunction %d",
                           channel.getChannelNumber(),
                           newConfig->Subfunction);
         return false;
@@ -1260,21 +1301,21 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
   }
 
   if (!isAlgorithmValid(newConfig->UsedAlgorithm)) {
-    SUPLA_LOG_WARNING("HVAC[%d]: invalid algorithm %d",
+    SUPLA_LOG_WARNING("HVAC[%d] invalid algorithm %d",
                       channel.getChannelNumber(),
                       newConfig->UsedAlgorithm);
     return false;
   }
 
   if (!isMinOnOffTimeValid(newConfig->MinOnTimeS)) {
-    SUPLA_LOG_WARNING("HVAC[%d]: invalid min on time %d",
+    SUPLA_LOG_WARNING("HVAC[%d] invalid min on time %d",
                       channel.getChannelNumber(),
                       newConfig->MinOnTimeS);
     return false;
   }
 
   if (!isMinOnOffTimeValid(newConfig->MinOffTimeS)) {
-    SUPLA_LOG_WARNING("HVAC[%d]: invalid min off time %d",
+    SUPLA_LOG_WARNING("HVAC[%d] invalid min off time %d",
                       channel.getChannelNumber(),
                       newConfig->MinOffTimeS);
     return false;
@@ -1282,7 +1323,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
 
   if (!isLocalUILockCapabilitySupported(
           getLocalUILockCapabilityAsEnum(newConfig->LocalUILock))) {
-    SUPLA_LOG_WARNING("HVAC[%d]: invalid local UI lock 0x%X",
+    SUPLA_LOG_WARNING("HVAC[%d] invalid local UI lock 0x%X",
                       channel.getChannelNumber(),
                       newConfig->LocalUILock);
     return false;
@@ -1290,14 +1331,14 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
 
   if (newConfig->OutputValueOnError > 100 ||
       newConfig->OutputValueOnError < -100) {
-    SUPLA_LOG_WARNING("HVAC[%d]: invalid output value on error %d",
+    SUPLA_LOG_WARNING("HVAC[%d] invalid output value on error %d",
                       channel.getChannelNumber(),
                       newConfig->OutputValueOnError);
     return false;
   }
 
   if (!areTemperaturesValid(&newConfig->Temperatures)) {
-    SUPLA_LOG_WARNING("HVAC[%d]: invalid temperatures",
+    SUPLA_LOG_WARNING("HVAC[%d] invalid temperatures",
                       channel.getChannelNumber());
     return false;
   }
@@ -1313,7 +1354,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_FREEZE_PROTECTION)) {
     if (!isTemperatureFreezeProtectionValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid freeze protection temperature",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid freeze protection temperature",
                         channel.getChannelNumber());
       return false;
     }
@@ -1321,7 +1362,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_HEAT_PROTECTION)) {
     if (!isTemperatureHeatProtectionValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid heat protection temperature",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid heat protection temperature",
                         channel.getChannelNumber());
       return false;
     }
@@ -1329,7 +1370,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_ECO)) {
     if (!isTemperatureEcoValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid eco temperature",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid eco temperature",
                         channel.getChannelNumber());
       return false;
     }
@@ -1337,7 +1378,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_COMFORT)) {
     if (!isTemperatureComfortValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid comfort temperature",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid comfort temperature",
                         channel.getChannelNumber());
       return false;
     }
@@ -1345,7 +1386,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_BOOST)) {
     if (!isTemperatureBoostValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid boost temperature",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid boost temperature",
                         channel.getChannelNumber());
       return false;
     }
@@ -1353,7 +1394,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_HISTERESIS)) {
     if (!isTemperatureHisteresisValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid histeresis value",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid histeresis value",
                         channel.getChannelNumber());
       return false;
     }
@@ -1361,7 +1402,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_AUX_HISTERESIS)) {
     if (!isTemperatureAuxHisteresisValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid histeresis value",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid histeresis value",
                         channel.getChannelNumber());
       return false;
     }
@@ -1369,7 +1410,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_BELOW_ALARM)) {
     if (!isTemperatureBelowAlarmValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid below alarm temperature",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid below alarm temperature",
                         channel.getChannelNumber());
       return false;
     }
@@ -1377,7 +1418,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_ABOVE_ALARM)) {
     if (!isTemperatureAboveAlarmValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid above alarm temperature",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid above alarm temperature",
                         channel.getChannelNumber());
       return false;
     }
@@ -1385,7 +1426,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_AUX_MIN_SETPOINT)) {
     if (!isTemperatureAuxMinSetpointValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid aux min setpoint",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid aux min setpoint",
                         channel.getChannelNumber());
       return false;
     }
@@ -1393,7 +1434,7 @@ bool HvacBase::areTemperaturesValid(
 
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_AUX_MAX_SETPOINT)) {
     if (!isTemperatureAuxMaxSetpointValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid aux max setpoint",
+      SUPLA_LOG_WARNING("HVAC[%d] invalid aux max setpoint",
                         channel.getChannelNumber());
       return false;
     }
@@ -1635,7 +1676,7 @@ bool HvacBase::isChannelThermometer(int16_t channelNo) const {
   }
   auto element = Supla::Element::getElementByChannelNumber(channelNo);
   if (element == nullptr) {
-    SUPLA_LOG_WARNING("HVAC[%d]: thermometer not found for channel %d",
+    SUPLA_LOG_WARNING("HVAC[%d] thermometer not found for channel %d",
                       getChannelNumber(),
                       channelNo);
     return false;
@@ -1646,7 +1687,7 @@ bool HvacBase::isChannelThermometer(int16_t channelNo) const {
     case SUPLA_CHANNELTYPE_THERMOMETER:
       break;
     default:
-      SUPLA_LOG_WARNING("HVAC[%d]: thermometer channel %d has invalid type %d",
+      SUPLA_LOG_WARNING("HVAC[%d] thermometer channel %d has invalid type %d",
                         getChannelNumber(),
                         channelNo,
                         elementType);
@@ -1661,7 +1702,7 @@ bool HvacBase::isChannelBinarySensor(int16_t channelNo) const {
   }
   auto element = Supla::Element::getElementByChannelNumber(channelNo);
   if (element == nullptr) {
-    SUPLA_LOG_WARNING("HVAC[%d]: binary sensor not found for channel %d",
+    SUPLA_LOG_WARNING("HVAC[%d] binary sensor not found for channel %d",
                       getChannelNumber(),
                       channelNo);
     return false;
@@ -1679,7 +1720,7 @@ bool HvacBase::isChannelHvac(int16_t channelNo) const {
   }
   auto element = Supla::Element::getElementByChannelNumber(channelNo);
   if (element == nullptr) {
-    SUPLA_LOG_WARNING("HVAC[%d]: master thermostat not found for channel %d",
+    SUPLA_LOG_WARNING("HVAC[%d] master thermostat not found for channel %d",
                       getChannelNumber(),
                       channelNo);
     return false;
@@ -1687,7 +1728,7 @@ bool HvacBase::isChannelHvac(int16_t channelNo) const {
   if (element->getChannel()->getChannelType() == SUPLA_CHANNELTYPE_HVAC) {
     return true;
   }
-  SUPLA_LOG_WARNING("HVAC[%d]: master thermostat channel %d has invalid type "
+  SUPLA_LOG_WARNING("HVAC[%d] master thermostat channel %d has invalid type "
                     "%d",
                     getChannelNumber(),
                     channelNo,
@@ -1701,7 +1742,7 @@ bool HvacBase::isChannelRelay(int16_t channelNo) const {
   }
   auto element = Supla::Element::getElementByChannelNumber(channelNo);
   if (element == nullptr) {
-    SUPLA_LOG_WARNING("HVAC[%d]: relay not found for channel %d",
+    SUPLA_LOG_WARNING("HVAC[%d] relay not found for channel %d",
                       getChannelNumber(),
                       channelNo);
     return false;
@@ -1709,7 +1750,7 @@ bool HvacBase::isChannelRelay(int16_t channelNo) const {
   if (element->getChannel()->getChannelType() == SUPLA_CHANNELTYPE_RELAY) {
     return true;
   }
-  SUPLA_LOG_WARNING("HVAC[%d]: channel %d has invalid relay type %d",
+  SUPLA_LOG_WARNING("HVAC[%d] channel %d has invalid relay type %d",
                     getChannelNumber(),
                     channelNo,
                     element->getChannel()->getChannelType());
@@ -2273,7 +2314,7 @@ unsigned _supla_int16_t HvacBase::getUsedAlgorithm(bool forAux) const {
 }
 
 bool HvacBase::setMainThermometerChannelNo(int16_t newChannelNo) {
-  SUPLA_LOG_DEBUG("Hvac[%d]: setMainThermometerChannelNo %d",
+  SUPLA_LOG_DEBUG("Hvac[%d] setMainThermometerChannelNo %d",
                   getChannelNumber(),
                   newChannelNo);
   uint8_t channelNo = getChannelNumber();
@@ -2548,9 +2589,9 @@ void HvacBase::saveConfig(bool localChange) {
     if (cfg->setBlob(key,
                      reinterpret_cast<char *>(&config),
                      sizeof(TChannelConfig_HVAC))) {
-      SUPLA_LOG_INFO("HVAC[%d]: config saved successfully", getChannelNumber());
+      SUPLA_LOG_INFO("HVAC[%d] config saved successfully", getChannelNumber());
     } else {
-      SUPLA_LOG_WARNING("HVAC[%d]: failed to save config", getChannelNumber());
+      SUPLA_LOG_WARNING("HVAC[%d] failed to save config", getChannelNumber());
     }
 
     saveConfigChangeFlag();
@@ -2577,10 +2618,10 @@ void HvacBase::handleSetChannelConfigResult(
   Supla::ElementWithChannelActions::handleSetChannelConfigResult(result);
 
   if (result->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT) {
-    bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
-    SUPLA_LOG_INFO("HVAC[%d]: set channel config %s (%d)",
+    SUPLA_LOG_INFO("HVAC[%d] set channel config %s (%d)",
                    getChannelNumber(),
-                   success ? "succeeded" : "failed",
+                   result->Result == SUPLA_CONFIG_RESULT_TRUE
+                       ? "succeeded" : "failed",
                    result->Result);
     return;
   }
@@ -2925,7 +2966,7 @@ void HvacBase::setOutput(int value, bool force) {
 }
 
 void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
-  //  SUPLA_LOG_DEBUG("HVAC[%d]: set target mode %s, keepScheduleOn %d",
+  //  SUPLA_LOG_DEBUG("HVAC[%d] set target mode %s, keepScheduleOn %d",
   //                  getChannelNumber(),
   //                  channel.getHvacModeCstr(mode),
   //                  keepScheduleOn);
@@ -2940,7 +2981,7 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
     lastProgramManualOverride = -1;
   }
 
-  SUPLA_LOG_INFO("HVAC[%d]: set target mode %s requested (%d)",
+  SUPLA_LOG_INFO("HVAC[%d] set target mode %s requested (%d)",
                  getChannelNumber(),
                  channel.getHvacModeCstr(mode),
                  mode);
@@ -2978,7 +3019,7 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
 
     lastConfigChangeTimestampMs = millis();
   }
-  SUPLA_LOG_INFO("HVAC[%d]: current mode %s",
+  SUPLA_LOG_INFO("HVAC[%d] current mode %s",
                  getChannelNumber(),
                  channel.getHvacModeCstr());
 }
@@ -3163,7 +3204,7 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
                                        int16_t tCool,
                                        int32_t durationSec) {
   SUPLA_LOG_DEBUG(
-      "HVAC[%d]: applyNewRuntimeSettings mode=%s tHeat=%d tCool=%d, "
+      "HVAC[%d] applyNewRuntimeSettings mode=%s tHeat=%d tCool=%d, "
       "durationSec=%d",
       getChannelNumber(),
       channel.getHvacModeCstr(mode),
@@ -3199,7 +3240,7 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
   }
 
   if (!isModeSupported(mode)) {
-    SUPLA_LOG_WARNING("HVAC[%d]: applyNewRuntimeSettings mode=%s not supported",
+    SUPLA_LOG_WARNING("HVAC[%d] applyNewRuntimeSettings mode=%s not supported",
                       getChannelNumber(),
                       channel.getHvacModeCstr(mode));
     return false;
@@ -3212,7 +3253,7 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
       channel.setHvacFlagClockError(false);
       if (countdownTimerEnds <= now) {
         SUPLA_LOG_WARNING(
-            "HVAC[%d]: applyNewRuntimeSettings countdown timer ends in the "
+            "HVAC[%d] applyNewRuntimeSettings countdown timer ends in the "
             "past",
             getChannelNumber());
         return false;
@@ -3221,7 +3262,7 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
         storeLastWorkingMode();
       }
     } else {
-      SUPLA_LOG_WARNING("HVAC[%d]: applyNewRuntimeSettings clock is not ready!",
+      SUPLA_LOG_WARNING("HVAC[%d] applyNewRuntimeSettings clock is not ready!",
                         getChannelNumber());
       channel.setHvacFlagClockError(true);
       return false;
@@ -3264,13 +3305,13 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
 int32_t HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   if (isMasterThermostatSet()) {
     // ignore new value from server
-    SUPLA_LOG_DEBUG("HVAC[%d]: ignore new value from server (master is set)",
+    SUPLA_LOG_DEBUG("HVAC[%d] ignore new value from server (master is set)",
                     getChannelNumber());
     return 0;
   }
   auto hvacValue = reinterpret_cast<THVACValue *>(newValue->value);
   SUPLA_LOG_DEBUG(
-      "HVAC[%d]: new value from server: mode=%s tHeat=%d tCool=%d, "
+      "HVAC[%d] new value from server: mode=%s tHeat=%d tCool=%d, "
       "durationSec=%d",
       getChannelNumber(),
       channel.getHvacModeCstr(hvacValue->Mode),
@@ -3418,7 +3459,7 @@ bool HvacBase::processWeeklySchedule() {
 bool HvacBase::applyWeeklyScheduleProgram(
     const TWeeklyScheduleProgram &program, int currentProgramId) {
   if (program.Mode == SUPLA_HVAC_MODE_NOT_SET) {
-    SUPLA_LOG_INFO("HVAC[%d]: Invalid program mode. Disabling schedule.",
+    SUPLA_LOG_INFO("HVAC[%d] Invalid program mode. Disabling schedule.",
                    getChannelNumber());
     setTargetMode(SUPLA_HVAC_MODE_OFF, false);
     return false;
@@ -3426,7 +3467,7 @@ bool HvacBase::applyWeeklyScheduleProgram(
 
   if (isWeelkySchedulManualOverrideMode()) {
     if (currentProgramId != getWeeklyScheduleLastProgramManualOverride()) {
-      SUPLA_LOG_DEBUG("HVAC[%d]: leaving manual override mode",
+      SUPLA_LOG_DEBUG("HVAC[%d] leaving manual override mode",
                       getChannelNumber());
       setWeeklyScheduleLastProgramManualOverride(-1);
     } else {
@@ -3435,13 +3476,13 @@ bool HvacBase::applyWeeklyScheduleProgram(
         if (mode == 0) {
           mode = getDefaultManualMode();
         }
-        SUPLA_LOG_DEBUG("HVAC[%d]: Manual override mode %d",
+        SUPLA_LOG_DEBUG("HVAC[%d] Manual override mode %d",
                         getChannelNumber(),
                         mode);
         setTargetMode(mode, true);
       }
       if (!isWeeklyScheduleTemporalOverride()) {
-        SUPLA_LOG_DEBUG("HVAC[%d]: Manual override mode", getChannelNumber());
+        SUPLA_LOG_DEBUG("HVAC[%d] Manual override mode", getChannelNumber());
       }
       setWeeklyScheduleTemporalOverride(true);
       return true;
@@ -3620,13 +3661,13 @@ int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
                                       _supla_int16_t tTarget,
                                       bool forAux) {
   if (!isSensorTempValid(tMeasured)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: tMeasured not valid", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] tMeasured not valid", getChannelNumber());
     channel.setHvacFlagThermometerError(true);
     return getOutputValueOnError();
   }
   channel.setHvacFlagThermometerError(false);
   if (!isSensorTempValid(tTarget)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: tTarget not valid", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] tTarget not valid", getChannelNumber());
     return getOutputValueOnError();
   }
 
@@ -3637,7 +3678,7 @@ int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
   initDefaultAlgorithm();
   const auto algorithm = getUsedAlgorithm(forAux);
   if (algorithm == SUPLA_HVAC_ALGORITHM_NOT_SET) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: algorithm not valid", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] algorithm not valid", getChannelNumber());
     return getOutputValueOnError();
   }
 
@@ -3645,7 +3686,7 @@ int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
 
   auto hysteresis = getCurrentHysteresis(forAux);
   if (!isSensorTempValid(hysteresis)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: hysteresis not valid", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] hysteresis not valid", getChannelNumber());
     return getOutputValueOnError();
   }
 
@@ -3694,14 +3735,14 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
                                       _supla_int16_t tTarget,
                                       bool forAux) {
   if (!isSensorTempValid(tMeasured)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: tMeasured not valid", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] tMeasured not valid", getChannelNumber());
     channel.setHvacFlagThermometerError(true);
     return getOutputValueOnError();
   }
   channel.setHvacFlagThermometerError(false);
 
   if (!isSensorTempValid(tTarget)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: tTarget not valid", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] tTarget not valid", getChannelNumber());
     return getOutputValueOnError();
   }
 
@@ -3712,7 +3753,7 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
   initDefaultAlgorithm();
   const auto algorithm = getUsedAlgorithm(forAux);
   if (algorithm == SUPLA_HVAC_ALGORITHM_NOT_SET) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: algorithm not valid", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] algorithm not valid", getChannelNumber());
     return getOutputValueOnError();
   }
 
@@ -3720,7 +3761,7 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
 
   auto hysteresis = getCurrentHysteresis(forAux);
   if (!isSensorTempValid(hysteresis)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: hysteresis not valid", getChannelNumber());
+    SUPLA_LOG_DEBUG("HVAC[%d] hysteresis not valid", getChannelNumber());
     return getOutputValueOnError();
   }
 
@@ -3768,7 +3809,7 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
     return;
   }
 
-  SUPLA_LOG_DEBUG("HVAC[%d]: changing function from %d to %d",
+  SUPLA_LOG_DEBUG("HVAC[%d] changing function from %d to %d",
                   getChannelNumber(), currentFunction, newFunction);
 
   if (newFunction == 0) {
@@ -3960,7 +4001,7 @@ bool HvacBase::isManualModeEnabled() {
 
 void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                                       int id) {
-  SUPLA_LOG_DEBUG("HVAC[%d]:", id);
+  SUPLA_LOG_DEBUG("HVAC[%d]", id);
   SUPLA_LOG_DEBUG("  Main: %d", config->MainThermometerChannelNo);
   SUPLA_LOG_DEBUG("  Aux: %d%s (type: %d)",
                   config->AuxThermometerChannelNo,
@@ -4029,7 +4070,7 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
 void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
                                     const TChannelConfig_HVAC *configNew,
                                     int id) {
-  SUPLA_LOG_DEBUG("HVAC[%d]: config diff:", id);
+  SUPLA_LOG_DEBUG("HVAC[%d] config diff:", id);
   bool changed = false;
   if (configCurrent->MainThermometerChannelNo !=
       configNew->MainThermometerChannelNo) {
@@ -4204,7 +4245,7 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
         (configCurrent->Temperatures.Temperature[i] !=
          configNew->Temperatures.Temperature[i])) {
       SUPLA_LOG_DEBUG(
-          "  Temperature[%s]: %d%s -> %d%s",
+          "  Temperature[%s] %d%s -> %d%s",
           temperatureName(1 << i),
           configCurrent->Temperatures.Temperature[i],
           (configCurrent->Temperatures.Index & (1 << i)) ? "" : " (not set)",
@@ -4538,7 +4579,7 @@ void HvacBase::fillDefaultWeeklySchedule(
       }
       default: {
         SUPLA_LOG_WARNING(
-            "HVAC[%d]: no default weekly schedule defined for "
+            "HVAC[%d] no default weekly schedule defined for "
             "function %d",
             getChannelNumber(),
             channelFunction);
@@ -4597,7 +4638,7 @@ bool HvacBase::getForcedOffSensorState() {
     auto element =
         Supla::Element::getElementByChannelNumber(config.BinarySensorChannelNo);
     if (element == nullptr) {
-      SUPLA_LOG_WARNING("HVAC[%d]: sensor not found for channel %d",
+      SUPLA_LOG_WARNING("HVAC[%d] sensor not found for channel %d",
                         getChannelNumber(),
                         config.BinarySensorChannelNo);
       return false;
@@ -4787,7 +4828,7 @@ void HvacBase::updateTimerValue() {
   }
 
   SUPLA_LOG_DEBUG(
-      "HVAC[%d]: updating timer value: remainingTime=%d s; "
+      "HVAC[%d] updating timer value: remainingTime=%d s; "
       "countdownTimerEnds=%d; now=%d",
       channel.getChannelNumber(),
       remainingTimeS,
@@ -5753,7 +5794,7 @@ bool HvacBase::isLocalUILockCapabilitySupported(
 bool HvacBase::setLocalUILock(enum LocalUILock lock) {
   if (!isLocalUILockCapabilitySupported(lock)) {
     SUPLA_LOG_WARNING(
-        "HVAC[%d]: LocalUILock 0x%X not supported", getChannelNumber(), lock);
+        "HVAC[%d] LocalUILock 0x%X not supported", getChannelNumber(), lock);
     return false;
   }
 
@@ -5852,7 +5893,7 @@ enum Supla::LocalUILock HvacBase::getLocalUILockCapabilityAsEnum(
     }
   }
 
-  SUPLA_LOG_WARNING("HVAC[%d]: Invalid LocalUILock value 0x%X",
+  SUPLA_LOG_WARNING("HVAC[%d] Invalid LocalUILock value 0x%X",
                     getChannelNumber(),
                     config.LocalUILock);
   return LocalUILock::NotSupported;
@@ -5873,7 +5914,7 @@ uint8_t HvacBase::getLocalUILockCapabilities() const {
 void HvacBase::setTemperatureControlType(uint8_t type) {
   if (type >
       SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE) {
-    SUPLA_LOG_WARNING("HVAC[%d]: Invalid TemperatureControlType value %d",
+    SUPLA_LOG_WARNING("HVAC[%d] Invalid TemperatureControlType value %d",
                       getChannelNumber(),
                       type);
     return;

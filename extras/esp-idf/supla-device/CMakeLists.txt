@@ -10,7 +10,7 @@ set(SUPLA_DEVICE_PORTING_SRCS
   ../../porting/esp-idf/esp_idf_web_server.cpp
   ../../porting/esp-idf/esp_idf_ota.cpp
   ../../porting/esp-idf/esp_idf_client.cpp
-  ../../porting/esp-idf/esp_mqtt.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/esp_mqtt.cpp
   ../../porting/esp-idf/esp_idf_network_common.cpp
   ../../porting/esp-idf/esp_idf_sector_wl_storage.cpp
   ../../porting/esp-idf/esp_idf_watchdog.cpp
@@ -21,6 +21,7 @@ set(SUPLA_DEVICE_PORTING_SRCS
 idf_component_register(SRCS
   ${SUPLA_DEVICE_PORTING_SRCS}
   REQUIRES
+    lwip
     esp-tls
     nvs_flash
     spiffs

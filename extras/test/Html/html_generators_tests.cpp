@@ -2480,6 +2480,33 @@ TEST_F(HtmlCaptureTest, DeviceInfoRendersRegisterDeviceAndMainMac) {
             "</span>");
 }
 
+TEST_F(HtmlCaptureTest, LoginPageShowsPasswordErrorOnlyAfterFailure) {
+  SenderMock sender;
+  expectAllSendCalls(sender);
+  Supla::HtmlGenerator generator;
+
+  generator.sendLoginPage(&sender);
+  EXPECT_THAT(sendHtml, Not(HasSubstr("Entered password is incorrect")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("Too many failed login attempts")));
+
+  sendHtml.clear();
+  generator.sendLoginPage(&sender, true);
+  EXPECT_THAT(sendHtml, HasSubstr("Entered password is incorrect"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("Too many failed login attempts")));
+}
+
+TEST_F(HtmlCaptureTest, BlockedLoginPageExplainsTemporaryBlock) {
+  SenderMock sender;
+  expectAllSendCalls(sender);
+  Supla::HtmlGenerator generator;
+
+  generator.sendLoginBlockedPage(&sender);
+  EXPECT_THAT(sendHtml, HasSubstr(
+      "Too many failed login attempts. Please try again later."));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("Entered password is incorrect")));
+  EXPECT_THAT(sendHtml, HasSubstr("<form method=\"post\">"));
+}
+
 TEST_F(HtmlCaptureTest, HtmlGeneratorIncludesPrivacyToggleAssets) {
   SenderMock sender;
   expectAllSendCalls(sender);

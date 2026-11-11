@@ -44,7 +44,7 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
         rawActivePower[i] < INT32_MIN) {
       activePowerInKW = true;
       if (rawActivePower[i] / 1000 > INT32_MAX) {
-        SUPLA_LOG_WARNING("EM[%d]: active power overflow %d",
+        SUPLA_LOG_WARNING("EM[%d] active power overflow %d",
                           getChannelNumber(), rawActivePower[i]);
         int64_t sign = rawActivePower[i] < 0 ? -1 : 1;
         rawActivePower[i] = sign * INT32_MAX * 1000;
@@ -54,7 +54,7 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
         rawReactivePower[i] < INT32_MIN) {
       reactivePowerInKvar = true;
       if (rawReactivePower[i] / 1000 > INT32_MAX) {
-        SUPLA_LOG_WARNING("EM[%d]: reactive power overflow %d",
+        SUPLA_LOG_WARNING("EM[%d] reactive power overflow %d",
                           getChannelNumber(), rawReactivePower[i]);
         int64_t sign = rawReactivePower[i] < 0 ? -1 : 1;
         rawReactivePower[i] = sign * INT32_MAX * 1000;
@@ -64,7 +64,7 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
         rawApparentPower[i] < INT32_MIN) {
       apparentPowerInKVA = true;
       if (rawApparentPower[i] / 1000 > INT32_MAX) {
-        SUPLA_LOG_WARNING("EM[%d]: apparent power overflow %d",
+        SUPLA_LOG_WARNING("EM[%d] apparent power overflow %d",
                           getChannelNumber(), rawApparentPower[i]);
         int64_t sign = rawApparentPower[i] < 0 ? -1 : 1;
         rawApparentPower[i] = sign * INT32_MAX * 1000;
@@ -76,7 +76,7 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
     if (over65A) {
       uint32_t current = rawCurrent[i] / 10;
       if (current > UINT16_MAX) {
-        SUPLA_LOG_WARNING("EM[%d]: current overflow %d", getChannelNumber(),
+        SUPLA_LOG_WARNING("EM[%d] current overflow %d", getChannelNumber(),
                           rawCurrent[i]);
         emValue.m[0].current[i] = UINT16_MAX;
       } else {
@@ -436,7 +436,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
       }
       usedCtType = value32;
     }
-    SUPLA_LOG_INFO("EM[%d]: CT type is %d", getChannelNumber(), usedCtType);
+    SUPLA_LOG_INFO("EM[%d] CT type is %d", getChannelNumber(), usedCtType);
 
     int8_t value = 0;
     generateKey(key, Supla::ConfigTag::EmPhaseLedTag);
@@ -447,7 +447,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
       usedPhaseLedType = value;
     }
     SUPLA_LOG_INFO(
-        "EM[%d]: Phase LED type is %d", getChannelNumber(), usedPhaseLedType);
+        "EM[%d] Phase LED type is %d", getChannelNumber(), usedPhaseLedType);
 
     value32 = 0;
     generateKey(key, Supla::ConfigTag::EmPhaseLedVoltageLowTag);
@@ -535,7 +535,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
     }
 
     SUPLA_LOG_INFO(
-        "EM[%d]: Voltage low: %d, Voltage high: %d, Power low: %d, Power high: "
+        "EM[%d] Voltage low: %d, Voltage high: %d, Power low: %d, Power high: "
         "%d",
         getChannelNumber(),
         ledVoltageLow,
@@ -558,7 +558,7 @@ Supla::ApplyConfigResult Supla::Sensor::ElectricityMeter::applyChannelConfig(
 
   if (config->Func != SUPLA_CHANNELFNC_ELECTRICITY_METER) {
     SUPLA_LOG_DEBUG(
-        "EM[%d]: wrong function %d",
+        "EM[%d] wrong function %d",
         getChannelNumber(),
         config->Func);
     return Supla::ApplyConfigResult::Success;
@@ -654,7 +654,7 @@ Supla::ApplyConfigResult Supla::Sensor::ElectricityMeter::applyChannelConfig(
   if (configFromServer->AvailablePhaseLedTypes != availablePhaseLedTypes ||
       configFromServer->AvailableCTTypes != availableCtTypes || !configValid) {
     SUPLA_LOG_WARNING(
-        "EM[%d]: Invalid config received from server %X%08X %X%08X %X%08X "
+        "EM[%d] Invalid config received from server %X%08X %X%08X %X%08X "
         "%X%08X, "
         "configValid %d",
         getChannelNumber(),
@@ -708,7 +708,7 @@ void Supla::Sensor::ElectricityMeter::fillChannelConfig(void *channelConfig,
     config->PhaseLedParam2 = ledPowerHigh;
   }
   SUPLA_LOG_DEBUG(
-      "EM[%d]: fillChannelConfig: usedCtType=%d, usedPhaseLedType=%d"
+      "EM[%d] fillChannelConfig: usedCtType=%d, usedPhaseLedType=%d"
       ", availableCtTypes=%d, availablePhaseLedTypes=%d"
       ", param1=%d, param2=%d",
       getChannelNumber(),
@@ -740,7 +740,7 @@ void Supla::Sensor::ElectricityMeter::iterateAlways() {
 // Implement this method to reset stored energy value (i.e. to set energy
 // counter back to 0 kWh
 void Supla::Sensor::ElectricityMeter::resetStorage() {
-  SUPLA_LOG_DEBUG("EM[%d]: reset storage called, but implementation is missing",
+  SUPLA_LOG_DEBUG("EM[%d] reset storage called, but implementation is missing",
                   getChannelNumber());
 }
 
@@ -753,7 +753,7 @@ const Supla::Channel *Supla::Sensor::ElectricityMeter::getChannel() const {
 }
 
 void Supla::Sensor::ElectricityMeter::setRefreshRate(unsigned int sec) {
-  SUPLA_LOG_INFO("EM[%d]: setRefreshRate: %d", getChannelNumber(), sec);
+  SUPLA_LOG_INFO("EM[%d] setRefreshRate: %d", getChannelNumber(), sec);
   refreshRateSec = sec;
   if (refreshRateSec == 0) {
     refreshRateSec = 1;

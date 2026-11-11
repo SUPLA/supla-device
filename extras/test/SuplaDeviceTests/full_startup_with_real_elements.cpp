@@ -51,6 +51,9 @@ class FullStartupWithRealElements : public ::testing::Test {
         .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   }
   virtual void TearDown() {
+    if (client && sd.getSrpcLayer() && sd.getSrpcLayer()->client == client) {
+      client->expectStopOnDestruction();
+    }
     if (SuplaDevice.getClock()) {
       delete SuplaDevice.getClock();
     }

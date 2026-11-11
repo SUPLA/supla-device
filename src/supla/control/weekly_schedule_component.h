@@ -122,6 +122,9 @@ class WeeklyScheduleConfigHandler {
                                  int *size,
                                  uint8_t configType) = 0;
   virtual void purgeConfig() = 0;
+  // Returns true when changing the owner's function replaced incompatible
+  // configuration. The owner must persist and announce the local change.
+  virtual bool onFunctionChanged() { return false; }
 };
 
 class WeeklyScheduleComponents {

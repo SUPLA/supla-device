@@ -4,6 +4,7 @@
 #include "at_channel.h"
 
 #include <supla/channels/channel.h>
+#include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
 
 #include <string.h>
@@ -74,11 +75,23 @@ void AtChannel::setButtonMode(uint8_t mode) {
   setActionTriggerProperties(properties);
 }
 
+void AtChannel::setButtonModeAndTemporaryUnlock(uint8_t mode, bool active) {
+  TActionTriggerProperties properties = actionTriggerProperties;
+  properties.ButtonMode = mode;
+  if (active) {
+    properties.Flags |= SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE;
+  } else {
+    properties.Flags &= ~SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE;
+  }
+  setActionTriggerProperties(properties);
+}
+
 uint8_t AtChannel::getButtonMode() const {
   return actionTriggerProperties.ButtonMode;
 }
 
 void AtChannel::setWeeklyScheduleEnabled(bool enabled) {
+  [[maybe_unused]] const bool changed = isWeeklyScheduleEnabled() != enabled;
   TActionTriggerProperties properties = actionTriggerProperties;
   if (enabled) {
     properties.Flags |= SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED;
@@ -88,6 +101,10 @@ void AtChannel::setWeeklyScheduleEnabled(bool enabled) {
     properties.Flags &= static_cast<uint8_t>(~weeklyScheduleFlag);
   }
   setActionTriggerProperties(properties);
+  if (changed) {
+    SUPLA_LOG_INFO("AT[%d] weekly schedule %s", getChannelNumber(),
+        enabled ? "enabled" : "disabled (manual mode)");
+  }
 }
 
 bool AtChannel::isWeeklyScheduleEnabled() const {
@@ -116,3 +133,13 @@ void AtChannel::setActionTriggerProperties(
 }
 
 };  // namespace Supla
+
+void Supla::AtChannel::setTemporaryUnlockActive(bool active) {
+  TActionTriggerProperties properties = actionTriggerProperties;
+  if (active) {
+    properties.Flags |= SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE;
+  } else {
+    properties.Flags &= ~SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE;
+  }
+  setActionTriggerProperties(properties);
+}

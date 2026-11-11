@@ -24,6 +24,24 @@ using Supla::Channel;
 Channel *Channel::firstPtr = nullptr;
 int Channel::startingChannelNumber = 0;
 
+namespace {
+
+void logRelayChannelValue(int channelNumber, const char *reason,
+                          const TRelayChannel_Value *relay) {
+  SUPLA_LOG_INFO(
+      "Channel[%d] relay %s: value=%u mode=%u flags=0x%04X "
+      "forced_on=%d forced_off=%d weekly=%d overcurrent_cutoff=%d",
+      channelNumber, reason, static_cast<unsigned char>(relay->hi),
+      relay->RelayMode, relay->flags,
+      relay->RelayMode == SUPLA_RELAY_MODE_FORCED_ON,
+      relay->RelayMode == SUPLA_RELAY_MODE_FORCED_OFF,
+      (relay->flags & SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED) != 0,
+      (relay->flags & SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF) != 0);
+}
+
+}  // namespace
+
+
 #ifdef SUPLA_TEST
 // Method used in tests to restore default values for static members
 void Supla::Channel::resetToDefaults() {
@@ -301,6 +319,10 @@ void Channel::setNewValue(
 bool Channel::setNewValue(const char *newValue) {
   if (memcmp(value, newValue, SUPLA_CHANNELVALUE_SIZE) != 0) {
     memcpy(value, newValue, SUPLA_CHANNELVALUE_SIZE);
+    if (channelType == ChannelType::RELAY && !isRollerShutterRelayType()) {
+      logRelayChannelValue(channelNumber, "value changed",
+          reinterpret_cast<const TRelayChannel_Value *>(value));
+    }
     setSendValue();
     return true;
   }
@@ -312,9 +334,10 @@ void Channel::setType(uint32_t type) {
 }
 
 void Channel::setDefault(uint32_t value) {
-  SUPLA_LOG_DEBUG("Channel[%d]: setDefaultFunction: %d", channelNumber, value);
+  SUPLA_LOG_VERBOSE("Channel[%d] setDefaultFunction: %d",
+                    channelNumber, value);
   if (value > UINT16_MAX) {
-    SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %d",
+    SUPLA_LOG_ERROR("Channel[%d] Invalid defaultFunction value %d",
                     channelNumber, value);
     value = 0;
   }
@@ -426,6 +449,10 @@ bool Channel::isStateInfoUpdateReady() const {
 
 void Channel::sendUpdate() {
   if (isValueUpdateReady()) {
+    if (channelType == ChannelType::RELAY && !isRollerShutterRelayType()) {
+      logRelayChannelValue(channelNumber, "sending update",
+          reinterpret_cast<const TRelayChannel_Value *>(value));
+    }
     clearSendValue();
     for (auto proto = Supla::Protocol::ProtocolLayer::first();
         proto != nullptr; proto = proto->next()) {
@@ -1176,7 +1203,7 @@ void Channel::setHvacFlagBatteryCoverOpen(bool value) {
 void Channel::setHvacFlagCalibrationError(bool value) {
   auto hvacValue = getValueHvac();
   if (hvacValue != nullptr && value != isHvacFlagCalibrationError()) {
-    SUPLA_LOG_ERROR("HVAC[%d]: Setting calibration error flag %d",
+    SUPLA_LOG_ERROR("HVAC[%d] Setting calibration error flag %d",
                     getChannelNumber(),
                     value);
     setSendValue();
@@ -1206,7 +1233,7 @@ void Channel::setHvacFlagAntifreezeOverheatActive(bool value) {
 }
 
 void Channel::clearHvacState() {
-  SUPLA_LOG_INFO("HVAC[%d]: Clearing HVAC state for channel",
+  SUPLA_LOG_INFO("HVAC[%d] Clearing HVAC state for channel",
                  getChannelNumber());
   clearHvacSetpointTemperatureCool();
   clearHvacSetpointTemperatureHeat();
@@ -2034,6 +2061,7 @@ void Channel::setRelayOvercurrentCutOff(bool overcurrent) {
         overcurrent) {
       relay->flags = (relay->flags & ~SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF) |
                      (overcurrent ? SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF : 0);
+      logRelayChannelValue(channelNumber, "overcurrent flag changed", relay);
       setSendValue();
     }
   }
@@ -2056,6 +2084,7 @@ void Channel::setRelayMode(uint8_t mode) {
     return;
   }
   relay->RelayMode = mode;
+  logRelayChannelValue(channelNumber, "mode changed", relay);
   setSendValue();
 }
 
@@ -2078,6 +2107,7 @@ void Channel::setRelayWeeklyScheduleEnabled(bool enabled) {
   }
   relay->flags = (relay->flags & ~SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED) |
                  (enabled ? SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED : 0);
+  logRelayChannelValue(channelNumber, "weekly flag changed", relay);
   setSendValue();
 }
 

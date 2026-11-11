@@ -3,6 +3,7 @@
 
 #include "action_trigger.h"
 
+#include <inttypes.h>
 #include <SuplaDevice.h>
 #include <supla/auto_lock.h>
 #include <supla/log_wrapper.h>
@@ -14,11 +15,17 @@
 #include <supla/events.h>
 #include <supla/storage/config_tags.h>
 #include <supla/time.h>
+#ifndef ARDUINO_ARCH_AVR
+#include <new>
+#endif
 
 #include "weekly_schedule_common.h"
 #include "weekly_schedule_storage.h"
 
 namespace {
+
+// Protocol v29 limits all temporary unlock durations to 18 hours.
+constexpr uint32_t kMaximumTemporaryUnlockDurationS = 64800;
 
 // ActionTrigger state storage historically contains only a uint32_t with
 // active actions. Keep that layout unchanged and use its two highest bits for
@@ -28,6 +35,26 @@ constexpr uint32_t kActionTriggerStateModeMask = 0xC0000000UL;
 constexpr uint32_t kActionTriggerStateWeeklySchedule = 0x40000000UL;
 constexpr uint32_t kActionTriggerStateLocked = 0x80000000UL;
 constexpr uint32_t kActionTriggerLegacyAllActions = 0xFFFFFFFFUL;
+
+[[maybe_unused]] const char *buttonModeName(uint8_t mode) {
+  switch (mode) {
+    case SUPLA_BUTTON_MODE_NOT_SET:
+      return "UNLOCKED";
+    case SUPLA_BUTTON_MODE_LOCKED:
+      return "LOCKED";
+    case SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED:
+      return "TEMP";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+[[maybe_unused]] const char *buttonProgramDefaultSuffix(
+    const TWeeklyScheduleProgram &program) {
+  return program.Mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
+                 program.ButtonTemporaryUnlockDurationS == 0
+             ? "(default)" : "";
+}
 
 }  // namespace
 
@@ -60,10 +87,13 @@ class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
       return false;
     }
     for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE; i++) {
-      if (!owner_->isWeeklyScheduleProgramModeSupported(
-              schedule->Program[i].Mode)) {
+      const auto &program = schedule->Program[i];
+      if (!owner_->isWeeklyScheduleProgramModeSupported(program.Mode) ||
+          (program.Mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
+           (program.Value2 != 0 || program.ButtonTemporaryUnlockDurationS >
+               kMaximumTemporaryUnlockDurationS))) {
         SUPLA_LOG_WARNING(
-            "ActionTrigger[%d]: invalid weekly schedule program %d",
+            "ActionTrigger[%d] invalid weekly schedule program %d",
             owner_->getChannelNumber(),
             i);
         return false;
@@ -74,7 +104,7 @@ class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
       if (programId < 0 ||
           programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
         SUPLA_LOG_WARNING(
-            "ActionTrigger[%d]: weekly schedule references invalid program %d",
+            "ActionTrigger[%d] weekly schedule references invalid program %d",
             owner_->getChannelNumber(),
             programId);
         return false;
@@ -97,8 +127,59 @@ class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
     }
   }
 
+  void onNativeScheduleApplied(bool alt, bool local, bool changed) override {
+    const auto *schedule = getSchedule(alt, false);
+    if (changed && schedule != nullptr) {
+      static_assert(SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE == 4,
+                    "Update the compact weekly schedule log for more programs");
+      [[maybe_unused]] const auto &p = schedule->Program;
+      SUPLA_LOG_INFO(
+          "AT[%d] weekly(%s): P1=%s/%us%s P2=%s/%us%s "
+          "P3=%s/%us%s P4=%s/%us%s",
+          owner_->getChannelNumber(), local ? "local" : "server",
+          buttonModeName(p[0].Mode), p[0].ButtonTemporaryUnlockDurationS,
+          buttonProgramDefaultSuffix(p[0]),
+          buttonModeName(p[1].Mode), p[1].ButtonTemporaryUnlockDurationS,
+          buttonProgramDefaultSuffix(p[1]),
+          buttonModeName(p[2].Mode), p[2].ButtonTemporaryUnlockDurationS,
+          buttonProgramDefaultSuffix(p[2]),
+          buttonModeName(p[3].Mode), p[3].ButtonTemporaryUnlockDurationS,
+          buttonProgramDefaultSuffix(p[3]));
+    }
+    NativeWeeklyScheduleController::onNativeScheduleApplied(
+        alt, local, changed);
+  }
+
+  bool applyResolvedWeeklyScheduleProgram(
+      const TWeeklyScheduleProgram &program, int programId,
+      bool programChanged) override {
+    if (programId > 0 &&
+        program.Mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
+        !owner_->prepareTemporaryUnlockState()) {
+      // Fail closed if the runtime allocation fails.
+      owner_->applyButtonMode(
+          SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED);
+      return false;
+    }
+    if (owner_->temporaryUnlock) {
+      owner_->temporaryUnlock->weeklyDurationS = programId > 0 &&
+          program.Mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED
+              ? program.ButtonTemporaryUnlockDurationS : 0;
+    }
+    syncWeeklyScheduleMode(programId > 0 ? program.Mode : 0);
+    if (programChanged) {
+      SUPLA_LOG_INFO("AT[%d] weekly schedule active program=%d, mode=%s(%u)",
+          owner_->getChannelNumber(), programId,
+          buttonModeName(programId > 0 ? program.Mode : 0),
+          programId > 0 ? program.Mode : 0);
+    }
+    return true;
+  }
+
   void syncWeeklyScheduleMode(uint8_t mode) override {
-    if (owner_ == nullptr) {
+    if (owner_ == nullptr ||
+        (owner_->temporaryUnlock &&
+         owner_->temporaryUnlock->manualModeTransition)) {
       return;
     }
     owner_->channel.setWeeklyScheduleEnabled(isActive());
@@ -164,6 +245,7 @@ bool isDirectionalHandler(const Supla::ActionHandlerClient *handler) {
 
 Supla::Control::ActionTrigger::ActionTrigger() {
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_TEMPORARY_UNLOCK_SUPPORTED);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_ACTIONTRIGGER);
   channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
@@ -171,16 +253,34 @@ Supla::Control::ActionTrigger::ActionTrigger() {
 }
 
 Supla::Control::ActionTrigger::~ActionTrigger() {
+  delete temporaryUnlock;
+  temporaryUnlock = nullptr;
 }
 
 void Supla::Control::ActionTrigger::attach(Supla::Control::Button *button) {
+  if (button != nullptr) {
+    for (auto element = Supla::Element::begin(); element;
+         element = element->next()) {
+      auto peer = element->getActionTrigger();
+      if (peer && peer != this && peer->attachedButton == button) {
+        SUPLA_LOG_WARNING(
+            "AT[%d] button already attached to AT[%d]",
+            getChannelNumber(), peer->getChannelNumber());
+        return;
+      }
+    }
+  }
   if (attachedButton != nullptr && attachedButton != button) {
+    attachedButton->setTemporaryUnlockDeadline(0, 0);
     attachedButton->setActionTriggerModeLocked(false, false, false);
   }
   attachedButton = button;
   if (attachedButton != nullptr) {
+    attachedButton->setTemporaryUnlockDeadline(
+        temporaryUnlock ? temporaryUnlock->startMs : 0,
+        isTemporaryUnlockActive() ? temporaryUnlock->durationMs : 0);
     attachedButton->setActionTriggerModeLocked(
-        channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED,
+        isEffectivelyLocked(),
         runtimeFlags.localUnlockAllowed,
         runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
   }
@@ -200,23 +300,24 @@ void Supla::Control::ActionTrigger::handleAction(int, int action) {
       applyManualButtonMode(SUPLA_BUTTON_MODE_LOCKED);
       return;
     case Supla::UNLOCK:
-      if (channel.getButtonMode() != SUPLA_BUTTON_MODE_LOCKED ||
+      if (!isEffectivelyLocked() ||
           runtimeFlags.localUnlockAllowed) {
         applyManualButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
       }
       return;
     case Supla::TOGGLE_LOCK:
-      if (channel.getButtonMode() != SUPLA_BUTTON_MODE_LOCKED ||
+      if (!isEffectivelyLocked() ||
           runtimeFlags.localUnlockAllowed) {
         applyManualButtonMode(
-            channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED
+            isEffectivelyLocked()
                 ? SUPLA_BUTTON_MODE_NOT_SET
                 : SUPLA_BUTTON_MODE_LOCKED);
       }
       return;
   }
 
-  if (channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED) {
+  updateTemporaryUnlock();
+  if (isEffectivelyLocked()) {
     return;
   }
   uint32_t actionCap = getActionTriggerCap(action);
@@ -244,6 +345,10 @@ void Supla::Control::ActionTrigger::activateAction(int action) {
 
 int Supla::Control::ActionTrigger::getActionTriggerCap(int action) {
   switch (action) {
+    case SEND_AT_ROTATE_RIGHT:
+      return SUPLA_ACTION_CAP_ROTATE_RIGHT;
+    case SEND_AT_ROTATE_LEFT:
+      return SUPLA_ACTION_CAP_ROTATE_LEFT;
     case SEND_AT_TURN_ON: {
       return SUPLA_ACTION_CAP_TURN_ON;
     }
@@ -290,6 +395,10 @@ int Supla::Control::ActionTrigger::getActionTriggerCap(int action) {
 int Supla::Control::ActionTrigger::actionTriggerCapToActionId(
     uint32_t actionCap) {
   switch (actionCap) {
+    case SUPLA_ACTION_CAP_ROTATE_RIGHT:
+      return SEND_AT_ROTATE_RIGHT;
+    case SUPLA_ACTION_CAP_ROTATE_LEFT:
+      return SEND_AT_ROTATE_LEFT;
     case SUPLA_ACTION_CAP_TURN_ON: {
       return SEND_AT_TURN_ON;
     }
@@ -377,7 +486,6 @@ void Supla::Control::ActionTrigger::onRegistered(
   }
 
   channel.enableValueUpdates();
-  channel.setSendGetConfig();
 }
 
 void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
@@ -424,7 +532,7 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
       if (eventId == -1 || actionId == -1) {
         continue;
       }
-      if (actionCap & activeActionsFromServer ||
+      if ((actionCap & activeActionsFromServer) ||
           actionHandlingType == ActionHandlingType_PublishAllDisableNone) {
         attachedButton->enableAction(actionId, this, eventId);
       } else {
@@ -583,30 +691,78 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
   if (result->ConfigSize == 0) {
     return Supla::ApplyConfigResult::Success;
   }
-  if (result->ConfigSize != sizeof(TChannelConfig_ActionTrigger)) {
+  if (result->ConfigSize != 4 &&
+      result->ConfigSize != sizeof(TChannelConfig_ActionTrigger)) {
     return Supla::ApplyConfigResult::DataError;
   }
-
-  TChannelConfig_ActionTrigger *config =
-      reinterpret_cast<TChannelConfig_ActionTrigger *>(result->Config);
   Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
-  if (runtimeFlags.channelConfigReceived &&
-      lastReceivedActiveActions == config->ActiveActions) {
-    // Preserve an in-flight click/release when the server repeats its
-    // configuration, e.g. after reconnecting. Local callers can still force
-    // a rebuild when button bindings or the channel function change.
-    return Supla::ApplyConfigResult::Success;
+  uint32_t activeActions = 0;
+  memcpy(&activeActions, result->Config, sizeof(activeActions));
+  auto candidate = currentTemporaryUnlockConfig();
+  if (result->ConfigSize == sizeof(TChannelConfig_ActionTrigger)) {
+    TChannelConfig_ActionTrigger wire = {};
+    memcpy(&wire, result->Config, sizeof(wire));
+    if (wire.TemporaryUnlockDurationSec > kMaximumTemporaryUnlockDurationS ||
+        wire.TemporaryUnlockSensorEdge > SUPLA_AT_SENSOR_EDGE_BOTH) {
+      return Supla::ApplyConfigResult::DataError;
+    }
+    candidate.duration = wire.TemporaryUnlockDurationSec;
+    candidate.edge = wire.TemporaryUnlockSensorEdge;
+    if (wire.TemporaryUnlockSensorIsSet > 1 ||
+        (wire.TemporaryUnlockSensorIsSet &&
+         wire.TemporaryUnlockSensorChannelNo == 255)) {
+      return Supla::ApplyConfigResult::DataError;
+    }
+    candidate.sensor = wire.TemporaryUnlockSensorIsSet
+        ? wire.TemporaryUnlockSensorChannelNo : 255;
   }
-  lastReceivedActiveActions = config->ActiveActions;
-  runtimeFlags.channelConfigReceived = true;
-  activeActionsFromServer = config->ActiveActions;
-  SUPLA_LOG_DEBUG(
-      "AT[%d] received config with active actions: 0x%X",
-      channel.getChannelNumber(),
-      activeActionsFromServer);
-  rebuildForAttachedButton();
-  // Schedule save in 2 s after state change
-  scheduleStateSave(2000, 0);
+  const uint32_t effectiveActions =
+      actionHandlingType == ActionHandlingType_PublishAllDisableAll
+          ? kActionTriggerLegacyAllActions : activeActions;
+  if (channel.getButtonMode() ==
+      SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED) {
+    candidate.escapedActions =
+        (effectiveActions & ~kActionTriggerStateModeMask) == 0x3FFFFFFFUL
+            ? effectiveActions : 0;
+  }
+  const auto currentConfig = currentTemporaryUnlockConfig();
+  const bool configChanged =
+      memcmp(&candidate, &currentConfig, sizeof(candidate)) != 0;
+  const bool activeActionsChanged = !runtimeFlags.channelConfigReceived ||
+      lastReceivedActiveActions != activeActions;
+  const bool localChange = local && (configChanged || activeActionsChanged);
+  const bool storeActiveActions = activeActionsChanged &&
+      (temporaryUnlock ||
+       actionHandlingType == ActionHandlingType_PublishAllDisableAll);
+  if (configChanged && !ensureTemporaryUnlockState()) {
+    return Supla::ApplyConfigResult::DataError;
+  }
+  if ((configChanged || localChange || storeActiveActions ||
+       (temporaryUnlock && temporaryUnlock->persistenceUncertain)) &&
+      !persistTemporaryUnlockConfig(candidate, localChange, &activeActions)) {
+    return Supla::ApplyConfigResult::DataError;
+  }
+  if (configChanged) {
+    temporaryUnlock->config = candidate;
+    temporaryUnlock->baselineKnown = false;
+  }
+  if (localChange) {
+    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
+  }
+  if (activeActionsChanged) {
+    lastReceivedActiveActions = activeActions;
+    runtimeFlags.channelConfigReceived = true;
+    activeActionsFromServer = activeActions;
+    rebuildForAttachedButton();
+    // Schedule save in 2 s after state change
+    scheduleStateSave(2000, 0);
+  }
+  SUPLA_LOG_INFO(
+      "AT[%d] config applied (%s): actions=0x%08" PRIX32
+      ", temporary_unlock=%" PRIu32 " s, sensor=%d, edge=%u",
+      getChannelNumber(), local ? "local" : "server", activeActions,
+      candidate.duration, candidate.sensor == 255 ? -1 : candidate.sensor,
+      candidate.edge);
   return Supla::ApplyConfigResult::Success;
 }
 
@@ -895,6 +1051,7 @@ void Supla::Control::ActionTrigger::onSaveState() {
   if (!runtimeFlags.storageEnabled) {
     return;
   }
+  Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
 
   ActionTriggerFlags flags = {};
   auto *weeklySchedule = weeklyScheduleComponents.getController();
@@ -902,14 +1059,23 @@ void Supla::Control::ActionTrigger::onSaveState() {
       weeklySchedule != nullptr && weeklySchedule->isActive();
   flags.flags.locked = !flags.flags.weeklySchedule &&
                        channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED;
+  const bool temporaryMode = !flags.flags.weeklySchedule &&
+      channel.getButtonMode() ==
+          SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED;
 
   uint32_t state = activeActionsFromServer;
   // 0xFFFFFFFF is a legacy value meaning "all actions". Preserve it when
   // there is no mode flag to store; otherwise the two reserved bits encode
   // the current mode.
-  if (state != kActionTriggerLegacyAllActions || flags.rawValue != 0) {
+  if (state != kActionTriggerLegacyAllActions || flags.rawValue != 0 ||
+      temporaryMode) {
     state &= ~kActionTriggerStateModeMask;
-    if (flags.flags.weeklySchedule) {
+    if (temporaryMode) {
+      // The legacy 0xFFFFFFFF sentinel means all actions. In mode 6 encode
+      // its currently defined actions so it cannot be mistaken for legacy.
+      if (state == 0x3FFFFFFF) state = 0xFFFF;
+      state |= kActionTriggerStateModeMask;
+    } else if (flags.flags.weeklySchedule) {
       state |= kActionTriggerStateWeeklySchedule;
     } else if (flags.flags.locked) {
       state |= kActionTriggerStateLocked;
@@ -923,6 +1089,32 @@ void Supla::Control::ActionTrigger::onSaveState() {
 void Supla::Control::ActionTrigger::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
+
+  delete temporaryUnlock;
+  temporaryUnlock = nullptr;
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, "at_tmp");
+    TemporaryUnlockConfig stored;
+    if (cfg->getBlobSize(key) == sizeof(stored) &&
+        cfg->getBlob(key, reinterpret_cast<char *>(&stored), sizeof(stored)) &&
+        stored.version == 1 &&
+        stored.function == SUPLA_CHANNELFNC_ACTIONTRIGGER &&
+        stored.duration <= kMaximumTemporaryUnlockDurationS &&
+        stored.edge <= SUPLA_AT_SENSOR_EDGE_BOTH &&
+        (stored.escapedActions == 0 ||
+         (stored.escapedActions & ~kActionTriggerStateModeMask) ==
+             0x3FFFFFFFUL) &&
+        ensureTemporaryUnlockState()) {
+      temporaryUnlock->config = stored;
+      generateKey(key, "at_actions");
+      if (cfg->getUInt32(key, &lastReceivedActiveActions)) {
+        temporaryUnlock->hasStoredActiveActions = true;
+        activeActionsFromServer = lastReceivedActiveActions;
+      }
+    }
+  }
+  syncEffectiveButtonLock();
 
   ensureNativeWeeklyScheduleController();
   if (weeklyScheduleComponents.isAssigned()) {
@@ -981,6 +1173,11 @@ void Supla::Control::ActionTrigger::onLoadConfig(SuplaDeviceClass *sdc) {
 }
 
 void Supla::Control::ActionTrigger::onLoadState() {
+  if (temporaryUnlock) {
+    temporaryUnlock->durationMs = 0;
+    temporaryUnlock->baselineKnown = false;
+  }
+  syncEffectiveButtonLock();
   if (!runtimeFlags.storageEnabled) {
     return;
   }
@@ -996,6 +1193,7 @@ void Supla::Control::ActionTrigger::onLoadState() {
     return;
   }
 
+  bool temporaryMode = false;
   flags.rawValue = 0;
   if (state == kActionTriggerLegacyAllActions) {
     // Keep compatibility with the old all-actions sentinel, which predates
@@ -1003,6 +1201,9 @@ void Supla::Control::ActionTrigger::onLoadState() {
     activeActionsFromServer = state;
   } else {
     switch (state & kActionTriggerStateModeMask) {
+      case kActionTriggerStateModeMask:
+        temporaryMode = true;
+        break;
       case kActionTriggerStateWeeklySchedule:
         flags.flags.weeklySchedule = 1;
         break;
@@ -1013,11 +1214,23 @@ void Supla::Control::ActionTrigger::onLoadState() {
         break;
     }
     activeActionsFromServer = state & ~kActionTriggerStateModeMask;
+    if (temporaryUnlock && temporaryUnlock->config.escapedActions &&
+        ((temporaryMode && activeActionsFromServer == 0xFFFF) ||
+         (flags.flags.weeklySchedule &&
+          activeActionsFromServer == 0x3FFFFFFFUL))) {
+      activeActionsFromServer = temporaryUnlock->config.escapedActions;
+    }
+  }
+
+  if (temporaryUnlock && temporaryUnlock->hasStoredActiveActions) {
+    // The state bitmap can contain a publish-all routing override or an older
+    // asynchronously saved selection. The durable config remains authoritative.
+    activeActionsFromServer = lastReceivedActiveActions;
   }
 
   if (activeActionsFromServer) {
     SUPLA_LOG_INFO(
-        "AT[%d]: restored activeActionsFromServer: 0x%X",
+        "AT[%d] restored activeActionsFromServer: 0x%X",
         channel.getChannelNumber(),
         activeActionsFromServer);
   }
@@ -1031,7 +1244,10 @@ void Supla::Control::ActionTrigger::onLoadState() {
     }
   }
   if (!flags.flags.weeklySchedule) {
-    applyButtonMode(flags.flags.locked ? SUPLA_BUTTON_MODE_LOCKED
+    if (temporaryMode) ensureTemporaryUnlockState();
+    applyButtonMode(temporaryMode
+        ? SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED
+        : flags.flags.locked ? SUPLA_BUTTON_MODE_LOCKED
                                        : SUPLA_BUTTON_MODE_NOT_SET);
   }
 }
@@ -1060,7 +1276,7 @@ Supla::Control::ActionTrigger::setLocalUnlockAllowed(bool allowed) {
   runtimeFlags.localUnlockAllowed = allowed;
   if (attachedButton != nullptr) {
     attachedButton->setActionTriggerModeLocked(
-        channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED,
+        isEffectivelyLocked(),
         runtimeFlags.localUnlockAllowed,
         runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
   }
@@ -1077,7 +1293,7 @@ Supla::Control::ActionTrigger::setKeepConfigButtonTriggerAlwaysAvailable(
   runtimeFlags.keepConfigButtonTriggerAlwaysAvailable = keep;
   if (attachedButton != nullptr) {
     attachedButton->setActionTriggerModeLocked(
-        channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED,
+        isEffectivelyLocked(),
         runtimeFlags.localUnlockAllowed,
         runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
   }
@@ -1170,14 +1386,20 @@ void Supla::Control::ActionTrigger::fillDefaultWeeklySchedule(
 bool Supla::Control::ActionTrigger::isWeeklyScheduleProgramModeSupported(
     uint8_t mode) const {
   return mode == SUPLA_BUTTON_MODE_NOT_SET ||
-         mode == SUPLA_BUTTON_MODE_LOCKED;
+         mode == SUPLA_BUTTON_MODE_LOCKED ||
+         mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED;
 }
 
 void Supla::Control::ActionTrigger::iterateAlways() {
+  Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
   auto *weeklySchedule = weeklyScheduleComponents.getController();
   if (weeklySchedule != nullptr && isWeeklyScheduleSupported()) {
     weeklySchedule->processWeeklySchedule();
   }
+  // Sample edges before retiring an expired timer. An edge that arrived
+  // between timer iterations must not revive the just-expired unlock.
+  updateUnlockSensor();
+  updateTemporaryUnlock();
 }
 
 int32_t Supla::Control::ActionTrigger::handleNewValueFromServer(
@@ -1185,10 +1407,17 @@ int32_t Supla::Control::ActionTrigger::handleNewValueFromServer(
   if (newValue == nullptr) {
     return -1;
   }
+  Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
   auto *properties =
       reinterpret_cast<TActionTriggerProperties *>(newValue->value);
   auto *weeklySchedule = weeklyScheduleComponents.getController();
   switch (properties->ButtonMode) {
+    case SUPLA_BUTTON_MODE_CMD_TEMPORARY_UNLOCK:
+      return startTemporaryUnlock(newValue->DurationSec) ? 1 : 0;
+    case SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED:
+      if (!prepareTemporaryUnlockState()) return 0;
+      applyManualButtonMode(properties->ButtonMode);
+      return 1;
     case SUPLA_BUTTON_MODE_LOCKED:
     case SUPLA_BUTTON_MODE_NOT_SET: {
       applyManualButtonMode(properties->ButtonMode);
@@ -1222,6 +1451,22 @@ void Supla::Control::ActionTrigger::fillChannelConfig(
     return;
   }
   *size = 0;
+  if (channelConfig && configType == SUPLA_CONFIG_TYPE_DEFAULT) {
+    TChannelConfig_ActionTrigger wire = {};
+    // Publish-all mode overrides only runtime routing, not Cloud's selection.
+    wire.ActiveActions = (runtimeFlags.channelConfigReceived ||
+        (temporaryUnlock && temporaryUnlock->hasStoredActiveActions))
+        ? lastReceivedActiveActions : activeActionsFromServer;
+    const auto config = currentTemporaryUnlockConfig();
+    wire.TemporaryUnlockDurationSec = config.duration;
+    wire.TemporaryUnlockSensorEdge = config.edge;
+    wire.TemporaryUnlockSensorIsSet = config.sensor != 255;
+    wire.TemporaryUnlockSensorChannelNo = config.sensor != 255
+        ? config.sensor : 0;
+    memcpy(channelConfig, &wire, sizeof(wire));
+    *size = sizeof(wire);
+    return;
+  }
   if (channelConfig == nullptr ||
       configType != SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
     return;
@@ -1235,6 +1480,16 @@ void Supla::Control::ActionTrigger::fillChannelConfig(
 }
 
 void Supla::Control::ActionTrigger::purgeConfig() {
+  if (auto cfg = Supla::Storage::ConfigInstance()) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, "at_tmp");
+    cfg->eraseKey(key);
+    generateKey(key, "at_actions");
+    cfg->eraseKey(key);
+  }
+  delete temporaryUnlock;
+  temporaryUnlock = nullptr;
+  syncEffectiveButtonLock();
   ElementWithChannelActions::purgeConfig();
   auto *configHandler = weeklyScheduleComponents.getConfigHandler();
   if (configHandler != nullptr) {
@@ -1243,21 +1498,35 @@ void Supla::Control::ActionTrigger::purgeConfig() {
 }
 
 void Supla::Control::ActionTrigger::applyButtonMode(uint8_t mode) {
-  channel.setButtonMode(mode);
-  if (attachedButton != nullptr) {
-    attachedButton->setActionTriggerModeLocked(
-        mode == SUPLA_BUTTON_MODE_LOCKED,
-        runtimeFlags.localUnlockAllowed,
-        runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
+  [[maybe_unused]] const uint8_t previousMode = channel.getButtonMode();
+  if (temporaryUnlock) {
+    if (mode != channel.getButtonMode()) temporaryUnlock->baselineKnown = false;
+    if (mode != SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED) {
+      temporaryUnlock->durationMs = 0;
+    }
+  }
+  channel.setButtonModeAndTemporaryUnlock(mode, isTemporaryUnlockActive());
+  syncEffectiveButtonLock();
+  if (previousMode != mode) {
+    SUPLA_LOG_INFO("AT[%d] mode %s(%u) -> %s(%u), effective=%s, weekly=%d",
+        getChannelNumber(), buttonModeName(previousMode), previousMode,
+        buttonModeName(mode), mode,
+        isEffectivelyLocked() ? "LOCKED" : "UNLOCKED",
+        channel.isWeeklyScheduleEnabled());
   }
 }
 
 void Supla::Control::ActionTrigger::applyManualButtonMode(uint8_t mode) {
   auto *weeklySchedule = weeklyScheduleComponents.getController();
   if (weeklySchedule != nullptr) {
+    // Apply only the requested final button mode. The controller's manual
+    // transition synchronizes mode 0, which would cancel a live 6 -> 6 timer.
+    if (temporaryUnlock) temporaryUnlock->manualModeTransition = true;
     weeklySchedule->switchToManualMode();
+    if (temporaryUnlock) temporaryUnlock->manualModeTransition = false;
   }
   channel.setWeeklyScheduleEnabled(false);
+  if (temporaryUnlock) temporaryUnlock->weeklyDurationS = 0;
   applyButtonMode(mode);
   scheduleStateSave();
 }
@@ -1267,4 +1536,200 @@ void Supla::Control::ActionTrigger::scheduleStateSave(uint32_t delayMsMax,
   if (runtimeFlags.storageEnabled) {
     Supla::Storage::ScheduleSave(delayMsMax, delayMsMin);
   }
+}
+
+
+bool Supla::Control::ActionTrigger::ensureTemporaryUnlockState() {
+  if (temporaryUnlock) return true;
+#ifndef ARDUINO_ARCH_AVR
+  temporaryUnlock = new (std::nothrow) TemporaryUnlockState();
+#else
+  temporaryUnlock = new TemporaryUnlockState();
+#endif
+  return temporaryUnlock != nullptr;
+}
+
+bool Supla::Control::ActionTrigger::persistTemporaryUnlockConfig(
+    const TemporaryUnlockConfig &config, bool localChange,
+    const uint32_t *activeActions) {
+  if (!ensureTemporaryUnlockState()) return false;
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) return true;
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, "at_tmp");
+  TemporaryUnlockConfig previous;
+  const bool existed = cfg->getBlobSize(key) == sizeof(previous) &&
+      cfg->getBlob(key, reinterpret_cast<char *>(&previous), sizeof(previous));
+  const bool recordChanged = !existed ||
+      memcmp(&config, &previous, sizeof(config)) != 0;
+  char changedTypesKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  uint32_t previousTypes = 0;
+  uint32_t pendingTypes = 0;
+  bool typesExisted = false;
+  bool typesChanged = false;
+  char actionsKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  uint32_t previousActions = 0;
+  bool actionsExisted = false;
+  bool actionsChanged = false;
+  if (activeActions) {
+    generateKey(actionsKey, "at_actions");
+    actionsExisted = cfg->getUInt32(actionsKey, &previousActions);
+    actionsChanged = !actionsExisted || previousActions != *activeActions;
+  }
+  if (localChange) {
+    generateKey(changedTypesKey,
+                Supla::ConfigTag::ChannelConfigChangedTypesTag);
+    typesExisted = cfg->getUInt32(changedTypesKey, &previousTypes);
+    auto types = locallyChangedConfigTypes;
+    types.set(SUPLA_CONFIG_TYPE_DEFAULT);
+    pendingTypes = types.getAll();
+    typesChanged = !typesExisted || previousTypes != pendingTypes;
+  }
+  if (!temporaryUnlock->persistenceUncertain &&
+      !recordChanged && !typesChanged && !actionsChanged) {
+    if (activeActions) temporaryUnlock->hasStoredActiveActions = true;
+    return true;
+  }
+  // Persist settings, original actions and the pending marker together.
+  // Only then may the caller publish either change to the running element.
+  if ((!typesChanged || cfg->setUInt32(changedTypesKey, pendingTypes)) &&
+      (!actionsChanged || cfg->setUInt32(actionsKey, *activeActions)) &&
+      (!recordChanged || cfg->setBlob(key,
+          reinterpret_cast<const char *>(&config), sizeof(config))) &&
+      cfg->commitWithResult()) {
+    TemporaryUnlockConfig confirmed;
+    uint32_t confirmedTypes = 0;
+    uint32_t confirmedActions = 0;
+    if (cfg->getBlobSize(key) == sizeof(confirmed) &&
+        cfg->getBlob(key, reinterpret_cast<char *>(&confirmed),
+                     sizeof(confirmed)) &&
+        !memcmp(&config, &confirmed, sizeof(config)) &&
+        (!activeActions || (cfg->getUInt32(actionsKey, &confirmedActions) &&
+                            confirmedActions == *activeActions)) &&
+        (!localChange || (cfg->getUInt32(changedTypesKey, &confirmedTypes) &&
+                         confirmedTypes == pendingTypes))) {
+      temporaryUnlock->persistenceUncertain = false;
+      if (activeActions) temporaryUnlock->hasStoredActiveActions = true;
+      return true;
+    }
+  }
+  temporaryUnlock->persistenceUncertain = true;
+  if (actionsChanged) {
+    if (actionsExisted) {
+      cfg->setUInt32(actionsKey, previousActions);
+    } else {
+      cfg->eraseKey(actionsKey);
+    }
+  }
+  if (typesChanged) {
+    if (typesExisted) {
+      cfg->setUInt32(changedTypesKey, previousTypes);
+    } else {
+      cfg->eraseKey(changedTypesKey);
+    }
+  }
+  if (existed) {
+    cfg->setBlob(key, reinterpret_cast<const char *>(&previous),
+                 sizeof(previous));
+  } else {
+    cfg->eraseKey(key);
+  }
+  return false;
+}
+
+bool Supla::Control::ActionTrigger::prepareTemporaryUnlockState() {
+  if (!ensureTemporaryUnlockState()) return false;
+  auto config = temporaryUnlock->config;
+  config.escapedActions =
+      (activeActionsFromServer & ~kActionTriggerStateModeMask) == 0x3FFFFFFFUL
+          ? activeActionsFromServer : 0;
+  if (config.escapedActions != temporaryUnlock->config.escapedActions ||
+      temporaryUnlock->persistenceUncertain) {
+    if (!persistTemporaryUnlockConfig(config)) return false;
+    temporaryUnlock->config = config;
+  }
+  return true;
+}
+
+Supla::Control::ActionTrigger::TemporaryUnlockConfig
+Supla::Control::ActionTrigger::currentTemporaryUnlockConfig() const {
+  return temporaryUnlock ? temporaryUnlock->config : TemporaryUnlockConfig{};
+}
+
+bool Supla::Control::ActionTrigger::isTemporaryUnlockActive() const {
+  return temporaryUnlock && temporaryUnlock->durationMs != 0 &&
+      static_cast<uint32_t>(millis() - temporaryUnlock->startMs) <
+          temporaryUnlock->durationMs;
+}
+
+bool Supla::Control::ActionTrigger::isEffectivelyLocked() const {
+  return channel.getButtonMode() == SUPLA_BUTTON_MODE_LOCKED ||
+      (channel.getButtonMode() ==
+           SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
+       !isTemporaryUnlockActive());
+}
+
+void Supla::Control::ActionTrigger::syncEffectiveButtonLock() {
+  channel.setTemporaryUnlockActive(isTemporaryUnlockActive());
+  if (attachedButton) {
+    attachedButton->setTemporaryUnlockDeadline(
+        temporaryUnlock ? temporaryUnlock->startMs : 0,
+        isTemporaryUnlockActive() ? temporaryUnlock->durationMs : 0);
+    attachedButton->setActionTriggerModeLocked(isEffectivelyLocked(),
+        runtimeFlags.localUnlockAllowed,
+        runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
+  }
+}
+
+bool Supla::Control::ActionTrigger::startTemporaryUnlock(uint32_t seconds) {
+  if (channel.getButtonMode() !=
+      SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED ||
+      seconds > kMaximumTemporaryUnlockDurationS ||
+      !ensureTemporaryUnlockState()) return false;
+  if (seconds == 0) seconds = temporaryUnlock->weeklyDurationS
+      ? temporaryUnlock->weeklyDurationS : temporaryUnlock->config.duration;
+  if (seconds == 0) return false;
+  [[maybe_unused]] const bool restart = isTemporaryUnlockActive();
+  temporaryUnlock->startMs = millis();
+  temporaryUnlock->durationMs = seconds * 1000;
+  syncEffectiveButtonLock();
+  SUPLA_LOG_INFO("AT[%d] temporary unlock %s, duration=%" PRIu32 " s",
+      getChannelNumber(), restart ? "restarted" : "started", seconds);
+  return true;
+}
+
+void Supla::Control::ActionTrigger::updateTemporaryUnlock() {
+  if (temporaryUnlock && temporaryUnlock->durationMs &&
+      !isTemporaryUnlockActive()) {
+    temporaryUnlock->durationMs = 0;
+    // A transition may have arrived during the timer but not yet been read.
+    temporaryUnlock->baselineKnown = false;
+    syncEffectiveButtonLock();
+    SUPLA_LOG_INFO("AT[%d] temporary unlock expired, effective=LOCKED",
+        getChannelNumber());
+  }
+}
+
+void Supla::Control::ActionTrigger::updateUnlockSensor() {
+  if (!temporaryUnlock ||
+      temporaryUnlock->config.edge == SUPLA_AT_SENSOR_EDGE_NONE) return;
+  const auto sensor = Supla::Channel::GetByChannelNumber(
+      temporaryUnlock->config.sensor);
+  if (!sensor || !sensor->isStateOnline() ||
+      sensor->isStateOnlineAndNotAvailable() ||
+      sensor->isStateFirmwareUpdateOngoing() ||
+      sensor->getChannelType() != SUPLA_CHANNELTYPE_BINARYSENSOR) {
+    temporaryUnlock->baselineKnown = false;
+    return;
+  }
+  const bool value = sensor->getValueBool();
+  const bool edge = temporaryUnlock->baselineKnown &&
+      value != temporaryUnlock->baseline &&
+      (temporaryUnlock->config.edge == SUPLA_AT_SENSOR_EDGE_BOTH ||
+       (value && temporaryUnlock->config.edge == SUPLA_AT_SENSOR_EDGE_RISING) ||
+       (!value &&
+        temporaryUnlock->config.edge == SUPLA_AT_SENSOR_EDGE_FALLING));
+  temporaryUnlock->baselineKnown = true;
+  temporaryUnlock->baseline = value;
+  if (edge && temporaryUnlock->durationMs == 0) startTemporaryUnlock(0);
 }

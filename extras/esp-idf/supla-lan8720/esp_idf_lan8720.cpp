@@ -25,8 +25,8 @@
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 
-#include <cstring>
 #include <arpa/inet.h>
+#include <cstring>
 
 #include "esp_idf_network_common.h"
 
@@ -63,10 +63,6 @@ Supla::EspIdfLan8720::EspIdfLan8720(int mdcGpio, int mdioGpio) :
 
 Supla::EspIdfLan8720::~EspIdfLan8720() {
   thisNetIntfPtr = nullptr;
-}
-
-bool Supla::EspIdfLan8720::isStaticIpConfigured() const {
-  return staticIpConfigured;
 }
 
 void Supla::EspIdfLan8720::setEthStarted(bool started) {
@@ -112,9 +108,10 @@ static void eventHandler(void *arg,
         break;
       }
       case ETHERNET_EVENT_CONNECTED: {
+        thisNetIntfPtr->setLinkConnected(true);
         SUPLA_LOG_INFO("[%s] Ethernet connected",
                        thisNetIntfPtr->getIntfName());
-        if (thisNetIntfPtr->isStaticIpConfigured()) {
+        if (thisNetIntfPtr->isStaticIpApplied()) {
           thisNetIntfPtr->setIpv4Addr(
               htonl(thisNetIntfPtr->getNetifConfig().ip));
           char ipBuf[32] = {};
@@ -128,13 +125,7 @@ static void eventHandler(void *arg,
         break;
       }
       case ETHERNET_EVENT_DISCONNECTED: {
-        thisNetIntfPtr->setIpv4Addr(0);
-        if (thisNetIntfPtr->isStateLoggingAllowed()) {
-          auto sdc = thisNetIntfPtr->getSdc();
-          if (sdc) {
-            sdc->addLastStateLog("Ethernet: disconnected");
-          }
-        }
+        thisNetIntfPtr->setLinkConnected(false);
         SUPLA_LOG_INFO("[%s] Ethernet disconnected",
                        thisNetIntfPtr->getIntfName());
         break;
@@ -145,8 +136,8 @@ static void eventHandler(void *arg,
 
 void Supla::EspIdfLan8720::setup() {
   if (!initDone) {
-    setIpReady(false);
-    staticIpConfigured = false;
+    resetLinkState();
+    setStaticIpApplied(false);
     Supla::initEspNetif();
 
     esp_netif_inherent_config_t espNetifConfig =
@@ -221,15 +212,21 @@ void Supla::EspIdfLan8720::setup() {
       } else {
         setDnsInfo(netIf, ESP_NETIF_DNS_MAIN, getNetifConfig().dns1);
         setDnsInfo(netIf, ESP_NETIF_DNS_BACKUP, getNetifConfig().dns2);
-        staticIpConfigured = true;
+        setStaticIpApplied(true);
         SUPLA_LOG_INFO("[%s] static IP configured", getIntfName());
       }
     }
   }
 
-  if (!ethStarted && ethHandle != NULL) {
+  setAllowDisable(true);
+  if (ethHandle == NULL) {
+    // driver install failed
+    reportStartResult(false);
+  } else if (!ethStarted) {
     esp_err_t result = esp_eth_start(ethHandle);
-    if (result == ESP_OK || result == ESP_ERR_INVALID_STATE) {
+    const bool success = result == ESP_OK || result == ESP_ERR_INVALID_STATE;
+    reportStartResult(success);
+    if (success) {
       ethStarted = true;
     } else {
       SUPLA_LOG_WARNING("[%s] Ethernet start failed (%d)",
@@ -238,23 +235,21 @@ void Supla::EspIdfLan8720::setup() {
     }
   }
 
-  allowDisable = true;
   initDone = true;
 }
 
 void Supla::EspIdfLan8720::disable() {
-  if (!allowDisable) {
+  if (!takeAllowDisable()) {
     return;
   }
 
-  allowDisable = false;
   SUPLA_LOG_DEBUG("[%s] disabling ETH connection", getIntfName());
   DisconnectProtocols();
   if (ethStarted && ethHandle != NULL) {
     esp_err_t result = esp_eth_stop(ethHandle);
     if (result == ESP_OK || result == ESP_ERR_INVALID_STATE) {
       ethStarted = false;
-      setIpv4Addr(0);
+      setLinkConnected(false);
     } else {
       SUPLA_LOG_WARNING("[%s] Ethernet stop failed (%d)",
                         getIntfName(),
@@ -264,8 +259,9 @@ void Supla::EspIdfLan8720::disable() {
 }
 
 void Supla::EspIdfLan8720::uninit() {
-  setIpReady(false);
-  staticIpConfigured = false;
+  setAllowDisable(false);
+  resetLinkState();
+  setStaticIpApplied(false);
   DisconnectProtocols();
   if (initDone) {
     SUPLA_LOG_DEBUG("[%s] stopping ETH driver", getIntfName());
@@ -309,9 +305,9 @@ void Supla::EspIdfLan8720::uninit() {
     }
   }
   ethStarted = false;
-  allowDisable = false;
   initDone = false;
-  setIpv4Addr(0);
+  // event handlers are unregistered now, so no late event can restore state
+  resetLinkState();
 }
 
 bool Supla::EspIdfLan8720::getMacAddr(uint8_t *out) {
@@ -321,14 +317,4 @@ bool Supla::EspIdfLan8720::getMacAddr(uint8_t *out) {
 
 bool Supla::EspIdfLan8720::isIpSetupTimeout() {
   return false;
-}
-
-SuplaDeviceClass *Supla::EspIdfLan8720::getSdc() {
-  return sdc;
-}
-
-bool Supla::EspIdfLan8720::isStateLoggingAllowed() {
-  // state logging is not allowed when we manually disabled network interface.
-  // We leave state logging to unexpected events instead.
-  return allowDisable;
 }

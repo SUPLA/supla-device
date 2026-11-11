@@ -20,7 +20,7 @@ void Supla::Control::CmdValve::onInit() {
 }
 
 void Supla::Control::CmdValve::setValueOnDevice(uint8_t openLevel) {
-  SUPLA_LOG_DEBUG("CmdValve[%d]: openLevel %d", getChannelNumber(), openLevel);
+  SUPLA_LOG_DEBUG("CmdValve[%d] openLevel %d", getChannelNumber(), openLevel);
   // we support only open/close at the moment
   if (openLevel > 0) {
     if (cmdOpen.length() > 0) {

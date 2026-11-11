@@ -163,6 +163,22 @@ The application creates these persistent files with owner-only permissions
 (`0600`): `guid_auth.yaml`, `config_storage.bin`, `state.bin`, and
 `last_state.txt`.
 
+When rewriting these files, the application also restricts existing file
+permissions to `0600`.
+
+`config_storage.bin` stores runtime configuration in binary form, separately
+from the input YAML configuration file. It is rewritten when configuration
+changes are committed.
+
+Failed delayed configuration saves are retried every five seconds. SIGINT,
+SIGTERM, SIGHUP and SIGQUIT request termination even when delivered to a worker
+thread. Shutdown uses the SDK's shared reset/stop preparation: element reset
+callbacks, state storage, configuration commit and network teardown. A normal
+stop exits with status 0; a failed final configuration commit exits with status 1.
+Software reset retains its existing status 1 exit. Legacy configuration backends
+can keep overriding `commit()`; backends that report write errors override
+`commitWithResult()`.
+
 Adjust "supla_user" to your user name.
 
 `last_state.txt` contains the last runtime "last state" log (similar to
@@ -302,8 +318,9 @@ Mandatory.
 Defines MQTT broker port to which device should connect to. This application
 can use SSL/TLS encrypted connection. Parameter is optional. The default is
 `1883` when `use_ssl` is `false` and `8883` when `use_ssl` is `true`. An
-explicit `port` value overrides these defaults. Using port `8883` also enables
-TLS when `use_ssl` is omitted or set to `false`.
+explicit `port` value overrides these defaults, including custom TLS ports.
+Port `8883` requires `use_ssl: true`; `use_ssl: false` with this port is rejected.
+The port never enables TLS implicitly.
 
 #### Parameter `username`
 
@@ -323,12 +340,21 @@ Parameter is optional - default value: hostname.
 #### Parameter `use_ssl`
 
 Defines whether an encrypted SSL/TLS connection is to be used.
-Parameter is optional - default value: false.
+Mandatory boolean whenever an MQTT source or output is used, including named
+sources and references through `use`. Set explicitly to `true` or `false`.
 
 #### Parameter `verify_ca`
 
-Defines whether the MQTT broker certificate is to be verified.
-Parameter is optional - default value: false.
+Defines whether the MQTT broker certificate and host name are to be verified.
+Mandatory boolean when `use_ssl: true`; there is no implicit choice.
+With `use_ssl: false`, this parameter is not required. Explicit `false` keeps
+TLS encryption without verifying the broker identity and logs an INSECURE
+warning. Explicit `true` enables verification using system CAs or `ca_file`.
+
+Incomplete configurations and invalid boolean types are rejected at startup,
+before the MQTT client is created or connects. Existing MQTT configurations
+must add `use_ssl`, and TLS configurations must also add `verify_ca`.
+Configurations that do not use MQTT are unaffected.
 
 #### Parameter `ca_file`
 
@@ -342,8 +368,9 @@ Example (no SSL/TLS, anonymous):
       host: mqtt.example.org
       port: 1883
       client_name: sl4d_client_001
+      use_ssl: false
 
-Example (with SSL/TLS with login):
+Example (TLS with CA and host-name verification):
 
     mqtt:
       host: mqtt-ssl.example.org
@@ -352,10 +379,6 @@ Example (with SSL/TLS with login):
       password: my_s3cr3t-PSWD
       client_name: sl4d_client_001
       use_ssl: true
-
-It is recommended to verify the server certificate with an encrypted connection,
-so we should set `verify_ca` to `true`
-
       verify_ca: true
 
 If the server is trusted but its certificate is self-signed or its CA is not in
@@ -363,6 +386,16 @@ the system's trusted certificate store, we can use a PEM file with the certifica
 path and specify the file location as `ca_file`.
 
       ca_file: ca_chain.pem
+
+Example (TLS without certificate verification, explicitly chosen by the operator):
+
+    mqtt:
+      host: mqtt-ssl.example.org
+      use_ssl: true
+      verify_ca: false
+
+This encrypts traffic but does not authenticate the broker. It is vulnerable to
+an attacker impersonating the broker; use verification whenever possible.
 
 # Supla channels configuration
 
@@ -1054,6 +1087,9 @@ In order to disable time expiration check, please set `expiration_time_sec` to 0
    we can define them as a `sub_topics` array and assign them an index in this array
    in the parameters, just like with the `Simple` parser (index counting starts with 0).
    I.e. please take a look at `th5` channel above.
+   Optional `expiration_time_sec` defaults to `0` (no expiration).
+   The maximum is `2147483` seconds (about 24.8 days). Each source expires its
+   documents independently, even when other sources subscribe to the same topic.
    If source was already defined earlier, and you want to reuse it, you can specify
    `use` parameter with proper name of previously defined source. When `use`
    parameter is used, then no other source configuration parameters are allowed.
@@ -1123,6 +1159,84 @@ update every 200 ms.
 
 If parser was already defined earlier, you can reuse it by providing `use`
 parameter with a parser name.
+
+### Multiple independent JSON documents
+
+`parser.multi_document` is optional and defaults to `false`. In the default
+mode, JSON keys and JSON Pointers (for example `/data/val`) work as before.
+`Simple` also keeps its existing newline/index behavior for multiple MQTT topics.
+
+With `type: Json` and `multi_document: true`, mappings use
+`document-id:/json-pointer`. Each MQTT `sub_topics` entry is a **text** document
+identifier, including leading zeroes. The full subscription is
+`state_topic + "/" + document-id`. Reordering `sub_topics` or receiving messages
+in a different order does not change mappings. Duplicate or empty identifiers,
+unknown identifiers in mappings, and malformed JSON Pointers are rejected when
+loading channels. JSON Pointer supports objects, array indices, `~0` for `~` and
+`~1` for `/` (RFC 6901).
+
+Each document is parsed independently; multiline JSON is preserved. No combined
+JSON document is generated. A source without subtopics exposes one document
+named `default`, so a mapping can use `default:/data/val`. Other ordinary sources
+also expose their existing content as the `default` document. Snapshot reads do
+not consume data, and named sources and parsers can be shared as before.
+
+MQTT sources accept optional `expiration_time_sec` (integer seconds,
+`0..4294967295`, default `0`, meaning no time expiration). Age is measured with a
+monotonic clock, independently for each topic. Receiving a new message renews
+only that topic. Expiration keeps the cached payload and identity but marks the
+document unavailable for parsing. No first message and a received empty payload
+are distinct source states; neither supplies a valid JSON measurement. With an
+explicit nonzero expiration, legacy `getContent()` returns an empty result if
+any topic has not received a message or has expired. Complete snapshots retain
+all positions, including received empty payloads, so `Simple` indices cannot
+shift. With the default `0`, the existing concatenation behavior is unchanged.
+
+In multi-document mode, a missing, expired, empty or malformed **required**
+document makes the parser source snapshot invalid until a later refresh succeeds.
+A missing field or failed numeric conversion invalidates the value read, while
+`isSourceValid()` still describes the successfully parsed documents.
+`ElectricityMeterParsed` checks all configured numeric measurements before
+updating them; incomplete or invalid measurements are unavailable (`m_count = 0`),
+rather than valid zero readings. Recovery happens on a subsequent parser/channel
+refresh. Freshness checks follow `parser.refresh_time_ms` and the channel's
+refresh interval. Broker disconnection continues to mark channels offline.
+
+Complete MQTT meter configuration (also in
+[`mqtt_meter.yaml`](mqtt_meter.yaml); supply your SUPLA credentials):
+
+```yaml
+supla:
+  server: svr1.supla.org
+  mail: user@example.com
+
+mqtt:
+  host: localhost
+  use_ssl: false
+
+channels:
+- type: ElectricityMeterParsed
+  name: meter
+  source:
+    type: MQTT
+    state_topic: "data/dev/1/0b04"
+    sub_topics: ["0505", "0508", "0509"]
+    expiration_time_sec: 600
+  parser:
+    type: Json
+    multi_document: true
+    refresh_time_ms: 1000
+  phase_1:
+  - voltage: "0505:/data/val"
+  - current: "0508:/data/val"
+  - power_active: "0509:/data/val"
+```
+
+Publish `{"data":{"val":"230.5"}}`, `{"data":{"val":"4.2"}}` and
+`{"data":{"val":"966.0"}}` to `data/dev/1/0b04/0505`,
+`data/dev/1/0b04/0508` and `data/dev/1/0b04/0509`, respectively.
+These values represent volts, amperes and watts. Energy mappings continue to use
+kWh. The identifiers are examples; choose the actual topics for your device.
 
 ### JSON parser
 JSON parser takes input from source and parse it as JSON format. Values can
@@ -1324,6 +1438,38 @@ AMIplus meter on standard single tariff:
 Creates instance of "action trigger" channel. There is only one mandatory
 parameter `name` which is used in other channels to reference this channel.
 
+Optional `temporary_unlock_duration_sec` sets the default temporary unlock
+duration (`TemporaryUnlockDurationSec` in the Action Trigger channel config).
+It accepts an integer from `0` to `64800` seconds. When present, it is applied
+at each startup as a local channel config change and synchronized with the
+SUPLA server. Other Action Trigger config fields are preserved. When omitted,
+the saved/server configuration is used. For example, to test a 30-second unlock:
+
+```yaml
+channels:
+  - type: ActionTriggerParsed
+    name: test_button
+    temporary_unlock_duration_sec: 30
+```
+
+Optional `related_channel` names another channel in the same YAML configuration.
+It accepts any channel type, including a relay, roller shutter or sensor. Several
+action triggers can reference the same channel. The target may appear before or
+after the action trigger; channel names used in these references must be unique.
+This declares a channel relationship and does not add local control actions.
+
+```yaml
+channels:
+  - type: VirtualRelay
+    name: motor
+  - type: ActionTriggerParsed
+    name: button_up
+    related_channel: motor
+  - type: ActionTriggerParsed
+    name: button_down
+    related_channel: motor
+```
+
 Action trigger can be used in `BinaryParsed`, `CmdRelay`, and `CustomRelay`
 channels.
 Here is example configuration of action trigger for `BinaryParsed` channel:
@@ -1369,8 +1515,10 @@ trigger run when state or value changes between two selected values. Format is:
 
 It is allowed to configure multiple "on_" conditions to generate the same action.
 
-For action, please use only following numbers: 0, 1, 2, 3, 4, 5, 6, and
-10, 11, 12, 13, 14, 15.
+For action, please use only following numbers: 0, 1, 2, 3, 4, 5, 6, 7, 8, and
+10, 11, 12, 13, 14, 15. Action 7 is `ROTATE_RIGHT` and action 8 is `ROTATE_LEFT`.
+Unsupported action numbers are ignored. Events are suppressed while the action
+trigger is disabled or locked, including locks applied by its weekly schedule.
 
 When an action is used and device is registered in Cloud, there will be action
 trigger channel with actions corresponding to buttons, as defined in:
@@ -1381,8 +1529,7 @@ I.e. action 3 corresponds with:
     #define SUPLA_ACTION_CAP_TOGGLE_x2 (1 << 3)
 
 (last number in bracket is action number, please check above link to `proto.h`
- for more details). Currently in Supla only actions
-for buttons are defined, so we reuse them here.
+for more details). These action capabilities are reused for parsed events.
 
 ### `HumidityParsed`
 Add channel with "humidity" type.

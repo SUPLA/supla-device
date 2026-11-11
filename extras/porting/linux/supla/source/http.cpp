@@ -76,7 +76,23 @@ HttpResponse CurlHttpTransport::perform(const HttpRequest& request) {
   }
 
   curl_easy_setopt(curl, CURLOPT_URL, request.url.c_str());
-  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+  // Custom headers may contain secrets that curl would forward on redirects.
+  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION,
+                   request.headers.empty() ? 1L : 0L);
+  curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5L);
+#if LIBCURL_VERSION_NUM >= 0x075500
+  const auto redirectProtocolsResult =
+      curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
+#else
+  const auto redirectProtocolsResult = curl_easy_setopt(
+      curl, CURLOPT_REDIR_PROTOCOLS,
+      curlLong(CURLPROTO_HTTP | CURLPROTO_HTTPS));
+#endif
+  if (redirectProtocolsResult != CURLE_OK) {
+    response.error = "failed to restrict HTTP redirect protocols";
+    curl_easy_cleanup(curl);
+    return response;
+  }
   curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
   curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS,
                    curlLong(request.timeoutMs));

@@ -55,6 +55,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <climits>
+#include <optional>
+#include <set>
 #include <cstring>
 #include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
@@ -62,6 +65,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "linux_channel_factory.h"
@@ -355,19 +359,23 @@ bool Supla::LinuxYamlConfig::getUInt8(const char* key, uint8_t* result) {
 }
 
 void Supla::LinuxYamlConfig::commit() {
+  commitWithResult();
+}
+
+bool Supla::LinuxYamlConfig::commitWithResult() {
   uint8_t buf[SUPLA_LINUX_CONFIG_BUF_SIZE] = {};
 
   size_t dataSize = serializeToMemory(buf, SUPLA_LINUX_CONFIG_BUF_SIZE);
 
-  std::ofstream rwConfigFile(
-      getStateFilesPath() + Supla::ReadWriteConfigStorage,
-      std::ofstream::out | std::ios::binary);
-
-  for (size_t i = 0; i < dataSize; i++) {
-    rwConfigFile << buf[i];
+  if (!Supla::Linux::writeSecureFile(
+          getStateFilesPath() + Supla::ReadWriteConfigStorage,
+          buf,
+          dataSize,
+          false)) {
+    SUPLA_LOG_ERROR("Config: failed to write read/write config storage file");
+    return false;
   }
-
-  rwConfigFile.close();
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::setDeviceName(const char* name) {
@@ -510,6 +518,57 @@ bool Supla::LinuxYamlConfig::getMqttClientHost(char* result) const {
   return false;
 }
 
+bool Supla::LinuxYamlConfig::isValidMqttConfig() const {
+  const auto mqtt = config["mqtt"];
+  if (!mqtt || !mqtt.IsMap()) {
+    SUPLA_LOG_ERROR("Config: mqtt.use_ssl is required (true/false)");
+    return false;
+  }
+  bool useSsl = false;
+  for (const char* key : {"use_ssl", "verify_ca"}) {
+    const auto value = mqtt[key];
+    if (!value) {
+      if (std::string(key) == "use_ssl") {
+        SUPLA_LOG_ERROR("Config: mqtt.use_ssl is required (true/false)");
+        return false;
+      }
+      if (useSsl) {
+        SUPLA_LOG_ERROR(
+            "Config: mqtt.verify_ca is required when mqtt.use_ssl=true");
+        return false;
+      }
+      continue;
+    }
+    bool enabled = false;
+    // Quoted scalars and explicit string tags are strings, not YAML booleans.
+    const auto tag = value.Tag();
+    if (!value.IsScalar() ||
+        (!tag.empty() && tag != "?" && tag != "tag:yaml.org,2002:bool") ||
+        !YAML::convert<bool>::decode(value, enabled)) {
+      SUPLA_LOG_ERROR("Config: mqtt.%s must be a boolean (true/false)", key);
+      return false;
+    }
+    if (std::string(key) == "use_ssl") {
+      useSsl = enabled;
+    }
+  }
+  if (mqtt["port"]) {
+    int port = 0;
+    try {
+      port = mqtt["port"].as<int>();
+    } catch (const YAML::Exception&) {
+      SUPLA_LOG_ERROR("Config: mqtt.port must be an integer");
+      return false;
+    }
+    if (!useSsl && port == 8883) {
+      SUPLA_LOG_ERROR(
+          "Config: mqtt.use_ssl=false conflicts with mqtt.port=8883");
+      return false;
+    }
+  }
+  return true;
+}
+
 int32_t Supla::LinuxYamlConfig::getMqttClientPort() const {
   try {
     if (config["mqtt"] && config["mqtt"]["port"]) {
@@ -519,7 +578,7 @@ int32_t Supla::LinuxYamlConfig::getMqttClientPort() const {
   } catch (const YAML::Exception& ex) {
     logError(file, ex);
   }
-  return config["mqtt"] && config["mqtt"]["use_ssl"] ? 8883 : 1883;
+  return getMqttClientUseSSL() ? 8883 : 1883;
 }
 
 bool Supla::LinuxYamlConfig::getMqttClientUsername(char* result) const {
@@ -565,27 +624,14 @@ bool Supla::LinuxYamlConfig::getMqttClientName(char* result) const {
 }
 
 bool Supla::LinuxYamlConfig::getMqttClientUseSSL() const {
-  try {
-    if (config["mqtt"] && config["mqtt"]["use_ssl"]) {
-      auto mqtt_use_ssl = config["mqtt"]["use_ssl"].as<bool>();
-      return mqtt_use_ssl;
-    }
-  } catch (const YAML::Exception& ex) {
-    logError(file, ex);
-  }
-  return false;
+  return config["mqtt"]["use_ssl"].as<bool>();
 }
 
 bool Supla::LinuxYamlConfig::getMqttClientVerifyCA() const {
-  try {
-    if (config["mqtt"] && config["mqtt"]["verify_ca"]) {
-      auto mqtt_secure = config["mqtt"]["verify_ca"].as<bool>();
-      return mqtt_secure;
-    }
-  } catch (const YAML::Exception& ex) {
-    logError(file, ex);
+  if (!getMqttClientUseSSL() && !config["mqtt"]["verify_ca"]) {
+    return false;
   }
-  return false;
+  return config["mqtt"]["verify_ca"].as<bool>();
 }
 
 bool Supla::LinuxYamlConfig::getMqttClientFileCA(char* result) const {
@@ -603,6 +649,7 @@ bool Supla::LinuxYamlConfig::getMqttClientFileCA(char* result) const {
 }
 
 bool Supla::LinuxYamlConfig::loadChannels() {
+  channelNames.clear();
   try {
     Supla::Linux::initExtensions();
     if (!loadTopLevelSources(config["sources"])) {
@@ -652,11 +699,13 @@ bool Supla::LinuxYamlConfig::loadChannels() {
         SUPLA_LOG_ERROR("Config: \"channels\" section missing in file");
         return false;
       }
-      return true;
+      return resolveActionTriggerRelatedChannels();
     } else {
       SUPLA_LOG_ERROR("Config: \"channels\" section missing in file");
       return false;
     }
+  } catch (const std::invalid_argument& ex) {
+    SUPLA_LOG_ERROR("Config: %s", ex.what());
   } catch (const YAML::Exception& ex) {
     logError(file, ex);
   }
@@ -834,10 +883,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return false;
     }
 
-    if (auto nameParameter = getAndMarkChannelParameter(ch, "name")) {
-      std::string name = nameParameter.as<std::string>();
-      channelNames[name] = channelNumber;
-    }
+    getAndMarkChannelParameter(ch, "name");
 
     if (type == "VirtualRelay") {
       return addVirtualRelay(ch, channelNumber);
@@ -1075,7 +1121,7 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
     auto cmdOpen = cmdOpenParameter.as<std::string>();
     cv->setCmdOpen(cmdOpen);
   } else {
-    SUPLA_LOG_ERROR("CmdValve[%d]: missing \"cmd_open\" parameter",
+    SUPLA_LOG_ERROR("CmdValve[%d] missing \"cmd_open\" parameter",
                     channelNumber);
     return false;
   }
@@ -1083,7 +1129,7 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
     auto cmdClose = cmdCloseParameter.as<std::string>();
     cv->setCmdClose(cmdClose);
   } else {
-    SUPLA_LOG_ERROR("CmdValve[%d]: missing \"cmd_close\" parameter",
+    SUPLA_LOG_ERROR("CmdValve[%d] missing \"cmd_close\" parameter",
                     channelNumber);
     return false;
   }
@@ -1133,7 +1179,7 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
     cr->setCmdUpOn(cmdUpOn);
   } else {
     SUPLA_LOG_ERROR(
-        "CmdRollerShutter[%d]: missing \"cmd_up_on\" parameter",
+        "CmdRollerShutter[%d] missing \"cmd_up_on\" parameter",
         channelNumber);
     return false;
   }
@@ -1142,7 +1188,7 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
     cr->setCmdUpOff(cmdUpOff);
   } else {
     SUPLA_LOG_ERROR(
-        "CmdRollerShutter[%d]: missing \"cmd_up_off\" parameter",
+        "CmdRollerShutter[%d] missing \"cmd_up_off\" parameter",
         channelNumber);
     return false;
   }
@@ -1152,7 +1198,7 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
     cr->setCmdDownOn(cmdDownOn);
   } else {
     SUPLA_LOG_ERROR(
-        "CmdRollerShutter[%d]: missing \"cmd_down_on\" parameter",
+        "CmdRollerShutter[%d] missing \"cmd_down_on\" parameter",
         channelNumber);
     return false;
   }
@@ -1162,7 +1208,7 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
     cr->setCmdDownOff(cmdDownOff);
   } else {
     SUPLA_LOG_ERROR(
-        "CmdRollerShutter[%d]: missing \"cmd_down_off\" parameter",
+        "CmdRollerShutter[%d] missing \"cmd_down_off\" parameter",
         channelNumber);
     return false;
   }
@@ -1359,12 +1405,10 @@ bool Supla::LinuxYamlConfig::addAfore(const YAML::Node& ch, int channelNumber) {
   if (auto ipParameter = getAndMarkChannelParameter(ch, "ip")) {
     std::string ip = ipParameter.as<std::string>();
     SUPLA_LOG_INFO(
-        "Channel[%d] config: adding Afore with IP %s, port: %d,"
-        " login_and_password: %s",
+        "Channel[%d] config: adding Afore with IP %s, port: %d",
         channelNumber,
         ip.c_str(),
-        port,
-        loginAndPassword.c_str());
+        port);
 
     IPAddress ipAddr(ip);
     auto afore = new Supla::PV::Afore(ipAddr, port, loginAndPassword.c_str());
@@ -2117,7 +2161,9 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
     if (type == "Simple") {
       prs = new Supla::Parser::Simple(src);
     } else if (type == "Json") {
-      prs = new Supla::Parser::Json(src);
+      prs = new Supla::Parser::Json(
+          src, parser["multi_document"] ?
+              parser["multi_document"].as<bool>() : false);
     } else {
       SUPLA_LOG_ERROR("Config: unknown parser type \"%s\"", type.c_str());
       return nullptr;
@@ -2239,11 +2285,31 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       std::string cmd = source["command"].as<std::string>();
       src = new Supla::Source::Cmd(cmd.c_str());
     } else if (type == "MQTT") {
+      if (!isValidMqttConfig()) {
+        return nullptr;
+      }
       auto base_state_topic = source["state_topic"].as<std::string>();
       std::vector<std::string> allSubTopics;
+      std::vector<std::string> documentIds;
+      unsigned int expirationTimeSec = 0;
+      if (source["expiration_time_sec"]) {
+        const auto expiration = source["expiration_time_sec"].as<int64_t>();
+        if (expiration < 0 ||
+            expiration > Supla::Source::Mqtt::MaximumExpirationTimeSec) {
+          SUPLA_LOG_ERROR("Config: MQTT expiration_time_sec out of range");
+          return nullptr;
+        }
+        expirationTimeSec = static_cast<unsigned int>(expiration);
+      }
       if (source["sub_topics"] && source["sub_topics"].size() > 0) {
         auto sub_topics = source["sub_topics"].as<std::vector<std::string>>();
+        std::set<std::string> seen;
         for (auto& sub_topic : sub_topics) {
+          if (sub_topic.empty() || !seen.insert(sub_topic).second) {
+            SUPLA_LOG_ERROR("Config: empty or duplicate MQTT sub_topics id");
+            return nullptr;
+          }
+          documentIds.push_back(sub_topic);
           std::string state_topic = base_state_topic;
           state_topic.append("/").append(sub_topic);
           allSubTopics.push_back(state_topic);
@@ -2251,7 +2317,8 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       } else {
         allSubTopics.push_back(base_state_topic);
       }
-      src = new Supla::Source::Mqtt(*this, allSubTopics);
+      src = new Supla::Source::Mqtt(*this, allSubTopics, documentIds,
+                                    expirationTimeSec);
     } else if (type == "HTTP") {
 #ifndef SUPLA_LINUX_HTTP_SOURCE_ENABLED
       SUPLA_LOG_ERROR(
@@ -2398,6 +2465,9 @@ Supla::Output::Output* Supla::LinuxYamlConfig::addOutput(
       std::string fileName = output["file"].as<std::string>();
       out = new Supla::Output::File(fileName.c_str());
     } else if (type == "MQTT") {
+      if (!isValidMqttConfig()) {
+        return nullptr;
+      }
       std::string controlTopic = output["control_topic"].as<std::string>();
       int qos = output["qos"].as<int>(0);
       if (qos < 0 || qos > 2) {
@@ -2813,7 +2883,9 @@ bool Supla::LinuxYamlConfig::addActionTriggerActions(
           return false;
         }
       } else if (el["use"]) {
-        SUPLA_LOG_INFO("Channel config: using action trigger \"%s\"",
+        SUPLA_LOG_INFO("Channel[%d] config: using action trigger \"%s\"",
+                       sensor->getChannel()
+                           ? sensor->getChannel()->getChannelNumber() : -1,
                        el["use"].as<std::string>().c_str());
         sensor->setAtName(el["use"].as<std::string>());
         atNameFound = true;
@@ -2833,15 +2905,86 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
                                                     int channelNumber) {
   SUPLA_LOG_INFO("Channel[%d] config: adding ActionTriggerParsed",
                  channelNumber);
+  if (auto related = getAndMarkChannelParameter(ch, "related_channel")) {
+    if (!related.IsScalar() || related.as<std::string>().empty()) {
+      SUPLA_LOG_ERROR("Channel[%d] related_channel must be a channel name",
+          channelNumber);
+      return false;
+    }
+  }
+  std::optional<uint32_t> temporaryUnlockDuration;
+  if (auto parameter =
+          getAndMarkChannelParameter(ch, "temporary_unlock_duration_sec")) {
+    int64_t seconds = -1;
+    try {
+      seconds = parameter.as<int64_t>();
+    } catch (const YAML::Exception&) {
+      SUPLA_LOG_ERROR(
+          "Channel[%d] temporary_unlock_duration_sec must be an integer",
+          channelNumber);
+      return false;
+    }
+    if (seconds < 0 || seconds > Supla::Control::ActionTriggerParsed::
+                                   MaximumTemporaryUnlockDurationSec) {
+      SUPLA_LOG_ERROR(
+          "Channel[%d] temporary_unlock_duration_sec must be in 0..64800",
+          channelNumber);
+      return false;
+    }
+    temporaryUnlockDuration = static_cast<uint32_t>(seconds);
+  }
   if (auto nameParameter = getAndMarkChannelParameter(ch, "name")) {
     auto name = nameParameter.as<std::string>();
     auto at = new Supla::Control::ActionTriggerParsed(name);
+    if (temporaryUnlockDuration.has_value()) {
+      at->setTemporaryUnlockDurationSec(*temporaryUnlockDuration);
+    }
     return addCommonParameters(ch, at);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: mandatory \"name\" parameter missing",
                     channelNumber);
     return false;
   }
+}
+
+bool Supla::LinuxYamlConfig::resolveActionTriggerRelatedChannels() {
+  std::vector<std::pair<Supla::Control::ActionTrigger*, Supla::Channel*>> links;
+  for (const auto& entry : config["channels"]) {
+    if (entry["type"].as<std::string>() != "ActionTriggerParsed" ||
+        !entry["related_channel"]) {
+      continue;
+    }
+    const auto sourceName = entry["name"].as<std::string>();
+    const auto targetName = entry["related_channel"].as<std::string>();
+    auto source = channelNames.find(sourceName);
+    auto target = channelNames.find(targetName);
+    if (source == channelNames.end() || source->second < 0) {
+      SUPLA_LOG_ERROR("AT: unknown or ambiguous trigger name \"%s\"",
+          sourceName.c_str());
+      return false;
+    }
+    if (target == channelNames.end() || target->second < 0) {
+      SUPLA_LOG_ERROR(
+          "AT \"%s\": unknown or ambiguous related_channel \"%s\"",
+          sourceName.c_str(), targetName.c_str());
+      return false;
+    }
+    auto element = Supla::Element::getElementByChannelNumber(source->second);
+    auto at = element ? element->getActionTrigger() : nullptr;
+    auto channel = Supla::Channel::GetByChannelNumber(target->second);
+    if (!at || !channel || target->second >= 255 ||
+        source->second == target->second) {
+      SUPLA_LOG_ERROR("AT \"%s\": invalid related channel \"%s\"",
+          sourceName.c_str(), targetName.c_str());
+      return false;
+    }
+    links.emplace_back(at, channel);
+  }
+  // Validate every reference before applying any relationship.
+  for (const auto& link : links) {
+    link.first->setRelatedChannel(link.second);
+  }
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
@@ -3070,8 +3213,12 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
   if (!addWeeklyScheduleParameter(ch, dynamic_cast<Supla::Element*>(sensor))) {
     return false;
   }
-  return addDefaultFunctionNumber(
-      ch, dynamic_cast<Supla::Element*>(sensor));
+  auto element = dynamic_cast<Supla::Element*>(sensor);
+  if (!addDefaultFunctionNumber(ch, element)) {
+    return false;
+  }
+  registerChannelName(ch, element);
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
@@ -3120,7 +3267,28 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
       ch->setDefaultIcon(static_cast<uint8_t>(iconId));
     }
   }
-  return addDefaultFunctionNumber(ch, element);
+  if (!addDefaultFunctionNumber(ch, element)) {
+    return false;
+  }
+  registerChannelName(ch, element);
+  return true;
+}
+
+void Supla::LinuxYamlConfig::registerChannelName(const YAML::Node& ch,
+                                                Supla::Element* element) {
+  if (auto name = getAndMarkChannelParameter(ch, "name")) {
+    auto channel = element ? element->getChannel() : nullptr;
+    if (channel) {
+      // Record the final channel number, including explicit numbering and
+      // channels created by elements with more than one channel.
+      auto result = channelNames.emplace(name.as<std::string>(),
+          channel->getChannelNumber());
+      if (!result.second &&
+          result.first->second != channel->getChannelNumber()) {
+        result.first->second = -1;  // Ambiguous name; reject references to it.
+      }
+    }
+  }
 }
 
 bool Supla::LinuxYamlConfig::addWeeklyScheduleParameter(

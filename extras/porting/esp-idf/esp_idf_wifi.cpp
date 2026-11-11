@@ -71,19 +71,14 @@ Supla::EspIdfWifi::~EspIdfWifi() {
   thisNetIntfPtr = nullptr;
 }
 
-bool Supla::EspIdfWifi::isReady() {
-  return isWifiConnected && isIpReady;
-}
-
 bool Supla::EspIdfWifi::isStaticIpConfigured() const {
-  return staticIpConfigured;
+  return isStaticIpApplied();
 }
 
 static void eventHandler(void *arg,
                          esp_event_base_t eventBase,
                          int32_t eventId,
                          void *eventData) {
-  static bool firstWiFiScanDone = false;
   if (thisNetIntfPtr == nullptr) {
     return;
   }
@@ -91,13 +86,9 @@ static void eventHandler(void *arg,
 
   if (eventBase == WIFI_EVENT) {
     switch (eventId) {
-      case WIFI_EVENT_STA_STOP: {
-        firstWiFiScanDone = false;
-        break;
-      }
       case WIFI_EVENT_STA_START: {
-        firstWiFiScanDone = false;
-        if (!thisNetIntfPtr->isInConfigMode()) {
+        if (!thisNetIntfPtr->isInConfigMode() &&
+            thisNetIntfPtr->isStateLoggingAllowed()) {
           SUPLA_LOG_DEBUG("[%s] Starting connection to AP",
                           thisNetIntfPtr->getIntfName());
           Supla::InputNoiseGuard::NotifyWifiTransition();
@@ -106,13 +97,12 @@ static void eventHandler(void *arg,
         break;
       }
       case WIFI_EVENT_STA_CONNECTED: {
-        firstWiFiScanDone = true;
         if (thisNetIntfPtr) {
           thisNetIntfPtr->setWifiConnected(true);
+          thisNetIntfPtr->setLastDisconnectReason(0);
           if (thisNetIntfPtr->isStaticIpConfigured()) {
             thisNetIntfPtr->setIpv4Addr(
                 htonl(thisNetIntfPtr->getConfiguredStaticIp()));
-            thisNetIntfPtr->setIpReady(true);
             char ipBuf[32] = {};
             Supla::formatIpv4Address(thisNetIntfPtr->getConfiguredStaticIp(),
                                      ipBuf,
@@ -128,16 +118,13 @@ static void eventHandler(void *arg,
       case WIFI_EVENT_STA_DISCONNECTED: {
         wifi_event_sta_disconnected_t *data =
             reinterpret_cast<wifi_event_sta_disconnected_t *>(eventData);
+        bool unexpected = false;
         if (thisNetIntfPtr) {
-          thisNetIntfPtr->setIpReady(false);
-          thisNetIntfPtr->setWifiConnected(false);
           thisNetIntfPtr->setLastDisconnectReason(data->reason);
-          if (firstWiFiScanDone) {
-            // we ignore connection error if it happens first time
-            thisNetIntfPtr->logWifiReason(data->reason);
-          }
+          unexpected = thisNetIntfPtr->handleWifiDisconnect(data->reason);
         }
-        if (!thisNetIntfPtr->isInConfigMode()) {
+        if (unexpected && !thisNetIntfPtr->isInConfigMode() &&
+            thisNetIntfPtr->isStateLoggingAllowed()) {
           Supla::InputNoiseGuard::NotifyWifiStaDisconnected();
           esp_wifi_connect();
           SUPLA_LOG_DEBUG(
@@ -145,7 +132,6 @@ static void eventHandler(void *arg,
                     thisNetIntfPtr->getIntfName(),
                     data->reason);
         }
-        firstWiFiScanDone = true;
         break;
       }
       case WIFI_EVENT_SCAN_DONE: {
@@ -161,7 +147,6 @@ static void eventHandler(void *arg,
         Supla::InputNoiseGuard::NotifyWifiStaConnected();
         ip_event_got_ip_t *event = static_cast<ip_event_got_ip_t *>(eventData);
         if (thisNetIntfPtr) {
-          thisNetIntfPtr->setIpReady(true);
           thisNetIntfPtr->setIpv4Addr(event->ip_info.ip.addr);
         }
         SUPLA_LOG_INFO("[%s] Got IP " IPSTR,
@@ -171,7 +156,6 @@ static void eventHandler(void *arg,
       }
       case IP_EVENT_STA_LOST_IP: {
         if (thisNetIntfPtr) {
-          thisNetIntfPtr->setIpReady(false);
           thisNetIntfPtr->setIpv4Addr(0);
         }
         SUPLA_LOG_DEBUG("[%s] Lost IP", thisNetIntfPtr->getIntfName());
@@ -202,16 +186,14 @@ static void eventHandler(void *arg,
   }
 }
 
-uint32_t Supla::EspIdfWifi::getIP() {
-  if (isReady()) {
-    return ipv4;
-  }
-  return 0;
-}
-
 void Supla::EspIdfWifi::setup() {
-  setIpReady(false);
-  staticIpConfigured = false;
+  if (initDone) {
+    SUPLA_LOG_DEBUG("[%s] reinitializing WiFi connection", getIntfName());
+    disable();
+  }
+  setAllowDisable(false);
+  resetLinkState();
+  setStaticIpApplied(false);
   delay(50);
   int txPower = maxTxPower;
   if (txPower < 0) {
@@ -247,10 +229,7 @@ void Supla::EspIdfWifi::setup() {
         NULL));
 
     esp_wifi_set_ps(WIFI_PS_NONE);
-
-  } else {
-    SUPLA_LOG_DEBUG("[%s] reinitializing WiFi connection", getIntfName());
-    disable();
+    initDone = true;
   }
 
   if (mode == Supla::DEVICE_MODE_OFFLINE) {
@@ -279,7 +258,7 @@ void Supla::EspIdfWifi::setup() {
     SUPLA_LOG_INFO(
         "[%s] establishing connection with SSID: \"%s\"", getIntfName(), ssid);
     wifi_config_t wifi_config = {};
-    memcpy(wifi_config.sta.ssid, ssid, MAX_SSID_SIZE);
+    memcpy(wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
     memcpy(wifi_config.sta.password, password, MAX_WIFI_PASSWORD_SIZE);
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
     if (testMode) {
@@ -322,7 +301,7 @@ void Supla::EspIdfWifi::setup() {
       } else {
         setDnsInfo(staNetIf, ESP_NETIF_DNS_MAIN, getNetifConfig().dns1);
         setDnsInfo(staNetIf, ESP_NETIF_DNS_BACKUP, getNetifConfig().dns2);
-        staticIpConfigured = true;
+        setStaticIpApplied(true);
         SUPLA_LOG_INFO("[%s] static IP configured", getIntfName());
       }
     }
@@ -330,7 +309,16 @@ void Supla::EspIdfWifi::setup() {
   delay(50);
 
   Supla::InputNoiseGuard::NotifyWifiTransition();
-  ESP_ERROR_CHECK(esp_wifi_start());
+  setAllowDisable(true);
+  esp_err_t startResult = esp_wifi_start();
+  reportStartResult(startResult == ESP_OK);
+  initDone = true;
+  if (startResult != ESP_OK) {
+    SUPLA_LOG_WARNING("[%s] WiFi start failed (%d)",
+                      getIntfName(),
+                      startResult);
+    return;
+  }
   if (txPower >= 0) {
     SUPLA_LOG_INFO("[%s] setting TX power to %d", getIntfName(), txPower);
     ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(txPower));
@@ -339,21 +327,17 @@ void Supla::EspIdfWifi::setup() {
   if (mode == Supla::DEVICE_MODE_CONFIG) {
     startConfigModeScan();
   }
-
-  allowDisable = true;
-  initDone = true;
 }
 
 void Supla::EspIdfWifi::disable() {
-  if (!allowDisable) {
+  if (!takeAllowDisable()) {
     return;
   }
 
-  allowDisable = false;
+  expectWifiDisconnect();
   configModeScanInProgress = false;
-  staticIpConfigured = false;
+  setStaticIpApplied(false);
   setWifiConnected(false);
-  setIpReady(false);
   setIpv4Addr(0);
   SUPLA_LOG_DEBUG("[%s] disabling WiFi connection", getIntfName());
   DisconnectProtocols();
@@ -384,10 +368,11 @@ void Supla::EspIdfWifi::disable() {
 }
 
 void Supla::EspIdfWifi::uninit() {
+  setAllowDisable(false);
+  resetLinkState();
   setWifiConnected(false);
-  setIpReady(false);
   configModeScanInProgress = false;
-  staticIpConfigured = false;
+  setStaticIpApplied(false);
   DisconnectProtocols();
   if (initDone) {
     SUPLA_LOG_DEBUG("[%s] stopping WiFi connection", getIntfName());
@@ -434,9 +419,8 @@ void Supla::EspIdfWifi::uninit() {
                         result);
     }
   }
-  allowDisable = false;
   initDone = false;
-  setIpv4Addr(0);
+  resetLinkState();
 }
 
 void Supla::EspIdfWifi::fillStateData(TDSC_ChannelState *channelState) {
@@ -446,7 +430,7 @@ void Supla::EspIdfWifi::fillStateData(TDSC_ChannelState *channelState) {
                           SUPLA_CHANNELSTATE_FIELD_WIFISIGNALSTRENGTH;
 
   esp_read_mac(channelState->MAC, ESP_MAC_WIFI_STA);
-  channelState->IPv4 = ipv4;
+  channelState->IPv4 = getIP();
 
   wifi_ap_record_t ap;
   esp_wifi_sta_get_ap_info(&ap);
@@ -455,33 +439,16 @@ void Supla::EspIdfWifi::fillStateData(TDSC_ChannelState *channelState) {
   channelState->WiFiSignalStrength = Supla::rssiToSignalStrength(rssi);
 }
 
-void Supla::EspIdfWifi::setIpReady(bool ready) {
-  connectedToWifiTimestamp = 0;
-  isIpReady = ready;
-}
-
-void Supla::EspIdfWifi::setWifiConnected(bool state) {
-  connectedToWifiTimestamp = millis();
-  isWifiConnected = state;
-  if (state) {
-    lastDisconnectReason = 0;
-  }
-}
-
 void Supla::EspIdfWifi::setLastDisconnectReason(int reason) {
   lastDisconnectReason = reason;
 }
 
 bool Supla::EspIdfWifi::isAccessPointConnected() const {
-  return isWifiConnected;
+  return isLinkConnected();
 }
 
 int Supla::EspIdfWifi::getLastDisconnectReason() const {
   return lastDisconnectReason;
-}
-
-void Supla::EspIdfWifi::setIpv4Addr(uint32_t ip) {
-  ipv4 = ip;
 }
 
 bool Supla::EspIdfWifi::isInConfigMode() {
@@ -551,109 +518,7 @@ bool Supla::EspIdfWifi::getMacAddr(uint8_t *out) {
   return true;
 }
 
-void Supla::EspIdfWifi::logWifiReason(int reason) {
-  bool reasonAlreadyReported = false;
-  for (int i = 0; i < SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX; i++) {
-    if (lastReasons[i] == reason) {
-      reasonAlreadyReported = true;
-      break;
-    }
-  }
-
-  if (lastReasonIdx >= SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX) {
-    lastReasonIdx = 0;
-  }
-  lastReasons[lastReasonIdx++] = reason;
-
-  if (!reasonAlreadyReported && sdc) {
-    switch (reason) {
-      case 1: {
-        sdc->addLastStateLog("Wi-Fi: disconnect (unspecified)");
-        break;
-      }
-      case 2: {
-        sdc->addLastStateLog("Wi-Fi: auth expire (incorrect password)");
-        break;
-      }
-      case 3: {
-        sdc->addLastStateLog("Wi-Fi: auth leave");
-        break;
-      }
-      case 8: {
-        sdc->addLastStateLog("Wi-Fi: disconnecting from AP");
-        break;
-      }
-      case 15: {
-        sdc->addLastStateLog(
-            "Wi-Fi: 4way handshake timeout (incorrect password)");
-        break;
-      }
-      case 200: {
-        sdc->addLastStateLog("Wi-Fi: beacon timeout");
-        break;
-      }
-      case 201: {
-        char buf[100] = {};
-        snprintf(buf, sizeof(buf), "Wi-Fi: \"%s\" not found", ssid);
-        sdc->addLastStateLog(buf);
-        break;
-      }
-      case 202: {
-        sdc->addLastStateLog("Wi-Fi: auth fail");
-        break;
-      }
-      case 203: {
-        sdc->addLastStateLog("Wi-Fi: assoc fail");
-        break;
-      }
-      case 204: {
-        sdc->addLastStateLog("Wi-Fi: handshake timeout (incorrect password)");
-        break;
-      }
-      case 205: {
-        sdc->addLastStateLog("Wi-Fi: connection fail");
-        break;
-      }
-      case 206: {
-        sdc->addLastStateLog("Wi-Fi: ap tsf reset");
-        break;
-      }
-      case 207: {
-        sdc->addLastStateLog("Wi-Fi: roaming");
-        break;
-      }
-      case 210: {
-        sdc->addLastStateLog(
-            "Wi-Fi: SSID found but with incompatible security");
-        break;
-      }
-      case 211: {
-        sdc->addLastStateLog(
-            "Wi-Fi: AP found but with incompatible authmode (at least WPA2 PSK "
-            "is required)");
-        break;
-      }
-      case 212: {
-        sdc->addLastStateLog("Wi-Fi: AP found but RSSI is too low");
-        break;
-      }
-      default: {
-        char buf[100] = {};
-        // see:
-        // https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/wifi.html#wi-fi-reason-code
-        snprintf(buf, sizeof(buf), "Wi-Fi: disconnect reason %d", reason);
-        sdc->addLastStateLog(buf);
-        break;
-      }
-    }
-  }
-}
-
 bool Supla::EspIdfWifi::isIpSetupTimeout() {
-  //  if (connectedToWifiTimestamp && millis() - connectedToWifiTimestamp >
-  //  3000) {
-  //    return true;
-  //  }
   return false;
 }
 

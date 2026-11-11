@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <supla/time.h>
+#include <supla/auto_lock.h>
+#include <supla/mutex.h>
 
 #include <SuplaDevice.h>
 #include <supla/log_wrapper.h>
@@ -287,6 +289,7 @@ Network::Network(unsigned char *ip) : Network() {
 }
 
 Network::Network() {
+  stateMutex = Supla::Mutex::Create();
   normalizeDhcpNetifConfig(&netifConfig);
   mode = DEVICE_MODE_NORMAL;
   setSSLEnabled(true);
@@ -306,6 +309,8 @@ Network::Network() {
 }
 
 Network::~Network() {
+  delete stateMutex;
+  stateMutex = nullptr;
   if (firstNetIntf == this) {
     firstNetIntf = nextNetIntf;
   } else {
@@ -472,9 +477,6 @@ enum Network::IntfType Network::getIntfType() const {
   return intfType;
 }
 
-uint32_t Network::getIP() {
-  return 0;
-}
 
 bool Network::isIntfDisabledInConfig() const {
   if (mode == Supla::DEVICE_MODE_CONFIG && getIntfType() == IntfType::WiFi) {
@@ -482,6 +484,132 @@ bool Network::isIntfDisabledInConfig() const {
     return false;
   }
   return intfDisabledInConfig;
+}
+
+bool Network::isReady() {
+  Supla::AutoLock lock(stateMutex);
+  return isIpReady;
+}
+
+void Network::applyIpv4AddrLocked(uint32_t ip) {
+  ipv4 = ip;
+  isIpReady = (ip != 0);
+}
+
+void Network::setIpv4Addr(uint32_t ip) {
+  bool ipLost = false;
+  {
+    Supla::AutoLock lock(stateMutex);
+    // Ignore late address notifications after shutdown or link loss.
+    if (ip != 0 && (!allowDisable || !linkConnected)) {
+      return;
+    }
+    // IP loss caused by link loss is covered by "disconnected" entry, and
+    // static IP is assigned locally, so only DHCP lease loss is reported.
+    ipLost = ip == 0 && ipv4 != 0 && linkConnected && !staticIpApplied;
+    applyIpv4AddrLocked(ip);
+  }
+  if (ipLost) {
+    logLastState("IP lost");
+  }
+}
+
+uint32_t Network::getIP() {
+  Supla::AutoLock lock(stateMutex);
+  if (isIpReady) {
+    return ipv4;
+  }
+  return 0;
+}
+
+void Network::logLastState(const char *message) {
+  bool allowed = false;
+  {
+    Supla::AutoLock lock(stateMutex);
+    allowed = allowDisable;
+  }
+  if (allowed && sdc) {
+    char entry[160] = {};
+    snprintf(entry, sizeof(entry), "%s: %s", getIntfName(), message);
+    sdc->addLastStateLog(entry);
+  }
+}
+
+bool Network::applyLinkConnectedLocked(bool connected) {
+  if (connected && !allowDisable) {
+    return false;
+  }
+  if (!connected) {
+    applyIpv4AddrLocked(0);
+  }
+  linkConnected = connected;
+  return true;
+}
+
+void Network::setLinkConnected(bool connected, const char *reason) {
+  bool linkLost = false;
+  {
+    Supla::AutoLock lock(stateMutex);
+    linkLost = linkConnected && !connected;
+    applyLinkConnectedLocked(connected);
+  }
+  if (linkLost && reason) {
+    logLastState(reason);
+  }
+}
+
+void Network::resetLinkState() {
+  Supla::AutoLock lock(stateMutex);
+  applyIpv4AddrLocked(0);
+  linkConnected = false;
+  startFailureLogged = false;
+}
+
+void Network::reportStartResult(bool success) {
+  bool logFailure = false;
+  {
+    Supla::AutoLock lock(stateMutex);
+    if (!allowDisable) {
+      return;
+    }
+    logFailure = !success && !startFailureLogged;
+    startFailureLogged = !success;
+  }
+  if (logFailure) {
+    logLastState("start failed");
+  }
+}
+
+void Network::setAllowDisable(bool value) {
+  Supla::AutoLock lock(stateMutex);
+  allowDisable = value;
+}
+
+bool Network::takeAllowDisable() {
+  Supla::AutoLock lock(stateMutex);
+  const bool previous = allowDisable;
+  allowDisable = false;
+  return previous;
+}
+
+void Network::setStaticIpApplied(bool applied) {
+  Supla::AutoLock lock(stateMutex);
+  staticIpApplied = applied;
+}
+
+bool Network::isStaticIpApplied() const {
+  Supla::AutoLock lock(stateMutex);
+  return staticIpApplied;
+}
+
+bool Network::isLinkConnected() const {
+  Supla::AutoLock lock(stateMutex);
+  return linkConnected;
+}
+
+bool Network::isStateLoggingAllowed() const {
+  Supla::AutoLock lock(stateMutex);
+  return allowDisable;
 }
 
 };  // namespace Supla

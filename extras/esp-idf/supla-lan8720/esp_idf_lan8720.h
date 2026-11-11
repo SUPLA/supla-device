@@ -26,9 +26,6 @@ class EspIdfLan8720 : public Supla::LAN {
 
   bool isIpSetupTimeout() override;
 
-  SuplaDeviceClass *getSdc();
-  bool isStateLoggingAllowed();
-  bool isStaticIpConfigured() const;
   void setEthStarted(bool started);
 
  protected:
@@ -41,8 +38,6 @@ class EspIdfLan8720 : public Supla::LAN {
 
   bool initDone = false;
   bool ethStarted = false;
-  bool allowDisable = false;
-  bool staticIpConfigured = false;
 };
 
 };  // namespace Supla

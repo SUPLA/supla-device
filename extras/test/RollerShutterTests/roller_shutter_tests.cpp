@@ -1739,3 +1739,259 @@ TEST_F(RollerShutterFixture,
   EXPECT_EQ(rs.getCurrentDirection(),
             static_cast<int>(Supla::Control::Directions::STOP_DIR));
 }
+
+TEST_F(RollerShutterFixture, directionalMovementAtEndpointUsesOnlyMargin) {
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(AtLeast(0));
+
+  for (bool down : {false, true}) {
+    // Config values encode 0% as 1 and 10% as 11; -1 is the default.
+    for (int margin : {-1, 1, 11}) {
+      SCOPED_TRACE(testing::Message()
+                   << "down=" << down << " margin=" << margin);
+      RollerShutterTestAccess rs(gpioUp, gpioDown);
+      rs.setOpenCloseTime(20000, 10000);
+      rs.setRsConfigTimeMarginValue(margin);
+      rs.setCurrentPosition(down ? 100 : 0);
+      rs.onInit();
+      const uint32_t fullTime = down ? 20000 : 10000;
+      const uint32_t expectedMargin =
+          margin == -1 ? fullTime * 3 / 10 : margin == 1 ? 50 : fullTime / 10;
+      const auto direction = down ? Supla::Control::Directions::DOWN_DIR
+                                  : Supla::Control::Directions::UP_DIR;
+
+      // Repeated clicks after stopping must each allow a corrective run.
+      for (int repeat = 0; repeat < 2; ++repeat) {
+        time.advance(501);
+        rs.handleAction(0, down ? Supla::MOVE_DOWN_OR_STOP
+                               : Supla::MOVE_UP_OR_STOP);
+        rs.onTimer();
+        rs.onTimer();  // Observe the endpoint and start the margin.
+        ASSERT_EQ(rs.getOperationTimeoutMs(), expectedMargin);
+        ASSERT_EQ(rs.getTargetPosition(), UNKNOWN_POSITION);
+        time.advance(expectedMargin - 1);
+        rs.onTimer();
+        EXPECT_EQ(rs.getCurrentDirection(), static_cast<int>(direction));
+        // The margin must not restart on every timer iteration.
+        time.advance(2);
+        rs.onTimer();
+        rs.onTimer();
+        EXPECT_EQ(rs.getCurrentDirection(),
+                  static_cast<int>(Supla::Control::Directions::STOP_DIR));
+      }
+    }
+  }
+}
+
+TEST_F(RollerShutterFixture, directionalMovementStartsMarginAtEndpoint) {
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(AtLeast(0));
+
+  for (bool down : {false, true}) {
+    RollerShutterTestAccess rs(gpioUp, gpioDown);
+    rs.setOpenCloseTime(20000, 10000);
+    rs.setCurrentPosition(50);
+    rs.onInit();
+    rs.handleAction(0, down ? Supla::MOVE_DOWN : Supla::MOVE_UP);
+    rs.onTimer();
+    const uint32_t fullTime = down ? 20000 : 10000;
+    time.advance(fullTime / 2 - 1);
+    rs.onTimer();
+    EXPECT_EQ(rs.getTargetPosition(),
+              down ? MOVE_DOWN_POSITION : MOVE_UP_POSITION);
+    time.advance(1);
+    rs.onTimer();
+    EXPECT_EQ(rs.getCurrentPosition(), down ? 100 : 0);
+    EXPECT_EQ(rs.getTargetPosition(), UNKNOWN_POSITION);
+    EXPECT_EQ(rs.getOperationTimeoutMs(), fullTime * 3 / 10);
+    time.advance(fullTime * 3 / 10 + 1);
+    rs.onTimer();
+    rs.onTimer();
+    EXPECT_EQ(rs.getCurrentDirection(),
+              static_cast<int>(Supla::Control::Directions::STOP_DIR));
+  }
+}
+
+TEST_F(RollerShutterFixture,
+       directionalMovementWaitsForEndpointTiltBeforeMargin) {
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(AtLeast(0));
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(AtLeast(0));
+
+  for (uint8_t type : {SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING,
+                       SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING,
+                       SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED}) {
+    for (bool down : {false, true}) {
+      SCOPED_TRACE(testing::Message() << "type=" << +type << " down=" << down);
+      RollerShutterTestAccess rs(gpioUp, gpioDown, true, true);
+      rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+      rs.setOpenCloseTime(20000, 10000);
+      rs.setTiltingTime(1000, false);
+      rs.setTiltControlType(type, false);
+      // Closing must still finish tilting when position already reads 100%.
+      // For opening, tilt only at fully closed requires starting at 100%.
+      const bool tiltOnlyAtBottom =
+          type == SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED;
+      rs.setCurrentPosition(down || tiltOnlyAtBottom ? 100 : 0, 50);
+      rs.onInit();
+      rs.handleAction(0, down ? Supla::MOVE_DOWN : Supla::MOVE_UP);
+      rs.onTimer();
+      time.advance(499);
+      rs.onTimer();
+      EXPECT_EQ(rs.getTargetPosition(),
+                down ? MOVE_DOWN_POSITION : MOVE_UP_POSITION);
+      for (int i = 0; i < 2100 &&
+                          rs.getTargetPosition() != UNKNOWN_POSITION; ++i) {
+        time.advance(10);
+        rs.onTimer();
+      }
+      ASSERT_EQ(rs.getTargetPosition(), UNKNOWN_POSITION);
+      EXPECT_EQ(rs.getCurrentPosition(), down ? 100 : 0);
+      EXPECT_EQ(rs.getCurrentTilt(), down ? 100 : 0);
+      const uint32_t expectedMargin = down ? 6000 : 3000;
+      EXPECT_EQ(rs.getOperationTimeoutMs(), expectedMargin);
+      time.advance(expectedMargin + 1);
+      rs.onTimer();
+      rs.onTimer();
+      EXPECT_EQ(rs.getCurrentDirection(),
+                static_cast<int>(Supla::Control::Directions::STOP_DIR));
+    }
+  }
+}
+
+TEST_F(RollerShutterFixture,
+       attachedMonostableButtonsKeepClickAndHoldBehavior) {
+  StatefulDigitalInterface gpio;
+  for (bool down : {false, true}) {
+    gpio.setInput(3, LOW);
+    Supla::Control::Button button(3);
+    button.setDebounceDelay(0);
+    button.setSwNoiseFilterDelay(0);
+    button.setHoldTime(500);
+    button.setMulticlickTime(100);
+    RollerShutterTestAccess rs(gpioUp, gpioDown, true, true);
+    rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+    rs.setOpenCloseTime(20000, 10000);
+    rs.setTiltingTime(1000, false);
+    rs.setTiltControlType(
+        SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING, false);
+    rs.setCurrentPosition(down ? 100 : 0, down ? 100 : 0);
+    rs.attach(&button, !down, true);
+    rs.onInit();
+    const int output = down ? gpioDown : gpioUp;
+    auto advance = [&](int duration) {
+      for (int elapsed = 0; elapsed < duration; ++elapsed) {
+        time.advance(1);
+        button.onTimer();
+        rs.onTimer();
+      }
+    };
+    advance(100);
+    gpio.setInput(3, HIGH);
+    advance(100);
+    EXPECT_EQ(gpio.level(output), LOW);
+    gpio.setInput(3, LOW);
+    advance(250);
+    EXPECT_EQ(gpio.level(output), HIGH);
+    EXPECT_EQ(rs.getOperationTimeoutMs(), down ? 6000 : 3000);
+
+    // A second short click stops the corrective movement.
+    gpio.setInput(3, HIGH);
+    advance(100);
+    gpio.setInput(3, LOW);
+    advance(250);
+    EXPECT_EQ(gpio.level(output), LOW);
+
+    advance(501);
+    rs.setCurrentPosition(50, 50);
+    gpio.setInput(3, HIGH);
+    advance(600);
+    EXPECT_EQ(gpio.level(output), HIGH);
+    EXPECT_NE(rs.getCurrentTilt(), 50);
+    gpio.setInput(3, LOW);
+    advance(10);
+    EXPECT_EQ(gpio.level(output), LOW);
+    advance(250);
+    EXPECT_EQ(gpio.level(output), LOW);  // No click after releasing a hold.
+  }
+}
+
+TEST_F(RollerShutterFixture,
+       invalidTiltDirectionalMovementKeepsMarginAndCorrectiveRuns) {
+  StatefulDigitalInterface gpio;
+  for (bool down : {false, true}) {
+    for (int margin : {-1, 1, 11}) {
+      SCOPED_TRACE(testing::Message()
+                   << "down=" << down << " margin=" << margin);
+      RollerShutterTestAccess rs(gpioUp, gpioDown, true, true);
+      rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+      rs.setOpenCloseTime(20000, 10000);
+      rs.setTiltingTime(20000, false);
+      rs.setTiltControlType(
+          SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING, false);
+      rs.setRsConfigTimeMarginValue(margin);
+      rs.setCurrentPosition(50, 50);
+      rs.onInit();
+      ASSERT_FALSE(rs.isTiltConfigured());
+      const int output = down ? gpioDown : gpioUp;
+      const uint32_t fullTime = down ? 20000 : 10000;
+      const uint32_t expectedMargin =
+          margin == -1 ? fullTime * 3 / 10 : margin == 1 ? 50 : fullTime / 10;
+
+      // First establish fallback during travel, then reuse its retained flag
+      // for a corrective run starting at the endpoint.
+      for (int run = 0; run < 2; ++run) {
+        time.advance(501);
+        rs.handleAction(0, down ? Supla::MOVE_DOWN : Supla::MOVE_UP);
+        rs.onTimer();
+        if (run == 0) {
+          time.advance(fullTime / 2 - 1);
+          rs.onTimer();
+          EXPECT_EQ(rs.getTargetPosition(),
+                    down ? MOVE_DOWN_POSITION : MOVE_UP_POSITION);
+          time.advance(1);
+        }
+        rs.onTimer();
+        EXPECT_EQ(rs.getCurrentPosition(), down ? 100 : 0);
+        ASSERT_EQ(gpio.level(output), HIGH);
+        ASSERT_EQ(rs.getOperationTimeoutMs(), expectedMargin);
+        EXPECT_EQ(rs.getTargetPosition(), UNKNOWN_POSITION);
+        EXPECT_EQ(rs.getTargetTilt(), UNKNOWN_POSITION);
+        time.advance(expectedMargin - 1);
+        rs.onTimer();
+        EXPECT_EQ(gpio.level(output), HIGH);
+        time.advance(2);
+        rs.onTimer();
+        rs.onTimer();
+        EXPECT_EQ(gpio.level(gpioUp), LOW);
+        EXPECT_EQ(gpio.level(gpioDown), LOW);
+      }
+    }
+  }
+}
+
+TEST_F(RollerShutterFixture,
+       invalidTiltAbsoluteMovementStillStopsWithoutMargin) {
+  StatefulDigitalInterface gpio;
+  for (bool down : {false, true}) {
+    RollerShutterTestAccess rs(gpioUp, gpioDown, true, true);
+    rs.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+    rs.setOpenCloseTime(20000, 10000);
+    rs.setTiltingTime(20000, false);
+    rs.setTiltControlType(
+        SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING, false);
+    rs.setCurrentPosition(50, 50);
+    rs.onInit();
+    ASSERT_FALSE(rs.isTiltConfigured());
+    rs.handleAction(0, down ? Supla::CLOSE : Supla::OPEN);
+    rs.onTimer();
+    time.advance((down ? 20000 : 10000) / 2 - 1);
+    rs.onTimer();
+    EXPECT_EQ(gpio.level(down ? gpioDown : gpioUp), HIGH);
+    time.advance(1);
+    rs.onTimer();
+    EXPECT_EQ(rs.getCurrentPosition(), down ? 100 : 0);
+    EXPECT_EQ(rs.getOperationTimeoutMs(), 0);
+    EXPECT_EQ(gpio.level(gpioUp), LOW);
+    EXPECT_EQ(gpio.level(gpioDown), LOW);
+  }
+}

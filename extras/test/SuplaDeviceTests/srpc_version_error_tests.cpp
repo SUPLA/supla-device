@@ -69,6 +69,7 @@ class SuplaSrpcVersionErrorTests : public ::testing::Test {
 
   void TearDown() override {
     srpcLayer.deinitializeSrpcForTest();
+    client->expectStopOnDestruction();
     Supla::RegisterDevice::resetToDefaults();
   }
 

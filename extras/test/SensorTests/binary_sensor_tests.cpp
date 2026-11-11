@@ -345,6 +345,7 @@ TEST(BinarySensorTests, BinaryStartupSyncWaitsForFilteringTime) {
   sensor.addAction(1, actionHandler, Supla::ON_TURN_ON);
   sensor.addAction(2, actionHandler, Supla::ON_CHANGE);
   sensor.addAction(3, actionHandler, Supla::ON_SECONDARY_CHANNEL_CHANGE);
+  sensor.addAction(4, actionHandler, Supla::ON_TURN_OFF);
   sensor.setFilteringTimeMs(1000);
   sensor.setTurnActionSyncOnStartup();
   sensor.onInit();
@@ -362,10 +363,11 @@ TEST(BinarySensorTests, BinaryStartupSyncWaitsForFilteringTime) {
   EXPECT_CALL(actionHandler,
               handleAction(Supla::ON_SECONDARY_CHANNEL_CHANGE, 3));
 
-  time.advance(500);
+  time.advance(1000);
   sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
 
-  time.advance(501);
+  time.advance(101);
   sensor.iterateAlways();
 }
 
@@ -387,6 +389,8 @@ TEST(BinarySensorTests, BinaryStartupSyncQuietlyAcceptsInitialFilteredState) {
   sensor.setFilteringTimeMs(1000);
   sensor.setTurnActionSyncOnStartup();
   sensor.onInit();
+
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
 
   time.advance(500);
   sensor.iterateAlways();
@@ -422,6 +426,49 @@ TEST(BinarySensorTests, BinaryStartupSyncTimerDoesNotUnderflow) {
   gpioValue = 1;
   time.value = 101;
   time.incrementOnRead = 1;
+  sensor.iterateAlways();
+}
+
+TEST(BinarySensorTests,
+     BinaryStartupSyncWaitsForAcceptedCandidateAcrossClockTick) {
+  Supla::Channel::resetToDefaults();
+  DigitalInterfaceMock ioMock;
+  AdvancingTime time;
+  testing::StrictMock<BinaryActionHandlerMock> actionHandler;
+  int gpioValue = 1;
+  EXPECT_CALL(ioMock, pinMode(1, INPUT)).WillOnce(::testing::Return());
+  EXPECT_CALL(ioMock, digitalRead(1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  Supla::Sensor::Binary sensor(1);
+  sensor.addAction(1, actionHandler, Supla::ON_TURN_ON);
+  sensor.addAction(2, actionHandler, Supla::ON_TURN_OFF);
+  sensor.addAction(3, actionHandler, Supla::ON_CHANGE);
+  sensor.addAction(4, actionHandler, Supla::ON_SECONDARY_CHANNEL_CHANGE);
+  sensor.setFilteringTimeMs(1000);
+  sensor.setTurnActionSyncOnStartup();
+  sensor.onInit();
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+
+  gpioValue = 0;
+  time.value = 101;
+  sensor.iterateAlways();
+  // The filter checks at 1101 (1000 ms elapsed), then startup sync checks
+  // at 1102 (1001 ms elapsed). The candidate has not been accepted yet.
+  time.value = 1100;
+  time.incrementOnRead = 1;
+  sensor.iterateAlways();
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+
+  testing::InSequence sequence;
+  EXPECT_CALL(actionHandler, handleAction(Supla::ON_TURN_OFF, 2));
+  EXPECT_CALL(actionHandler, handleAction(Supla::ON_CHANGE, 3));
+  EXPECT_CALL(actionHandler,
+              handleAction(Supla::ON_SECONDARY_CHANNEL_CHANGE, 4));
+  time.value = 1201;
+  time.incrementOnRead = 0;
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+  time.value = 1402;
   sensor.iterateAlways();
 }
 
@@ -607,4 +654,191 @@ TEST(BinarySensorTests, BinaryIoPinConstructorUsesSeparateIoAndPolarity) {
 
   EXPECT_EQ(sensor.getValue(), false);
   EXPECT_EQ(sensor.getChannel()->getValueBool(), false);
+}
+
+class BinaryFilteredTests : public ::testing::TestWithParam<bool> {
+ protected:
+  void SetUp() override {
+    Supla::Channel::resetToDefaults();
+    gpioValue = GetParam() ? 1 : 0;
+    EXPECT_CALL(ioMock, pinMode(1, INPUT)).WillOnce(::testing::Return());
+    EXPECT_CALL(ioMock, digitalRead(1))
+        .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  }
+
+  void addActions(Supla::Sensor::Binary& sensor) {
+    sensor.addAction(1, actionHandler, Supla::ON_TURN_ON);
+    sensor.addAction(2, actionHandler, Supla::ON_TURN_OFF);
+    sensor.addAction(3, actionHandler, Supla::ON_CHANGE);
+    sensor.addAction(4, actionHandler, Supla::ON_SECONDARY_CHANNEL_CHANGE);
+  }
+
+  void expectTransition(bool active) {
+    testing::InSequence sequence;
+    EXPECT_CALL(actionHandler, handleAction(active ? Supla::ON_TURN_ON
+                                                   : Supla::ON_TURN_OFF,
+                                            active ? 1 : 2));
+    EXPECT_CALL(actionHandler, handleAction(Supla::ON_CHANGE, 3));
+    EXPECT_CALL(actionHandler,
+                handleAction(Supla::ON_SECONDARY_CHANNEL_CHANGE, 4));
+  }
+
+  DigitalInterfaceMock ioMock;
+  SimpleTime time;
+  testing::StrictMock<BinaryActionHandlerMock> actionHandler;
+  int gpioValue = 0;
+};
+
+TEST_P(BinaryFilteredTests, InitializesChannelFromInputWithoutActions) {
+  Supla::Sensor::Binary sensor(1);
+  addActions(sensor);
+  sensor.setFilteringTimeMs(1000);
+  // The first read must also work before onInit().
+  EXPECT_EQ(sensor.getValue(), GetParam());
+  sensor.onInit();
+  EXPECT_EQ(sensor.getValue(), GetParam());
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+  time.advance(500);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+  time.advance(501);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+}
+
+TEST_P(BinaryFilteredTests,
+       FiltersShortAndPersistentTransitionsInBothDirections) {
+  Supla::Sensor::Binary sensor(1);
+  addActions(sensor);
+  sensor.setFilteringTimeMs(1000);
+  sensor.onInit();
+
+  gpioValue = !GetParam();
+  time.advance(101);
+  sensor.iterateAlways();
+  time.advance(500);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+  gpioValue = GetParam();
+  time.advance(101);
+  sensor.iterateAlways();
+  time.advance(1001);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+
+  gpioValue = !GetParam();
+  time.advance(101);
+  sensor.iterateAlways();
+  time.advance(1000);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+  expectTransition(!GetParam());
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), !GetParam());
+}
+
+TEST_P(BinaryFilteredTests, EnablingFilterPreservesLastUnfilteredRead) {
+  Supla::Sensor::Binary sensor(1);
+  addActions(sensor);
+  sensor.onInit();
+  gpioValue = !GetParam();
+  expectTransition(!GetParam());
+  time.advance(101);
+  sensor.iterateAlways();
+  ASSERT_TRUE(testing::Mock::VerifyAndClearExpectations(&actionHandler));
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), !GetParam());
+
+  sensor.setFilteringTimeMs(1000);
+  EXPECT_EQ(sensor.getValue(), !GetParam());
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), !GetParam());
+
+  gpioValue = GetParam();
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), !GetParam());
+  time.advance(500);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), !GetParam());
+  expectTransition(GetParam());
+  time.advance(501);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+}
+
+TEST_P(BinaryFilteredTests, StartupSyncWaitsAndRunsOnlyOneTurnAction) {
+  Supla::Sensor::Binary sensor(1);
+  addActions(sensor);
+  sensor.setFilteringTimeMs(1000);
+  sensor.setTurnActionSyncOnStartup();
+  sensor.onInit();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+  time.advance(800);
+  sensor.iterateAlways();
+
+  EXPECT_CALL(actionHandler, handleAction(GetParam() ? Supla::ON_TURN_ON
+                                                    : Supla::ON_TURN_OFF,
+                                         GetParam() ? 1 : 2));
+  time.advance(200);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+  time.advance(1001);
+  sensor.iterateAlways();
+}
+
+TEST_P(BinaryFilteredTests, StartupSyncAcceptsReturnedInitialState) {
+  Supla::Sensor::Binary sensor(1);
+  addActions(sensor);
+  sensor.setFilteringTimeMs(1000);
+  sensor.setTurnActionSyncOnStartup();
+  sensor.onInit();
+  gpioValue = !GetParam();
+  time.advance(101);
+  sensor.iterateAlways();
+  gpioValue = GetParam();
+  time.advance(501);
+  sensor.iterateAlways();
+  time.advance(1000);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+
+  EXPECT_CALL(actionHandler, handleAction(GetParam() ? Supla::ON_TURN_ON
+                                                    : Supla::ON_TURN_OFF,
+                                         GetParam() ? 1 : 2));
+  time.advance(101);
+  sensor.iterateAlways();
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), GetParam());
+  time.advance(1001);
+  sensor.iterateAlways();
+}
+
+INSTANTIATE_TEST_SUITE_P(InputStates, BinaryFilteredTests,
+                         ::testing::Bool());
+
+TEST(BinarySensorTests, FilteredStartupRespectsLocalAndServerInversion) {
+  Supla::Channel::resetToDefaults();
+  DigitalInterfaceMock ioMock;
+  SimpleTime time;
+  testing::StrictMock<BinaryActionHandlerMock> actionHandler;
+  EXPECT_CALL(ioMock, pinMode(1, INPUT)).Times(2);
+  EXPECT_CALL(ioMock, digitalRead(1)).WillRepeatedly(::testing::Return(0));
+  Supla::Sensor::Binary sensor(1, false, true);
+  sensor.addAction(1, actionHandler, Supla::ON_TURN_ON);
+  sensor.addAction(2, actionHandler, Supla::ON_TURN_OFF);
+  sensor.setFilteringTimeMs(1000);
+  sensor.onInit();
+  EXPECT_TRUE(sensor.getValue());
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+  EXPECT_EQ(Supla::RegisterDevice::getChannelValuePtr(
+                sensor.getChannelNumber())[0], 1);
+  sensor.onLoadConfig(nullptr);
+  sensor.setServerInvertLogic(true);
+  sensor.onInit();
+  EXPECT_TRUE(sensor.getValue());
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+  time.advance(1001);
+  sensor.iterateAlways();
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
 }

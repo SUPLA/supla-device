@@ -17,6 +17,15 @@
 
 namespace {
 
+std::string nestedJson(int depth, const std::string &pattern) {
+  std::string value = "null";
+  for (int i = 0; i < depth; i++) {
+    value = pattern[i % pattern.size()] == '[' ?
+        "[" + value + "]" : "{\"x\":" + value + "}";
+  }
+  return value;
+}
+
 class InMemoryConfig : public Supla::Config {
  public:
   bool init() override {
@@ -379,6 +388,34 @@ void forceDownloadedDefinitionActiveVariantToMissingB(InMemoryConfig *config) {
 }
 
 }  // namespace
+
+TEST(SupletServerConfigTests, BoundsUnknownCommandValueNesting) {
+  Supla::Suplet::ServerConfigHandler handler(nullptr, nullptr);
+  for (const char *pattern : {"[", "{", "[{"}) {
+    for (int depth : {0, 1, 16, 17, 1000}) {
+      SCOPED_TRACE(std::string(pattern) + ":" + std::to_string(depth));
+      const std::string json =
+          "{\"op\":\"remove\",\"instanceId\":1,\"future\":" +
+          nestedJson(depth, pattern) + "}";
+      const auto expected = depth <= 16 ?
+          Supla::Suplet::ServerConfigResult::Removed :
+          Supla::Suplet::ServerConfigResult::InvalidArgument;
+      EXPECT_EQ(handler.validateCommandJson(json.c_str()), expected);
+    }
+  }
+}
+
+TEST(SupletServerConfigTests, RejectsMalformedUnknownCommandValues) {
+  Supla::Suplet::ServerConfigHandler handler(nullptr, nullptr);
+  for (const char *value : {"", "[", "{", "[null,]", "{\"x\":}", "[{]}"}) {
+    const std::string json =
+        std::string("{\"op\":\"remove\",\"instanceId\":1,\"future\":") +
+        value + "}";
+    EXPECT_EQ(handler.validateCommandJson(json.c_str()),
+              Supla::Suplet::ServerConfigResult::InvalidArgument)
+        << value;
+  }
+}
 
 TEST(SupletServerConfigTests, AppliesBuiltInAssignmentAndRequestsRefresh) {
   InMemoryConfig config;

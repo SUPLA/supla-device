@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# Set your SUPLA server/mail and MQTT broker before running.
+supla:
+  server: svr1.supla.org
+  mail: user@example.com
+
+mqtt:
+  host: localhost
+  use_ssl: false
+
+channels:
+- type: ElectricityMeterParsed
+  name: meter
+  source:
+    type: MQTT
+    state_topic: "data/dev/1/0b04"
+    sub_topics: ["0505", "0508", "0509"]
+    expiration_time_sec: 600
+  parser:
+    type: Json
+    multi_document: true
+    refresh_time_ms: 1000
+  phase_1:
+  - voltage: "0505:/data/val"
+  - current: "0508:/data/val"
+  - power_active: "0509:/data/val"

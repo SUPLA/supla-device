@@ -157,8 +157,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   }
   initializationDone = true;
 
-  SUPLA_LOG_INFO("");
-  SUPLA_LOG_INFO(" *** Supla - starting initialization (platform %d)",
+  SUPLA_LOG_INFO("Init: platform=%d",
                  Supla::getPlatformId());
 
   if (getClock() == nullptr) {
@@ -187,8 +186,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   storageInitResult = Supla::Storage::Init();
 
   if (Supla::Storage::IsConfigStorageAvailable()) {
-    SUPLA_LOG_INFO("");
-    SUPLA_LOG_INFO(" *** Supla - Config initalization");
+    SUPLA_LOG_INFO("Init: config");
 
     if (!lastStateLogger) {
       lastStateLogger = new Supla::Device::LastStateLogger();
@@ -233,30 +231,25 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
     loadSupletRuntime();
 
-    SUPLA_LOG_INFO("");
-    SUPLA_LOG_INFO(" *** Supla - Config load for elements");
+    SUPLA_LOG_INFO("Init: element config");
     // Load elements configuration
     for (auto element = Supla::Element::begin(); element != nullptr;
          element = element->next()) {
       element->onLoadConfig(this);
       delay(0);
     }
-    SUPLA_LOG_INFO(" *** Supla - Config load for elements done");
   }
 
   if (Supla::Storage::Instance()) {
-    SUPLA_LOG_INFO("");
-    SUPLA_LOG_INFO(" *** Supla - Load state storage");
+    SUPLA_LOG_INFO("Init: state storage");
     // Pefrorm dry run of write state to validate stored state section with
     // current device configuration
     if (Supla::Storage::IsStateStorageValid()) {
       Supla::Storage::LoadStateStorage();
     }
-    SUPLA_LOG_INFO(" *** Supla - Load state storage done");
   }
 
-  SUPLA_LOG_INFO("");
-  SUPLA_LOG_INFO(" *** Supla - Init elements");
+  SUPLA_LOG_INFO("Init: elements");
   // Initialize elements
   bool isStateStorageMigrationNeeded = false;
   for (auto element = Supla::Element::begin(); element != nullptr;
@@ -267,11 +260,9 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     }
     delay(0);
   }
-  SUPLA_LOG_INFO(" *** Supla - Init elements done");
-  SUPLA_LOG_INFO("");
 
   if (Supla::Storage::Instance() && isStateStorageMigrationNeeded) {
-    SUPLA_LOG_INFO(" *** Supla - State storage migration");
+    SUPLA_LOG_INFO("Init: state migration");
     if (Supla::Storage::IsConfigStorageAvailable()) {
       Supla::Storage::ConfigInstance()->commit();
     }
@@ -279,8 +270,6 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     Supla::Storage::Instance()->deleteAll();
     Supla::Storage::Init();
     Supla::Storage::WriteStateStorage();
-    SUPLA_LOG_INFO(" *** Supla - State storage migration done");
-    SUPLA_LOG_INFO("");
   }
 
   // Enable timers
@@ -361,7 +350,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   SUPLA_LOG_INFO("Device software version: %s",
                  Supla::RegisterDevice::getSoftVer());
 
-  SUPLA_LOG_INFO(" *** Supla - Initializing network layer");
+  SUPLA_LOG_INFO("Init: network");
   char hostname[32] = {};
   generateHostname(hostname, macLengthInHostname);
   Supla::Network::SetHostname(hostname, macLengthInHostname);
@@ -376,8 +365,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   setupDeviceMode();
 
-  SUPLA_LOG_INFO(" *** Supla - Initialization done");
-  SUPLA_LOG_INFO("");
+  SUPLA_LOG_INFO("Init: done");
   if (deviceMode != Supla::DEVICE_MODE_TEST) {
     SUPLA_LOG_INFO(" *** Self-test ***");
     auto tester = new Supla::Device::FactoryTest(this, 0);
@@ -1052,6 +1040,17 @@ void SuplaDeviceClass::leaveConfigModeWithoutRestart() {
 
 void SuplaDeviceClass::softRestart() {
   status(STATUS_SOFTWARE_RESET, F("Software reset"));
+  if (!prepareForShutdown()) {
+    SUPLA_LOG_ERROR("Configuration save failed before software reset");
+  }
+  SUPLA_LOG_INFO("Resetting in 0.5s...");
+  delay(500);
+  SUPLA_LOG_INFO("See you soon!");
+  deviceSoftwareReset();
+}
+
+bool SuplaDeviceClass::prepareForShutdown() {
+  bool saved = true;
   if (statusLed) {
     statusLed->setAlwaysOffSequence();
   }
@@ -1067,7 +1066,7 @@ void SuplaDeviceClass::softRestart() {
     saveStateToStorage();
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
-      cfg->commit();
+      saved = cfg->commitWithResult();
     }
   }
   deviceMode = Supla::DEVICE_MODE_NORMAL;
@@ -1079,10 +1078,7 @@ void SuplaDeviceClass::softRestart() {
   }
 
   Supla::Network::Uninit();
-  SUPLA_LOG_INFO("Resetting in 0.5s...");
-  delay(500);
-  SUPLA_LOG_INFO("See you soon!");
-  deviceSoftwareReset();
+  return saved;
 }
 
 void SuplaDeviceClass::enterNormalMode() {

@@ -95,6 +95,7 @@ class LinuxYamlConfig : public KeyValue {
   bool getUInt8(const char* key, uint8_t* result) override;
 
   void commit() override;
+  bool commitWithResult() override;
 
   // Device generic config
   bool setGUID(const char* guid) override;
@@ -120,7 +121,7 @@ class LinuxYamlConfig : public KeyValue {
   std::string getStateFilesPath();
 
   bool isMqttSource();
-  bool isValidMqttConfig();
+  bool isValidMqttConfig() const;
 
   bool getMqttClientHost(char* result) const;
   int32_t getMqttClientPort() const;
@@ -243,6 +244,8 @@ class LinuxYamlConfig : public KeyValue {
                                Supla::Sensor::SensorParsedBase* sensor,
                                bool mandatory);
   bool addActionTriggerParsed(const YAML::Node& ch, int channnelNumber);
+  bool resolveActionTriggerRelatedChannels();
+  void registerChannelName(const YAML::Node& ch, Supla::Element* element);
   bool addGeneralPurposeMeasurementParsed(const YAML::Node& ch,
                                           int channelNumber,
                                           Supla::Parser::Parser* parser);

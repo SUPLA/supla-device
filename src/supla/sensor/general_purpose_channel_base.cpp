@@ -109,7 +109,7 @@ void GeneralPurposeChannelBase::onLoadConfig(SuplaDeviceClass *sdc) {
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&commonConfig),
                      sizeof(GPMCommonConfig))) {
-      SUPLA_LOG_INFO("GPM[%d]: config loaded successfully", getChannelNumber());
+      SUPLA_LOG_INFO("GPM[%d] config loaded successfully", getChannelNumber());
       setChannelRefreshIntervalMs(commonConfig.refreshIntervalMs);
       configLoaded = true;
     }
@@ -118,7 +118,7 @@ void GeneralPurposeChannelBase::onLoadConfig(SuplaDeviceClass *sdc) {
     loadConfigChangeFlag();
     lastReadTime = 0;
   } else {
-    SUPLA_LOG_WARNING("GPM[%d]: Failed to load config", getChannelNumber());
+    SUPLA_LOG_WARNING("GPM[%d] Failed to load config", getChannelNumber());
   }
 
   if (!configLoaded) {
@@ -161,18 +161,18 @@ void GeneralPurposeChannelBase::iterateAlways() {
 
 void GeneralPurposeChannelBase::setDefaultValueDivider(int32_t divider) {
   SUPLA_LOG_DEBUG(
-      "GPM[%d]: DefaultValueDivider %d", getChannelNumber(), divider);
+      "GPM[%d] DefaultValueDivider %d", getChannelNumber(), divider);
   defaultValueDivider = divider;
 }
 
 void GeneralPurposeChannelBase::setDefaultValueMultiplier(int32_t multiplier) {
   SUPLA_LOG_DEBUG(
-      "GPM[%d]: DefaultValueMultiplier %d", getChannelNumber(), multiplier);
+      "GPM[%d] DefaultValueMultiplier %d", getChannelNumber(), multiplier);
   defaultValueMultiplier = multiplier;
 }
 
 void GeneralPurposeChannelBase::setDefaultValueAdded(int64_t added) {
-  SUPLA_LOG_DEBUG("GPM[%d]: DefaultValueAdded %d",
+  SUPLA_LOG_DEBUG("GPM[%d] DefaultValueAdded %d",
                   getChannelNumber(),
                   static_cast<int>(added));
   defaultValueAdded = added;
@@ -180,14 +180,14 @@ void GeneralPurposeChannelBase::setDefaultValueAdded(int64_t added) {
 
 void GeneralPurposeChannelBase::setDefaultValuePrecision(uint8_t precision) {
   SUPLA_LOG_DEBUG(
-      "GPM[%d]: DefaultValuePrecision %d", getChannelNumber(), precision);
+      "GPM[%d] DefaultValuePrecision %d", getChannelNumber(), precision);
   defaultValuePrecision = precision;
 }
 
 void GeneralPurposeChannelBase::setDefaultUnitBeforeValue(const char *unit) {
   if (unit) {
     SUPLA_LOG_DEBUG(
-        "GPM[%d]: DefaultUnitBeforeValue \"%s\"", getChannelNumber(), unit);
+        "GPM[%d] DefaultUnitBeforeValue \"%s\"", getChannelNumber(), unit);
     strncpy(defaultUnitBeforeValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
     defaultUnitBeforeValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
@@ -196,7 +196,7 @@ void GeneralPurposeChannelBase::setDefaultUnitBeforeValue(const char *unit) {
 void GeneralPurposeChannelBase::setDefaultUnitAfterValue(const char *unit) {
   if (unit) {
     SUPLA_LOG_DEBUG(
-        "GPM[%d]: DefaultUnitAfterValue \"%s\"", getChannelNumber(), unit);
+        "GPM[%d] DefaultUnitAfterValue \"%s\"", getChannelNumber(), unit);
     strncpy(defaultUnitAfterValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
     defaultUnitAfterValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
@@ -296,7 +296,7 @@ void GeneralPurposeChannelBase::setChannelRefreshIntervalMs(
     intervalMs = 200;
   }
   refreshIntervalMs = intervalMs;
-  SUPLA_LOG_DEBUG("GPM[%d]: RefreshIntervalMs %d ms",
+  SUPLA_LOG_DEBUG("GPM[%d] RefreshIntervalMs %d ms",
                   getChannelNumber(),
                   refreshIntervalMs);
 }
@@ -524,7 +524,7 @@ void GeneralPurposeChannelBase::fillChannelConfig(void *channelConfig,
 void GeneralPurposeChannelBase::saveConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
-    SUPLA_LOG_WARNING("GPM[%d]: Failed to save config", getChannelNumber());
+    SUPLA_LOG_WARNING("GPM[%d] Failed to save config", getChannelNumber());
     return;
   }
 
@@ -533,7 +533,7 @@ void GeneralPurposeChannelBase::saveConfig() {
   if (cfg->setBlob(key,
                    reinterpret_cast<char *>(&commonConfig),
                    sizeof(GPMCommonConfig))) {
-    SUPLA_LOG_INFO("GPM[%d]: common config saved successfully",
+    SUPLA_LOG_INFO("GPM[%d] common config saved successfully",
                    getChannelNumber());
     cfg->saveWithDelay(5000);
   }

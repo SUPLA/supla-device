@@ -13,8 +13,10 @@
 #include <unistd.h>
 
 #include <array>
+#include <cstring>
 #include <fstream>
 #include <filesystem>  // NOLINT(build/c++17)
+#include <iterator>
 #include <string>
 #include <variant>
 #include <vector>
@@ -33,47 +35,6 @@ namespace Supla::Linux {
 void initExtensions() {
 }
 }  // namespace Supla::Linux
-
-Supla::Source::Mqtt::Mqtt(const Supla::LinuxYamlConfig&,
-                          const std::vector<std::string>& topics)
-    : topics(topics) {
-}
-
-Supla::Source::Mqtt::~Mqtt() {
-}
-
-std::string Supla::Source::Mqtt::getContent() {
-  return latestMessage;
-}
-
-bool Supla::Source::Mqtt::isConnected() {
-  return false;
-}
-
-Supla::Output::Mqtt::Mqtt(const Supla::LinuxYamlConfig&,
-                          const char* topic,
-                          int qos)
-    : controlTopic(topic), qos(qos) {
-}
-
-Supla::Output::Mqtt::~Mqtt() {
-}
-
-bool Supla::Output::Mqtt::putContent(int) {
-  return false;
-}
-
-bool Supla::Output::Mqtt::putContent(const std::string&) {
-  return false;
-}
-
-bool Supla::Output::Mqtt::putContent(const std::vector<int>&) {
-  return false;
-}
-
-bool Supla::Output::Mqtt::putContent(bool) {
-  return false;
-}
 
 namespace {
 
@@ -165,6 +126,7 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
   using Supla::LinuxYamlConfig::config;
+  bool hasPendingSave() const { return saveDelayMs != 0; }
 };
 
 class UmaskGuard {
@@ -294,6 +256,107 @@ TEST_F(Sd4linuxYamlCredentialTests,
   EXPECT_EQ(targetContents, "unchanged");
 }
 
+TEST_F(Sd4linuxYamlCredentialTests,
+       RetriesFailedDelayedSaveAfterPathRecovery) {
+  SimpleTime time;
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  ASSERT_TRUE(std::filesystem::create_directory(storagePath));
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(config.setString("test_key", "test_value"));
+  config.saveWithDelay(1);
+  time.advance(2);
+  config.saveIfNeeded();
+  EXPECT_TRUE(config.hasPendingSave());
+
+  ASSERT_TRUE(std::filesystem::remove(storagePath));
+  time.advance(4999);
+  config.saveIfNeeded();
+  EXPECT_FALSE(std::filesystem::exists(storagePath));
+  time.advance(2);
+  config.saveIfNeeded();
+  EXPECT_FALSE(config.hasPendingSave());
+  EXPECT_TRUE(std::filesystem::is_regular_file(storagePath));
+}
+
+TEST_F(Sd4linuxYamlCredentialTests,
+       SavesNewAndExistingConfigStorageWithOwnerOnlyPermissions) {
+  UmaskGuard umaskGuard(0022);
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(config.setString("test_key", "test_value"));
+  std::array<uint8_t, 256> serialized = {};
+  const auto size = config.serializeToMemory(serialized.data(),
+                                             serialized.size());
+  ASSERT_GT(size, 0U);
+  const std::string expected(reinterpret_cast<char*>(serialized.data()), size);
+
+  for (bool existing : {false, true}) {
+    if (existing) {
+      std::ofstream oldFile(storagePath, std::ios::binary);
+      ASSERT_TRUE(oldFile.is_open());
+      oldFile << std::string(1024, 'x');
+      oldFile.close();
+      ASSERT_EQ(::chmod(storagePath.c_str(), 0644), 0);
+    }
+    config.commit();
+
+    struct stat fileStat = {};
+    ASSERT_EQ(::stat(storagePath.c_str(), &fileStat), 0);
+    EXPECT_EQ(fileStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO), 0600);
+    std::ifstream saved(storagePath, std::ios::binary);
+    ASSERT_TRUE(saved.is_open());
+    const std::string actual{std::istreambuf_iterator<char>(saved),
+                             std::istreambuf_iterator<char>()};
+    EXPECT_EQ(actual, expected);
+  }
+}
+
+TEST_F(Sd4linuxYamlCredentialTests,
+       RejectsConfigStorageSymlinkWithoutModifyingItsTarget) {
+  const auto targetPath = tempDirectory / "target";
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  {
+    std::ofstream target(targetPath);
+    ASSERT_TRUE(target.is_open());
+    target << "unchanged";
+  }
+  ASSERT_EQ(::chmod(targetPath.c_str(), 0644), 0);
+  ASSERT_EQ(::symlink(targetPath.c_str(), storagePath.c_str()), 0);
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(config.setString("test_key", "test_value"));
+  supla_test_clear_last_log();
+
+  config.commit();
+
+  EXPECT_NE(std::string(supla_test_get_last_log()).find(
+                "failed to write read/write config storage file"),
+            std::string::npos);
+  struct stat fileStat = {};
+  ASSERT_EQ(::stat(targetPath.c_str(), &fileStat), 0);
+  EXPECT_EQ(fileStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO), 0644);
+  std::ifstream target(targetPath);
+  std::string content;
+  std::getline(target, content);
+  EXPECT_EQ(content, "unchanged");
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, LogsConfigStorageWriteFailure) {
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = (tempDirectory / "missing").string();
+  ASSERT_TRUE(config.setString("test_key", "test_value"));
+  supla_test_clear_last_log();
+
+  config.commit();
+
+  EXPECT_NE(std::string(supla_test_get_last_log()).find(
+                "failed to write read/write config storage file"),
+            std::string::npos);
+  EXPECT_FALSE(std::filesystem::exists(tempDirectory / "missing"));
+}
+
 TEST(Sd4linuxYamlConfigTests, AllowsRgbCctWithoutStateAndRejectsMissingParser) {
   TestLinuxYamlConfig config;
   auto previousElement = Supla::Element::last();
@@ -382,6 +445,240 @@ TEST(Sd4linuxYamlConfigTests,
   deleteCreatedElement(previousElement);
 }
 
+class AtDurationYamlConfig : public TestLinuxYamlConfig {
+ public:
+  AtDurationYamlConfig() { setConfigInitDone(true); }
+  bool commitWithResult() override { return commitAllowed; }
+  bool commitAllowed = true;
+};
+
+class Sd4linuxAtDurationTests : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    ASSERT_EQ(Supla::Element::begin(), nullptr);
+    Supla::Channel::resetToDefaults();
+  }
+  void TearDown() override {
+    while (auto element = Supla::Element::last()) delete element;
+    Supla::Channel::resetToDefaults();
+  }
+  Supla::Control::ActionTriggerParsed *create(const std::string& extra) {
+    if (!config.parseChannel(YAML::Load(
+            "type: ActionTriggerParsed\nname: duration_test\n" + extra), 0)) {
+      return nullptr;
+    }
+    return dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+        Supla::Element::last());
+  }
+  TChannelConfig_ActionTrigger read(Supla::Control::ActionTriggerParsed *at) {
+    TChannelConfig_ActionTrigger value = {};
+    int size = 0;
+    at->fillChannelConfig(&value, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+    EXPECT_EQ(size, sizeof(value));
+    return value;
+  }
+  void seed(Supla::Control::ActionTriggerParsed *at) {
+    TSD_ChannelConfig wire = {};
+    wire.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+    wire.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+    TChannelConfig_ActionTrigger value = {};
+    value.ActiveActions = SUPLA_ACTION_CAP_HOLD;
+    value.TemporaryUnlockDurationSec = 7;
+    value.TemporaryUnlockSensorIsSet = 1;
+    value.TemporaryUnlockSensorChannelNo = 4;
+    value.TemporaryUnlockSensorEdge = SUPLA_AT_SENSOR_EDGE_BOTH;
+    memcpy(wire.Config, &value, sizeof(value));
+    ASSERT_EQ(at->handleChannelConfig(&wire), SUPLA_CONFIG_RESULT_TRUE);
+  }
+  AtDurationYamlConfig config;
+};
+
+TEST_F(Sd4linuxAtDurationTests, StartupOverridesOnlyDurationAndPersistsIt) {
+  auto at = create("temporary_unlock_duration_sec: 30");
+  ASSERT_NE(at, nullptr);
+  seed(at);
+  at->onLoadConfig(nullptr);
+  const auto value = read(at);
+  EXPECT_EQ(value.TemporaryUnlockDurationSec, 30U);
+  EXPECT_EQ(value.ActiveActions, SUPLA_ACTION_CAP_HOLD);
+  EXPECT_EQ(value.TemporaryUnlockSensorIsSet, 1);
+  EXPECT_EQ(value.TemporaryUnlockSensorChannelNo, 4);
+  EXPECT_EQ(value.TemporaryUnlockSensorEdge, SUPLA_AT_SENSOR_EDGE_BOTH);
+  at->onLoadConfig(nullptr);
+  EXPECT_EQ(read(at).TemporaryUnlockDurationSec, 30U);
+}
+
+TEST_F(Sd4linuxAtDurationTests, OmissionPreservesSavedDuration) {
+  auto at = create("");
+  ASSERT_NE(at, nullptr);
+  seed(at);
+  at->onLoadConfig(nullptr);
+  EXPECT_EQ(read(at).TemporaryUnlockDurationSec, 7U);
+}
+
+TEST_F(Sd4linuxAtDurationTests, ZeroAndMaximumAreAccepted) {
+  for (auto seconds : {0, 64800}) {
+    auto at = create("temporary_unlock_duration_sec: " +
+                     std::to_string(seconds));
+    ASSERT_NE(at, nullptr);
+    at->onLoadConfig(nullptr);
+    EXPECT_EQ(read(at).TemporaryUnlockDurationSec,
+              static_cast<uint32_t>(seconds));
+    delete at;
+  }
+}
+
+TEST_F(Sd4linuxAtDurationTests, InvalidDurationsAreRejectedBeforeCreation) {
+  for (const auto *value : {"-1", "64801", "4294967296", "text", "1.5",
+                             "[]", "{}", "null", "18446744073709551616"}) {
+    SCOPED_TRACE(value);
+    EXPECT_EQ(create(std::string("temporary_unlock_duration_sec: ") + value),
+              nullptr);
+    EXPECT_EQ(Supla::Element::begin(), nullptr);
+  }
+}
+
+TEST_F(Sd4linuxAtDurationTests, FailedPersistenceKeepsSavedDuration) {
+  auto at = create("temporary_unlock_duration_sec: 30");
+  ASSERT_NE(at, nullptr);
+  seed(at);
+  config.commitAllowed = false;
+  at->onLoadConfig(nullptr);
+  EXPECT_EQ(read(at).TemporaryUnlockDurationSec, 7U);
+}
+
+class Sd4linuxAtRelatedChannelTests : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    ASSERT_EQ(Supla::Element::begin(), nullptr);
+    Supla::Channel::resetToDefaults();
+  }
+  void clearElements() {
+    while (auto element = Supla::Element::last()) delete element;
+    Supla::Channel::resetToDefaults();
+  }
+  void TearDown() override { clearElements(); }
+  uint8_t relatedChannel(int channelNumber) {
+    auto element = Supla::Element::getElementByChannelNumber(channelNumber);
+    auto at = element ? element->getActionTrigger() : nullptr;
+    EXPECT_NE(at, nullptr);
+    return at ? static_cast<Supla::AtChannel*>(at->getChannel())
+                    ->getRelatedChannelNumber() : 255;
+  }
+  TestLinuxYamlConfig config;
+};
+
+TEST_F(Sd4linuxAtRelatedChannelTests,
+       TwoTriggersResolveForwardAndBackwardToZero) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: ActionTriggerParsed, name: up, channel_number: 11, related_channel: motor}
+- {type: VirtualRelay, name: motor, channel_number: 0}
+- {type: ActionTriggerParsed, name: down, channel_number: 12, related_channel: motor}
+)");
+  ASSERT_TRUE(config.loadChannels());
+  EXPECT_EQ(relatedChannel(11), 1);  // Protocol stores channel number + 1.
+  EXPECT_EQ(relatedChannel(12), 1);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests,
+       AnyChannelTypeAndActualNumbersAreSupported) {
+  // An element created before YAML shifts automatically allocated numbers.
+  new Supla::Control::VirtualRelay();
+  config.config = YAML::Load(R"(
+channels:
+- {type: CustomChannel, name: contact, channel_type: 1000}
+- {type: ActionTriggerParsed, name: at, related_channel: contact}
+)");
+  ASSERT_TRUE(config.loadChannels());
+  EXPECT_EQ(relatedChannel(2), 2);  // contact is channel 1, not YAML index 0.
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, MissingParameterLeavesTriggerUnrelated) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: ActionTriggerParsed, name: at}
+)");
+  ASSERT_TRUE(config.loadChannels());
+  EXPECT_EQ(relatedChannel(0), 0);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests,
+       UnknownReferenceDoesNotApplyEarlierLinks) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: VirtualRelay, name: motor}
+- {type: ActionTriggerParsed, name: good, related_channel: motor}
+- {type: ActionTriggerParsed, name: bad, related_channel: missing}
+)");
+  EXPECT_FALSE(config.loadChannels());
+  EXPECT_EQ(relatedChannel(1), 0);
+  EXPECT_EQ(relatedChannel(2), 0);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, AmbiguousTargetNameIsRejected) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: VirtualRelay, name: motor}
+- {type: VirtualRelay, name: motor}
+- {type: ActionTriggerParsed, name: at, related_channel: motor}
+)");
+  EXPECT_FALSE(config.loadChannels());
+  EXPECT_STREQ(supla_test_get_last_log(),
+      "AT \"at\": unknown or ambiguous related_channel \"motor\"");
+  EXPECT_EQ(relatedChannel(2), 0);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, SelfReferenceDoesNotApplyEarlierLinks) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: VirtualRelay, name: motor}
+- {type: ActionTriggerParsed, name: good, related_channel: motor}
+- {type: ActionTriggerParsed, name: self, related_channel: self}
+)");
+  EXPECT_FALSE(config.loadChannels());
+  EXPECT_STREQ(supla_test_get_last_log(),
+      "AT \"self\": invalid related channel \"self\"");
+  EXPECT_EQ(relatedChannel(1), 0);
+  EXPECT_EQ(relatedChannel(2), 0);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, AmbiguousTriggerNameIsReportedCorrectly) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: VirtualRelay, name: motor}
+- {type: ActionTriggerParsed, name: duplicate, related_channel: motor}
+- {type: ActionTriggerParsed, name: duplicate}
+)");
+  EXPECT_FALSE(config.loadChannels());
+  EXPECT_STREQ(supla_test_get_last_log(),
+      "AT: unknown or ambiguous trigger name \"duplicate\"");
+  EXPECT_EQ(relatedChannel(1), 0);
+  EXPECT_EQ(relatedChannel(2), 0);
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, InvalidReferenceShapesAreRejected) {
+  for (const char* value : {"null", "''", "[]", "{}"}) {
+    SCOPED_TRACE(value);
+    config.config = YAML::Load(std::string(
+        "channels: [{type: ActionTriggerParsed, name: at, related_channel: ") +
+        value + "}]");
+    EXPECT_FALSE(config.loadChannels());
+    clearElements();
+  }
+}
+
+TEST_F(Sd4linuxAtRelatedChannelTests, NamesFromEarlierLoadAreNotReused) {
+  config.config = YAML::Load(
+      "channels: [{type: VirtualRelay, name: old}]");
+  ASSERT_TRUE(config.loadChannels());
+  clearElements();
+  config.config = YAML::Load(
+      "channels: [{type: ActionTriggerParsed, name: at, "
+      "related_channel: old}]");
+  EXPECT_FALSE(config.loadChannels());
+}
+
 TEST(Sd4linuxYamlConfigTests,
      ParsedRelayWeeklyScheduleCanBeEnabledFromYaml) {
   TestLinuxYamlConfig config;
@@ -443,8 +740,134 @@ TEST(Sd4linuxYamlConfigTests, RejectsQosForMqttSource) {
             nullptr);
 }
 
+TEST(Sd4linuxYamlConfigTests, UnusedMqttDoesNotRequireSecurityFields) {
+  ASSERT_EQ(Supla::Element::begin(), nullptr);
+  TestLinuxYamlConfig config;
+  auto previousElement = Supla::Element::last();
+  config.config = YAML::Load("channels: [{type: VirtualRelay}]");
+  EXPECT_TRUE(config.loadChannels());
+  deleteCreatedElement(previousElement);
+  ASSERT_EQ(Supla::Element::begin(), nullptr);
+}
+
+TEST(Sd4linuxYamlConfigTests, RequiresExplicitMqttSecurityForSourceAndOutput) {
+  for (const char* fields : {"", "use_ssl: true",
+                             "use_ssl: false, port: 8883"}) {
+    SCOPED_TRACE(fields);
+    TestLinuxYamlConfig config;
+    config.config = YAML::Load(std::string("mqtt: {host: localhost, ") +
+                               fields + "}");
+    EXPECT_EQ(config.addSource(YAML::Load(
+                  "type: MQTT\nstate_topic: state\n")), nullptr);
+    EXPECT_EQ(config.addOutput(YAML::Load(
+                  "type: MQTT\ncontrol_topic: control\n")), nullptr);
+    EXPECT_FALSE(config.loadTopLevelSources(YAML::Load(
+        "named: {type: MQTT, state_topic: state}")));
+  }
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsIncompleteMqttDuringChannelLoading) {
+  for (const char* usage : {
+           "channels: [{type: VirtualRelay, source: "
+           "{type: MQTT, state_topic: state}}]",
+           "channels: [{type: VirtualRelay, output: "
+           "{type: MQTT, control_topic: control}}]",
+           "sources: {named: {type: MQTT, state_topic: state}}\n"
+           "channels: [{type: VirtualRelay, source: {use: named}}]",
+           "channels:\n"
+           "- {type: VirtualRelay, source: "
+           "{name: named, type: MQTT, state_topic: state}}\n"
+           "- {type: VirtualRelay, source: {use: named}}"}) {
+    TestLinuxYamlConfig config;
+    config.config = YAML::Load(std::string(usage) +
+                               "\nmqtt: {host: localhost, use_ssl: true}");
+    EXPECT_FALSE(config.loadChannels());
+  }
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     ExplicitMqttSecurityPreservesPortsAndVerification) {
+  struct Case {
+    const char* fields;
+    int port;
+    bool ssl;
+    bool verify;
+  };
+  const Case cases[] = {
+      {"use_ssl: false", 1883, false, false},
+      {"use_ssl: true, verify_ca: false", 8883, true, false},
+      {"use_ssl: true, verify_ca: true", 8883, true, true},
+      {"use_ssl: true, verify_ca: true, ca_file: ca.pem", 8883, true, true},
+      {"use_ssl: true, verify_ca: true, port: 1884", 1884, true, true},
+      {"use_ssl: false, port: 1884", 1884, false, false}};
+  for (const auto& entry : cases) {
+    SCOPED_TRACE(entry.fields);
+    TestLinuxYamlConfig config;
+    config.config = YAML::Load(std::string("mqtt: {host: localhost, ") +
+                               entry.fields + "}");
+    ASSERT_TRUE(config.isValidMqttConfig());
+    EXPECT_EQ(config.getMqttClientUseSSL(), entry.ssl);
+    EXPECT_EQ(config.getMqttClientVerifyCA(), entry.verify);
+    EXPECT_EQ(config.getMqttClientPort(), entry.port);
+    EXPECT_NE(config.addSource(YAML::Load(
+                  "type: MQTT\nstate_topic: state\n")), nullptr);
+    EXPECT_NE(config.addOutput(YAML::Load(
+                  "type: MQTT\ncontrol_topic: control\n")), nullptr);
+    ASSERT_TRUE(config.loadTopLevelSources(YAML::Load(
+        "named: {type: MQTT, state_topic: state}")));
+    EXPECT_NE(config.addSource(YAML::Load("use: named")), nullptr);
+    EXPECT_NE(config.addSource(YAML::Load(
+                  "name: inline\ntype: MQTT\nstate_topic: state\n")), nullptr);
+    EXPECT_NE(config.addSource(YAML::Load("use: inline")), nullptr);
+    EXPECT_NE(config.addOutput(YAML::Load(
+                  "name: control\ntype: MQTT\ncontrol_topic: control\n")),
+              nullptr);
+    EXPECT_NE(config.addOutput(YAML::Load("use: control")), nullptr);
+  }
+}
+
+TEST(Sd4linuxYamlConfigTests,
+     RejectsInvalidMqttBooleanTypesWithFieldDiagnostic) {
+  for (const char* value : {"null", "[]", "{}", "1", "broken", "\"false\"",
+                            "!!str true"}) {
+    for (const char* field : {"use_ssl", "verify_ca"}) {
+      SCOPED_TRACE(std::string(field) + ": " + value);
+      TestLinuxYamlConfig config;
+      config.config = YAML::Load("mqtt: {host: localhost, use_ssl: true}");
+      config.config["mqtt"][field] = YAML::Load(value);
+      supla_test_clear_last_log();
+      EXPECT_FALSE(config.isValidMqttConfig());
+      EXPECT_NE(std::string(supla_test_get_last_log()).find(
+                    std::string("mqtt.") + field + " must be a boolean"),
+                std::string::npos);
+      EXPECT_EQ(config.addSource(YAML::Load(
+                    "type: MQTT\nstate_topic: state\n")), nullptr);
+      EXPECT_EQ(config.addOutput(YAML::Load(
+                    "type: MQTT\ncontrol_topic: control\n")), nullptr);
+    }
+  }
+}
+
+TEST(Sd4linuxYamlConfigTests, ExplainsMissingSecurityAndConflictingPort) {
+  const char* fields[] = {"", "use_ssl: true", "use_ssl: false, port: 8883"};
+  const char* messages[] = {
+      "Config: mqtt.use_ssl is required (true/false)",
+      "Config: mqtt.verify_ca is required when mqtt.use_ssl=true",
+      "Config: mqtt.use_ssl=false conflicts with mqtt.port=8883"};
+  for (int i = 0; i < 3; ++i) {
+    TestLinuxYamlConfig config;
+    config.config = YAML::Load(std::string("mqtt: {host: localhost, ") +
+                               fields[i] + "}");
+    supla_test_clear_last_log();
+    EXPECT_FALSE(config.isValidMqttConfig());
+    EXPECT_NE(std::string(supla_test_get_last_log()).find(messages[i]),
+              std::string::npos);
+  }
+}
+
 TEST(Sd4linuxYamlConfigTests, RejectsQosForReusedMqttSource) {
   TestLinuxYamlConfig config;
+  config.config = YAML::Load("mqtt: {host: localhost, use_ssl: false}");
 
   ASSERT_TRUE(config.loadTopLevelSources(YAML::Load(
       "mqtt_state:\n"
@@ -459,6 +882,7 @@ TEST(Sd4linuxYamlConfigTests, RejectsQosForReusedMqttSource) {
 
 TEST(Sd4linuxYamlConfigTests, AcceptsMqttOutputQosRange) {
   TestLinuxYamlConfig config;
+  config.config = YAML::Load("mqtt: {host: localhost, use_ssl: false}");
 
   for (int qos = 0; qos <= 2; qos++) {
     EXPECT_NE(config.addOutput(YAML::Load(
@@ -472,6 +896,7 @@ TEST(Sd4linuxYamlConfigTests, AcceptsMqttOutputQosRange) {
 
 TEST(Sd4linuxYamlConfigTests, RejectsMqttOutputQosOutsideRange) {
   TestLinuxYamlConfig config;
+  config.config = YAML::Load("mqtt: {host: localhost, use_ssl: false}");
 
   EXPECT_EQ(config.addOutput(YAML::Load(
                 "type: MQTT\n"
@@ -937,4 +1362,93 @@ TEST(Sd4linuxYamlConfigTests, RejectsParsedIconIdOutsideAllowedRange) {
                                       0,
                                       &parser));
   deleteCreatedElement(previousElement);
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsInvalidMultiDocumentConfiguration) {
+  for (const char* fields : {
+           "sub_topics: [a, a]",
+           "expiration_time_sec: -1",
+           "expiration_time_sec: 2147484",
+           "expiration_time_sec: 4294967295",
+           "expiration_time_sec: 4294967296",
+           "expiration_time_sec: 99999999999999999999999",
+           "expiration_time_sec: broken",
+           "expiration_time_sec: 1.5",
+           "expiration_time_sec: []"}) {
+    SCOPED_TRACE(fields);
+    TestLinuxYamlConfig config;
+    config.config = YAML::Load(std::string(
+        "mqtt: {host: localhost, use_ssl: false}\n"
+        "sources:\n  data:\n    type: MQTT\n    state_topic: yaml-docs\n    ") +
+        fields + "\nchannels: [{type: VirtualRelay}]\n");
+    EXPECT_FALSE(config.loadChannels());
+  }
+  for (const char* mapping : {"unknown:/data/val", "a:data/val",
+                               "a:/bad~2escape", ":/data/val"}) {
+    SCOPED_TRACE(mapping);
+    TestLinuxYamlConfig config;
+    config.config = YAML::Load(std::string(
+        "mqtt: {host: localhost, use_ssl: false}\n"
+        "channels:\n- type: ElectricityMeterParsed\n"
+        "  source: {type: MQTT, state_topic: yaml-docs, sub_topics: [a]}\n"
+        "  parser: {type: Json, multi_document: true}\n"
+        "  phase_1: [{voltage: '") + mapping + "'}]\n");
+    auto previous = Supla::Element::last();
+    EXPECT_FALSE(config.loadChannels());
+    deleteCreatedElement(previous);
+  }
+}
+
+TEST(Sd4linuxYamlConfigTests, NamedMultiDocumentSourceAndParsersCanBeShared) {
+  for (int mode : {-1, 0, 1}) {
+    TestLinuxYamlConfig config;
+    config.config = YAML::Load(R"(
+mqtt: {host: localhost, use_ssl: false}
+sources:
+  docs: {type: MQTT, state_topic: shared-docs, sub_topics: ["0505", "0508"]}
+parsers:
+  first: {source: docs, type: Json}
+  second: {source: docs, type: Json}
+channels:
+- type: ElectricityMeterParsed
+  parser: first
+  phase_1: [{voltage: /data/val}]
+- type: ElectricityMeterParsed
+  parser: {use: first}
+  phase_1: [{current: /data/val}]
+- type: ElectricityMeterParsed
+  parser: second
+  phase_1: [{voltage: /data/val}]
+)");
+    if (mode >= 0) {
+      config.config["parsers"]["first"]["multi_document"] = mode == 1;
+      config.config["parsers"]["second"]["multi_document"] = mode == 1;
+    }
+    if (mode == 1) {
+      config.config["channels"][0]["phase_1"][0]["voltage"] = "0505:/data/val";
+      config.config["channels"][1]["phase_1"][0]["current"] = "0508:/data/val";
+      config.config["channels"][2]["phase_1"][0]["voltage"] = "0505:/data/val";
+    }
+    auto previous = Supla::Element::last();
+    EXPECT_TRUE(config.loadChannels());
+    while (Supla::Element::last() != previous) {
+      delete Supla::Element::last();
+    }
+  }
+}
+
+TEST(Sd4linuxYamlConfigTests, LegacyMqttSimpleYamlRemainsSupported) {
+  TestLinuxYamlConfig config;
+  config.config = YAML::Load(R"(
+mqtt: {host: localhost, use_ssl: false}
+channels:
+- type: ThermHygroMeterParsed
+  source: {type: MQTT, state_topic: device, sub_topics: [temperature, humidity]}
+  parser: {type: Simple}
+  temperature: 0
+  humidity: 1
+)");
+  auto previous = Supla::Element::last();
+  EXPECT_TRUE(config.loadChannels());
+  deleteCreatedElement(previous);
 }

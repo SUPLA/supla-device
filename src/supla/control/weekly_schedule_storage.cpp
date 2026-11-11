@@ -165,7 +165,7 @@ bool NativeWeeklyScheduleConfigHandler::loadSchedule(bool alt) {
 
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   owner->generateKey(key, getScheduleStorageTag(alt));
-  SUPLA_LOG_DEBUG("%s[%d]: loading%s %s from storage",
+  SUPLA_LOG_DEBUG("%s[%d] loading%s %s from storage",
                   getDeviceLabel(),
                   owner->getChannelNumber(),
                   alt ? " alt" : "",
@@ -175,7 +175,7 @@ bool NativeWeeklyScheduleConfigHandler::loadSchedule(bool alt) {
   if (!cfg->getBlob(key,
                     reinterpret_cast<char *>(schedule),
                     sizeof(TChannelConfig_WeeklySchedule))) {
-    SUPLA_LOG_DEBUG("%s[%d]: %s%s not found in storage",
+    SUPLA_LOG_DEBUG("%s[%d] %s%s not found in storage",
                     getDeviceLabel(),
                     owner->getChannelNumber(),
                     getScheduleLabel(alt),
@@ -188,7 +188,7 @@ bool NativeWeeklyScheduleConfigHandler::loadSchedule(bool alt) {
   }
 
   if (!validateSchedule(schedule, alt)) {
-    SUPLA_LOG_WARNING("%s[%d]: loaded%s %s is invalid",
+    SUPLA_LOG_WARNING("%s[%d] loaded%s %s is invalid",
                       getDeviceLabel(),
                       owner->getChannelNumber(),
                       alt ? " alt" : "",
@@ -203,7 +203,7 @@ bool NativeWeeklyScheduleConfigHandler::loadSchedule(bool alt) {
   configured_[alt ? 1 : 0] = true;
   persisted_[alt ? 1 : 0] = true;
   touchCache(false, millis());
-  SUPLA_LOG_DEBUG("%s[%d]: loaded%s %s successfully",
+  SUPLA_LOG_DEBUG("%s[%d] loaded%s %s successfully",
                   getDeviceLabel(),
                   owner->getChannelNumber(),
                   alt ? " alt" : "",
@@ -287,12 +287,12 @@ bool NativeWeeklyScheduleConfigHandler::saveSchedule(bool alt, bool notify) {
                    reinterpret_cast<const char *>(schedule),
                    sizeof(TChannelConfig_WeeklySchedule));
   if (persisted_[alt ? 1 : 0]) {
-    SUPLA_LOG_INFO("%s[%d]: %s saved successfully",
+    SUPLA_LOG_VERBOSE("%s[%d] %s saved successfully",
                    getDeviceLabel(),
                    owner->getChannelNumber(),
                    getScheduleLabel(alt));
   } else {
-    SUPLA_LOG_WARNING("%s[%d]: failed to save %s",
+    SUPLA_LOG_WARNING("%s[%d] failed to save %s",
                       getDeviceLabel(),
                       owner->getChannelNumber(),
                       getScheduleLabel(alt));
@@ -410,7 +410,8 @@ void NativeWeeklyScheduleConfigHandler::touchCache(bool active,
 bool NativeWeeklyScheduleConfigHandler::resolveProgramTiming(
     const WeeklyScheduleTimeSnapshot &time, bool alt, int programId,
     int32_t *occurrence, uint32_t *elapsedSeconds) {
-  if (time.state != WeeklyScheduleClockState::Ready || programId <= 0 ||
+  if (time.state != WeeklyScheduleClockState::Ready || programId < 0 ||
+      programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE ||
       occurrence == nullptr || elapsedSeconds == nullptr) {
     return false;
   }
@@ -422,12 +423,18 @@ bool NativeWeeklyScheduleConfigHandler::resolveProgramTiming(
   if (index < 0 || getProgramId(schedule, index) != programId) {
     return false;
   }
+  const auto program = getProgramById(schedule, programId);
+  const auto sameProgram = [&](int quarter) {
+    const auto other =
+        getProgramById(schedule, getProgramId(schedule, quarter));
+    return program.Mode == other.Mode && program.Value1 == other.Value1 &&
+           program.Value2 == other.Value2;
+  };
   int preceding = 0;
   while (
       preceding < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE - 1 &&
-      getProgramId(schedule,
-                   (index - preceding - 1 + SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) %
-                       SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) == programId) {
+      sameProgram((index - preceding - 1 + SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) %
+                  SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE)) {
     preceding++;
   }
   // A uniform week has no transition; anchor it at Sunday midnight.

@@ -152,6 +152,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/pwm_frequency_parameters.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/client.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/esp32_tcp_abort.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/ip_address.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/protocol_layer.cpp

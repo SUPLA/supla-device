@@ -300,12 +300,6 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
                     reconnect_state->clientName.c_str());
   }
 
-  if (!reconnect_state->username.empty()) {
-    SUPLA_LOG_DEBUG("using credentials %s %s",
-                    reconnect_state->username.c_str(),
-                    reconnect_state->password.c_str());
-  }
-
   /* Open a new socket. */
   void* sockfd = nullptr;
   try {

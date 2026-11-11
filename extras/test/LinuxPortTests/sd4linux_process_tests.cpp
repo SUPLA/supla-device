@@ -18,7 +18,8 @@ TEST(Sd4linuxProcessTests, Signals) {
       st_hook_signals();
       std::thread worker([sig]() { raise(sig); });
       worker.join();
-      if (st_app_terminate != 0) _exit(2);
+      if (st_app_terminate != (sig == SIGPIPE ? 0 : 1)) _exit(2);
+      st_app_terminate = 0;
       raise(sig);
       _exit(st_app_terminate == (sig == SIGPIPE ? 0 : 1) ? 0 : 3);
     }, ::testing::ExitedWithCode(0), "");

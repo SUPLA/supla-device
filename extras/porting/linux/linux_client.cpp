@@ -254,7 +254,8 @@ int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
       stop();
       return 0;
     }
-    if (SSL_set_tlsext_host_name(ssl, server) != 1) {
+    // OpenSSL's macro casts to void *, but only reads and copies the name.
+    if (SSL_set_tlsext_host_name(ssl, const_cast<char *>(server)) != 1) {
       SUPLA_LOG_ERROR("SSL_set_tlsext_host_name failed");
       stop();
       return 0;

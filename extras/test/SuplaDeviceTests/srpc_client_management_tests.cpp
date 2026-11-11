@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <stdint.h>
+#include <string.h>
 
 #include <gtest/gtest.h>
 #include <SuplaDevice.h>
@@ -27,6 +28,8 @@ struct ClientStats {
   int stopCalls = 0;
   int destroyed = 0;
   int connectResult = 0;
+  std::string written;
+  std::string response;
   std::vector<Event> events;
 };
 
@@ -72,12 +75,22 @@ class TrackingClient : public Supla::Client {
     return stats.connectResult;
   }
 
-  size_t writeImp(const uint8_t *, size_t size) override {
+  size_t writeImp(const uint8_t *buf, size_t size) override {
+    stats.written.append(reinterpret_cast<const char *>(buf), size);
     return size;
   }
 
-  int readImp(uint8_t *, size_t) override {
-    return 0;
+  int readImp(uint8_t *buf, size_t size) override {
+    size_t len = stats.response.size();
+    if (len > size) {
+      len = size;
+    }
+    memcpy(buf, stats.response.data(), len);
+    stats.response.erase(0, len);
+    if (len > 0 && stats.response.empty()) {
+      connectedState = false;
+    }
+    return len;
   }
 
  private:
@@ -189,6 +202,43 @@ TEST_F(SrpcClientManagementTests,
   EXPECT_NE(std::string(supla_test_get_last_log()).find(
                 "Failed to create autodiscovery network client"),
             std::string::npos);
+}
+
+TEST_F(SrpcClientManagementTests,
+       AutodiscoveryEncodesEmailInRequestPath) {
+  const struct {
+    const char *email;
+    const char *encoded;
+  } cases[] = {
+      {"test+tag@example.com", "test%2Btag%40example.com"},
+      {"test?tag@example.com", "test%3Ftag%40example.com"},
+      {"test#tag@example.com", "test%23tag%40example.com"},
+      {"test/name@example.com", "test%2Fname%40example.com"},
+      {"test%20@example.com", "test%2520%40example.com"},
+      {"test\r\nX-Test: injected", "test%0D%0AX-Test%3A%20injected"},
+      {"abcdefghijklmno?@example.com", "abcdefghijklmno%3F%40example.com"},
+      {"abcdefghijklmnop#@example.com", "abcdefghijklmnop%23%40example.com"},
+  };
+
+  for (const auto &test : cases) {
+    SCOPED_TRACE(test.email);
+    ClientStats stats;
+    stats.connectResult = 1;
+    stats.response = "HTTP/1.1 404 Not Found\r\n\r\n";
+    TestNetwork network;
+    network.clients.push_back(new TrackingClient(stats));
+    SuplaDeviceClass sd;
+    Supla::RegisterDevice::setEmail(test.email);
+    TestSrpc srpc(&sd);
+
+    EXPECT_FALSE(srpc.iterate(0));
+
+    const std::string expected = std::string("GET /users/") + test.encoded +
+        " HTTP/1.1\r\nHost: iot.autodiscover.supla.org\r\n";
+    EXPECT_EQ(stats.written.substr(0, expected.size()), expected);
+    EXPECT_STREQ(Supla::RegisterDevice::getEmail(), test.email);
+    EXPECT_EQ(stats.destroyed, 1);
+  }
 }
 
 TEST_F(SrpcClientManagementTests,

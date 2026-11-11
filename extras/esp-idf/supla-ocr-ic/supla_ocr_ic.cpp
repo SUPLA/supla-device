@@ -4,13 +4,74 @@
 #include "supla_ocr_ic.h"
 
 #include <string.h>
+#include <sys/socket.h>
 
 #include <driver/ledc.h>
 #include <esp_http_client.h>
+#include <esp_timer.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include <supla/io.h>
 #include <supla/log_wrapper.h>
 
 #include "ocr_http_response_buffer.h"
+
+namespace {
+class OcrResponseTimer {
+ public:
+  OcrResponseTimer(int socket, int64_t deadlineUs)
+      : socket(socket), deadlineUs(deadlineUs) {
+    started = start();
+  }
+  ~OcrResponseTimer() {
+    // A fired one-shot is inactive even while its callback is still running.
+    if (started && esp_timer_stop(timer) != ESP_OK) {
+      xSemaphoreTake(done, portMAX_DELAY);
+    }
+    if (timer) {
+      esp_timer_delete(timer);
+    }
+    if (done) {
+      vSemaphoreDelete(done);
+    }
+  }
+  bool isStarted() const { return started; }
+
+  OcrResponseTimer(const OcrResponseTimer &) = delete;
+  OcrResponseTimer &operator=(const OcrResponseTimer &) = delete;
+
+ private:
+  static void expire(void *context) {
+    auto *response = static_cast<OcrResponseTimer *>(context);
+    ::shutdown(response->socket, SHUT_RDWR);
+    xSemaphoreGive(response->done);
+  }
+  bool start() {
+    if (socket < 0) {
+      return false;
+    }
+    done = xSemaphoreCreateBinary();
+    if (!done) {
+      return false;
+    }
+    esp_timer_create_args_t args = {};
+    args.callback = expire;
+    args.arg = this;
+    args.name = "ocr_response";
+    if (esp_timer_create(&args, &timer) != ESP_OK) {
+      return false;
+    }
+    const int64_t remainingUs = deadlineUs - esp_timer_get_time();
+    return remainingUs > 0 &&
+        esp_timer_start_once(timer, remainingUs) == ESP_OK;
+  }
+  int socket;
+  int64_t deadlineUs;
+  esp_timer_handle_t timer = nullptr;
+  SemaphoreHandle_t done = nullptr;
+  bool started = false;
+};
+}  // namespace
 
 // TODO(klew): move it to constructor
 #define CAM_PIN_PWDN 32
@@ -158,6 +219,10 @@ bool OcrIc::sendPhotoToOcrServer(const char *url,
   // TODO(klew): move it to common implementation based on
   // Supla::Network::Client
   bool success = false;
+  if (resultBuffer == nullptr || resultBufferSize <= 0) {
+    return false;
+  }
+  resultBuffer[0] = '\0';
 
   const char *headerContent =
     "------WebKitFormBoundary7MA4YWxkTrZu0gW\r\n"
@@ -178,6 +243,9 @@ bool OcrIc::sendPhotoToOcrServer(const char *url,
   config.event_handler = nullptr;
 
   esp_http_client_handle_t client = esp_http_client_init(&config);
+  if (client == nullptr) {
+    return false;
+  }
 
   esp_http_client_set_method(client, HTTP_METHOD_POST);
   esp_http_client_set_header(
@@ -208,42 +276,53 @@ bool OcrIc::sendPhotoToOcrServer(const char *url,
       esp_http_client_write(client, closure, strlen(closure));
     }
 
-    esp_http_client_fetch_headers(client);
-    int status = esp_http_client_get_status_code(client);
-    SUPLA_LOG_INFO("HTTP POST Status = %d", status);
-    if (true) {  // if (content_length > 0) {
-      if (resultBuffer) {
-        memset(resultBuffer, 0, resultBufferSize);
+    const int64_t responseStartUs = esp_timer_get_time();
+    const int64_t responseDeadlineUs = responseStartUs + 10000000;
+    OcrResponseTimer deadline(esp_http_client_get_socket(client),
+                              responseDeadlineUs);
+    if (deadline.isStarted()) {
+      const int64_t contentLength = esp_http_client_fetch_headers(client);
+      int status = esp_http_client_get_status_code(client);
+      SUPLA_LOG_INFO("HTTP POST Status = %d", status);
+      bool complete = false;
+      size_t offset = 0;
+      char data[128];
+      if (contentLength >= 0 && contentLength < resultBufferSize) {
         while (true) {
-          int dataRead = esp_http_client_read(
-              client, resultBuffer, resultBufferSize - 1);
-          if (dataRead < 0) {
-            SUPLA_LOG_ERROR("data read error");
+          const int64_t remainingUs = responseDeadlineUs - esp_timer_get_time();
+          if (remainingUs <= 0 ||
+              esp_http_client_set_timeout_ms(
+                  client, (remainingUs + 999) / 1000) != ESP_OK) {
             break;
-          } else if (dataRead > 0) {
-            resultBuffer[dataRead < resultBufferSize ? dataRead
-              : resultBufferSize - 1] =
-              '\0';
-          } else if (dataRead == 0) {
-            if (errno == ECONNRESET || errno == ENOTCONN) {
-              SUPLA_LOG_DEBUG("Connection closed, errno = %d", errno);
-              break;
-            }
-            if (esp_http_client_is_complete_data_received(client) == true) {
-              break;
-            }
           }
-        }
-
-        if (!esp_http_client_is_complete_data_received(client)) {
-          SUPLA_LOG_ERROR("error in receiving check update response");
-        } else {
-          SUPLA_LOG_INFO("HTTP POST complete, content = %s", resultBuffer);
-          if (status >= 200 && status <= 202) {
-            success = true;
+          // Read at most one byte beyond capacity to detect oversized bodies.
+          const size_t available = resultBufferSize - offset;
+          const int length =
+              available < sizeof(data) ? available : sizeof(data);
+          const int received = esp_http_client_read(client, data, length);
+          if (received < 0 || received > length ||
+              esp_timer_get_time() >= responseDeadlineUs) {
+            break;
+          }
+          if (received == 0) {
+            // Drain cached body data before accepting the completion flag.
+            complete = esp_http_client_is_complete_data_received(client);
+            break;
+          }
+          if (!Supla::Sensor::appendOcrHttpResponseData(
+                  resultBuffer, resultBufferSize, &offset, data, received)) {
+            break;
           }
         }
       }
+      if (complete) {
+        SUPLA_LOG_INFO("HTTP POST complete, content = %s", resultBuffer);
+        success = status >= 200 && status <= 202;
+      } else {
+        SUPLA_LOG_ERROR("HTTP POST response incomplete or exceeds limits");
+      }
+    } else {
+      SUPLA_LOG_ERROR("HTTP POST response deadline could not be started");
     }
   } else {
     SUPLA_LOG_ERROR("HTTP POST request failed: %s", esp_err_to_name(err));

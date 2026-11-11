@@ -988,7 +988,7 @@ int RollerShutterInterface::handleCalcfgFromServer(
 
 Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
-  SUPLA_LOG_DEBUG(
+  SUPLA_LOG_VERBOSE(
       "RS[%d] applyChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
       result->Func,

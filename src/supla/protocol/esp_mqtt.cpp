@@ -3,9 +3,12 @@
 
 #include "esp_mqtt.h"
 
+#ifdef SUPLA_ESP_MQTT_AVAILABLE
+
 #include <errno.h>
 
 #include <SuplaDevice.h>
+#include <sdkconfig.h>
 #if defined(CONFIG_MBEDTLS_CERTIFICATE_BUNDLE) && \
     CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
 #include <esp_crt_bundle.h>
@@ -93,23 +96,29 @@ Supla::ConnectionError mapMqttTransportError(
 }  // namespace
 
 void mqttEventDataProcess(esp_mqtt_event_handle_t event) {
-  if (event == nullptr) {
+  if (event == nullptr || espMqtt == nullptr) {
+    return;
+  }
+
+  if (event->topic == nullptr || event->topic_len <= 0 ||
+      event->topic_len >= MAX_TOPIC_LEN || event->data_len < 0 ||
+      event->data_len >= MQTT_MAX_PAYLOAD_LEN ||
+      (event->data_len > 0 && event->data == nullptr) ||
+      event->current_data_offset != 0 ||
+      event->total_data_len != event->data_len) {
+    SUPLA_LOG_WARNING(
+        "MQTT: ignoring invalid, oversized or fragmented message");
     return;
   }
 
   char topic[MAX_TOPIC_LEN] = {};
   char payload[MQTT_MAX_PAYLOAD_LEN] = {};
-  int topicLen = MAX_TOPIC_LEN;
-  if (event->topic_len < topicLen) {
-    topicLen = event->topic_len;
+  memcpy(topic, event->topic, event->topic_len);
+  topic[event->topic_len] = '\0';
+  if (event->data_len > 0) {
+    memcpy(payload, event->data, event->data_len);
   }
-  int payloadLen = MQTT_MAX_PAYLOAD_LEN - 1;
-  if (event->data_len < payloadLen) {
-    payloadLen = event->data_len;
-  }
-
-  strncpy(topic, event->topic, topicLen);
-  strncpy(payload, event->data, payloadLen);
+  payload[event->data_len] = '\0';
 
   espMqtt->processData(topic, payload);
 }
@@ -322,7 +331,22 @@ void Supla::Protocol::EspMqtt::onInit() {
 #endif
       }
     } else {
+#if defined(CONFIG_ESP_TLS_INSECURE) && CONFIG_ESP_TLS_INSECURE && \
+    defined(CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY) &&           \
+    CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY
       SUPLA_LOG_WARNING("MQTT: broker certificate verification is disabled");
+#else
+      // ESP-TLS refuses connections without server verification unless
+      // insecure mode is enabled in sdkconfig (Arduino ESP32 core doesn't).
+      SUPLA_LOG_ERROR(
+          "MQTT: TLS without certificate verification is not supported");
+      sdc->addLastStateLog(
+          "MQTT: TLS without certificate verification is not supported");
+      enabled = false;
+      error = true;
+      connectionError = ConnectionError::CERTIFICATE_ERROR;
+      return;
+#endif
     }
   } else {
     mqttCfg.broker.address.transport = MQTT_TRANSPORT_OVER_TCP;
@@ -485,3 +509,5 @@ void Supla::Protocol::EspMqtt::unsubscribeImp(const char *topic) {
   esp_mqtt_client_unsubscribe(client, topic);
   mutex->lock();
 }
+
+#endif  // SUPLA_ESP_MQTT_AVAILABLE

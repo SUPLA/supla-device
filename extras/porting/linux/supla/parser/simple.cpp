@@ -5,6 +5,10 @@
 
 #include <sstream>
 #include <string>
+#include <cerrno>
+#include <cmath>
+#include <cstdlib>
+#include <limits>
 
 Supla::Parser::Simple::Simple(Supla::Source::Source *src)
     : Supla::Parser::Parser(src) {
@@ -14,13 +18,15 @@ Supla::Parser::Simple::~Simple() {
 }
 
 double Supla::Parser::Simple::getValue(const std::string &key) {
-  int index = keys[key];
-  if (index < 0 || static_cast<size_t>(index) >= values.size()) {
+  const auto mapping = keys.find(key);
+  if (!valid || mapping == keys.end() || mapping->second < 0 ||
+      static_cast<size_t>(mapping->second) >= values.size()) {
     valid = false;
     return 0;
   }
-  std::variant<int, bool, std::string, double> val = values[index];
-  if (std::holds_alternative<double>(val)) {
+  const auto &val = values[mapping->second];
+  if (std::holds_alternative<double>(val) &&
+      std::isfinite(std::get<double>(val))) {
     return std::get<double>(val);
   } else if (std::holds_alternative<int>(val)) {
     return static_cast<double>(std::get<int>(val));
@@ -32,12 +38,13 @@ double Supla::Parser::Simple::getValue(const std::string &key) {
 
 std::variant<int, bool, std::string> Supla::Parser::Simple::getStateValue(
     const std::string &key) {
-  int index = keys[key];
-  if (index < 0 || static_cast<size_t>(index) >= values.size()) {
+  const auto mapping = keys.find(key);
+  if (!valid || mapping == keys.end() || mapping->second < 0 ||
+      static_cast<size_t>(mapping->second) >= values.size()) {
     valid = false;
     return 0;
   }
-  std::variant<int, bool, std::string, double> val = values[index];
+  const auto &val = values[mapping->second];
   if (std::holds_alternative<int>(val)) {
     return std::get<int>(val);
   } else if (std::holds_alternative<bool>(val)) {
@@ -45,42 +52,59 @@ std::variant<int, bool, std::string> Supla::Parser::Simple::getStateValue(
   } else if (std::holds_alternative<std::string>(val)) {
     return std::get<std::string>(val);
   } else if (std::holds_alternative<double>(val)) {
-    return static_cast<int>(std::get<double>(val));
-  } else {
-    valid = false;
-    return 0;
+    const double number = std::get<double>(val);
+    if (std::isfinite(number) && number >= std::numeric_limits<int>::min() &&
+        number <= std::numeric_limits<int>::max()) {
+      return static_cast<int>(number);
+    }
   }
+  valid = false;
+  return 0;
 }
 
 bool Supla::Parser::Simple::refreshSource() {
-  if (source) {
-    std::string sourceContent = source->getContent();
+  valid = false;
+  values.clear();
+  if (source == nullptr) {
+    return false;
+  }
+  const std::string sourceContent = source->getContent();
+  if (sourceContent.empty()) {
+    return false;
+  }
 
-    if (sourceContent.length() == 0) {
-      valid = false;
-      return valid;
+  // Count getline-compatible fields before allocating or converting any.
+  size_t count = 0;
+  for (size_t start = 0; start < sourceContent.size();) {
+    if (++count > MAX_FIELDS) {
+      return false;
     }
-
-    std::stringstream ss(sourceContent);
-    std::string line;
-    values.clear();
-
-    std::string strVal;
-    for (int i = 0; std::getline(ss, strVal, '\n'); i++) {
-      try {
-        if (strVal == "true" || strVal == "false") {
-          values[i] = strVal == "true";
-        } else {
-          double dblVal = std::stod(strVal);
-          if (dblVal == static_cast<int>(dblVal)) {
-            values[i] = static_cast<int>(dblVal);
-          } else {
-            values[i] = dblVal;
-          }
-        }
-      } catch (...) {
-        values[i] = strVal;
-      }
+    const size_t end = sourceContent.find('\n', start);
+    if (end == std::string::npos) {
+      break;
+    }
+    start = end + 1;
+  }
+  values.reserve(count);
+  std::stringstream ss(sourceContent);
+  std::string strVal;
+  while (std::getline(ss, strVal, '\n')) {
+    if (strVal == "true" || strVal == "false") {
+      values.emplace_back(strVal == "true");
+      continue;
+    }
+    char *end = nullptr;
+    errno = 0;
+    const double number = std::strtod(strVal.c_str(), &end);
+    if (end == strVal.c_str() || errno == ERANGE) {
+      values.emplace_back(strVal);
+    } else if (std::isfinite(number) &&
+               number >= std::numeric_limits<int>::min() &&
+               number <= std::numeric_limits<int>::max() &&
+               number == std::trunc(number)) {
+      values.emplace_back(static_cast<int>(number));
+    } else {
+      values.emplace_back(number);
     }
   }
   valid = true;

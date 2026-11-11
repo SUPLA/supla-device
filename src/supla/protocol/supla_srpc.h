@@ -184,13 +184,19 @@ class SuplaSrpc : public ProtocolLayer {
   uint8_t activityTimeoutS = 30;
   uint8_t securityLevel = 0;
   int8_t registered = 0;
-  bool requestNetworkRestart = false;
-  bool enabled = true;
-  bool setDeviceConfigReceivedAfterRegistration = false;
-  bool deviceSyncDoneReceived = false;
-  bool firstConnectionAttempt = true;
-  bool adErrorLogged = false;
-  bool writeFailure = false;
+  bool requestNetworkRestart : 1;
+  bool enabled : 1;
+  bool setDeviceConfigReceivedAfterRegistration : 1;
+  bool deviceSyncDoneReceived : 1;
+  bool firstConnectionAttempt : 1;
+  bool adErrorLogged : 1;
+  bool writeFailure : 1;
+  bool ownsSelectedCertificate : 1;
+
+ private:
+  bool versionErrorDisconnectPending : 1;
+
+ protected:
   uint8_t autodiscoverRetryCounter = 0;
   uint16_t connectionFailCounter = 0;
   uint8_t reconnectAttemptCounter = 0;
@@ -210,9 +216,9 @@ class SuplaSrpc : public ProtocolLayer {
   Supla::Device::ChannelConflictResolver *channelConflictResolver = nullptr;
 
  private:
+  void releaseOwnedCertificate();
   void handlePendingCalCfgTimeouts(uint32_t _millis);
   Supla::Device::RemoteDeviceConfig *remoteDeviceConfig = nullptr;
-  bool versionErrorDisconnectPending = false;
 };
 }  // namespace Protocol
 

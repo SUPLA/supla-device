@@ -3,11 +3,11 @@
 
 #include <gtest/gtest.h>
 
-#include <cstring>
-#include <string>
-
 #include <supla/channels/channel.h>
 #include <supla/sensor/general_purpose_text.h>
+
+#include <cstring>
+#include <string>
 
 #include "simple_time.h"
 
@@ -43,8 +43,16 @@ TEST_F(GeneralPurposeTextTestsFixture, publishesTextAndSkipsUnchangedValue) {
   ASSERT_TRUE(channel->isUpdateReady());
   ASSERT_NE(nullptr, channel->getExtValue());
   EXPECT_EQ(EV_TYPE_GENERAL_PURPOSE_TEXT, channel->getExtValue()->type);
-  EXPECT_EQ(5U, channel->getExtValue()->size);
-  EXPECT_EQ(0, std::memcmp(channel->getExtValue()->value, "hello", 5));
+  EXPECT_EQ(SUPLA_GENERAL_PURPOSE_TEXT_PAYLOAD_HEADER_SIZE + 5,
+            channel->getExtValue()->size);
+  EXPECT_EQ(0, channel->getExtValue()->value[0]);
+  EXPECT_EQ(0, channel->getExtValue()->value[1]);
+  EXPECT_EQ(0, channel->getExtValue()->value[2]);
+  EXPECT_EQ(0, channel->getExtValue()->value[3]);
+  EXPECT_EQ(0, std::memcmp(
+                   channel->getExtValue()->value +
+                       SUPLA_GENERAL_PURPOSE_TEXT_PAYLOAD_HEADER_SIZE,
+                   "hello", 5));
 
   auto sequence = channel->getValueInt64();
   channel->clearSendValue();
@@ -55,7 +63,11 @@ TEST_F(GeneralPurposeTextTestsFixture, publishesTextAndSkipsUnchangedValue) {
   sensor.setValue("world");
   EXPECT_TRUE(channel->isUpdateReady());
   EXPECT_EQ(sequence + 1, channel->getValueInt64());
-  EXPECT_EQ(0, std::memcmp(channel->getExtValue()->value, "world", 5));
+  EXPECT_EQ(
+      0, std::memcmp(
+             channel->getExtValue()->value +
+                 SUPLA_GENERAL_PURPOSE_TEXT_PAYLOAD_HEADER_SIZE,
+             "world", 5));
 }
 
 TEST_F(GeneralPurposeTextTestsFixture, handlesEmptyAndTruncatedText) {
@@ -67,61 +79,65 @@ TEST_F(GeneralPurposeTextTestsFixture, handlesEmptyAndTruncatedText) {
   ASSERT_TRUE(channel->isUpdateReady());
   ASSERT_NE(nullptr, channel->getExtValue());
   EXPECT_EQ(EV_TYPE_GENERAL_PURPOSE_TEXT, channel->getExtValue()->type);
-  EXPECT_EQ(0U, channel->getExtValue()->size);
+  EXPECT_EQ(SUPLA_GENERAL_PURPOSE_TEXT_PAYLOAD_HEADER_SIZE,
+            channel->getExtValue()->size);
 
   channel->clearSendValue();
   std::string longText(SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE + 10, 'x');
   sensor.setValue(longText.c_str());
   EXPECT_TRUE(channel->isUpdateReady());
-  EXPECT_EQ(SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE, channel->getExtValue()->size);
-  EXPECT_EQ(0, std::memcmp(channel->getExtValue()->value,
-                           longText.data(),
-                           SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE));
+  EXPECT_EQ(SUPLA_GENERAL_PURPOSE_TEXT_PAYLOAD_HEADER_SIZE +
+                SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE,
+            channel->getExtValue()->size);
+  EXPECT_EQ(0, std::memcmp(
+                   channel->getExtValue()->value +
+                       SUPLA_GENERAL_PURPOSE_TEXT_PAYLOAD_HEADER_SIZE,
+                   longText.data(), SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE));
 }
 
-TEST_F(GeneralPurposeTextTestsFixture, periodicallyResendsTextUsingConfig) {
+TEST_F(GeneralPurposeTextTestsFixture, doesNotSupportChannelConfig) {
+  Supla::Sensor::GeneralPurposeText sensor;
+  TSD_ChannelConfig channelConfig = {};
+  EXPECT_EQ(Supla::ApplyConfigResult::NotSupported,
+            sensor.applyChannelConfig(&channelConfig, false));
+  EXPECT_EQ(Supla::ApplyConfigResult::NotSupported,
+            sensor.applyChannelConfig(nullptr, false));
+
+  int configSize = 1;
+  sensor.fillChannelConfig(nullptr, &configSize, SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(0, configSize);
+}
+
+TEST_F(GeneralPurposeTextTestsFixture, truncatesUtf8AtCodePointBoundary) {
   SimpleTime time;
   Supla::Sensor::GeneralPurposeText sensor;
   auto channel = sensor.getChannel();
 
-  TSD_ChannelConfig channelConfig = {};
-  channelConfig.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
-  channelConfig.ConfigSize = sizeof(TChannelConfig_GeneralPurposeText);
-  auto config = reinterpret_cast<TChannelConfig_GeneralPurposeText *>(
-      channelConfig.Config);
-  config->RefreshIntervalMs = 200;
+  std::string exactFit(SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE - 3, 'x');
+  exactFit.append("\xE2\x82\xAC");
+  sensor.setValue(exactFit.c_str());
+  ASSERT_EQ(SUPLA_GENERAL_PURPOSE_TEXT_PAYLOAD_HEADER_SIZE +
+                SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE,
+            channel->getExtValue()->size);
+  EXPECT_EQ(0, std::memcmp(
+                   channel->getExtValue()->value +
+                       SUPLA_GENERAL_PURPOSE_TEXT_PAYLOAD_HEADER_SIZE,
+                   exactFit.data(), SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE));
 
-  EXPECT_EQ(Supla::ApplyConfigResult::Success,
-            sensor.applyChannelConfig(&channelConfig, false));
-
-  TChannelConfig_GeneralPurposeText filledConfig = {};
-  int filledConfigSize = 0;
-  sensor.fillChannelConfig(&filledConfig, &filledConfigSize,
-                           SUPLA_CONFIG_TYPE_DEFAULT);
-  EXPECT_EQ(sizeof(filledConfig), filledConfigSize);
-  EXPECT_EQ(200, filledConfig.RefreshIntervalMs);
-  EXPECT_EQ(0, filledConfig.Reserved[0]);
-
-  sensor.setValue("current state");
-  ASSERT_TRUE(channel->isUpdateReady());
-  auto sequence = channel->getValueInt64();
-  channel->clearSendValue();
-
-  time.advance(199);
-  sensor.iterateAlways();
-  EXPECT_FALSE(channel->isUpdateReady());
-
-  time.advance(1);
-  sensor.iterateAlways();
-  EXPECT_TRUE(channel->isUpdateReady());
-  EXPECT_EQ(sequence + 1, channel->getValueInt64());
-  EXPECT_EQ(13U, channel->getExtValue()->size);
-  EXPECT_EQ(0, std::memcmp(channel->getExtValue()->value,
-                           "current state",
-                           13));
+  std::string overLimit(SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE - 2, 'y');
+  overLimit.append("\xE2\x82\xAC");
+  sensor.setValue(overLimit.c_str());
+  EXPECT_EQ(SUPLA_GENERAL_PURPOSE_TEXT_PAYLOAD_HEADER_SIZE +
+                SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE - 2,
+            channel->getExtValue()->size);
+  EXPECT_EQ(0, std::memcmp(
+                   channel->getExtValue()->value +
+                       SUPLA_GENERAL_PURPOSE_TEXT_PAYLOAD_HEADER_SIZE,
+                   overLimit.data(), SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE - 2));
 }
 
-TEST_F(GeneralPurposeTextTestsFixture, zeroRefreshIntervalUsesDefault) {
+TEST_F(GeneralPurposeTextTestsFixture,
+       periodicallyResendsTextUsingDefaultInterval) {
   SimpleTime time;
   Supla::Sensor::GeneralPurposeText sensor;
   auto channel = sensor.getChannel();

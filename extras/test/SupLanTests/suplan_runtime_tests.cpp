@@ -1300,6 +1300,59 @@ TEST(SupLanDiscoveryAudit, MissingPeerStopsAfterThreeLocateAttempts) {
   EXPECT_EQ(pair.runtimeB.diagnostics().sessionInitTx, 0U);
 }
 
+// Destination B reads from a Source that never answers LOCATE.
+uint8_t readFromAbsentSource(RuntimePair &pair, uint32_t nodeId) {
+  Supla::SupLan::PeerContext context = {
+      Supla::SupLan::kAuthorityServer, 0,
+      {Supla::SupLan::kNodeIdDevice, nodeId},
+      {Supla::SupLan::kNodeIdDevice, 1002}, 1, 1};
+  const uint8_t key[32] = {static_cast<uint8_t>(nodeId)};
+  const ResourceId resource = {Supla::SupLan::kResourceTypeChannel,
+                               60000 + nodeId};
+  Supla::SupLan::AclEntry acl = {resource, Supla::SupLan::kPermissionRead};
+  uint8_t peer = 0;
+  EXPECT_TRUE(pair.peersB.addPeer(&context, key, 1, &acl, 1, &peer, true));
+  EXPECT_TRUE(pair.runtimeB.requestRead(peer, resource));
+  return peer;
+}
+
+TEST(SupLanDiscoveryAudit, AbsentPeersYieldLocateSlotsAfterReplyWindow) {
+  RuntimePair pair;
+  for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i)
+    readFromAbsentSource(pair, 1100 + i);
+  pair.runtimeB.iterate();
+  ASSERT_EQ(pair.runtimeB.diagnostics().locateTx,
+            SUPLAN_MAX_OUTSTANDING_LOCATES);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx,
+            SUPLAN_MAX_OUTSTANDING_LOCATES);  // Reply windows are guaranteed.
+  pair.pumpMs(1000);  // Far below the 5 s recovery deadline.
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 1U);
+  EXPECT_TRUE(pair.runtimeB.hasSession(pair.peerB));
+  EXPECT_EQ(pair.runtimeB.recoveryStatus(pair.peerB).backgroundStage, 0U);
+  EXPECT_LE(pair.runtimeB.poolDiagnostics().locates.highWater,
+            SUPLAN_MAX_OUTSTANDING_LOCATES);
+}
+
+TEST(SupLanDiscoveryAudit, LocateStarvedCycleDoesNotEscalateBackoff) {
+  RuntimePair pair;
+  uint8_t peers[SUPLAN_MAX_OUTSTANDING_LOCATES + 1];
+  for (uint8_t i = 0; i <= SUPLAN_MAX_OUTSTANDING_LOCATES; ++i)
+    peers[i] = readFromAbsentSource(pair, 1100 + i);
+  pair.runtimeB.iterate();  // The last peer finds every slot fresh.
+  const uint8_t starved = peers[SUPLAN_MAX_OUTSTANDING_LOCATES];
+  ASSERT_EQ(pair.runtimeB.recoveryStatus(starved).locateAttempts, 0U);
+  pair.network.now = pair.runtimeB.recoveryStatus(starved).deadlineMs;
+  pair.runtimeB.iterate();
+  for (uint8_t i = 0; i <= SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
+    const auto status = pair.runtimeB.recoveryStatus(peers[i]);
+    SCOPED_TRACE(i);
+    EXPECT_FALSE(status.active);
+    EXPECT_EQ(status.backgroundStage, peers[i] == starved ? 0U : 1U);
+  }
+}
+
 TEST(SupLanDiscoveryAudit, LostQueryAndLateJoiningPeerRecoverOnNextAttempt) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));

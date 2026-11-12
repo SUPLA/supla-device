@@ -203,6 +203,7 @@ class Runtime {
     bool active : 1;
     bool scheduled : 1;
     bool sleeping : 1;
+    bool locateStarved : 1;
   };
 
   // A dependency consumes at most one slot per locally requested ACL resource.

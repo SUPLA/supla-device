@@ -581,6 +581,7 @@ void Runtime::beginRecovery(uint8_t peerIndex) {
     peer.active = true;
     peer.scheduled = false;
     peer.locateAttempts = 0;
+    peer.locateStarved = false;
     peer.deadlineMs = datagrams_->nowMs() + kControlLifetimeMs;
   }
 }
@@ -628,7 +629,9 @@ void Runtime::finishRecovery(uint8_t peerIndex) {
         getUint32(jitter) % (base / 5 + 1);
     emit(DiagnosticEvent::RecoveryFailed, peerIndex, ResourceId(),
          peer.nextRefreshMs - datagrams_->nowMs());
-    if (peer.backgroundStage < 3) {
+    // A cycle that never got a LOCATE slot did not probe the peer.
+    if (peer.backgroundStage < 3 &&
+        !(peer.locateStarved && !peer.locateAttempts)) {
       ++peer.backgroundStage;
     }
   }
@@ -761,6 +764,14 @@ void Runtime::startLocate(uint8_t peerIndex) {
     startHandshake(peerIndex);
     return;
   }
+  const uint32_t now = datagrams_->nowMs();
+  PeerRecovery &recovery = recovery_[peerIndex];
+  if (!recovery.active || recovery.locateAttempts >= kLocateMaxAttempts ||
+      (recovery.locateAttempts != 0 &&
+       static_cast<uint32_t>(now - recovery.lastLocateMs) <
+           kLocateRetrySpacingMs)) {
+    return;
+  }
   // One slot keeps every attempt nonce of this recovery cycle outstanding, so
   // a reply delayed past later attempts or a slow iteration is still accepted.
   int slot = -1;
@@ -770,21 +781,27 @@ void Runtime::startLocate(uint8_t peerIndex) {
   for (uint8_t i = 0; slot < 0 && i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
     if (!locates_[i].used) slot = i;
   }
+  // Only the per-attempt reply window is guaranteed. The longer cycle window
+  // is best effort: the oldest slot past that window yields to a waiting peer.
+  uint32_t oldest = 0;
+  for (uint8_t i = 0; slot < 0 && i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
+    const uint32_t age = now - recovery_[locates_[i].peerIndex].lastLocateMs;
+    if (age >= kLocateRetrySpacingMs && age > oldest) oldest = age;
+  }
+  for (uint8_t i = 0; slot < 0 && oldest && i < SUPLAN_MAX_OUTSTANDING_LOCATES;
+       ++i) {
+    if (now - recovery_[locates_[i].peerIndex].lastLocateMs == oldest) slot = i;
+  }
   if (slot < 0) {
+    recovery.locateStarved = true;
     emit(DiagnosticEvent::ResourceLimit);
     ++diagnostics_.poolReject;
     return;
   }
-  const uint32_t now = datagrams_->nowMs();
-  PeerRecovery &recovery = recovery_[peerIndex];
   OutstandingLocate &locate = locates_[slot];
-  if (!recovery.active || recovery.locateAttempts >= kLocateMaxAttempts ||
-      (locate.used && locate.nonceCount >= kLocateMaxAttempts) ||
-      (recovery.locateAttempts != 0 &&
-       static_cast<uint32_t>(now - recovery.lastLocateMs) <
-           kLocateRetrySpacingMs)) {
-    return;
-  }
+  if (locate.used && locate.peerIndex != peerIndex)
+    locate = OutstandingLocate();  // Reclaimed: its late replies are dropped.
+  if (locate.used && locate.nonceCount >= kLocateMaxAttempts) return;
   // Scheduling counts attempts even if RNG, MAC or the local send fails.
   ++recovery.locateAttempts;
   recovery.lastLocateMs = now;

@@ -948,102 +948,41 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     return true;
   }
 
-  hvac->generateKey(keyMatch, "t_freeze");
-  // temperature freeze
-  if (strcmp(key, keyMatch) == 0) {
-    if (strnlen(value, 10) > 0) {
-      int16_t temperature = floatStringToInt(value, 1);
-      temperature *= 10;
-      Supla::Control::HvacBase::setTemperatureInStruct(
-          &hvacConfig->Temperatures,
-          TEMPERATURE_FREEZE_PROTECTION,
-          temperature);
-    }
-    return true;
-  }
+  struct TemperatureField {
+    char tag[10];
+    uint16_t type;
+  };
+  static const TemperatureField temperatureFields[] SUPLA_WEB_PROGMEM = {
+      {"t_freeze", TEMPERATURE_FREEZE_PROTECTION},
+      {"t_eco", TEMPERATURE_ECO},
+      {"t_comfort", TEMPERATURE_COMFORT},
+      {"t_boost", TEMPERATURE_BOOST},
+      {"t_heat", TEMPERATURE_HEAT_PROTECTION},
+      {"t_hister", TEMPERATURE_HISTERESIS},
+      {"t_below", TEMPERATURE_BELOW_ALARM},
+      {"t_above", TEMPERATURE_ABOVE_ALARM},
+      {"t_aux_min", TEMPERATURE_AUX_MIN_SETPOINT},
+      {"t_aux_max", TEMPERATURE_AUX_MAX_SETPOINT},
+  };
 
-  hvac->generateKey(keyMatch, "t_eco");
-  // temperature eco
-  if (strcmp(key, keyMatch) == 0) {
-    if (strnlen(value, 10) > 0) {
-      int16_t temperature = floatStringToInt(value, 1);
-      temperature *= 10;
-      Supla::Control::HvacBase::setTemperatureInStruct(
-          &hvacConfig->Temperatures, TEMPERATURE_ECO, temperature);
+  for (const auto& storedField : temperatureFields) {
+#if defined(ARDUINO_ARCH_ESP8266)
+    // Copy one descriptor from flash before passing its tag to generateKey().
+    TemperatureField field;
+    memcpy_P(&field, &storedField, sizeof(field));
+#else
+    const auto& field = storedField;
+#endif
+    hvac->generateKey(keyMatch, field.tag);
+    if (strcmp(key, keyMatch) == 0) {
+      if (strnlen(value, 10) > 0) {
+        int16_t temperature = floatStringToInt(value, 1);
+        temperature *= 10;
+        Supla::Control::HvacBase::setTemperatureInStruct(
+            &hvacConfig->Temperatures, field.type, temperature);
+      }
+      return true;
     }
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "t_comfort");
-  // temperature comfort
-  if (strcmp(key, keyMatch) == 0) {
-    if (strnlen(value, 10) > 0) {
-      int16_t temperature = floatStringToInt(value, 1);
-      temperature *= 10;
-      Supla::Control::HvacBase::setTemperatureInStruct(
-          &hvacConfig->Temperatures, TEMPERATURE_COMFORT, temperature);
-    }
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "t_boost");
-  // temperature boost
-  if (strcmp(key, keyMatch) == 0) {
-    if (strnlen(value, 10) > 0) {
-      int16_t temperature = floatStringToInt(value, 1);
-      temperature *= 10;
-      Supla::Control::HvacBase::setTemperatureInStruct(
-          &hvacConfig->Temperatures, TEMPERATURE_BOOST, temperature);
-    }
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "t_heat");
-  // temperature heat
-  if (strcmp(key, keyMatch) == 0) {
-    if (strnlen(value, 10) > 0) {
-      int16_t temperature = floatStringToInt(value, 1);
-      temperature *= 10;
-      Supla::Control::HvacBase::setTemperatureInStruct(
-          &hvacConfig->Temperatures, TEMPERATURE_HEAT_PROTECTION, temperature);
-    }
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "t_hister");
-  // temperature hister
-  if (strcmp(key, keyMatch) == 0) {
-    if (strnlen(value, 10) > 0) {
-      int16_t temperature = floatStringToInt(value, 1);
-      temperature *= 10;
-      Supla::Control::HvacBase::setTemperatureInStruct(
-          &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, temperature);
-    }
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "t_below");
-  // temperature below alarm
-  if (strcmp(key, keyMatch) == 0) {
-    if (strnlen(value, 10) > 0) {
-      int16_t temperature = floatStringToInt(value, 1);
-      temperature *= 10;
-      Supla::Control::HvacBase::setTemperatureInStruct(
-          &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, temperature);
-    }
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "t_above");
-  // temperature above alarm
-  if (strcmp(key, keyMatch) == 0) {
-    if (strnlen(value, 10) > 0) {
-      int16_t temperature = floatStringToInt(value, 1);
-      temperature *= 10;
-      Supla::Control::HvacBase::setTemperatureInStruct(
-          &hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM, temperature);
-    }
-    return true;
   }
 
   hvac->generateKey(keyMatch, "aux_ctrl");
@@ -1051,30 +990,6 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   if (strcmp(key, keyMatch) == 0) {
     bool auxMinMaxEnabled = (strcmp(value, "on") == 0);
     hvacConfig->AuxMinMaxSetpointEnabled = auxMinMaxEnabled;
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "t_aux_min");
-  // temperature aux min setpoint
-  if (strcmp(key, keyMatch) == 0) {
-    if (strnlen(value, 10) > 0) {
-      int16_t temperature = floatStringToInt(value, 1);
-      temperature *= 10;
-      Supla::Control::HvacBase::setTemperatureInStruct(
-          &hvacConfig->Temperatures, TEMPERATURE_AUX_MIN_SETPOINT, temperature);
-    }
-    return true;
-  }
-
-  hvac->generateKey(keyMatch, "t_aux_max");
-  // temperature aux max setpoint
-  if (strcmp(key, keyMatch) == 0) {
-    if (strnlen(value, 10) > 0) {
-      int16_t temperature = floatStringToInt(value, 1);
-      temperature *= 10;
-      Supla::Control::HvacBase::setTemperatureInStruct(
-          &hvacConfig->Temperatures, TEMPERATURE_AUX_MAX_SETPOINT, temperature);
-    }
     return true;
   }
 

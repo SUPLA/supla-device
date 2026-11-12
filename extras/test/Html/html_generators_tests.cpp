@@ -2355,6 +2355,60 @@ TEST_F(HtmlCaptureTest,
   Supla::Channel::resetToDefaults();
 }
 
+TEST_F(HtmlCaptureTest, HvacTemperatureResponsesPreserveMappingAndEmptyValues) {
+  NiceMock<ConfigMock> cfg;
+  OutputSimulatorWithCheck output;
+  SimpleTime time;
+  Supla::Control::HvacBase hvac(&output);
+
+  class PendingParameters : public Supla::Html::HvacParameters {
+   public:
+    explicit PendingParameters(Supla::Control::HvacBase* hvac)
+        : HvacParameters(hvac) {}
+    ~PendingParameters() override {
+      delete config;
+      delete newValue;
+    }
+    const THVACTemperatureCfg& temperatures() const {
+      return hvacConfig->Temperatures;
+    }
+  } param(&hvac);
+
+  const char* tags[] = {"t_freeze", "t_eco", "t_comfort", "t_boost", "t_heat",
+                        "t_hister", "t_below", "t_above", "t_aux_min",
+                        "t_aux_max"};
+  const unsigned int types[] = {
+      TEMPERATURE_FREEZE_PROTECTION, TEMPERATURE_ECO, TEMPERATURE_COMFORT,
+      TEMPERATURE_BOOST, TEMPERATURE_HEAT_PROTECTION, TEMPERATURE_HISTERESIS,
+      TEMPERATURE_BELOW_ALARM, TEMPERATURE_ABOVE_ALARM,
+      TEMPERATURE_AUX_MIN_SETPOINT, TEMPERATURE_AUX_MAX_SETPOINT};
+  const char* values[] = {"-12.3", "17.5", "21.0", "25.5", "35.0",
+                          "0.4", "-5.0", "40.2", "18.0", "29.5"};
+  const int16_t expected[] = {-1230, 1750, 2100, 2550, 3500,
+                              40, -500, 4020, 1800, 2950};
+
+  for (size_t i = 0; i < sizeof(tags) / sizeof(tags[0]); ++i) {
+    SCOPED_TRACE(tags[i]);
+    char key[16] = {};
+    hvac.generateKey(key, tags[i]);
+    ASSERT_TRUE(param.handleResponse(key, values[i]));
+    EXPECT_EQ(expected[i], Supla::Control::HvacBase::getTemperatureFromStruct(
+                               &param.temperatures(), types[i]));
+    ASSERT_TRUE(param.handleResponse(key, ""));
+    EXPECT_EQ(expected[i], Supla::Control::HvacBase::getTemperatureFromStruct(
+                               &param.temperatures(), types[i]));
+  }
+
+  // Later fields must not overwrite values handled earlier in the same form.
+  for (size_t i = 0; i < sizeof(tags) / sizeof(tags[0]); ++i) {
+    EXPECT_EQ(expected[i], Supla::Control::HvacBase::getTemperatureFromStruct(
+                               &param.temperatures(), types[i]));
+  }
+  EXPECT_FALSE(param.handleResponse("0_t_unknown", "19.0"));
+  EXPECT_FALSE(param.handleResponse("1_t_eco", "19.0"));
+  EXPECT_TRUE(param.handleResponse("0_aux_ctrl", "on"));
+}
+
 TEST_F(HtmlCaptureTest, HvacParametersRendersBasicThermostatFields) {
   NiceMock<ConfigMock> cfg;
   SenderMock sender;

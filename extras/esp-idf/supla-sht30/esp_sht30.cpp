@@ -31,9 +31,9 @@ void Supla::Sensor::SHT30::onInit() {
   driver->release();
 
   if (devHandle == nullptr) {
-    SUPLA_LOG_WARNING("SHT30[0x%2X]: Failed to add i2c device", addr);
+    SUPLA_LOG_WARNING("SHT30[0x%2X] Failed to add i2c device", addr);
   } else {
-    SUPLA_LOG_DEBUG("SHT30[0x%2X]: I2C device added", addr);
+    SUPLA_LOG_DEBUG("SHT30[0x%2X] I2C device added", addr);
   }
 
   channel.setNewValue(getTemp(), getHumi());

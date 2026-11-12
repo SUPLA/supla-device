@@ -16,6 +16,10 @@ Supla::LinuxNetwork::~LinuxNetwork() {
   DisconnectProtocols();
 }
 
+const char *Supla::LinuxNetwork::getIntfName() const {
+  return "Linux";
+}
+
 bool Supla::LinuxNetwork::isReady() {
   return isDeviceReady;
 }

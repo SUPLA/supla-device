@@ -224,7 +224,7 @@ void LightingPwmLeds::onInit() {
   applyPwmResolutionBitsToOutputs();
 
   if (hasParent()) {
-    SUPLA_LOG_DEBUG("Light[%d]: initialize parent PWM", getChannelNumber());
+    SUPLA_LOG_DEBUG("Light[%d] initialize parent PWM", getChannelNumber());
     parentPwm->onInit();
   }
 

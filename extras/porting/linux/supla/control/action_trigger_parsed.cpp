@@ -65,7 +65,7 @@ void ActionTriggerParsed::onLoadConfig(SuplaDeviceClass *sdc) {
   config.ConfigSize = size;
   memcpy(config.Config, &value, sizeof(value));
   if (handleChannelConfig(&config, true) != SUPLA_CONFIG_RESULT_TRUE) {
-    SUPLA_LOG_ERROR("AT[%d]: failed to apply temporary_unlock_duration_sec",
+    SUPLA_LOG_ERROR("AT[%d] failed to apply temporary_unlock_duration_sec",
                     getChannelNumber());
   }
 }

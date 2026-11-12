@@ -4,6 +4,7 @@
 #include "valve_base.h"
 #include <supla/control/remote_action.h>
 
+#include <inttypes.h>
 #include <string.h>
 #include <supla/channels/channel_state.h>
 #include <supla/storage/canonical_config.h>
@@ -96,11 +97,11 @@ void ValveBase::iterateAlways() {
     if (currentState != lastOpenLevelState) {
       if (lastCmdTimestamp == 0 || millis() - lastCmdTimestamp > 30000) {
         if (currentState == 0) {
-          SUPLA_LOG_DEBUG("Valve[%d]: manually closed", getChannelNumber());
+          SUPLA_LOG_DEBUG("Valve[%d] manually closed", getChannelNumber());
           channel.setValveManuallyClosedFlag(true);
         }
         if (currentState != 0) {
-          SUPLA_LOG_DEBUG("Valve[%d]: manually opened", getChannelNumber());
+          SUPLA_LOG_DEBUG("Valve[%d] manually opened", getChannelNumber());
           channel.setValveManuallyClosedFlag(false);
         }
       }
@@ -166,7 +167,7 @@ int32_t ValveBase::handleRemoteNewValue(TSD_SuplaChannelNewValue *command) {
 int32_t ValveBase::handleNewValueFromServer(
     TSD_SuplaChannelNewValue *newValue) {
   // TODO(klew): update below logic for percentage variant
-  SUPLA_LOG_DEBUG("Valve[%d]: handleNewValueFromServer, value[0] %d",
+  SUPLA_LOG_DEBUG("Valve[%d] handleNewValueFromServer, value[0] %d",
                   getChannelNumber(),
                   newValue->value[0]);
   switch (newValue->value[0]) {
@@ -179,7 +180,7 @@ int32_t ValveBase::handleNewValueFromServer(
       break;
     }
     default: {
-      SUPLA_LOG_WARNING("Valve[%d]: value[0] not supported",
+      SUPLA_LOG_WARNING("Valve[%d] value[0] not supported",
                         getChannelNumber());
       return SUPLA_RESULT_FALSE;
     }
@@ -270,8 +271,20 @@ void ValveBase::purgeConfig() {
 }
 
 void ValveBase::printConfig() const {
-  SUPLA_LOG_DEBUG("Valve[%d]: close on flood type %d", getChannelNumber(),
-                   config.closeValveOnFloodType);
+  SUPLA_LOG_DEBUG("Valve[%d] close on flood type: %s (%d)",
+                  getChannelNumber(),
+                  config.closeValveOnFloodType == 0   ? "N/A"
+                  : config.closeValveOnFloodType == 1 ? "always"
+                                                      : "on change",
+                  config.closeValveOnFloodType);
+  for (const auto &sensor : config.sensorData) {
+    [[maybe_unused]] const auto reference = sensor.reference();
+    if (reference.kind == ChannelReferenceKind::NONE) continue;
+    SUPLA_LOG_DEBUG("Valve[%d] sensor %s:%" PRIu32,
+                    getChannelNumber(),
+                    reference.kind == ChannelReferenceKind::SERVER_CHANNEL
+                        ? "server" : "local", reference.id);
+  }
 }
 
 void ValveBase::onLoadState() {
@@ -292,7 +305,7 @@ void ValveBase::onLoadState() {
   }
 
   SUPLA_LOG_DEBUG(
-      "Valve[%d]: restored state %d (%s), flooding %d, manually closed %d",
+      "Valve[%d] restored state %d (%s), flooding %d, manually closed %d",
       getChannelNumber(),
       state,
       (state == 0 ? "closed" : "open"),
@@ -423,7 +436,7 @@ void ValveBase::openValve() {
 }
 
 void ValveBase::setValve(uint8_t openLevel) {
-  SUPLA_LOG_INFO("Valve[%d]: setValve %d (%s)",
+  SUPLA_LOG_INFO("Valve[%d] setValve %d (%s)",
                  getChannelNumber(),
                  openLevel,
                  openLevel > 0 ? "open" : "close");
@@ -487,7 +500,7 @@ bool ValveBase::removeSensor(uint8_t channelNumber) {
 }
 
 uint8_t ValveBase::getValueOpenStateFromDevice() {
-  SUPLA_LOG_ERROR("Valve[%d]: getValueOpenStateFromDevice not implemented",
+  SUPLA_LOG_ERROR("Valve[%d] getValueOpenStateFromDevice not implemented",
                   getChannelNumber());
   return 0;
 }
@@ -495,7 +508,7 @@ uint8_t ValveBase::getValueOpenStateFromDevice() {
 void ValveBase::setValueOnDevice(uint8_t openLevel) {
   SUPLA_LOG_WARNING("Valve::setValueOnDevice not implemented");
   SUPLA_LOG_DEBUG(
-      "Valve[%d]: setValueOnDevice: %d", getChannelNumber(), openLevel);
+      "Valve[%d] setValueOnDevice: %d", getChannelNumber(), openLevel);
 }
 
 void ValveBase::setIgnoreManuallyOpenedTimeMs(uint32_t timeMs) {

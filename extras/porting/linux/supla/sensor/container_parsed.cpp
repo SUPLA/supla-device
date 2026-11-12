@@ -28,7 +28,7 @@ int ContainerParsed::readNewValue() {
     if (!sourceRefreshed || !parser->isValid()) {
       if (!isDataErrorLogged) {
         isDataErrorLogged = true;
-        SUPLA_LOG_WARNING("ContainerParsed[%d]: source data error",
+        SUPLA_LOG_WARNING("ContainerParsed[%d] source data error",
                           getChannelNumber());
       }
       return -1;

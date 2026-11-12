@@ -4,6 +4,7 @@
 #include "container.h"
 
 #include <supla-common/proto.h>
+#include <inttypes.h>
 #include <string.h>
 #include <supla/channels/channel_state.h>
 #include <supla/storage/canonical_config.h>
@@ -584,11 +585,19 @@ void Container::purgeConfig() {
 
 void Container::printConfig() const {
   SUPLA_LOG_DEBUG(
-      "Container[%d]: warning above: %d, alarm above: %d, warning below: "
+      "Container[%d] warning above: %d, alarm above: %d, warning below: "
       "%d, alarm below: %d, mute by any user: %d",
       getChannelNumber(), config.warningAboveLevel - 1,
       config.alarmAboveLevel - 1, config.warningBelowLevel - 1,
       config.alarmBelowLevel - 1, config.muteAlarmSoundWithoutAdditionalAuth);
+  for (const auto &sensor : config.sensorData) {
+    [[maybe_unused]] const auto reference = sensor.source.reference();
+    if (reference.kind == ChannelReferenceKind::NONE) continue;
+    SUPLA_LOG_DEBUG("Container[%d] sensor %s:%" PRIu32 ", fill level: %d",
+                    getChannelNumber(),
+                    reference.kind == ChannelReferenceKind::SERVER_CHANNEL
+                        ? "server" : "local", reference.id, sensor.fillLevel);
+  }
 }
 
 void Container::fillChannelConfig(void *channelConfig, int *size,

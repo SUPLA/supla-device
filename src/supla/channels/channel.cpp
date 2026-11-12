@@ -414,9 +414,10 @@ void Channel::setType(uint32_t type) {
 }
 
 void Channel::setDefault(uint32_t value) {
-  SUPLA_LOG_DEBUG("Channel[%d]: setDefaultFunction: %d", channelNumber, value);
+  SUPLA_LOG_VERBOSE("Channel[%d] setDefaultFunction: %d",
+                    channelNumber, value);
   if (value > UINT16_MAX) {
-    SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %d",
+    SUPLA_LOG_ERROR("Channel[%d] Invalid defaultFunction value %d",
                     channelNumber, value);
     value = 0;
   }
@@ -1296,7 +1297,7 @@ void Channel::setHvacFlagBatteryCoverOpen(bool value) {
 void Channel::setHvacFlagCalibrationError(bool value) {
   auto hvacValue = getValueHvac();
   if (hvacValue != nullptr && value != isHvacFlagCalibrationError()) {
-    SUPLA_LOG_ERROR("HVAC[%d]: Setting calibration error flag %d",
+    SUPLA_LOG_ERROR("HVAC[%d] Setting calibration error flag %d",
                     getChannelNumber(),
                     value);
     setSendValue();
@@ -1326,7 +1327,7 @@ void Channel::setHvacFlagAntifreezeOverheatActive(bool value) {
 }
 
 void Channel::clearHvacState() {
-  SUPLA_LOG_INFO("HVAC[%d]: Clearing HVAC state for channel",
+  SUPLA_LOG_INFO("HVAC[%d] Clearing HVAC state for channel",
                  getChannelNumber());
   clearHvacSetpointTemperatureCool();
   clearHvacSetpointTemperatureHeat();

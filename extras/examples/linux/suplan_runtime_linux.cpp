@@ -424,11 +424,10 @@ bool LinuxSupLanRuntime::processDebugCommand(
     char output[160] = {};
     snprintf(output, sizeof(output),
              "CHANNEL id=%" PRIu32 " type=%" PRIu32 " function=%" PRIu32
-             " online=%u durable=%u value=%02x%02x%02x%02x%02x%02x%02x%02x\n",
+             " online=%u value=%02x%02x%02x%02x%02x%02x%02x%02x\n",
              channel->getServerChannelId(), channel->getChannelType(),
              static_cast<uint32_t>(snapshot.Default),
              channel->isStateOnline() ? 1U : 0U,
-             element->isChannelConfigDurable() ? 1U : 0U,
              value[0], value[1], value[2], value[3], value[4], value[5],
              value[6], value[7]);
     writeText(writer, output);
@@ -479,7 +478,7 @@ bool LinuxSupLanRuntime::processDebugCommand(
                "HVAC main=%" PRIu32 " min_on=%u temp=%d mode=%d "
                "heat=%u setpoint=%d aux=%" PRIu32 " binary=%" PRIu32
                " master=%" PRIu32 " pump=%" PRIu32 " hocs=%" PRIu32
-               " function=%" PRIu32 " durable=%u\n",
+               " function=%" PRIu32 "\n",
                config.MainThermometerChannelId,
                static_cast<unsigned>(config.MinOnTimeS),
                static_cast<int>(hvac->getLastTemperature()), hvac->getMode(),
@@ -488,8 +487,7 @@ bool LinuxSupLanRuntime::processDebugCommand(
                config.AuxThermometerChannelId, config.BinarySensorChannelId,
                config.MasterThermostatChannelId, config.PumpSwitchChannelId,
                config.HeatOrColdSourceSwitchChannelId,
-               hvac->getChannel()->getDefaultFunction(),
-               hvac->isChannelConfigDurable() ? 1U : 0U);
+               hvac->getChannel()->getDefaultFunction());
       writeText(writer, output);
 #ifdef SUPLAN_TESTING
     } else if (!(input >> mainId >> minOn) || mainId > INT32_MAX ||

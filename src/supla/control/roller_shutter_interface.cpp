@@ -1047,13 +1047,6 @@ int RollerShutterInterface::handleCalcfgFromServer(
 
 Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
-  SUPLA_LOG_DEBUG(
-      "RS[%d] applyChannelConfig, func %d, configtype %d, configsize %d",
-      getChannelNumber(),
-      result->Func,
-      result->ConfigType,
-      result->ConfigSize);
-
   if (result->ConfigSize == 0) {
     return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
@@ -1066,6 +1059,14 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
     case SUPLA_CHANNELFNC_CURTAIN:
     case SUPLA_CHANNELFNC_PROJECTOR_SCREEN:
     case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
+      if (result->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT &&
+          result->ConfigSize != sizeof(TChannelConfig_RollerShutter)) {
+        SUPLA_LOG_WARNING(
+            "RS[%d] invalid config size: received=%u, expected=%u",
+            getChannelNumber(), static_cast<unsigned int>(result->ConfigSize),
+            static_cast<unsigned int>(sizeof(TChannelConfig_RollerShutter)));
+        return Supla::ApplyConfigResult::DataError;
+      }
       if (result->ConfigType == 0 &&
           result->ConfigSize == sizeof(TChannelConfig_RollerShutter)) {
         auto newConfig =
@@ -1118,6 +1119,14 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
     }
     case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND:
     case SUPLA_CHANNELFNC_VERTICAL_BLIND: {
+      if (result->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT &&
+          result->ConfigSize != sizeof(TChannelConfig_FacadeBlind)) {
+        SUPLA_LOG_WARNING(
+            "FB[%d] invalid config size: received=%u, expected=%u",
+            getChannelNumber(), static_cast<unsigned int>(result->ConfigSize),
+            static_cast<unsigned int>(sizeof(TChannelConfig_FacadeBlind)));
+        return Supla::ApplyConfigResult::DataError;
+      }
       if (result->ConfigType == 0 &&
           result->ConfigSize == sizeof(TChannelConfig_FacadeBlind)) {
         auto newConfig =

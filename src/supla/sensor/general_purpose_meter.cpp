@@ -27,7 +27,7 @@ void GeneralPurposeMeter::onLoadConfig(SuplaDeviceClass *sdc) {
 
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
-    SUPLA_LOG_WARNING("GPM[%d]: Failed to load config", getChannelNumber());
+    SUPLA_LOG_WARNING("GPM[%d] Failed to load config", getChannelNumber());
     return;
   }
 
@@ -36,7 +36,7 @@ void GeneralPurposeMeter::onLoadConfig(SuplaDeviceClass *sdc) {
   if (cfg->getBlob(key,
         reinterpret_cast<char *>(&meterSpecificConfig),
         sizeof(GPMMeterSpecificConfig))) {
-    SUPLA_LOG_INFO("GPM[%d]: meter config loaded successfully",
+    SUPLA_LOG_INFO("GPM[%d] meter config loaded successfully",
                    getChannelNumber());
   }
 }
@@ -90,7 +90,7 @@ Supla::ApplyConfigResult GeneralPurposeMeter::applyChannelConfig(
       strncmp(config->DefaultUnitAfterValue,
               defaultUnitAfterValue,
               SUPLA_GENERAL_PURPOSE_UNIT_SIZE)) {
-    SUPLA_LOG_INFO("GPM[%d]: meter config changed", getChannelNumber());
+    SUPLA_LOG_INFO("GPM[%d] meter config changed", getChannelNumber());
     if (local) {
       setAndSaveConfigChangeFlag(true);
     }
@@ -189,7 +189,7 @@ void GeneralPurposeMeter::setFillMissingData(uint8_t fillMissingData,
 void GeneralPurposeMeter::saveMeterSpecificConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
-    SUPLA_LOG_WARNING("GPM[%d]: Failed to save config", getChannelNumber());
+    SUPLA_LOG_WARNING("GPM[%d] Failed to save config", getChannelNumber());
     return;
   }
 
@@ -198,7 +198,7 @@ void GeneralPurposeMeter::saveMeterSpecificConfig() {
   if (cfg->setBlob(key,
         reinterpret_cast<char *>(&meterSpecificConfig),
         sizeof(GPMMeterSpecificConfig))) {
-    SUPLA_LOG_INFO("GPM[%d]: meter specific config saved successfully",
+    SUPLA_LOG_INFO("GPM[%d] meter specific config saved successfully",
                    getChannelNumber());
     cfg->saveWithDelay(5000);
   }
@@ -234,7 +234,7 @@ int GeneralPurposeMeter::handleCalcfgFromServer(
       if (!request->SuperUserAuthorized) {
         return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
       }
-      SUPLA_LOG_INFO("GPM[%d]: CALCFG reset counter received",
+      SUPLA_LOG_INFO("GPM[%d] CALCFG reset counter received",
                      getChannelNumber());
       setCounter(resetToValue);
       return SUPLA_CALCFG_RESULT_DONE;

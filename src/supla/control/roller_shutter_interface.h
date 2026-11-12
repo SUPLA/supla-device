@@ -319,6 +319,9 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   void clearTiltConfig();
 
  protected:
+  bool hasChannelConfigSummary(uint8_t configType) const override {
+    return configType == SUPLA_CONFIG_TYPE_DEFAULT;
+  }
   RollerShutterInterface(bool tiltFunctionsEnabled,
                          Supla::Channel &externalChannel,
                          ElementMode mode);

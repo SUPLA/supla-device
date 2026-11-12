@@ -137,12 +137,56 @@ bool Storage::DeleteSection(int sectionId) {
   return false;
 }
 
+StateStorageInterface *Storage::CreateSimpleStateStorage(Storage *storage,
+                                                        uint32_t offset,
+                                                        uint32_t) {
+  return new SimpleState(storage, offset);
+}
+
+StateStorageInterface *Storage::CreateByteStateStorage(Storage *storage,
+                                                      uint32_t offset,
+                                                      uint32_t) {
+  return new StateWearLevelingByte(storage, offset);
+}
+
+StateStorageInterface *Storage::CreateSectorStateStorage(Storage *storage,
+                                                        uint32_t offset,
+                                                        uint32_t size) {
+  return new StateWearLevelingSector(storage, offset, size);
+}
+
+Storage::StateStorageFactory Storage::GetStateStorageFactory(
+    WearLevelingMode mode) {
+  switch (mode) {
+    case WearLevelingMode::OFF:
+      return CreateSimpleStateStorage;
+    case WearLevelingMode::BYTE_WRITE_MODE:
+      return CreateByteStateStorage;
+    case WearLevelingMode::SECTOR_WRITE_MODE:
+      return CreateSectorStateStorage;
+  }
+  return nullptr;
+}
+
+Storage::Storage(unsigned int storageStartingOffset,
+                 unsigned int availableSize)
+    : Storage(storageStartingOffset, availableSize,
+              CreateSimpleStateStorage) {
+}
+
 Storage::Storage(unsigned int storageStartingOffset,
                  unsigned int availableSize,
                  enum WearLevelingMode wearLevelingMode)
+    : Storage(storageStartingOffset, availableSize,
+              GetStateStorageFactory(wearLevelingMode)) {
+}
+
+Storage::Storage(unsigned int storageStartingOffset,
+                 unsigned int availableSize,
+                 StateStorageFactory stateStorageFactory)
     : storageStartingOffset(storageStartingOffset),
       availableSize(availableSize),
-      wearLevelingMode(wearLevelingMode) {
+      stateStorageFactory(stateStorageFactory) {
   instance = this;
 }
 
@@ -172,21 +216,9 @@ bool Storage::init() {
 
   uint32_t stateSectionPreambleOffset =
       storageStartingOffset + sizeof(Preamble);
-  switch (wearLevelingMode) {
-    case WearLevelingMode::OFF: {
-      stateStorage = new Supla::SimpleState(this, stateSectionPreambleOffset);
-      break;
-    }
-    case WearLevelingMode::BYTE_WRITE_MODE: {
-      stateStorage =
-        new Supla::StateWearLevelingByte(this, stateSectionPreambleOffset);
-      break;
-    }
-    case WearLevelingMode::SECTOR_WRITE_MODE: {
-      stateStorage = new Supla::StateWearLevelingSector(
-          this, stateSectionPreambleOffset, availableSize);
-      break;
-    }
+  if (stateStorageFactory != nullptr) {
+    stateStorage =
+        stateStorageFactory(this, stateSectionPreambleOffset, availableSize);
   }
 
   if (stateStorage == nullptr) {
@@ -327,7 +359,7 @@ bool Storage::readSection(int sectionId, unsigned char *data, int size) {
         int offset = ptr->offset;
         offset += entry * (ptr->size + (ptr->addCrc ? sizeof(uint16_t) : 0));
 
-        SUPLA_LOG_DEBUG("Storage special section[%d]: reading data from"
+        SUPLA_LOG_DEBUG("Storage special section[%d] reading data from"
             " entry %d at offset %d, size %d",
             sectionId, entry, offset, ptr->size);
 
@@ -390,7 +422,7 @@ bool Storage::writeSection(int sectionId, const unsigned char *data, int size) {
         delete[] currentData;
 
         if (isDataDifferent) {
-          SUPLA_LOG_DEBUG("Storage special section[%d]: writing data to"
+          SUPLA_LOG_DEBUG("Storage special section[%d] writing data to"
               " entry %d at offset %d, size %d",
               sectionId, entry, offset, ptr->size);
           auto wroteBytes = writeStorage(offset, data, size);
@@ -427,7 +459,7 @@ bool Storage::deleteSection(int sectionId) {
         int offset = ptr->offset;
         offset += entry * (ptr->size + (ptr->addCrc ? sizeof(uint16_t) : 0));
 
-        SUPLA_LOG_DEBUG("Storage special section[%d]: deleting data from"
+        SUPLA_LOG_DEBUG("Storage special section[%d] deleting data from"
             " entry %d at offset %d, size %d",
             sectionId, entry, offset, ptr->size);
 

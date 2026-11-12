@@ -328,7 +328,7 @@ bool RelayWeeklySchedule::isWeeklyScheduleValid(
       continue;
     }
     if (!isProgramValid(newSchedule->Program[i])) {
-      SUPLA_LOG_WARNING("Relay[%d]: invalid weekly schedule program %d",
+      SUPLA_LOG_WARNING("Relay[%d] invalid weekly schedule program %d",
                         owner_->getChannelNumber(),
                         i);
       return false;
@@ -339,7 +339,7 @@ bool RelayWeeklySchedule::isWeeklyScheduleValid(
     int programId = getProgramId(newSchedule, i);
     if (programId < 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
       SUPLA_LOG_WARNING(
-          "Relay[%d]: weekly schedule references invalid program %d",
+          "Relay[%d] weekly schedule references invalid program %d",
           owner_->getChannelNumber(),
           programId);
       return false;

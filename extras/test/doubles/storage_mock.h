@@ -35,6 +35,9 @@ class StorageMockSimulator: public Supla::Storage {
                        uint32_t size = 0,
                        enum Supla::Storage::WearLevelingMode mode =
                            Supla::Storage::WearLevelingMode::OFF);
+  StorageMockSimulator(uint32_t offset,
+                       uint32_t size,
+                       StateStorageFactory factory);
 
   int readStorage(unsigned int offset,
                   unsigned char *data,

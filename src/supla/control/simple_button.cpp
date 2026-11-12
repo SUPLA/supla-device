@@ -133,7 +133,7 @@ void ButtonState::init(int buttonNumber) {
     }
     newStatusCandidate = prevState;
     SUPLA_LOG_DEBUG(
-        "Button[%d]: Initialized: pin %d, pullUp %d, activeHigh %d, state %d",
+        "Button[%d] Initialized: pin %d, pullUp %d, activeHigh %d, state %d",
         buttonNumber,
         inputPin.getPin(),
         inputPin.isPullUp(),

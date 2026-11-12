@@ -47,7 +47,7 @@ extern "C" void supla_test_clear_last_log() {
 }
 
 extern "C" void supla_vlog(int priority, const char *message) {
-  supla_log(priority, "%s", message);
+  supla_log(priority, "%s", message ? message : "");
 }
 
 extern "C" unsigned int supla_test_log_calls() {

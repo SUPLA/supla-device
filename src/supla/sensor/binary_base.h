@@ -181,6 +181,9 @@ class BinaryBase : public ElementWithChannelActions {
                          uint8_t configType) override;
 
  protected:
+  bool hasChannelConfigSummary(uint8_t configType) const override {
+    return configType == SUPLA_CONFIG_TYPE_DEFAULT;
+  }
   void beginInitialChannelValueRead();
   void setInitialChannelValue(bool value);
   void notifyInputStateChangeCandidate();

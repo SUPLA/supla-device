@@ -95,7 +95,7 @@ bool DS18B20Parameters::handleResponse(const char* key, const char* value) {
       uint8_t dsAddress[DS_ADDRESS_SIZE] = {};
       cfg->getBlob(key, reinterpret_cast<char*>(dsAddress), DS_ADDRESS_SIZE);
       Supla::Sensor::DS18B20::clearAssignedAddress(dsAddress);
-      SUPLA_LOG_DEBUG("DS18B20[%d]: resetting address assignement", channel);
+      SUPLA_LOG_DEBUG("DS18B20[%d] resetting address assignement", channel);
     }
     return true;
   }

@@ -135,11 +135,7 @@ void BinaryBase::purgeConfig() {
 }
 
 Supla::ApplyConfigResult BinaryBase::applyChannelConfig(
-    TSD_ChannelConfig *newConfig, bool local) {
-  SUPLA_LOG_DEBUG("Binary[%d] processing%s channel config",
-                  getChannelNumber(),
-                  local ? " local" : "");
-
+    TSD_ChannelConfig *newConfig, bool) {
   if (newConfig->ConfigSize == 0) {
     SUPLA_LOG_DEBUG("Binary[%d] config missing on server",
         getChannelNumber());
@@ -152,16 +148,6 @@ Supla::ApplyConfigResult BinaryBase::applyChannelConfig(
 
   TChannelConfig_BinarySensor *serverConfig =
       reinterpret_cast<TChannelConfig_BinarySensor *>(newConfig->Config);
-
-  SUPLA_LOG_DEBUG("Binary[%d] received serverInvertLogic %d, timeoutDs %d, "
-                  "filteringTimeMs %d, sensitivity %d, "
-                  "localAlarmIndication %d",
-                  getChannelNumber(),
-                  serverConfig->InvertedLogic,
-                  serverConfig->Timeout,
-                  serverConfig->FilteringTimeMs,
-                  serverConfig->Sensitivity,
-                  serverConfig->LocalAlarmIndication);
 
   bool configChanged = false;
 

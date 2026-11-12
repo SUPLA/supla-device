@@ -184,7 +184,7 @@ void LightingPwmBase::setRGBCCT(int red,
   this->instant = instant;
   resetDisance = true;
 
-  SUPLA_LOG_DEBUG("Light[%d]: %d,%d,%d,%d,%d,%d",
+  SUPLA_LOG_DEBUG("Light[%d] %d,%d,%d,%d,%d,%d",
                   getChannelNumber(),
                   requested.red,
                   requested.green,

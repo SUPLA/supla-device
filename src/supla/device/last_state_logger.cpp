@@ -54,7 +54,7 @@ void LastStateLogger::log(const char *state, int uptimeSec) {
   buffer[LAST_STATE_LOGGER_BUFFER_SIZE - 2] = '.';
   buffer[LAST_STATE_LOGGER_BUFFER_SIZE - 1] = '\0';
 
-  SUPLA_LOG_INFO("LAST STATE ADDED: %s", buffer);
+  SUPLA_LOG_VERBOSE("LAST STATE ADDED: %s", buffer);
   delete [] copy;
 }
 

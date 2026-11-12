@@ -12,12 +12,12 @@
 using Supla::EspIdfSectorWlStorage;
 
 EspIdfSectorWlStorage::EspIdfSectorWlStorage(uint32_t size) : Storage(0, size,
-    WearLevelingMode::SECTOR_WRITE_MODE) {
+    CreateSectorStateStorage) {
   setStateSavePeriod(5000);
 }
 
 EspIdfSectorWlStorage::EspIdfSectorWlStorage(uint32_t offset, uint32_t size) :
-    Storage(offset, size, WearLevelingMode::SECTOR_WRITE_MODE) {
+    Storage(offset, size, CreateSectorStateStorage) {
   setStateSavePeriod(5000);
 }
 

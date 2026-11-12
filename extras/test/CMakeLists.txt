@@ -265,6 +265,7 @@ target_link_libraries(arduinoesp8266_client_factory_tests PRIVATE
 # Exercise the asynchronous ESP32 client and the real abort helper together.
 add_executable(esp32_tcp_abort_tests
   ArduinoEsp32PlatformTests/arduino_esp32_tcp_abort_tests.cpp
+  ArduinoEsp32PlatformTests/log_indent_tests.cpp
   Esp32TcpAbortTests/esp32_tcp_abort_tests.cpp
   Esp32TcpAbortTests/fake_lwip.c
   ../../src/supla/network/async_client.cpp
@@ -369,6 +370,7 @@ if(SUPLA_TEST_ENABLE_HTTP_INTEGRATION)
   find_package(Threads REQUIRED)
   add_executable(sd4linux_http_integration_tests
     LinuxPortIntegrationTests/sd4linux_http_redirect_tests.cpp
+    ../../src/supla/log_wrapper.cpp
     ../porting/linux/supla/source/http.cpp
     doubles/arduino_mock.cpp
     doubles/log.cpp
@@ -465,7 +467,7 @@ add_test(NAME nvsconfigtests COMMAND nvsconfigtests)
 # the ordinary SUPLA_TEST/ESP8266 path. Only the platform API is doubled.
 add_library(littlefsesp32config OBJECT ../../src/supla/storage/littlefs_config.cpp)
 target_include_directories(littlefsesp32config BEFORE PRIVATE
-  LittleFsEsp32Tests/fakes doubles ../../src)
+  LittleFsEsp32Tests/fakes doubles ../../src Esp32TcpAbortTests/fakes)
 target_compile_definitions(littlefsesp32config PRIVATE
   SUPLA_TEST ARDUINO_ARCH_ESP32)
 supla_apply_warnings(littlefsesp32config)
@@ -552,11 +554,12 @@ foreach(arduino_platform IN ITEMS ESP8266 ESP32)
   set(arduino_target "suplan${arduino_target}arduinoudptests")
   add_executable(${arduino_target}
     SupLanArduinoUdpTests/arduino_udp_tests.cpp
+    ../../src/supla/log_wrapper.cpp
     doubles/log.cpp
     ../../src/supla/suplan/arduino_udp.cpp
     ../../src/supla/suplan/network_transport.cpp)
   target_include_directories(${arduino_target} BEFORE PRIVATE
-    SupLanArduinoUdpTests/fakes ../../src)
+    SupLanArduinoUdpTests/fakes ../../src Esp32TcpAbortTests/fakes)
   target_compile_definitions(${arduino_target} PRIVATE
     SUPLA_DEVICE ARDUINO_ARCH_${arduino_platform})
   target_link_libraries(${arduino_target} PRIVATE gtest_main)
@@ -645,6 +648,7 @@ add_test(NAME serverstreamwiretests COMMAND serverstreamwiretests)
 
 add_executable(async_linux_client_tests
   SuplaDeviceTests/async_client_linux_tests.cpp
+  ../../src/supla/log_wrapper.cpp
   ../porting/linux/linux_client.cpp
   ../../src/supla/network/client.cpp
   ../../src/supla/network/async_client.cpp

@@ -37,6 +37,64 @@ class RollerShutterInterfaceFixture : public testing::Test {
   }
 };
 
+TEST_F(RollerShutterInterfaceFixture,
+       rejectsWrongConfigSizesWithoutChangingState) {
+  const struct {
+    int32_t function;
+    uint16_t size;
+  } cases[] = {
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER,
+       sizeof(TChannelConfig_RollerShutter)},
+      {SUPLA_CHANNELFNC_TERRACE_AWNING, sizeof(TChannelConfig_RollerShutter)},
+      {SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR,
+       sizeof(TChannelConfig_RollerShutter)},
+      {SUPLA_CHANNELFNC_CURTAIN, sizeof(TChannelConfig_RollerShutter)},
+      {SUPLA_CHANNELFNC_PROJECTOR_SCREEN, sizeof(TChannelConfig_RollerShutter)},
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW,
+       sizeof(TChannelConfig_RollerShutter)},
+      {SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND,
+       sizeof(TChannelConfig_FacadeBlind)},
+      {SUPLA_CHANNELFNC_VERTICAL_BLIND, sizeof(TChannelConfig_FacadeBlind)},
+  };
+  for (const auto &testCase : cases) {
+    SCOPED_TRACE(testCase.function);
+    Supla::Control::RollerShutterInterface rs(true);
+    rs.setDefaultFunction(testCase.function);
+    rs.setOpenCloseTime(5000, 6000);
+    const int targetPosition = rs.getTargetPosition();
+    const int targetTilt = rs.getTargetTilt();
+    ConfigMock config;
+    EXPECT_CALL(config, setBlob(_, _, _)).Times(0);
+
+    for (int offset : {-1, 1}) {
+      TSD_ChannelConfig request = {};
+      request.ChannelNumber = rs.getChannelNumber();
+      request.Func = testCase.function;
+      request.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+      request.ConfigSize = testCase.size + offset;
+      EXPECT_EQ(rs.handleChannelConfig(&request, false),
+                SUPLA_CONFIG_RESULT_DATA_ERROR);
+      EXPECT_EQ(rs.getClosingTimeMs(), 5000);
+      EXPECT_EQ(rs.getOpeningTimeMs(), 6000);
+      EXPECT_EQ(rs.getTargetPosition(), targetPosition);
+      EXPECT_EQ(rs.getTargetTilt(), targetTilt);
+    }
+  }
+}
+
+TEST_F(RollerShutterInterfaceFixture, emptyConfigStillRequestsDeviceConfig) {
+  for (int32_t function : {SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER,
+                          SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND}) {
+    Supla::Control::RollerShutterInterface rs(true);
+    rs.setDefaultFunction(function);
+    TSD_ChannelConfig request = {};
+    request.Func = function;
+    request.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+    EXPECT_EQ(rs.applyChannelConfig(&request),
+              Supla::ApplyConfigResult::SetChannelConfigNeeded);
+  }
+}
+
 namespace {
 
 void setFacadeBlindConfig(TSD_ChannelConfig *channelConfig,

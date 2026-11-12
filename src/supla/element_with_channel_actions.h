@@ -38,7 +38,7 @@ struct ConfigTypesBitmap {
   bool isSet(int configType) const;
   void clear(int configType);
   void clearAll();
-  void setAll(uint8_t values);
+  void setAll(uint8_t values, int channelNumber = -1);
   uint8_t getAll() const;
   void set(int configType, bool value = true);
   bool operator!=(const ConfigTypesBitmap &other) const;
@@ -127,6 +127,8 @@ class ElementWithChannelActions : public Element, public LocalAction {
       bool localChange = false);
 
  protected:
+  // Config handlers with their own summary suppress the generic success log.
+  virtual bool hasChannelConfigSummary(uint8_t) const { return false; }
   // returns true if function was changed (previous one was different)
   virtual bool setAndSaveFunction(uint32_t channelFunction);
   virtual bool loadFunctionFromConfig();

@@ -25,9 +25,9 @@ class Bh1750 : public GeneralPurposeMeasurement {
 
   void initializeSensor() {
     if (sensor.begin()) {
-      SUPLA_LOG_DEBUG("BH1750[%d]: initialized", getChannelNumber());
+      SUPLA_LOG_DEBUG("BH1750[%d] initialized", getChannelNumber());
     } else {
-      SUPLA_LOG_WARNING("BH1750[%d]: not found or other error",
+      SUPLA_LOG_WARNING("BH1750[%d] not found or other error",
                         getChannelNumber());
     }
   }

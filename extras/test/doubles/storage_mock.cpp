@@ -11,6 +11,11 @@ StorageMockSimulator::StorageMockSimulator(
     : Supla::Storage(offset, size, mode) {
 }
 
+StorageMockSimulator::StorageMockSimulator(
+    uint32_t offset, uint32_t size, StateStorageFactory factory)
+    : Supla::Storage(offset, size, factory) {
+}
+
 int StorageMockSimulator::readStorage(unsigned int offset,
     unsigned char *data,
     unsigned int size,

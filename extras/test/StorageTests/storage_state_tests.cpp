@@ -14,6 +14,83 @@ class TestableStorageMock : public StorageMock {
   using Supla::Storage::updateStorage;
 };
 
+class FixedFactoryStorageSimulator : public StorageMockSimulator {
+ public:
+  using Factory = StateStorageFactory;
+  using Supla::Storage::CreateSimpleStateStorage;
+  using Supla::Storage::CreateByteStateStorage;
+  using Supla::Storage::CreateSectorStateStorage;
+
+  FixedFactoryStorageSimulator(uint32_t offset, uint32_t size,
+                               Factory factory)
+      : StorageMockSimulator(offset, size, factory) {}
+
+  bool reinitialize() {
+    return Supla::Storage::init();
+  }
+};
+
+TEST(StorageStateTests, fixedFactoriesPreserveBackendOnReinitialization) {
+  const struct {
+    FixedFactoryStorageSimulator::Factory factory;
+    uint8_t sectionType;
+  } cases[] = {
+      {FixedFactoryStorageSimulator::CreateSimpleStateStorage,
+       STORAGE_SECTION_TYPE_ELEMENT_STATE},
+      {FixedFactoryStorageSimulator::CreateByteStateStorage,
+       STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_BYTE},
+      {FixedFactoryStorageSimulator::CreateSectorStateStorage,
+       STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_SECTOR},
+  };
+
+  for (const auto& testCase : cases) {
+    SCOPED_TRACE(testCase.sectionType);
+    testing::NiceMock<FixedFactoryStorageSimulator> storage(
+        0, 5 * 4096, testCase.factory);
+    ASSERT_TRUE(Supla::Storage::Init());
+    EXPECT_EQ(testCase.sectionType, storage.getSectionPreamble()->type);
+    ASSERT_TRUE(storage.reinitialize());
+    EXPECT_EQ(testCase.sectionType, storage.getSectionPreamble()->type);
+  }
+}
+
+TEST(StorageStateTests, fixedFactoryReceivesOffsetsAndCanRetryAfterFailure) {
+  static int calls = 0;
+  calls = 0;
+  auto factory = [](Supla::Storage* storage, uint32_t offset, uint32_t size)
+      -> Supla::StateStorageInterface* {
+    EXPECT_EQ(Supla::Storage::Instance(), storage);
+    EXPECT_EQ(128 + sizeof(Supla::Preamble), offset);
+    EXPECT_EQ(8192u, size);
+    if (++calls == 1) {
+      return nullptr;
+    }
+    return FixedFactoryStorageSimulator::CreateSimpleStateStorage(
+        storage, offset, size);
+  };
+  testing::NiceMock<FixedFactoryStorageSimulator> storage(
+      128, 8192, factory);
+  EXPECT_FALSE(storage.reinitialize());
+  ASSERT_TRUE(storage.reinitialize());
+  EXPECT_EQ(2, calls);
+  EXPECT_EQ(STORAGE_SECTION_TYPE_ELEMENT_STATE,
+            storage.getSectionPreamble()->type);
+}
+
+TEST(StorageStateTests, invalidLegacyModeAndNullFactoryFailInitialization) {
+  using Mode = Supla::Storage::WearLevelingMode;
+  {
+    testing::NiceMock<StorageMockSimulator> storage(
+        0, 0, static_cast<Mode>(99));
+    EXPECT_FALSE(Supla::Storage::Init());
+  }
+  {
+    testing::NiceMock<FixedFactoryStorageSimulator> storage(
+        0, 0, nullptr);
+    EXPECT_FALSE(Supla::Storage::Init());
+  }
+}
+
 TEST(StorageStateTests, preambleInitialization) {
   EXPECT_FALSE(Supla::Storage::Init());
 

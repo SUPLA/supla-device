@@ -73,8 +73,10 @@ class Storage {
   static bool DeleteSection(int sectionId);
 
   explicit Storage(unsigned int storageStartingOffset = 0,
-                   unsigned int availableSize = 0,
-                   enum WearLevelingMode = WearLevelingMode::OFF);
+                   unsigned int availableSize = 0);
+  Storage(unsigned int storageStartingOffset,
+          unsigned int availableSize,
+          enum WearLevelingMode wearLevelingMode);
   virtual ~Storage();
 
   // Changes default state save period time
@@ -96,6 +98,26 @@ class Storage {
   void setDeleteAllMethodEnabled(bool value);
 
  protected:
+  using StateStorageFactory = StateStorageInterface *(*)(Storage *, uint32_t,
+                                                        uint32_t);
+
+  // Fixed-backend ports use this constructor to avoid linking other engines.
+  // The constructor taking WearLevelingMode links all three engines.
+  Storage(unsigned int storageStartingOffset,
+          unsigned int availableSize,
+          StateStorageFactory stateStorageFactory);
+
+  static StateStorageInterface *CreateSimpleStateStorage(Storage *storage,
+                                                        uint32_t offset,
+                                                        uint32_t size);
+  static StateStorageInterface *CreateByteStateStorage(Storage *storage,
+                                                      uint32_t offset,
+                                                      uint32_t size);
+  static StateStorageInterface *CreateSectorStateStorage(Storage *storage,
+                                                        uint32_t offset,
+                                                        uint32_t size);
+  static StateStorageFactory GetStateStorageFactory(WearLevelingMode mode);
+
   virtual bool init();
   bool getInitResult() const;
   virtual int readStorage(unsigned int address,
@@ -122,7 +144,7 @@ class Storage {
 
   const uint32_t storageStartingOffset = 0;
   const uint32_t availableSize = 0;
-  const enum WearLevelingMode wearLevelingMode = WearLevelingMode::OFF;
+  const StateStorageFactory stateStorageFactory;
 
   uint32_t saveStatePeriod = 1000;
   uint32_t lastWriteTimestamp = 0;

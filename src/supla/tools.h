@@ -158,7 +158,7 @@ bool isLastResetSoft();
 const char *getManufacturer(int16_t id);
 
 namespace Supla {
-	
+
 /**
 * Checks name of platform ID (not supported yet).
 *

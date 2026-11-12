@@ -136,9 +136,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a00174251d07957cd389bae2ed271703a" id="r_a00174251d07957cd389bae2ed271703a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a00174251d07957cd389bae2ed271703a">commit</a> ()</td></tr>
 <tr class="separator:a00174251d07957cd389bae2ed271703a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1Storage"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1Storage')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1Storage.html">Supla::Storage</a></td></tr>
-<tr class="memitem:a7d467d720d6e249198a7388f57ed8a01 inherit pub_methods_classSupla_1_1Storage" id="r_a7d467d720d6e249198a7388f57ed8a01"><td class="memItemLeft" align="right" valign="top">
-&#160;</td><td class="memItemRight" valign="bottom"><b>Storage</b> (unsigned int storageStartingOffset=0, unsigned int availableSize=0, enum WearLevelingMode=WearLevelingMode::OFF)</td></tr>
-<tr class="separator:a7d467d720d6e249198a7388f57ed8a01 inherit pub_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04fb4db31f93938446535b3556626cc7 inherit pub_methods_classSupla_1_1Storage" id="r_a04fb4db31f93938446535b3556626cc7"><td class="memItemLeft" align="right" valign="top">
+&#160;</td><td class="memItemRight" valign="bottom"><b>Storage</b> (unsigned int storageStartingOffset=0, unsigned int availableSize=0)</td></tr>
+<tr class="separator:a04fb4db31f93938446535b3556626cc7 inherit pub_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a543cfa820420678d9a2d80a50f78870b inherit pub_methods_classSupla_1_1Storage" id="r_a543cfa820420678d9a2d80a50f78870b"><td class="memItemLeft" align="right" valign="top">
+&#160;</td><td class="memItemRight" valign="bottom"><b>Storage</b> (unsigned int storageStartingOffset, unsigned int availableSize, enum WearLevelingMode wearLevelingMode)</td></tr>
+<tr class="separator:a543cfa820420678d9a2d80a50f78870b inherit pub_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36f5efe0ada6e3ce12854dbafd40b6cc inherit pub_methods_classSupla_1_1Storage" id="r_a36f5efe0ada6e3ce12854dbafd40b6cc"><td class="memItemLeft" align="right" valign="top">
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setStateSavePeriod</b> (uint32_t periodMs)</td></tr>
 <tr class="separator:a36f5efe0ada6e3ce12854dbafd40b6cc inherit pub_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -165,6 +168,9 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:ae8c56b90e89f5b0910c9cc025cf31f2e" id="r_ae8c56b90e89f5b0910c9cc025cf31f2e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae8c56b90e89f5b0910c9cc025cf31f2e">writeStorage</a> (unsigned int, const unsigned char *, unsigned int)</td></tr>
 <tr class="separator:ae8c56b90e89f5b0910c9cc025cf31f2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classSupla_1_1Storage"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1Storage')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classSupla_1_1Storage.html">Supla::Storage</a></td></tr>
+<tr class="memitem:a48fa9cb9f907b4cda0e702fa98d7f729 inherit pro_methods_classSupla_1_1Storage" id="r_a48fa9cb9f907b4cda0e702fa98d7f729"><td class="memItemLeft" align="right" valign="top">
+&#160;</td><td class="memItemRight" valign="bottom"><b>Storage</b> (unsigned int storageStartingOffset, unsigned int availableSize, StateStorageFactory stateStorageFactory)</td></tr>
+<tr class="separator:a48fa9cb9f907b4cda0e702fa98d7f729 inherit pro_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa373f918b2218e9473baf9a1ce615012 inherit pro_methods_classSupla_1_1Storage" id="r_aa373f918b2218e9473baf9a1ce615012"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>getInitResult</b> () const</td></tr>
 <tr class="separator:aa373f918b2218e9473baf9a1ce615012 inherit pro_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -205,9 +211,9 @@ const uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>storageStar
 <tr class="memitem:aab83cd4da78abe0c5392876df9932c39 inherit pro_attribs_classSupla_1_1Storage" id="r_aab83cd4da78abe0c5392876df9932c39"><td class="memItemLeft" align="right" valign="top">
 const uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>availableSize</b> = 0</td></tr>
 <tr class="separator:aab83cd4da78abe0c5392876df9932c39 inherit pro_attribs_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab214606a880632cc729dae8c35587f9a inherit pro_attribs_classSupla_1_1Storage" id="r_ab214606a880632cc729dae8c35587f9a"><td class="memItemLeft" align="right" valign="top">
-enum WearLevelingMode&#160;</td><td class="memItemRight" valign="bottom"><b>wearLevelingMode</b> = WearLevelingMode::OFF</td></tr>
-<tr class="separator:ab214606a880632cc729dae8c35587f9a inherit pro_attribs_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac22c4c7db486684ff5916464c21d3ed inherit pro_attribs_classSupla_1_1Storage" id="r_aac22c4c7db486684ff5916464c21d3ed"><td class="memItemLeft" align="right" valign="top">
+const StateStorageFactory&#160;</td><td class="memItemRight" valign="bottom"><b>stateStorageFactory</b></td></tr>
+<tr class="separator:aac22c4c7db486684ff5916464c21d3ed inherit pro_attribs_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c862d9f71403ad2a0e0586250fdda2f inherit pro_attribs_classSupla_1_1Storage" id="r_a5c862d9f71403ad2a0e0586250fdda2f"><td class="memItemLeft" align="right" valign="top">
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>saveStatePeriod</b> = 1000</td></tr>
 <tr class="separator:a5c862d9f71403ad2a0e0586250fdda2f inherit pro_attribs_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -294,7 +300,22 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>DeleteSection<
 <tr class="memitem:a88b3be96021b98f0e4173c0cbb0d03e4 inherit pub_static_attribs_classSupla_1_1Storage" id="r_a88b3be96021b98f0e4173c0cbb0d03e4"><td class="memItemLeft" align="right" valign="top">
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>storageInitDone</b> = false</td></tr>
 <tr class="separator:a88b3be96021b98f0e4173c0cbb0d03e4 inherit pub_static_attribs_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_types_classSupla_1_1Storage"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_types_classSupla_1_1Storage')"><img src="closed.png" alt="-"/>&#160;Protected Types inherited from <a class="el" href="classSupla_1_1Storage.html">Supla::Storage</a></td></tr>
+<tr class="memitem:ab42f4ba5f554a79b1793013c06dedf6c inherit pro_types_classSupla_1_1Storage" id="r_ab42f4ba5f554a79b1793013c06dedf6c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Storage.html#ab42f4ba5f554a79b1793013c06dedf6c">StateStorageFactory</a></td></tr>
+<tr class="separator:ab42f4ba5f554a79b1793013c06dedf6c inherit pro_types_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_static_methods_classSupla_1_1Storage"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_static_methods_classSupla_1_1Storage')"><img src="closed.png" alt="-"/>&#160;Static Protected Member Functions inherited from <a class="el" href="classSupla_1_1Storage.html">Supla::Storage</a></td></tr>
+<tr class="memitem:a0017a931d6899e5f795b1c01fa92442d inherit pro_static_methods_classSupla_1_1Storage" id="r_a0017a931d6899e5f795b1c01fa92442d"><td class="memItemLeft" align="right" valign="top">
+static <a class="el" href="classSupla_1_1StateStorageInterface.html">StateStorageInterface</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>CreateSimpleStateStorage</b> (<a class="el" href="classSupla_1_1Storage.html">Storage</a> *storage, uint32_t offset, uint32_t size)</td></tr>
+<tr class="separator:a0017a931d6899e5f795b1c01fa92442d inherit pro_static_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a567a9fc276ddd407f992f93fedf5df9d inherit pro_static_methods_classSupla_1_1Storage" id="r_a567a9fc276ddd407f992f93fedf5df9d"><td class="memItemLeft" align="right" valign="top">
+static <a class="el" href="classSupla_1_1StateStorageInterface.html">StateStorageInterface</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>CreateByteStateStorage</b> (<a class="el" href="classSupla_1_1Storage.html">Storage</a> *storage, uint32_t offset, uint32_t size)</td></tr>
+<tr class="separator:a567a9fc276ddd407f992f93fedf5df9d inherit pro_static_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea7b9bda65678994d2d04215f4d7baef inherit pro_static_methods_classSupla_1_1Storage" id="r_aea7b9bda65678994d2d04215f4d7baef"><td class="memItemLeft" align="right" valign="top">
+static <a class="el" href="classSupla_1_1StateStorageInterface.html">StateStorageInterface</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>CreateSectorStateStorage</b> (<a class="el" href="classSupla_1_1Storage.html">Storage</a> *storage, uint32_t offset, uint32_t size)</td></tr>
+<tr class="separator:aea7b9bda65678994d2d04215f4d7baef inherit pro_static_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc7f1d575d5b0d33e9a2d2c8c156be7d inherit pro_static_methods_classSupla_1_1Storage" id="r_afc7f1d575d5b0d33e9a2d2c8c156be7d"><td class="memItemLeft" align="right" valign="top">
+static StateStorageFactory&#160;</td><td class="memItemRight" valign="bottom"><b>GetStateStorageFactory</b> (WearLevelingMode mode)</td></tr>
+<tr class="separator:afc7f1d575d5b0d33e9a2d2c8c156be7d inherit pro_static_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a382fe24e010b97acdc8aa42dd3bd1cdb inherit pro_static_methods_classSupla_1_1Storage" id="r_a382fe24e010b97acdc8aa42dd3bd1cdb"><td class="memItemLeft" align="right" valign="top">
 static void&#160;</td><td class="memItemRight" valign="bottom"><b>WriteElementsState</b> ()</td></tr>
 <tr class="separator:a382fe24e010b97acdc8aa42dd3bd1cdb inherit pro_static_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>

@@ -93,6 +93,7 @@ $(function(){ initResizable(false); });
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pro-types">Protected Types</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
@@ -142,9 +143,12 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a7d467d720d6e249198a7388f57ed8a01" id="r_a7d467d720d6e249198a7388f57ed8a01"><td class="memItemLeft" align="right" valign="top"><a id="a7d467d720d6e249198a7388f57ed8a01" name="a7d467d720d6e249198a7388f57ed8a01"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Storage</b> (unsigned int storageStartingOffset=0, unsigned int availableSize=0, enum WearLevelingMode=WearLevelingMode::OFF)</td></tr>
-<tr class="separator:a7d467d720d6e249198a7388f57ed8a01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04fb4db31f93938446535b3556626cc7" id="r_a04fb4db31f93938446535b3556626cc7"><td class="memItemLeft" align="right" valign="top"><a id="a04fb4db31f93938446535b3556626cc7" name="a04fb4db31f93938446535b3556626cc7"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Storage</b> (unsigned int storageStartingOffset=0, unsigned int availableSize=0)</td></tr>
+<tr class="separator:a04fb4db31f93938446535b3556626cc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a543cfa820420678d9a2d80a50f78870b" id="r_a543cfa820420678d9a2d80a50f78870b"><td class="memItemLeft" align="right" valign="top"><a id="a543cfa820420678d9a2d80a50f78870b" name="a543cfa820420678d9a2d80a50f78870b"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Storage</b> (unsigned int storageStartingOffset, unsigned int availableSize, enum WearLevelingMode wearLevelingMode)</td></tr>
+<tr class="separator:a543cfa820420678d9a2d80a50f78870b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36f5efe0ada6e3ce12854dbafd40b6cc" id="r_a36f5efe0ada6e3ce12854dbafd40b6cc"><td class="memItemLeft" align="right" valign="top"><a id="a36f5efe0ada6e3ce12854dbafd40b6cc" name="a36f5efe0ada6e3ce12854dbafd40b6cc"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setStateSavePeriod</b> (uint32_t periodMs)</td></tr>
 <tr class="separator:a36f5efe0ada6e3ce12854dbafd40b6cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -224,8 +228,16 @@ Static Public Attributes</h2></td></tr>
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>storageInitDone</b> = false</td></tr>
 <tr class="separator:a88b3be96021b98f0e4173c0cbb0d03e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-types" name="pro-types"></a>
+Protected Types</h2></td></tr>
+<tr class="memitem:ab42f4ba5f554a79b1793013c06dedf6c" id="r_ab42f4ba5f554a79b1793013c06dedf6c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab42f4ba5f554a79b1793013c06dedf6c">StateStorageFactory</a></td></tr>
+<tr class="separator:ab42f4ba5f554a79b1793013c06dedf6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
+<tr class="memitem:a48fa9cb9f907b4cda0e702fa98d7f729" id="r_a48fa9cb9f907b4cda0e702fa98d7f729"><td class="memItemLeft" align="right" valign="top"><a id="a48fa9cb9f907b4cda0e702fa98d7f729" name="a48fa9cb9f907b4cda0e702fa98d7f729"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Storage</b> (unsigned int storageStartingOffset, unsigned int availableSize, StateStorageFactory stateStorageFactory)</td></tr>
+<tr class="separator:a48fa9cb9f907b4cda0e702fa98d7f729"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aefc30ea536678ff20a8ee6d50302a581" id="r_aefc30ea536678ff20a8ee6d50302a581"><td class="memItemLeft" align="right" valign="top"><a id="aefc30ea536678ff20a8ee6d50302a581" name="aefc30ea536678ff20a8ee6d50302a581"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> ()</td></tr>
 <tr class="separator:aefc30ea536678ff20a8ee6d50302a581"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -265,6 +277,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>deleteSection</b> (in
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-methods" name="pro-static-methods"></a>
 Static Protected Member Functions</h2></td></tr>
+<tr class="memitem:a0017a931d6899e5f795b1c01fa92442d" id="r_a0017a931d6899e5f795b1c01fa92442d"><td class="memItemLeft" align="right" valign="top"><a id="a0017a931d6899e5f795b1c01fa92442d" name="a0017a931d6899e5f795b1c01fa92442d"></a>
+static <a class="el" href="classSupla_1_1StateStorageInterface.html">StateStorageInterface</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>CreateSimpleStateStorage</b> (<a class="el" href="classSupla_1_1Storage.html">Storage</a> *storage, uint32_t offset, uint32_t size)</td></tr>
+<tr class="separator:a0017a931d6899e5f795b1c01fa92442d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a567a9fc276ddd407f992f93fedf5df9d" id="r_a567a9fc276ddd407f992f93fedf5df9d"><td class="memItemLeft" align="right" valign="top"><a id="a567a9fc276ddd407f992f93fedf5df9d" name="a567a9fc276ddd407f992f93fedf5df9d"></a>
+static <a class="el" href="classSupla_1_1StateStorageInterface.html">StateStorageInterface</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>CreateByteStateStorage</b> (<a class="el" href="classSupla_1_1Storage.html">Storage</a> *storage, uint32_t offset, uint32_t size)</td></tr>
+<tr class="separator:a567a9fc276ddd407f992f93fedf5df9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea7b9bda65678994d2d04215f4d7baef" id="r_aea7b9bda65678994d2d04215f4d7baef"><td class="memItemLeft" align="right" valign="top"><a id="aea7b9bda65678994d2d04215f4d7baef" name="aea7b9bda65678994d2d04215f4d7baef"></a>
+static <a class="el" href="classSupla_1_1StateStorageInterface.html">StateStorageInterface</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>CreateSectorStateStorage</b> (<a class="el" href="classSupla_1_1Storage.html">Storage</a> *storage, uint32_t offset, uint32_t size)</td></tr>
+<tr class="separator:aea7b9bda65678994d2d04215f4d7baef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc7f1d575d5b0d33e9a2d2c8c156be7d" id="r_afc7f1d575d5b0d33e9a2d2c8c156be7d"><td class="memItemLeft" align="right" valign="top"><a id="afc7f1d575d5b0d33e9a2d2c8c156be7d" name="afc7f1d575d5b0d33e9a2d2c8c156be7d"></a>
+static StateStorageFactory&#160;</td><td class="memItemRight" valign="bottom"><b>GetStateStorageFactory</b> (WearLevelingMode mode)</td></tr>
+<tr class="separator:afc7f1d575d5b0d33e9a2d2c8c156be7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a382fe24e010b97acdc8aa42dd3bd1cdb" id="r_a382fe24e010b97acdc8aa42dd3bd1cdb"><td class="memItemLeft" align="right" valign="top"><a id="a382fe24e010b97acdc8aa42dd3bd1cdb" name="a382fe24e010b97acdc8aa42dd3bd1cdb"></a>
 static void&#160;</td><td class="memItemRight" valign="bottom"><b>WriteElementsState</b> ()</td></tr>
 <tr class="separator:a382fe24e010b97acdc8aa42dd3bd1cdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -277,9 +301,9 @@ const uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>storageStar
 <tr class="memitem:aab83cd4da78abe0c5392876df9932c39" id="r_aab83cd4da78abe0c5392876df9932c39"><td class="memItemLeft" align="right" valign="top"><a id="aab83cd4da78abe0c5392876df9932c39" name="aab83cd4da78abe0c5392876df9932c39"></a>
 const uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>availableSize</b> = 0</td></tr>
 <tr class="separator:aab83cd4da78abe0c5392876df9932c39"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab214606a880632cc729dae8c35587f9a" id="r_ab214606a880632cc729dae8c35587f9a"><td class="memItemLeft" align="right" valign="top"><a id="ab214606a880632cc729dae8c35587f9a" name="ab214606a880632cc729dae8c35587f9a"></a>
-enum WearLevelingMode&#160;</td><td class="memItemRight" valign="bottom"><b>wearLevelingMode</b> = WearLevelingMode::OFF</td></tr>
-<tr class="separator:ab214606a880632cc729dae8c35587f9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac22c4c7db486684ff5916464c21d3ed" id="r_aac22c4c7db486684ff5916464c21d3ed"><td class="memItemLeft" align="right" valign="top"><a id="aac22c4c7db486684ff5916464c21d3ed" name="aac22c4c7db486684ff5916464c21d3ed"></a>
+const StateStorageFactory&#160;</td><td class="memItemRight" valign="bottom"><b>stateStorageFactory</b></td></tr>
+<tr class="separator:aac22c4c7db486684ff5916464c21d3ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c862d9f71403ad2a0e0586250fdda2f" id="r_a5c862d9f71403ad2a0e0586250fdda2f"><td class="memItemLeft" align="right" valign="top"><a id="a5c862d9f71403ad2a0e0586250fdda2f" name="a5c862d9f71403ad2a0e0586250fdda2f"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>saveStatePeriod</b> = 1000</td></tr>
 <tr class="separator:a5c862d9f71403ad2a0e0586250fdda2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -317,6 +341,31 @@ Friends</h2></td></tr>
 class&#160;</td><td class="memItemRight" valign="bottom"><b>StateStorageInterface</b></td></tr>
 <tr class="separator:ac90aefdbb4b2117e99b8ac163222dece"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="ab42f4ba5f554a79b1793013c06dedf6c" name="ab42f4ba5f554a79b1793013c06dedf6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab42f4ba5f554a79b1793013c06dedf6c">&#9670;&#160;</a></span>StateStorageFactory</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using Supla::Storage::StateStorageFactory</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"> StateStorageInterface *(*)(Storage *, uint32_t,</div>
+<div class="line">                                                        uint32_t)</div>
+</div><!-- fragment -->
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a5505a4c3b4fe473c9d00e8c890b1618b" name="a5505a4c3b4fe473c9d00e8c890b1618b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5505a4c3b4fe473c9d00e8c890b1618b">&#9670;&#160;</a></span>ScheduleSave()</h2>

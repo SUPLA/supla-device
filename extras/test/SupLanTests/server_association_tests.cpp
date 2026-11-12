@@ -949,6 +949,7 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
     hvac->setTargetMode(SUPLA_HVAC_MODE_HEAT);
   }
   if (rebootEndpoint) {
+    if (!config.commit()) return 36;
     associations.load(nullptr, nullptr);
     identity.load(nullptr);
     if (hvac) {

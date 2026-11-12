@@ -2247,13 +2247,9 @@ void Supla::Protocol::SuplaSrpc::onDeviceSyncDone() {
   }
 
 #ifndef ARDUINO_ARCH_AVR
-  for (auto element = Supla::Element::begin(); element;
-       element = element->next()) {
-    if (!element->isChannelConfigDurable()) {
-      SUPLA_LOG_WARNING("DEVICE_SYNC_DONE blocked by config persistence");
-      return;
-    }
-  }
+  // Server finished its configuration stream. ChannelConfig validation and
+  // device-originated uploads do not delay this notification. Identity keeps
+  // its independent durable migration barriers.
   const bool wasSyncComplete = serverIdentityState.serverSyncComplete();
   serverIdentityState.syncDone();
   const bool syncBecameReady =

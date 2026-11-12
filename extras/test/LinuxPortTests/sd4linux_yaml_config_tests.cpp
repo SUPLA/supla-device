@@ -493,10 +493,11 @@ class Sd4linuxAtDurationTests : public ::testing::Test {
     memcpy(wire.Config, &value, sizeof(value));
     ASSERT_EQ(at->handleChannelConfig(&wire), SUPLA_CONFIG_RESULT_TRUE);
   }
+  SimpleTime time;
   AtDurationYamlConfig config;
 };
 
-TEST_F(Sd4linuxAtDurationTests, StartupOverridesOnlyDurationAndPersistsIt) {
+TEST_F(Sd4linuxAtDurationTests, StartupOverridesOnlyDurationAndStagesIt) {
   auto at = create("temporary_unlock_duration_sec: 30");
   ASSERT_NE(at, nullptr);
   seed(at);
@@ -541,13 +542,15 @@ TEST_F(Sd4linuxAtDurationTests, InvalidDurationsAreRejectedBeforeCreation) {
   }
 }
 
-TEST_F(Sd4linuxAtDurationTests, FailedPersistenceKeepsSavedDuration) {
+TEST_F(Sd4linuxAtDurationTests, FailedPersistenceKeepsAcceptedRuntimeDuration) {
   auto at = create("temporary_unlock_duration_sec: 30");
   ASSERT_NE(at, nullptr);
   seed(at);
   config.commitAllowed = false;
   at->onLoadConfig(nullptr);
-  EXPECT_EQ(read(at).TemporaryUnlockDurationSec, 7U);
+  time.advance(5001);
+  config.saveIfNeeded();
+  EXPECT_EQ(read(at).TemporaryUnlockDurationSec, 30U);
 }
 
 class Sd4linuxAtRelatedChannelTests : public ::testing::Test {

@@ -54,15 +54,21 @@ void ValveBase::cleanupLegacy() {
 }
 
 bool ValveBase::persistConfig(const ValveConfiguration &candidate,
-                              uint32_t function) {
+                              uint32_t function, bool migration) {
   if (!candidate.valid()) return false;
   ValveStoredConfigV2 record;
   record.function = function;
   record.config = candidate;
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, "valve_cfg2");
-  return Supla::StorageDetail::persistCanonicalConfig(
-      key, record, getChannelNumber());
+  const bool saved = migration
+      ? Supla::StorageDetail::persistCanonicalConfig(
+            key, record, getChannelNumber())
+      : Supla::StorageDetail::stageCanonicalConfig(
+            key, record, getChannelNumber());
+  if (!saved) SUPLA_LOG_WARNING("Channel[%d]: config staging failed",
+                               getChannelNumber());
+  return saved;
 }
 
 ValveBase::ValveBase(bool openClose) {
@@ -193,7 +199,6 @@ void ValveBase::onServerScopeMigration() {
       record.version != 2 || !record.config.valid()) return;
   if (memcmp(&config, &record.config, sizeof(config))) {
     config = record.config;
-    configDurable = false;
     reconcileChannelDependencies();
   }
 }
@@ -221,12 +226,10 @@ void ValveBase::onLoadConfig(SuplaDeviceClass *) {
          record.function != SUPLA_CHANNELFNC_VALVE_PERCENTAGE)) {
       config = {};
       config.closeValveOnFloodType = defaultCloseValveOnFloodType;
-      configDurable = false;
       reconcileChannelDependencies();
       return;
     }
     config = record.config;
-    configDurable = true;
     cleanupLegacy();
   } else {
     generateKey(key, Supla::ConfigTag::ValveCfgTag);
@@ -243,8 +246,8 @@ void ValveBase::onLoadConfig(SuplaDeviceClass *) {
       }
       if (candidate.valid()) {
         config = candidate;
-        configDurable = persistConfig(candidate, channel.getDefaultFunction());
-        if (configDurable) cleanupLegacy();
+        if (persistConfig(candidate, channel.getDefaultFunction(), true))
+          cleanupLegacy();
       }
     }
   }
@@ -329,11 +332,12 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
       candidate = {};
     if (defaultCloseValveOnFloodType)
       candidate.closeValveOnFloodType = defaultCloseValveOnFloodType;
-    configDurable = persistConfig(candidate, result->Func);
-    if (!configDurable) return Supla::ApplyConfigResult::DataError;
     config = candidate;
     channel.setDefaultFunction(result->Func);
+    (void)persistConfig(config, result->Func);
     reconcileChannelDependencies();
+    for (auto p = Supla::Protocol::ProtocolLayer::first(); p; p = p->next())
+      p->notifyConfigChange(getChannelNumber());
     if (!result->Func) {
       markAllChannelConfigsReceived();
       return Supla::ApplyConfigResult::Success;
@@ -371,19 +375,16 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
     }
   }
   if (!candidate.valid()) return Supla::ApplyConfigResult::DataError;
-  if (!persistConfig(candidate, result->Func)) {
-    configDurable = false;
-    return Supla::ApplyConfigResult::DataError;
-  }
   for (uint8_t i = 0; i < SUPLA_VALVE_SENSOR_MAX; ++i) {
     if (sensorReference(i) != candidate.sensorData[i].reference())
       previousSensorState[i] = false;
   }
   config = candidate;
-  configDurable = true;
   channel.setDefaultFunction(result->Func);
-  cleanupLegacy();
+  (void)persistConfig(config, result->Func);
   reconcileChannelDependencies();
+  for (auto p = Supla::Protocol::ProtocolLayer::first(); p; p = p->next())
+    p->notifyConfigChange(getChannelNumber());
   if (readonlyViolation) triggerSetChannelConfig();
   return readonlyViolation ? Supla::ApplyConfigResult::SetChannelConfigNeeded
                            : Supla::ApplyConfigResult::Success;
@@ -443,12 +444,10 @@ void ValveBase::setValve(uint8_t openLevel) {
 }
 
 void ValveBase::saveConfig(bool local) {
-  configDurable = persistConfig(config, channel.getDefaultFunction());
-  if (!configDurable) return;
-  cleanupLegacy();
   if (local) triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
   else clearChannelConfigChangedFlag();
   saveConfigChangeFlag();
+  (void)persistConfig(config, channel.getDefaultFunction());
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto;
        proto = proto->next()) proto->notifyConfigChange(getChannelNumber());
 }

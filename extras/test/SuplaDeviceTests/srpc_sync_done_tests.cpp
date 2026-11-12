@@ -7,6 +7,7 @@
 #include <network_client_mock.h>
 #include <simple_time.h>
 #include <srpc_mock.h>
+#include <supla/control/hvac_base.h>
 #include <supla/device/register_device.h>
 #include <supla/element.h>
 #include <supla/protocol/supla_srpc.h>
@@ -35,6 +36,8 @@ class TestSrpc : public Supla::Protocol::SuplaSrpc {
   void setRegisteredForTest(bool value) {
     registered = value ? 1 : 0;
   }
+
+  bool syncDoneReceived() const { return deviceSyncDoneReceived; }
 
   void setDeviceConfigReceivedForTest(bool value) {
     setDeviceConfigReceivedAfterRegistration = value;
@@ -127,6 +130,36 @@ TEST_F(SuplaSrpcSyncDoneTests, SleepingV29WaitsForSyncDone) {
   EXPECT_TRUE(protocol.isUpdatePending());
   protocol.onDeviceSyncDone();
   EXPECT_FALSE(protocol.isUpdatePending());
+}
+
+TEST_F(SuplaSrpcSyncDoneTests, HvacUploadDoesNotDiscardServerSyncDone) {
+  for (bool empty : {true, false}) {
+    SCOPED_TRACE(empty);
+    SuplaDeviceClass device;
+    TestSrpc protocol(&device);
+    configureSleepingV29(&protocol);
+    Supla::Control::HvacBase hvac;
+    hvac.setHeatingAndCoolingSupported(true);
+    hvac.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+    hvac.onRegistered(nullptr);
+    TSD_ChannelConfig config = {};
+    config.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+    if (!empty) {
+      TChannelConfig_HVAC invalid = {};
+      invalid.AntiFreezeAndOverheatProtectionEnabled = 2;
+      config.ConfigSize = sizeof(invalid);
+      std::memcpy(config.Config, &invalid, sizeof(invalid));
+    }
+    ASSERT_EQ(hvac.handleChannelConfig(&config),
+              empty ? SUPLA_CONFIG_RESULT_TRUE
+                    : SUPLA_CONFIG_RESULT_DATA_ERROR);
+    protocol.onDeviceSyncDone();
+    EXPECT_TRUE(protocol.syncDoneReceived());
+    TSDS_SetChannelConfigResult result = {};
+    result.Result = SUPLA_CONFIG_RESULT_TRUE;
+    hvac.handleSetChannelConfigResult(&result);
+    EXPECT_TRUE(protocol.syncDoneReceived());
+  }
 }
 
 TEST_F(SuplaSrpcSyncDoneTests, OlderProtocolDoesNotRequireSyncDone) {

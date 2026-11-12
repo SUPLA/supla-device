@@ -1155,7 +1155,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
        LocalDefaultConfigChangeDoesNotBlockServerWeeklySchedule) {
   // A failed save does not trigger rollback. Weekly-schedule synchronization
   // must still work afterwards.
-  EXPECT_CALL(cfg, commit()).Times(1).WillOnce(Return(false));
+  EXPECT_CALL(cfg, commit()).Times(0);
   EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2"))).Times(0);
   ProtocolLayerMock proto;
   EXPECT_CALL(cfg, init());
@@ -1377,8 +1377,8 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
 
   EXPECT_CALL(
       cfg,
@@ -1506,8 +1506,8 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
               sizeof(TChannelConfig_WeeklySchedule)))
       .Times(0);
   EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 1))
       .Times(0);
   EXPECT_CALL(
@@ -1595,8 +1595,8 @@ TEST_F(HvacWeeklyScheduleTestsF,
       .Times(AnyNumber())
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(
       cfg,
       setBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
@@ -1696,8 +1696,8 @@ TEST_F(HvacWeeklyScheduleTestsF,
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
 
   EXPECT_CALL(
       cfg,

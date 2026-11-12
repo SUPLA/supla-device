@@ -83,15 +83,21 @@ void Container::cleanupLegacy() {
 }
 
 bool Container::persistConfig(const ContainerConfiguration &candidate,
-                              uint32_t function) {
+                              uint32_t function, bool migration) {
   if (!candidate.valid()) return false;
   ContainerStoredConfigV2 record;
   record.function = function;
   record.config = candidate;
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, "cnt_cfg2");
-  return Supla::StorageDetail::persistCanonicalConfig(
-      key, record, getChannelNumber());
+  const bool saved = migration
+      ? Supla::StorageDetail::persistCanonicalConfig(
+            key, record, getChannelNumber())
+      : Supla::StorageDetail::stageCanonicalConfig(
+            key, record, getChannelNumber());
+  if (!saved) SUPLA_LOG_WARNING("Channel[%d]: config staging failed",
+                               getChannelNumber());
+  return saved;
 }
 
 void Container::setInternalLevelReporting(bool internalLevelReporting) {
@@ -440,7 +446,6 @@ void Container::onServerScopeMigration() {
       record.version != 2 || !record.config.valid()) return;
   if (memcmp(&config, &record.config, sizeof(config))) {
     config = record.config;
-    configDurable = false;
     reconcileChannelDependencies();
   }
 }
@@ -469,12 +474,10 @@ void Container::onLoadConfig(SuplaDeviceClass *) {
          record.function != SUPLA_CHANNELFNC_SEPTIC_TANK &&
          record.function != SUPLA_CHANNELFNC_WATER_TANK)) {
       config = {};
-      configDurable = false;
       reconcileChannelDependencies();
       return;
     }
     config = record.config;
-    configDurable = true;
     cleanupLegacy();
   } else {
     generateKey(key, Supla::ConfigTag::ContainerTag);
@@ -492,8 +495,8 @@ void Container::onLoadConfig(SuplaDeviceClass *) {
       }
       if (candidate.valid()) {
         config = candidate;
-        configDurable = persistConfig(candidate, channel.getDefaultFunction());
-        if (configDurable) cleanupLegacy();
+        if (persistConfig(candidate, channel.getDefaultFunction(), true))
+          cleanupLegacy();
       }
     }
   }
@@ -517,11 +520,12 @@ Supla::ApplyConfigResult Container::applyChannelConfig(
     if (static_cast<uint32_t>(result->Func) !=
             channel.getDefaultFunction() || result->Func == 0)
       candidate = {};
-    configDurable = persistConfig(candidate, result->Func);
-    if (!configDurable) return Supla::ApplyConfigResult::DataError;
     config = candidate;
     channel.setDefaultFunction(result->Func);
+    (void)persistConfig(config, result->Func);
     reconcileChannelDependencies();
+    for (auto p = Supla::Protocol::ProtocolLayer::first(); p; p = p->next())
+      p->notifyConfigChange(getChannelNumber());
     if (!result->Func) {
       markAllChannelConfigsReceived();
       return Supla::ApplyConfigResult::Success;
@@ -559,15 +563,12 @@ Supla::ApplyConfigResult Container::applyChannelConfig(
     sensor.fillLevel = sensor.source.kind ? field.FillLevel : 0;
   }
   if (!candidate.valid()) return Supla::ApplyConfigResult::DataError;
-  if (!persistConfig(candidate, result->Func)) {
-    configDurable = false;
-    return Supla::ApplyConfigResult::DataError;
-  }
-  configDurable = true;
   config = candidate;
   channel.setDefaultFunction(result->Func);
-  cleanupLegacy();
+  (void)persistConfig(config, result->Func);
   reconcileChannelDependencies();
+  for (auto p = Supla::Protocol::ProtocolLayer::first(); p; p = p->next())
+    p->notifyConfigChange(getChannelNumber());
   return Supla::ApplyConfigResult::Success;
 }
 
@@ -616,10 +617,8 @@ void Container::fillChannelConfig(void *channelConfig, int *size,
 }
 
 void Container::saveConfig() {
-  configDurable = persistConfig(config, channel.getDefaultFunction());
-  if (!configDurable) return;
-  cleanupLegacy();
   saveConfigChangeFlag();
+  (void)persistConfig(config, channel.getDefaultFunction());
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto;
        proto = proto->next()) proto->notifyConfigChange(getChannelNumber());
 }

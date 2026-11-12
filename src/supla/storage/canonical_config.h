@@ -3,23 +3,46 @@
 #ifndef SRC_SUPLA_STORAGE_CANONICAL_CONFIG_H_
 #define SRC_SUPLA_STORAGE_CANONICAL_CONFIG_H_
 
+#include <string.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 
 namespace Supla {
 namespace StorageDetail {
-// Config setters and commit are the persistence boundary. A failed candidate
-// may remain staged until a later commit; callers retry normally.
-// Negative channelNo preserves local ChannelFunction handling.
+// Stage normal ChannelConfig without making runtime acceptance depend on IO.
+// Set failures are diagnostic; only commit failures use Config's delayed retry.
+template <typename Record>
+bool stageCanonicalConfig(const char *key, const Record &record,
+                          int channelNo) {
+  auto cfg = Storage::ConfigInstance();
+  if (!cfg) return false;
+  Record previous;
+  if (cfg->getBlobSize(key) == sizeof(record) &&
+      cfg->getBlob(key, reinterpret_cast<char *>(&previous),
+                   sizeof(previous)) &&
+      !memcmp(&previous, &record, sizeof(record)) &&
+      cfg->getChannelFunction(channelNo) ==
+          static_cast<int32_t>(record.function)) return true;
+  cfg->saveWithDelay(5000);
+  const bool function = cfg->setChannelFunction(channelNo, record.function);
+  const bool config = cfg->setBlob(key,
+      reinterpret_cast<const char *>(&record), sizeof(record));
+  return function && config;
+}
+
+// Legacy migration must confirm V2 before deleting its only recovery record.
 template <typename Record>
 bool persistCanonicalConfig(const char *key, const Record &record,
-                            int channelNo = -1) {
+                            int channelNo) {
   auto cfg = Storage::ConfigInstance();
-  return cfg &&
-      (channelNo < 0 || cfg->setChannelFunction(channelNo, record.function)) &&
+  Record stored;
+  return cfg && cfg->setChannelFunction(channelNo, record.function) &&
       cfg->setBlob(key, reinterpret_cast<const char *>(&record),
-                   sizeof(record)) &&
-      cfg->commit();
+                   sizeof(record)) && cfg->commit() &&
+      cfg->getBlob(key, reinterpret_cast<char *>(&stored), sizeof(stored)) &&
+      !memcmp(&stored, &record, sizeof(record)) &&
+      cfg->getChannelFunction(channelNo) ==
+          static_cast<int32_t>(record.function);
 }
 
 inline bool cleanupLegacyConfig(const char *key) {

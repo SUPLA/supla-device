@@ -98,7 +98,6 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   void iterateAlways() override;
   void refreshSupLanRecognition();
   void reconcileChannelDependencies() override;
-  bool isChannelConfigDurable() const override;
   void onServerIdentityTransition() override;
 #ifndef ARDUINO_ARCH_AVR
   void onServerScopeMigration() override;
@@ -213,7 +212,6 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   uint8_t buttonBindingsInitialized : 1;
 #ifndef ARDUINO_ARCH_AVR
   uint8_t suplanRecognitionActive : 1;
-  uint8_t suplanConfigDurable : 1;
   uint8_t destroying : 1;
 #else
   static constexpr bool suplanRecognitionActive = false;

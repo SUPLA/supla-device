@@ -36,7 +36,6 @@ class Element {
  public:
   explicit Element(ElementMode mode = ElementMode::Registered);
   virtual ~Element();
-  virtual bool isChannelConfigDurable() const { return true; }
   virtual void onServerIdentityTransition() {}
 #ifndef ARDUINO_ARCH_AVR
   virtual void onServerScopeMigration() {}

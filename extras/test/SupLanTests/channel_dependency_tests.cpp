@@ -411,6 +411,7 @@ TEST(ChannelDependency, NeverRegisteredChannelZeroPersistsAndRestartsLocal) {
     EXPECT_EQ(record.references[0].local.channelNo, 0);
     EXPECT_EQ(record.references[0].local.isSet, 1);
   }
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   resetChannels();
   Sensor::VirtualThermometer thermometer;
@@ -554,6 +555,7 @@ TEST(ChannelDependency, ServerMixedDependenciesAndSettersKeepWholeNamespace) {
   EXPECT_EQ(resolveChannelReference(config.reference(config.AuxThermometer),
                                    &identity).channel,
             thermometer.getChannel());
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   identity.load(&storage);
   hvac.onLoadConfig(nullptr);
@@ -812,7 +814,7 @@ TEST(ChannelDependency, AnonymousShareCancellationAndTimeoutCloseConnection) {
   EXPECT_TRUE(srpc.acceptShareResult());
 }
 
-TEST(ChannelDependency, FailedDurableConfigCannotReleaseIdentityBarrier) {
+TEST(ChannelDependency, AcceptedRamConfigStillWaitsForDurableIdentityFence) {
   resetChannels();
   SimpleTime time;
   DurableHvacConfig storage;
@@ -852,11 +854,13 @@ TEST(ChannelDependency, FailedDurableConfigCannotReleaseIdentityBarrier) {
   std::memcpy(request.Config, &config, sizeof(config));
   storage.failCommit = true;
   EXPECT_EQ(hvac.handleChannelConfig(&request, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
+            SUPLA_CONFIG_RESULT_TRUE);
   srpc.onDeviceSyncDone();
   EXPECT_TRUE(identity.identityTransition());
   EXPECT_FALSE(identity.serverSyncComplete());
   storage.failCommit = false;
+  // Failed security persistence requires renewed durable identity acceptance.
+  ASSERT_EQ(identity.accept(identities).Result, SUPLA_SUPLAN_RESULT_OK);
   ASSERT_EQ(hvac.handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
   srpc.onDeviceSyncDone();
@@ -901,7 +905,7 @@ TEST(ChannelDependency, ReadonlyLocalSyncUsesIdsWithoutReleasingBarrier) {
   memcpy(request.Config, &wire, sizeof(wire));
   storage.failCommit = true;
   EXPECT_EQ(hvac.handleChannelConfig(&request, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
+            SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_TRUE(identity.identityTransition());
   storage.failCommit = false;
   ASSERT_EQ(hvac.handleChannelConfig(&request, false),
@@ -1128,7 +1132,7 @@ TEST(ChannelDependency, V2FirmwareValidationPreservesUnchangedServerTags) {
   EXPECT_EQ(wire.PumpSwitchChannelId, 1005);
 }
 
-TEST(ChannelDependency, ServerConfigPersistenceFailurePreventsActivation) {
+TEST(ChannelDependency, ServerConfigPersistenceFailureKeepsRuntimeActive) {
   resetChannels();
   SimpleTime time;
   DurableHvacConfig storage;
@@ -1155,34 +1159,30 @@ TEST(ChannelDependency, ServerConfigPersistenceFailurePreventsActivation) {
   std::memcpy(request.Config, &wire, sizeof(wire));
   storage.failCommit = true;
   EXPECT_EQ(hvac.handleChannelConfig(&request, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-  EXPECT_EQ(hvac.getMainThermometerChannelNo(), 1);
-  EXPECT_FALSE(hvac.isChannelConfigDurable());
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(hvac.getMainThermometerChannelNo(), -1);
   storage.failCommit = false;
   ASSERT_EQ(hvac.handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_TRUE(hvac.isChannelConfigDurable());
   const int commits = storage.commits;
   ASSERT_EQ(hvac.handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_EQ(storage.commits, commits + 1);
+  EXPECT_EQ(storage.commits, commits);
   Control::HvacStoredConfigV2 record;
   ASSERT_TRUE(storage.getBlob("0_hvac_cfg2", reinterpret_cast<char *>(&record),
                               sizeof(record)));
   EXPECT_EQ(record.references[0].channelId, 501u);
   EXPECT_EQ(record.referenceNamespace,
             Control::HvacReferenceNamespace::SERVER_CHANNEL_ID);
-  // Disabled-function compatibility also acknowledges only durable reset.
+  // Disabled-function reset is accepted in RAM while commit fails.
   request.Func = 0;
   request.ConfigSize = 0;
   storage.failCommit = true;
   EXPECT_EQ(hvac.handleChannelConfig(&request, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-  EXPECT_FALSE(hvac.isChannelConfigDurable());
+            SUPLA_CONFIG_RESULT_TRUE);
   storage.failCommit = false;
   EXPECT_EQ(hvac.handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_TRUE(hvac.isChannelConfigDurable());
   hvac.purgeConfig();
   EXPECT_EQ(storage.getBlobSize("0_hvac_cfg2"), -1);
 }
@@ -1362,7 +1362,7 @@ class AmbiguousCommitConfig : public DurableHvacConfig {
   bool reportFailure = false;
 };
 TEST(ChannelDependency,
-     RetryAfterFailedCommitRewritesPreviousRecord) {
+     AmbiguousDelayedCommitNeverRollsBackAcceptedRuntime) {
   resetChannels();
   SimpleTime time;
   AmbiguousCommitConfig storage;
@@ -1392,30 +1392,29 @@ TEST(ChannelDependency,
   wire.MainThermometerChannelId = 1002;
   memcpy(request.Config, &wire, sizeof(wire));
   ASSERT_EQ(hvac.handleChannelConfig(&request, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-  ASSERT_FALSE(hvac.isChannelConfigDurable());
+            SUPLA_CONFIG_RESULT_TRUE);
+  time.advance(5001);
+  storage.saveIfNeeded();
   storage.reportFailure = false;
   wire.MainThermometerChannelId = 1001;
   memcpy(request.Config, &wire, sizeof(wire));
-  // The normal retry also fails. Success must remain blocked.
+  // A newer accepted RAM state is independent of the pending retry.
   storage.failCommit = true;
   EXPECT_EQ(hvac.handleChannelConfig(&request, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-  EXPECT_FALSE(hvac.isChannelConfigDurable());
+            SUPLA_CONFIG_RESULT_TRUE);
   storage.reboot();
-  // Storage reported failure after B reached flash, although active config
-  // stayed A. Failed replay must not pretend that A is durable again.
+  // The failed commit actually reached disk; reboot restores that state.
   EXPECT_EQ(hvac.configuration().MainThermometer.channelId, 1002u);
   storage.failCommit = false;
   ASSERT_EQ(hvac.handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_TRUE(hvac.isChannelConfigDurable());
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   EXPECT_EQ(hvac.configuration().MainThermometer.channelId, 1001u);
   const int commits = storage.commits;
   ASSERT_EQ(hvac.handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_EQ(storage.commits, commits + 1);
+  EXPECT_EQ(storage.commits, commits);
 }
 }  // namespace
 
@@ -2293,6 +2292,43 @@ TEST_F(R1PeerPresence, ReversedRoleAndOwnershipBarrierCannotReuseOldState) {
   EXPECT_FALSE(resources.state({kResourceTypeChannel, 1001}, 0).available());
 }
 
+TEST_F(R1PeerPresence, RightsAreReevaluatedOnlyAfterPeerTableChange) {
+  static bool owned;
+  static unsigned checks;
+  owned = true;
+  checks = 0;
+  peers.setOwnershipCheck([](void *, const PeerContext &,
+                             const ResourceId &resource) {
+    if (resource.type != kResourceTypeChannel) return true;
+    ++checks;
+    return owned;
+  }, nullptr);
+  const auto peer = add();
+  consume(1001);
+  consume(1002);
+  publish(peer, 1001);
+  publish(peer, 1002);
+  resources.iterate(0);
+  ASSERT_TRUE(resources.state({kResourceTypeChannel, 1001}, 0).available());
+  const unsigned settled = checks;
+  for (uint32_t now = 1; now < 4; ++now) resources.iterate(now);
+  EXPECT_TRUE(resources.state({kResourceTypeChannel, 1002}, 4).available());
+  EXPECT_EQ(checks, settled);
+  // Revocation needs no authorizationChanged() notification.
+  ASSERT_TRUE(peers.replaceAcl(peer, 2, entries + 1, 2));
+  EXPECT_FALSE(resources.state({kResourceTypeChannel, 1001}, 5).available());
+  EXPECT_TRUE(resources.state({kResourceTypeChannel, 1002}, 5).available());
+  owned = false;
+  peers.ownershipChanged();
+  EXPECT_FALSE(resources.state({kResourceTypeChannel, 1002}, 6).available());
+  EXPECT_EQ(resources.access({kResourceTypeChannel, 1002}),
+            RemoteAccess::PENDING);
+  ASSERT_TRUE(peers.removePeer(peer));
+  owned = true;
+  EXPECT_FALSE(resources.state({kResourceTypeChannel, 1002}, 7).available());
+  peers.setOwnershipCheck(nullptr, nullptr);
+}
+
 TEST_F(R1PeerPresence, RevokeRegrantDoesNotRestoreValuesOrResetPeerQuota) {
   const auto peer = add();
   consume(1001);
@@ -2424,7 +2460,6 @@ TEST(ChannelDependency, TemporaryUnlockServerUnionAndLocalZeroAreDistinct) {
   bootstrapIdentity(&identity, &storage);
   ASSERT_TRUE(usesServerReferences());
   at.onServerIdentityTransition();
-  EXPECT_FALSE(at.isChannelConfigDurable());
   TChannelConfig_ActionTrigger wire = {};
   wire.TemporaryUnlockDurationSec = 10;
   wire.TemporaryUnlockSensorEdge = SUPLA_AT_SENSOR_EDGE_RISING;
@@ -2434,7 +2469,6 @@ TEST(ChannelDependency, TemporaryUnlockServerUnionAndLocalZeroAreDistinct) {
   request.ConfigSize = sizeof(wire);
   memcpy(request.Config, &wire, sizeof(wire));
   ASSERT_EQ(at.handleChannelConfig(&request, false), SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_TRUE(at.isChannelConfigDurable());
   TChannelConfig_ActionTrigger result = {};
   int size = 0;
   at.fillChannelConfig(&result, &size, 0);

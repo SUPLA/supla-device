@@ -134,6 +134,7 @@ bool PeerTable::addPeer(const PeerContext *context,
   candidate->used = true;
   *peerIndex = slot;
   ++peerCount_;
+  changed();
   return true;
 }
 
@@ -177,6 +178,7 @@ bool PeerTable::addPeerFromRoot(const PeerContext *context,
   candidate->used = true;
   *peerIndex = slot;
   ++peerCount_;
+  changed();
   return true;
 }
 
@@ -237,6 +239,7 @@ bool PeerTable::installAcl(uint8_t peerIndex, uint32_t revision,
   peer->aclCount = entryCount;
   peer->aclRevision = revision;
   aclEntryCount_ = updatedTotal;
+  changed();
   return true;
 }
 
@@ -275,6 +278,7 @@ bool PeerTable::runtimeEligible(uint8_t peerIndex) const {
 void PeerTable::setOwnershipCheck(OwnershipCheck check, void *context) {
   ownershipCheck_ = check;
   ownershipContext_ = context;
+  changed();
 }
 
 bool PeerTable::owns(uint8_t peerIndex, const ResourceId &resource) const {
@@ -298,8 +302,10 @@ bool PeerTable::owns(uint8_t peerIndex, const ResourceId &resource) const {
 
 uint8_t PeerTable::effectivePermissions(uint8_t peerIndex,
                                        const ResourceId &resource) const {
-  const PeerRecord *peer = get(peerIndex);
-  if (!peer || !owns(peerIndex, resource)) {
+  // The ACL scan is cheap and usually empty; ownership may consult the
+  // integration's identity map, so evaluate it only for granted resources.
+  // Re-read the grant afterwards: the ownership callback may mutate the table.
+  if (!aclPermissions(peerIndex, resource) || !owns(peerIndex, resource)) {
     return 0;
   }
   return aclPermissions(peerIndex, resource);
@@ -314,14 +320,17 @@ uint8_t PeerTable::aclPermissions(uint8_t peerIndex,
     return 0;
   }
   uint8_t permissions = 0;
-  for (uint16_t i = 0; i < aclEntryCount_; ++i) {
+  // aclCount is this peer's exact entry count; stop after its last entry.
+  uint8_t remaining = peer->aclCount;
+  for (uint16_t i = 0; remaining && i < aclEntryCount_; ++i) {
     const PeerAclRecord &entry = acl_[i];
-    if (entry.peerIndex == peerIndex &&
-        ((entry.resourceType == resource.type &&
-          entry.resourceId == resource.id)
-         || (resource.type == kResourceTypeChannel &&
-             entry.resourceType == kResourceTypeDevice &&
-             entry.resourceId == context.source.nodeId))) {
+    if (entry.peerIndex != peerIndex) continue;
+    --remaining;
+    if ((entry.resourceType == resource.type &&
+         entry.resourceId == resource.id)
+        || (resource.type == kResourceTypeChannel &&
+            entry.resourceType == kResourceTypeDevice &&
+            entry.resourceId == context.source.nodeId)) {
       permissions |= entry.permissions;
     }
   }
@@ -360,6 +369,7 @@ bool PeerTable::removePeer(uint8_t peerIndex) {
   aclEntryCount_ = output;
   memset(&peers_[peerIndex], 0, sizeof(peers_[peerIndex]));
   --peerCount_;
+  changed();
   return true;
 }
 

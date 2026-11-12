@@ -17,10 +17,6 @@
 #define HVAC_BASE_FLAG_IGNORE_DEFAULT_HEAT_OR_COLD (1 << 1)
 
 namespace Supla {
-namespace Device {
-class RemoteResourceManager;
-}
-
 enum class LocalUILock : uint8_t {
   None = 0,
   Full = 1,
@@ -55,11 +51,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onInit() override;
-  bool isChannelConfigDurable() const override {
-    return synchronizedConfigDurable;
-  }
   void onServerIdentityTransition() override {
-    synchronizedConfigDurable = false;
     refreshMainDependency();
   }
   void onSaveState() override;
@@ -585,12 +577,12 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void initDefaultFunction();
   HvacConfiguration defaultConfiguration(uint32_t function = 0);
   bool persistConfiguration(const HvacConfiguration &candidate,
-                            uint32_t function, int8_t serverNone = -1);
+                            uint32_t function, int8_t serverNone = -1,
+                            bool migration = false);
 #ifndef ARDUINO_ARCH_AVR
   HvacServerNoneScope serverNoneProjection;
 #endif
   void cleanupLegacyConfig();
-  bool synchronizedConfigDurable = true;
   // Volatile firmware readonly bindings, not canonical config references.
   // 0xff means no proven local binding; remote IDs are never rebound.
   uint8_t readonlyLocalChannels[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -598,9 +590,6 @@ class HvacBase : public ChannelElement, public ActionHandler {
   ChannelState mainThermometerState();
   ChannelState dependencyState(ChannelReference reference, uint8_t field);
   void refreshMainDependency();
-#ifndef ARDUINO_ARCH_AVR
-  Device::RemoteResourceManager *remoteManager() const;
-#endif
   const Device::ServerIdentity *referenceIdentity() const;
   int32_t channelFunctionToIndex(int32_t channelFunction) const;
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);

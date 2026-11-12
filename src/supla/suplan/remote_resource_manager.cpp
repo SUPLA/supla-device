@@ -5,6 +5,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <supla/log_wrapper.h>
+#include <supla/suplan/suplan_server_associations.h>
 namespace Supla {
 namespace Device {
 namespace {
@@ -30,17 +31,19 @@ RemoteResourceManager::Resource *RemoteResourceManager::find(
   return static_cast<Resource *>(
       findResource({id.id, RemoteDelivery::SupLanPeer}));
 }
-int RemoteResourceManager::readyPeer(const Resource &resource) const {
+int RemoteResourceManager::readyPeer(const Resource &resource,
+                                     uint8_t *effective) const {
+  constexpr uint8_t kResourceRights = SupLan::kPermissionRead |
+      SupLan::kPermissionControl | SupLan::kPermissionActionTrigger;
   if (!peers_) return -1;
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     const auto *peer = peers_->get(i);
-    if (peer && peer->destination &&
-        peer->contextBytes[0] == SupLan::kAuthorityServer &&
-        peers_->runtimeEligible(i)) {
-      for (uint8_t right = 1; right <= 4; right <<= 1) {
-        if (peers_->authorize(i, resource.id, right)) return i;
-      }
-    }
+    if (!peer || !peer->destination ||
+        peer->contextBytes[0] != SupLan::kAuthorityServer) continue;
+    // One ACL evaluation yields every right; per-bit authorize() is
+    // equivalent.
+    *effective = peers_->effectivePermissions(i, resource.id) & kResourceRights;
+    if (*effective && peers_->runtimeEligible(i)) return i;
   }
   return -1;
 }
@@ -77,6 +80,8 @@ RemoteResourceManager::PeerPresence *RemoteResourceManager::reconcilePeer(
       resource.readAttempted = false;
       resource.ensureAttempted = false;
       resource.access = RemoteAccess::PENDING;
+      // Not reconciled by its own pass; let the next lookup rebind it.
+      resource.reconciledPermissions = 0xff;
     }
     state = {};
   }
@@ -86,8 +91,30 @@ RemoteResourceManager::PeerPresence *RemoteResourceManager::reconcilePeer(
   return &state;
 }
 
+void RemoteResourceManager::reconcileResource(
+    RemoteChannelResource &resource) {
+  // ACL and ownership are reevaluated after a PeerTable revision change.
+  // The bound peer's role is rechecked every time; it costs no ACL scan.
+  // A ready peer also overrides an ENSURE BLOCKED outcome, as before.
+  auto entry = static_cast<Resource *>(&resource);
+  if (associations) associations->refreshOwnership();
+  const auto peer = entry->peerIndex != 0xff && peers_
+                        ? peers_->get(entry->peerIndex) : nullptr;
+  if (peers_ && peers_->revision() != authorizationRevision_) {
+    authorizationChanged();
+  } else if (entry->reconciledPermissions != entry->permissions ||
+             entry->access == RemoteAccess::BLOCKED ||
+             (entry->peerIndex != 0xff &&
+              !(peer && peer->destination &&
+                peer->contextBytes[0] == SupLan::kAuthorityServer))) {
+    reconcile(entry);
+  }
+}
+
 void RemoteResourceManager::reconcile(Resource *resource) {
-  const int peerIndex = readyPeer(*resource);
+  resource->reconciledPermissions = resource->permissions;
+  uint8_t effective = 0;
+  const int peerIndex = readyPeer(*resource, &effective);
   if (resource->peerIndex != 0xff && resource->peerIndex != peerIndex)
     peerPresence(resource->peerIndex);
   if (peerIndex < 0) {
@@ -113,10 +140,6 @@ void RemoteResourceManager::reconcile(Resource *resource) {
     resource->readAttempted = false;
   }
   const uint8_t previous = resource->effective;
-  uint8_t effective = 0;
-  for (uint8_t right = 1; right <= 4; right <<= 1) {
-    if (peers_->authorize(peerIndex, resource->id, right)) effective |= right;
-  }
   grantLost(resource, effective);
   resource->effective = effective;
   if ((previous & SupLan::kPermissionRead) &&
@@ -209,7 +232,7 @@ void RemoteResourceManager::receive(uint8_t peerIndex,
   auto *resource = find(id);
   if (!resource || !payload || length != sizeof(resource->snapshot) ||
       payload[0] != 0xff) return;
-  reconcile(resource);
+  reconcileResource(*resource);
   if (!(resource->effective & resource->permissions &
         SupLan::kPermissionRead) || resource->peerIndex != peerIndex)
     return;
@@ -242,6 +265,8 @@ void RemoteResourceManager::sessionChanged(uint8_t peerIndex) {
   }
 }
 void RemoteResourceManager::authorizationChanged() {
+  // A change during this sweep makes the next reconcileResource() sweep again.
+  if (peers_) authorizationRevision_ = peers_->revision();
   // Removed peers can have no resources left; retain a same-identity quota
   // through ACL edits, but never through an observed association replacement.
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
@@ -256,7 +281,7 @@ bool RemoteResourceManager::allowPresence(uint8_t index, uint32_t nowMs) {
   if (!peer) return false;
   for (auto &resource : resources_) {
     if (!resource.used()) continue;
-    reconcile(&resource);
+    reconcileResource(resource);
     if (!(resource.effective & resource.permissions &
         SupLan::kPermissionRead) ||
         resource.peerIndex != index) {
@@ -287,7 +312,7 @@ void RemoteResourceManager::peerAwake(uint8_t index, uint16_t window,
   bool refresh = false;
   for (auto &resource : resources_) {
     if (!resource.used()) continue;
-    reconcile(&resource);
+    reconcileResource(resource);
     if (!(resource.effective & resource.permissions &
         SupLan::kPermissionRead) ||
         resource.peerIndex != index)

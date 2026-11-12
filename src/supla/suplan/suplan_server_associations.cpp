@@ -88,6 +88,14 @@ void ServerAssociations::clear(uint8_t index) {
   }
 }
 
+void ServerAssociations::refreshOwnership() {
+  const uint32_t seen = identity_ ? identity_->revision() : 0;
+  if (peers_ && seen != ownershipSeen_) {
+    ownershipSeen_ = seen;
+    peers_->ownershipChanged();
+  }
+}
+
 bool ServerAssociations::owns(void *self, const PeerContext &context,
                               const ResourceId &resource) {
   auto state = static_cast<ServerAssociations *>(self);
@@ -249,6 +257,7 @@ void ServerAssociations::load(Config *config, ServerIdentity *identity) {
   for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) clear(i);
   config_ = config;
   identity_ = identity;
+  if (peers_) peers_->ownershipChanged();
   storageReady_ = false;
   loadAttempted_ = true;
   loadRetryMs_ = runtime_ ? runtime_->nowMs() : 0;

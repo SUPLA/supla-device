@@ -33,6 +33,8 @@ class ServerAssociations {
   ServerAssociations &operator=(const ServerAssociations &) = delete;
   void load(Config *config, ServerIdentity *identity);
   void identityChanged();
+  // Report SERVER identity changes to PeerTable before its revision is used.
+  void refreshOwnership();
   void retryLoad(uint32_t now);
   bool storageReady() const { return storageReady_; }
   bool bindingsStored() const { return bindingsStored_; }
@@ -64,6 +66,7 @@ class ServerAssociations {
   ServerAssociations *next_ = nullptr;
   Config *config_ = nullptr;
   ServerIdentity *identity_ = nullptr;
+  uint32_t ownershipSeen_ = 0;
   SupLan::PeerTable *peers_;
   SupLan::Runtime *runtime_;
   // 0xff means unmanaged/free; persistent slot numbers never escape this class.

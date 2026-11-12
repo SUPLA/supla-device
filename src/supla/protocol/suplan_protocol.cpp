@@ -20,6 +20,7 @@
 #include <supla/at_channel.h>
 #include <supla/channels/channel.h>
 #include <supla/element.h>
+#include <supla/control/hvac_base.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/storage/storage.h>
 #include <supla/storage/config.h>
@@ -150,6 +151,7 @@ void SupLan::setEnabled(bool enabled) {
 }
 
 void SupLan::onInit() {
+  notifyConfigChange(-1);
   if (associations()) {
     resources_->presence().resetPending_ = true;
     resources_->presence().presenceCursor_ = 0;
@@ -171,6 +173,7 @@ void SupLan::attachServerAssociations(
     resources_ = Device::allocateSupLan<Device::RemoteResourceManager>(
         peers_, runtime_, this);
   }
+  bindingConfigDirty_ = true;
   if (resources_) resources_->associations = state;
   if (resources_ && resources_->bindings)
     resources_->bindings->attachAssociations(state);
@@ -185,6 +188,38 @@ Device::ResourceBindingManager *SupLan::resourceBindings() {
       resources_->bindings->attachAssociations(associations());
   }
   return resources_->bindings;
+}
+
+void SupLan::notifyConfigChange(int channelNumber) {
+  (void)channelNumber;
+  bindingConfigDirty_ = true;
+  if (resources_ && resources_->bindings)
+    resources_->bindings->configChanged();
+}
+
+// Discover the feature only after an event, retaining lazy allocation.
+// HVAC construction publishes metadata before configuration is loaded; the
+// deferred pass sees the completed Element in the normal protocol cycle.
+void SupLan::discoverBindings() {
+  const auto identity = associations() ? associations()->identity() : nullptr;
+  if (!identity || !identity->serverSyncComplete()) return;
+  if (!bindingConfigDirty_) return;
+  if (!resources_->bindings) {
+    for (auto element = Element::begin(); element; element = element->next()) {
+      const auto hvac = element->getHvacBase();
+      if (!hvac) continue;
+      for (uint8_t field = 0; field < 2; ++field) {
+        const auto target =
+            resolveChannelReference(hvac->bindingTarget(field), identity);
+        if (target.kind != ChannelResolutionKind::kRemote) continue;
+        if (!resourceBindings()) return;  // Retry allocation in normal cycle.
+        break;
+      }
+      if (resources_->bindings) break;
+    }
+  }
+  if (resources_->bindings) resources_->bindings->configChanged();
+  bindingConfigDirty_ = false;
 }
 
 bool SupLan::restoreBindings() {
@@ -222,6 +257,7 @@ bool SupLan::setSuplanDestinationAssociation(
 }
 
 void SupLan::suplanIdentityChanged() {
+  notifyConfigChange(-1);
   if (!associations()) return;
   associations()->identityChanged();
   const auto identity = associations()->identity();
@@ -241,6 +277,7 @@ bool SupLan::isSupLanServerCapable() const {
 }
 
 void SupLan::onFactoryReset() {
+  notifyConfigChange(-1);
   disconnect();
   if (!associations() || !sdc || !sdc->getSrpcLayer()) return;
   if (resources_->bindings) resources_->bindings->attachAssociations(nullptr);
@@ -290,6 +327,87 @@ bool SupLan::isConfigEmpty() {
 }
 
 bool SupLan::iterate(uint32_t nowMs) {
+  // Temporary wall-clock diagnostics. All paths, including early returns,
+  // contribute to the same 5 s window. No logging inside measured stages.
+#ifndef SUPLA_TEST
+  struct IterateTiming {
+    enum Stage {
+      kEnabled, kLoad, kIdentity, kRestore, kResources,
+      kNetwork, kBindings, kPresence, kOwnership, kRuntime, kStageCount
+    };
+    uint32_t startMs = millis();
+    uint32_t stageStartMs = startMs;
+    uint32_t elapsed[kStageCount] = {};
+    Stage stage = kEnabled;
+
+    void next(Stage nextStage) {
+      const uint32_t now = millis();
+      elapsed[stage] += now - stageStartMs;
+      stageStartMs = now;
+      stage = nextStage;
+    }
+
+    ~IterateTiming() {
+      static uint32_t windowMs, lastStartMs, lastEndMs;
+      static uint32_t calls, periods, sumPeriod, maxPeriod;
+      static uint32_t sumOutside, maxOutside, sumRun, maxRun;
+      static uint32_t sums[kStageCount] = {};
+      static uint32_t maxima[kStageCount] = {};
+      static bool havePrevious = false;
+      const uint32_t endMs = millis();
+      elapsed[stage] += endMs - stageStartMs;
+      const uint32_t run = endMs - startMs;
+      if (!calls) windowMs = startMs;
+      if (havePrevious) {
+        const uint32_t period = startMs - lastStartMs;
+        const uint32_t outside = startMs - lastEndMs;
+        ++periods;
+        sumPeriod += period;
+        sumOutside += outside;
+        if (period > maxPeriod) maxPeriod = period;
+        if (outside > maxOutside) maxOutside = outside;
+      }
+      lastStartMs = startMs;
+      havePrevious = true;
+      ++calls;
+      sumRun += run;
+      if (run > maxRun) maxRun = run;
+      for (unsigned i = 0; i < kStageCount; ++i) {
+        sums[i] += elapsed[i];
+        if (elapsed[i] > maxima[i]) maxima[i] = elapsed[i];
+      }
+      if (endMs - windowMs >= 5000) {
+        SUPLA_LOG_INFO(
+            "SupLAN timing: calls=%" PRIu32 " avg_period_ms=%" PRIu32
+            " max_period_ms=%" PRIu32 " avg_run_ms=%" PRIu32
+            " max_run_ms=%" PRIu32 " avg_outside_ms=%" PRIu32
+            " max_outside_ms=%" PRIu32,
+            calls, periods ? sumPeriod / periods : 0, maxPeriod,
+            sumRun / calls, maxRun,
+            periods ? sumOutside / periods : 0, maxOutside);
+        static const char *const names[kStageCount] = {
+            "enabled", "load", "identity", "restore", "resources",
+            "network", "bindings", "presence", "ownership", "runtime"};
+        // Stage averages include skipped stages as zero; maxima are per call.
+        for (unsigned i = 0; i < kStageCount; i += 2) {
+          SUPLA_LOG_INFO(
+              "SupLAN stages ms avg/max: %s=%" PRIu32 "/%" PRIu32
+              " %s=%" PRIu32 "/%" PRIu32,
+              names[i], sums[i] / calls, maxima[i],
+              names[i + 1], sums[i + 1] / calls, maxima[i + 1]);
+        }
+        calls = periods = sumPeriod = maxPeriod = 0;
+        sumOutside = maxOutside = sumRun = maxRun = 0;
+        for (unsigned i = 0; i < kStageCount; ++i) {
+          sums[i] = maxima[i] = 0;
+        }
+      }
+      // Exclude reporting from run/stages and the next outside interval.
+      // The start-to-start period still includes the reporting overhead.
+      lastEndMs = millis();
+    }
+  } timing;
+#endif  // SUPLA_TEST
   if (!isEnabled()) {
     return false;
   }
@@ -299,18 +417,34 @@ bool SupLan::iterate(uint32_t nowMs) {
   // Full-scope invalidation runs synchronously at migration notifications.
   // While fenced no SERVER peer can be admitted; repeating teardown here
   // cannot add safety. Keep ordinary live identity reconciliation otherwise.
+#ifndef SUPLA_TEST
+  timing.next(IterateTiming::kLoad);
+#endif
   if (associations()) associations()->retryLoad(nowMs);
+#ifndef SUPLA_TEST
+  timing.next(IterateTiming::kIdentity);
+#endif
   const auto identity = associations() ? associations()->identity() : nullptr;
   if (associations() && (!identity || !identity->fullScopeFenced()))
     associations()->identityChanged();
+#ifndef SUPLA_TEST
+  timing.next(IterateTiming::kRestore);
+#endif
   if (associations()) (void)restoreBindings();
+#ifndef SUPLA_TEST
+  timing.next(IterateTiming::kResources);
+#endif
   // A Source must also advertise an authoritative empty binding set. Without
   // its owner no sendDesired() would start that first peer session.
   if (resources_ && !resources_->bindings && identity &&
       identity->serverSyncComplete() && peers_ && peers_->aclEntryCount() &&
       peers_->entryCount(false))
     (void)resourceBindings();
+  discoverBindings();
   if (resources_) resources_->iterate(nowMs);
+#ifndef SUPLA_TEST
+  timing.next(IterateTiming::kNetwork);
+#endif
   if (transport_ != nullptr) {
     if (!transport_->networkReady(nowMs)) {
       if (transport_->isOpen() || transportWasOpen_) {
@@ -338,7 +472,13 @@ bool SupLan::iterate(uint32_t nowMs) {
     transportWasOpen_ = true;
   }
 
+#ifndef SUPLA_TEST
+  timing.next(IterateTiming::kBindings);
+#endif
   if (resources_ && resources_->bindings) resources_->bindings->iterate(nowMs);
+#ifndef SUPLA_TEST
+  timing.next(IterateTiming::kPresence);
+#endif
   if (resources_ &&
       (resources_->presence().resetPending_ ||
        resources_->presence().awakePending_) &&
@@ -362,6 +502,14 @@ bool SupLan::iterate(uint32_t nowMs) {
           resources_->presence().awakePending_ = false;
     }
   }
+#ifndef SUPLA_TEST
+  timing.next(IterateTiming::kOwnership);
+#endif
+  // Runtime revalidates authorization only after a PeerTable revision change.
+  if (associations()) associations()->refreshOwnership();
+#ifndef SUPLA_TEST
+  timing.next(IterateTiming::kRuntime);
+#endif
   runtime_->iterate();
   return true;
 }
@@ -1022,6 +1170,9 @@ void SupLan::sendExtendedChannelValueChanged(
 }
 
 void SupLan::sendChannelMetadataChanged(uint8_t number) {
+  // Function/type changes affect resolution too. This is only invalidation;
+  // the manager still requires complete routing and a synchronized identity.
+  notifyConfigChange(number);
   auto *channel = Supla::Channel::GetByChannelNumber(number);
   if (!channel) return;
   int8_t value[8];

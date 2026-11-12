@@ -48,6 +48,7 @@ void ResourceBindingManager::attachRuntime(SupLan::Runtime *runtime) {
   runtime_ = runtime;
 }
 void ResourceBindingManager::invalidateServerScope() {
+  configChanged();
   if (pendingIntent_ >= 0 && port_) port_->cancelShare();
   pendingIntent_ = -1;
   const auto retryPeer = peers_->get(retry_.peerIndex);
@@ -70,6 +71,7 @@ void ResourceBindingManager::invalidateServerScope() {
 void ResourceBindingManager::migrate(const ServerIdentity *identity,
                                      const ServerMigration &migration) {
   if (!associations_ || associations_->identity() != identity) return;
+  configChanged();
   auto removed = [&migration](uint32_t id) {
     return id && migration.translate(ChannelReference::server(id)).kind ==
                      ChannelReferenceKind::NONE;
@@ -105,6 +107,7 @@ void ResourceBindingManager::migrate(const ServerIdentity *identity,
   }
 }
 void ResourceBindingManager::attachAssociations(ServerAssociations *state) {
+  configChanged();
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     detach(i);
     sets_[i] = {};
@@ -339,16 +342,8 @@ void ResourceBindingManager::addIntent(uint32_t source, uint32_t target) {
     intentOverflow_ = true;
   }
 }
-bool ResourceBindingManager::collectIntents() {
-  const auto identity = associations_ ? associations_->identity() : nullptr;
-  if (!identity) return false;
-  // A rejected/unconfirmed config is not an authoritative empty dependency.
-  // Check the whole snapshot before changing any retained intents or routing.
-  for (int n = 0; n < 255; ++n) {
-    const auto element = Element::getElementByChannelNumber(n);
-    const auto hvac = element ? element->getHvacBase() : nullptr;
-    if (hvac && !hvac->isChannelConfigDurable()) return false;
-  }
+void ResourceBindingManager::collectIntents() {
+  const auto identity = associations_->identity();
   intentOverflow_ = false;
   for (auto &intent : intents_) intent.retained = false;
   for (int n = 0; n < 255; ++n) {
@@ -365,10 +360,12 @@ bool ResourceBindingManager::collectIntents() {
     }
   }
   for (int i = 0; i < SUPLAN_MAX_BINDING_INTENTS; ++i) {
-    if (intents_[i].source && !intents_[i].retained && i != pendingIntent_)
+    if (intents_[i].source && !intents_[i].retained && i != pendingIntent_) {
       intents_[i] = {};
+      // An obsolete slot may have prevented admitting a new target above.
+      if (intentOverflow_) configChanged();
+    }
   }
-  return true;
 }
 void ResourceBindingManager::ensureShareResult(
     const TSD_SuplaEnsureResourceShareResult &result) {
@@ -384,6 +381,7 @@ void ResourceBindingManager::ensureShareResult(
     intent.attempted = false;
     intent.nextEnsure = millis() + 1000;
   }
+  if (!intent.retained) configChanged();
   pendingIntent_ = -1;
 }
 void ResourceBindingManager::acknowledged(uint8_t peer, uint8_t result) {
@@ -477,6 +475,8 @@ void ResourceBindingManager::sendDesired(uint32_t now) {
   }
 }
 void ResourceBindingManager::serverReconnected() {
+  if (pendingIntent_ >= 0 && !intents_[pendingIntent_].retained)
+    configChanged();
   if (pendingIntent_ >= 0 && port_) port_->cancelShare();
   pendingIntent_ = -1;
   for (auto &intent : intents_) {
@@ -516,12 +516,26 @@ void ResourceBindingManager::iterate(uint32_t now) {
     }
   }
   if (!identity || !identity->serverSyncComplete()) return;
-  if (!collectIntents()) return;
+  // Lifecycle revisions also cover direct identity/topology API users.
+  // Comparing them is constant-time; canonical HVAC discovery is event-driven.
+  const auto revision = identity->revision();
+  const auto topology = Channel::registrationGeneration();
+  if (revision != identityRevision_ || topology != topologyRevision_) {
+    identityRevision_ = revision;
+    topologyRevision_ = topology;
+    configChanged();
+  }
+  if (configDirty_) {
+    configDirty_ = false;
+    collectIntents();
+    if (configDirty_) return;
+  }
   if (pendingIntent_ >= 0 && static_cast<int32_t>(now - ensureDeadline_) >= 0) {
     if (port_) port_->cancelShare();
     auto &intent = intents_[pendingIntent_];
     intent.attempted = false;
     intent.nextEnsure = now + 1000;
+    if (!intent.retained) configChanged();
     pendingIntent_ = -1;
   }
   if (pendingIntent_ < 0 && port_) {

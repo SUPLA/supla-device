@@ -111,6 +111,7 @@ Channel::Channel(int number) {
 
   channelNumber = number;
   Supla::RegisterDevice::addChannel(number);
+  ++registrationChanges;
 
   setFlag(SUPLA_CHANNEL_FLAG_CHANNELSTATE);
 }

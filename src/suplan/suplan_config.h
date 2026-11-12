@@ -160,7 +160,10 @@ static const uint8_t kPermissionRead = 1 << 0;
 static const uint8_t kPermissionControl = 1 << 1;
 static const uint8_t kPermissionActionTrigger = 1 << 2;
 
-static const uint32_t kLocateReplyWindowMs = 250;
+// LOCATE attempts are spaced by this interval; replies to any attempt of the
+// current recovery cycle stay valid until that cycle's deadline.
+static const uint32_t kLocateRetrySpacingMs = 250;
+static const uint8_t kLocateMaxAttempts = 3;
 static const uint32_t kSessionInitRetryMs = 250;
 static const uint8_t kSessionInitMaxAttempts = 3;
 static const uint32_t kAckRetryMs = 150;

@@ -84,10 +84,25 @@ class PeerTable {
   typedef bool (*OwnershipCheck)(void *, const PeerContext &,
                                  const ResourceId &);
   void setOwnershipCheck(OwnershipCheck check, void *context);
+  // The integration reports every change of its ownership check inputs.
+  void ownershipChanged() { changed(); }
+  // Changes whenever runtimeEligible(), owns() or effectivePermissions() may
+  // return a different result; an equal value lets callers keep decisions.
+  uint32_t revision() const { return revision_; }
+  // True once after any revision change; reserved for the Runtime sweep.
+  bool takeRuntimeSweep() {
+    const bool pending = runtimeSweep_;
+    runtimeSweep_ = false;
+    return pending;
+  }
   bool owns(uint8_t peerIndex, const ResourceId &resource) const;
   uint16_t entryCount(bool destination) const;
 
  private:
+  void changed() {
+    ++revision_;
+    runtimeSweep_ = true;
+  }
   uint8_t aclPermissions(uint8_t peerIndex, const ResourceId &resource) const;
   bool installAcl(uint8_t peerIndex, uint32_t revision,
                   const AclEntry *entries, uint8_t count);
@@ -101,7 +116,9 @@ class PeerTable {
   PeerAclRecord acl_[SUPLAN_MAX_TOTAL_ACL_ENTRIES +
                     SUPLAN_MAX_TOTAL_EXPECTED_ENTRIES];
   uint8_t peerCount_;
+  bool runtimeSweep_ = true;
   uint16_t aclEntryCount_;
+  uint32_t revision_ = 1;
   OwnershipCheck ownershipCheck_ = nullptr;
   void *ownershipContext_ = nullptr;
 };

@@ -56,8 +56,6 @@ class ValveBase : public ChannelElement, public ActionHandler {
    */
   explicit ValveBase(bool openClose = true);
   ~ValveBase() override;
-  bool isChannelConfigDurable() const override { return configDurable; }
-  void onServerIdentityTransition() override { configDurable = false; }
   void reconcileChannelDependencies() override;
   ChannelReference sensorReference(uint8_t slot) const;
 
@@ -193,10 +191,10 @@ class ValveBase : public ChannelElement, public ActionHandler {
   bool shouldProcessChannelFunctionFromConfig() const override {
     return false;
   }
-  bool persistConfig(const ValveConfiguration &candidate, uint32_t function);
+  bool persistConfig(const ValveConfiguration &candidate, uint32_t function,
+                     bool migration = false);
   void cleanupLegacy();
   ValveConfiguration config = {};
-  bool configDurable = true;
   uint32_t lastSensorsCheckTimestamp = 0;
   uint32_t lastUpdateTimestamp = 0;
   uint32_t lastCmdTimestamp = 0;

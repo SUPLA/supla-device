@@ -543,6 +543,7 @@ void Config::saveIfNeeded() {
         saveDelayMs = 0;
         saveDelayTimestamp = 0;
       } else {
+        SUPLA_LOG_WARNING("Configuration commit failed, retry in 5 s");
         saveDelayMs = 5000;
         saveDelayTimestamp = millis();
       }

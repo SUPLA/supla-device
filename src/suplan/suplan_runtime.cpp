@@ -211,8 +211,10 @@ int Runtime::findSession(uint64_t sessionId, const Endpoint &endpoint) const {
 
 int Runtime::findPending(uint64_t sessionId,
                          const Endpoint &endpoint) const {
+  const uint32_t now = datagrams_->nowMs();
   for (uint8_t i = 0; i < SUPLAN_MAX_PENDING_HANDSHAKES; ++i) {
     if (pending_[i].used && !pending_[i].initiator &&
+        static_cast<int32_t>(now - pending_[i].expiresAtMs) < 0 &&
         pending_[i].sessionId == sessionId &&
         endpointEqual(pending_[i].endpoint, endpoint)) {
       return i;
@@ -653,7 +655,7 @@ void Runtime::noteReachability(uint8_t peerIndex) {
   }
 }
 
-void Runtime::pruneReadDependencies() {
+void Runtime::pruneReadDependencies(bool rights) {
   for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
     ReadDependency &entry = dependencies_[i];
     if (!entry.used) {
@@ -661,7 +663,8 @@ void Runtime::pruneReadDependencies() {
     }
     const uint8_t peerIndex = entry.peerIndex;
     const ResourceId resource = {entry.resourceType, entry.resourceId};
-    if (readAuthorized(peerIndex, resource)) {
+    if (rights ? readAuthorized(peerIndex, resource)
+               : readRole(peerIndex, resource)) {
       continue;
     }
     // A revoked dependency must not retain queued or retrying READ work.
@@ -726,7 +729,7 @@ void Runtime::iterateRecovery(uint32_t now) {
     }
     if (peer.active &&
         (static_cast<int32_t>(now - peer.deadlineMs) >= 0 ||
-         (peer.locateAttempts >= 3 && !locate && !handshake &&
+         (peer.locateAttempts >= kLocateMaxAttempts && !locate && !handshake &&
           record->endpointState == kPeerEndpointNone))) {
       finishRecovery(peerIndex);
     }
@@ -742,6 +745,13 @@ void Runtime::iterateRecovery(uint32_t now) {
   }
 }
 
+bool Runtime::OutstandingLocate::hasNonce(const uint8_t *nonce) const {
+  bool found = false;
+  for (uint8_t i = 0; i < nonceCount && i < kLocateMaxAttempts; ++i)
+    found = found || memcmp(nonces[i], nonce, kNonceSize) == 0;
+  return found;
+}
+
 void Runtime::startLocate(uint8_t peerIndex) {
   PeerRecord *peer = peers_->get(peerIndex);
   if (peer == nullptr || !peers_->hasActiveGrants(peerIndex)) {
@@ -751,17 +761,14 @@ void Runtime::startLocate(uint8_t peerIndex) {
     startHandshake(peerIndex);
     return;
   }
-  for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
-    if (locates_[i].used && locates_[i].peerIndex == peerIndex) {
-      return;
-    }
-  }
+  // One slot keeps every attempt nonce of this recovery cycle outstanding, so
+  // a reply delayed past later attempts or a slow iteration is still accepted.
   int slot = -1;
   for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
-    if (!locates_[i].used) {
-      slot = i;
-      break;
-    }
+    if (locates_[i].used && locates_[i].peerIndex == peerIndex) slot = i;
+  }
+  for (uint8_t i = 0; slot < 0 && i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
+    if (!locates_[i].used) slot = i;
   }
   if (slot < 0) {
     emit(DiagnosticEvent::ResourceLimit);
@@ -770,10 +777,12 @@ void Runtime::startLocate(uint8_t peerIndex) {
   }
   const uint32_t now = datagrams_->nowMs();
   PeerRecovery &recovery = recovery_[peerIndex];
-  if (!recovery.active || recovery.locateAttempts >= 3 ||
+  OutstandingLocate &locate = locates_[slot];
+  if (!recovery.active || recovery.locateAttempts >= kLocateMaxAttempts ||
+      (locate.used && locate.nonceCount >= kLocateMaxAttempts) ||
       (recovery.locateAttempts != 0 &&
        static_cast<uint32_t>(now - recovery.lastLocateMs) <
-           kLocateReplyWindowMs)) {
+           kLocateRetrySpacingMs)) {
     return;
   }
   // Scheduling counts attempts even if RNG, MAC or the local send fails.
@@ -799,14 +808,21 @@ void Runtime::startLocate(uint8_t peerIndex) {
     --hooks_.corruptNextMacTx;
   }
 #endif  // SUPLAN_TESTING
-  locates_[slot].used = true;
-  locates_[slot].peerIndex = peerIndex;
-  memcpy(locates_[slot].nonce, nonce, sizeof(nonce));
-  locates_[slot].expiresAtMs = now + kLocateReplyWindowMs;
+  if (!locate.used) {
+    locate = OutstandingLocate();
+    locate.used = true;
+    locate.peerIndex = peerIndex;
+  }
   const bool sent = datagrams_->sendLocateMulticast(frame, sizeof(frame));
   emit(DiagnosticEvent::LocateTx, peerIndex, ResourceId(), sent);
   if (sent) {
     ++diagnostics_.locateTx;
+    // A transmitted nonce stays answerable until the cycle deadline.
+    memcpy(locate.nonces[locate.nonceCount++], nonce, sizeof(nonce));
+    locate.expiresAtMs = recovery.deadlineMs;
+  } else if (!locate.nonceCount) {
+    // A failed local send still consumes its spaced attempt window.
+    locate.expiresAtMs = now + kLocateRetrySpacingMs;
   }
   memset(nonce, 0, sizeof(nonce));
   memset(mac, 0, sizeof(mac));
@@ -992,14 +1008,18 @@ void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
   updatePoolHighWater();
 }
 
-bool Runtime::readAuthorized(uint8_t peerIndex,
-                             const ResourceId &resource) const {
+bool Runtime::readRole(uint8_t peerIndex, const ResourceId &resource) const {
   const PeerRecord *peer = peers_->get(peerIndex);
   return resource.type == kResourceTypeChannel && peer &&
       (peer->contextBytes[0] != kAuthorityServer || peer->destination) &&
-      isLocalDestination(peer) &&
-      (peers_->authorize(peerIndex, resource, kPermissionRead) ||
-       peers_->authorize(peerIndex, resource, kPermissionActionTrigger));
+      isLocalDestination(peer);
+}
+
+bool Runtime::readAuthorized(uint8_t peerIndex,
+                             const ResourceId &resource) const {
+  return readRole(peerIndex, resource) &&
+      (peers_->effectivePermissions(peerIndex, resource) &
+       (kPermissionRead | kPermissionActionTrigger));
 }
 
 bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
@@ -1391,6 +1411,8 @@ void Runtime::setLocalAddress(const NodeAddress &address) {
       clearPeer(i);
     }
     localAddress_ = address;
+    // Local Destination identity is an authorization input as well.
+    if (peers_) peers_->ownershipChanged();
   }
 }
 
@@ -1794,6 +1816,9 @@ void Runtime::drainDeferred() {
       cancelPeerRecoveryIfIdle(queued->peerIndex);
       continue;
     }
+    // READ/CONTROL wait in the bounded queue for a retry slot; that is
+    // backpressure, not a capacity rejection.
+    if (parsed && app.flags == kAckRequired && findFreeRetry() < 0) continue;
     const uint8_t *sendData = queued->data;
     size_t sendLength = queued->length;
     if (parsed && app.messageClass == kMessageClassNative &&
@@ -2343,7 +2368,7 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
   // this suppression rule.
   for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
     if (locates_[i].used && locates_[i].peerIndex == peerIndex &&
-        memcmp(locates_[i].nonce, nonce, sizeof(nonce)) == 0) {
+        locates_[i].hasNonce(nonce)) {
       return;
     }
   }
@@ -2383,7 +2408,7 @@ void Runtime::processLocateReply(const Endpoint &source, const uint8_t *data,
   for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
     OutstandingLocate *locate = &locates_[i];
     if (!locate->used || static_cast<int32_t>(now - locate->expiresAtMs) >= 0 ||
-        memcmp(locate->nonce, nonce, sizeof(nonce)) != 0) {
+        !locate->hasNonce(nonce)) {
       continue;
     }
     PeerRecord *peer = peers_->get(locate->peerIndex);
@@ -2532,9 +2557,11 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
     ++diagnostics_.invalidSessionDrop;
     return;
   }
+  const uint32_t now = datagrams_->nowMs();
   int slot = -1;
   for (uint8_t i = 0; i < SUPLAN_MAX_PENDING_HANDSHAKES; ++i) {
     if (pending_[i].used && pending_[i].initiator &&
+        static_cast<int32_t>(now - pending_[i].expiresAtMs) < 0 &&
         endpointEqual(pending_[i].endpoint, source) &&
         memcmp(pending_[i].initFrame + 2, data + 2,
                kPeerLocatorSize) == 0) {
@@ -3195,6 +3222,9 @@ void Runtime::sendAck(uint8_t peerIndex, SessionEntry *session,
 }
 
 void Runtime::noteReadState(uint8_t peerIndex, const ResourceId &resource) {
+  // Authorized state satisfies READ demand even after its retry timed out.
+  // Keep transport retries until ACK; STATE may arrive before that ACK.
+  completeRead(peerIndex, resource);
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
     if (!retry->isUsed() || retry->peerIndex != peerIndex ||
@@ -3206,7 +3236,6 @@ void Runtime::noteReadState(uint8_t peerIndex, const ResourceId &resource) {
     }
     retry->flags |= kRetryReadStateReceived;
     if ((retry->flags & kRetryAwaitingReadState) != 0) {
-      completeRead(peerIndex, resource);
       clearRetryEntry(retry);
     }
   }
@@ -3271,9 +3300,23 @@ void Runtime::iterate() {
     return;
   }
   iterating_ = true;
-  pruneReadDependencies();
+  // Dependencies are authorized when admitted. Recheck their peer role every
+  // iteration, but ACL/ownership rights only after a PeerTable change; a
+  // change during this sweep makes the next iteration sweep again.
+  pruneReadDependencies(peers_->takeRuntimeSweep());
   for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     if (peers_->get(i) && !peers_->runtimeEligible(i)) clearPeer(i);
+  }
+  // Process queued replies before timing out their operations. RX remains
+  // bounded; sample time afterwards because receive callbacks can take time.
+  for (uint8_t i = 0; i < kMaxDatagramsPerIterate; ++i) {
+    Endpoint source = {};
+    const int length = datagrams_->pollReceive(transmitFrame_,
+                                               sizeof(transmitFrame_), &source);
+    if (length <= 0) {
+      break;
+    }
+    processDatagram(source, transmitFrame_, static_cast<size_t>(length));
   }
   const uint32_t now = datagrams_->nowMs();
   iterateBindingRetry(now);
@@ -3455,15 +3498,6 @@ void Runtime::iterate() {
     }
   }
 
-  for (uint8_t i = 0; i < kMaxDatagramsPerIterate; ++i) {
-    Endpoint source = {};
-    const int length = datagrams_->pollReceive(transmitFrame_,
-                                               sizeof(transmitFrame_), &source);
-    if (length <= 0) {
-      break;
-    }
-    processDatagram(source, transmitFrame_, static_cast<size_t>(length));
-  }
   drainDeferred();
   // Bound fresh READ work across both recovery phases and nested callbacks.
   for (uint8_t i = 0; i < 2; ++i) {

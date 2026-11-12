@@ -153,6 +153,7 @@ TEST_F(RemoteReferenceForms,
   EXPECT_EQ(hvac.getMinOnTimeS(), 37);
   EXPECT_EQ(hvac.getTemperatureHisteresis(), 70);
   checkAll(hvac);
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   hvac.onLoadConfig(nullptr);
   checkAll(hvac);
@@ -198,6 +199,7 @@ TEST_F(RemoteReferenceForms, HvacExplicitUnsetOnlyChangesSelectedReference) {
             ChannelReference::server(12345));
   EXPECT_EQ(hvac.channelReference(Field::HeatOrColdSourceSwitch),
             ChannelReference::server(12350));
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   hvac.onLoadConfig(nullptr);
   EXPECT_EQ(hvac.channelReference(Field::AuxThermometer), ChannelReference{});
@@ -227,6 +229,7 @@ TEST_F(RemoteReferenceForms, HvacLocalReplacementUsesOwnServerMap) {
             ChannelReference::server(502));
   EXPECT_EQ(hvac.channelReference(Field::AuxThermometer),
             ChannelReference::server(12346));
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   hvac.onLoadConfig(nullptr);
   EXPECT_EQ(hvac.channelReference(Field::MainThermometer),
@@ -269,6 +272,7 @@ TEST_F(RemoteReferenceForms, HvacAllSixLocalChoicesUseMappedChannelIds) {
   for (int i = 0; i < 6; ++i)
     EXPECT_EQ(hvac.channelReference(static_cast<Field>(i)),
               ChannelReference::server(502 + i));
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   hvac.onLoadConfig(nullptr);
   for (int i = 0; i < 6; ++i)
@@ -288,7 +292,8 @@ TEST_F(RemoteReferenceForms, HvacInvalidPostedFunctionKeepsReferencesOnReload) {
     form.onProcessingEnd();
     EXPECT_EQ(hvac.getChannelFunction(), function) << value;
     checkAll(hvac);
-    storage.reboot();
+    ASSERT_TRUE(storage.commit());
+  storage.reboot();
     hvac.onLoadConfig(nullptr);
     EXPECT_EQ(hvac.getChannelFunction(), function) << value;
     checkAll(hvac);
@@ -334,6 +339,7 @@ TEST_F(RemoteReferenceForms, HvacServerFunctionZeroStillResetsReferences) {
             SUPLA_CONFIG_RESULT_TRUE);
   for (int i = 0; i < 6; ++i)
     EXPECT_EQ(hvac.channelReference(static_cast<Field>(i)), ChannelReference{});
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   hvac.onLoadConfig(nullptr);
   for (int i = 0; i < 6; ++i)
@@ -354,6 +360,7 @@ TEST_F(RemoteReferenceForms, HvacFunctionEditPreservesCanonicalAssignments) {
   checkAll(hvac);
   EXPECT_EQ(hvac.getChannelFunction(),
             SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER);
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   hvac.onLoadConfig(nullptr);
   checkAll(hvac);
@@ -417,6 +424,7 @@ TEST_F(RemoteReferenceForms,
   form.onProcessingEnd();
   EXPECT_EQ(container.sensorReference(0), ChannelReference::server(12345));
   EXPECT_EQ(container.level(0), 75);
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   container.onLoadConfig(nullptr);
   EXPECT_EQ(container.sensorReference(0), ChannelReference::server(12345));
@@ -447,6 +455,7 @@ TEST_F(RemoteReferenceForms, ContainerExplicitLocalReplacementAndUnset) {
   EXPECT_EQ(container.sensorReference(0), ChannelReference::local(1));
   EXPECT_EQ(container.level(0), 50);
   EXPECT_EQ(container.sensorReference(1), ChannelReference{});
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   container.onLoadConfig(nullptr);
   EXPECT_EQ(container.sensorReference(0), ChannelReference::local(1));
@@ -477,6 +486,7 @@ TEST_F(RemoteReferenceForms, ValveGeneralFunctionFormDoesNotProjectSensorIds) {
   ASSERT_TRUE(form.handleResponse(key, function.c_str()));
   form.onProcessingEnd();
   EXPECT_EQ(valve.sensorReference(0), ChannelReference::server(12345));
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   valve.onLoadConfig(nullptr);
   EXPECT_EQ(valve.sensorReference(0), ChannelReference::server(12345));

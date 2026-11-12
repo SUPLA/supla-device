@@ -70,6 +70,8 @@ class ServerIdentity {
   uint32_t rootEpoch() const { return rootValid ? epoch : 0; }
   const uint8_t *rootKey() const { return rootValid ? root : nullptr; }
   int32_t serverDeviceId() const { return identityAvailable() ? deviceId : 0; }
+  // Changes whenever any query above, including resolve(), may change.
+  uint32_t revision() const;
 
  private:
   static const int kIdentityPrefix = 6;
@@ -91,6 +93,7 @@ class ServerIdentity {
   uint32_t epoch = 0;
   int32_t deviceId = 0;
   uint32_t identityGeneration = 0;
+  uint32_t changes = 0;
   uint8_t registrationCount = 0;
   bool rootValid : 1;
   bool identityValid : 1;

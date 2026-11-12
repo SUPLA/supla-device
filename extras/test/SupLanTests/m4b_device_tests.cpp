@@ -280,6 +280,11 @@ class FollowupHvac : public Control::HvacBase {
   using Control::HvacBase::HvacBase;
   using Control::HvacBase::setOutput;
   void clearPending() { clearChannelConfigChangedFlag(); }
+  Control::HvacBase *getHvacBase() override {
+    ++discoveryChecks;
+    return this;
+  }
+  int discoveryChecks = 0;
 };
 
 class M4bDevice : public ::testing::Test {
@@ -537,23 +542,53 @@ TEST_F(M4bDevice, FullSlotsAndUnavailableInputsAreRetained) {
   EXPECT_GT(adapter.remoteResources()->consumerCount(), 0);
 }
 
-TEST_F(M4bDevice, PersistenceFailureBlocksActivationAndReplayCommits) {
+TEST_F(M4bDevice, AcceptedRuntimeDoesNotRequireConfigBackend) {
+  for (int family = 0; family < 3; ++family) {
+    auto request = familyRequest(family);
+    auto element = familyElement(family);
+    Storage::SetConfigInstance(nullptr);
+    const auto result = element->handleChannelConfig(&request, false);
+    Storage::SetConfigInstance(&storage);
+    ASSERT_EQ(result, SUPLA_CONFIG_RESULT_TRUE);
+    EXPECT_EQ(familyReference(family), ChannelReference::server(1001));
+  }
+  TSD_ChannelConfig none = {};
+  Storage::SetConfigInstance(nullptr);
+  const auto result = hvac->handleChannelConfig(&none, false);
+  Storage::SetConfigInstance(&storage);
+  ASSERT_EQ(result, SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(hvac->supLanFunction(), 0);
+}
+
+TEST_F(M4bDevice, DeferredCommitFailureKeepsRuntimeAndRetriesLatestState) {
   auto c = containerWire();
+  const int commits = storage.commits;
   storage.failCommit = true;
-  EXPECT_EQ(container->applyChannelConfig(&c), ApplyConfigResult::DataError);
-  EXPECT_EQ(container->sensorReference(0).kind, ChannelReferenceKind::NONE);
-  EXPECT_FALSE(container->isChannelConfigDurable());
-  EXPECT_EQ(adapter.remoteResources()->consumerCount(), 0);
+  ASSERT_EQ(container->handleChannelConfig(&c, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(container->sensorReference(0), ChannelReference::server(1001));
+  EXPECT_EQ(storage.commits, commits);
+  time.advance(5001);
+  storage.saveIfNeeded();
+  EXPECT_EQ(storage.commits, commits + 1);
+  for (int i = 0; i < 100; ++i) storage.saveIfNeeded();
+  EXPECT_EQ(storage.commits, commits + 1);
+  auto wire = reinterpret_cast<TChannelConfig_Container *>(c.Config);
+  wire->SensorInfo[0].ChannelId = 1002;
+  ASSERT_EQ(container->handleChannelConfig(&c, false),
+            SUPLA_CONFIG_RESULT_TRUE);
   storage.failCommit = false;
-  ASSERT_EQ(container->applyChannelConfig(&c), ApplyConfigResult::Success);
-  const auto events = storage.events.size();
-  ASSERT_EQ(container->applyChannelConfig(&c), ApplyConfigResult::Success);
-  EXPECT_GT(storage.events.size(), events);
+  time.advance(5001);
+  storage.saveIfNeeded();
+  EXPECT_EQ(storage.commits, commits + 2);
+  storage.reboot();
+  container->onLoadConfig(nullptr);
+  EXPECT_EQ(container->sensorReference(0), ChannelReference::server(1002));
+  // Setter failure is diagnostic, not a rejected runtime configuration.
   auto v = valveWire();
   storage.failWrite = true;
-  EXPECT_EQ(valve->applyChannelConfig(&v), ApplyConfigResult::DataError);
-  EXPECT_EQ(valve->sensorReference(0).kind, ChannelReferenceKind::NONE);
-  EXPECT_FALSE(valve->isChannelConfigDurable());
+  ASSERT_EQ(valve->handleChannelConfig(&v, false), SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(valve->sensorReference(0), ChannelReference::server(1001));
 }
 
 TEST_F(M4bDevice, LocalUpdatePreservesRemoteReferenceAndNoFallback) {
@@ -677,6 +712,8 @@ TEST_F(M4bDevice, LateHvacTargetCreatesBindingOwner) {
   auto candidate = bindingConfig(9001, 0);
   ASSERT_EQ(hvac->handleChannelConfig(&candidate, false),
             SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  adapter.iterate(time.value);
   EXPECT_NE(adapter.remoteResources()->bindings, nullptr);
 }
 
@@ -689,7 +726,111 @@ TEST_F(M4bDevice, DynamicallyAddedHvacStartsBindingFeature) {
   added.onInit();
   ASSERT_EQ(added.handleChannelConfig(&candidate, false),
             SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  adapter.iterate(time.value);
   EXPECT_NE(adapter.remoteResources()->bindings, nullptr);
+}
+
+TEST_F(M4bDevice, BindingConfigReconciliationIsEventDriven) {
+  auto counted = static_cast<FollowupHvac *>(hvac);
+  auto config = bindingConfig(9001, 0);
+  ASSERT_EQ(hvac->handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  adapter.iterate(time.value);
+  auto manager = adapter.remoteResources()->bindings;
+  ASSERT_NE(manager, nullptr);
+  const int initial = counted->discoveryChecks;
+  ASSERT_GT(initial, 0);
+  for (int i = 0; i < 100; ++i) manager->iterate(++time.value);
+  EXPECT_EQ(counted->discoveryChecks, initial);
+
+  // Config changes coalesce; callback does no discovery or provisioning.
+  const int shares = adapter.shares;
+  adapter.notifyConfigChange(hvac->getChannelNumber());
+  adapter.notifyConfigChange(hvac->getChannelNumber());
+  EXPECT_EQ(counted->discoveryChecks, initial);
+  EXPECT_EQ(adapter.shares, shares);
+  manager->iterate(++time.value);
+  EXPECT_EQ(counted->discoveryChecks, initial + 1);
+
+  manager->serverReconnected();
+  for (int i = 0; i < 100; ++i) manager->iterate(++time.value);
+  EXPECT_EQ(counted->discoveryChecks, initial + 1);
+
+  // Persistence failure never blocks a newly accepted runtime dependency.
+  storage.failCommit = true;
+  config = bindingConfig(9002, 0);
+  ASSERT_EQ(hvac->handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  manager->iterate(++time.value);
+  const int changed = counted->discoveryChecks;
+  for (int i = 0; i < 100; ++i) manager->iterate(++time.value);
+  EXPECT_EQ(counted->discoveryChecks, changed);
+  storage.failCommit = false;
+  time.advance(5001);
+  storage.saveIfNeeded();
+  manager->iterate(++time.value);
+  EXPECT_EQ(counted->discoveryChecks, changed);
+
+  // Mapping revision is checked even when callers drive the manager directly.
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 202;
+  ids.ChannelCount = 5;
+  for (int i = 0; i < 5; ++i) ids.ChannelId[i] = 601 + i;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  identity.syncDone();
+  manager->iterate(++time.value);
+  EXPECT_GT(counted->discoveryChecks, changed);
+}
+
+TEST_F(M4bDevice, BindingBootDiscoveryRetriesLazyAllocation) {
+  auto config = bindingConfig(9001, 0);
+  ASSERT_EQ(hvac->handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  hvac->onLoadConfig(nullptr);
+  ASSERT_EQ(hvac->bindingTarget(0), ChannelReference::server(9001));
+  adapter.onInit();
+  failSupLanAllocationAfter(0);
+  adapter.iterate(++time.value);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  failSupLanAllocationAfter(-1);
+  adapter.iterate(++time.value);
+  ASSERT_NE(adapter.remoteResources()->bindings, nullptr);
+  EXPECT_EQ(adapter.shares, 1);
+  EXPECT_EQ(adapter.lastShare.DestinationResource.ResourceId, 9001);
+}
+
+TEST_F(M4bDevice, SupersededPendingBindingsReleaseIntentSlots) {
+  auto config = bindingConfig(9001, 0);
+  ASSERT_EQ(hvac->handleChannelConfig(&config, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  auto manager = adapter.resourceBindings();
+  manager->iterate(++time.value);
+  for (int i = 0; i < SUPLAN_MAX_BINDING_INTENTS + 2; ++i) {
+    const uint32_t target = 9002 + i;
+    config = bindingConfig(target, 0);
+    ASSERT_EQ(hvac->handleChannelConfig(&config, false),
+              SUPLA_CONFIG_RESULT_TRUE);
+    manager->iterate(++time.value);
+    // Completion concerns the superseded request, never the new target.
+    TSD_SuplaEnsureResourceShareResult result = {};
+    result.Result = SUPLA_SUPLAN_RESULT_OK;
+    result.DestinationDeviceId = 303;
+    manager->ensureShareResult(result);
+    manager->iterate(++time.value);
+    EXPECT_EQ(adapter.shares, i + 2);
+    EXPECT_EQ(adapter.lastShare.DestinationResource.ResourceId, target);
+  }
+}
+
+TEST_F(M4bDevice, BindingDiscoveryWithoutRemoteTargetsDoesNotAllocate) {
+  for (int i = 0; i < 100; ++i) adapter.iterate(++time.value);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
+  adapter.notifyConfigChange(hvac->getChannelNumber());
+  adapter.iterate(++time.value);
+  EXPECT_EQ(adapter.remoteResources()->bindings, nullptr);
 }
 
 TEST_F(M4bDevice, SourceGrantStillRequestsSessionForEmptyBindingSet) {
@@ -1712,6 +1853,7 @@ TEST_F(M4bDevice, HvacAcceptedNoneSurvivesReplayRebootAndKeepsLocalFunction) {
       ChannelCapability::HvacMaster));
   hvac->onRegistered(nullptr);
   EXPECT_EQ(hvac->supLanFunction(), 0);
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   hvac->onLoadConfig(nullptr);
   EXPECT_EQ(hvac->supLanFunction(), 0);
@@ -1719,7 +1861,7 @@ TEST_F(M4bDevice, HvacAcceptedNoneSurvivesReplayRebootAndKeepsLocalFunction) {
   const int commits = storage.commits;
   ASSERT_EQ(hvac->handleChannelConfig(&none, false),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_EQ(storage.commits, commits + 2);
+  EXPECT_EQ(storage.commits, commits);
   auto active = bindingConfig(0, 0);
   active.Func = internal;
   active.ConfigSize = 0;
@@ -1727,12 +1869,14 @@ TEST_F(M4bDevice, HvacAcceptedNoneSurvivesReplayRebootAndKeepsLocalFunction) {
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac->supLanFunction(), internal);
   EXPECT_EQ(storedHvac().serverNone.rootEpoch, 0);
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   hvac->onLoadConfig(nullptr);
   EXPECT_EQ(hvac->supLanFunction(), internal);
 }
 
-TEST_F(M4bDevice, HvacRejectedOrUndurableFunctionDoesNotChangeProjection) {
+TEST_F(M4bDevice,
+       HvacInvalidFunctionPreservesRuntimeAndCommitFailureDoesNotBlockNone) {
   const auto internal = hvac->getChannel()->getDefaultFunction();
   TSD_ChannelConfig request = {};
   request.Func = SUPLA_CHANNELFNC_POWERSWITCH;
@@ -1743,27 +1887,14 @@ TEST_F(M4bDevice, HvacRejectedOrUndurableFunctionDoesNotChangeProjection) {
   request.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
   EXPECT_EQ(hvac->handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_EQ(hvac->supLanFunction(), internal);
   request.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
   storage.failCommit = true;
-  EXPECT_EQ(hvac->handleChannelConfig(&request, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-  EXPECT_EQ(hvac->supLanFunction(), internal);
-  EXPECT_FALSE(hvac->isChannelConfigDurable());
-  storage.failCommit = false;
   ASSERT_EQ(hvac->handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac->supLanFunction(), 0);
   auto active = bindingConfig(0, 0);
-  storage.failCommit = true;
-  EXPECT_EQ(hvac->handleChannelConfig(&active, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-  EXPECT_EQ(hvac->supLanFunction(), 0);
-  hvac->onRegistered(nullptr);
-  EXPECT_EQ(hvac->supLanFunction(), 0);
-  storage.failCommit = false;
-  // A supported empty DEFAULT also applies the function and requests upload.
-  request.Func = internal;
-  EXPECT_EQ(hvac->handleChannelConfig(&request, false),
+  ASSERT_EQ(hvac->handleChannelConfig(&active, false),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac->supLanFunction(), internal);
 }
@@ -1774,6 +1905,7 @@ TEST_F(M4bDevice, AcceptedNoneRestoresInNewHvacWithoutServer) {
             SUPLA_CONFIG_RESULT_TRUE);
   identity.load(nullptr);
   delete hvac;
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   hvac = new FollowupHvac(&output);
   ASSERT_EQ(hvac->getChannelNumber(), 4);
@@ -1826,6 +1958,7 @@ TEST_F(M4bDevice, ScalarEditPreservesNoneInOneCompleteRecord) {
   hvac->saveConfig();
   const auto record = storedHvac();
   EXPECT_EQ(record.serverNone.channelId, 605);
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   hvac->onLoadConfig(nullptr);
   EXPECT_EQ(hvac->supLanFunction(), 0);
@@ -1848,9 +1981,9 @@ TEST_F(M4bDevice, OriginalV2PrefixLoadsWithoutEagerRewrite) {
   storage.failCommit = true;
   TSD_ChannelConfig none = {};
   EXPECT_EQ(hvac->handleChannelConfig(&none, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
+            SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(storage.getBlobSize("4_hvac_cfg2"), sizeof(record));
-  EXPECT_NE(hvac->supLanFunction(), 0);
+  EXPECT_EQ(hvac->supLanFunction(), 0);
   storage.reboot();
   EXPECT_EQ(storage.getBlobSize("4_hvac_cfg2"), prefixSize);
   storage.failCommit = false;
@@ -1860,21 +1993,21 @@ TEST_F(M4bDevice, OriginalV2PrefixLoadsWithoutEagerRewrite) {
   EXPECT_EQ(storedHvac().serverNone.channelId, 605);
 }
 
-TEST_F(M4bDevice, NoneRecordWriteFailuresKeepPreviousProjection) {
+TEST_F(M4bDevice, NoneRecordStagingFailureDoesNotRollBackProjection) {
   TSD_ChannelConfig config = {};
   const auto active = hvac->getChannel()->getDefaultFunction();
   storage.failWrite = true;
   EXPECT_EQ(hvac->handleChannelConfig(&config, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-  EXPECT_EQ(hvac->supLanFunction(), active);
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(hvac->supLanFunction(), 0);
   storage.failWrite = false;
   ASSERT_EQ(hvac->handleChannelConfig(&config, false),
             SUPLA_CONFIG_RESULT_TRUE);
   storage.failWrite = true;
   config.Func = active;
   EXPECT_EQ(hvac->handleChannelConfig(&config, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-  EXPECT_EQ(hvac->supLanFunction(), 0);
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(hvac->supLanFunction(), active);
   storage.failWrite = false;
   config.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL;
   hvac->enableDifferentialFunctionSupport();
@@ -1904,14 +2037,14 @@ TEST_F(M4bDevice, HvacNoneScopeRejectsRemappedIdentityAndRootRotation) {
   EXPECT_EQ(hvac->supLanFunction(), hvac->getChannel()->getDefaultFunction());
 }
 
-TEST_F(M4bDevice, LocalFunctionEditClearsAcceptedNoneOnlyAfterPersistence) {
+TEST_F(M4bDevice, LocalFunctionEditClearsAcceptedNoneWithoutCommit) {
   TSD_ChannelConfig none = {};
   ASSERT_EQ(hvac->handleChannelConfig(&none, false),
             SUPLA_CONFIG_RESULT_TRUE);
   identity.disconnected();
   storage.failCommit = true;
   hvac->changeFunction(hvac->getChannel()->getDefaultFunction(), true);
-  EXPECT_EQ(hvac->supLanFunction(), 0);
+  EXPECT_EQ(hvac->supLanFunction(), hvac->getChannel()->getDefaultFunction());
   storage.failCommit = false;
   hvac->changeFunction(hvac->getChannel()->getDefaultFunction(), true);
   EXPECT_EQ(hvac->supLanFunction(), hvac->getChannel()->getDefaultFunction());
@@ -2162,7 +2295,8 @@ TEST_F(M4bDevice, TransientShareFailureRetriesWithoutDeclaringEmpty) {
   EXPECT_GT(datagrams.locates, 0);
 }
 
-TEST_F(M4bDevice, FailedHvacPersistenceDoesNotPublishEmptyBindings) {
+TEST_F(M4bDevice,
+       AcceptedRemovalPublishesEmptyBindingsDespitePersistenceFailure) {
   ScopedCryptoTestState rng{5};
   TSDS_SuplaSetSuplanSourceAssociation source = {};
   source.PeerContext = {1, 0, 1, 202, 1, 303, identity.rootEpoch(), 1};
@@ -2200,6 +2334,7 @@ TEST_F(M4bDevice, FailedHvacPersistenceDoesNotPublishEmptyBindings) {
   auto config = bindingConfig(9001, 0);
   ASSERT_EQ(hvac->handleChannelConfig(&config, false),
             SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_TRUE(storage.commit());  // Durable old Source fallback.
   manager->iterate(time.value);
   ASSERT_EQ(adapter.shares, 1);
   TSD_SuplaEnsureResourceShareResult result = {};
@@ -2219,42 +2354,56 @@ TEST_F(M4bDevice, FailedHvacPersistenceDoesNotPublishEmptyBindings) {
   EXPECT_EQ(getUint32(receiver.snapshots[0].data() + 8), 9001);
   ASSERT_FALSE(runtime.bindingsInFlight());
 
-  // A failed scalar-only update keeps the previous dependency active.
-  auto wire = reinterpret_cast<TChannelConfig_HVAC *>(config.Config);
-  wire->OutputValueOnError = 50;
-  storage.failCommit = true;
-  ASSERT_EQ(hvac->handleChannelConfig(&config, false),
+  // Invalid input never changes the active configuration or topology.
+  auto invalid = bindingConfig(0, 0);
+  invalid.ConfigSize = 1;
+  ASSERT_EQ(hvac->handleChannelConfig(&invalid, false),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
-  ASSERT_TRUE(identity.serverSyncComplete());
-  EXPECT_EQ(hvac->bindingTarget(0), ChannelReference::server(9001));
   pump();
-  EXPECT_EQ(receiver.snapshots.size(), 1);
-  EXPECT_FALSE(runtime.bindingsInFlight());
+  EXPECT_EQ(receiver.snapshots.size(), 1U);
+  EXPECT_EQ(hvac->bindingTarget(0), ChannelReference::server(9001));
 
-  // Also withhold cleanup while an unset request has not been persisted.
+  // Accepted removal is authoritative even while persistence keeps failing.
   auto unset = bindingConfig(0, 0);
-  ASSERT_EQ(hvac->handleChannelConfig(&unset, false),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  storage.failCommit = true;
+  ASSERT_EQ(hvac->handleChannelConfig(&unset, false), SUPLA_CONFIG_RESULT_TRUE);
   pump();
-  EXPECT_EQ(receiver.snapshots.size(), 1);
-  EXPECT_EQ(hvac->bindingTarget(0), ChannelReference::server(9001));
-
-  // Retrying the accepted dependency preserves its resolved route.
-  storage.failCommit = false;
-  ASSERT_EQ(hvac->handleChannelConfig(&config, false),
-            SUPLA_CONFIG_RESULT_TRUE);
-  pump();
-  EXPECT_EQ(adapter.shares, 1);
-  EXPECT_EQ(receiver.snapshots.size(), 1);
-
-  // Only a durable removal may replace the binding set with an empty one.
-  ASSERT_EQ(hvac->handleChannelConfig(&unset, false),
-            SUPLA_CONFIG_RESULT_TRUE);
-  pump();
-  ASSERT_EQ(receiver.snapshots.size(), 2);
-  ASSERT_EQ(receiver.snapshots[1].size(), 1);
+  ASSERT_EQ(receiver.snapshots.size(), 2U);
+  ASSERT_EQ(receiver.snapshots[1].size(), 1U);
   EXPECT_EQ(receiver.snapshots[1][0], 0);
+  time.advance(5001);
+  storage.saveIfNeeded();
   EXPECT_FALSE(runtime.bindingsInFlight());
+  // Source loses its newer RAM config, while Destination keeps Count=0.
+  storage.reboot();
+  hvac->onLoadConfig(nullptr);
+  ASSERT_EQ(hvac->bindingTarget(0), ChannelReference::server(9001));
+  ASSERT_TRUE(identity.registrationStarted());
+  identity.registrationSucceeded();
+  delete manager;
+  adapter.remoteResources()->bindings = nullptr;
+  manager = adapter.resourceBindings();
+  ASSERT_NE(manager, nullptr);
+  pump();
+  EXPECT_EQ(receiver.snapshots.size(), 2U);
+  TSD_SuplaDeviceIdentities ids = {};
+  ids.DeviceId = 202;
+  ids.ChannelCount = 5;
+  for (int i = 0; i < 5; ++i) ids.ChannelId[i] = 601 + i;
+  ASSERT_EQ(identity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
+  // Identity alone is insufficient: the latest Server config must arrive.
+  pump();
+  EXPECT_EQ(receiver.snapshots.size(), 2U);
+  ASSERT_EQ(hvac->handleChannelConfig(&unset, false), SUPLA_CONFIG_RESULT_TRUE);
+  identity.syncDone();
+  pump();
+  ASSERT_EQ(receiver.snapshots.size(), 3U);
+  EXPECT_EQ(receiver.snapshots.back(), std::vector<uint8_t>({0}));
+  storage.failCommit = false;
+  time.advance(5001);
+  storage.saveIfNeeded();
+  pump();
+  EXPECT_EQ(receiver.snapshots.size(), 3U);
   datagrams.linked = nullptr;
 }
 
@@ -2348,7 +2497,7 @@ TEST(M4bPersistence, NeverRegisteredZeroMigrationCleanupFailureAndCorruption) {
   storage.setBlob("1_cnt_cfg2", reinterpret_cast<char *>(&record),
                    sizeof(record));
   container.onLoadConfig(nullptr);
-  EXPECT_FALSE(container.isChannelConfigDurable());
+  EXPECT_EQ(container.sensorReference(0), ChannelReference());
   Storage::SetConfigInstance(nullptr);
 }
 
@@ -2365,7 +2514,8 @@ TEST_F(M4bDevice, CoherenceMatchingFunctionRestoresAndMismatchRejectsLegacy) {
               SUPLA_CONFIG_RESULT_TRUE);
     const auto reference = familyReference(family);
     ASSERT_EQ(reference, ChannelReference::server(1001));
-    storage.reboot();
+    ASSERT_TRUE(storage.commit());
+  storage.reboot();
     loadFamily(family);
     EXPECT_EQ(familyReference(family), reference);
     // A present mismatched V2 must not revive this superseded local blob.
@@ -2390,7 +2540,8 @@ TEST_F(M4bDevice, CoherenceMatchingFunctionRestoresAndMismatchRejectsLegacy) {
     }
     ASSERT_TRUE(storage.setChannelFunction(element->getChannelNumber(), 0));
     ASSERT_TRUE(storage.commit());
-    storage.reboot();
+    ASSERT_TRUE(storage.commit());
+  storage.reboot();
     // HVAC NONE is not a valid internal selection: firmware default stays.
     if (family == 2) {
       hvac->enableDifferentialFunctionSupport();
@@ -2399,7 +2550,6 @@ TEST_F(M4bDevice, CoherenceMatchingFunctionRestoresAndMismatchRejectsLegacy) {
     }
     loadFamily(family);
     EXPECT_EQ(familyReference(family).kind, ChannelReferenceKind::NONE);
-    EXPECT_FALSE(element->isChannelConfigDurable());
     EXPECT_GE(storage.getBlobSize(familyKey(family)), 0);
     if (family != 2) {
       EXPECT_EQ(element->getChannel()->getDefaultFunction(), 0);
@@ -2437,58 +2587,48 @@ TEST_F(M4bDevice, CoherenceMissingUnsupportedAndZeroMarkerNeverSelectFunction) {
     storage.reboot();
     loadFamily(family);
     EXPECT_EQ(element->getChannel()->getDefaultFunction(), function);
-    EXPECT_FALSE(element->isChannelConfigDurable());
+    EXPECT_EQ(familyReference(family), ChannelReference());
   }
 }
 
-TEST_F(M4bDevice, CoherenceFunctionChangeAndReplayCommitBothKeys) {
+TEST_F(M4bDevice, CoherenceFunctionChangeAndReplayDeferMatchingPair) {
   for (int family = 0; family < 3; ++family) {
     auto request = familyRequest(family, true);
     auto element = familyElement(family);
+    const int commits = storage.commits;
     ASSERT_EQ(element->handleChannelConfig(&request, false),
               SUPLA_CONFIG_RESULT_TRUE);
     EXPECT_EQ(storage.getChannelFunction(element->getChannelNumber()),
               request.Func);
     EXPECT_EQ(element->getChannel()->getDefaultFunction(), request.Func);
-    const auto commits = storage.commits;
+    const auto writes = storage.events.size();
     ASSERT_EQ(element->handleChannelConfig(&request, false),
               SUPLA_CONFIG_RESULT_TRUE);
-    EXPECT_EQ(storage.commits, commits + 1);
+    EXPECT_EQ(storage.commits, commits);
+    EXPECT_EQ(storage.events.size(), writes);
+    time.advance(5001);
+    storage.saveIfNeeded();
     storage.reboot();
     loadFamily(family);
     EXPECT_EQ(element->getChannel()->getDefaultFunction(), request.Func);
-    EXPECT_TRUE(element->isChannelConfigDurable());
   }
 }
 
-TEST_F(M4bDevice, CoherenceWriteAndCommitFailuresBlockActivation) {
+TEST_F(M4bDevice, CoherenceStorageFailuresDoNotRollBackRuntime) {
   for (int family = 0; family < 3; ++family) {
     for (int failure = 0; failure < 3; ++failure) {
       SCOPED_TRACE(family);
       SCOPED_TRACE(failure);
-      auto initial = familyRequest(family);
-      auto element = familyElement(family);
-      ASSERT_EQ(element->handleChannelConfig(&initial, false),
-                SUPLA_CONFIG_RESULT_TRUE);
-      const auto function = element->getChannel()->getDefaultFunction();
-      const auto reference = familyReference(family);
       auto request = familyRequest(family, true);
+      auto element = familyElement(family);
       storage.failFunction = failure == 0;
       storage.failWrite = failure == 1;
       storage.failCommit = failure == 2;
       EXPECT_EQ(element->handleChannelConfig(&request, false),
-                SUPLA_CONFIG_RESULT_DATA_ERROR);
-      EXPECT_EQ(element->getChannel()->getDefaultFunction(), function);
-      EXPECT_EQ(familyReference(family), reference);
-      EXPECT_FALSE(element->isChannelConfigDurable());
-      storage.failFunction = storage.failWrite = storage.failCommit = false;
-      // A retry must confirm durability even when staging matches old bytes.
-      ASSERT_EQ(element->handleChannelConfig(&initial, false),
                 SUPLA_CONFIG_RESULT_TRUE);
-      EXPECT_TRUE(element->isChannelConfigDurable());
-      storage.reboot();
-      loadFamily(family);
-      EXPECT_EQ(element->getChannel()->getDefaultFunction(), function);
+      EXPECT_EQ(element->getChannel()->getDefaultFunction(), request.Func);
+      // No synchronous commit is attempted even on function changes.
+      storage.failFunction = storage.failWrite = storage.failCommit = false;
     }
   }
 }
@@ -2501,29 +2641,24 @@ TEST_F(M4bDevice, CoherenceContainerNoneDoesNotRestoreActiveV2AfterRestart) {
   request.ConfigSize = 0;
   ASSERT_EQ(container->handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_TRUE(storage.commit());
   storage.reboot();
   container->onLoadConfig(nullptr);
   EXPECT_EQ(container->getChannel()->getDefaultFunction(), 0);
   EXPECT_EQ(container->sensorReference(0).kind, ChannelReferenceKind::NONE);
 }
 
-TEST_F(M4bDevice, CoherenceHvacEmptyFunctionChangeHasOneRequiredCommit) {
+TEST_F(M4bDevice, CoherenceHvacEmptyFunctionChangeHasNoSynchronousCommit) {
   TSD_ChannelConfig none = {};
   ASSERT_EQ(hvac->handleChannelConfig(&none, false), SUPLA_CONFIG_RESULT_TRUE);
-  ASSERT_TRUE(hvac->setOutputValueOnError(50));
-  hvac->saveConfig();
-  static_cast<FollowupHvac *>(hvac)->clearPending();
   auto request = familyRequest(2, true);
-  const auto commits = storage.commits;
-  storage.failCommitNumber = commits + 2;
+  const int commits = storage.commits;
   ASSERT_EQ(hvac->handleChannelConfig(&request, false),
             SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(storage.commits, commits);
+  time.advance(5001);
+  storage.saveIfNeeded();
   EXPECT_EQ(storage.commits, commits + 1);
-  EXPECT_EQ(hvac->supLanFunction(), request.Func);
-  storage.reboot();
-  hvac->onLoadConfig(nullptr);
-  EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), request.Func);
-  EXPECT_EQ(hvac->supLanFunction(), request.Func);
 }
 
 
@@ -2540,6 +2675,8 @@ TEST_F(M4bDevice, CoherenceLocalOfflineChangesSurviveRestart) {
   ASSERT_TRUE(hvac->setMainThermometerChannelNo(
       thermometer.getChannelNumber()));
   hvac->saveConfig();
+  time.advance(5001);
+  storage.saveIfNeeded();
   storage.reboot();
   container->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_CONTAINER);
   hvac->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
@@ -2554,36 +2691,49 @@ TEST_F(M4bDevice, CoherenceLocalOfflineChangesSurviveRestart) {
             SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
 }
 
-TEST_F(M4bDevice, CoherenceAllFamiliesBlockDeviceSyncDoneOnFunctionWriteError) {
-  SuplaDeviceClass device;
-  CoherenceSrpc srpc(&device);
-  int handle = 0;
-  srpc.prepare(&handle);
-  auto &syncIdentity = srpc.serverIdentity();
-  syncIdentity.load(&storage);
-  ASSERT_TRUE(syncIdentity.registrationStarted());
-  syncIdentity.registrationSucceeded();
-  TSD_SuplaDeviceIdentities ids = {};
-  ids.DeviceId = 202;
-  ids.ChannelCount = 5;
-  for (int family = 0; family < 3; ++family) {
-    for (int i = 0; i < 5; ++i) ids.ChannelId[i] = 701 + family * 100 + i;
+TEST_F(M4bDevice, SyncDoneBeforeConfigUploadResultDoesNotWaitForChannelConfig) {
+  for (bool empty : {true, false}) {
+    SCOPED_TRACE(empty);
+    SuplaDeviceClass device;
+    CoherenceSrpc srpc(&device);
+    int handle = 0;
+    srpc.prepare(&handle);
+    auto &syncIdentity = srpc.serverIdentity();
+    syncIdentity.load(&storage);
+    ASSERT_TRUE(syncIdentity.registrationStarted());
+    syncIdentity.registrationSucceeded();
+    TSD_SuplaDeviceIdentities ids = {};
+    ids.DeviceId = 202;
+    ids.ChannelCount = 5;
+    for (int i = 0; i < 5; ++i) ids.ChannelId[i] = 601 + i;
     ASSERT_EQ(syncIdentity.accept(ids).Result, SUPLA_SUPLAN_RESULT_OK);
-    ASSERT_TRUE(syncIdentity.identityTransition());
-    auto element = familyElement(family);
-    element->onServerIdentityTransition();
-    auto request = familyRequest(family, true);
-    storage.failFunction = true;
-    ASSERT_EQ(element->handleChannelConfig(&request, false),
-              SUPLA_CONFIG_RESULT_DATA_ERROR);
+    for (int family = 0; family < 3; ++family) {
+      auto element = familyElement(family);
+      auto request = familyRequest(family);
+      ASSERT_EQ(element->handleChannelConfig(&request),
+                SUPLA_CONFIG_RESULT_TRUE);
+      element->onRegistered(nullptr);
+      const auto reference = familyReference(family);
+      const auto function = element->getChannel()->getDefaultFunction();
+      request.ConfigSize = empty ? 0 : 1;
+      EXPECT_EQ(element->handleChannelConfig(&request),
+                empty ? SUPLA_CONFIG_RESULT_TRUE
+                      : SUPLA_CONFIG_RESULT_DATA_ERROR);
+      EXPECT_EQ(familyReference(family), reference);
+      EXPECT_EQ(element->getChannel()->getDefaultFunction(), function);
+    }
+    // The server marker arrives before any reply to device-originated upload.
+    // Neither invalid ChannelConfig nor pending persistence blocks the marker.
+    storage.failCommit = true;
     srpc.onDeviceSyncDone();
-    EXPECT_TRUE(syncIdentity.identityTransition());
-    EXPECT_FALSE(syncIdentity.serverSyncComplete());
-    storage.failFunction = false;
-    ASSERT_EQ(element->handleChannelConfig(&request, false),
-              SUPLA_CONFIG_RESULT_TRUE);
-    srpc.onDeviceSyncDone();
-    EXPECT_FALSE(syncIdentity.identityTransition());
+    EXPECT_TRUE(syncIdentity.serverSyncComplete());
+    storage.failCommit = false;
+    for (int family = 0; family < 3; ++family) {
+      TSDS_SetChannelConfigResult result = {};
+      result.Result = SUPLA_CONFIG_RESULT_TRUE;
+      static_cast<ElementWithChannelActions *>(familyElement(family))
+          ->handleSetChannelConfigResult(&result);
+    }
     EXPECT_TRUE(syncIdentity.serverSyncComplete());
   }
 }
@@ -2622,7 +2772,6 @@ TEST_F(M4bDevice, CoherenceNewMarkerWithOldFunctionFailsClosedAfterCrash) {
     storage.reboot();
     loadFamily(family);
     EXPECT_EQ(element->getChannel()->getDefaultFunction(), oldFunction);
-    EXPECT_FALSE(element->isChannelConfigDurable());
     EXPECT_EQ(familyReference(family).kind, ChannelReferenceKind::NONE);
   }
 }
@@ -2643,11 +2792,11 @@ TEST_F(M4bDevice, CoherenceFullActiveFunctionReplacementSurvivesReboot) {
     }
     ASSERT_EQ(element->handleChannelConfig(&request, false),
               SUPLA_CONFIG_RESULT_TRUE);
-    storage.reboot();
+    ASSERT_TRUE(storage.commit());
+  storage.reboot();
     loadFamily(family);
     EXPECT_EQ(element->getChannel()->getDefaultFunction(), request.Func);
     EXPECT_EQ(familyReference(family), ChannelReference::server(1001));
-    EXPECT_TRUE(element->isChannelConfigDurable());
     if (family == 2) {
       EXPECT_EQ(storedHvac().scalars.OutputValueOnError, 50);
     }
@@ -2655,35 +2804,28 @@ TEST_F(M4bDevice, CoherenceFullActiveFunctionReplacementSurvivesReboot) {
 }
 
 
-TEST_F(M4bDevice, CoherenceStagedLocalFunctionCannotMakeReplayDurable) {
+TEST_F(M4bDevice, CoherenceRestartBeforeSaveRestoresOldPairAndReplayConverges) {
   for (int family = 0; family < 3; ++family) {
     auto element = familyElement(family);
-    const auto original = element->getChannel()->getDefaultFunction();
-    auto request = familyRequest(family, true);
+    auto request = familyRequest(family);
     ASSERT_EQ(element->handleChannelConfig(&request, false),
               SUPLA_CONFIG_RESULT_TRUE);
-    // Local selector changes independently; the old V2 must fail closed.
-    ASSERT_TRUE(storage.setChannelFunction(element->getChannelNumber(),
-                                          original));
-    ASSERT_TRUE(element->setRuntimeFunction(original));
     ASSERT_TRUE(storage.commit());
-    // UI stages a return to the same function as the existing V2 marker.
-    ASSERT_TRUE(storage.setChannelFunction(element->getChannelNumber(),
-                                          request.Func));
-    ASSERT_TRUE(element->setRuntimeFunction(request.Func));
-    const auto commits = storage.commits;
-    storage.failCommit = true;
-    EXPECT_EQ(element->handleChannelConfig(&request, false),
-              SUPLA_CONFIG_RESULT_DATA_ERROR);
-    EXPECT_FALSE(element->isChannelConfigDurable());
-    storage.failCommit = false;
+    const auto previous = element->getChannel()->getDefaultFunction();
+    request = familyRequest(family, true);
     ASSERT_EQ(element->handleChannelConfig(&request, false),
               SUPLA_CONFIG_RESULT_TRUE);
-    EXPECT_GE(storage.commits, commits + 2);
+    // Power loss drops staged B and restores the coherent durable A.
     storage.reboot();
     loadFamily(family);
+    EXPECT_EQ(element->getChannel()->getDefaultFunction(), previous);
+    EXPECT_EQ(familyReference(family), ChannelReference::server(1001));
+    // An unchanged-identity replay converges immediately without a commit.
+    const int commits = storage.commits;
+    ASSERT_EQ(element->handleChannelConfig(&request, false),
+              SUPLA_CONFIG_RESULT_TRUE);
     EXPECT_EQ(element->getChannel()->getDefaultFunction(), request.Func);
-    EXPECT_TRUE(element->isChannelConfigDurable());
+    EXPECT_EQ(storage.commits, commits);
   }
 }
 
@@ -2708,7 +2850,6 @@ TEST_F(M4bDevice, CoherenceMalformedVersionAndLengthRejectWholeRecord) {
       loadFamily(family);
       EXPECT_EQ(element->getChannel()->getDefaultFunction(), function);
       EXPECT_EQ(familyReference(family).kind, ChannelReferenceKind::NONE);
-      EXPECT_FALSE(element->isChannelConfigDurable());
     }
   }
 }
@@ -2994,8 +3135,6 @@ TEST_F(M4bDevice, DeviceIdMigrationSanitizesLiveFallbackBeforeCloudUpload) {
   EXPECT_EQ(valve->sensorReference(0), ChannelReference());
   EXPECT_EQ(hvac->bindingTarget(0), ChannelReference());
   EXPECT_EQ(adapter.remoteResources()->consumerCount(), 0);
-  srpc.onDeviceSyncDone();
-  EXPECT_FALSE(current.serverSyncComplete());
   // Empty Cloud config accepts the durable sanitized fallback for each family.
   for (int family = 0; family < 3; ++family) {
     auto request = familyRequest(family);
@@ -3009,6 +3148,7 @@ TEST_F(M4bDevice, DeviceIdMigrationSanitizesLiveFallbackBeforeCloudUpload) {
   ASSERT_EQ(size, sizeof(wire));
   EXPECT_EQ(wire.PumpSwitchChannelId, 0u);
   EXPECT_EQ(wire.HeatOrColdSourceSwitchChannelId, 0u);
+  // SYNC_DONE precedes upload ACK; the sanitized identity is already durable.
   srpc.onDeviceSyncDone();
   EXPECT_TRUE(current.serverSyncComplete());
   // Later authoritative Cloud configuration replaces the sanitized fallback.
@@ -3422,4 +3562,20 @@ TEST_F(M4bDevice, BindingRemovalCommitFailureAbortsAndReplaysAfterReboot) {
   EXPECT_TRUE(relay->getChannel()->prepareForRemoval());
   manager->iterate(time.value);
   EXPECT_EQ(manager->bindingCount(), 0);
+}
+
+TEST_F(M4bDevice, ServerIdentityChangesAdvancePeerTableRevision) {
+  associations.refreshOwnership();
+  const auto settled = peers.revision();
+  for (int i = 0; i < 3; ++i) associations.refreshOwnership();
+  EXPECT_EQ(peers.revision(), settled);
+  // Removing a SERVER Channel changes resolve() without a PeerTable call.
+  delete relay;
+  relay = new Control::Relay(1);
+  associations.refreshOwnership();
+  const auto renumbered = peers.revision();
+  EXPECT_NE(renumbered, settled);
+  identity.disconnected();
+  associations.refreshOwnership();
+  EXPECT_NE(peers.revision(), renumbered);
 }

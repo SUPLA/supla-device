@@ -68,8 +68,6 @@ class Container : public ChannelElement, public ActionHandler {
   friend class Supla::Html::ContainerParameters;
   Container();
   ~Container() override;
-  bool isChannelConfigDurable() const override { return configDurable; }
-  void onServerIdentityTransition() override { configDurable = false; }
   void reconcileChannelDependencies() override;
   int sensorChannelNumber(uint8_t slot) const;
   bool setSensorSlot(uint8_t slot, int number, uint8_t level);
@@ -252,7 +250,7 @@ class Container : public ChannelElement, public ActionHandler {
   enum SensorState getSensorState(const uint8_t channelNumber) const;
   enum SensorState sensorState(uint8_t slot) const;
   bool persistConfig(const ContainerConfiguration &candidate,
-                     uint32_t function);
+                     uint32_t function, bool migration = false);
   void cleanupLegacy();
   uint32_t lastReadTime = 0;
   uint32_t readIntervalMs = 1000;
@@ -263,7 +261,6 @@ class Container : public ChannelElement, public ActionHandler {
   bool sensorOfflineReported = false;
 
   ContainerConfiguration config = {};
-  bool configDurable = true;
 };
 
 static_assert(sizeof(ContainerConfiguration().sensorData) /

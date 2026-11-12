@@ -25,6 +25,7 @@ class ResourceBindingManager {
   void attachRuntime(SupLan::Runtime *runtime);
   void attachAssociations(ServerAssociations *associations);
   void iterate(uint32_t now);
+  void configChanged() { configDirty_ = true; }
   void ensureShareResult(const TSD_SuplaEnsureResourceShareResult &result);
   uint8_t accept(uint8_t peer, const uint8_t *body, size_t size);
   void authorizationReplacing(const SupLan::PeerContext &context,
@@ -82,13 +83,16 @@ class ResourceBindingManager {
   bool loadAttempted_ = false;
   uint32_t loadRetryMs_ = 0;
   bool intentOverflow_ = false;
+  bool configDirty_ = true;
+  uint32_t identityRevision_ = 0;
+  uint32_t topologyRevision_ = 0;
   bool loadRecords();
   bool persist(uint8_t set, const uint8_t *record, size_t length);
   bool validateBody(uint8_t peer, const uint8_t *body, size_t size) const;
   void activate(uint8_t set, const uint8_t *body, size_t size);
   void detach(uint8_t set);
   int peerForSet(uint8_t set) const;
-  bool collectIntents();
+  void collectIntents();
   void addIntent(uint32_t source, uint32_t target);
   int targetNumber(uint32_t id) const;
   bool hasCompleteIntents(uint8_t peer) const;

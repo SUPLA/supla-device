@@ -19,6 +19,9 @@ class RemoteConfigHvac : public Supla::Control::HvacBase {
     onInit();
   }
   using HvacBase::importRemoteConfig;
+  bool defaultReceived() const {
+    return receivedConfigTypes.isSet(SUPLA_CONFIG_TYPE_DEFAULT);
+  }
   Supla::ApplyConfigResult preparation = Supla::ApplyConfigResult::Success;
   int preparations = 0;
   bool invalidPreparedConfig = false;
@@ -45,6 +48,24 @@ TEST_F(HvacRemoteConfigTests,
        ExplicitChannelNumberIsReservedByBaseConstructor) {
   RemoteConfigHvac hvac(37);
   EXPECT_EQ(hvac.getChannelNumber(), 37);
+}
+
+TEST_F(HvacRemoteConfigTests, InvalidUpdateKeepsPreviouslyReceivedConfigType) {
+  RemoteConfigHvac hvac;
+  hvac.onRegistered(nullptr);
+  TChannelConfig_HVAC wire = {};
+  hvac.copyFullChannelConfigTo(&wire);
+  TSD_ChannelConfig request = {};
+  request.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+  request.ConfigSize = sizeof(wire);
+  memcpy(request.Config, &wire, sizeof(wire));
+  ASSERT_EQ(hvac.handleChannelConfig(&request), SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_TRUE(hvac.defaultReceived());
+  request.ConfigSize = 1;
+  EXPECT_EQ(hvac.handleChannelConfig(&request), SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_TRUE(hvac.defaultReceived());
+  hvac.onRegistered(nullptr);
+  EXPECT_FALSE(hvac.defaultReceived());
 }
 
 TEST_F(HvacRemoteConfigTests, RejectedPreparationDoesNotApplyServerConfig) {

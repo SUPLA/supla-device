@@ -257,8 +257,10 @@ class Runtime {
   struct OutstandingLocate {
     bool used;
     uint8_t peerIndex;
-    uint8_t nonce[kNonceSize];
+    uint8_t nonceCount;
+    uint8_t nonces[kLocateMaxAttempts][kNonceSize];
     uint32_t expiresAtMs;
+    bool hasNonce(const uint8_t *nonce) const;
   };
 
   struct RuntimeInterest {
@@ -351,7 +353,9 @@ class Runtime {
              const ResourceId &resource = ResourceId(), uint32_t detail = 0) {
     if (application_) application_->diagnostic(event, peer, resource, detail);
   }
-  void pruneReadDependencies();
+  // rights=false checks only the peer role, never ACL/ownership.
+  void pruneReadDependencies(bool rights = true);
+  bool readRole(uint8_t peerIndex, const ResourceId &resource) const;
   bool readAuthorized(uint8_t peerIndex, const ResourceId &resource) const;
   void noteReachability(uint8_t peerIndex);
   void completeRead(uint8_t peerIndex, const ResourceId &resource);

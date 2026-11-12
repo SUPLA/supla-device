@@ -266,8 +266,10 @@ void RemoteChannelManager::iterate(uint32_t nowMs) {
     approvalRefreshArmed_ = true;
     approvalRefreshAt_ = tick + kApprovalRefreshTicks + (nowMs & 63);
   }
-  for (int number = 0; number < 255; ++number) {
-    if (auto element = Element::getElementByChannelNumber(number))
+  // One list walk; a lookup per ChannelNumber would walk it 255 times.
+  for (auto element = Element::begin(); element; element = element->next()) {
+    if (element->getChannelNumber() >= 0 ||
+        element->getSecondaryChannelNumber() >= 0)
       element->reconcileChannelDependencies();
   }
   if (ensurePending_ && static_cast<int32_t>(nowMs - ensureNextMs_) >= 0) {

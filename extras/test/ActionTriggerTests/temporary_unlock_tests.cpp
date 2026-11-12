@@ -304,7 +304,7 @@ TEST_F(TemporaryUnlock, ConfigChangesWithoutActionChangesAndLegacyPrefix) {
   ASSERT_EQ(configure(at, 5), SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(cfg.commits, commits);
   ASSERT_EQ(configure(at, 12), SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_EQ(cfg.commits, commits + 1);
+  EXPECT_EQ(cfg.commits, commits);
   TSD_ChannelConfig legacy = {};
   legacy.ConfigSize = 4;
   uint32_t actions = SUPLA_ACTION_CAP_ROTATE_RIGHT;
@@ -456,16 +456,16 @@ TEST_F(TemporaryUnlock, EdgeSelectionAndChangedSensorWithSameActions) {
   }
 }
 
-TEST_F(TemporaryUnlock, FailedPersistenceDoesNotApplyCandidate) {
+TEST_F(TemporaryUnlock, FailedPersistenceDoesNotRejectRuntimeCandidate) {
   MemoryConfig cfg;
   ActionTrigger at;
   ASSERT_EQ(configure(at, 5), SUPLA_CONFIG_RESULT_TRUE);
   cfg.fail = true;
-  EXPECT_EQ(configure(at, 11), SUPLA_CONFIG_RESULT_DATA_ERROR);
+  EXPECT_EQ(configure(at, 11), SUPLA_CONFIG_RESULT_TRUE);
   TChannelConfig_ActionTrigger wire = {};
   int size = 0;
   at.fillChannelConfig(&wire, &size, 0);
-  EXPECT_EQ(wire.TemporaryUnlockDurationSec, 5);
+  EXPECT_EQ(wire.TemporaryUnlockDurationSec, 11);
   cfg.fail = false;
   EXPECT_EQ(configure(at, 11), SUPLA_CONFIG_RESULT_TRUE);
 }
@@ -768,6 +768,7 @@ TEST_F(TemporaryUnlock, LocalConfigAndPendingMarkerSurviveStorageReboot) {
     ASSERT_EQ(at.handleChannelConfig(&request, true), SUPLA_CONFIG_RESULT_TRUE);
     EXPECT_TRUE(at.hasPendingLocalConfig());
   }
+  ASSERT_TRUE(cfg.commit());
   cfg.reboot();  // No delayed save or cloud acknowledgement took place.
   Supla::Channel::resetToDefaults();
   InspectableTrigger restored;
@@ -784,6 +785,7 @@ TEST_F(TemporaryUnlock, LocalConfigAndPendingMarkerSurviveStorageReboot) {
   restored.acknowledgeLocalConfig();
   EXPECT_FALSE(restored.hasPendingLocalConfig());
   ASSERT_TRUE(cfg.commit());
+  ASSERT_TRUE(cfg.commit());
   cfg.reboot();
   restored.onLoadConfig(&sd);
   EXPECT_FALSE(restored.hasPendingLocalConfig());
@@ -793,35 +795,27 @@ TEST_F(TemporaryUnlock, LocalConfigAndPendingMarkerSurviveStorageReboot) {
   EXPECT_EQ(wire.TemporaryUnlockDurationSec, 31u);
 }
 
-TEST_F(TemporaryUnlock, FailedLocalSaveDoesNotApplySettingsOrPendingMarker) {
-  for (int failure : {0, 1, 2}) {
+TEST_F(TemporaryUnlock,
+       FailedLocalStagingKeepsAcceptedRuntimeAndPendingUpload) {
+  for (int failure = 0; failure < 3; ++failure) {
     DurableMemoryConfig cfg;
     InspectableTrigger at;
     ASSERT_EQ(configure(at, 5), SUPLA_CONFIG_RESULT_TRUE);
-    TChannelConfig_ActionTrigger wire = {};
-    wire.TemporaryUnlockDurationSec = 17;
-    TSD_ChannelConfig request = {};
-    request.ConfigSize = sizeof(wire);
-    memcpy(request.Config, &wire, sizeof(wire));
     cfg.fail = failure == 0;
     cfg.failMarkerWrite = failure == 1;
     cfg.failActionsWrite = failure == 2;
-    EXPECT_EQ(at.handleChannelConfig(&request, true),
-              SUPLA_CONFIG_RESULT_DATA_ERROR);
-    EXPECT_FALSE(at.hasPendingLocalConfig());
-    int size = 0;
-    at.fillChannelConfig(&wire, &size, SUPLA_CONFIG_TYPE_DEFAULT);
-    EXPECT_EQ(wire.TemporaryUnlockDurationSec, 5u);
-    cfg.fail = false;
-    cfg.failMarkerWrite = false;
-    cfg.failActionsWrite = false;
-    cfg.reboot();
-    at.onLoadConfig(&sd);
-    EXPECT_FALSE(at.hasPendingLocalConfig());
-    at.fillChannelConfig(&wire, &size, SUPLA_CONFIG_TYPE_DEFAULT);
-    EXPECT_EQ(wire.TemporaryUnlockDurationSec, 5u);
-    EXPECT_EQ(at.handleChannelConfig(&request, true), SUPLA_CONFIG_RESULT_TRUE);
+    TSD_ChannelConfig request = {};
+    request.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+    TChannelConfig_ActionTrigger wire = {};
+    wire.TemporaryUnlockDurationSec = 17;
+    wire.ActiveActions = 1 << 7;
+    memcpy(request.Config, &wire, sizeof(wire));
+    ASSERT_EQ(at.handleChannelConfig(&request, true), SUPLA_CONFIG_RESULT_TRUE);
     EXPECT_TRUE(at.hasPendingLocalConfig());
+    int size = 0;
+    at.fillChannelConfig(&wire, &size, 0);
+    EXPECT_EQ(wire.TemporaryUnlockDurationSec, 17U);
+    EXPECT_EQ(wire.ActiveActions, 1U << 7);
   }
 }
 
@@ -838,10 +832,11 @@ TEST_F(TemporaryUnlock, LocalActionsOnlyChangePersistsPendingMarkerOnce) {
     memcpy(request.Config, &wire, sizeof(wire));
     const int commits = cfg.commits;
     ASSERT_EQ(at.handleChannelConfig(&request, true), SUPLA_CONFIG_RESULT_TRUE);
-    EXPECT_EQ(cfg.commits, commits + 1);
+    EXPECT_EQ(cfg.commits, commits);
     ASSERT_EQ(at.handleChannelConfig(&request, true), SUPLA_CONFIG_RESULT_TRUE);
-    EXPECT_EQ(cfg.commits, commits + 1);
+    EXPECT_EQ(cfg.commits, commits);
   }
+  ASSERT_TRUE(cfg.commit());
   cfg.reboot();
   Supla::Channel::resetToDefaults();
   InspectableTrigger restored;
@@ -887,7 +882,8 @@ TEST_F(TemporaryUnlock, PublishAllRestartsWithOriginalActionsAndPendingConfig) {
           });
       at.onSaveState();
     }
-    cfg.reboot();
+    ASSERT_TRUE(cfg.commit());
+  cfg.reboot();
     Supla::Channel::resetToDefaults();
     {
       InspectableTrigger restored;
@@ -928,6 +924,7 @@ TEST_F(TemporaryUnlock, ServerActionsUpdateStoredSelectionAfterLocalAck) {
     ASSERT_EQ(at.handleChannelConfig(&request, false),
               SUPLA_CONFIG_RESULT_TRUE);
   }
+  ASSERT_TRUE(cfg.commit());
   cfg.reboot();
   Supla::Channel::resetToDefaults();
   InspectableTrigger restored;

@@ -114,8 +114,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
       getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(0);
   EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));
@@ -570,8 +570,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   //  EXPECT_CALL(cfg,
   //              setInt32(StrEq("0_fnc"),
   //              SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL))
-  //      .Times(1)
-  //      .WillOnce(Return(true));
+  //      .Times(testing::AtLeast(1))
+  //      .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _, _))
@@ -1015,8 +1015,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
       .Times(0);
   EXPECT_CALL(
       cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _, _))
@@ -1858,8 +1858,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   //  EXPECT_CALL(cfg,
   //              setInt32(StrEq("0_fnc"),
   //              SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL))
-  //      .Times(1)
-  //      .WillOnce(Return(true));
+  //      .Times(testing::AtLeast(1))
+  //      .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _, _))
@@ -2393,8 +2393,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
       .Times(0);
   EXPECT_CALL(
       cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _, _))
@@ -3795,6 +3795,9 @@ TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {
       cfg,
       getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(0);
+  // Legacy migration stages the matching selector before V2.
+  EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), storedFunction))
+      .WillOnce(Return(true));
   // Boot migration now writes the canonical V2 DEFAULT record once.
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg2"), _,
                            sizeof(Supla::Control::HvacStoredConfigV2)))
@@ -4158,8 +4161,8 @@ TEST_F(HvacIntegrationF, histeresisHeatingCheck) {
       getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(0);
   EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));

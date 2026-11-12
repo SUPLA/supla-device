@@ -512,9 +512,9 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
 
-  // change to function 0 (none/disabled) is allowed
+  // NONE is only a valid DEFAULT configuration.
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer, false),
-            SUPLA_CONFIG_RESULT_TRUE);
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
 
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer, false),
@@ -1256,9 +1256,8 @@ TEST_F(HvacTestsF, invalidRelayAssignmentsAreClearedOnInit) {
 
 TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   // This legacy validation/serialization fixture has no durable backend.
-  // Explicitly reject commit and forbid rollback instead of silently relying
-  // on GMock's default false result.
-  EXPECT_CALL(cfg, commit()).Times(1).WillRepeatedly(Return(false));
+  // Ordinary ChannelConfig must neither commit nor roll back.
+  EXPECT_CALL(cfg, commit()).Times(0);
   EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2"))).Times(0);
   EXPECT_CALL(cfg, init());
   TSD_ChannelConfig configFromServer = {};
@@ -1322,7 +1321,7 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
-      .Times(1).WillOnce(Return(true));
+      .Times(testing::AtLeast(1)).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
               setUInt32(StrEq("0_cfg_chng_t"), 0))
@@ -1432,9 +1431,8 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
 
 TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   // This legacy validation/serialization fixture has no durable backend.
-  // Explicitly reject commit and forbid rollback instead of silently relying
-  // on GMock's default false result.
-  EXPECT_CALL(cfg, commit()).Times(1).WillRepeatedly(Return(false));
+  // Ordinary ChannelConfig must neither commit nor roll back.
+  EXPECT_CALL(cfg, commit()).Times(0);
   EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2"))).Times(0);
   EXPECT_CALL(cfg, init());
   // Config storage doesn't contain any data about HVAC channel, so it returns
@@ -1464,8 +1462,8 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
       .Times(0);
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setUInt32(StrEq("0_cfg_chng_t"), 0))
       .Times(1)
       .WillOnce(Return(true));
@@ -1615,9 +1613,8 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
 TEST_F(HvacTestWithChannelSetupF,
        startupProcedureWithConfigChangedBeforeConnection) {
   // This legacy validation/serialization fixture has no durable backend.
-  // Explicitly reject commit and forbid rollback instead of silently relying
-  // on GMock's default false result.
-  EXPECT_CALL(cfg, commit()).Times(2).WillRepeatedly(Return(false));
+  // Ordinary ChannelConfig must neither commit nor roll back.
+  EXPECT_CALL(cfg, commit()).Times(0);
   EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2"))).Times(0);
   EXPECT_CALL(cfg, init());
   ProtocolLayerMock proto;
@@ -1650,8 +1647,8 @@ TEST_F(HvacTestWithChannelSetupF,
       .Times(0);
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_cfg2"), _,
@@ -1945,9 +1942,8 @@ TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
 TEST_F(HvacTestWithChannelSetupF,
        startupProcedureWithInvalidConfigFromServerAfterRegister) {
   // This legacy validation/serialization fixture has no durable backend.
-  // Explicitly reject commit and forbid rollback instead of silently relying
-  // on GMock's default false result.
-  EXPECT_CALL(cfg, commit()).Times(1).WillRepeatedly(Return(false));
+  // Ordinary ChannelConfig must neither commit nor roll back.
+  EXPECT_CALL(cfg, commit()).Times(0);
   EXPECT_CALL(cfg, eraseKey(StrEq("0_hvac_cfg2"))).Times(0);
   EXPECT_CALL(cfg, init());
   ProtocolLayerMock proto;
@@ -1979,8 +1975,8 @@ TEST_F(HvacTestWithChannelSetupF,
       .Times(0);
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
-      .Times(1)
-      .WillOnce(Return(true));
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_cfg2"), _,

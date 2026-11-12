@@ -241,7 +241,6 @@ Supla::Control::ActionTrigger::ActionTrigger() {
   buttonBindingsInitialized = false;
 #ifndef ARDUINO_ARCH_AVR
   suplanRecognitionActive = false;
-  suplanConfigDurable = true;
   destroying = false;
 #endif
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
@@ -753,9 +752,6 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
     return Supla::ApplyConfigResult::NotSupported;
   }
   if (result->ConfigSize == 0) {
-#ifndef ARDUINO_ARCH_AVR
-    if (!local) suplanConfigDurable = true;
-#endif
     return Supla::ApplyConfigResult::Success;
   }
   if (result->ConfigSize != 4 &&
@@ -821,16 +817,6 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
   if (configChanged && !ensureTemporaryUnlockState()) {
     return Supla::ApplyConfigResult::DataError;
   }
-  if ((configChanged || localChange || storeActiveActions) &&
-      !persistTemporaryUnlockConfig(candidate, localChange, &activeActions)) {
-#ifndef ARDUINO_ARCH_AVR
-    suplanConfigDurable = false;
-#endif
-    return Supla::ApplyConfigResult::DataError;
-  }
-#ifndef ARDUINO_ARCH_AVR
-  if (!local) suplanConfigDurable = true;
-#endif
   if (configChanged) {
     temporaryUnlock->config = candidate;
     temporaryUnlock->baselineKnown = false;
@@ -847,12 +833,19 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
     // Schedule save in 2 s after state change
     scheduleStateSave(2000, 0);
   }
+  if ((configChanged || localChange || storeActiveActions) &&
+      !persistTemporaryUnlockConfig(candidate, localChange, &activeActions))
+    SUPLA_LOG_WARNING("AT[%d]: config staging failed", getChannelNumber());
+  [[maybe_unused]] const auto sensor = candidate.sensor.reference();
   SUPLA_LOG_INFO(
       "AT[%d] config applied (%s): actions=0x%08" PRIX32
-      ", temporary_unlock=%" PRIu32 " s, sensor=%d, edge=%u",
+      ", temporary_unlock=%" PRIu32 " s, sensor=%s:%" PRIu32 ", edge=%u",
       getChannelNumber(), local ? "local" : "server", activeActions,
-      candidate.duration, candidate.sensor == 255 ? -1 : candidate.sensor,
-      candidate.edge);
+      candidate.duration,
+      sensor.kind == ChannelReferenceKind::LOCAL_CHANNEL_NUMBER ? "local" :
+          sensor.kind == ChannelReferenceKind::SERVER_CHANNEL ? "server" :
+          "none",
+      sensor.id, candidate.edge);
   return Supla::ApplyConfigResult::Success;
 }
 
@@ -1674,7 +1667,6 @@ void Supla::Control::ActionTrigger::scheduleStateSave(uint32_t delayMsMax,
   }
 }
 
-
 bool Supla::Control::ActionTrigger::ensureTemporaryUnlockState() {
   if (temporaryUnlock) return true;
 #ifndef ARDUINO_ARCH_AVR
@@ -1693,6 +1685,7 @@ bool Supla::Control::ActionTrigger::persistTemporaryUnlockConfig(
   if (!cfg) return true;
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, "at_tmp");
+  cfg->saveWithDelay(5000);
   if (localChange) {
     char changedTypesKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     generateKey(changedTypesKey,
@@ -1707,7 +1700,7 @@ bool Supla::Control::ActionTrigger::persistTemporaryUnlockConfig(
     if (!cfg->setUInt32(actionsKey, *activeActions)) return false;
   }
   if (!cfg->setBlob(key, reinterpret_cast<const char *>(&config),
-                    sizeof(config)) || !cfg->commit()) return false;
+                    sizeof(config))) return false;
   if (activeActions) temporaryUnlock->hasStoredActiveActions = true;
   return true;
 }
@@ -1734,17 +1727,7 @@ uint32_t Supla::Control::ActionTrigger::unlockSensorConsumer() const {
   return 0x50000 + getChannelNumber() + 1;
 }
 
-bool Supla::Control::ActionTrigger::isChannelConfigDurable() const {
-#ifndef ARDUINO_ARCH_AVR
-  if (!suplanConfigDurable) return false;
-#endif
-  return true;
-}
-
 void Supla::Control::ActionTrigger::onServerIdentityTransition() {
-#ifndef ARDUINO_ARCH_AVR
-  suplanConfigDurable = false;
-#endif
   if (temporaryUnlock) temporaryUnlock->baselineKnown = false;
 }
 
@@ -1762,7 +1745,6 @@ void Supla::Control::ActionTrigger::onServerScopeMigration() {
   if (memcmp(&temporaryUnlock->config, &stored, sizeof(stored))) {
     temporaryUnlock->config = stored;
     temporaryUnlock->baselineKnown = false;
-    suplanConfigDurable = false;
     reconcileChannelDependencies();
   }
 }

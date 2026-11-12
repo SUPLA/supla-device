@@ -57,6 +57,14 @@ bool valid(const uint8_t *data, int size) {
   return calculateCrc16(data, size - 2) ==
              (data[size - 2] | (static_cast<uint16_t>(data[size - 1]) << 8));
 }
+// Counts on entry and exit: a callback reading revision() mid-update still
+// observes a different value once the update completes.
+struct ChangeScope {
+  explicit ChangeScope(uint32_t *counter) : counter(counter) { ++*counter; }
+  ~ChangeScope() { ++*counter; }
+  uint32_t *counter;
+};
+
 bool uniform(const uint8_t *data, int size, uint8_t value) {
   for (int i = 0; i < size; ++i) {
     if (data[i] != value) {
@@ -135,6 +143,7 @@ bool Supla::Device::ServerIdentity::channelChanging(uint8_t number,
   if (!active) {
     return true;
   }
+  const ChangeScope change(&active->changes);
   for (int i = 0; active->registrationPrepared &&
                   i < active->registrationCount; ++i) {
     if (active->registrationNumbers[i] == number) {
@@ -174,6 +183,7 @@ void Supla::Device::ServerIdentity::factoryReset() {
 }
 
 bool Supla::Device::ServerIdentity::rotateRoot() {
+  const ChangeScope change(&changes);
   if (legacyCleanupPending) return false;
   bool previousValid = rootValid;
   rootValid = false;
@@ -197,12 +207,14 @@ bool Supla::Device::ServerIdentity::capable() const {
 }
 
 void Supla::Device::ServerIdentity::abandonRegistration() {
+  const ChangeScope change(&changes);
   free(registrationNumbers);
   registrationNumbers = nullptr;
   registrationValid = registrationPrepared = identitiesAccepted = false;
 }
 
 void Supla::Device::ServerIdentity::load(Config *cfg) {
+  const ChangeScope change(&changes);
   abandonRegistration();
   active = cfg ? this : nullptr;
   if (config != cfg) legacyCleanupPending = false;
@@ -300,11 +312,13 @@ void Supla::Device::ServerIdentity::load(Config *cfg) {
 }
 
 bool Supla::Device::ServerIdentity::retryLegacyCleanup() {
+  const ChangeScope change(&changes);
   if (legacyCleanupPending) load(config);
   return !legacyCleanupPending;
 }
 
 bool Supla::Device::ServerIdentity::registrationStarted() {
+  const ChangeScope change(&changes);
   abandonRegistration();
   syncComplete = false;
   int count = Supla::RegisterDevice::getChannelCount();
@@ -365,14 +379,17 @@ bool Supla::Device::ServerIdentity::registrationInvalidated() const {
   return registrationPrepared && !registrationContextValid();
 }
 void Supla::Device::ServerIdentity::registrationSucceeded() {
+  const ChangeScope change(&changes);
   registrationValid = registrationContextValid();
 }
 void Supla::Device::ServerIdentity::disconnected() {
+  const ChangeScope change(&changes);
   abandonRegistration();
   syncComplete = false;
   // An unfinished identity transition survives an ordinary reconnect.
 }
 void Supla::Device::ServerIdentity::syncDone() {
+  const ChangeScope change(&changes);
   if (registrationValid && registrationContextValid() &&
       identitiesAccepted &&
       identityDurable) {
@@ -459,6 +476,7 @@ bool Supla::Device::ServerIdentity::persist(const char *key,
 }
 
 bool Supla::Device::ServerIdentity::ensureRoot() {
+  const ChangeScope change(&changes);
   if (legacyCleanupPending) return false;
   if (rootValid && rootDurable) {
     return true;
@@ -507,6 +525,7 @@ bool Supla::Device::ServerIdentity::ensureRoot() {
 
 TDS_SuplaDeviceIdentitiesResult Supla::Device::ServerIdentity::accept(
     const TSD_SuplaDeviceIdentities &snapshot) {
+  const ChangeScope change(&changes);
   identitiesAccepted = false;
   TDS_SuplaDeviceIdentitiesResult result = {};
   result.Result = SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
@@ -612,6 +631,7 @@ TDS_SuplaDeviceIdentitiesResult Supla::Device::ServerIdentity::accept(
 }
 
 bool Supla::Device::ServerIdentity::forgetChannel(uint8_t number) {
+  const ChangeScope change(&changes);
   auto forgotten = Supla::Channel::GetByChannelNumber(number);
   if (!forgotten || !identityValid) {
     return !migrationPending || beginMigration(false, nullptr, number);
@@ -658,6 +678,10 @@ bool Supla::Device::ServerIdentity::forgetChannel(uint8_t number) {
   return true;
 }
 
+uint32_t Supla::Device::ServerIdentity::revision() const {
+  // identityTransition() also follows Channel identity changes lazily.
+  return changes + Supla::Channel::identityGeneration();
+}
 bool Supla::Device::ServerIdentity::identityAvailable() const {
   return identityValid && (!fullMigration || !scopeFenced());
 }
@@ -738,6 +762,7 @@ bool Supla::Device::ServerIdentity::configuredService(
 
 bool Supla::Device::ServerIdentity::beginMigration(bool full,
     const TSD_SuplaDeviceIdentities *next, int removed) {
+  const ChangeScope change(&changes);
   if (!config) return false;
   bool existed = config->getBlobSize(kMigrationKey) >= 0;
   const bool oldPending = migrationPending;
@@ -864,6 +889,7 @@ bool Supla::Device::ServerIdentity::beginMigration(bool full,
 }
 
 bool Supla::Device::ServerIdentity::resumeMigration(bool reload) {
+  const ChangeScope change(&changes);
   Buffer workspace(ServerMigration::kMaxSize);
   auto fence = workspace.data;
   const int size = config->getBlobSize(kMigrationKey);

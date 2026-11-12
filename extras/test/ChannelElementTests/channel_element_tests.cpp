@@ -297,6 +297,35 @@ TEST(ChannelElementTests, ConfigExchangeNoConfigOnServer) {
             SUPLA_CONFIG_RESULT_TRUE);
 }
 
+TEST(ChannelElementTests, RejectedConfigDoesNotRestartCompletedExchange) {
+  Supla::Channel::resetToDefaults();
+  TestingChannelElement element;
+  element.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+  Supla::ConfigTypesBitmap types;
+  types.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  element.setUsedConfigTypes(types);
+  element.onRegistered(nullptr);
+  TSD_ChannelConfig config = {};
+  config.Func = SUPLA_CHANNELFNC_POWERSWITCH;
+  config.ConfigSize = 4;
+  ASSERT_EQ(element.handleChannelConfig(&config), SUPLA_CONFIG_RESULT_TRUE);
+  config.ConfigSize = 1;
+  ASSERT_EQ(element.handleChannelConfig(&config),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  element.handleChannelConfigFinished();
+  EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
+
+  element.onServerIdentityTransition();
+  element.handleChannelConfigFinished();
+  EXPECT_EQ(element.getChannelConfigState(), Supla::ChannelConfigState::None);
+
+  // A new registration still starts a fresh configuration exchange.
+  element.onRegistered(nullptr);
+  element.handleChannelConfigFinished();
+  EXPECT_EQ(element.getChannelConfigState(),
+            Supla::ChannelConfigState::ResendConfig);
+}
+
 TEST(ChannelElementTests, SuccessfulSingleConfigExchangeResetsAttempts) {
   Supla::Channel::resetToDefaults();
   ASSERT_EQ(Supla::LocalAction::getClientListPtr(), nullptr);

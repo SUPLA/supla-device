@@ -802,12 +802,12 @@ class CommitConfig : public Supla::KeyValue {
 };
 }  // namespace
 
-TEST(CanonicalConfigTests, WritesAndCommitsWithoutReadingBack) {
+TEST(CanonicalConfigTests, LegacyMigrationCommitsAndConfirmsRecord) {
   CommitConfig cfg;
   CommitRecord record;
   ASSERT_TRUE(Supla::StorageDetail::persistCanonicalConfig(
       "record", record, 0));
-  EXPECT_EQ(cfg.reads, 0);
+  EXPECT_EQ(cfg.reads, 2);
   EXPECT_EQ(cfg.commits, 1);
   cfg.reboot();
   CommitRecord restored;
@@ -833,7 +833,7 @@ TEST(CanonicalConfigTests, FailedWriteOrCommitHasNoRollbackAndRetrySavesAgain) {
     ASSERT_TRUE(Supla::StorageDetail::persistCanonicalConfig("record", record,
                                                            0));
     EXPECT_EQ(cfg.commits, commits + 1);
-    EXPECT_EQ(cfg.reads, 0);
+    EXPECT_EQ(cfg.reads, 2);
     cfg.reboot();
     CommitRecord restored;
     ASSERT_TRUE(cfg.getBlob("record", reinterpret_cast<char *>(&restored),

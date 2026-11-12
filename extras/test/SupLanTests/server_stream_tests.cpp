@@ -669,19 +669,6 @@ TEST_F(ServerStream, PersistedIdentityAdmitsAfterProductionSyncOrdering) {
   EXPECT_EQ(protocol.serverStreamAllocatedBytes(), 0U);
   EXPECT_TRUE(requests.empty());
 
-  class ConfigBarrier : public Element {
-   public:
-    bool isChannelConfigDurable() const override { return durable; }
-    bool durable = false;
-  } config;
-  const auto deferredGeneration = manager()->admissionGeneration();
-  protocol.onDeviceSyncDone();
-  tick();
-  EXPECT_EQ(manager()->admissionGeneration(), deferredGeneration);
-  EXPECT_FALSE(protocol.serverStreamReady());
-  EXPECT_TRUE(requests.empty());
-
-  config.durable = true;
   protocol.onDeviceSyncDone();
   ASSERT_TRUE(protocol.serverStreamReady());
   tick();

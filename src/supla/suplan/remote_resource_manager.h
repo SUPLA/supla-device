@@ -78,6 +78,8 @@ class RemoteResourceManager : public RemoteChannelManager,
     uint32_t lastReadMs = 0;
     uint8_t peerIndex = 0xff;
     bool readAttempted = false;
+    // Requested rights at the last reconcile; 0xff forces one.
+    uint8_t reconciledPermissions = 0xff;
   };
   // One authenticated association per stable PeerTable slot. The full locator
   // binds authority, direction, context generations and credential. Replacing
@@ -100,7 +102,7 @@ class RemoteResourceManager : public RemoteChannelManager,
   PeerPresence *reconcilePeer(uint8_t index,
                              const SupLan::PeerRecord *eligiblePeer);
   Resource *find(const SupLan::ResourceId &resource);
-  int readyPeer(const Resource &resource) const;
+  int readyPeer(const Resource &resource, uint8_t *effective) const;
   void reconcile(Resource *resource);
   bool usable(const Resource &resource, uint32_t nowMs) const {
     return RemoteChannelManager::usable(
@@ -119,9 +121,7 @@ class RemoteResourceManager : public RemoteChannelManager,
     return resources_[index];
   }
   void clearResource(int index) override { resources_[index] = {}; }
-  void reconcileResource(RemoteChannelResource &resource) override {
-    reconcile(static_cast<Resource *>(&resource));
-  }
+  void reconcileResource(RemoteChannelResource &resource) override;
   void releaseResource(RemoteChannelResource &resource) override;
   void cancelControls(uint32_t owner) override;
   void refreshResource(RemoteChannelResource &resource,
@@ -137,12 +137,15 @@ class RemoteResourceManager : public RemoteChannelManager,
   Presence presence_;
   SupLan::PeerTable *peers_;
   SupLan::Runtime *runtime_;
+  // PeerTable::revision() at the last full reconcile; 0 forces one.
+  uint32_t authorizationRevision_ = 0;
   ChannelConsumer intents_[kConsumerCapacity] = {};
   Resource resources_[kCapacity];
   PeerPresence peerPresence_[SUPLAN_MAX_PERSISTENT_PEERS];
 };
+// Fixed part includes the 4-byte authorization revision of the last sweep.
 static_assert(sizeof(RemoteResourceManager) <=
-                  (sizeof(void *) == 8 ? 104 : 68) +
+                  (sizeof(void *) == 8 ? 108 : 72) +
                   64 * RemoteResourceManager::kCapacity +
                   sizeof(ChannelConsumer) *
                       RemoteResourceManager::kConsumerCapacity +

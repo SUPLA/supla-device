@@ -17,7 +17,6 @@
 #include <supla/storage/config.h>
 #ifndef ARDUINO_ARCH_AVR
 #include <supla/suplan/suplan_server_identity.h>
-#include <supla/suplan/remote_resource_manager.h>
 #endif
 #include <supla/storage/config_tags.h>
 #include <supla/storage/canonical_config.h>
@@ -278,7 +277,6 @@ void HvacBase::onServerScopeMigration() {
     Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
     registeredInRelayHvacAggregator = false;
     config = next;
-    synchronizedConfigDurable = false;
     refreshMainDependency();
   }
 #ifndef ARDUINO_ARCH_AVR
@@ -292,11 +290,6 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
   weeklyScheduleComponents.loadConfig();
   auto cfg = Supla::Storage::ConfigInstance();
-  if (referenceIdentity()) {
-#ifndef ARDUINO_ARCH_AVR
-    synchronizedConfigDurable = !referenceIdentity()->identityTransition();
-#endif
-  }
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
 #ifndef ARDUINO_ARCH_AVR
@@ -315,7 +308,6 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     HvacStoredConfigV2 record;
     const int size = cfg->getBlobSize(key);
     if (size >= 0) {
-      synchronizedConfigDurable = false;
       HvacConfiguration loaded;
       // The original V2 prefix has no accepted-NONE scope.
       if ((size == sizeof(record) ||
@@ -329,12 +321,6 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
         auto wire = loaded.localWire(referenceIdentity(), getChannelNumber());
         if (isConfigValid(&wire, record.function)) {
           config = loaded;
-#ifndef ARDUINO_ARCH_AVR
-          synchronizedConfigDurable = !referenceIdentity() ||
-              !referenceIdentity()->identityTransition();
-#else
-          synchronizedConfigDurable = true;
-#endif
 #ifndef ARDUINO_ARCH_AVR
           serverNoneProjection = record.serverNone;
 #endif
@@ -353,7 +339,8 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
         applyAdditionalValidation(&legacy);
         applyConfigWithoutValidation(&legacy);
         fixTemperatureSetpoints();
-        if (persistConfiguration(config, channel.getDefaultFunction()))
+        if (persistConfiguration(config, channel.getDefaultFunction(),
+                                 -1, true))
           cleanupLegacyConfig();
       }
     }
@@ -1045,35 +1032,37 @@ uint8_t HvacBase::handleChannelConfigImpl(TSD_ChannelConfig *newConfig,
   if (!isFunctionSupported(channelFunction)) {
     serverChannelFunctionValid = false;
     if (channelFunction == 0) {
+      if (newConfig->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT ||
+          (newConfig->ConfigSize != 0 &&
+           newConfig->ConfigSize != sizeof(TChannelConfig_HVAC)))
+        return SUPLA_CONFIG_RESULT_DATA_ERROR;
       // Channel function set to "none/disabled". Retain the historical local
-      // function while durably accepting the reset configuration.
+      // function while accepting the complete reset configuration in RAM.
 #ifndef ARDUINO_ARCH_AVR
       if (!local && usesServerReferences()) {
-        if (newConfig->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT ||
-            (newConfig->ConfigSize != 0 &&
-             newConfig->ConfigSize != sizeof(TChannelConfig_HVAC)))
-          return SUPLA_CONFIG_RESULT_DATA_ERROR;
-        synchronizedConfigDurable = false;
         auto candidate = defaultConfiguration();
         TChannelConfig_HVAC server;
         if (!candidate.serverWire(referenceIdentity(), &server)) {
           return SUPLA_CONFIG_RESULT_DATA_ERROR;
         }
         candidate = HvacConfiguration::fromServer(server);
-        if (!persistConfiguration(candidate, channel.getDefaultFunction(), 1)) {
+        const auto identity = referenceIdentity();
+        if (!identity || !identity->identityAvailable() ||
+            !channel.getServerChannelId())
           return SUPLA_CONFIG_RESULT_DATA_ERROR;
-        }
         config = candidate;
+        (void)persistConfiguration(config, channel.getDefaultFunction(), 1);
       }
 #endif
       changeFunction(channelFunction, false);
       serverChannelFunctionValid = false;
-      synchronizedConfigDurable = true;
       refreshMainDependency();
       markAllChannelConfigsReceived();
       for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
-           layer = layer->next())
+           layer = layer->next()) {
+        layer->notifyConfigChange(getChannelNumber());
         layer->sendChannelMetadataChanged(getChannelNumber());
+      }
       return SUPLA_CONFIG_RESULT_TRUE;
     }
     return SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED;
@@ -1082,7 +1071,6 @@ uint8_t HvacBase::handleChannelConfigImpl(TSD_ChannelConfig *newConfig,
 #ifndef ARDUINO_ARCH_AVR
   if (!local && usesServerReferences() &&
       newConfig->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT) {
-    synchronizedConfigDurable = false;
     if (newConfig->ConfigSize != 0 &&
         newConfig->ConfigSize != sizeof(TChannelConfig_HVAC)) {
       return SUPLA_CONFIG_RESULT_DATA_ERROR;
@@ -1095,24 +1083,20 @@ uint8_t HvacBase::handleChannelConfigImpl(TSD_ChannelConfig *newConfig,
     } else if (channelFunction != channel.getDefaultFunction()) {
       candidate = defaultConfiguration(channelFunction);
     }
-    synchronizedConfigDurable = false;
     if (!candidate.validReferences() ||
-        !applyFirmwareConfiguration(&candidate)) {
+        !applyFirmwareConfiguration(&candidate))
       return SUPLA_CONFIG_RESULT_DATA_ERROR;
-    }
     auto validation =
         candidate.localWire(referenceIdentity(), getChannelNumber());
-    if (!isConfigValid(&validation, channelFunction)) {
+    if (!isConfigValid(&validation, channelFunction))
       return SUPLA_CONFIG_RESULT_DATA_ERROR;
-    }
-    // Canonical IDs are never copied from the local validation projection.
-    if (!persistConfiguration(candidate, channelFunction, 0)) {
-      return SUPLA_CONFIG_RESULT_DATA_ERROR;
-    }
+
     Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
     registeredInRelayHvacAggregator = false;
     const bool functionChanged =
         channelFunction != channel.getDefaultFunction();
+    config = candidate;
+    serverNoneProjection = {};
     if (functionChanged) {
       channel.setDefault(channelFunction);
       channel.clearHvacState();
@@ -1120,23 +1104,23 @@ uint8_t HvacBase::handleChannelConfigImpl(TSD_ChannelConfig *newConfig,
       setOutput(0, true);
       lastIterateTimestampMs = 0;
     }
-    config = candidate;
+    (void)persistConfiguration(config, channelFunction, 0);
     if (functionChanged) {
       initDefaultWeeklySchedule();
       updateWeeklyScheduleConfigTypes();
     }
-    synchronizedConfigDurable = true;
     refreshMainDependency();
     if (newConfig->ConfigSize || functionChanged) fixTemperatureSetpoints();
-    cleanupLegacyConfig();
     if (newConfig->ConfigSize)
       markChannelConfigReceived(SUPLA_CONFIG_TYPE_DEFAULT);
     else
       triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
     serverChannelFunctionValid = true;
     for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
-         layer = layer->next())
+         layer = layer->next()) {
+      layer->notifyConfigChange(getChannelNumber());
       layer->sendChannelMetadataChanged(getChannelNumber());
+    }
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 #endif
@@ -1147,21 +1131,13 @@ uint8_t HvacBase::handleChannelConfigImpl(TSD_ChannelConfig *newConfig,
         getChannelNumber());
     return SUPLA_CONFIG_RESULT_TRUE;
   }
-
-  if (newConfig->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
+  if (newConfig->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT)
     return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
-  }
-
-  if (channelFunction != getChannel()->getDefaultFunction()) {
-    SUPLA_LOG_INFO("HVAC[%d]: function changed to %d", getChannelNumber(),
-                   channelFunction);
-    changeFunction(channelFunction, false, referenceChanges != 0xff);
-    triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
-    if (referenceChanges == 0xff) return SUPLA_CONFIG_RESULT_TRUE;
-  }
 
   bool applyServerConfig = (newConfig->ConfigSize > 0);
   if (!applyServerConfig) {
+    if (channelFunction != channel.getDefaultFunction())
+      changeFunction(channelFunction, false, referenceChanges != 0xff);
     // server doesn't have channel configuration, so we'll send it
     triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
     serverChannelFunctionValid = true;
@@ -1185,7 +1161,7 @@ uint8_t HvacBase::handleChannelConfigImpl(TSD_ChannelConfig *newConfig,
     debugPrintConfigDiff(&currentWire, hvacConfig, getChannelNumber());
   }
 
-  if (applyServerConfig && !isConfigValid(hvacConfig)) {
+  if (applyServerConfig && !isConfigValid(hvacConfig, channelFunction)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: invalid config", getChannelNumber());
     // server have invalid channel config
     if (!isChannelConfigFinishedReceived()) {
@@ -1204,7 +1180,7 @@ uint8_t HvacBase::handleChannelConfigImpl(TSD_ChannelConfig *newConfig,
   if (preparation != ApplyConfigResult::Success) {
     return finishChannelConfig(newConfig, preparation, local);
   }
-  if (!isConfigValid(hvacConfig)) {
+  if (!isConfigValid(hvacConfig, channelFunction)) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
@@ -1213,6 +1189,8 @@ uint8_t HvacBase::handleChannelConfigImpl(TSD_ChannelConfig *newConfig,
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
   const HvacConfiguration configCopy = config;
+  if (channelFunction != channel.getDefaultFunction())
+    changeFunction(channelFunction, false, referenceChanges != 0xff);
 
   // Received config looks ok, so we apply it to channel
   if (applyServerConfig) {
@@ -2831,14 +2809,8 @@ void HvacBase::saveConfig(bool localChange) {
     triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT, true);
   }
   if (cfg) {
-    if (!persistConfiguration(config, channel.getDefaultFunction())) {
-      SUPLA_LOG_WARNING("HVAC[%d]: failed V2 persistence", getChannelNumber());
-    } else {
-      cleanupLegacyConfig();
-    }
-
     saveConfigChangeFlag();
-    cfg->saveWithDelay(5000);
+    (void)persistConfiguration(config, channel.getDefaultFunction());
   }
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
        proto = proto->next()) {
@@ -4090,11 +4062,14 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally,
 #ifndef ARDUINO_ARCH_AVR
   if (changedLocally && isFunctionSupported(newFunction) &&
       serverNoneProjection.rootEpoch) {
-    if (!persistConfiguration(config, newFunction, 0)) return;
+    serverNoneProjection = {};
     if (currentFunction == newFunction) {
+      saveConfig(true);
       for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
-           layer = layer->next())
+           layer = layer->next()) {
+        layer->notifyConfigChange(getChannelNumber());
         layer->sendChannelMetadataChanged(getChannelNumber());
+      }
     }
   }
 #endif
@@ -6353,9 +6328,9 @@ bool HvacBase::applyFirmwareConfiguration(HvacConfiguration *candidate) {
 }
 
 bool HvacBase::persistConfiguration(const HvacConfiguration &candidate,
-                                   uint32_t function, int8_t serverNone) {
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg || !candidate.validReferences()) return false;
+                                   uint32_t function, int8_t serverNone,
+                                   bool migration) {
+  if (!candidate.validReferences()) return false;
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, "hvac_cfg2");
   auto record = storeHvacConfig(candidate, function);
@@ -6373,16 +6348,17 @@ bool HvacBase::persistConfiguration(const HvacConfiguration &candidate,
 #else
   (void)serverNone;
 #endif
-  // Local setters retain the existing function API and staged save ordering.
-  // Authoritative Server acceptance explicitly includes both required keys.
-  const bool persisted = Supla::StorageDetail::persistCanonicalConfig(
-      key, record,
-      serverNone < 0 ? -1 : getChannelNumber());
-  if (!persisted) return false;
 #ifndef ARDUINO_ARCH_AVR
   serverNoneProjection = record.serverNone;
 #endif
-  return true;
+  const bool saved = migration
+      ? Supla::StorageDetail::persistCanonicalConfig(
+            key, record, getChannelNumber())
+      : Supla::StorageDetail::stageCanonicalConfig(
+            key, record, getChannelNumber());
+  if (!saved) SUPLA_LOG_WARNING("HVAC[%d]: config staging failed",
+                               getChannelNumber());
+  return saved;
 }
 
 void HvacBase::cleanupLegacyConfig() {
@@ -6392,16 +6368,6 @@ void HvacBase::cleanupLegacyConfig() {
   generateKey(key, Supla::ConfigTag::HvacCfgTag);
   Supla::StorageDetail::cleanupLegacyConfig(key);
 }
-
-#ifndef ARDUINO_ARCH_AVR
-Supla::Device::RemoteResourceManager *HvacBase::remoteManager() const {
-  for (auto layer = Supla::Protocol::ProtocolLayer::first(); layer;
-       layer = layer->next()) {
-    if (auto manager = layer->remoteResources()) return manager;
-  }
-  return nullptr;
-}
-#endif
 
 Supla::ChannelState HvacBase::dependencyState(ChannelReference reference,
                                               uint8_t field) {
@@ -6425,25 +6391,6 @@ void HvacBase::refreshMainDependency() {
                           config.AuxThermometer), 1);
   dependencyState(config.reference(config.BinarySensor), 2);
   dependencyState(config.reference(config.MasterThermostat), 3);
-#ifndef ARDUINO_ARCH_AVR
-  // Outgoing targets can appear after boot or on a newly added HVAC. Reuse
-  // dependency reconciliation; no new polling pass over all Elements.
-  const auto manager = remoteManager();
-  if (manager && !manager->bindings) {
-    for (uint8_t field = 0; field < 2; ++field) {
-      if (resolveChannelReference(bindingTarget(field), referenceIdentity())
-              .kind != ChannelResolutionKind::kRemote) continue;
-      for (auto layer = Protocol::ProtocolLayer::first(); layer;
-           layer = layer->next()) {
-        if (layer->remoteResources() == manager) {
-          layer->resourceBindings();
-          break;
-        }
-      }
-      break;
-    }
-  }
-#endif
 }
 
 Supla::ChannelState HvacBase::mainThermometerState() {

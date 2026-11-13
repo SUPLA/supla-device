@@ -38,6 +38,7 @@
 #include <supla/sensor/electricity_meter_parsed.h>
 #include <supla/sensor/general_purpose_measurement_parsed.h>
 #include <supla/sensor/general_purpose_meter_parsed.h>
+#include <supla/sensor/general_purpose_text_parsed.h>
 #include <supla/sensor/humidity_parsed.h>
 #include <supla/sensor/impulse_counter_parsed.h>
 #include <supla/sensor/pressure_parsed.h>
@@ -1162,6 +1163,12 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
         return false;
       }
       return addGeneralPurposeMeterParsed(ch, channelNumber, parser);
+    } else if (type == "GeneralPurposeTextParsed") {
+      if (!parser) {
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+        return false;
+      }
+      return addGeneralPurposeTextParsed(ch, channelNumber, parser);
     } else if (type == "ImpulseCounterParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
@@ -2079,6 +2086,31 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeterParsed(
   }
 
   return addCommonParametersParsed(ch, gpm, parser);
+}
+
+bool Supla::LinuxYamlConfig::addGeneralPurposeTextParsed(
+    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding GeneralPurposeText",
+                 channelNumber);
+  auto gpt = new Supla::Sensor::GeneralPurposeTextParsed(parser);
+  auto valueParameter =
+      getAndMarkChannelParameter(ch, Supla::Parser::Value);
+  if (valueParameter) {
+    if (parser->isBasedOnIndex()) {
+      int index = valueParameter.as<int>();
+      gpt->setMapping(Supla::Parser::Value, index);
+    } else {
+      std::string key = valueParameter.as<std::string>();
+      gpt->setMapping(Supla::Parser::Value, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Value);
+    return false;
+  }
+
+  return addCommonParametersParsed(ch, gpt, parser);
 }
 
 bool Supla::LinuxYamlConfig::addImpulseCounterParsed(

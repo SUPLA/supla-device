@@ -1760,6 +1760,9 @@ bool Channel::isFunctionValid(uint32_t function) const {
         }
       }
     }
+    case ChannelType::GENERAL_PURPOSE_TEXT: {
+      return function == SUPLA_CHANNELFNC_GENERAL_PURPOSE_TEXT;
+    }
     default: {
       return true;
     }

@@ -55,11 +55,11 @@
       "header": "supla/control/action_trigger.h",
       "limits": {
         "host": 200,
-        "avr": 96,
-        "esp8266": 136,
-        "esp32": 136
+        "avr": 97,
+        "esp8266": 144,
+        "esp32": 144
       },
-      "reason": "Temporary unlock adds one pointer to lazily allocated state: +8 B on host, +2 B on AVR; ESP targets use existing padding."
+      "reason": "Temporary unlock adds one pointer to lazily allocated state: +8 B on host, +2 B on AVR; ESP targets use existing padding. Widening RuntimeFlags to uint16_t for button mode support (8c27009f) adds +1 B on AVR and +8 B on ESP; host uses existing padding. Temporary unlock timer reporting uses only RuntimeFlags bits and doesn't change sizes."
     },
     {
       "name": "Supla::Control::Relay",

@@ -24,6 +24,9 @@ class AtChannel : public Channel {
   void setButtonMode(uint8_t mode);
   void setButtonModeAndTemporaryUnlock(uint8_t mode, bool active);
   uint8_t getButtonMode() const;
+  TActionTriggerProperties getActionTriggerProperties() const {
+    return actionTriggerProperties;
+  }
   void setWeeklyScheduleEnabled(bool enabled);
   bool isWeeklyScheduleEnabled() const;
   void enableValueUpdates();

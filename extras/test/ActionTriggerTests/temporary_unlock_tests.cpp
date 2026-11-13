@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 #include <simple_time.h>
 #include <storage_mock.h>
+#include <protocol_layer_mock.h>
 #include <supla/control/action_trigger.h>
 #include <supla/control/button.h>
 #include <supla/control/weekly_schedule_buffer.h>
@@ -1060,3 +1061,205 @@ TEST_F(TemporaryUnlock, ServerActionsUpdateStoredSelectionAfterLocalAck) {
   EXPECT_EQ(wire.ActiveActions, SUPLA_ACTION_CAP_ROTATE_LEFT);
 }
 }  // namespace
+
+namespace {
+using ::testing::_;
+using ::testing::Invoke;
+using ::testing::NiceMock;
+
+struct TimerReport {
+  uint32_t remainingMs;
+  int32_t senderId;
+  TActionTriggerProperties target;
+};
+
+class TemporaryUnlockTimerReport : public TemporaryUnlock {
+ protected:
+  void SetUp() override {
+    TemporaryUnlock::SetUp();
+    ON_CALL(proto, sendRemainingTimeValue(_, _, _, _, _))
+        .WillByDefault(Invoke([this](uint8_t channel, uint32_t remaining,
+                                     uint8_t *state, int32_t senderId,
+                                     bool seconds) {
+          EXPECT_FALSE(seconds);
+          TimerReport report = {remaining, senderId, {}};
+          memcpy(&report.target, state, sizeof(report.target));
+          reportedChannel = channel;
+          reports.push_back(report);
+        }));
+  }
+  void pump(ActionTrigger &at) {
+    for (int i = 0; i < 5; i++) {
+      at.iterateAlways();
+      at.iterateConnected();
+    }
+  }
+  int commandFrom(ActionTrigger &at, uint8_t mode, int32_t senderId) {
+    TSD_SuplaChannelNewValue request = {};
+    reinterpret_cast<TActionTriggerProperties *>(request.value)->ButtonMode =
+        mode;
+    request.SenderID = senderId;
+    return at.handleNewValueFromServer(&request);
+  }
+
+  NiceMock<ProtocolLayerMock> proto;
+  std::vector<TimerReport> reports;
+  int reportedChannel = -1;
+};
+}  // namespace
+
+TEST_F(TemporaryUnlockTimerReport, ReportsStartRestartAndExpiry) {
+  ActionTrigger at;
+  at.setButtonModeSupported();
+  ASSERT_EQ(configure(at), SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_EQ(command(at, 6), 1);
+  at.onRegistered(nullptr);
+  pump(at);
+  // Clears a timer which server may keep from before device restart.
+  ASSERT_EQ(reports.size(), 1u);
+  EXPECT_EQ(reports[0].remainingMs, 0u);
+  EXPECT_EQ(reportedChannel, at.getChannelNumber());
+
+  ASSERT_EQ(commandFrom(at, 7, 123), 1);
+  pump(at);
+  ASSERT_EQ(reports.size(), 2u);
+  EXPECT_EQ(reports[1].remainingMs, 5000u);
+  EXPECT_EQ(reports[1].senderId, 123);
+  EXPECT_EQ(reports[1].target.ButtonMode, 6);
+  EXPECT_FALSE(reports[1].target.Flags &
+               SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE);
+
+  time.advance(2000);
+  pump(at);
+  EXPECT_EQ(reports.size(), 2u);  // one report per timer change
+
+  ASSERT_EQ(command(at, 7), 1);  // restart
+  pump(at);
+  ASSERT_EQ(reports.size(), 3u);
+  EXPECT_EQ(reports[2].remainingMs, 5000u);
+  EXPECT_EQ(reports[2].senderId, 0);
+
+  time.advance(5000);
+  pump(at);
+  ASSERT_EQ(reports.size(), 4u);
+  EXPECT_EQ(reports[3].remainingMs, 0u);
+  EXPECT_TRUE(at.isEffectivelyLocked());
+}
+
+TEST_F(TemporaryUnlockTimerReport, ReportsRemainingTimeAfterRegistration) {
+  ActionTrigger at;
+  at.setButtonModeSupported();
+  ASSERT_EQ(configure(at), SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_EQ(command(at, 6), 1);
+  ASSERT_EQ(command(at, 7), 1);
+  pump(at);
+  ASSERT_EQ(reports.size(), 1u);
+
+  time.advance(1500);
+  at.onRegistered(nullptr);
+  pump(at);
+  ASSERT_EQ(reports.size(), 2u);
+  EXPECT_EQ(reports[1].remainingMs, 3500u);
+}
+
+TEST_F(TemporaryUnlockTimerReport, ModeChangeAndRelockReportZero) {
+  for (uint8_t mode : {0, 1, 6}) {
+    SCOPED_TRACE(static_cast<int>(mode));
+    reports.clear();
+    ActionTrigger at;
+    at.setButtonModeSupported();
+    ASSERT_EQ(configure(at), SUPLA_CONFIG_RESULT_TRUE);
+    ASSERT_EQ(command(at, 6), 1);
+    ASSERT_EQ(command(at, 7), 1);
+    pump(at);
+    ASSERT_EQ(reports.size(), 1u);
+    ASSERT_EQ(command(at, mode), 1);
+    pump(at);
+    ASSERT_EQ(reports.size(), 2u);
+    EXPECT_EQ(reports[1].remainingMs, 0u);
+    EXPECT_EQ(reports[1].target.ButtonMode, mode);
+  }
+}
+
+TEST_F(TemporaryUnlockTimerReport, NoReportsWithoutTemporaryUnlockSupport) {
+  ActionTrigger plain;
+  ActionTrigger noTempUnlock;
+  noTempUnlock.setButtonModeSupported().setTemporaryUnlockSupported(false);
+  for (auto *at : {&plain, &noTempUnlock}) {
+    at->onRegistered(nullptr);
+    pump(*at);
+  }
+  EXPECT_TRUE(reports.empty());
+}
+
+TEST_F(TemporaryUnlockTimerReport, RestartWithSameEndTimeReportsNewSender) {
+  ActionTrigger at;
+  at.setButtonModeSupported();
+  ASSERT_EQ(configure(at), SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_EQ(command(at, 6), 1);
+  TSD_SuplaChannelNewValue request = {};
+  reinterpret_cast<TActionTriggerProperties *>(request.value)->ButtonMode = 7;
+  request.DurationSec = 10;
+  request.SenderID = 1;
+  ASSERT_EQ(at.handleNewValueFromServer(&request), 1);
+  pump(at);
+  ASSERT_EQ(reports.size(), 1u);
+  EXPECT_EQ(reports[0].remainingMs, 10000u);
+  EXPECT_EQ(reports[0].senderId, 1);
+
+  // Restart ends exactly at the same time, but by another sender.
+  time.advance(5000);
+  request.DurationSec = 5;
+  request.SenderID = 2;
+  ASSERT_EQ(at.handleNewValueFromServer(&request), 1);
+  pump(at);
+  ASSERT_EQ(reports.size(), 2u);
+  EXPECT_EQ(reports[1].remainingMs, 5000u);
+  EXPECT_EQ(reports[1].senderId, 2);
+
+  pump(at);
+  EXPECT_EQ(reports.size(), 2u);
+}
+
+namespace {
+// Clock which can move forward on every read, like a real one during
+// iteration.
+class SteppingTime : public SimpleTime {
+ public:
+  uint32_t millis() override {
+    const uint32_t now = value;
+    value += step;
+    return now;
+  }
+  uint32_t step = 0;
+};
+}  // namespace
+
+TEST_F(TemporaryUnlockTimerReport, ExpiryDuringReportDoesNotUnderflow) {
+  // SteppingTime destructor clears the global instance; restore the fixture
+  // clock afterwards (destroyed in reverse order, also on ASSERT failure).
+  struct RestoreTime {
+    TimeInterface *previous;
+    ~RestoreTime() { TimeInterface::instance = previous; }
+  } restoreTime{&time};
+  SteppingTime clock;
+  for (uint32_t offset = 0; offset < 30; offset++) {
+    SCOPED_TRACE(offset);
+    reports.clear();
+    clock.step = 0;
+    clock.value = 1000;
+    ActionTrigger at;
+    at.setButtonModeSupported();
+    ASSERT_EQ(configure(at, 1), SUPLA_CONFIG_RESULT_TRUE);
+    ASSERT_EQ(command(at, 6), 1);
+    ASSERT_EQ(command(at, 7), 1);  // started at 1000 ms for 1 s
+    clock.value = 2000 - offset;
+    clock.step = 3;
+    at.onRegistered(nullptr);
+    at.iterateConnected();
+    clock.step = 0;
+    for (const auto &report : reports) {
+      EXPECT_LE(report.remainingMs, 1000u);
+    }
+  }
+}

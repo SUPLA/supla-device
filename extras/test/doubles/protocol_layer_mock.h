@@ -61,6 +61,14 @@ class ProtocolLayerMock : public Supla::Protocol::ProtocolLayer {
       sendRemainingTimeValue,
       (uint8_t channelNumber, uint32_t timeMs, uint8_t state, int32_t senderId),
       (override));
+  MOCK_METHOD(void,
+              sendRemainingTimeValue,
+              (uint8_t channelNumber,
+               uint32_t remainingTime,
+               uint8_t *state,
+               int32_t senderId,
+               bool useSecondsInsteadOfMs),
+              (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_PROTOCOL_LAYER_MOCK_H_

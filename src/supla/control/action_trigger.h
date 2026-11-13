@@ -72,6 +72,8 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   const Supla::Channel *getChannel() const override;
   void onInit() override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr) override;
+  bool iterateConnected() override;
+  using ElementWithChannelActions::iterateConnected;
   void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onSaveState() override;
@@ -155,7 +157,7 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   bool requiresClickMode() const;
   static void synchronizeDirectionalButtonModes();
 
-  bool startTemporaryUnlock(uint32_t seconds);
+  bool startTemporaryUnlock(uint32_t seconds, int32_t senderId = 0);
   void updateTemporaryUnlock();
   void updateUnlockSensor();
   void syncEffectiveButtonLock();
@@ -183,6 +185,8 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
     // Weekly switch passes through mode 0; keep the timer until it settles.
     bool keepTimerOnModeChange = false;
     bool hasStoredActiveActions = false;
+    // Reported to the server with the remaining time (0 for local starts).
+    int32_t senderId = 0;
   };
   bool ensureTemporaryUnlockState();
   bool persistTemporaryUnlockConfig(const TemporaryUnlockConfig &config,
@@ -191,6 +195,13 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   bool prepareTemporaryUnlockState();
   TemporaryUnlockConfig currentTemporaryUnlockConfig() const;
   TemporaryUnlockState *temporaryUnlock = nullptr;
+  // Remaining temporary unlock time is reported as a timer extended value.
+  // Returns true and the remaining time if the timer is active.
+  // Requires timerAccessMutex.
+  bool getTemporaryUnlockRemainingMs(uint32_t *remainingMs) const;
+  void sendTimerValue(uint32_t remainingMs,
+                      uint8_t *targetValue,
+                      int32_t senderId);
 
   Supla::Control::Button *attachedButton = nullptr;
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;
@@ -220,7 +231,10 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
           keepConfigButtonTriggerAlwaysAvailable(false),
           buttonModeExplicit(false),
           buttonModeEnabled(false),
-          temporaryUnlockDisabled(false) {}
+          temporaryUnlockDisabled(false),
+          timerReportForced(false),
+          timerReportPending(false),
+          timerReportedActive(false) {}
 
     uint16_t storageEnabled : 1;
     uint16_t alwaysUseOnClick1 : 1;
@@ -236,6 +250,16 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
     uint16_t buttonModeExplicit : 1;
     uint16_t buttonModeEnabled : 1;
     uint16_t temporaryUnlockDisabled : 1;
+    // Report timer state after registration, also when it is not running,
+    // so a timer stored by the server before a restart is cleared.
+    uint16_t timerReportForced : 1;
+    // Set on every timer (re)start, so a restart with the same end time
+    // (e.g. different sender) is reported too.
+    uint16_t timerReportPending : 1;
+    // Server was told that the timer is running. Kept outside of
+    // temporaryUnlock, because that state may be released while the server
+    // still shows a running timer.
+    uint16_t timerReportedActive : 1;
   };
 
   static_assert(sizeof(RuntimeFlags) == sizeof(uint16_t),

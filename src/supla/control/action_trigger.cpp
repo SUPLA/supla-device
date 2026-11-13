@@ -4,12 +4,14 @@
 #include "action_trigger.h"
 
 #include <inttypes.h>
+#include <string.h>
 #include <SuplaDevice.h>
 #include <supla/auto_lock.h>
 #include <supla/log_wrapper.h>
 #include <supla/local_action.h>
 #include <supla/storage/storage.h>
 #include <supla/storage/config.h>
+#include <supla/protocol/protocol_layer.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/control/button.h>
 #include <supla/events.h>
@@ -502,6 +504,82 @@ void Supla::Control::ActionTrigger::onRegistered(
   }
 
   channel.enableValueUpdates();
+  {
+    // RuntimeFlags share one word with flags changed from the timer thread.
+    Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
+    runtimeFlags.timerReportForced = true;
+  }
+}
+
+bool Supla::Control::ActionTrigger::iterateConnected() {
+  if (!Supla::ElementWithChannelActions::iterateConnected()) {
+    return false;
+  }
+
+  uint32_t remainingMs = 0;
+  int32_t senderId = 0;
+  uint8_t targetValue[SUPLA_CHANNELVALUE_SIZE] = {};
+  {
+    // Temporary unlock state is also changed by Button actions from the timer
+    // thread. Take a consistent snapshot, but send it without the lock.
+    Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
+    const bool forced = runtimeFlags.timerReportForced;
+    const bool pending = runtimeFlags.timerReportPending;
+    runtimeFlags.timerReportForced = false;
+    runtimeFlags.timerReportPending = false;
+    const bool active = getTemporaryUnlockRemainingMs(&remainingMs);
+    // Pending covers every (re)start; a reported timer which is no longer
+    // active covers expiry and all cancel paths.
+    const bool stopped = runtimeFlags.timerReportedActive && !active;
+    if (!pending && !stopped && !(forced && isTemporaryUnlockSupported())) {
+      return true;
+    }
+    runtimeFlags.timerReportedActive = active;
+
+    if (active) {
+      senderId = temporaryUnlock->senderId;
+    }
+    // Target value: channel properties after the timer ends (still in the
+    // same mode, but without the temporary unlock flag).
+    TActionTriggerProperties target = channel.getActionTriggerProperties();
+    target.Flags &= static_cast<uint8_t>(
+        ~SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE);
+    memcpy(targetValue, &target, sizeof(target));
+  }
+
+  sendTimerValue(remainingMs, targetValue, senderId);
+  return false;
+}
+
+bool Supla::Control::ActionTrigger::getTemporaryUnlockRemainingMs(
+    uint32_t *remainingMs) const {
+  *remainingMs = 0;
+  if (!temporaryUnlock || temporaryUnlock->durationMs == 0) {
+    return false;
+  }
+  // Single time read: activity check and remaining time must agree, even
+  // if the timer expires meanwhile (same condition as
+  // isTemporaryUnlockActive()).
+  const uint32_t elapsedMs = millis() - temporaryUnlock->startMs;
+  if (elapsedMs >= temporaryUnlock->durationMs) {
+    return false;
+  }
+  *remainingMs = temporaryUnlock->durationMs - elapsedMs;
+  return true;
+}
+
+void Supla::Control::ActionTrigger::sendTimerValue(uint32_t remainingMs,
+                                                   uint8_t *targetValue,
+                                                   int32_t senderId) {
+  SUPLA_LOG_DEBUG("AT[%d] temporary unlock timer=%" PRIu32 " ms",
+                  getChannelNumber(),
+                  remainingMs);
+
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+       proto = proto->next()) {
+    proto->sendRemainingTimeValue(
+        getChannelNumber(), remainingMs, targetValue, senderId, false);
+  }
 }
 
 void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
@@ -1505,7 +1583,9 @@ int32_t Supla::Control::ActionTrigger::handleNewValueFromServer(
   }
   switch (properties->ButtonMode) {
     case SUPLA_BUTTON_MODE_CMD_TEMPORARY_UNLOCK:
-      return startTemporaryUnlock(newValue->DurationSec) ? 1 : 0;
+      return startTemporaryUnlock(newValue->DurationSec, newValue->SenderID)
+                 ? 1
+                 : 0;
     case SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED: {
       // Weekly -> manual keeps a running timer. Mode 6 sent while already
       // in manual mode 6 is an explicit "lock now" and ends the timer.
@@ -1807,7 +1887,8 @@ void Supla::Control::ActionTrigger::syncEffectiveButtonLock() {
   }
 }
 
-bool Supla::Control::ActionTrigger::startTemporaryUnlock(uint32_t seconds) {
+bool Supla::Control::ActionTrigger::startTemporaryUnlock(uint32_t seconds,
+                                                         int32_t senderId) {
   if (channel.getButtonMode() !=
       SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED ||
       seconds > kMaximumTemporaryUnlockDurationS ||
@@ -1818,6 +1899,8 @@ bool Supla::Control::ActionTrigger::startTemporaryUnlock(uint32_t seconds) {
   [[maybe_unused]] const bool restart = isTemporaryUnlockActive();
   temporaryUnlock->startMs = millis();
   temporaryUnlock->durationMs = seconds * 1000;
+  temporaryUnlock->senderId = senderId;
+  runtimeFlags.timerReportPending = true;
   syncEffectiveButtonLock();
   SUPLA_LOG_INFO("AT[%d] temporary unlock %s, duration=%" PRIu32 " s",
       getChannelNumber(), restart ? "restarted" : "started", seconds);

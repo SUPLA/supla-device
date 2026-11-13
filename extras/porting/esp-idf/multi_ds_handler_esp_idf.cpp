@@ -10,7 +10,6 @@
 #include <string.h>
 
 #include <supla/log_wrapper.h>
-#include <supla/time.h>
 
 namespace Supla {
 namespace Sensor {
@@ -19,7 +18,6 @@ namespace {
 
 constexpr double kDisconnectedTemperature = -127.0;
 constexpr uint8_t kDs18b20FamilyCode = 0x28;
-constexpr uint32_t kConversionTimeMs = 750;
 
 }  // namespace
 
@@ -57,16 +55,6 @@ class MultiDsHandlerEspIdf::Impl {
       return 0;
     }
 
-    const int previousDeviceCount = deviceCount;
-    uint8_t previousAddresses[MULTI_DS_MAX_DEVICES_COUNT][8] = {};
-    double previousCachedValues[MULTI_DS_MAX_DEVICES_COUNT] = {};
-    bool previousCachedValueValid[MULTI_DS_MAX_DEVICES_COUNT] = {};
-    memcpy(previousAddresses, addresses, sizeof(previousAddresses));
-    memcpy(previousCachedValues, cachedValues, sizeof(previousCachedValues));
-    memcpy(previousCachedValueValid,
-           cachedValueValid,
-           sizeof(previousCachedValueValid));
-
     clearDevices();
 
     OneWireBus_SearchState searchState = {};
@@ -87,13 +75,6 @@ class MultiDsHandlerEspIdf::Impl {
         ds18b20_set_resolution(devices[deviceCount],
                                DS18B20_RESOLUTION_12_BIT);
 
-        for (int i = 0; i < previousDeviceCount; i++) {
-          if (memcmp(addresses[deviceCount], previousAddresses[i], 8) == 0) {
-            cachedValues[deviceCount] = previousCachedValues[i];
-            cachedValueValid[deviceCount] = previousCachedValueValid[i];
-            break;
-          }
-        }
         deviceCount++;
       }
 
@@ -108,7 +89,6 @@ class MultiDsHandlerEspIdf::Impl {
       }
     }
 
-    conversionPending = false;
     if (deviceCount != lastReportedDeviceCount) {
       SUPLA_LOG_DEBUG("MultiDS ESP-IDF: Found %d DS18B20 device(s)",
                       deviceCount);
@@ -129,8 +109,6 @@ class MultiDsHandlerEspIdf::Impl {
     }
 
     ds18b20_convert_all(bus);
-    conversionStartedAtMs = millis();
-    conversionPending = true;
   }
 
   bool getAddress(uint8_t *address, int index) const {
@@ -157,16 +135,13 @@ class MultiDsHandlerEspIdf::Impl {
       return kDisconnectedTemperature;
     }
 
-    if (conversionPending) {
-      if (millis() - conversionStartedAtMs < kConversionTimeMs) {
-        return cachedValueValid[index] ? cachedValues[index]
-                                       : TEMPERATURE_NOT_AVAILABLE;
-      }
-      readMeasurements();
+    // MultiDsHandlerBase waits for the conversion to complete before reading.
+    float reading = 0;
+    if (ds18b20_read_temp(devices[index], &reading) != DS18B20_OK ||
+        reading == 85.0f) {
+      return kDisconnectedTemperature;
     }
-
-    return cachedValueValid[index] ? cachedValues[index]
-                                   : kDisconnectedTemperature;
+    return reading;
   }
 
  private:
@@ -176,23 +151,8 @@ class MultiDsHandlerEspIdf::Impl {
         ds18b20_free(&devices[i]);
       }
       memset(addresses[i], 0, sizeof(addresses[i]));
-      cachedValues[i] = kDisconnectedTemperature;
-      cachedValueValid[i] = false;
     }
     deviceCount = 0;
-    conversionPending = false;
-  }
-
-  void readMeasurements() {
-    for (int i = 0; i < deviceCount; i++) {
-      float reading = 0;
-      cachedValueValid[i] =
-          ds18b20_read_temp(devices[i], &reading) == DS18B20_OK &&
-          reading != 85.0f;
-      cachedValues[i] = cachedValueValid[i] ? reading
-                                            : kDisconnectedTemperature;
-    }
-    conversionPending = false;
   }
 
   uint8_t pin = 0;
@@ -200,12 +160,8 @@ class MultiDsHandlerEspIdf::Impl {
   owb_gpio_driver_info driverInfo = {};
   DS18B20_Info *devices[MULTI_DS_MAX_DEVICES_COUNT] = {};
   uint8_t addresses[MULTI_DS_MAX_DEVICES_COUNT][8] = {};
-  double cachedValues[MULTI_DS_MAX_DEVICES_COUNT] = {};
-  bool cachedValueValid[MULTI_DS_MAX_DEVICES_COUNT] = {};
   int deviceCount = 0;
   int lastReportedDeviceCount = -1;
-  uint32_t conversionStartedAtMs = 0;
-  bool conversionPending = false;
 };
 
 MultiDsHandlerEspIdf::MultiDsHandlerEspIdf(SuplaDeviceClass *sdc, uint8_t pin)

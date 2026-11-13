@@ -3,6 +3,7 @@
 
 #include "multi_ds_handler_base.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -30,6 +31,25 @@ using Supla::Sensor::MultiDsHandlerBase;
 MultiDsHandlerBase::MultiDsHandlerBase(
     SuplaDeviceClass *sdc,
     uint8_t pin): sdc(sdc), pin(pin) {
+
+  for (int i = 0; i < MULTI_DS_MAX_DEVICES_COUNT; i++) {
+    cachedValues[i] = NAN;
+  }
+}
+
+double MultiDsHandlerBase::getCachedTemperature(
+    const uint8_t *address) const {
+  if (address == nullptr) {
+    return TEMPERATURE_NOT_AVAILABLE;
+  }
+
+  for (uint8_t i = 0; i < maxDeviceCount; i++) {
+    auto sensor = sensors[i];
+    if (sensor != nullptr && memcmp(address, sensor->getAddress(), 8) == 0) {
+      return isnan(cachedValues[i]) ? TEMPERATURE_NOT_AVAILABLE : cachedValues[i];
+    }
+  }
+  return TEMPERATURE_NOT_AVAILABLE;
 }
 
 MultiDsHandlerBase::~MultiDsHandlerBase() {
@@ -93,6 +113,8 @@ void MultiDsHandlerBase::onInit() {
   if (searchFirstDevice && !anySensorLoaded) {
     initialSensorSearch();
   }
+
+  startTemperatureConversion();
 }
 
 void MultiDsHandlerBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
@@ -143,6 +165,7 @@ void MultiDsHandlerBase::iterateAlways() {
             notifySrpcAboutParingEnd(
                 SUPLA_CALCFG_PAIRINGRESULT_RESOURCES_LIMIT_EXCEEDED, nullptr);
           } else {
+            startTemperatureConversion();
             char name[SUPLA_DEVICE_NAME_MAXSIZE] = {};
             char addressString[DS_HANDLER_ADDRESS_LENGTH] = {};
             addressToString(addressString, DS_HANDLER_ADDRESS_LENGTH, address);
@@ -174,11 +197,35 @@ void MultiDsHandlerBase::iterateAlways() {
     }
   }
 
-  if (state == MultiDsState::READY) {
-    if (millis() - lastBusReadTime > refreshIntervalMs) {
-      requestTemperatures();
-      lastBusReadTime = millis();
+  if (state == MultiDsState::READY && !conversionPending &&
+      millis() - lastBusReadTime > refreshIntervalMs) {
+    startTemperatureConversion();
+  }
+
+  if (conversionPending &&
+      millis() - conversionStartedAtMs >= kMaxConversionTimeMs) {
+    refreshTemperatureCache();
+    conversionPending = false;
+  }
+}
+
+void MultiDsHandlerBase::startTemperatureConversion() {
+  requestTemperatures();
+  conversionStartedAtMs = millis();
+  lastBusReadTime = conversionStartedAtMs;
+  conversionPending = true;
+}
+
+void MultiDsHandlerBase::refreshTemperatureCache() {
+  for (uint8_t i = 0; i < maxDeviceCount; i++) {
+    auto sensor = sensors[i];
+    if (sensor == nullptr) {
+      cachedValues[i] = NAN;
+      continue;
     }
+
+    const double temperature = getTemperature(sensor->getAddress());
+    cachedValues[i] = temperature == TEMPERATURE_NOT_AVAILABLE ? NAN : temperature;
   }
 }
 
@@ -285,6 +332,7 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
   SUPLA_LOG_DEBUG("MultiDS: Device added (subId: %d, number %d)",
       subDeviceId, sensor->getChannel()->getChannelNumber());
 
+  cachedValues[sensorSlot] = NAN;
   sensors[sensorSlot] = sensor;
   return sensor;
 }

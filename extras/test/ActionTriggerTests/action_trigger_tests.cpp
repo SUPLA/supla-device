@@ -310,6 +310,7 @@ TEST_F(ActionTriggerTests, ExtendedDefaultConfigCanDisableAllActions) {
 
 TEST_F(ActionTriggerTests, WeeklyScheduleIsOptInAndLoadedLazily) {
   Supla::Control::ActionTrigger at;
+  at.setButtonModeSupported();
 
   EXPECT_TRUE(at.getChannel()->getFlags() &
               SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
@@ -345,6 +346,7 @@ TEST_F(ActionTriggerTests, WeeklyScheduleIsOptInAndLoadedLazily) {
 TEST_F(ActionTriggerTests,
        ExplicitOptInCanBeDisabledWithoutDisablingButtonMode) {
   Supla::Control::ActionTrigger at;
+  at.setButtonModeSupported();
   at.setWeeklyScheduleAvailable();
   EXPECT_TRUE(at.getChannel()->getFlags() &
               SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
@@ -358,6 +360,7 @@ TEST_F(ActionTriggerTests,
 
 TEST_F(ActionTriggerTests, WeeklyScheduleCanBeDisabledWithoutDisablingLock) {
   Supla::Control::ActionTrigger at;
+  at.setButtonModeSupported();
   at.setWeeklyScheduleAvailable(false);
 
   EXPECT_FALSE(at.getChannel()->getFlags() &
@@ -484,6 +487,7 @@ TEST_F(ActionTriggerTests,
 TEST_F(ActionTriggerTests,
        WeeklyScheduleControllerCannotChangeAfterActionTriggerConfigLoad) {
   Supla::Control::ActionTrigger at;
+  at.setButtonModeSupported();
   ASSERT_TRUE(at.setWeeklyScheduleController(
       new Supla::Control::ExternalManagedWeeklySchedule()));
   at.onLoadConfig(nullptr);
@@ -503,6 +507,7 @@ TEST_F(ActionTriggerTests,
 TEST_F(ActionTriggerTests, WeeklyScheduleConfigDoesNotEnableSchedule) {
   TimeInterfaceStub time;
   Supla::Control::ActionTrigger at;
+  at.setButtonModeSupported();
   at.setWeeklyScheduleAvailable();
   auto config = makeActionTriggerWeeklySchedule(SUPLA_BUTTON_MODE_LOCKED);
 
@@ -556,6 +561,7 @@ TEST_F(ActionTriggerTests, ManualLockIsReportedAsChannelValue) {
   EXPECT_CALL(srpc, getChannelConfig(_, _)).Times(0);
   TimeInterfaceStub time;
   Supla::Control::ActionTrigger at;
+  at.setButtonModeSupported();
   at.onRegistered(suplaSrpc);
   at.iterateConnected();
   testing::Mock::VerifyAndClearExpectations(&srpc);
@@ -699,6 +705,7 @@ TEST_F(ActionTriggerTests, RestoredLockedStateIsPropagatedToAttachedButton) {
 TEST_F(ActionTriggerTests, InvalidWeeklyScheduleModeIsRejected) {
   TimeInterfaceStub time;
   Supla::Control::ActionTrigger at;
+  at.setButtonModeSupported();
   at.setWeeklyScheduleAvailable();
   auto config = makeActionTriggerWeeklySchedule(0xFF);
 
@@ -723,6 +730,7 @@ TEST_F(ActionTriggerTests, WeeklyScheduleModeIsRestoredFromStateStorage) {
   StorageMock storage;
   storage.defaultInitialization(4);
   Supla::Control::ActionTrigger at;
+  at.setButtonModeSupported();
   at.setWeeklyScheduleAvailable();
   at.enableStateStorage();
   at.onLoadConfig(nullptr);
@@ -751,6 +759,7 @@ TEST_F(ActionTriggerTests, WeeklyScheduleModeIsSavedInStateStorage) {
         return sizeof(uint32_t);
       });
   Supla::Control::ActionTrigger at;
+  at.setButtonModeSupported();
   at.enableStateStorage();
   at.setWeeklyScheduleAvailable();
   auto config = makeActionTriggerWeeklySchedule(SUPLA_BUTTON_MODE_LOCKED);
@@ -779,6 +788,7 @@ TEST_F(ActionTriggerTests, StateStorageDisabledDoesNotReadOrWriteMode) {
   StorageMock storage;
   storage.defaultInitialization(1);
   Supla::Control::ActionTrigger at;
+  at.setButtonModeSupported();
 
   EXPECT_CALL(storage, readStorage(_, _, _, _)).Times(0);
   EXPECT_CALL(storage, writeStorage(_, _, _)).Times(0);
@@ -791,6 +801,231 @@ TEST_F(ActionTriggerTests, StateStorageDisabledDoesNotReadOrWriteMode) {
   reinterpret_cast<TActionTriggerProperties *>(command.value)->ButtonMode =
       SUPLA_BUTTON_MODE_LOCKED;
   EXPECT_EQ(at.handleNewValueFromServer(&command), 1);
+}
+
+namespace {
+constexpr uint64_t kButtonModeFlags =
+    SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED |  // NOLINT
+    SUPLA_CHANNEL_FLAG_BUTTON_TEMPORARY_UNLOCK_SUPPORTED;  // NOLINT
+
+int sendButtonMode(Supla::Control::ActionTrigger *at, uint8_t mode) {
+  TSD_SuplaChannelNewValue command = {};
+  reinterpret_cast<TActionTriggerProperties *>(command.value)->ButtonMode =
+      mode;
+  return at->handleNewValueFromServer(&command);
+}
+
+void restoreActionTriggerState(Supla::Control::ActionTrigger *at,
+                               StorageMock *storage, uint32_t state) {
+  EXPECT_CALL(*storage, readStorage(_, _, sizeof(uint32_t), _))
+      .WillOnce([state](uint32_t, unsigned char *data, uint32_t, bool) {
+        memcpy(data, &state, sizeof(state));
+        return sizeof(state);
+      });
+  at->onLoadState();
+}
+}  // namespace
+
+TEST_F(ActionTriggerTests, StandaloneAtHasNoButtonModeByDefault) {
+  TimeInterfaceStub time;
+  Supla::Control::ActionTrigger at;
+  at.setWeeklyScheduleAvailable();
+  at.onInit();
+
+  EXPECT_FALSE(at.isButtonModeSupported());
+  EXPECT_FALSE(at.isTemporaryUnlockSupported());
+  EXPECT_FALSE(at.isWeeklyScheduleSupported());
+  EXPECT_EQ(at.getChannel()->getFlags() &
+                (kButtonModeFlags | SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE),
+            0u);
+  for (uint8_t mode : {0, 1, 4, 5, 6, 7}) {
+    EXPECT_EQ(sendButtonMode(&at, mode), 0);
+  }
+  // Unknown modes stay invalid (-1), not just unsupported.
+  for (uint8_t mode : {2, 3, 8, 255}) {
+    EXPECT_EQ(sendButtonMode(&at, mode), -1);
+  }
+  auto config = makeActionTriggerWeeklySchedule(SUPLA_BUTTON_MODE_LOCKED);
+  EXPECT_EQ(at.handleWeeklySchedule(&config, false, false),
+            SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
+  at.handleAction(Supla::ON_PRESS, Supla::LOCK);
+  at.handleAction(Supla::ON_PRESS, Supla::TOGGLE_LOCK);
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_NOT_SET);
+  EXPECT_FALSE(at.isEffectivelyLocked());
+}
+
+TEST_F(ActionTriggerTests, ButtonAttachEnablesButtonModePermanently) {
+  TimeInterfaceStub time;
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+  EXPECT_FALSE(at.getChannel()->getFlags() & kButtonModeFlags);
+
+  at.attach(button);
+  at.onInit();
+  EXPECT_TRUE(at.isButtonModeSupported());
+  EXPECT_EQ(at.getChannel()->getFlags() & kButtonModeFlags, kButtonModeFlags);
+  EXPECT_EQ(sendButtonMode(&at, SUPLA_BUTTON_MODE_LOCKED), 1);
+
+  // Detaching keeps button modes, so a locked AT can still be unlocked.
+  at.attach(nullptr);
+  EXPECT_TRUE(at.isButtonModeSupported());
+  EXPECT_EQ(at.getChannel()->getFlags() & kButtonModeFlags, kButtonModeFlags);
+  EXPECT_TRUE(at.isEffectivelyLocked());
+  EXPECT_EQ(sendButtonMode(&at, SUPLA_BUTTON_MODE_NOT_SET), 1);
+  EXPECT_FALSE(at.isEffectivelyLocked());
+}
+
+TEST_F(ActionTriggerTests, DisablingButtonModeAtRuntimeDropsLock) {
+  TimeInterfaceStub time;
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  at.onInit();
+  ASSERT_EQ(sendButtonMode(&at, SUPLA_BUTTON_MODE_LOCKED), 1);
+  ASSERT_TRUE(button.isActionTriggerModeLocked());
+
+  at.setButtonModeSupported(false);
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_NOT_SET);
+  EXPECT_FALSE(at.isEffectivelyLocked());
+  EXPECT_FALSE(button.isActionTriggerModeLocked());
+}
+
+TEST_F(ActionTriggerTests, DisablingTemporaryUnlockAtRuntimeLocks) {
+  TimeInterfaceStub time;
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  at.onInit();
+  TChannelConfig_ActionTrigger wire = {};
+  wire.TemporaryUnlockDurationSec = 30;
+  TSD_ChannelConfig request = {};
+  request.ConfigSize = sizeof(wire);
+  memcpy(request.Config, &wire, sizeof(wire));
+  ASSERT_EQ(at.handleChannelConfig(&request), SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_EQ(sendButtonMode(
+                &at, SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED),
+            1);
+  ASSERT_EQ(sendButtonMode(&at, SUPLA_BUTTON_MODE_CMD_TEMPORARY_UNLOCK), 1);
+  ASSERT_FALSE(at.isEffectivelyLocked());
+
+  at.setTemporaryUnlockSupported(false);
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_LOCKED);
+  EXPECT_FALSE(at.isTemporaryUnlockActive());
+  EXPECT_TRUE(at.isEffectivelyLocked());
+  EXPECT_TRUE(button.isActionTriggerModeLocked());
+}
+
+TEST_F(ActionTriggerTests, ExplicitButtonModeSettingWinsInAnyAttachOrder) {
+  TimeInterfaceStub time;
+  InspectableButton button1(10);
+  InspectableButton button2(11);
+  Supla::Control::ActionTrigger disabledBeforeAttach;
+  disabledBeforeAttach.setButtonModeSupported(false);
+  disabledBeforeAttach.attach(button1);
+  disabledBeforeAttach.onInit();
+  EXPECT_FALSE(disabledBeforeAttach.getChannel()->getFlags() &
+               kButtonModeFlags);
+  EXPECT_EQ(sendButtonMode(&disabledBeforeAttach, SUPLA_BUTTON_MODE_LOCKED),
+            0);
+
+  Supla::Control::ActionTrigger disabledAfterAttach;
+  disabledAfterAttach.attach(button2);
+  disabledAfterAttach.setButtonModeSupported(false);
+  disabledAfterAttach.onInit();
+  EXPECT_FALSE(disabledAfterAttach.getChannel()->getFlags() &
+               kButtonModeFlags);
+
+  Supla::Control::ActionTrigger standaloneEnabled;
+  standaloneEnabled.setButtonModeSupported();
+  standaloneEnabled.onInit();
+  EXPECT_EQ(standaloneEnabled.getChannel()->getFlags() & kButtonModeFlags,
+            kButtonModeFlags);
+  EXPECT_EQ(sendButtonMode(&standaloneEnabled, SUPLA_BUTTON_MODE_LOCKED), 1);
+  EXPECT_TRUE(standaloneEnabled.isEffectivelyLocked());
+}
+
+TEST_F(ActionTriggerTests, RestoredModeIsDroppedWhenButtonModeUnsupported) {
+  TimeInterfaceStub time;
+  StorageMock storage;
+  storage.defaultInitialization(sizeof(uint32_t));
+  Supla::Control::ActionTrigger at;
+  at.enableStateStorage();
+  restoreActionTriggerState(&at, &storage,
+                            0x80000000UL | SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  at.onInit();
+
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_NOT_SET);
+  EXPECT_FALSE(at.isEffectivelyLocked());
+  EXPECT_TRUE(at.isAnyActionEnabledOnServer());
+}
+
+TEST_F(ActionTriggerTests, TemporaryUnlockCanBeDisabledSeparately) {
+  TimeInterfaceStub time;
+  ClockStub clock;
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+  at.setTemporaryUnlockSupported(false);
+  at.attach(button);
+  at.setWeeklyScheduleAvailable();
+  at.onInit();
+
+  EXPECT_TRUE(at.isButtonModeSupported());
+  EXPECT_FALSE(at.isTemporaryUnlockSupported());
+  EXPECT_EQ(at.getChannel()->getFlags() & kButtonModeFlags,
+            SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
+  EXPECT_EQ(sendButtonMode(
+                &at, SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED),
+            0);
+  EXPECT_EQ(sendButtonMode(&at, SUPLA_BUTTON_MODE_CMD_TEMPORARY_UNLOCK), 0);
+  EXPECT_EQ(sendButtonMode(&at, SUPLA_BUTTON_MODE_LOCKED), 1);
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_LOCKED);
+
+  // A weekly schedule with an unsupported mode is invalid.
+  auto weekly = makeActionTriggerWeeklySchedule(
+      SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED);
+  EXPECT_NE(at.handleWeeklySchedule(&weekly, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  auto lockedWeekly =
+      makeActionTriggerWeeklySchedule(SUPLA_BUTTON_MODE_LOCKED);
+  EXPECT_EQ(at.handleWeeklySchedule(&lockedWeekly, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  TChannelConfig_ActionTrigger wire = {};
+  wire.ActiveActions = SUPLA_ACTION_CAP_SHORT_PRESS_x1;
+  wire.TemporaryUnlockDurationSec = 30;
+  TSD_ChannelConfig request = {};
+  request.ConfigSize = sizeof(wire);
+  memcpy(request.Config, &wire, sizeof(wire));
+  EXPECT_EQ(at.handleChannelConfig(&request), SUPLA_CONFIG_RESULT_TRUE);
+  TChannelConfig_ActionTrigger filled = {};
+  int size = 0;
+  at.fillChannelConfig(&filled, &size, SUPLA_CONFIG_TYPE_DEFAULT);
+  EXPECT_EQ(size, static_cast<int>(sizeof(filled)));
+  EXPECT_EQ(filled.ActiveActions, SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  EXPECT_EQ(filled.TemporaryUnlockDurationSec, 0u);
+
+  // Temporary unlock can't be enabled without button modes.
+  Supla::Control::ActionTrigger standalone;
+  standalone.setTemporaryUnlockSupported(true);
+  EXPECT_FALSE(standalone.isTemporaryUnlockSupported());
+}
+
+TEST_F(ActionTriggerTests, RestoredModeSixFallsBackToLockedWithoutTempUnlock) {
+  TimeInterfaceStub time;
+  StorageMock storage;
+  storage.defaultInitialization(sizeof(uint32_t));
+  InspectableButton button(10);
+  Supla::Control::ActionTrigger at;
+  at.attach(button);
+  at.setTemporaryUnlockSupported(false);
+  at.enableStateStorage();
+  restoreActionTriggerState(&at, &storage,
+                            0xC0000000UL | SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+  at.onInit();
+
+  EXPECT_EQ(actionTriggerValue(at)->ButtonMode, SUPLA_BUTTON_MODE_LOCKED);
+  EXPECT_TRUE(at.isEffectivelyLocked());
+  EXPECT_TRUE(button.isActionTriggerModeLocked());
 }
 
 TEST_F(ActionTriggerTests, FirstEmptyServerConfigStillBuildsButtonHandlers) {

@@ -71,6 +71,11 @@ class PhysicalButton : public Supla::Control::Button {
   PhysicalButton() : Button(10) {}
   bool locked() const { return runtimeFlags.actionTriggerModeLocked; }
   void dispatch() { runActionWithActionTriggerPolicy(Supla::ON_PRESS); }
+  void setClickCounter(uint8_t clicks) { clickCounter = clicks; }
+  uint8_t getClickCounter() const { return clickCounter; }
+  bool suppressedUntilRelease() const {
+    return runtimeFlags.actionTriggerSuppressActionsUntilRelease;
+  }
 };
 class Counter : public Supla::ActionHandler {
  public:
@@ -115,7 +120,9 @@ TEST_F(TemporaryUnlock, OccupiedButtonRejectsAnotherTriggerWithoutChanges) {
   PhysicalButton firstButton;
   PhysicalButton secondButton;
   InspectableTrigger first;
+  first.setButtonModeSupported();
   InspectableTrigger second;
+  second.setButtonModeSupported();
   first.attach(firstButton);
   second.attach(secondButton);
   ASSERT_EQ(configure(first), SUPLA_CONFIG_RESULT_TRUE);
@@ -144,7 +151,9 @@ TEST_F(TemporaryUnlock, DetachedButtonCanBeAttachedToAnotherTrigger) {
   testing::NiceMock<DigitalInterfaceMock> io;
   PhysicalButton button;
   InspectableTrigger first;
+  first.setButtonModeSupported();
   InspectableTrigger second;
+  second.setButtonModeSupported();
   first.attach(button);
   ASSERT_EQ(command(first, 6), 1);
   ASSERT_EQ(command(first, 7, 5), 1);
@@ -161,6 +170,7 @@ TEST_F(TemporaryUnlock,
        ManualTimerReportsModeSixAndRestartsWithoutFlashWrites) {
   MemoryConfig cfg;
   ActionTrigger at;
+  at.setButtonModeSupported();
   ASSERT_EQ(configure(at), SUPLA_CONFIG_RESULT_TRUE);
   const int commits = cfg.commits;
   ASSERT_EQ(command(at, 6), 1);
@@ -185,6 +195,7 @@ TEST_F(TemporaryUnlock,
 
 TEST_F(TemporaryUnlock, LimitsModeExitAndMonotonicWrap) {
   ActionTrigger at;
+  at.setButtonModeSupported();
   EXPECT_EQ(configure(at, 64801), SUPLA_CONFIG_RESULT_DATA_ERROR);
   ASSERT_EQ(configure(at, 64800), SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(command(at, 7), 0);
@@ -207,6 +218,7 @@ TEST_F(TemporaryUnlock, LimitsModeExitAndMonotonicWrap) {
 TEST_F(TemporaryUnlock, SourceZeroBaselineOfflineAndActiveEdges) {
   Supla::Sensor::VirtualBinary sensor;
   ActionTrigger at;
+  at.setButtonModeSupported();
   ASSERT_EQ(sensor.getChannelNumber(), 0);
   ASSERT_EQ(configure(at, 5, SUPLA_AT_SENSOR_EDGE_BOTH, 0),
             SUPLA_CONFIG_RESULT_TRUE);
@@ -237,6 +249,7 @@ TEST_F(TemporaryUnlock, SourceZeroBaselineOfflineAndActiveEdges) {
 TEST_F(TemporaryUnlock, ConfigChangesWithoutActionChangesAndLegacyPrefix) {
   MemoryConfig cfg;
   ActionTrigger at;
+  at.setButtonModeSupported();
   ASSERT_EQ(configure(at, 5), SUPLA_CONFIG_RESULT_TRUE);
   const int commits = cfg.commits;
   ASSERT_EQ(configure(at, 5), SUPLA_CONFIG_RESULT_TRUE);
@@ -260,10 +273,48 @@ TEST_F(TemporaryUnlock, ConfigChangesWithoutActionChangesAndLegacyPrefix) {
   }
 }
 
+TEST_F(TemporaryUnlock, StoredModeSixScheduleIsRejectedWithoutTempUnlock) {
+  ClockStub clock;
+  time.advance(31000);
+  MemoryConfig cfg;
+  TSD_ChannelConfig request = {};
+  request.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  request.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  auto *schedule = reinterpret_cast<TChannelConfig_WeeklySchedule *>(
+      request.Config);
+  schedule->Program[0].Mode = 6;
+  Supla::Control::WeeklyScheduleBuffer buffer;
+  for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; ++i)
+    buffer.setWeeklySchedule(schedule, i, 1);
+  {
+    ActionTrigger at;
+    at.setButtonModeSupported();
+    at.setWeeklyScheduleAvailable();
+    ASSERT_EQ(at.handleWeeklySchedule(&request, false, false),
+              SUPLA_CONFIG_RESULT_TRUE);
+  }
+  Supla::Channel::resetToDefaults();
+  // New firmware disables temporary unlock: the stored schedule is invalid,
+  // so as for any invalid schedule it is dropped and mode 0 stays.
+  ActionTrigger restored;
+  restored.setButtonModeSupported();
+  restored.setTemporaryUnlockSupported(false);
+  restored.setWeeklyScheduleAvailable();
+  restored.onLoadConfig(&sd);
+  restored.onInit();
+  EXPECT_EQ(command(restored, 4), 0);
+  restored.iterateAlways();
+  EXPECT_FALSE(properties(restored).Flags &
+               SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(properties(restored).ButtonMode, SUPLA_BUTTON_MODE_NOT_SET);
+  EXPECT_FALSE(restored.isEffectivelyLocked());
+}
+
 TEST_F(TemporaryUnlock, RestartLoadsConfigButNeverTimer) {
   MemoryConfig cfg;
   {
     ActionTrigger at;
+    at.setButtonModeSupported();
     ASSERT_EQ(configure(at, 19, SUPLA_AT_SENSOR_EDGE_RISING, 0),
               SUPLA_CONFIG_RESULT_TRUE);
     ASSERT_EQ(command(at, 6), 1);
@@ -271,6 +322,7 @@ TEST_F(TemporaryUnlock, RestartLoadsConfigButNeverTimer) {
   }
   Supla::Channel::resetToDefaults();
   ActionTrigger restored;
+  restored.setButtonModeSupported();
   restored.onLoadConfig(&sd);
   EXPECT_FALSE(restored.isTemporaryUnlockActive());
   TChannelConfig_ActionTrigger wire = {};
@@ -284,6 +336,7 @@ TEST_F(TemporaryUnlock, RestartLoadsConfigButNeverTimer) {
 TEST_F(TemporaryUnlock, ButtonAndBaseDispatchUseEffectiveLock) {
   testing::NiceMock<DigitalInterfaceMock> io;
   ActionTrigger at;
+  at.setButtonModeSupported();
   PhysicalButton button;
   Counter counter;
   button.addAction(Supla::TURN_ON, counter, Supla::ON_PRESS, true);
@@ -314,6 +367,7 @@ TEST_F(TemporaryUnlock, WeeklyProgramOverridesDurationAndValidatesTimes) {
   ClockStub clock;
   time.advance(31000);
   ActionTrigger at;
+  at.setButtonModeSupported();
   ASSERT_EQ(configure(at, 20), SUPLA_CONFIG_RESULT_TRUE);
   at.setWeeklyScheduleAvailable();
   TSD_ChannelConfig request = {};
@@ -344,6 +398,7 @@ TEST_F(TemporaryUnlock, WeeklyProgramOverridesDurationAndValidatesTimes) {
 TEST_F(TemporaryUnlock, EdgeSelectionAndChangedSensorWithSameActions) {
   Supla::Sensor::VirtualBinary sensor;
   ActionTrigger at;
+  at.setButtonModeSupported();
   for (uint8_t edge : {SUPLA_AT_SENSOR_EDGE_RISING,
                        SUPLA_AT_SENSOR_EDGE_FALLING,
                        SUPLA_AT_SENSOR_EDGE_BOTH}) {
@@ -369,6 +424,7 @@ TEST_F(TemporaryUnlock, EdgeSelectionAndChangedSensorWithSameActions) {
 TEST_F(TemporaryUnlock, FailedPersistenceDoesNotApplyCandidate) {
   MemoryConfig cfg;
   ActionTrigger at;
+  at.setButtonModeSupported();
   ASSERT_EQ(configure(at, 5), SUPLA_CONFIG_RESULT_TRUE);
   cfg.fail = true;
   EXPECT_EQ(configure(at, 11), SUPLA_CONFIG_RESULT_DATA_ERROR);
@@ -384,6 +440,7 @@ TEST_F(TemporaryUnlock, ModeSixStateRestoresLockedWithoutTimerOrExtraBytes) {
   StorageMock storage;
   storage.defaultInitialization(4);
   ActionTrigger at;
+  at.setButtonModeSupported();
   at.enableStateStorage();
   EXPECT_CALL(storage, scheduleSave(testing::_, testing::_))
       .Times(testing::AnyNumber());
@@ -417,6 +474,7 @@ TEST_F(TemporaryUnlock, TimerDoesNotScheduleStateWritesEvenWhenStorageEnabled) {
   StorageMock storage;
   storage.defaultInitialization(4);
   ActionTrigger at;
+  at.setButtonModeSupported();
   EXPECT_CALL(storage, scheduleSave(testing::_, testing::_))
       .Times(testing::AnyNumber());
   ASSERT_EQ(configure(at), SUPLA_CONFIG_RESULT_TRUE);
@@ -446,6 +504,7 @@ TEST_F(TemporaryUnlock, LegacyAllActionsSurviveModeSixStateRestart) {
       .Times(testing::AnyNumber());
   {
     ActionTrigger at;
+    at.setButtonModeSupported();
     at.enableStateStorage();
     TSD_ChannelConfig legacy = {};
     legacy.ConfigSize = 4;
@@ -462,6 +521,7 @@ TEST_F(TemporaryUnlock, LegacyAllActionsSurviveModeSixStateRestart) {
   }
   Supla::Channel::resetToDefaults();
   ActionTrigger restored;
+  restored.setButtonModeSupported();
   restored.enableStateStorage();
   restored.onLoadConfig(&sd);
   restored.onLoadState();
@@ -475,6 +535,7 @@ TEST_F(TemporaryUnlock, LegacyAllActionsSurviveModeSixStateRestart) {
 
 TEST_F(TemporaryUnlock, RuntimeAllocationIsDeferredUntilNeeded) {
   InspectableTrigger at;
+  at.setButtonModeSupported();
   EXPECT_FALSE(at.hasTemporaryState());
   ASSERT_EQ(configure(at, 0, SUPLA_AT_SENSOR_EDGE_NONE),
             SUPLA_CONFIG_RESULT_TRUE);
@@ -485,6 +546,7 @@ TEST_F(TemporaryUnlock, RuntimeAllocationIsDeferredUntilNeeded) {
 
 TEST_F(TemporaryUnlock, PublishAllDoesNotOverwriteCloudActiveActionsOnFill) {
   InspectableTrigger at;
+  at.setButtonModeSupported();
   at.publishAll();
   ASSERT_EQ(configure(at, 5, 0, -1, SUPLA_ACTION_CAP_ROTATE_LEFT),
             SUPLA_CONFIG_RESULT_TRUE);
@@ -498,6 +560,7 @@ TEST_F(TemporaryUnlock, PublishAllDoesNotOverwriteCloudActiveActionsOnFill) {
 TEST_F(TemporaryUnlock, LocalChangeIsProtectedUntilCloudAcknowledgesIt) {
   MemoryConfig cfg;
   ActionTrigger at;
+  at.setButtonModeSupported();
   TChannelConfig_ActionTrigger wire = {};
   wire.TemporaryUnlockDurationSec = 17;
   wire.ActiveActions = SUPLA_ACTION_CAP_ROTATE_LEFT;
@@ -518,6 +581,7 @@ TEST_F(TemporaryUnlock, LocalChangeIsProtectedUntilCloudAcknowledgesIt) {
 TEST_F(TemporaryUnlock, EdgeBeforeExpiryCannotReviveExpiredTimer) {
   Supla::Sensor::VirtualBinary sensor;
   ActionTrigger at;
+  at.setButtonModeSupported();
   ASSERT_EQ(configure(at, 5, SUPLA_AT_SENSOR_EDGE_BOTH, 0),
             SUPLA_CONFIG_RESULT_TRUE);
   ASSERT_EQ(command(at, 6), 1);
@@ -536,9 +600,34 @@ TEST_F(TemporaryUnlock, EdgeBeforeExpiryCannotReviveExpiredTimer) {
   EXPECT_TRUE(at.isEffectivelyLocked());
 }
 
+TEST_F(TemporaryUnlock, UnsampledEdgeCannotReviveManualRelock) {
+  Supla::Sensor::VirtualBinary sensor;
+  ActionTrigger at;
+  at.setButtonModeSupported();
+  ASSERT_EQ(configure(at, 5, SUPLA_AT_SENSOR_EDGE_BOTH, 0),
+            SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_EQ(command(at, 6), 1);
+  sensor.getChannel()->setNewValue(false);
+  at.iterateAlways();
+  sensor.getChannel()->setNewValue(true);
+  at.iterateAlways();
+  ASSERT_TRUE(at.isTemporaryUnlockActive());
+  time.advance(1000);
+  sensor.getChannel()->setNewValue(false);  // Not sampled yet.
+  ASSERT_EQ(command(at, 6), 1);              // "Lock now".
+  at.iterateAlways();
+  EXPECT_FALSE(at.isTemporaryUnlockActive());
+  EXPECT_TRUE(at.isEffectivelyLocked());
+  // A new edge after the relock still unlocks.
+  sensor.getChannel()->setNewValue(true);
+  at.iterateAlways();
+  EXPECT_TRUE(at.isTemporaryUnlockActive());
+}
+
 TEST_F(TemporaryUnlock, UnavailableOrUpdatingSensorCannotUnlock) {
   Supla::Sensor::VirtualBinary sensor;
   ActionTrigger at;
+  at.setButtonModeSupported();
   ASSERT_EQ(configure(at, 5, SUPLA_AT_SENSOR_EDGE_RISING, 0),
             SUPLA_CONFIG_RESULT_TRUE);
   ASSERT_EQ(command(at, 6), 1);
@@ -562,6 +651,7 @@ TEST_F(TemporaryUnlock, UnavailableOrUpdatingSensorCannotUnlock) {
 TEST_F(TemporaryUnlock, RecoveryFromUnavailableOrUpdatingSensorIsBaseline) {
   Supla::Sensor::VirtualBinary sensor;
   ActionTrigger at;
+  at.setButtonModeSupported();
   ASSERT_EQ(configure(at, 5, SUPLA_AT_SENSOR_EDGE_RISING, 0),
             SUPLA_CONFIG_RESULT_TRUE);
   ASSERT_EQ(command(at, 6), 1);
@@ -589,20 +679,25 @@ TEST_F(TemporaryUnlock, RecoveryFromUnavailableOrUpdatingSensorIsBaseline) {
   }
 }
 
-TEST_F(TemporaryUnlock, RepeatedModeSixPreservesOriginalDeadline) {
+TEST_F(TemporaryUnlock, RepeatedManualModeSixCancelsTimerAndKeepsMode) {
   for (bool weeklyAvailable : {false, true}) {
     ActionTrigger at;
+    at.setButtonModeSupported();
     at.setWeeklyScheduleAvailable(weeklyAvailable);
     ASSERT_EQ(configure(at), SUPLA_CONFIG_RESULT_TRUE);
     ASSERT_EQ(command(at, 6), 1);
     ASSERT_EQ(command(at, 7), 1);
     time.advance(1000);
     ASSERT_EQ(command(at, 6), 1);
-    EXPECT_TRUE(at.isTemporaryUnlockActive());
+    EXPECT_FALSE(at.isTemporaryUnlockActive());
+    EXPECT_TRUE(at.isEffectivelyLocked());
     EXPECT_EQ(properties(at).ButtonMode, 6);
-    EXPECT_TRUE(properties(at).Flags &
-                SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE);
-    time.advance(3999);
+    EXPECT_FALSE(properties(at).Flags &
+                 SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE);
+    // Temporary unlock is still allowed afterwards.
+    ASSERT_EQ(command(at, 7), 1);
+    EXPECT_TRUE(at.isTemporaryUnlockActive());
+    time.advance(4999);
     at.iterateAlways();
     EXPECT_TRUE(at.isTemporaryUnlockActive());
     time.advance(1);
@@ -611,10 +706,55 @@ TEST_F(TemporaryUnlock, RepeatedModeSixPreservesOriginalDeadline) {
   }
 }
 
+TEST_F(TemporaryUnlock, SwitchingManualSixToWeeklySixKeepsTimer) {
+  ClockStub clock;
+  testing::NiceMock<DigitalInterfaceMock> io;
+  time.advance(31000);
+  ActionTrigger at;
+  PhysicalButton button;
+  at.attach(button);
+  ASSERT_EQ(configure(at, 20), SUPLA_CONFIG_RESULT_TRUE);
+  at.setWeeklyScheduleAvailable();
+  TSD_ChannelConfig request = {};
+  request.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  request.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  auto *schedule = reinterpret_cast<TChannelConfig_WeeklySchedule *>(
+      request.Config);
+  schedule->Program[0].Mode = 6;
+  Supla::Control::WeeklyScheduleBuffer buffer;
+  for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; ++i)
+    buffer.setWeeklySchedule(schedule, i, 1);
+  ASSERT_EQ(at.handleWeeklySchedule(&request, false, false),
+            SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_EQ(command(at, 6), 1);
+  ASSERT_EQ(command(at, 7), 1);
+  ASSERT_FALSE(button.locked());
+  time.advance(1000);
+  // A click sequence in progress must survive the switch: no transient lock.
+  button.setClickCounter(2);
+  ASSERT_EQ(command(at, 4), 1);
+  EXPECT_FALSE(button.locked());
+  EXPECT_EQ(button.getClickCounter(), 2);
+  EXPECT_FALSE(button.suppressedUntilRelease());
+  at.iterateAlways();
+  EXPECT_TRUE(properties(at).Flags &
+              SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
+  EXPECT_EQ(properties(at).ButtonMode, 6);
+  EXPECT_TRUE(at.isTemporaryUnlockActive());
+  time.advance(18999);
+  at.iterateAlways();
+  EXPECT_TRUE(at.isTemporaryUnlockActive());
+  time.advance(1);
+  at.iterateAlways();
+  EXPECT_TRUE(at.isEffectivelyLocked());
+  EXPECT_TRUE(button.locked());
+}
+
 TEST_F(TemporaryUnlock, LeavingWeeklyModeSixForManualKeepsCurrentTimer) {
   ClockStub clock;
   time.advance(31000);
   ActionTrigger at;
+  at.setButtonModeSupported();
   ASSERT_EQ(configure(at, 20), SUPLA_CONFIG_RESULT_TRUE);
   at.setWeeklyScheduleAvailable();
   TSD_ChannelConfig request = {};
@@ -654,15 +794,77 @@ TEST_F(TemporaryUnlock, LeavingWeeklyModeSixForManualKeepsCurrentTimer) {
 
 TEST_F(TemporaryUnlock, LeavingModeSixStillCancelsTimerWithWeeklySupport) {
   ActionTrigger at;
+  at.setButtonModeSupported();
   at.setWeeklyScheduleAvailable();
   ASSERT_EQ(configure(at), SUPLA_CONFIG_RESULT_TRUE);
-  for (uint8_t mode : {0, 1, 5}) {
+  for (uint8_t mode : {0, 1}) {
     ASSERT_EQ(command(at, 6), 1);
     ASSERT_EQ(command(at, 7), 1);
     ASSERT_EQ(command(at, mode), 1);
     EXPECT_FALSE(at.isTemporaryUnlockActive());
     EXPECT_FALSE(properties(at).Flags &
                  SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE);
+  }
+}
+
+TEST_F(TemporaryUnlock, SwitchToManualInManualModeSixKeepsModeAndTimer) {
+  ActionTrigger at;
+  at.setButtonModeSupported();
+  at.setWeeklyScheduleAvailable();
+  ASSERT_EQ(configure(at), SUPLA_CONFIG_RESULT_TRUE);
+  ASSERT_EQ(command(at, 6), 1);
+  ASSERT_EQ(command(at, 7), 1);
+  ASSERT_EQ(command(at, 5), 1);
+  EXPECT_EQ(properties(at).ButtonMode, 6);
+  EXPECT_TRUE(at.isTemporaryUnlockActive());
+  EXPECT_TRUE(properties(at).Flags &
+              SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE);
+}
+
+TEST_F(TemporaryUnlock, SwitchToManualFromWeeklyKeepsProgramModeAndTimer) {
+  for (uint8_t programMode : {1, 6}) {
+    ClockStub clock;
+    time.advance(31000);
+    ActionTrigger at;
+    at.setButtonModeSupported();
+    ASSERT_EQ(configure(at, 20), SUPLA_CONFIG_RESULT_TRUE);
+    at.setWeeklyScheduleAvailable();
+    TSD_ChannelConfig request = {};
+    request.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+    request.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+    auto *schedule = reinterpret_cast<TChannelConfig_WeeklySchedule *>(
+        request.Config);
+    schedule->Program[0].Mode = programMode;
+    Supla::Control::WeeklyScheduleBuffer buffer;
+    for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; ++i)
+      buffer.setWeeklySchedule(schedule, i, 1);
+    ASSERT_EQ(at.handleWeeklySchedule(&request, false, false),
+              SUPLA_CONFIG_RESULT_TRUE);
+    ASSERT_EQ(command(at, 6), 1);
+    ASSERT_EQ(command(at, 4), 1);
+    at.iterateAlways();
+    ASSERT_EQ(properties(at).ButtonMode, programMode);
+    if (programMode == 6) {
+      ASSERT_EQ(command(at, 7, 60), 1);
+    }
+    time.advance(1000);
+    ASSERT_EQ(command(at, 5), 1);
+    at.iterateAlways();
+    EXPECT_FALSE(properties(at).Flags &
+                 SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED);
+    EXPECT_EQ(properties(at).ButtonMode, programMode);
+    EXPECT_TRUE(at.isEffectivelyLocked() == (programMode == 1));
+    if (programMode == 6) {
+      EXPECT_TRUE(properties(at).Flags &
+                  SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE);
+      time.advance(58999);
+      at.iterateAlways();
+      EXPECT_TRUE(at.isTemporaryUnlockActive());
+      time.advance(1);
+      at.iterateAlways();
+      EXPECT_TRUE(at.isEffectivelyLocked());
+      EXPECT_EQ(properties(at).ButtonMode, 6);
+    }
   }
 }
 
@@ -675,12 +877,14 @@ TEST_F(TemporaryUnlock, LocalConfigAndPendingMarkerSurviveStorageReboot) {
   memcpy(request.Config, &wire, sizeof(wire));
   {
     InspectableTrigger at;
+    at.setButtonModeSupported();
     ASSERT_EQ(at.handleChannelConfig(&request, true), SUPLA_CONFIG_RESULT_TRUE);
     EXPECT_TRUE(at.hasPendingLocalConfig());
   }
   cfg.reboot();  // No delayed save or cloud acknowledgement took place.
   Supla::Channel::resetToDefaults();
   InspectableTrigger restored;
+  restored.setButtonModeSupported();
   restored.onLoadConfig(&sd);
   EXPECT_TRUE(restored.hasPendingLocalConfig());
   wire.TemporaryUnlockDurationSec = 31;
@@ -707,6 +911,7 @@ TEST_F(TemporaryUnlock, FailedLocalSaveDoesNotApplySettingsOrPendingMarker) {
   for (int failure : {0, 1, 2}) {
     DurableMemoryConfig cfg;
     InspectableTrigger at;
+    at.setButtonModeSupported();
     ASSERT_EQ(configure(at, 5), SUPLA_CONFIG_RESULT_TRUE);
     TChannelConfig_ActionTrigger wire = {};
     wire.TemporaryUnlockDurationSec = 17;
@@ -739,6 +944,7 @@ TEST_F(TemporaryUnlock, LocalActionsOnlyChangePersistsPendingMarkerOnce) {
   DurableMemoryConfig cfg;
   {
     InspectableTrigger at;
+    at.setButtonModeSupported();
     ASSERT_EQ(configure(at), SUPLA_CONFIG_RESULT_TRUE);
     TChannelConfig_ActionTrigger wire = {};
     wire.TemporaryUnlockDurationSec = 5;
@@ -755,6 +961,7 @@ TEST_F(TemporaryUnlock, LocalActionsOnlyChangePersistsPendingMarkerOnce) {
   cfg.reboot();
   Supla::Channel::resetToDefaults();
   InspectableTrigger restored;
+  restored.setButtonModeSupported();
   restored.onLoadConfig(&sd);
   EXPECT_TRUE(restored.hasPendingLocalConfig());
   TChannelConfig_ActionTrigger wire = {};
@@ -780,6 +987,7 @@ TEST_F(TemporaryUnlock, PublishAllRestartsWithOriginalActionsAndPendingConfig) {
         });
     {
       InspectableTrigger at;
+      at.setButtonModeSupported();
       at.enableStateStorage();
       at.onLoadConfig(&sd);
       TChannelConfig_ActionTrigger wire = {};
@@ -801,6 +1009,7 @@ TEST_F(TemporaryUnlock, PublishAllRestartsWithOriginalActionsAndPendingConfig) {
     Supla::Channel::resetToDefaults();
     {
       InspectableTrigger restored;
+      restored.setButtonModeSupported();
       restored.enableStateStorage();
       restored.onLoadConfig(&sd);
       restored.onLoadState();
@@ -824,6 +1033,7 @@ TEST_F(TemporaryUnlock, ServerActionsUpdateStoredSelectionAfterLocalAck) {
   DurableMemoryConfig cfg;
   {
     InspectableTrigger at;
+    at.setButtonModeSupported();
     TChannelConfig_ActionTrigger wire = {};
     wire.ActiveActions = SUPLA_ACTION_CAP_ROTATE_RIGHT;
     wire.TemporaryUnlockDurationSec = 5;
@@ -841,6 +1051,7 @@ TEST_F(TemporaryUnlock, ServerActionsUpdateStoredSelectionAfterLocalAck) {
   cfg.reboot();
   Supla::Channel::resetToDefaults();
   InspectableTrigger restored;
+  restored.setButtonModeSupported();
   restored.onLoadConfig(&sd);
   EXPECT_FALSE(restored.hasPendingLocalConfig());
   TChannelConfig_ActionTrigger wire = {};

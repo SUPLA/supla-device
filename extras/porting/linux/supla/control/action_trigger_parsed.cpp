@@ -21,6 +21,9 @@ int parsedActionId(int action) {
 }  // namespace
 
 ActionTriggerParsed::ActionTriggerParsed(const std::string &name) {
+  // Parsed AT has no Button, but keeps lock/temporary unlock/weekly schedule
+  // support (configured from YAML and Supla Cloud).
+  setButtonModeSupported();
   Supla::Sensor::SensorParsedBase::registerAtName(name, this);
 }
 

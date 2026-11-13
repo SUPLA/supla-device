@@ -112,6 +112,22 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   void enable();
   void disable();
 
+  // Button modes: lock, temporary unlock and weekly schedule. By default they
+  // are unsupported for a standalone AT, and attaching a Button enables them
+  // permanently (attach() may be called any time before onInit(); a later
+  // detach keeps them). An explicit call overrides the default regardless of
+  // attach() order. When unsupported, mode commands and lock actions are
+  // rejected and the current/restored mode is dropped (state storage format
+  // is unchanged).
+  ActionTrigger &setButtonModeSupported(bool supported = true);
+  bool isButtonModeSupported() const;
+  // Temporary unlock (mode 6) follows button mode support by default and can
+  // be disabled separately. It can't be enabled without button modes. When
+  // disabled, commands 6/7 and weekly schedules with mode 6 are rejected, and
+  // a current/restored manual mode 6 becomes LOCKED.
+  ActionTrigger &setTemporaryUnlockSupported(bool supported = true);
+  bool isTemporaryUnlockSupported() const;
+
   bool isWeeklyScheduleSupported() const;
   ActionTrigger &setWeeklyScheduleAvailable(bool available = true);
   bool setWeeklyScheduleController(
@@ -128,6 +144,7 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   virtual bool isWeeklyScheduleProgramModeSupported(uint8_t mode) const;
   bool ensureNativeWeeklyScheduleController();
   void updateWeeklyScheduleCapabilities();
+  void updateButtonModeCapabilities();
   void scheduleStateSave(uint32_t delayMsMax = 5000,
                          uint32_t delayMsMin = 2000);
   void applyButtonMode(uint8_t mode);
@@ -163,6 +180,8 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
     bool baseline = false;
     bool persistenceUncertain = false;
     bool manualModeTransition = false;
+    // Weekly switch passes through mode 0; keep the timer until it settles.
+    bool keepTimerOnModeChange = false;
     bool hasStoredActiveActions = false;
   };
   bool ensureTemporaryUnlockState();
@@ -198,21 +217,29 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
           channelConfigReceived(false),
           weeklyScheduleAvailable(false),
           localUnlockAllowed(false),
-          keepConfigButtonTriggerAlwaysAvailable(false) {}
+          keepConfigButtonTriggerAlwaysAvailable(false),
+          buttonModeExplicit(false),
+          buttonModeEnabled(false),
+          temporaryUnlockDisabled(false) {}
 
-    uint8_t storageEnabled : 1;
-    uint8_t alwaysUseOnClick1 : 1;
-    uint8_t enabled : 1;
-    uint8_t localHandlerSwitchConfigured : 1;
-    uint8_t channelConfigReceived : 1;
+    uint16_t storageEnabled : 1;
+    uint16_t alwaysUseOnClick1 : 1;
+    uint16_t enabled : 1;
+    uint16_t localHandlerSwitchConfigured : 1;
+    uint16_t channelConfigReceived : 1;
     // Native weekly schedule remains opt-in.
-    uint8_t weeklyScheduleAvailable : 1;
-    uint8_t localUnlockAllowed : 1;
-    uint8_t keepConfigButtonTriggerAlwaysAvailable : 1;
+    uint16_t weeklyScheduleAvailable : 1;
+    uint16_t localUnlockAllowed : 1;
+    uint16_t keepConfigButtonTriggerAlwaysAvailable : 1;
+    // Button mode support: set by setButtonModeSupported() (explicit), or
+    // enabled by attaching a Button.
+    uint16_t buttonModeExplicit : 1;
+    uint16_t buttonModeEnabled : 1;
+    uint16_t temporaryUnlockDisabled : 1;
   };
 
-  static_assert(sizeof(RuntimeFlags) == sizeof(uint8_t),
-                "ActionTrigger runtime flags must fit in uint8_t");
+  static_assert(sizeof(RuntimeFlags) == sizeof(uint16_t),
+                "ActionTrigger runtime flags must fit in uint16_t");
 
   RuntimeFlags runtimeFlags;
   WeeklyScheduleComponents weeklyScheduleComponents;

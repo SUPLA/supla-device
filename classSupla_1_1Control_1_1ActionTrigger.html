@@ -223,6 +223,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setRelatedChannel</b>
 <tr class="memitem:a92fb57fbb265fe99136595e1b9a59ebf" id="r_a92fb57fbb265fe99136595e1b9a59ebf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a92fb57fbb265fe99136595e1b9a59ebf">onRegistered</a> (<a class="el" href="classSupla_1_1Protocol_1_1SuplaSrpc.html">Supla::Protocol::SuplaSrpc</a> *suplaSrpc=nullptr) override</td></tr>
 <tr class="memdesc:a92fb57fbb265fe99136595e1b9a59ebf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called each time when device successfully registers to Supla server.  <br /></td></tr>
 <tr class="separator:a92fb57fbb265fe99136595e1b9a59ebf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58c3dbe3c9d07e9c8106d0690edc3a2c" id="r_a58c3dbe3c9d07e9c8106d0690edc3a2c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a58c3dbe3c9d07e9c8106d0690edc3a2c">iterateConnected</a> () override</td></tr>
+<tr class="memdesc:a58c3dbe3c9d07e9c8106d0690edc3a2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration when device is connected and registered to Supla server or other protocol.  <br /></td></tr>
+<tr class="separator:a58c3dbe3c9d07e9c8106d0690edc3a2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeda7909946c7975c863b11465e2a46cd" id="r_aeda7909946c7975c863b11465e2a46cd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aeda7909946c7975c863b11465e2a46cd">onLoadConfig</a> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *) override</td></tr>
 <tr class="memdesc:aeda7909946c7975c863b11465e2a46cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">First method called on element in SuplaDevice.begin().  <br /></td></tr>
 <tr class="separator:aeda7909946c7975c863b11465e2a46cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -584,9 +587,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>hasDirectionalPair</b
 <tr class="memitem:a38e36f3b32121c0fbaf0035f23959d3b" id="r_a38e36f3b32121c0fbaf0035f23959d3b"><td class="memItemLeft" align="right" valign="top"><a id="a38e36f3b32121c0fbaf0035f23959d3b" name="a38e36f3b32121c0fbaf0035f23959d3b"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>requiresClickMode</b> () const</td></tr>
 <tr class="separator:a38e36f3b32121c0fbaf0035f23959d3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8bf6563c65e3e2c8af5de62137a455c9" id="r_a8bf6563c65e3e2c8af5de62137a455c9"><td class="memItemLeft" align="right" valign="top"><a id="a8bf6563c65e3e2c8af5de62137a455c9" name="a8bf6563c65e3e2c8af5de62137a455c9"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>startTemporaryUnlock</b> (uint32_t seconds)</td></tr>
-<tr class="separator:a8bf6563c65e3e2c8af5de62137a455c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa520ec405b4b959f7d2cd94fc2dfc275" id="r_aa520ec405b4b959f7d2cd94fc2dfc275"><td class="memItemLeft" align="right" valign="top"><a id="aa520ec405b4b959f7d2cd94fc2dfc275" name="aa520ec405b4b959f7d2cd94fc2dfc275"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>startTemporaryUnlock</b> (uint32_t seconds, int32_t senderId=0)</td></tr>
+<tr class="separator:aa520ec405b4b959f7d2cd94fc2dfc275"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae712ddccdf8ce98816702a96d1235298" id="r_ae712ddccdf8ce98816702a96d1235298"><td class="memItemLeft" align="right" valign="top"><a id="ae712ddccdf8ce98816702a96d1235298" name="ae712ddccdf8ce98816702a96d1235298"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateTemporaryUnlock</b> ()</td></tr>
 <tr class="separator:ae712ddccdf8ce98816702a96d1235298"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -608,6 +611,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>prepareTemporaryUnloc
 <tr class="memitem:ad603963a809e4e5f5d09af371e2f108a" id="r_ad603963a809e4e5f5d09af371e2f108a"><td class="memItemLeft" align="right" valign="top"><a id="ad603963a809e4e5f5d09af371e2f108a" name="ad603963a809e4e5f5d09af371e2f108a"></a>
 <a class="el" href="structSupla_1_1Control_1_1ActionTrigger_1_1TemporaryUnlockConfig.html">TemporaryUnlockConfig</a>&#160;</td><td class="memItemRight" valign="bottom"><b>currentTemporaryUnlockConfig</b> () const</td></tr>
 <tr class="separator:ad603963a809e4e5f5d09af371e2f108a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86255cac232ef03f7949d107441ea8ae" id="r_a86255cac232ef03f7949d107441ea8ae"><td class="memItemLeft" align="right" valign="top"><a id="a86255cac232ef03f7949d107441ea8ae" name="a86255cac232ef03f7949d107441ea8ae"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>getTemporaryUnlockRemainingMs</b> (uint32_t *remainingMs) const</td></tr>
+<tr class="separator:a86255cac232ef03f7949d107441ea8ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03364e3f49e27c4b2284ccb5fde5f883" id="r_a03364e3f49e27c4b2284ccb5fde5f883"><td class="memItemLeft" align="right" valign="top"><a id="a03364e3f49e27c4b2284ccb5fde5f883" name="a03364e3f49e27c4b2284ccb5fde5f883"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>sendTimerValue</b> (uint32_t remainingMs, uint8_t *targetValue, int32_t senderId)</td></tr>
+<tr class="separator:a03364e3f49e27c4b2284ccb5fde5f883"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1ElementWithChannelActions')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
 <tr class="memitem:a7c0d2300a5d85232c683f65631da0ece inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a7c0d2300a5d85232c683f65631da0ece"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>hasChannelConfigSummary</b> (uint8_t) const</td></tr>
@@ -1048,6 +1057,36 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 <p>It should provide all actions that have to be executed periodically regardless of network state. </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#af728b2c6d12993fae8513eb720dda8ee">Supla::Element</a>.</p>
+
+</div>
+</div>
+<a id="a58c3dbe3c9d07e9c8106d0690edc3a2c" name="a58c3dbe3c9d07e9c8106d0690edc3a2c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58c3dbe3c9d07e9c8106d0690edc3a2c">&#9670;&#160;</a></span>iterateConnected()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::Control::ActionTrigger::iterateConnected </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Method called on each SuplaDevice iteration when device is connected and registered to Supla server or other protocol. </p>
+<dl class="section return"><dt>Returns</dt><dd>true when element didn't communicate with server and next element should be iterated instead. false otherwise. </dd></dl>
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#a4c85b27857d687c9dccbf178fa739698">Supla::Element</a>.</p>
 
 </div>
 </div>

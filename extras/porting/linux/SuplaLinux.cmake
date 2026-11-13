@@ -112,6 +112,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   ${SUPLA_LINUX_PORT_DIR}/supla/control/rgbcct_parsed.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/cmd_valve.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/action_trigger_parsed.cpp
+  ${SUPLA_LINUX_PORT_DIR}/supla/control/button_parsed.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/hvac_parsed.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/custom_hvac.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/custom_relay.cpp

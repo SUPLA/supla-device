@@ -1,0 +1,51 @@
+# Copy to a separate working directory, set your server/mail, and create
+# btn_up.txt and btn_down.txt containing 0. Run sd4linux from that directory
+# with -c rs_buttons.yaml.
+# Click a button:   echo 1 > btn_up.txt; sleep 0.2; echo 0 > btn_up.txt
+# Hold a button:    echo 1 > btn_up.txt; sleep 2; echo 0 > btn_up.txt
+# Relay commands are appended to rs.log (command output is not logged).
+name: RS buttons test
+log_level: debug
+proto_verbose_log: false
+state_files_path: ./state
+security_level: 0
+
+supla:
+  server: svr123.supla.org
+  mail: user@example.com
+  proto: 29
+
+channels:
+  - type: CmdRollerShutter
+    name: blind
+    cmd_up_on: "echo up_on >> rs.log"
+    cmd_up_off: "echo up_off >> rs.log"
+    cmd_down_on: "echo down_on >> rs.log"
+    cmd_down_off: "echo down_off >> rs.log"
+
+buttons:
+  - name: blind_up
+    type: monostable
+    state: 0
+    source:
+      type: File
+      file: btn_up.txt
+      expiration_time_sec: 0
+    parser:
+      type: Simple
+    attach:
+      channel: blind
+      direction: up
+
+  - name: blind_down
+    type: monostable
+    state: 0
+    source:
+      type: File
+      file: btn_down.txt
+      expiration_time_sec: 0
+    parser:
+      type: Simple
+    attach:
+      channel: blind
+      direction: down

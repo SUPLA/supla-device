@@ -68,6 +68,7 @@ namespace Supla {
 
 namespace Control {
 class ActionTrigger;
+class Button;
 class Relay;
 }
 
@@ -142,6 +143,17 @@ class LinuxYamlConfig : public KeyValue {
   bool loadTopLevelSources(const YAML::Node& sourcesNode);
   bool loadTopLevelParsers(const YAML::Node& parsersNode);
   bool parseChannel(const YAML::Node& ch, int channelNumber);
+  bool addSourceAndParser(const YAML::Node& node,
+                          Supla::Source::Source** source,
+                          Supla::Parser::Parser** parser);
+  bool checkUnrecognizedParameters(const YAML::Node& node,
+                                   const char* kind,
+                                   int index);
+  bool loadButtons(const YAML::Node& buttonsNode);
+  bool parseButton(const YAML::Node& btn, int buttonIndex);
+  bool attachButton(const YAML::Node& attachNode,
+                    Supla::Control::Button* button,
+                    int buttonIndex);
   Supla::Source::Source* findSource(const std::string& name);
   Supla::Parser::Parser* findParser(const std::string& name);
   Supla::Source::Source* addSourceWithName(const YAML::Node& source,

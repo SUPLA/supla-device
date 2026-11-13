@@ -24,10 +24,16 @@ class ActionTriggerParsed : public ActionTrigger {
   static constexpr uint32_t MaximumTemporaryUnlockDurationSec = 64800;
   // Applied as a local override after loading saved settings in onLoadConfig.
   bool setTemporaryUnlockDurationSec(uint32_t seconds);
+  bool setTemporaryUnlockSensor(uint8_t channelNumber, uint8_t edge);
   void onLoadConfig(SuplaDeviceClass *sdc) override;
 
  private:
+  struct UnlockSensor {
+    uint8_t channelNumber;
+    uint8_t edge;
+  };
   std::optional<uint32_t> temporaryUnlockDurationSec;
+  std::optional<UnlockSensor> temporaryUnlockSensor;
 };
 
 }  // namespace Control

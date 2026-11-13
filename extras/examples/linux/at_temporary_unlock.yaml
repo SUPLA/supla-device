@@ -1,0 +1,32 @@
+# Copy to a separate working directory, set your server/mail, and create
+# binary.txt containing 0. Run sd4linux from that directory with -c config.yaml.
+# In SUPLA Cloud set test_button to mode 6 (locked, temporary unlock allowed).
+# Then change binary.txt from 0 to 1 to trigger a 30-second unlock.
+name: AT temporary unlock test
+log_level: debug
+proto_verbose_log: false
+state_files_path: ./state
+security_level: 0
+
+supla:
+  server: svr123.supla.org
+  mail: user@example.com
+  proto: 29
+
+channels:
+  - type: ActionTriggerParsed
+    name: test_button
+    temporary_unlock_duration_sec: 30
+    temporary_unlock_sensor: contact
+    temporary_unlock_sensor_edge: rising
+
+  - type: BinaryParsed
+    name: contact
+    state: 0
+    state_on_values: [1]
+    parser:
+      type: Simple
+      refresh_time_ms: 200
+    source:
+      type: File
+      file: binary.txt

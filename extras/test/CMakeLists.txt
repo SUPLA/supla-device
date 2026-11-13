@@ -169,6 +169,7 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/control/rgbcct_parsed.cpp
   ../porting/linux/supla/control/cmd_valve.cpp
   ../porting/linux/supla/control/action_trigger_parsed.cpp
+  ../porting/linux/supla/control/button_parsed.cpp
   ../porting/linux/supla/custom_channel.cpp
   ../porting/linux/supla/linux_command.cpp
   ../porting/linux/supla/parser/json.cpp

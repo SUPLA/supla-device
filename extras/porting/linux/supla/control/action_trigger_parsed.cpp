@@ -51,9 +51,20 @@ bool ActionTriggerParsed::setTemporaryUnlockDurationSec(uint32_t seconds) {
   return true;
 }
 
+bool ActionTriggerParsed::setTemporaryUnlockSensor(uint8_t channelNumber,
+                                                   uint8_t edge) {
+  if (edge > SUPLA_AT_SENSOR_EDGE_BOTH ||
+      (edge != SUPLA_AT_SENSOR_EDGE_NONE && channelNumber == 255)) {
+    return false;
+  }
+  temporaryUnlockSensor = UnlockSensor{channelNumber, edge};
+  return true;
+}
+
 void ActionTriggerParsed::onLoadConfig(SuplaDeviceClass *sdc) {
   ActionTrigger::onLoadConfig(sdc);
-  if (!temporaryUnlockDurationSec.has_value()) {
+  if (!temporaryUnlockDurationSec.has_value() &&
+      !temporaryUnlockSensor.has_value()) {
     return;
   }
 
@@ -64,11 +75,21 @@ void ActionTriggerParsed::onLoadConfig(SuplaDeviceClass *sdc) {
   TChannelConfig_ActionTrigger value = {};
   int size = 0;
   fillChannelConfig(&value, &size, config.ConfigType);
-  value.TemporaryUnlockDurationSec = *temporaryUnlockDurationSec;
+  if (temporaryUnlockDurationSec.has_value()) {
+    value.TemporaryUnlockDurationSec = *temporaryUnlockDurationSec;
+  }
+  if (temporaryUnlockSensor.has_value()) {
+    const bool enabled =
+        temporaryUnlockSensor->edge != SUPLA_AT_SENSOR_EDGE_NONE;
+    value.TemporaryUnlockSensorIsSet = enabled;
+    value.TemporaryUnlockSensorChannelNo =
+        enabled ? temporaryUnlockSensor->channelNumber : 0;
+    value.TemporaryUnlockSensorEdge = temporaryUnlockSensor->edge;
+  }
   config.ConfigSize = size;
   memcpy(config.Config, &value, sizeof(value));
   if (handleChannelConfig(&config, true) != SUPLA_CONFIG_RESULT_TRUE) {
-    SUPLA_LOG_ERROR("AT[%d] failed to apply temporary_unlock_duration_sec",
+    SUPLA_LOG_ERROR("AT[%d] failed to apply temporary unlock YAML settings",
                     getChannelNumber());
   }
 }

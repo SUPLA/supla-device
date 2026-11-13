@@ -6,6 +6,7 @@
 #include <supla-common/proto.h>
 #include <supla/control/action_trigger.h>
 #include <supla/control/action_trigger_parsed.h>
+#include <supla/control/button_parsed.h>
 #include <supla/control/cmd_relay.h>
 #include <supla/control/cmd_roller_shutter.h>
 #include <supla/control/cmd_valve.h>
@@ -13,6 +14,7 @@
 #include <supla/control/custom_relay.h>
 #include <supla/control/relay.h>
 #include <supla/control/rgbcct_parsed.h>
+#include <supla/control/roller_shutter_interface.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/custom_channel.h>
 #include <supla/device/register_device.h>
@@ -96,6 +98,19 @@ const char AuthKeyKey[] = "authkey";
 };  // namespace Supla
 
 #define SUPLA_LINUX_CONFIG_BUF_SIZE (1024 * 1024)
+
+namespace {
+bool parseUnlockSensorEdge(const YAML::Node& node, uint8_t* edge) {
+  if (!node.IsScalar()) return false;
+  const auto value = node.as<std::string>();
+  if (value == "none") *edge = SUPLA_AT_SENSOR_EDGE_NONE;
+  else if (value == "rising") *edge = SUPLA_AT_SENSOR_EDGE_RISING;
+  else if (value == "falling") *edge = SUPLA_AT_SENSOR_EDGE_FALLING;
+  else if (value == "both") *edge = SUPLA_AT_SENSOR_EDGE_BOTH;
+  else return false;
+  return true;
+}
+}  // namespace
 
 Supla::LinuxYamlConfig::LinuxYamlConfig(const std::string& file) : file(file) {
 }
@@ -669,28 +684,7 @@ bool Supla::LinuxYamlConfig::loadChannels() {
           SUPLA_LOG_ERROR("Config: parsing channel %d failed", channelCount);
           return false;
         }
-        if (untrackedChannelParameterCount == 0) {
-          bool unrecognizedParameterFound = false;
-          for (const auto& parameter : it) {
-            const auto parameterName = parameter.first.as<std::string>();
-            if (!usedChannelParameters.count(parameterName)) {
-              const auto line = parameter.first.Mark().line;
-              SUPLA_LOG_ERROR(
-                  "Channel[%d] config: unrecognized parameter \"%s\""
-                  " at line %d",
-                  channelCount,
-                  parameterName.c_str(),
-                  line >= 0 ? line + 1 : 0);
-              unrecognizedParameterFound = true;
-            }
-          }
-          if (unrecognizedParameterFound) {
-            return false;
-          }
-        } else if (it.size() > usedChannelParameters.size() +
-                                   untrackedChannelParameterCount) {
-          SUPLA_LOG_ERROR("Channel[%d] config contains unrecognized parameters",
-                          channelCount);
+        if (!checkUnrecognizedParameters(it, "Channel", channelCount)) {
           return false;
         }
         channelCount++;
@@ -699,7 +693,10 @@ bool Supla::LinuxYamlConfig::loadChannels() {
         SUPLA_LOG_ERROR("Config: \"channels\" section missing in file");
         return false;
       }
-      return resolveActionTriggerRelatedChannels();
+      if (!resolveActionTriggerRelatedChannels()) {
+        return false;
+      }
+      return loadButtons(config["buttons"]);
     } else {
       SUPLA_LOG_ERROR("Config: \"channels\" section missing in file");
       return false;
@@ -709,6 +706,270 @@ bool Supla::LinuxYamlConfig::loadChannels() {
   } catch (const YAML::Exception& ex) {
     logError(file, ex);
   }
+  return false;
+}
+
+bool Supla::LinuxYamlConfig::checkUnrecognizedParameters(
+    const YAML::Node& node, const char* kind, int index) {
+  if (untrackedChannelParameterCount == 0) {
+    bool unrecognizedParameterFound = false;
+    for (const auto& parameter : node) {
+      const auto parameterName = parameter.first.as<std::string>();
+      if (!usedChannelParameters.count(parameterName)) {
+        const auto line = parameter.first.Mark().line;
+        SUPLA_LOG_ERROR(
+            "%s[%d] config: unrecognized parameter \"%s\" at line %d",
+            kind,
+            index,
+            parameterName.c_str(),
+            line >= 0 ? line + 1 : 0);
+        unrecognizedParameterFound = true;
+      }
+    }
+    return !unrecognizedParameterFound;
+  }
+  if (node.size() >
+      usedChannelParameters.size() + untrackedChannelParameterCount) {
+    SUPLA_LOG_ERROR(
+        "%s[%d] config contains unrecognized parameters", kind, index);
+    return false;
+  }
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addSourceAndParser(
+    const YAML::Node& node,
+    Supla::Source::Source** source,
+    Supla::Parser::Parser** parser) {
+  if (auto sourceParameter = getAndMarkChannelParameter(node, "source")) {
+    if (sourceParameter.IsScalar()) {
+      *source = findSource(sourceParameter.as<std::string>());
+      if (!*source) {
+        SUPLA_LOG_ERROR("Config: can't find source with \"name\"=\"%s\"",
+                        sourceParameter.as<std::string>().c_str());
+        return false;
+      }
+    } else if (!(*source = addSource(sourceParameter))) {
+      SUPLA_LOG_ERROR("Adding source failed");
+      return false;
+    }
+  }
+
+  if (auto parserParameter = getAndMarkChannelParameter(node, "parser")) {
+    if (parserParameter.IsScalar()) {
+      *parser = findParser(parserParameter.as<std::string>());
+      if (!*parser) {
+        SUPLA_LOG_ERROR("Config: can't find parser with \"name\"=\"%s\"",
+                        parserParameter.as<std::string>().c_str());
+        return false;
+      }
+    } else if (!(*parser = addParser(parserParameter, *source))) {
+      SUPLA_LOG_ERROR("Adding parser failed");
+      return false;
+    }
+  }
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::loadButtons(const YAML::Node& buttonsNode) {
+  if (!buttonsNode) {
+    return true;
+  }
+  if (!buttonsNode.IsSequence()) {
+    SUPLA_LOG_ERROR("Config: \"buttons\" section has to be a list");
+    return false;
+  }
+  int buttonIndex = 0;
+  for (const auto& btn : buttonsNode) {
+    usedChannelParameters.clear();
+    untrackedChannelParameterCount = 0;
+    if (!btn.IsMap() || !parseButton(btn, buttonIndex)) {
+      SUPLA_LOG_ERROR("Config: parsing button %d failed", buttonIndex);
+      return false;
+    }
+    if (!checkUnrecognizedParameters(btn, "Button", buttonIndex)) {
+      return false;
+    }
+    buttonIndex++;
+  }
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::parseButton(const YAML::Node& btn,
+                                         int buttonIndex) {
+  Supla::Source::Source* source = nullptr;
+  Supla::Parser::Parser* parser = nullptr;
+  if (!addSourceAndParser(btn, &source, &parser)) {
+    return false;
+  }
+  if (!parser) {
+    SUPLA_LOG_ERROR("Button[%d] config: missing parser", buttonIndex);
+    return false;
+  }
+  // Parser default refresh time (5 s) is useless for a button. Use a short one
+  // for an inline parser unless it is configured explicitly. A named parser
+  // may be shared, so it is left as configured. Only cheap sources (File,
+  // MQTT) get 20 ms - e.g. Cmd would spawn a process 50 times per second.
+  auto parserParameter = btn["parser"];
+  if (parserParameter && !parserParameter.IsScalar() &&
+      !parserParameter["refresh_time_ms"]) {
+    if (dynamic_cast<Supla::Source::File*>(source) ||
+        dynamic_cast<Supla::Source::Mqtt*>(source)) {
+      parser->setRefreshTime(20);
+    } else {
+      SUPLA_LOG_WARNING(
+          "Button[%d] config: parser without \"refresh_time_ms\" for this "
+          "source type, using parser default (5000 ms)",
+          buttonIndex);
+    }
+  }
+
+  std::string name;
+  if (auto nameParameter = getAndMarkChannelParameter(btn, "name")) {
+    name = nameParameter.as<std::string>();
+  }
+
+  auto button = new Supla::Control::ButtonParsed(parser, name);
+  SUPLA_LOG_INFO("Button[%d] config: adding ButtonParsed \"%s\"",
+                 button->getButtonNumber(),
+                 name.c_str());
+
+  if (!addStateParser(btn, button, parser, true)) {
+    return false;
+  }
+
+  if (auto typeParameter = getAndMarkChannelParameter(btn, "type")) {
+    const auto type = typeParameter.as<std::string>();
+    if (type == "monostable") {
+      button->setButtonType(Supla::Control::Button::ButtonType::MONOSTABLE);
+    } else if (type == "bistable") {
+      button->setButtonType(Supla::Control::Button::ButtonType::BISTABLE);
+    } else if (type == "motion_sensor") {
+      button->setButtonType(
+          Supla::Control::Button::ButtonType::MOTION_SENSOR);
+    } else if (type == "central") {
+      button->setButtonType(
+          Supla::Control::Button::ButtonType::CENTRAL_CONTROL);
+    } else {
+      SUPLA_LOG_ERROR(
+          "Button[%d] config: unknown type \"%s\" (monostable, bistable, "
+          "motion_sensor, central)",
+          buttonIndex,
+          type.c_str());
+      return false;
+    }
+  }
+
+  if (auto invertParameter = getAndMarkChannelParameter(btn, "invert_logic")) {
+    button->setInvertLogic(invertParameter.as<bool>());
+  }
+
+  int holdTimeMs = 700;
+  if (auto parameter = getAndMarkChannelParameter(btn, "hold_time_ms")) {
+    holdTimeMs = parameter.as<int>();
+  }
+  int multiclickTimeMs = 300;
+  if (auto parameter = getAndMarkChannelParameter(btn, "multiclick_time_ms")) {
+    multiclickTimeMs = parameter.as<int>();
+  }
+  if (holdTimeMs < 0 || multiclickTimeMs < 0) {
+    SUPLA_LOG_ERROR("Button[%d] config: times can't be negative", buttonIndex);
+    return false;
+  }
+  button->setHoldTime(holdTimeMs);
+  button->setMulticlickTime(multiclickTimeMs);
+
+  if (auto attachParameter = getAndMarkChannelParameter(btn, "attach")) {
+    if (attachParameter.IsMap()) {
+      return attachButton(attachParameter, button, buttonIndex);
+    }
+    if (!attachParameter.IsSequence()) {
+      SUPLA_LOG_ERROR("Button[%d] config: \"attach\" has to be a map or a list",
+                      buttonIndex);
+      return false;
+    }
+    for (const auto& entry : attachParameter) {
+      if (!attachButton(entry, button, buttonIndex)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::attachButton(const YAML::Node& attachNode,
+                                          Supla::Control::Button* button,
+                                          int buttonIndex) {
+  if (!attachNode.IsMap() || !attachNode["channel"]) {
+    SUPLA_LOG_ERROR("Button[%d] config: attach entry requires \"channel\"",
+                    buttonIndex);
+    return false;
+  }
+  for (const auto& parameter : attachNode) {
+    const auto key = parameter.first.as<std::string>();
+    if (key != "channel" && key != "direction" && key != "internal") {
+      SUPLA_LOG_ERROR(
+          "Button[%d] config: unrecognized attach parameter \"%s\"",
+          buttonIndex,
+          key.c_str());
+      return false;
+    }
+  }
+
+  const auto channelName = attachNode["channel"].as<std::string>();
+  const auto target = channelNames.find(channelName);
+  if (target == channelNames.end() || target->second < 0) {
+    SUPLA_LOG_ERROR(
+        "Button[%d] config: unknown or ambiguous channel \"%s\"",
+        buttonIndex,
+        channelName.c_str());
+    return false;
+  }
+  auto element = Supla::Element::getElementByChannelNumber(target->second);
+
+  if (auto rs = dynamic_cast<Supla::Control::RollerShutterInterface*>(
+          element)) {
+    if (!attachNode["direction"]) {
+      SUPLA_LOG_ERROR(
+          "Button[%d] config: roller shutter \"%s\" requires \"direction\" "
+          "(up/down)",
+          buttonIndex,
+          channelName.c_str());
+      return false;
+    }
+    const auto direction = attachNode["direction"].as<std::string>();
+    if (direction != "up" && direction != "down") {
+      SUPLA_LOG_ERROR("Button[%d] config: invalid direction \"%s\" (up/down)",
+                      buttonIndex,
+                      direction.c_str());
+      return false;
+    }
+    bool internal = true;
+    if (attachNode["internal"]) {
+      internal = attachNode["internal"].as<bool>();
+    }
+    rs->attach(button, direction == "up", internal);
+    return true;
+  }
+
+  if (attachNode["direction"] || attachNode["internal"]) {
+    SUPLA_LOG_ERROR(
+        "Button[%d] config: \"direction\" and \"internal\" are valid only for "
+        "roller shutters",
+        buttonIndex);
+    return false;
+  }
+
+  if (auto relay = dynamic_cast<Supla::Control::Relay*>(element)) {
+    relay->attach(button);
+    return true;
+  }
+
+  SUPLA_LOG_ERROR(
+      "Button[%d] config: channel \"%s\" doesn't support buttons (only roller "
+      "shutters and relays)",
+      buttonIndex,
+      channelName.c_str());
   return false;
 }
 
@@ -817,32 +1078,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     Supla::Output::Output* output = nullptr;
     Supla::Payload::Payload* payload = nullptr;
 
-    if (auto sourceParameter = getAndMarkChannelParameter(ch, "source")) {
-      if (sourceParameter.IsScalar()) {
-        source = findSource(sourceParameter.as<std::string>());
-        if (!source) {
-          SUPLA_LOG_ERROR("Config: can't find source with \"name\"=\"%s\"",
-                          sourceParameter.as<std::string>().c_str());
-          return false;
-        }
-      } else if (!(source = addSource(sourceParameter))) {
-        SUPLA_LOG_ERROR("Adding source failed");
-        return false;
-      }
-    }
-
-    if (auto parserParameter = getAndMarkChannelParameter(ch, "parser")) {
-      if (parserParameter.IsScalar()) {
-        parser = findParser(parserParameter.as<std::string>());
-        if (!parser) {
-          SUPLA_LOG_ERROR("Config: can't find parser with \"name\"=\"%s\"",
-                          parserParameter.as<std::string>().c_str());
-          return false;
-        }
-      } else if (!(parser = addParser(parserParameter, source))) {
-        SUPLA_LOG_ERROR("Adding parser failed");
-        return false;
-      }
+    if (!addSourceAndParser(ch, &source, &parser)) {
+      return false;
     }
 
     if (auto outputParameter = getAndMarkChannelParameter(ch, "output")) {
@@ -2913,6 +3150,22 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
     }
   }
   std::optional<uint32_t> temporaryUnlockDuration;
+  const auto sensor =
+      getAndMarkChannelParameter(ch, "temporary_unlock_sensor");
+  const auto edge =
+      getAndMarkChannelParameter(ch, "temporary_unlock_sensor_edge");
+  uint8_t sensorEdge = SUPLA_AT_SENSOR_EDGE_NONE;
+  if ((sensor && (!sensor.IsScalar() || sensor.as<std::string>().empty())) ||
+      (edge && !parseUnlockSensorEdge(edge, &sensorEdge)) ||
+      (sensor && !edge) ||
+      (edge && ((sensorEdge != SUPLA_AT_SENSOR_EDGE_NONE) !=
+                static_cast<bool>(sensor)))) {
+    SUPLA_LOG_ERROR(
+        "Channel[%d] temporary unlock needs a sensor name and edge "
+        "rising/falling/both, or edge none without a sensor",
+        channelNumber);
+    return false;
+  }
   if (auto parameter =
           getAndMarkChannelParameter(ch, "temporary_unlock_duration_sec")) {
     int64_t seconds = -1;
@@ -2949,40 +3202,80 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
 
 bool Supla::LinuxYamlConfig::resolveActionTriggerRelatedChannels() {
   std::vector<std::pair<Supla::Control::ActionTrigger*, Supla::Channel*>> links;
+  struct UnlockLink {
+    Supla::Control::ActionTriggerParsed* at;
+    uint8_t channel;
+    uint8_t edge;
+  };
+  std::vector<UnlockLink> unlockLinks;
   for (const auto& entry : config["channels"]) {
     if (entry["type"].as<std::string>() != "ActionTriggerParsed" ||
-        !entry["related_channel"]) {
+        (!entry["related_channel"] && !entry["temporary_unlock_sensor_edge"])) {
       continue;
     }
     const auto sourceName = entry["name"].as<std::string>();
-    const auto targetName = entry["related_channel"].as<std::string>();
     auto source = channelNames.find(sourceName);
-    auto target = channelNames.find(targetName);
     if (source == channelNames.end() || source->second < 0) {
       SUPLA_LOG_ERROR("AT: unknown or ambiguous trigger name \"%s\"",
           sourceName.c_str());
       return false;
     }
-    if (target == channelNames.end() || target->second < 0) {
-      SUPLA_LOG_ERROR(
-          "AT \"%s\": unknown or ambiguous related_channel \"%s\"",
-          sourceName.c_str(), targetName.c_str());
-      return false;
-    }
     auto element = Supla::Element::getElementByChannelNumber(source->second);
-    auto at = element ? element->getActionTrigger() : nullptr;
-    auto channel = Supla::Channel::GetByChannelNumber(target->second);
-    if (!at || !channel || target->second >= 255 ||
-        source->second == target->second) {
-      SUPLA_LOG_ERROR("AT \"%s\": invalid related channel \"%s\"",
-          sourceName.c_str(), targetName.c_str());
+    auto at = dynamic_cast<Supla::Control::ActionTriggerParsed*>(element);
+    if (!at) {
+      SUPLA_LOG_ERROR("AT \"%s\": channel is not an ActionTriggerParsed",
+          sourceName.c_str());
       return false;
     }
-    links.emplace_back(at, channel);
+    auto resolve = [&](const char* parameter) -> Supla::Channel* {
+      const auto targetName = entry[parameter].as<std::string>();
+      const auto target = channelNames.find(targetName);
+      if (target == channelNames.end() || target->second < 0) {
+        SUPLA_LOG_ERROR("AT \"%s\": unknown or ambiguous %s \"%s\"",
+            sourceName.c_str(), parameter, targetName.c_str());
+        return nullptr;
+      }
+      auto channel = Supla::Channel::GetByChannelNumber(target->second);
+      if (!channel || target->second >= 255 ||
+          source->second == target->second) {
+        SUPLA_LOG_ERROR("AT \"%s\": invalid %s \"%s\"",
+            sourceName.c_str(),
+            strcmp(parameter, "related_channel") == 0
+                ? "related channel" : parameter,
+            targetName.c_str());
+        return nullptr;
+      }
+      return channel;
+    };
+    if (entry["related_channel"]) {
+      auto channel = resolve("related_channel");
+      if (!channel) return false;
+      links.emplace_back(at, channel);
+    }
+    if (entry["temporary_unlock_sensor_edge"]) {
+      uint8_t sensorEdge = SUPLA_AT_SENSOR_EDGE_NONE;
+      if (!parseUnlockSensorEdge(entry["temporary_unlock_sensor_edge"],
+                                 &sensorEdge)) return false;
+      uint8_t sensorNumber = 255;
+      if (sensorEdge != SUPLA_AT_SENSOR_EDGE_NONE) {
+        auto channel = resolve("temporary_unlock_sensor");
+        if (!channel || channel->getChannelType() !=
+                            SUPLA_CHANNELTYPE_BINARYSENSOR) {
+          SUPLA_LOG_ERROR("AT \"%s\": temporary_unlock_sensor must be binary",
+                          sourceName.c_str());
+          return false;
+        }
+        sensorNumber = channel->getChannelNumber();
+      }
+      unlockLinks.push_back({at, sensorNumber, sensorEdge});
+    }
   }
   // Validate every reference before applying any relationship.
   for (const auto& link : links) {
     link.first->setRelatedChannel(link.second);
+  }
+  for (const auto& link : unlockLinks) {
+    link.at->setTemporaryUnlockSensor(link.channel, link.edge);
   }
   return true;
 }

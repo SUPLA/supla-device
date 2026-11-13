@@ -1452,6 +1452,39 @@ channels:
     temporary_unlock_duration_sec: 30
 ```
 
+Optional `temporary_unlock_sensor` names a `BinaryParsed` or another binary
+sensor channel in the same YAML file. Set `temporary_unlock_sensor_edge` together
+with it: `rising` (0 -> 1), `falling` (1 -> 0), or `both`. Names must be unique;
+the sensor may appear before or after the Action Trigger and channel 0 is valid.
+A missing reference, a reference to the AT itself, or a non-binary target is
+rejected. To clear a saved sensor binding, use
+`temporary_unlock_sensor_edge: none` and omit `temporary_unlock_sensor`.
+
+Like the duration override, sensor settings are applied at startup as a local
+channel config change and synchronized with the server. Omitted fields retain
+their saved/server values. A YAML override is applied again after each restart.
+The first sensor reading establishes a baseline and does not trigger an unlock.
+An edge unlocks only in mode 6 (locked with temporary unlock allowed); it does
+not restart or extend an already active timer. Set that mode in SUPLA Cloud.
+Without an active weekly program override, the configured default duration must
+be greater than zero.
+
+The complete [temporary unlock example](at_temporary_unlock.yaml) reads a binary
+sensor from `binary.txt`. Copy it to a separate working directory, set your
+SUPLA server and email, create a `state` directory, and start sd4linux from there
+with `-c config.yaml`. Use protocol 29 or newer. After the sensor's initial
+reading of `0`, set the AT to mode 6 and change the file to `1` to unlock:
+
+```sh
+printf '0\n' > binary.txt
+# Wait for the initial reading, then select mode 6 in SUPLA Cloud.
+printf '1\n' > binary.txt
+```
+
+Wait at least one parser refresh period between file changes (200 ms in the
+example). The AT should unlock for 30 seconds and then lock again. For another
+rising edge, write `0`, wait for it to be read, and write `1` again.
+
 Optional `related_channel` names another channel in the same YAML configuration.
 It accepts any channel type, including a relay, roller shutter or sensor. Several
 action triggers can reference the same channel. The target may appear before or
@@ -1660,6 +1693,86 @@ The optional `battery_powered` field defines a parser key or index containing
 the battery-powered flag. It requires a parser. Use
 `force_battery_powered: true` to mark a channel as battery-powered with a fixed
 value, including channels without a parser.
+
+# Buttons configuration
+
+Optional top-level `buttons` section adds local buttons
+(`Supla::Control::ButtonParsed`, a regular `Supla::Control::Button` reading its
+input from `source`/`parser` instead of a GPIO). Buttons are not channels and
+are not visible in Supla Cloud. They can be attached to roller shutters
+(`CmdRollerShutter`) and relays (`VirtualRelay`, `CmdRelay`, `CustomRelay`)
+and behave as physical buttons attached in firmware, which is useful for
+testing local button logic.
+
+Buttons are loaded after `channels`, so they refer to channels by `name`.
+
+Parameters:
+* `source`, `parser` - the same as for Parsed channels (mandatory parser).
+  For an inline parser without `refresh_time_ms` and a `File` or `MQTT`
+  source, 20 ms is used (the parser default of 5 s is too slow for a button).
+  For other sources (e.g. `Cmd`, which runs a process on each refresh) and for
+  named parsers set `refresh_time_ms` explicitly; otherwise the parser default
+  is used. For a `File` source set `expiration_time_sec: 0`, otherwise the
+  button is released when the file isn't modified for 10 minutes.
+* `state` - parser key/index with the input state (mandatory). Value 1 (or
+  `state_on_values`) means pressed. Invalid or unavailable input is treated
+  as released.
+* `state_on_values` - optional, as in `BinaryParsed`.
+* `name` - optional, used in logs.
+* `type` - `monostable` (default), `bistable`, `motion_sensor`, `central`.
+* `invert_logic` - optional, `true` makes 0 mean pressed.
+* `hold_time_ms` - default 700.
+* `multiclick_time_ms` - default 300.
+* `attach` - one entry or a list of entries:
+  * `channel` - channel name,
+  * `direction` - `up` or `down`, mandatory for roller shutters only,
+  * `internal` - roller shutters only, default `true`. Internal buttons follow
+    the "buttons upside down" setting from Supla Cloud.
+
+Button actions are set up by the attached channel, the same way as in
+firmware. E.g. a monostable button on a roller shutter with tilt functions
+supported (as `CmdRollerShutter`) acts on click (up/down or stop) and on hold
+(move while held).
+
+Example with a roller shutter controlled by two buttons:
+
+    channels:
+      - type: CmdRollerShutter
+        name: blind
+        cmd_up_on: "echo up_on >> rs.log"
+        cmd_up_off: "echo up_off >> rs.log"
+        cmd_down_on: "echo down_on >> rs.log"
+        cmd_down_off: "echo down_off >> rs.log"
+
+    buttons:
+      - name: blind_up
+        state: 0
+        source:
+          type: File
+          file: btn_up.txt
+          expiration_time_sec: 0
+        parser:
+          type: Simple
+        attach:
+          channel: blind
+          direction: up
+      - name: blind_down
+        state: 0
+        source:
+          type: File
+          file: btn_down.txt
+          expiration_time_sec: 0
+        parser:
+          type: Simple
+        attach:
+          channel: blind
+          direction: down
+
+Click "up" from a shell:
+
+    echo 1 > btn_up.txt; sleep 0.2; echo 0 > btn_up.txt
+
+The same configuration is available in `rs_buttons.yaml`.
 
 # Running supla-device as a service
 

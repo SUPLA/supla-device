@@ -57,3 +57,12 @@ corresponding target build.
 When a deliberate change needs more room, measure and review the target build
 first, then update only the affected architecture entries in the JSON file.
 Adding a new long-lived core class should include a corresponding entry.
+
+`Supla::SupLan::Runtime` scales with the SupLAN profile. Its retry, deferred
+and per-pass receive capacities derive from `SUPLAN_PROFILE` in
+`src/suplan/suplan_config.h` and can still be overridden per macro. The
+constrained profile (ESP8266 and the host default) keeps 2 retry slots and 4
+deferred events. Standard (the ESP32 default) holds 4 and 8, Large 12 and 16,
+so one Destination reads several Sources in parallel. Measured with host `g++`
+without test hooks: Constrained 4992 B (unchanged), Standard 6784 → 7168 B,
+Large 12672 → 14240 B; `esp32:esp32:esp32wrover` Standard 6800 → 7152 B.

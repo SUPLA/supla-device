@@ -41,8 +41,26 @@ enum class DiagnosticEvent : uint8_t {
   LocateTx, LocateRx, LocateReplyTx, LocateReplyRx, LocateTimeout,
   HandshakeTx, HandshakeTimeout, SessionEstablished, SessionLost,
   ResetTx, ResetSkipped, ResetSendFailed, ResetRx, ReadRefresh,
-  RejectAuthority, RejectPacket, RejectSession, RejectLocate, RejectReplay,
-  ResourceLimit
+  RejectAuthority, RejectPacket, RejectSession, RejectLocate, RejectReplay
+};
+
+// Local diagnostics only; no wire representation and no retained pool state.
+struct CapacityDiagnostic {
+  enum class Pool : uint8_t {
+    Pending, Sessions, Locates, ReadDependencies, Retries, RetryFrame,
+    Interests, Deferred
+  };
+  enum class Operation : uint8_t {
+    Handshake, Locate, Read, Action, Send
+  };
+  enum class Outcome : uint8_t { Deferred, Rejected };
+  Pool pool;
+  Operation operation;
+  Outcome outcome;
+  uint32_t used;
+  uint32_t limit;
+  uint8_t peer;
+  ResourceId resource;
 };
 
 class ApplicationPort {
@@ -50,6 +68,7 @@ class ApplicationPort {
   virtual ~ApplicationPort() {}
   virtual void diagnostic(DiagnosticEvent, uint8_t, const ResourceId &,
                           uint32_t) {}
+  virtual void capacityLimited(const CapacityDiagnostic &) {}
   virtual void authorizationReplacing(const PeerContext &, const AclEntry *,
                                       uint16_t) {}
   virtual BindingRetry *bindingRetry() { return nullptr; }
@@ -118,6 +137,60 @@ class Runtime {
     uint32_t deadlineMs;
     uint32_t nextRefreshMs;
   };
+  struct RecoverySummary {
+    uint16_t peers = 0;
+    uint16_t sessions = 0;
+    uint16_t active = 0;
+    uint16_t scheduled = 0;
+    uint16_t waitingSnapshots = 0;
+  };
+  // Diagnostic snapshot; called only when reporting, never from the hot loop.
+  RecoverySummary recoverySummary() const;
+  struct ReadRecoverySummary {
+    uint16_t waiting = 0;
+    uint16_t notQueued = 0;
+    uint16_t queued = 0;
+    uint16_t awaitingAck = 0;
+    uint16_t awaitingState = 0;
+    uint32_t cycleRemainingMs = 0;
+    uint32_t backoffRemainingMs = 0;
+    ResourceId example = {};
+    // Example phase: 0=not queued, 1=queued, 2=awaiting ACK, 3=awaiting STATE.
+    uint8_t examplePhase = 0;
+    uint8_t exampleAttempts = 0;
+    // ACK resets the retry timer; this is not request round-trip time.
+    uint32_t exampleTimerAgeMs = 0;
+  };
+  ReadRecoverySummary readRecoverySummary(uint8_t peerIndex) const;
+#if SUPLAN_READ_PROFILING_ENABLED
+  struct ReadTiming {
+    uint64_t total = 0;
+    uint32_t count = 0;
+    uint32_t maximum = 0;
+    uint32_t buckets[6] = {};  // <=10/50/100/250/500/>500 ms.
+    void add(uint32_t ms) {
+      total += ms;
+      ++count;
+      if (ms > maximum) maximum = ms;
+      const unsigned bin = ms <= 10 ? 0 : ms <= 50 ? 1 : ms <= 100 ? 2 :
+          ms <= 250 ? 3 : ms <= 500 ? 4 : 5;
+      ++buckets[bin];
+    }
+    uint32_t average() const { return count ? total / count : 0; }
+  };
+  struct ReadProfile {
+    ReadTiming period, outside, run, queue, ack, state, hold, rxDispatch, send;
+    uint32_t elapsedMs = 0;
+    uint32_t calls = 0, rx = 0, rxBudgetHits = 0, readTx = 0, retryTx = 0;
+    uint32_t queueFull = 0, retryFull = 0, fairnessSkips = 0;
+    uint32_t readyFreeTicks = 0, readyFreeMs = 0, slotUsedTicks = 0;
+    uint32_t ackTimeout = 0, stateTimeout = 0, sendFailed = 0;
+    uint32_t backoff = 0, cycleYield = 0, deadlineReadExpired = 0;
+    uint32_t workspaceBytes = 0;
+  };
+  bool readProfileDue() const;
+  ReadProfile takeReadProfile();
+#endif
   Runtime(CryptoPort *crypto, DatagramPort *datagrams,
           ApplicationPort *application, PeerTable *peers,
           const NodeAddress &localAddress, uint8_t suplaProtoVersion);
@@ -200,11 +273,21 @@ class Runtime {
     uint32_t nextRefreshMs;
     uint8_t locateAttempts;
     uint8_t backgroundStage;
+    // Smoothed reply time of an unrepeated ACK_REQUIRED frame, in 16 ms units.
+    // It includes this node's loop period, so a slow loop does not retransmit
+    // while the reply still waits in the receive queue.
+    uint8_t ackRtt;
     bool active : 1;
     bool scheduled : 1;
     bool sleeping : 1;
     bool locateStarved : 1;
+    // Local pool waits are not communication attempts/failures.
+    bool probeAttempted : 1;
+    bool attemptFailed : 1;
+    // A READ completed in this cycle: the peer answers, however slowly.
+    bool progress : 1;
   };
+  uint32_t ackRetryMs(uint8_t peerIndex) const;
 
   // A dependency consumes at most one slot per locally requested ACL resource.
   // It contains no plaintext or protected frame from the failed READ.
@@ -215,6 +298,9 @@ class Runtime {
     bool used : 1;
     bool needsRefresh : 1;
     bool pending : 1;
+#if SUPLAN_READ_PROFILING_ENABLED
+    bool profileWaiting : 1;
+#endif
   };
 
   struct SessionEntry {
@@ -324,7 +410,7 @@ class Runtime {
 
   static void clearSessionEntry(SessionEntry *session);
   static void clearPendingHandshake(PendingHandshake *pending);
-  static void clearRetryEntry(RetryEntry *retry);
+  void clearRetryEntry(RetryEntry *retry);
 
   static bool fragmentDatagram(void *context, const uint8_t *data,
                                size_t length);
@@ -335,8 +421,8 @@ class Runtime {
   int findSession(uint64_t sessionId, const Endpoint &endpoint) const;
   int findPending(uint64_t sessionId, const Endpoint &endpoint) const;
   int findPendingForPeer(uint8_t peerIndex, bool initiator) const;
-  int allocatePending();
-  int allocateSession(uint8_t peerIndex);
+  int allocatePending(uint8_t peerIndex, bool initiator);
+  int allocateSession(uint8_t peerIndex, bool initiator);
   int findRetry(uint8_t peerIndex, uint64_t sessionId,
                 uint32_t sequence) const;
   int findFreeRetry() const;
@@ -354,13 +440,22 @@ class Runtime {
              const ResourceId &resource = ResourceId(), uint32_t detail = 0) {
     if (application_) application_->diagnostic(event, peer, resource, detail);
   }
+  void capacityLimited(CapacityDiagnostic::Pool pool,
+      CapacityDiagnostic::Operation operation,
+      CapacityDiagnostic::Outcome outcome,
+      uint32_t used, uint32_t limit, uint8_t peer = 0xff,
+      const ResourceId &resource = ResourceId()) {
+    if (application_)
+      application_->capacityLimited(
+          {pool, operation, outcome, used, limit, peer, resource});
+  }
   // rights=false checks only the peer role, never ACL/ownership.
   void pruneReadDependencies(bool rights = true);
   bool readRole(uint8_t peerIndex, const ResourceId &resource) const;
   bool readAuthorized(uint8_t peerIndex, const ResourceId &resource) const;
   void noteReachability(uint8_t peerIndex);
   void completeRead(uint8_t peerIndex, const ResourceId &resource);
-  bool dispatchRead();
+  void dispatchReads();
   bool queueRead(uint8_t peerIndex, const ResourceId &resource);
   int findReadDependency(uint8_t peerIndex, const ResourceId &resource) const;
   bool sendRaw(const Endpoint &endpoint, const uint8_t *data, size_t length,
@@ -424,6 +519,16 @@ class Runtime {
                        const ApplicationDataView &application,
                        bool duplicate);
 
+#if SUPLAN_READ_PROFILING_ENABLED
+  struct ReadProfileState {
+    ReadProfile window;
+    uint32_t admittedMs[SUPLAN_MAX_READ_DEPENDENCIES] = {};
+    uint32_t firstTxMs[SUPLAN_MAX_RETRY_SLOTS] = {};
+    uint32_t lastStartMs = 0, lastEndMs = 0, reportMs = 0;
+    bool started = false, readyFree = false;
+  } readProfile_;
+  void profileIterationEnd(uint32_t start);
+#endif
   CryptoPort *crypto_;
   DatagramPort *datagrams_;
   ApplicationPort *application_;

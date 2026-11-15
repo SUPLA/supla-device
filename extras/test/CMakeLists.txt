@@ -534,6 +534,7 @@ if(SUPLAN_ASSOCIATION_PROFILE_TESTS)
     SupLanTests/m4b_device_tests.cpp
     SupLanTests/channel_dependency_tests.cpp ${DOUBLE_SRC}
     SupLanTests/suplan_runtime_tests.cpp SupLanTests/m5b_sdk_tests.cpp
+    SupLanTests/suplan_read_sim_tests.cpp
     SupLanTests/remote_channel_manager_tests.cpp
     SupLanTests/server_stream_tests.cpp
     ../porting/linux/suplan_crypto_openssl.cpp

@@ -295,8 +295,8 @@ TEST_F(SrpcPacketLogTests, RegisterDeviceHeaderUsesContinuationLog) {
                       packetSize);
   std::string log = supla_test_get_last_log();
 
-  EXPECT_NE(log.find("SRPC cont=[Server=\"server.example\""),
-            std::string::npos);
+  EXPECT_EQ(log.find("  SRPC cont=[Server=\"server.example\""), 0U);
+  EXPECT_EQ(Supla::LogIndent::spaces(), 0);
   EXPECT_NE(log.find("MfrId=21, ProdId=10"), std::string::npos);
   EXPECT_NE(log.find("ChCount=10]"), std::string::npos);
 }

@@ -201,6 +201,8 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
                      size_t payloadLength) override;
   void diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
       const Supla::SupLan::ResourceId &resource, uint32_t detail) override;
+  void capacityLimited(const Supla::SupLan::CapacityDiagnostic &event) override;
+
   void operationAcknowledged(uint8_t peerIndex,
                              const Supla::SupLan::ResourceId &resource,
                              uint32_t sequence, uint8_t result) override;
@@ -233,6 +235,13 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
 #endif  // SUPLAN_TESTING
   SupLanApplicationEventHandler eventHandler_;
   void *eventContext_;
+  void reportRecovery(uint32_t nowMs);
+  bool admitDiagnostic(uint32_t nowMs, uint32_t *suppressed);
+  void diagnosticContext(uint8_t peer,
+      const Supla::SupLan::ResourceId &resource, char *text, size_t size) const;
+  uint32_t recoveryReportMs_ = 0;
+  bool recoveryReportActive_ = false;
+  bool recoveryReportPending_ = false;
   uint32_t diagnosticLastMs_ = 0;
   uint32_t diagnosticSuppressed_ = 0;
 #ifdef SUPLAN_TESTING

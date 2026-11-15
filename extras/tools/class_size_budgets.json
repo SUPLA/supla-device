@@ -532,18 +532,19 @@
       "limits": {
         "host": 5096,
         "esp8266": 5008,
-        "esp32": 6800
-      }
+        "esp32": 7152
+      },
+      "reason": "Standard profile: 4 retry slots and 8 deferred events (was 2 and 4) so READs to several peers run in parallel; ESP32 +352 B. Constrained profile (host, ESP8266) unchanged."
     },
     {
       "name": "Supla::Protocol::SupLan",
       "header": "supla/protocol/suplan_protocol.h",
       "limits": {
-        "host": 112,
-        "esp8266": 60,
-        "esp32": 60
+        "host": 120,
+        "esp8266": 64,
+        "esp32": 64
       },
-      "reason": "Allocation-free diagnostic events; two bounded uint32_t rate-limit fields (+8 B)."
+      "reason": "Bounded diagnostic rate limit and recovery reporting; measured host 120 B, ESP8266/ESP32 64 B. No per-peer or per-resource logging state."
     },
     {
       "name": "Supla::Device::ServerIdentity",

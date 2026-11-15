@@ -39,6 +39,18 @@ class RemoteResourceManager : public RemoteChannelManager,
   void peerAwake(uint8_t peerIndex, uint16_t windowMs, bool reset,
                  const uint8_t nonce[16], uint32_t nowMs);
 
+  struct SnapshotSummary {
+    uint16_t resources = 0;
+    uint16_t consumers = 0;
+    uint16_t sessionReady = 0;
+    uint16_t awaitingFirst = 0;
+    uint16_t awaitingSnapshot = 0;
+    uint16_t received = 0;
+    uint16_t available = 0;
+  };
+  // Read-only counters, evaluated only for a diagnostic report.
+  SnapshotSummary snapshotSummary(uint32_t nowMs) const;
+
   // Existing D2D component API remains source-compatible and explicitly peer.
   ChannelState state(const SupLan::ResourceId &id, uint32_t now) {
     return RemoteChannelManager::state(peerKey(id), now);
@@ -75,7 +87,7 @@ class RemoteResourceManager : public RemoteChannelManager,
             RemoteDelivery::SupLanPeer};
   }
   struct Resource : RemoteChannelResource {
-    uint32_t lastReadMs = 0;
+    uint32_t nextReadMs = 0;
     uint8_t peerIndex = 0xff;
     bool readAttempted = false;
     // Requested rights at the last reconcile; 0xff forces one.

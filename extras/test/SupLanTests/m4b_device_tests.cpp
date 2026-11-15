@@ -3317,18 +3317,22 @@ TEST_F(M4bDevice, D2dZeroWrapOfflineAndRevocation) {
   EXPECT_FALSE(manager->state({1, 1001}, 1000).available());
 }
 
-TEST_F(M4bDevice, ShortD2dTtlRefreshesWithHalfLeaseMargin) {
+TEST_F(M4bDevice, ShortD2dTtlRefreshesWithinSpreadHalfLeaseMargin) {
   auto manager = adapter.remoteResources();
   ASSERT_TRUE(manager->consume({123, {1, 1001}, 1}));
   time.value = 100;
   manager->iterate(time.value);
   binary(true, SUPLA_CHANNELFNC_FLOOD_SENSOR, 30);
   runtime.removeReadDependency(0, {1, 1001});
-  time.value = 15099;
+  // A 30 s lease refreshes in [11.25, 15] s, retaining half-lease margin.
+  time.value = 11349;
   manager->iterate(time.value);
   EXPECT_FALSE(runtime.readNeedsRefresh(0, {1, 1001}));
-  time.value = 15100;
-  manager->iterate(time.value);
+  for (time.value = 11350; time.value <= 15100; ++time.value) {
+    manager->iterate(time.value);
+    if (runtime.readNeedsRefresh(0, {1, 1001})) break;
+  }
+  EXPECT_LE(time.value, 15100U);
   EXPECT_TRUE(runtime.readNeedsRefresh(0, {1, 1001}));
   EXPECT_TRUE(manager->state({1, 1001}, time.value).available());
 }

@@ -39,7 +39,6 @@ int Supla::Client::connect(IPAddress ip, uint16_t port) {
 
 int Supla::Client::connect(const char *host, uint16_t port) {
   logConnecting(host, port);
-  Supla::LogIndent connectionIndent;
   return connectImp(host, port);
 }
 

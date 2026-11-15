@@ -9,6 +9,18 @@
 namespace Supla {
 namespace Device {
 namespace {
+// Spread healthy refreshes earlier, never beyond the existing finite maximum.
+// Stable per ChannelId: no RNG dependency or additional per-resource state.
+uint32_t healthyRefreshMs(uint32_t channelId, uint32_t ttl) {
+  const uint32_t maximum = ttl && ttl < 120 ? ttl * 500 : 60000;
+  uint32_t hash = channelId;
+  hash ^= hash >> 16;
+  hash *= UINT32_C(0x7feb352d);
+  hash ^= hash >> 15;
+  hash *= UINT32_C(0x846ca68b);
+  hash ^= hash >> 16;
+  return maximum - hash % (maximum / 4 + 1);
+}
 // A lost requested grant may be a withdrawn Cloud decision. Allow one more
 // approval-enabled ENSURE; the Server keeps an explicit rejection sticky.
 void grantLost(RemoteChannelResource *resource, uint8_t remaining) {
@@ -178,11 +190,11 @@ void RemoteResourceManager::refreshResource(RemoteChannelResource &entry,
   if (resource.hasSnapshot) (void)fresh(resource, nowMs);
   if (resource.effective & resource.permissions & SupLan::kPermissionRead) {
     const uint32_t ttl = resource.snapshot.ValueValidityTimeSec;
-    const uint32_t refreshMs =
-        resource.hasSnapshot && ttl && ttl < 120 ? ttl * 500 : 60000;
+    const uint32_t refreshMs = healthyRefreshMs(resource.id.id,
+        resource.hasSnapshot ? ttl : 0);
     if (runtime_ && !runtime_->recoveryStatus(resource.peerIndex).sleeping &&
         (!resource.readAttempted ||
-         (static_cast<uint32_t>(nowMs - resource.lastReadMs) >= refreshMs &&
+         (static_cast<int32_t>(nowMs - resource.nextReadMs) >= 0 &&
           !runtime_->readNeedsRefresh(resource.peerIndex, resource.id)))) {
       if (runtime_->requestRead(resource.peerIndex, resource.id)) {
         auto &peer = peerPresence_[resource.peerIndex];
@@ -192,7 +204,7 @@ void RemoteResourceManager::refreshResource(RemoteChannelResource &entry,
         } else {
           peer.awake = false;
         }
-        resource.lastReadMs = nowMs;
+        resource.nextReadMs = nowMs + refreshMs;
         resource.readAttempted = true;
       }
     }
@@ -240,8 +252,16 @@ void RemoteResourceManager::receive(uint8_t peerIndex,
       resource->snapshot.Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
   // Break observer continuity even when no poll occurred during the gap.
   if (resource->hasSnapshot && !fresh(*resource, nowMs)) invalidate(resource);
+  const bool first = !resource->hasSnapshot;
   acceptSnapshot(resource, payload, length, nowMs);
   if (!resource->hasSnapshot) return;
+  const uint32_t refreshMs = healthyRefreshMs(id.id,
+      resource->snapshot.ValueValidityTimeSec);
+  // A shorter advertised TTL may advance the deadline. Unsolicited updates
+  // must never keep postponing healthy refresh indefinitely.
+  if (first || static_cast<int32_t>(resource->nextReadMs - nowMs) >
+                   static_cast<int32_t>(refreshMs))
+    resource->nextReadMs = nowMs + refreshMs;
   resource->leaseExpired = false;
   SUPLA_LOG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
       " snapshot state=%s Offline=%u ttl_s=%" PRIu32 " lease renewed",
@@ -251,9 +271,39 @@ void RemoteResourceManager::receive(uint8_t peerIndex,
       resource->snapshot.ValueValidityTimeSec);
   if (!wasAvailable && usable(*resource, nowMs) &&
       resource->snapshot.Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE)
-    SUPLA_LOG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
+    SUPLA_LOG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
         " cache available after snapshot", peerIndex, id.id);
 }
+RemoteResourceManager::SnapshotSummary
+RemoteResourceManager::snapshotSummary(uint32_t nowMs) const {
+  SnapshotSummary result;
+  for (const auto &intent : intents_)
+    if (intent.consumerId && (intent.permissions & SupLan::kPermissionRead))
+      ++result.consumers;
+  for (const auto &resource : resources_) {
+    if (!resource.used() || !(resource.permissions & SupLan::kPermissionRead))
+      continue;
+    ++result.resources;
+    const bool admitted = resource.peerIndex != 0xff &&
+        (resource.effective & SupLan::kPermissionRead);
+    const bool waiting = admitted && runtime_ &&
+        runtime_->readNeedsRefresh(resource.peerIndex, resource.id);
+    result.sessionReady += admitted && runtime_ &&
+        runtime_->hasSession(resource.peerIndex);
+    result.awaitingFirst += admitted && !resource.hasSnapshot;
+    result.awaitingSnapshot += waiting;
+    result.received += resource.hasSnapshot;
+    // Never call fresh()/state() here: those can latch expiry and notify users.
+    const uint32_t ttl = resource.snapshot.ValueValidityTimeSec;
+    result.available += admitted && resource.hasSnapshot &&
+        resource.generation && !resource.leaseExpired &&
+        resource.snapshot.Default != SUPLA_CHANNELFNC_NONE &&
+        resource.snapshot.Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE &&
+        (!ttl || (nowMs - resource.receivedMs) / 1000 < ttl);
+  }
+  return result;
+}
+
 void RemoteResourceManager::sessionChanged(uint8_t peerIndex) {
   for (auto &resource : resources_) {
     if (resource.used() && resource.peerIndex == peerIndex &&

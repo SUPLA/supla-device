@@ -1623,6 +1623,11 @@ TEST(ChannelHandle, SharedRemoteLifetimeReconfigureAndConditionBaseline) {
                        sizeof(snapshot), 0);
     ChannelHandle::iterateAll();
   };
+  const auto initial = resources.snapshotSummary(0);
+  EXPECT_EQ(initial.resources, 1);
+  EXPECT_EQ(initial.consumers, 2);
+  EXPECT_EQ(initial.awaitingFirst, 1);
+  EXPECT_EQ(initial.received, 0);
   publish(22);
   EXPECT_EQ(counter.count, 0);
   publish(23);
@@ -1656,6 +1661,26 @@ TEST(ChannelHandle, SharedRemoteLifetimeReconfigureAndConditionBaseline) {
   EXPECT_EQ(resources.consumerCount(), 1);
   EXPECT_EQ(resources.resourceCount(), 1);
   EXPECT_TRUE(peers.authorize(index, id, kPermissionRead));
+  EXPECT_EQ(resources.snapshotSummary(0).received, 1);
+  EXPECT_EQ(resources.snapshotSummary(0).available, 1);
+  for (uint8_t offline : {SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE,
+                         SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE}) {
+    snapshot.Offline = offline;
+    resources.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                       sizeof(snapshot), 0);
+    const auto unavailable = resources.snapshotSummary(0);
+    EXPECT_EQ(unavailable.received, 1);
+    EXPECT_EQ(unavailable.awaitingFirst, 0);
+    EXPECT_EQ(unavailable.available, 0);
+  }
+  snapshot.Offline = SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
+  snapshot.ValueValidityTimeSec = 1;
+  resources.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                     sizeof(snapshot), 0);
+  const auto generation = resources.continuity(id);
+  EXPECT_EQ(resources.snapshotSummary(1001).available, 0);
+  EXPECT_EQ(resources.continuity(id), generation);
+  EXPECT_EQ(resources.snapshotSummary(0).available, 1);
 }
 TEST(ChannelHandle, ActionTriggerPermissionWithoutReadDemand) {
   resetChannels();

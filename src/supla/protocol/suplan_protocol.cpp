@@ -327,9 +327,9 @@ bool SupLan::isConfigEmpty() {
 }
 
 bool SupLan::iterate(uint32_t nowMs) {
-  // Temporary wall-clock diagnostics. All paths, including early returns,
+  // Optional wall-clock diagnostics. All paths, including early returns,
   // contribute to the same 5 s window. No logging inside measured stages.
-#ifndef SUPLA_TEST
+#if SUPLAN_ITERATE_TIMING_ENABLED
   struct IterateTiming {
     enum Stage {
       kEnabled, kLoad, kIdentity, kRestore, kResources,
@@ -407,7 +407,7 @@ bool SupLan::iterate(uint32_t nowMs) {
       lastEndMs = millis();
     }
   } timing;
-#endif  // SUPLA_TEST
+#endif  // SUPLAN_ITERATE_TIMING_ENABLED
   if (!isEnabled()) {
     return false;
   }
@@ -417,21 +417,21 @@ bool SupLan::iterate(uint32_t nowMs) {
   // Full-scope invalidation runs synchronously at migration notifications.
   // While fenced no SERVER peer can be admitted; repeating teardown here
   // cannot add safety. Keep ordinary live identity reconciliation otherwise.
-#ifndef SUPLA_TEST
+#if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kLoad);
 #endif
   if (associations()) associations()->retryLoad(nowMs);
-#ifndef SUPLA_TEST
+#if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kIdentity);
 #endif
   const auto identity = associations() ? associations()->identity() : nullptr;
   if (associations() && (!identity || !identity->fullScopeFenced()))
     associations()->identityChanged();
-#ifndef SUPLA_TEST
+#if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kRestore);
 #endif
   if (associations()) (void)restoreBindings();
-#ifndef SUPLA_TEST
+#if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kResources);
 #endif
   // A Source must also advertise an authoritative empty binding set. Without
@@ -442,7 +442,7 @@ bool SupLan::iterate(uint32_t nowMs) {
     (void)resourceBindings();
   discoverBindings();
   if (resources_) resources_->iterate(nowMs);
-#ifndef SUPLA_TEST
+#if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kNetwork);
 #endif
   if (transport_ != nullptr) {
@@ -472,11 +472,11 @@ bool SupLan::iterate(uint32_t nowMs) {
     transportWasOpen_ = true;
   }
 
-#ifndef SUPLA_TEST
+#if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kBindings);
 #endif
   if (resources_ && resources_->bindings) resources_->bindings->iterate(nowMs);
-#ifndef SUPLA_TEST
+#if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kPresence);
 #endif
   if (resources_ &&
@@ -502,15 +502,56 @@ bool SupLan::iterate(uint32_t nowMs) {
           resources_->presence().awakePending_ = false;
     }
   }
-#ifndef SUPLA_TEST
+#if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kOwnership);
 #endif
   // Runtime revalidates authorization only after a PeerTable revision change.
   if (associations()) associations()->refreshOwnership();
-#ifndef SUPLA_TEST
+#if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kRuntime);
 #endif
   runtime_->iterate();
+  reportRecovery(runtime_->nowMs());
+#if SUPLAN_READ_PROFILING_ENABLED
+  if (SUPLA_LOG_IS_ENABLED(LOG_INFO) && runtime_->readProfileDue()) {
+    const auto p = runtime_->takeReadProfile();
+    SUPLAN_DIAG_INFO("SupLAN perf window_ms=%" PRIu32 " calls=%" PRIu32
+        " rx=%" PRIu32 " rx_full=%" PRIu32 " read_tx=%" PRIu32
+        " retry_tx=%" PRIu32 " bytes=%" PRIu32,
+        p.elapsedMs, p.calls, p.rx, p.rxBudgetHits, p.readTx, p.retryTx,
+        p.workspaceBytes);
+    SUPLAN_DIAG_INFO("SupLAN perf ms avg/max period=%" PRIu32 "/%" PRIu32
+        " outside=%" PRIu32 "/%" PRIu32 " run=%" PRIu32 "/%" PRIu32
+        " rx_dispatch=%" PRIu32 "/%" PRIu32 " send=%" PRIu32 "/%" PRIu32,
+        p.period.average(), p.period.maximum, p.outside.average(),
+        p.outside.maximum, p.run.average(), p.run.maximum,
+        p.rxDispatch.average(), p.rxDispatch.maximum,
+        p.send.average(), p.send.maximum);
+    SUPLAN_DIAG_INFO("SupLAN perf ms n/avg/max queue=%" PRIu32 "/%" PRIu32
+        "/%" PRIu32 " ack=%" PRIu32 "/%" PRIu32 "/%" PRIu32
+        " state=%" PRIu32 "/%" PRIu32 "/%" PRIu32
+        " hold=%" PRIu32 "/%" PRIu32 "/%" PRIu32,
+        p.queue.count, p.queue.average(), p.queue.maximum,
+        p.ack.count, p.ack.average(), p.ack.maximum,
+        p.state.count, p.state.average(), p.state.maximum,
+        p.hold.count, p.hold.average(), p.hold.maximum);
+    SUPLAN_DIAG_INFO("SupLAN perf stalls queue=%" PRIu32 " retry=%" PRIu32
+        " fairness=%" PRIu32 " ready_free_ticks=%" PRIu32
+        " ready_free_ms=%" PRIu32 " slot_used_ticks=%" PRIu32
+        " yield=%" PRIu32 " backoff=%" PRIu32 " ack_timeout=%" PRIu32
+        " state_timeout=%" PRIu32 " send_fail=%" PRIu32
+        " deadline_read_expired=%" PRIu32,
+        p.queueFull, p.retryFull, p.fairnessSkips, p.readyFreeTicks,
+        p.readyFreeMs, p.slotUsedTicks, p.cycleYield, p.backoff,
+        p.ackTimeout, p.stateTimeout, p.sendFailed, p.deadlineReadExpired);
+    SUPLAN_DIAG_INFO("SupLAN perf state_ms buckets <=10/50/100/250/500/>500="
+        "%" PRIu32 "/%" PRIu32 "/%" PRIu32 "/%" PRIu32 "/%" PRIu32
+        "/%" PRIu32, p.state.buckets[0], p.state.buckets[1],
+        p.state.buckets[2], p.state.buckets[3], p.state.buckets[4],
+        p.state.buckets[5]);
+    (void)p;
+  }
+#endif
   return true;
 }
 
@@ -777,47 +818,148 @@ void SupLan::ensureResourceShareResult(
     resources_->bindings->ensureShareResult(result);
 }
 
+bool SupLan::admitDiagnostic(uint32_t now, uint32_t *suppressed) {
+  if (diagnosticSuppressed_ && now - diagnosticLastMs_ < 5000) {
+    if (diagnosticSuppressed_ != UINT32_MAX) ++diagnosticSuppressed_;
+    return false;
+  }
+  diagnosticLastMs_ = now;
+  *suppressed = diagnosticSuppressed_ ? diagnosticSuppressed_ - 1 : 0;
+  diagnosticSuppressed_ = 1;
+  return true;
+}
+
+void SupLan::diagnosticContext(uint8_t peer,
+    const Supla::SupLan::ResourceId &resource, char *text, size_t size) const {
+  text[0] = 0;
+  if (peer != 0xff && peers_ && peers_->get(peer))
+    snprintf(text, size, " peer=%u", peer);
+  const size_t used = strlen(text);
+  if (resource.type == Supla::SupLan::kResourceTypeChannel && resource.id)
+    snprintf(text + used, size - used, " ChannelId=%" PRIu32, resource.id);
+}
+
+void SupLan::capacityLimited(const Supla::SupLan::CapacityDiagnostic &event) {
+  using C = Supla::SupLan::CapacityDiagnostic;
+  // Waiting for a slot is ordinary backpressure: DEBUG only, so it never
+  // spends the WARNING rate-limit window while DEBUG is disabled.
+  const bool deferred = event.outcome == C::Outcome::Deferred;
+  if (!SUPLA_LOG_IS_ENABLED(deferred ? LOG_DEBUG : LOG_WARNING)) return;
+  uint32_t suppressed;
+  if (!admitDiagnostic(runtime_ ? runtime_->nowMs() : millis(), &suppressed))
+    return;
+  const char *pool = "unknown";
+  switch (event.pool) {
+    case C::Pool::Pending: pool = "pending_handshakes"; break;
+    case C::Pool::Sessions: pool = "sessions"; break;
+    case C::Pool::Locates: pool = "locates"; break;
+    case C::Pool::ReadDependencies: pool = "read_dependencies"; break;
+    case C::Pool::Retries: pool = "retries"; break;
+    case C::Pool::RetryFrame: pool = "retry_frame_bytes"; break;
+    case C::Pool::Interests: pool = "runtime_interests"; break;
+    case C::Pool::Deferred: pool = "deferred_events"; break;
+  }
+  const char *operation = "unknown";
+  switch (event.operation) {
+    case C::Operation::Handshake: operation = "handshake"; break;
+    case C::Operation::Locate: operation = "locate"; break;
+    case C::Operation::Read: operation = "read"; break;
+    case C::Operation::Action: operation = "action"; break;
+    case C::Operation::Send: operation = "protected_send"; break;
+  }
+  char context[64];
+  diagnosticContext(event.peer, event.resource, context, sizeof(context));
+#define SUPLAN_CAPACITY_FORMAT "SupLAN capacity pool=%s used=%" PRIu32 \
+    " limit=%" PRIu32 " operation=%s outcome=%s%s suppressed=%" PRIu32
+  if (deferred) {
+    SUPLAN_DIAG_DEBUG(SUPLAN_CAPACITY_FORMAT, pool, event.used, event.limit,
+        operation, "deferred", context, suppressed);
+  } else {
+    SUPLAN_DIAG_WARNING(SUPLAN_CAPACITY_FORMAT, pool, event.used, event.limit,
+        operation, "rejected", context, suppressed);
+  }
+#undef SUPLAN_CAPACITY_FORMAT
+  (void)pool;
+  (void)operation;
+}
+
+void SupLan::reportRecovery(uint32_t now) {
+  if (!recoveryReportActive_ || !runtime_ ||
+      !SUPLA_LOG_IS_ENABLED(LOG_INFO)) return;
+  const bool due = static_cast<uint32_t>(now - recoveryReportMs_) >= 5000;
+  if (!due && !recoveryReportPending_) return;
+  recoveryReportPending_ = false;
+  const auto recovery = runtime_->recoverySummary();
+  // Peers left in backoff end this report; their next cycle starts a new one.
+  const bool complete = !recovery.active && !recovery.waitingSnapshots;
+  if (!due && !complete) return;
+  recoveryReportMs_ = now;
+  if (complete) recoveryReportActive_ = false;
+  const auto snapshots = resources_
+      ? resources_->snapshotSummary(now)
+      : Supla::Device::RemoteResourceManager::SnapshotSummary{};
+  SUPLAN_DIAG_INFO("SupLAN recovery %s sessions=%u/%u active=%u backoff=%u"
+      " resources=%u consumers=%u resource_sessions=%u awaiting_first=%u"
+      " awaiting_snapshot=%u state_received=%u value_available=%u",
+      complete ? "cycle ended" : "progress", recovery.sessions, recovery.peers,
+      recovery.active, recovery.scheduled, snapshots.resources,
+      snapshots.consumers, snapshots.sessionReady, snapshots.awaitingFirst,
+      recovery.waitingSnapshots, snapshots.received, snapshots.available);
+  (void)snapshots;
+#if !SUPLAN_READ_PROFILING_ENABLED
+  // Bounded report-time inspection only; no state retained per peer/resource.
+  for (uint16_t peer = 0; peer < SUPLAN_MAX_PERSISTENT_PEERS; ++peer) {
+    const auto read = runtime_->readRecoverySummary(peer);
+    if (!read.waiting) continue;
+    const char *phase = "not_queued";
+    if (read.examplePhase == 1) phase = "queued";
+    if (read.examplePhase == 2) phase = "awaiting_ack";
+    if (read.examplePhase == 3) phase = "awaiting_state";
+    SUPLAN_DIAG_INFO("SupLAN READ peer=%u pending=%u not_queued=%u queued=%u"
+        " awaiting_ack=%u awaiting_state=%u cycle_left_ms=%" PRIu32
+        " backoff_ms=%" PRIu32 " example_type=%u example_id=%" PRIu32
+        " phase=%s attempts=%u timer_age_ms=%" PRIu32,
+        peer, read.waiting, read.notQueued, read.queued, read.awaitingAck,
+        read.awaitingState, read.cycleRemainingMs, read.backoffRemainingMs,
+        read.example.type, read.example.id, phase, read.exampleAttempts,
+        read.exampleTimerAgeMs);
+    (void)phase;
+  }
+#endif
+}
+
 void SupLan::diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
                         const Supla::SupLan::ResourceId &resource,
                         uint32_t detail) {
   using E = Supla::SupLan::DiagnosticEvent;
-  const bool warning = event == E::RecoveryFailed || event == E::ResourceLimit;
+  const bool warning = event == E::RecoveryFailed;
   const bool rejection = event >= E::RejectAuthority;
   // Disabled DEBUG rejects must not spend the WARNING rate-limit window.
   if (((rejection && !warning) || event == E::ResetSendFailed) &&
       !SUPLA_LOG_IS_ENABLED(LOG_DEBUG)) return;
+  if (event == E::RecoveryFailed || event == E::RecoveryComplete)
+    recoveryReportPending_ = true;  // Even when the warning is rate-limited.
   uint32_t count = 0;
-  if (warning || rejection || event == E::ResetSendFailed) {
-    const uint32_t now = runtime_ ? runtime_->nowMs() : millis();
-    if (diagnosticSuppressed_ && now - diagnosticLastMs_ < 5000) {
-      if (diagnosticSuppressed_ != UINT32_MAX) ++diagnosticSuppressed_;
-      return;
-    }
-    diagnosticLastMs_ = now;
-    count = diagnosticSuppressed_ ? diagnosticSuppressed_ - 1 : 0;
-    diagnosticSuppressed_ = 1;
-  }
+  if ((warning || rejection || event == E::ResetSendFailed) &&
+      !admitDiagnostic(runtime_ ? runtime_->nowMs() : millis(), &count)) return;
   (void)count;  // Log arguments are compiled out with SUPLA_DISABLE_LOGS.
   // Literal formats use the SDK's flash-string logging on Arduino.
   switch (event) {
     case E::RecoveryBegin:
-      SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
-                     " recovery started"
-                     " detail=%" PRIu32,
-                     peer, resource.id, detail);
+      if (!recoveryReportActive_) {
+        recoveryReportActive_ = true;
+        recoveryReportMs_ = (runtime_ ? runtime_->nowMs() : millis()) - 5000;
+      }
       break;
-    case E::RecoveryFailed:
-      SUPLAN_DIAG_WARNING(
-          "SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
-          " recovery cycle failed (discovery/handshake/READ timeout)"
+    case E::RecoveryFailed: {
+      char context[64];
+      diagnosticContext(peer, resource, context, sizeof(context));
+      SUPLAN_DIAG_WARNING("SupLAN recovery cycle failed%s"
           " next_retry_ms=%" PRIu32 " suppressed=%" PRIu32,
-          peer, resource.id, detail, count);
+          context, detail, count);
       break;
+    }
     case E::RecoveryComplete:
-      SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
-                     " recovery completed"
-                     " detail=%" PRIu32,
-                     peer, resource.id, detail);
       break;
     case E::ReadAccepted:
       SUPLAN_DIAG_DEBUG(
@@ -907,16 +1049,10 @@ void SupLan::diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
                       peer, resource.id, detail);
       break;
     case E::SessionEstablished:
-      SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
-                     " session established/restored"
-                     " detail=%" PRIu32,
-                     peer, resource.id, detail);
+      SUPLAN_DIAG_DEBUG("SupLAN peer=%u session ready", peer);
       break;
     case E::SessionLost:
-      SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
-                     " session lost"
-                     " detail=%" PRIu32,
-                     peer, resource.id, detail);
+      SUPLAN_DIAG_DEBUG("SupLAN peer=%u session lost", peer);
       break;
     case E::ResetTx:
       SUPLAN_DIAG_INFO("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
@@ -976,12 +1112,6 @@ void SupLan::diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
                       " packet rejected: replay"
                       " detail=%" PRIu32,
                       peer, resource.id, detail);
-      break;
-    case E::ResourceLimit:
-      SUPLAN_DIAG_WARNING("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
-                        " resource capacity exhausted"
-                        " next_retry_ms=%" PRIu32 " suppressed=%" PRIu32,
-                        peer, resource.id, detail, count);
       break;
   }
 }

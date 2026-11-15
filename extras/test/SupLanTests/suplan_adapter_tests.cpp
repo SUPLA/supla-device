@@ -15,6 +15,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <vector>
 
 #include "suplan_crypto_openssl.h"
@@ -611,8 +612,96 @@ TEST(SupLanAdapter, DiagnosticRejectFloodIsRateLimitedAndNeverSends) {
                              0, pair.resourceB, 0);
   EXPECT_EQ(supla_test_log_calls(), calls + 2);
   // Disabled DEBUG must not consume the first WARNING opportunity.
-  pair.protocolA.diagnostic(Supla::SupLan::DiagnosticEvent::ResourceLimit,
+  pair.protocolA.diagnostic(Supla::SupLan::DiagnosticEvent::RecoveryFailed,
                            0, pair.resourceB, 0);
   EXPECT_EQ(supla_test_log_calls(), calls + 3);
+  supla_log_set_level(oldLevel);
+}
+
+extern "C" const char *supla_test_get_last_log();
+TEST(SupLanAdapter, CapacityDetailsAreRateLimitedWithoutInventingContext) {
+  AdapterFanoutPair pair;
+  using C = Supla::SupLan::CapacityDiagnostic;
+  const int oldLevel = supla_log_get_level();
+  supla_log_set_level(LOG_INFO);
+  C event = {C::Pool::Locates, C::Operation::Locate, C::Outcome::Rejected,
+             2, 2, 0xff, {}};
+  C deferred = event;
+  deferred.outcome = C::Outcome::Deferred;
+  const auto packets = pair.network.count;
+  const auto calls = supla_test_log_calls();
+  // Backpressure is DEBUG and must not spend the WARNING window.
+  for (int i = 0; i < 10; ++i) pair.protocolA.capacityLimited(deferred);
+  EXPECT_EQ(supla_test_log_calls(), calls);
+  pair.protocolA.capacityLimited(event);
+  EXPECT_EQ(supla_test_log_calls(), calls + 1);
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("pool=locates used=2 limit=2"), std::string::npos);
+  EXPECT_NE(log.find("outcome=rejected"), std::string::npos);
+  EXPECT_NE(log.find("suppressed=0"), std::string::npos);
+  EXPECT_EQ(log.find("peer="), std::string::npos);
+  EXPECT_EQ(log.find("ChannelId="), std::string::npos);
+  for (int i = 0; i < 10; ++i) pair.protocolA.capacityLimited(event);
+  pair.network.now += 4999;
+  pair.protocolA.capacityLimited(event);
+  EXPECT_EQ(supla_test_log_calls(), calls + 1);
+  ++pair.network.now;
+  pair.protocolA.capacityLimited(event);
+  EXPECT_EQ(supla_test_log_calls(), calls + 2);
+  EXPECT_NE(std::string(supla_test_get_last_log()).find("suppressed=11"),
+            std::string::npos);
+  supla_log_set_level(LOG_DEBUG);
+  pair.network.now += 5000;
+  pair.protocolA.capacityLimited(deferred);
+  EXPECT_EQ(supla_test_log_calls(), calls + 3);
+  EXPECT_NE(std::string(supla_test_get_last_log()).find("outcome=deferred"),
+            std::string::npos);
+  EXPECT_EQ(pair.network.count, packets);
+  supla_log_set_level(oldLevel);
+}
+
+TEST(SupLanAdapter, RecoveryReportIsAggregatedAndCompletesOnce) {
+  AdapterFanoutPair pair;
+  const int oldLevel = supla_log_get_level();
+  supla_log_set_level(LOG_INFO);
+  ASSERT_TRUE(pair.configured);
+  ASSERT_TRUE(pair.protocolA.verifyConfig());
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resourceB));
+  pair.runtimeB.iterate();
+  pair.pump(24);
+  ASSERT_TRUE(pair.runtimeA.hasSession(pair.peerAForB));
+  ASSERT_TRUE(pair.runtimeA.forgetSession(pair.peerAForB));
+  pair.network.count = 0;
+  const uint32_t start = pair.network.now;
+  const uint8_t value[8] = {};
+  ASSERT_TRUE(pair.runtimeA.publishState(pair.peerAForB, pair.resourceB,
+      Supla::SupLan::kSuplaCallDeviceChannelValueChangedC,
+      value, sizeof(value)));
+  const auto calls = supla_test_log_calls();
+  pair.protocolA.iterate(start);
+  EXPECT_EQ(supla_test_log_calls(), calls + 1);
+  EXPECT_NE(std::string(supla_test_get_last_log()).find("recovery progress"),
+            std::string::npos);
+  for (uint32_t now : {1000, 2000, 4999}) {
+    pair.network.now = start + now;
+    pair.protocolA.iterate(start + now);
+    EXPECT_EQ(supla_test_log_calls(), calls + 1);
+  }
+  pair.network.now = start + 5000;
+  pair.protocolA.iterate(start + 5000);
+  EXPECT_EQ(supla_test_log_calls(), calls + 2);
+  EXPECT_NE(std::string(supla_test_get_last_log()).find("recovery cycle ended"),
+            std::string::npos);
+  pair.network.now = start + 10000;
+  pair.protocolA.iterate(start + 10000);
+#if SUPLAN_READ_PROFILING_ENABLED
+  EXPECT_EQ(supla_test_log_calls(), calls + 7);  // Five aggregate lines.
+  EXPECT_NE(std::string(supla_test_get_last_log()).find("SupLAN perf state_ms"),
+            std::string::npos);
+  pair.protocolA.iterate(start + 10000);
+  EXPECT_EQ(supla_test_log_calls(), calls + 7);  // No same-time repeat.
+#else
+  EXPECT_EQ(supla_test_log_calls(), calls + 2);
+#endif
   supla_log_set_level(oldLevel);
 }

@@ -8,6 +8,7 @@
 #include <srpc_mock.h>
 #include <supla/channel_element.h>
 #include <supla/device/register_device.h>
+#include <supla/log_indent.h>
 #include <supla/protocol/supla_srpc.h>
 
 using ::testing::_;
@@ -65,6 +66,7 @@ TEST(SuplaSrpcChannelConfigResultTests, RepliesPreserveRequestTypeAndChannel) {
       }
       EXPECT_CALL(srpc, setChannelConfigResult(_))
           .WillOnce([&request, status](TSDS_SetChannelConfigResult *result) {
+            EXPECT_EQ(Supla::LogIndent::spaces(), 2);
             EXPECT_EQ(result->Result, status);
             EXPECT_EQ(result->ConfigType, request.ConfigType);
             EXPECT_EQ(result->ChannelNumber, request.ChannelNumber);
@@ -72,6 +74,7 @@ TEST(SuplaSrpcChannelConfigResultTests, RepliesPreserveRequestTypeAndChannel) {
           });
       EXPECT_CALL(srpc, srpc_rd_free(_));
       Supla::messageReceived(nullptr, 0, 0, &protocol, 27);
+      EXPECT_EQ(Supla::LogIndent::spaces(), 0);
       ::testing::Mock::VerifyAndClearExpectations(&srpc);
       ::testing::Mock::VerifyAndClearExpectations(&element);
     }

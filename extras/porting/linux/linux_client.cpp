@@ -574,7 +574,6 @@ bool Supla::LinuxClient::checkSslCerts(SSL *ssl) {
     }
     if (SUPLA_LOG_IS_ENABLED(LOG_VERBOSE)) {
       SUPLA_LOG_VERBOSE("TLS certificate:");
-      Supla::LogIndent certificateIndent;
       line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
       SUPLA_LOG_VERBOSE("Subject: %s", line ? line : "(null)");
       if (line) {

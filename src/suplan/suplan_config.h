@@ -9,6 +9,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Independent of DEBUG; disabled builds retain no iterate timing code/state.
+#ifndef SUPLAN_ITERATE_TIMING_ENABLED
+#define SUPLAN_ITERATE_TIMING_ENABLED 0
+#endif
+
+// Optional bounded READ profiler; all translation units must agree.
+#ifndef SUPLAN_READ_PROFILING_ENABLED
+#define SUPLAN_READ_PROFILING_ENABLED 0
+#endif
+
 // Fault injection and legacy fixture adapters are absent from normal builds.
 // Native SDK tests opt in through SUPLA_TEST; dedicated hardware harnesses
 // must define SUPLAN_TESTING consistently for every SDK translation unit.
@@ -102,8 +112,16 @@
 #ifndef SUPLAN_RX_MAX_REASSEMBLED_FRAME
 #define SUPLAN_RX_MAX_REASSEMBLED_FRAME 1024
 #endif
+// ACK_REQUIRED operations in flight. Each peer waits for its own reply, so a
+// Destination reading many Sources needs about one slot per concurrent peer.
 #ifndef SUPLAN_MAX_RETRY_SLOTS
+#if SUPLAN_PROFILE == SUPLAN_PROFILE_LARGE
+#define SUPLAN_MAX_RETRY_SLOTS 12
+#elif SUPLAN_PROFILE == SUPLAN_PROFILE_STANDARD
+#define SUPLAN_MAX_RETRY_SLOTS 4
+#else
 #define SUPLAN_MAX_RETRY_SLOTS 2
+#endif
 #endif
 #ifndef SUPLAN_MAX_RETRY_FRAME_BYTES
 // READ=43, CONTROL=60, ACTION_TRIGGER=58 protected bytes. Action Trigger also
@@ -111,7 +129,25 @@
 #define SUPLAN_MAX_RETRY_FRAME_BYTES 64
 #endif
 #ifndef SUPLAN_MAX_DEFERRED_APP_EVENTS
+#if SUPLAN_PROFILE == SUPLAN_PROFILE_LARGE
+#define SUPLAN_MAX_DEFERRED_APP_EVENTS 16
+#elif SUPLAN_PROFILE == SUPLAN_PROFILE_STANDARD
+#define SUPLAN_MAX_DEFERRED_APP_EVENTS 8
+#else
 #define SUPLAN_MAX_DEFERRED_APP_EVENTS 4
+#endif
+#endif
+// Datagrams received per iterate. Every READ returns an ACK and a STATE, so
+// this bounds how many replies one loop pass can consume. The shared RX buffer
+// is reused; a larger budget costs time per pass, not RAM.
+#ifndef SUPLAN_MAX_RX_DATAGRAMS_PER_ITERATE
+#if SUPLAN_PROFILE == SUPLAN_PROFILE_LARGE
+#define SUPLAN_MAX_RX_DATAGRAMS_PER_ITERATE 32
+#elif SUPLAN_PROFILE == SUPLAN_PROFILE_STANDARD
+#define SUPLAN_MAX_RX_DATAGRAMS_PER_ITERATE 16
+#else
+#define SUPLAN_MAX_RX_DATAGRAMS_PER_ITERATE 4
+#endif
 #endif
 #ifndef SUPLAN_MAX_APPLICATION_BYTES
 #define SUPLAN_MAX_APPLICATION_BYTES 768
@@ -171,7 +207,12 @@ static const uint8_t kAckMaxAttempts = 3;
 static const uint32_t kActionDeliveryLifetimeMs = 3000;
 static const uint32_t kReadStateResponseTimeoutMs = 500;
 static const uint32_t kReassemblyTimeoutMs = 1000;
-static const uint8_t kMaxDatagramsPerIterate = 4;
+#define SUPLAN_RX_BUDGET SUPLAN_MAX_RX_DATAGRAMS_PER_ITERATE
+static const uint8_t kMaxDatagramsPerIterate = SUPLAN_RX_BUDGET;
+#undef SUPLAN_RX_BUDGET
+// Beyond the first datagrams a pass stops receiving after this much time.
+static const uint8_t kMinDatagramsPerIterate = 4;
+static const uint32_t kReceiveBudgetMs = 50;
 static const uint32_t kPendingHandshakeTimeoutMs = 3000;
 static const uint32_t kRuntimeInterestTimeoutMs = 300000;
 // Action Trigger call 700 is part of the PoC payload subset from SUPLA v16.

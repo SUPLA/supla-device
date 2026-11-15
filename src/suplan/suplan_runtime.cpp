@@ -161,6 +161,11 @@ void Runtime::clearPendingHandshake(PendingHandshake *pending) {
 
 void Runtime::clearRetryEntry(RetryEntry *retry) {
   if (retry != nullptr) {
+#if SUPLAN_READ_PROFILING_ENABLED
+    if (retry->isUsed() && (retry->flags & kRetryReadRequest))
+      readProfile_.window.hold.add(
+          nowMs() - readProfile_.firstTxMs[retry - retries_]);
+#endif
     memset(retry, 0, sizeof(*retry));
   }
 }
@@ -172,6 +177,42 @@ void Runtime::setDataTransmitObserver(DataTransmitObserver observer,
   dataTransmitContext_ = context;
 }
 #endif  // SUPLAN_TESTING
+
+#if SUPLAN_READ_PROFILING_ENABLED
+bool Runtime::readProfileDue() const {
+  return readProfile_.started && nowMs() - readProfile_.reportMs >= 10000;
+}
+
+Runtime::ReadProfile Runtime::takeReadProfile() {
+  auto result = readProfile_.window;
+  const uint32_t now = nowMs();
+  result.elapsedMs = now - readProfile_.reportMs;
+  result.workspaceBytes = sizeof(readProfile_);
+  readProfile_.reportMs = now;
+  readProfile_.window = ReadProfile();
+  return result;
+}
+
+void Runtime::profileIterationEnd(uint32_t start) {
+  auto &profile = readProfile_;
+  auto &window = profile.window;
+  window.run.add(nowMs() - start);
+  bool ready = false;
+  for (const auto &entry : dependencies_)
+    ready = ready || (entry.used && entry.needsRefresh && !entry.pending &&
+        recovery_[entry.peerIndex].active && hasSession(entry.peerIndex));
+  for (const auto &entry : deferred_)
+    ready = ready || (entry.used && entry.data[0] == kMessageClassNative &&
+        getUint32(entry.data + 1) == kNativeReadResource &&
+        hasSession(entry.peerIndex));
+  unsigned used = 0;
+  for (const auto &retry : retries_) used += retry.isUsed();
+  window.slotUsedTicks += used;
+  profile.readyFree = ready && used < SUPLAN_MAX_RETRY_SLOTS;
+  window.readyFreeTicks += profile.readyFree;
+  profile.lastEndMs = nowMs();
+}
+#endif
 
 bool Runtime::sameNode(const NodeAddress &left,
                       const NodeAddress &right) const {
@@ -233,7 +274,11 @@ int Runtime::findPendingForPeer(uint8_t peerIndex, bool initiator) const {
   return -1;
 }
 
-int Runtime::allocatePending() {
+using CapacityPool = CapacityDiagnostic::Pool;
+using CapacityOperation = CapacityDiagnostic::Operation;
+using CapacityOutcome = CapacityDiagnostic::Outcome;
+
+int Runtime::allocatePending(uint8_t peerIndex, bool initiator) {
   for (uint8_t i = 0; i < SUPLAN_MAX_PENDING_HANDSHAKES; ++i) {
     if (!pending_[i].used) {
       clearPendingHandshake(&pending_[i]);
@@ -242,16 +287,21 @@ int Runtime::allocatePending() {
       return i;
     }
   }
-  emit(DiagnosticEvent::ResourceLimit);
+  capacityLimited(CapacityPool::Pending, CapacityOperation::Handshake,
+      initiator ? CapacityOutcome::Deferred : CapacityOutcome::Rejected,
+      SUPLAN_MAX_PENDING_HANDSHAKES, SUPLAN_MAX_PENDING_HANDSHAKES, peerIndex);
   ++diagnostics_.poolReject;
   return -1;
 }
 
-int Runtime::allocateSession(uint8_t peerIndex) {
+int Runtime::allocateSession(uint8_t peerIndex, bool initiator) {
 #ifdef SUPLAN_TESTING
   if (hooks_.failNextSessionAllocation != 0) {
     --hooks_.failNextSessionAllocation;
-    emit(DiagnosticEvent::ResourceLimit);
+    capacityLimited(CapacityPool::Sessions, CapacityOperation::Handshake,
+        initiator ? CapacityOutcome::Deferred : CapacityOutcome::Rejected,
+        poolDiagnostics().sessions.used,
+        SUPLAN_MAX_ACTIVE_SESSIONS, peerIndex);
     ++diagnostics_.poolReject;
     return -1;
   }
@@ -294,7 +344,10 @@ int Runtime::allocateSession(uint8_t peerIndex) {
     }
   }
   if (selected < 0) {
-    emit(DiagnosticEvent::ResourceLimit);
+    capacityLimited(CapacityPool::Sessions, CapacityOperation::Handshake,
+        initiator ? CapacityOutcome::Deferred : CapacityOutcome::Rejected,
+        SUPLAN_MAX_ACTIVE_SESSIONS,
+        SUPLAN_MAX_ACTIVE_SESSIONS, peerIndex);
     ++diagnostics_.poolReject;
     return -1;
   }
@@ -566,6 +619,68 @@ Runtime::RecoveryStatus Runtime::recoveryStatus(uint8_t peerIndex) const {
   return result;
 }
 
+Runtime::RecoverySummary Runtime::recoverySummary() const {
+  RecoverySummary result;
+  for (uint16_t peer = 0; peer < SUPLAN_MAX_PERSISTENT_PEERS; ++peer) {
+    bool required = recovery_[peer].active || recovery_[peer].scheduled;
+    // A peer in backoff is waiting for its next cycle, not for a snapshot now.
+    const bool backoff = recovery_[peer].scheduled && !recovery_[peer].active;
+    for (const auto &entry : dependencies_) {
+      if (!entry.used || entry.peerIndex != peer) continue;
+      required = true;
+      result.waitingSnapshots += entry.needsRefresh && !backoff;
+    }
+    if (!required) continue;
+    ++result.peers;
+    result.sessions += hasSession(peer);
+    result.active += recovery_[peer].active;
+    result.scheduled += recovery_[peer].scheduled;
+  }
+  return result;
+}
+
+Runtime::ReadRecoverySummary Runtime::readRecoverySummary(
+    uint8_t peerIndex) const {
+  ReadRecoverySummary result;
+  if (peerIndex >= SUPLAN_MAX_PERSISTENT_PEERS) return result;
+  const uint32_t now = datagrams_->nowMs();
+  const auto &peer = recovery_[peerIndex];
+  if (peer.active && static_cast<int32_t>(peer.deadlineMs - now) > 0)
+    result.cycleRemainingMs = peer.deadlineMs - now;
+  if (peer.scheduled && !peer.active &&
+      static_cast<int32_t>(peer.nextRefreshMs - now) > 0)
+    result.backoffRemainingMs = peer.nextRefreshMs - now;
+  for (const auto &entry : dependencies_) {
+    if (!entry.used || !entry.needsRefresh || entry.peerIndex != peerIndex)
+      continue;
+    uint8_t phase = entry.pending ? 1 : 0;
+    uint8_t attempts = 0;
+    uint32_t age = 0;
+    for (const auto &retry : retries_) {
+      if (!retry.isUsed() || !(retry.flags & kRetryReadRequest) ||
+          retry.peerIndex != peerIndex ||
+          retry.resource.type != entry.resourceType ||
+          retry.resource.id != entry.resourceId) continue;
+      phase = (retry.flags & kRetryAwaitingReadState) ? 3 : 2;
+      attempts = retry.attempts;
+      age = now - retry.lastTransmitMs;
+      break;
+    }
+    if (!result.waiting) {
+      result.example = {entry.resourceType, entry.resourceId};
+      result.examplePhase = phase;
+      result.exampleAttempts = attempts;
+      result.exampleTimerAgeMs = age;
+    }
+    ++result.waiting;
+    result.notQueued += phase == 0;
+    result.queued += phase == 1;
+    result.awaitingAck += phase == 2;
+    result.awaitingState += phase == 3;
+  }
+  return result;
+}
+
 void Runtime::setPeerSleeping(uint8_t peerIndex, bool sleeping) {
   if (peerIndex < SUPLAN_MAX_PERSISTENT_PEERS) {
     recovery_[peerIndex].sleeping = sleeping;
@@ -582,12 +697,38 @@ void Runtime::beginRecovery(uint8_t peerIndex) {
     peer.scheduled = false;
     peer.locateAttempts = 0;
     peer.locateStarved = false;
+    peer.probeAttempted = false;
+    peer.attemptFailed = false;
+    peer.progress = false;
     peer.deadlineMs = datagrams_->nowMs() + kControlLifetimeMs;
   }
 }
 
 void Runtime::finishRecovery(uint8_t peerIndex) {
   PeerRecovery &peer = recovery_[peerIndex];
+  bool failed = peer.attemptFailed ||
+      (!hasSession(peerIndex) && peer.probeAttempted);
+  const uint32_t now = datagrams_->nowMs();
+  // A slow outer iteration can reach the cycle deadline before retry handling.
+  // Only a transmitted READ whose response window elapsed counts as failure.
+  for (const auto &retry : retries_) {
+    if (!retry.isUsed() || retry.peerIndex != peerIndex ||
+        !(retry.flags & kRetryReadRequest)) continue;
+    // Count only the attempts still left: after the last one a single ACK
+    // interval decides, however far apart a slow loop spaced them.
+    const uint32_t timeout = (retry.flags & kRetryAwaitingReadState)
+        ? kReadStateResponseTimeoutMs
+        : ackRetryMs(peerIndex) * (retry.attempts >= kAckMaxAttempts
+              ? 1U : kAckMaxAttempts - retry.attempts + 1U);
+#if SUPLAN_READ_PROFILING_ENABLED
+    if (now - retry.lastTransmitMs >= timeout)
+      ++readProfile_.window.deadlineReadExpired;
+#endif
+    failed = failed || now - retry.lastTransmitMs >= timeout;
+  }
+  // Timeouts of single READs do not make a peer that delivered states in this
+  // cycle unreachable. Its next cycle starts at once and is judged afresh.
+  failed = failed && !(peer.progress && hasSession(peerIndex));
   peer.active = false;
   bool refresh = !hasSession(peerIndex) && application_ &&
       application_->bindingSessionNeeded(peerIndex);
@@ -620,6 +761,18 @@ void Runtime::finishRecovery(uint8_t peerIndex) {
   }
   peer.scheduled = refresh;
   if (refresh) {
+    if (!failed && !peer.sleeping) {
+      // End the bounded cycle and discard its old frames as usual, but leave
+      // local backlog eligible on the next recovery pass without a penalty.
+      peer.nextRefreshMs = now;
+#if SUPLAN_READ_PROFILING_ENABLED
+      ++readProfile_.window.cycleYield;
+#endif
+      return;
+    }
+#if SUPLAN_READ_PROFILING_ENABLED
+    ++readProfile_.window.backoff;
+#endif
     static const uint32_t delays[] = {5000, 15000, 60000, 300000};
     const uint32_t base = delays[peer.backgroundStage];
     uint8_t jitter[4] = {};
@@ -643,10 +796,19 @@ void Runtime::completeRead(uint8_t peerIndex, const ResourceId &resource) {
     dependencies_[slot].pending = false;
     dependencies_[slot].needsRefresh = false;
   }
+  recovery_[peerIndex].progress = true;
   if (recovery_[peerIndex].backgroundStage &&
       !recovery_[peerIndex].locateAttempts)
     emit(DiagnosticEvent::RecoveryComplete, peerIndex);
   recovery_[peerIndex].backgroundStage = 0;
+}
+
+uint32_t Runtime::ackRetryMs(uint8_t peerIndex) const {
+  // Twice the measured reply time, never below the protocol default and
+  // bounded so that all attempts still fit one recovery cycle.
+  const uint32_t adaptive = recovery_[peerIndex].ackRtt * 32U;
+  return adaptive < kAckRetryMs ? kAckRetryMs
+      : adaptive > 1000 ? 1000 : adaptive;
 }
 
 void Runtime::noteReachability(uint8_t peerIndex) {
@@ -794,7 +956,9 @@ void Runtime::startLocate(uint8_t peerIndex) {
   }
   if (slot < 0) {
     recovery.locateStarved = true;
-    emit(DiagnosticEvent::ResourceLimit);
+    capacityLimited(CapacityPool::Locates, CapacityOperation::Locate,
+        CapacityOutcome::Deferred, SUPLAN_MAX_OUTSTANDING_LOCATES,
+        SUPLAN_MAX_OUTSTANDING_LOCATES, peerIndex);
     ++diagnostics_.poolReject;
     return;
   }
@@ -804,6 +968,7 @@ void Runtime::startLocate(uint8_t peerIndex) {
   if (locate.used && locate.nonceCount >= kLocateMaxAttempts) return;
   // Scheduling counts attempts even if RNG, MAC or the local send fails.
   ++recovery.locateAttempts;
+  recovery.probeAttempted = true;
   recovery.lastLocateMs = now;
   PeerMaterial material = {};
   Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
@@ -873,10 +1038,11 @@ void Runtime::startHandshake(uint8_t peerIndex) {
     return;
   }
   const Endpoint endpoint = peer->endpoint;
-  const int slot = allocatePending();
+  const int slot = allocatePending(peerIndex, true);
   if (slot < 0) {
     return;
   }
+  recovery_[peerIndex].probeAttempted = true;
   PendingHandshake *attempt = &pending_[slot];
   attempt->initiator = true;
   attempt->peerIndex = peerIndex;
@@ -1078,7 +1244,9 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
     }
   }
   if (slot < 0) {
-    emit(DiagnosticEvent::ResourceLimit);
+    capacityLimited(CapacityPool::ReadDependencies, CapacityOperation::Read,
+        CapacityOutcome::Rejected, SUPLAN_MAX_READ_DEPENDENCIES,
+        SUPLAN_MAX_READ_DEPENDENCIES, peerIndex, resource);
     ++diagnostics_.poolReject;
     return false;
   }
@@ -1089,76 +1257,92 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
   // Runtime owns queue admission and recovery until completion or removal.
   emit(DiagnosticEvent::ReadAccepted, peerIndex, resource,
        existing ? (dependencies_[slot].needsRefresh ? 2 : 1) : 0);
+#if SUPLAN_READ_PROFILING_ENABLED
+  if (!existing || !dependencies_[slot].needsRefresh) {
+    readProfile_.admittedMs[slot] = nowMs();
+    dependencies_[slot].profileWaiting = true;
+  }
+#endif
   dependencies_[slot].needsRefresh = true;
   beginRecovery(peerIndex);
   return true;
 }
 
-bool Runtime::dispatchRead() {
-  // This is the sole fresh READ admission point, bounded by outer iterate.
+void Runtime::dispatchReads() {
+  // This is the sole fresh READ admission point, called once per outer iterate.
   // A direct request or nested drain only records demand; neither calls here.
-  bool capacity = false;
-  for (const auto &queued : deferred_) capacity = capacity || !queued.used;
-  if (!capacity) return false;
-  uint8_t waitingPeer = 0xff;
-  bool competingPeers = false;
-  for (const auto &entry : dependencies_) {
-    if (!entry.used || !entry.needsRefresh || entry.pending ||
-        !recovery_[entry.peerIndex].active || !hasSession(entry.peerIndex))
-      continue;
-    if (waitingPeer != 0xff && waitingPeer != entry.peerIndex) {
-      competingPeers = true;
-      break;
+  // Per peer: READs in flight, kReadDemand when it waits for admission, or
+  // kReadBlocked when it has no session or no active recovery cycle.
+  static const uint8_t kReadBlocked = 0xff, kReadDemand = 0x80;
+  uint8_t state[SUPLAN_MAX_PERSISTENT_PEERS];
+  memset(state, kReadBlocked, sizeof(state));
+  bool any = false;
+  for (const auto &session : sessions_) {
+    if (session.used && recovery_[session.peerIndex].active) {
+      state[session.peerIndex] = 0;
+      any = true;
     }
-    waitingPeer = entry.peerIndex;
   }
-  // No eligible dependency means the following scan cannot admit a frame.
-  if (waitingPeer == 0xff) return false;
-  for (uint16_t visited = 0; visited < SUPLAN_MAX_READ_DEPENDENCIES;
+  if (!any) return;
+  for (const auto &retry : retries_) {
+    if (retry.isUsed() && (retry.flags & kRetryReadRequest) &&
+        state[retry.peerIndex] != kReadBlocked) ++state[retry.peerIndex];
+  }
+  for (const auto &queued : deferred_) {
+    if (queued.used && queued.data[0] == kMessageClassNative &&
+        getUint32(queued.data + 1) == kNativeReadResource &&
+        state[queued.peerIndex] != kReadBlocked) ++state[queued.peerIndex];
+  }
+  uint8_t waiting = 0;
+  for (const auto &entry : dependencies_) {
+    if (entry.used && entry.needsRefresh && !entry.pending &&
+        state[entry.peerIndex] < kReadDemand) {
+      state[entry.peerIndex] |= kReadDemand;
+      ++waiting;
+    }
+  }
+  // Competing peers share the retry slots, so a Source that stops replying
+  // cannot hold them all ahead of a healthy one. A lone Source may pipeline.
+  uint8_t limit = kReadDemand - 1;
+  if (waiting > 1) {
+    limit = SUPLAN_MAX_RETRY_SLOTS / waiting;
+    if (!limit) limit = 1;
+  }
+  for (uint16_t visited = 0; waiting && visited < SUPLAN_MAX_READ_DEPENDENCIES;
        ++visited) {
     const uint16_t slot = nextReadDependency_;
     if (++nextReadDependency_ >= SUPLAN_MAX_READ_DEPENDENCIES)
       nextReadDependency_ = 0;
     const auto &entry = dependencies_[slot];
-    if (!entry.used || !entry.needsRefresh || entry.pending ||
-        !recovery_[entry.peerIndex].active || !hasSession(entry.peerIndex))
-      continue;
     const uint8_t peerIndex = entry.peerIndex;
+    if (!entry.used || !entry.needsRefresh || entry.pending ||
+        state[peerIndex] == kReadBlocked)
+      continue;
+    if ((state[peerIndex] & (kReadDemand - 1)) >= limit) {
+#if SUPLAN_READ_PROFILING_ENABLED
+      ++readProfile_.window.fairnessSkips;
+#endif
+      continue;
+    }
     const ResourceId resource = {entry.resourceType, entry.resourceId};
     if (!readAuthorized(peerIndex, resource)) {
       removeReadDependency(peerIndex, resource);
       continue;
     }
-    bool peerPending = false;
-    for (const auto &retry : retries_) {
-      peerPending = peerPending || (retry.isUsed() &&
-          retry.peerIndex == peerIndex && (retry.flags & kRetryReadRequest));
+    bool capacity = false;
+    for (const auto &queued : deferred_) capacity = capacity || !queued.used;
+    if (!capacity) {
+#if SUPLAN_READ_PROFILING_ENABLED
+      ++readProfile_.window.queueFull;
+#endif
+      nextReadDependency_ = slot;  // Resume here once a slot is free.
+      return;
     }
-    for (const auto &queued : deferred_) {
-      peerPending = peerPending || (queued.used &&
-          queued.peerIndex == peerIndex &&
-          queued.data[0] == kMessageClassNative &&
-          getUint32(queued.data + 1) == kNativeReadResource);
-    }
-    // Reserve progress for other ready peers, but let a lone Source's healthy
-    // channels proceed while one of its channels has no readable state.
-    if (peerPending && competingPeers) continue;
-    // Prefer another peer's waiting slot on the next turn, without retaining
-    // a second queue or per-peer scheduler state. Recheck it on actual use.
-    uint16_t next = nextReadDependency_;
-    for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
-      const auto &candidate = dependencies_[next];
-      if (candidate.used && candidate.needsRefresh && !candidate.pending &&
-          candidate.peerIndex != peerIndex) {
-        nextReadDependency_ = next;
-        break;
-      }
-      if (++next >= SUPLAN_MAX_READ_DEPENDENCIES) next = 0;
-    }
-    // Advance before enqueue: draining may synchronously invoke callbacks.
-    return queueRead(peerIndex, resource);
+    ++state[peerIndex];
+    // The cursor is already advanced: draining may invoke callbacks.
+    if (!queueRead(peerIndex, resource) || !hasSession(peerIndex))
+      state[peerIndex] = kReadBlocked;
   }
-  return false;
 }
 
 bool Runtime::queueRead(uint8_t peerIndex, const ResourceId &resource) {
@@ -1166,6 +1350,12 @@ bool Runtime::queueRead(uint8_t peerIndex, const ResourceId &resource) {
   if (slot < 0) {
     return false;
   }
+#if SUPLAN_READ_PROFILING_ENABLED
+  if (!dependencies_[slot].profileWaiting) {
+    readProfile_.admittedMs[slot] = nowMs();
+    dependencies_[slot].profileWaiting = true;
+  }
+#endif
   dependencies_[slot].needsRefresh = true;
   dependencies_[slot].pending = true;
   emit(DiagnosticEvent::ReadQueued, peerIndex, resource);
@@ -1587,6 +1777,10 @@ bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
     }
   }
   if (slot < 0) {
+    capacityLimited(CapacityPool::Deferred,
+        actionDelivery ? CapacityOperation::Action : CapacityOperation::Send,
+        CapacityOutcome::Rejected, SUPLAN_MAX_DEFERRED_APP_EVENTS,
+        SUPLAN_MAX_DEFERRED_APP_EVENTS, peerIndex);
     ++diagnostics_.deferredQueueOverflow;
     return false;
   }
@@ -1828,14 +2022,27 @@ void Runtime::drainDeferred() {
       // leave this Action Trigger in the deferred queue to send it later when
       // a shared READ/CONTROL retry slot becomes free.
       queued->used = false;
-      emit(DiagnosticEvent::ResourceLimit);
+      capacityLimited(CapacityPool::Retries, CapacityOperation::Action,
+          CapacityOutcome::Rejected, SUPLAN_MAX_RETRY_SLOTS,
+          SUPLAN_MAX_RETRY_SLOTS, queued->peerIndex, resource);
       ++diagnostics_.poolReject;
       cancelPeerRecoveryIfIdle(queued->peerIndex);
       continue;
     }
     // READ/CONTROL wait in the bounded queue for a retry slot; that is
     // backpressure, not a capacity rejection.
-    if (parsed && app.flags == kAckRequired && findFreeRetry() < 0) continue;
+    if (parsed && app.flags == kAckRequired && findFreeRetry() < 0) {
+#if SUPLAN_READ_PROFILING_ENABLED
+      ++readProfile_.window.retryFull;
+#endif
+      capacityLimited(CapacityPool::Retries,
+          app.messageClass == kMessageClassNative &&
+                  app.messageType == kNativeReadResource
+              ? CapacityOperation::Read : CapacityOperation::Send,
+          CapacityOutcome::Deferred, SUPLAN_MAX_RETRY_SLOTS,
+          SUPLAN_MAX_RETRY_SLOTS, queued->peerIndex, resource);
+      continue;
+    }
     const uint8_t *sendData = queued->data;
     size_t sendLength = queued->length;
     if (parsed && app.messageClass == kMessageClassNative &&
@@ -2039,7 +2246,9 @@ bool Runtime::sendProtectedToEndpoint(
   if (ackRequired && !binding) {
     retryIndex = findFreeRetry();
     if (retryIndex < 0) {
-      emit(DiagnosticEvent::ResourceLimit);
+      capacityLimited(CapacityPool::Retries, CapacityOperation::Send,
+          CapacityOutcome::Rejected, SUPLAN_MAX_RETRY_SLOTS,
+          SUPLAN_MAX_RETRY_SLOTS, peerIndex, resource);
       ++diagnostics_.poolReject;
       return false;
     }
@@ -2056,7 +2265,9 @@ bool Runtime::sendProtectedToEndpoint(
     return false;
   }
   if (ackRequired && !binding && frameLength > sizeof(retries_[0].frame)) {
-    emit(DiagnosticEvent::ResourceLimit);
+    capacityLimited(CapacityPool::RetryFrame, CapacityOperation::Send,
+        CapacityOutcome::Rejected, frameLength, sizeof(retries_[0].frame),
+        peerIndex, resource);
     ++diagnostics_.poolReject;
     return false;
   }
@@ -2105,6 +2316,9 @@ bool Runtime::sendProtectedToEndpoint(
 #ifdef SUPLAN_TESTING
   fragmentOrdinal_ = 0;
 #endif  // SUPLAN_TESTING
+#if SUPLAN_READ_PROFILING_ENABLED
+  const uint32_t profileTransmitStart = nowMs();
+#endif
   bool sent = true;
 #ifdef SUPLAN_TESTING
   if (frameKind == kTxKindData && dataTransmitObserver_ != nullptr) {
@@ -2140,8 +2354,21 @@ bool Runtime::sendProtectedToEndpoint(
   if (!sent && !ackRequired) {
     return false;
   }
-  if (retryFlags & kRetryReadRequest)
+  if (retryFlags & kRetryReadRequest) {
+#if SUPLAN_READ_PROFILING_ENABLED
+    ++readProfile_.window.readTx;
+    readProfile_.window.send.add(nowMs() - profileTransmitStart);
+    if (!sent) ++readProfile_.window.sendFailed;
+    const int slot = findReadDependency(peerIndex, resource);
+    if (slot >= 0 && dependencies_[slot].profileWaiting) {
+      readProfile_.window.queue.add(
+          profileTransmitStart - readProfile_.admittedMs[slot]);
+      dependencies_[slot].profileWaiting = false;
+    }
+#endif
+    if (!sent) recovery_[peerIndex].attemptFailed = true;
     emit(DiagnosticEvent::ReadTransmit, peerIndex, resource, sent);
+  }
   if (sent) {
     ++diagnostics_.dataTx;
   }
@@ -2168,6 +2395,9 @@ bool Runtime::sendProtectedToEndpoint(
     retry->sessionId = sessionId;
     retry->sequence = sequence;
     retry->lastTransmitMs = datagrams_->nowMs();
+#if SUPLAN_READ_PROFILING_ENABLED
+    readProfile_.firstTxMs[retryIndex] = profileTransmitStart;
+#endif
     retry->attempts = 1;
     retry->sessionRecoveryAttempts = 0;
     retry->flags = retryFlags;
@@ -2510,7 +2740,7 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
     }
     clearPendingHandshake(old);
   }
-  const int slot = allocatePending();
+  const int slot = allocatePending(peerIndex, false);
   if (slot < 0) {
     return;
   }
@@ -2628,7 +2858,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   noteReachability(attempt->peerIndex);
   ++diagnostics_.sessionAcceptRx;
   const uint8_t peerIndex = attempt->peerIndex;
-  const int sessionIndex = allocateSession(peerIndex);
+  const int sessionIndex = allocateSession(peerIndex, true);
   if (sessionIndex < 0) {
     clearPendingHandshake(attempt);
     return;
@@ -2723,7 +2953,7 @@ void Runtime::processProtected(const Endpoint &source, const uint8_t *frame,
   }
   if (sessionIndex < 0) {
     // Key possession is proven. Admission happens before application dispatch.
-    const int admitted = allocateSession(peerIndex);
+    const int admitted = allocateSession(peerIndex, false);
     if (admitted < 0) {
       if (!pendingSession->initiator) {
         uint32_t rejectSequence = 0;
@@ -2838,7 +3068,9 @@ bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource) {
   }
   const int slot = findFreeInterest();
   if (slot < 0) {
-    emit(DiagnosticEvent::ResourceLimit);
+    capacityLimited(CapacityPool::Interests, CapacityOperation::Read,
+        CapacityOutcome::Rejected, SUPLAN_MAX_RUNTIME_INTERESTS,
+        SUPLAN_MAX_RUNTIME_INTERESTS, peerIndex, resource);
     ++diagnostics_.poolReject;
     return false;
   }
@@ -2984,6 +3216,18 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
     if (retryIndex >= 0) {
       RetryEntry *retry = &retries_[retryIndex];
       if ((retry->flags & kRetryAwaitingReadState) == 0) {
+        // Only an unrepeated frame measures the reply time (Karn's rule).
+        if (retry->attempts <= 1) {
+          const uint32_t sample =
+              (datagrams_->nowMs() - retry->lastTransmitMs + 15) / 16;
+          recovery_[peerIndex].ackRtt =
+              static_cast<uint8_t>(sample > 255 ? 255 : sample);
+        }
+#if SUPLAN_READ_PROFILING_ENABLED
+        if (retry->flags & kRetryReadRequest)
+          readProfile_.window.ack.add(
+              nowMs() - readProfile_.firstTxMs[retryIndex]);
+#endif
         const ResourceId resource = retry->resource;
         const bool expectsState =
             (retry->flags & kRetryReadExpectsState) != 0;
@@ -3007,8 +3251,14 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
                                               ackedSequence, result);
         }
         updatePoolHighWater();
+        return;
       }
     }
+    // A second ACK answers an earlier copy of a frame already acknowledged:
+    // the retransmission was premature, not lost. Wait longer next time.
+    const uint32_t waited = ackRetryMs(peerIndex) / 16;
+    if (recovery_[peerIndex].ackRtt < waited)
+      recovery_[peerIndex].ackRtt = static_cast<uint8_t>(waited);
     return;
   }
   if (application.messageType == kNativeSessionReject) {
@@ -3251,6 +3501,10 @@ void Runtime::noteReadState(uint8_t peerIndex, const ResourceId &resource) {
         retry->resource.id != resource.id) {
       continue;
     }
+#if SUPLAN_READ_PROFILING_ENABLED
+    if (!(retry->flags & kRetryReadStateReceived))
+      readProfile_.window.state.add(nowMs() - readProfile_.firstTxMs[i]);
+#endif
     retry->flags |= kRetryReadStateReceived;
     if ((retry->flags & kRetryAwaitingReadState) != 0) {
       clearRetryEntry(retry);
@@ -3260,7 +3514,7 @@ void Runtime::noteReadState(uint8_t peerIndex, const ResourceId &resource) {
 
 #ifdef SUPLAN_TESTING
 void Runtime::processFlood() {
-  for (uint8_t sent = 0; flood_.active && sent < kMaxDatagramsPerIterate;
+  for (uint8_t sent = 0; flood_.active && sent < kMinDatagramsPerIterate;
        ++sent) {
     bool attempted = false;
     if (flood_.kind == kFloodInvalidLocate) {
@@ -3317,6 +3571,22 @@ void Runtime::iterate() {
     return;
   }
   iterating_ = true;
+#if SUPLAN_READ_PROFILING_ENABLED
+  const uint32_t profileStart = nowMs();
+  auto &profile = readProfile_;
+  if (profile.started) {
+    profile.window.period.add(profileStart - profile.lastStartMs);
+    profile.window.outside.add(profileStart - profile.lastEndMs);
+    if (profile.readyFree)
+      profile.window.readyFreeMs += profileStart - profile.lastEndMs;
+  } else {
+    profile.started = true;
+    profile.reportMs = profileStart;
+  }
+  profile.lastStartMs = profileStart;
+  ++profile.window.calls;
+  uint8_t profileRx = 0;
+#endif
   // Dependencies are authorized when admitted. Recheck their peer role every
   // iteration, but ACL/ownership rights only after a PeerTable change; a
   // change during this sweep makes the next iteration sweep again.
@@ -3326,15 +3596,29 @@ void Runtime::iterate() {
   }
   // Process queued replies before timing out their operations. RX remains
   // bounded; sample time afterwards because receive callbacks can take time.
+  const uint32_t receiveStart = datagrams_->nowMs();
   for (uint8_t i = 0; i < kMaxDatagramsPerIterate; ++i) {
+    if (i >= kMinDatagramsPerIterate &&
+        datagrams_->nowMs() - receiveStart >= kReceiveBudgetMs) break;
     Endpoint source = {};
     const int length = datagrams_->pollReceive(transmitFrame_,
                                                sizeof(transmitFrame_), &source);
     if (length <= 0) {
       break;
     }
+#if SUPLAN_READ_PROFILING_ENABLED
+    const uint32_t dispatchStart = nowMs();
+    ++profileRx;
+#endif
     processDatagram(source, transmitFrame_, static_cast<size_t>(length));
+#if SUPLAN_READ_PROFILING_ENABLED
+    profile.window.rxDispatch.add(nowMs() - dispatchStart);
+#endif
   }
+#if SUPLAN_READ_PROFILING_ENABLED
+  profile.window.rx += profileRx;
+  profile.window.rxBudgetHits += profileRx == kMaxDatagramsPerIterate;
+#endif
   const uint32_t now = datagrams_->nowMs();
   iterateBindingRetry(now);
   iterateRecovery(now);
@@ -3427,6 +3711,10 @@ void Runtime::iterate() {
           kReadStateResponseTimeoutMs) {
         const uint8_t peerIndex = retry->peerIndex;
         const ResourceId resource = retry->resource;
+#if SUPLAN_READ_PROFILING_ENABLED
+        ++profile.window.stateTimeout;
+#endif
+        recovery_[peerIndex].attemptFailed = true;
         clearRetryEntry(retry);
         const int slot = findReadDependency(peerIndex, resource);
         if (slot >= 0) {
@@ -3453,7 +3741,7 @@ void Runtime::iterate() {
     }
     if (!retry->isUsed() ||
         static_cast<uint32_t>(now - retry->lastTransmitMs) <
-            kAckRetryMs) {
+            ackRetryMs(retry->peerIndex)) {
       continue;
     }
     if (retry->attempts >= kAckMaxAttempts) {
@@ -3462,6 +3750,10 @@ void Runtime::iterate() {
       } else {
         const uint8_t peerIndex = retry->peerIndex;
         const uint64_t sessionId = retry->sessionId;
+#if SUPLAN_READ_PROFILING_ENABLED
+        if (retry->flags & kRetryReadRequest) ++profile.window.ackTimeout;
+#endif
+        recovery_[peerIndex].attemptFailed = true;
         recoverSession(peerIndex, sessionId);
       }
       continue;
@@ -3512,18 +3804,21 @@ void Runtime::iterate() {
       ++retry->attempts;
       retry->lastTransmitMs = now;
       ++diagnostics_.retryTx;
+#if SUPLAN_READ_PROFILING_ENABLED
+      if (readRequest) ++profile.window.retryTx;
+#endif
     }
   }
 
   drainDeferred();
-  // Bound fresh READ work across both recovery phases and nested callbacks.
-  for (uint8_t i = 0; i < 2; ++i) {
-    if (!dispatchRead()) break;
-  }
+  dispatchReads();
   for (uint8_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     cancelPeerRecoveryIfIdle(i);
   }
   updatePoolHighWater();
+#if SUPLAN_READ_PROFILING_ENABLED
+  profileIterationEnd(profileStart);
+#endif
   iterating_ = false;
 }
 

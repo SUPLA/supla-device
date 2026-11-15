@@ -270,10 +270,14 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   // Elements append to the list in construction order. Read next AFTER the
   // hook, so appended children are visited once in this same forward traversal.
-  for (auto element = Supla::Element::begin(); element != nullptr;
-       element = element->next()) {
-    element->onLoadTopology(this);
-    delay(0);
+  SUPLA_LOG_INFO("Startup: topology");
+  {
+    Supla::LogIndent topologyIndent;
+    for (auto element = Supla::Element::begin(); element != nullptr;
+         element = element->next()) {
+      element->onLoadTopology(this);
+      delay(0);
+    }
   }
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
        proto = proto->next()) {

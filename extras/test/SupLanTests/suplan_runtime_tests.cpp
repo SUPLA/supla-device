@@ -150,6 +150,13 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
       const ResourceId &, uint32_t) override {
     ++diagnosticEvents[static_cast<unsigned>(event)];
   }
+  std::vector<Supla::SupLan::CapacityDiagnostic> capacityEvents;
+  void capacityLimited(
+      const Supla::SupLan::CapacityDiagnostic &event) override {
+    capacityEvents.push_back(event);
+  }
+  uint8_t snapshotOffline = 0;
+  uint8_t receivedOffline = 0;
   uint32_t diagnosticEvents[32] = {};
   FakeApplication() : value(0), controlCalls(0), stateCalls(0), actionCalls(0),
       acknowledged(0), lastAckResult(0), lastStateType(0), lastStateLength(0),
@@ -202,7 +209,7 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
     *eventOnly = false;
     std::memset(payload, 0, 14);
     payload[0] = 0xFF;
-    payload[1] = 0;
+    payload[1] = snapshotOffline;
     payload[5] = 60;
     payload[6] = value;
     *payloadLength = 14;
@@ -253,6 +260,7 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
                                 runtime ? runtime->nowMs() : 0);
     lastStateType = messageType;
     lastStateLength = payloadLength;
+    if (payloadLength > 1) receivedOffline = payload[1];
     if (payloadLength == 14) {
       value = payload[6];
     } else if (payloadLength == sizeof(TDS_SuplaDeviceChannel_E)) {
@@ -1128,27 +1136,28 @@ TEST(SupLanRuntime, DeferredControlWaitsForRetrySlot) {
   RuntimePair pair;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
   pair.pump(20);
-  pair.runtimeA.testHooks()->dropNextAckTx = 2;
+  const uint32_t slots = SUPLAN_MAX_RETRY_SLOTS;
+  pair.runtimeA.testHooks()->dropNextAckTx = slots;
   uint8_t control[17] = {};
   control[4] = 0xFF;
   control[9] = 1;
-  for (uint8_t i = 0; i < 3; ++i) {
+  for (uint32_t i = 0; i < slots + 1; ++i) {
     ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
                                           sizeof(control)));
   }
 
   pair.pump(5);
-  EXPECT_EQ(pair.appA.controlCalls, 2U);
-  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 2U);
+  EXPECT_EQ(pair.appA.controlCalls, slots);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, slots);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
 
   pair.network.now += Supla::SupLan::kAckRetryMs + 1;
   pair.runtimeB.iterate();
   pair.pump(20);
 
-  EXPECT_EQ(pair.appA.controlCalls, 3U);
-  EXPECT_EQ(pair.runtimeA.diagnostics().controlDuplicateSuppressed, 2U);
-  EXPECT_EQ(pair.appB.acknowledged, 4U);
+  EXPECT_EQ(pair.appA.controlCalls, slots + 1);
+  EXPECT_EQ(pair.runtimeA.diagnostics().controlDuplicateSuppressed, slots);
+  EXPECT_EQ(pair.appB.acknowledged, slots + 2);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
 }
@@ -1166,38 +1175,38 @@ TEST(SupLanRuntime,
   pair.pump(20);
   ASSERT_EQ(pair.runtimeB.poolDiagnostics().sessions.used, 2U);
 
-  // Keep both shared retry slots occupied by acknowledged CONTROL operations.
-  pair.runtimeA.testHooks()->dropNextAckTx = 2;
+  // Keep every shared retry slot occupied by acknowledged CONTROL operations.
+  const uint32_t slots = SUPLAN_MAX_RETRY_SLOTS;
+  pair.runtimeA.testHooks()->dropNextAckTx = slots;
   const uint32_t acknowledgedBeforeControls = pair.appB.acknowledged;
   uint8_t control[17] = {};
   control[4] = 0xFF;
-  control[9] = 1;
-  ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
-                                        sizeof(control)));
-  control[9] = 0;
-  ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
-                                        sizeof(control)));
-  ASSERT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 2U);
+  for (uint32_t i = 0; i < slots; ++i) {
+    control[9] = !(i % 2);
+    ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
+                                          sizeof(control)));
+  }
+  ASSERT_EQ(pair.runtimeB.poolDiagnostics().retries.used, slots);
 
   uint8_t action[15] = {};
   action[0] = 0xFF;
   action[1] = 0x34;
   ASSERT_TRUE(pair.runtimeB.publishAction(pair.actionPeerB, actionResource,
                                           action, sizeof(action)));
-  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 2U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, slots);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
   EXPECT_EQ(pair.runtimeB.diagnostics().actionTx, 0U);
   EXPECT_EQ(pair.appA.actionCalls, 0U);
   EXPECT_EQ(pair.runtimeB.diagnostics().poolReject, 1U);
 
   pair.pump(5);
-  EXPECT_EQ(pair.appA.controlCalls, 2U);
-  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 2U);
+  EXPECT_EQ(pair.appA.controlCalls, slots);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, slots);
 
   pair.network.now += Supla::SupLan::kAckRetryMs + 1;
   pair.pump(20);
-  EXPECT_EQ(pair.appA.controlCalls, 2U);
-  EXPECT_EQ(pair.appB.acknowledged, acknowledgedBeforeControls + 2U);
+  EXPECT_EQ(pair.appA.controlCalls, slots);
+  EXPECT_EQ(pair.appB.acknowledged, acknowledgedBeforeControls + slots);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
   EXPECT_EQ(pair.appA.actionCalls, 0U);
@@ -1218,20 +1227,27 @@ TEST(SupLanRuntime, QueuedReadWaitsForRetrySlotWithoutPoolReject) {
   ASSERT_EQ(pair.runtimeB.poolDiagnostics().sessions.used, 1U);
   const uint32_t readsBefore = pair.runtimeA.diagnostics().readDispatched;
 
-  // Both shared retry slots stay occupied by unacknowledged CONTROLs.
-  pair.runtimeA.testHooks()->dropNextAckTx = 2;
+  // Every shared retry slot stays occupied by unacknowledged CONTROLs.
+  const uint32_t slots = SUPLAN_MAX_RETRY_SLOTS;
+  pair.runtimeA.testHooks()->dropNextAckTx = slots;
   uint8_t control[17] = {};
   control[4] = 0xFF;
-  ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
-                                        sizeof(control)));
-  ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
-                                        sizeof(control)));
+  for (uint32_t i = 0; i < slots; ++i) {
+    ASSERT_TRUE(pair.runtimeB.sendControl(pair.peerB, pair.resource, control,
+                                          sizeof(control)));
+  }
   pair.pump(5);
-  ASSERT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 2U);
+  ASSERT_EQ(pair.runtimeB.poolDiagnostics().retries.used, slots);
 
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, second));
   pair.pump(5);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 1U);
+  ASSERT_FALSE(pair.appB.capacityEvents.empty());
+  const auto &capacity = pair.appB.capacityEvents.back();
+  using C = Supla::SupLan::CapacityDiagnostic;
+  EXPECT_EQ(capacity.pool, C::Pool::Retries);
+  EXPECT_EQ(capacity.operation, C::Operation::Read);
+  EXPECT_EQ(capacity.outcome, C::Outcome::Deferred);
   EXPECT_EQ(pair.runtimeB.diagnostics().poolReject, 0U);
   EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, readsBefore);
 
@@ -1348,9 +1364,37 @@ TEST(SupLanDiscoveryAudit, LocateStarvedCycleDoesNotEscalateBackoff) {
   for (uint8_t i = 0; i <= SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
     const auto status = pair.runtimeB.recoveryStatus(peers[i]);
     SCOPED_TRACE(i);
-    EXPECT_FALSE(status.active);
+    if (peers[i] == starved) {
+      // No network attempt failed: use the now-free slot without backoff.
+      EXPECT_TRUE(status.active);
+      EXPECT_EQ(status.locateAttempts, 1U);
+      EXPECT_GT(status.deadlineMs, pair.network.now);
+    } else {
+      EXPECT_FALSE(status.active);
+    }
     EXPECT_EQ(status.backgroundStage, peers[i] == starved ? 0U : 1U);
   }
+  const auto attempts = pair.runtimeB.diagnostics().locateTx;
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, attempts);
+}
+
+TEST(SupLanRecovery, SummaryTreatsBackoffPeerAsNotWaitingForSnapshot) {
+  RuntimePair pair;
+  const uint8_t absent = readFromAbsentSource(pair, 1100);
+  pair.runtimeB.iterate();
+  const auto waiting = pair.runtimeB.recoverySummary();
+  EXPECT_EQ(waiting.active, 1);
+  EXPECT_EQ(waiting.waitingSnapshots, 1);
+  pair.network.now = pair.runtimeB.recoveryStatus(absent).deadlineMs;
+  pair.runtimeB.iterate();
+  ASSERT_TRUE(pair.runtimeB.readNeedsRefresh(absent, {
+      Supla::SupLan::kResourceTypeChannel, 61100}));
+  const auto backoff = pair.runtimeB.recoverySummary();
+  EXPECT_EQ(backoff.peers, 1);
+  EXPECT_EQ(backoff.active, 0);
+  EXPECT_EQ(backoff.scheduled, 1);
+  EXPECT_EQ(backoff.waitingSnapshots, 0);
 }
 
 TEST(SupLanDiscoveryAudit, LostQueryAndLateJoiningPeerRecoverOnNextAttempt) {
@@ -2502,6 +2546,315 @@ TEST(SupLanRecovery, LogicalAdmissionIsIndependentOfDeferredFrameCapacity) {
   EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
 }
 
+TEST(SupLanRecovery, SummaryCountsDemandAndUnavailableRepliesCompleteRead) {
+  for (uint8_t offline : {1, 2}) {
+    RuntimePair pair;
+    pair.appA.snapshotOffline = offline;
+    const auto idle = pair.runtimeB.recoverySummary();
+    EXPECT_EQ(idle.peers, 0);  // ACL entries alone do not create demand.
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    const auto waiting = pair.runtimeB.recoverySummary();
+    EXPECT_EQ(waiting.peers, 1);
+    EXPECT_EQ(waiting.sessions, 0);
+    EXPECT_EQ(waiting.waitingSnapshots, 1);
+    const auto read = pair.runtimeB.readRecoverySummary(pair.peerB);
+    EXPECT_EQ(read.waiting, 1);
+    EXPECT_EQ(read.notQueued, 1);
+    EXPECT_EQ(read.queued + read.awaitingAck + read.awaitingState, 0);
+    EXPECT_EQ(read.example.id, pair.resource.id);
+    const auto before = pair.network.history.size();
+    (void)pair.runtimeB.recoverySummary();
+    EXPECT_EQ(pair.network.history.size(), before);
+    pair.pump(30);
+    EXPECT_EQ(pair.appB.stateCalls, 1U);
+    EXPECT_EQ(pair.appA.readCalls, 1U);
+    const auto complete = pair.runtimeB.recoverySummary();
+    EXPECT_EQ(complete.peers, 1);
+    EXPECT_EQ(complete.sessions, 1);
+    EXPECT_EQ(complete.waitingSnapshots, 0);
+    EXPECT_EQ(complete.active, 0);
+    EXPECT_EQ(complete.scheduled, 0);
+    EXPECT_EQ(pair.runtimeB.readRecoverySummary(pair.peerB).waiting, 0);
+    EXPECT_EQ(pair.appB.receivedOffline, offline);
+  }
+}
+
+#if SUPLAN_READ_PROFILING_ENABLED
+TEST(SupLanReadProfile, TracksRttAcrossReportsWithoutResettingTransmitTime) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(30);
+  (void)pair.runtimeB.takeReadProfile();
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
+  pair.network.now += 25;
+  const auto sent = pair.runtimeB.takeReadProfile();
+  EXPECT_EQ(sent.readTx, 1U);
+  EXPECT_EQ(sent.queue.count, 1U);
+  EXPECT_EQ(sent.queue.maximum, 0U);
+  EXPECT_EQ(sent.ack.count, 0U);
+  EXPECT_EQ(sent.state.count, 0U);
+  pair.runtimeA.iterate();
+  pair.network.now += 15;
+  pair.runtimeB.iterate();
+  const auto received = pair.runtimeB.takeReadProfile();
+  EXPECT_EQ(received.readTx, 0U);
+  EXPECT_EQ(received.ack.count, 1U);
+  EXPECT_EQ(received.ack.maximum, 40U);
+  EXPECT_EQ(received.state.count, 1U);
+  EXPECT_EQ(received.state.maximum, 40U);
+  EXPECT_EQ(received.state.buckets[1], 1U);
+  EXPECT_EQ(received.hold.count, 1U);
+  EXPECT_EQ(received.hold.maximum, 40U);
+  EXPECT_EQ(received.outside.maximum, 40U);
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeB.takeReadProfile().state.count, 0U);
+}
+
+TEST(SupLanReadProfile, ReportsSlowIterationsAndNeverTransmittedQueueWait) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(30);
+  (void)pair.runtimeB.takeReadProfile();
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.network.now += 5000;
+  pair.runtimeB.iterate();
+  const auto p = pair.runtimeB.takeReadProfile();
+  EXPECT_EQ(p.queue.count, 1U);
+  EXPECT_EQ(p.queue.maximum, 5000U);
+  EXPECT_EQ(p.period.maximum, 5000U);
+  EXPECT_EQ(p.cycleYield, 1U);
+  EXPECT_EQ(p.backoff, 0U);
+  EXPECT_EQ(p.ackTimeout, 0U);
+  EXPECT_EQ(p.stateTimeout, 0U);
+  EXPECT_GT(p.workspaceBytes, 4U * SUPLAN_MAX_READ_DEPENDENCIES);
+}
+#endif
+
+TEST(SupLanRecovery, PrematureRetransmissionLengthensAckTimeout) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  const auto slowRead = [&pair](uint32_t replyAfterMs) {
+    const auto retries = pair.runtimeB.diagnostics().retryTx;
+    EXPECT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.runtimeB.iterate();
+    pair.network.now += replyAfterMs;
+    pair.runtimeB.iterate();  // The reply has not arrived yet.
+    const auto repeated = pair.runtimeB.diagnostics().retryTx - retries;
+    pair.runtimeA.iterate();
+    pair.pump(5);
+    EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+    return repeated;
+  };
+  // The Source answers both copies, so the second ACK reveals that the reply
+  // was merely slow. The same delay then no longer triggers a retransmission.
+  EXPECT_EQ(slowRead(200), 1U);
+  EXPECT_EQ(slowRead(200), 0U);
+  // The unrepeated reply was measured: twice its time is tolerated next.
+  EXPECT_EQ(slowRead(350), 0U);
+  // A fast reply shortens the timeout again; the floor stays at the default.
+  EXPECT_EQ(slowRead(0), 0U);
+  EXPECT_EQ(slowRead(Supla::SupLan::kAckRetryMs), 1U);
+}
+
+TEST(SupLanRecovery, SlowLoopStillBacksOffPeerThatStoppedAnswering) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  // Slow replies raise the ACK timeout to its upper bound.
+  for (int i = 0; i < 2; ++i) {
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.runtimeB.iterate();
+    pair.network.now += 900;
+    pair.runtimeA.iterate();
+    pair.pump(5);
+    ASSERT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  }
+  pair.pumpMs(6000);  // Let the cycle that delivered those states end.
+  pair.datagramsA.available = false;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  // The attempts leave at 0, 2 and 4 s; the cycle ends before retry handling.
+  for (int i = 0; i < 4; ++i) {
+    pair.runtimeB.iterate();
+    pair.network.now += 2000;
+  }
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.appB.diagnosticEvents[static_cast<unsigned>(
+      Supla::SupLan::DiagnosticEvent::RecoveryFailed)], 1U);
+  EXPECT_EQ(pair.runtimeB.recoveryStatus(pair.peerB).backgroundStage, 1);
+  EXPECT_FALSE(pair.runtimeB.recoveryStatus(pair.peerB).active);
+}
+
+TEST(SupLanRecovery, PeerDeliveringStatesIsNotBackedOffForOneSilentChannel) {
+  for (const bool progress : {true, false}) {
+    RuntimePair pair;
+    const ResourceId silent = {Supla::SupLan::kResourceTypeChannel, 50003};
+    const Supla::SupLan::AclEntry acl[] = {
+        {pair.resource, Supla::SupLan::kPermissionRead},
+        {silent, Supla::SupLan::kPermissionRead}};
+    ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 2, acl, 2));
+    ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, acl, 2));
+    pair.appA.unavailableResource = silent.id;  // ACK, but never a state.
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, silent));
+    if (progress) {
+      ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    }
+    pair.pumpMs(6000);
+    SCOPED_TRACE(progress);
+    EXPECT_EQ(pair.appB.stateCalls, progress ? 1U : 0U);
+    EXPECT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, silent));
+    EXPECT_EQ(pair.appB.diagnosticEvents[static_cast<unsigned>(
+        Supla::SupLan::DiagnosticEvent::RecoveryFailed)], progress ? 0U : 1U);
+    EXPECT_EQ(pair.runtimeB.recoveryStatus(pair.peerB).backgroundStage,
+              progress ? 0 : 1);
+  }
+}
+
+TEST(SupLanRecovery, AdmittedReadWaitingForDispatchDoesNotBackoff) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(30);
+  const auto before = pair.runtimeB.diagnostics().dataTx;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  EXPECT_EQ(pair.runtimeB.readRecoverySummary(pair.peerB).notQueued, 1);
+  // Logical admission without any opportunity for transport dispatch.
+  pair.network.now += 5000;
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.recoveryStatus(pair.peerB).backgroundStage, 0);
+  EXPECT_EQ(pair.runtimeB.readRecoverySummary(pair.peerB).backoffRemainingMs,
+            0U);
+  EXPECT_EQ(pair.appB.diagnosticEvents[static_cast<unsigned>(
+      Supla::SupLan::DiagnosticEvent::RecoveryFailed)], 0U);
+  EXPECT_GT(pair.runtimeB.diagnostics().dataTx, before);
+  pair.pump(30);
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+}
+
+TEST(SupLanRecovery, OtherPeerFullQueueDoesNotPenalizeHealthyReadPeer) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(30);
+  const Supla::SupLan::PeerContext context = {
+      Supla::SupLan::kAuthorityServer, 0,
+      RuntimePair::nodeAddress(1003), RuntimePair::nodeAddress(1002), 1, 1};
+  const ResourceId blocked = {Supla::SupLan::kResourceTypeChannel, 60003};
+  const Supla::SupLan::AclEntry acl = {
+      blocked, Supla::SupLan::kPermissionControl};
+  const uint8_t key[32] = {42};
+  uint8_t other = 0xff;
+  ASSERT_TRUE(pair.peersB.addPeer(&context, key, 1, &acl, 1, &other, true));
+  uint8_t control[17] = {};
+  control[4] = 0xff;
+  for (unsigned i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i)
+    ASSERT_TRUE(pair.runtimeB.sendControl(other, blocked, control,
+                                         sizeof(control), 701));
+  ASSERT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used,
+            SUPLAN_MAX_DEFERRED_APP_EVENTS);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.readRecoverySummary(pair.peerB).notQueued, 1);
+  const auto before = pair.runtimeA.diagnostics().readDispatched;
+  pair.network.now += 5000;
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.recoveryStatus(pair.peerB).backgroundStage, 0);
+  EXPECT_EQ(pair.runtimeB.readRecoverySummary(pair.peerB).backoffRemainingMs,
+            0U);
+  pair.pump(40);
+  EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, before + 1);
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+}
+
+TEST(SupLanRecovery, HealthyRefreshIsSpreadAndWorksAcrossClockWrap) {
+  for (uint32_t start : {0U, UINT32_MAX - 10000U}) {
+    SCOPED_TRACE(start);
+    RuntimePair pair;
+    pair.network.now = start;
+    pair.appA.fullSnapshots = true;
+    pair.appB.runtime = &pair.runtimeB;
+    Supla::Device::RemoteResourceManager manager(&pair.peersB, &pair.runtimeB,
+                                                 nullptr);
+    pair.appB.remoteResources = &manager;
+    const Supla::SupLan::AclEntry wildcard = {
+        {Supla::SupLan::kResourceTypeDevice, 1001},
+        Supla::SupLan::kPermissionRead};
+    ASSERT_TRUE(pair.peersA.replaceAcl(pair.peerA, 2, &wildcard, 1));
+    ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, &wildcard, 1));
+    for (uint32_t i = 0; i < 8; ++i) {
+      ASSERT_TRUE(manager.consume({i + 1,
+          {Supla::SupLan::kResourceTypeChannel, 61000 + i},
+          Supla::SupLan::kPermissionRead}));
+    }
+    manager.iterate(pair.network.now);
+    pair.pump(40);
+    ASSERT_EQ(pair.runtimeA.diagnostics().readDispatched, 8U);
+    const auto initial = pair.appB.diagnosticEvents[static_cast<unsigned>(
+        Supla::SupLan::DiagnosticEvent::ReadAccepted)];
+    unsigned batches = 0;
+    uint32_t last = initial;
+    TDS_SuplaDeviceChannel_E notification = {};
+    notification.Number = 0xff;
+    notification.Default = SUPLA_CHANNELFNC_POWERSWITCH;
+    notification.Type = SUPLA_CHANNELTYPE_RELAY;
+    notification.ValueValidityTimeSec = 60;
+    for (uint32_t elapsed = 0; elapsed < 31000; elapsed += 100) {
+      pair.network.now += 100;
+      // Even continuous unsolicited state must not postpone periodic READs.
+      for (uint32_t i = 0; i < 8; ++i)
+        manager.receive(pair.peerB,
+            {Supla::SupLan::kResourceTypeChannel, 61000 + i},
+            reinterpret_cast<const uint8_t *>(&notification),
+            sizeof(notification), pair.network.now);
+      manager.iterate(pair.network.now);
+      const auto accepted = pair.appB.diagnosticEvents[static_cast<unsigned>(
+          Supla::SupLan::DiagnosticEvent::ReadAccepted)];
+      if (accepted != last) {
+        ++batches;
+        EXPECT_GE(pair.network.now - start, 22500U);
+        EXPECT_LE(pair.network.now - start, 30400U);
+        last = accepted;
+      }
+      pair.runtimeB.iterate();
+      pair.runtimeA.iterate();
+    }
+    EXPECT_GT(batches, 1U);
+    EXPECT_EQ(last, initial + 8U);
+    EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 16U);
+  }
+}
+
+TEST(SupLanRecovery, ReadSummaryDistinguishesTransportWaitFromBackoff) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(30);
+  ASSERT_TRUE(pair.runtimeB.hasSession(pair.peerB));
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
+  const auto sent = pair.runtimeB.readRecoverySummary(pair.peerB);
+  EXPECT_EQ(sent.waiting, 1);
+  EXPECT_EQ(sent.awaitingAck, 1);
+  EXPECT_EQ(sent.notQueued + sent.queued + sent.awaitingState, 0);
+  EXPECT_EQ(sent.examplePhase, 2);
+  EXPECT_EQ(sent.exampleAttempts, 1);
+  EXPECT_GT(sent.cycleRemainingMs, 0U);
+  // No Source iterate: keep the READ unanswered until the cycle expires.
+  pair.network.now += 5000;
+  pair.runtimeB.iterate();
+  const auto backoff = pair.runtimeB.readRecoverySummary(pair.peerB);
+  EXPECT_EQ(backoff.waiting, 1);
+  EXPECT_EQ(backoff.notQueued, 1);
+  EXPECT_EQ(backoff.awaitingAck + backoff.awaitingState + backoff.queued, 0);
+  EXPECT_EQ(backoff.cycleRemainingMs, 0U);
+  EXPECT_GE(backoff.backoffRemainingMs, 5000U);
+  EXPECT_EQ(backoff.example.id, pair.resource.id);
+  // The aggregate cycle can end while this READ still needs a snapshot.
+  EXPECT_EQ(pair.runtimeB.recoverySummary().waitingSnapshots, 0);
+  const auto packets = pair.network.history.size();
+  (void)pair.runtimeB.readRecoverySummary(pair.peerB);
+  EXPECT_EQ(pair.network.history.size(), packets);
+  EXPECT_EQ(pair.runtimeB.readRecoverySummary(0xff).waiting, 0);
+}
+
 TEST(SupLanRecovery, LogicalDemandPoolRejectsOverflowAndReclaimsLastOwner) {
   RuntimePair pair;
   const Supla::SupLan::AclEntry wildcard = {
@@ -2518,6 +2871,16 @@ TEST(SupLanRecovery, LogicalDemandPoolRejectsOverflowAndReclaimsLastOwner) {
   EXPECT_FALSE(pair.runtimeB.requestRead(pair.peerB, extra));
   EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, extra));
   EXPECT_EQ(pair.runtimeB.diagnostics().poolReject, 1U);
+  ASSERT_EQ(pair.appB.capacityEvents.size(), 1U);
+  const auto &event = pair.appB.capacityEvents.back();
+  using C = Supla::SupLan::CapacityDiagnostic;
+  EXPECT_EQ(event.pool, C::Pool::ReadDependencies);
+  EXPECT_EQ(event.operation, C::Operation::Read);
+  EXPECT_EQ(event.outcome, C::Outcome::Rejected);
+  EXPECT_EQ(event.used, SUPLAN_MAX_READ_DEPENDENCIES);
+  EXPECT_EQ(event.limit, SUPLAN_MAX_READ_DEPENDENCIES);
+  EXPECT_EQ(event.peer, pair.peerB);
+  EXPECT_EQ(event.resource.id, extra.id);
   EXPECT_EQ(pair.runtimeB.diagnostics().locateTx, 0U);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
   pair.runtimeB.removeReadDependency(
@@ -2599,16 +2962,24 @@ TEST(SupLanRecovery, FairCursorDispatchesAllSlotsAndReusedSlotsOnce) {
   }
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 0U);
   for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES + 40U; ++i) {
-    ++pair.network.now;
+    // A healthy fanout takes longer than a 5 s cycle at embedded cadence.
+    // Local scheduling limits must not turn that backlog into peer failure.
+    pair.network.now += 200;
     const auto sent = pair.runtimeB.diagnostics().dataTx;
     const auto retries = pair.runtimeB.diagnostics().retryTx;
     pair.runtimeB.iterate();
+    // Fresh READs per pass are bounded by the retry slots they occupy.
     EXPECT_LE(pair.runtimeB.diagnostics().dataTx - sent,
-              2U + pair.runtimeB.diagnostics().retryTx - retries) << i;
+              SUPLAN_MAX_RETRY_SLOTS +
+                  pair.runtimeB.diagnostics().retryTx - retries) << i;
     pair.runtimeA.iterate();
     runtimeC.iterate();
   }
   EXPECT_EQ(pair.appB.stateCalls, SUPLAN_MAX_READ_DEPENDENCIES);
+  EXPECT_EQ(pair.appB.diagnosticEvents[static_cast<unsigned>(
+      Supla::SupLan::DiagnosticEvent::RecoveryFailed)], 0U);
+  EXPECT_EQ(pair.runtimeB.recoveryStatus(pair.peerB).backgroundStage, 0);
+  EXPECT_EQ(pair.runtimeB.recoveryStatus(destinationC).backgroundStage, 0);
   EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched +
                 runtimeC.diagnostics().readDispatched,
             SUPLAN_MAX_READ_DEPENDENCIES);
@@ -2656,14 +3027,16 @@ TEST(SupLanRecovery, FairCursorDispatchesAllSlotsAndReusedSlotsOnce) {
   }
   EXPECT_EQ(runtimeC.diagnostics().readDispatched,
             readsC + SUPLAN_MAX_READ_DEPENDENCIES / 2);
-  // C completed before A's retry timer: A may now use both retry slots,
+  // C completed before A's retry timer: A may now use every retry slot,
   // since it is the only remaining peer with demand, but C was not blocked.
   EXPECT_LE(pair.network.now - unavailableAt,
             SUPLAN_MAX_READ_DEPENDENCIES + 40U);
-  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 2U);
-  // Two admissions per turn can leave two additional A frames queued after
-  // the final C response; C has already completed within the same bound.
-  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used, 2U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used,
+            SUPLAN_MAX_RETRY_SLOTS);
+  // A lone peer may also fill the queue behind its retries; C has already
+  // completed within the same bound.
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().deferredEvents.used,
+            SUPLAN_MAX_DEFERRED_APP_EVENTS);
   pair.datagramsA.available = true;
   pair.runtimeB.refreshPeer(pair.peerB, 40000, true);
   for (uint32_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES + 80U; ++i) {
@@ -2733,7 +3106,9 @@ TEST(SupLanRecovery, NestedIterateAndRequestsCannotBypassFreshReadBudget) {
   const auto sent = pair.runtimeB.diagnostics().dataTx;
   pair.runtimeB.iterate();
   EXPECT_TRUE(context.called);
-  EXPECT_EQ(pair.runtimeB.diagnostics().dataTx, sent + 2);
+  // The nested iterate admits nothing; the outer pass stays within its slots.
+  EXPECT_EQ(pair.runtimeB.diagnostics().dataTx,
+            sent + (SUPLAN_MAX_RETRY_SLOTS < 3 ? SUPLAN_MAX_RETRY_SLOTS : 3));
   EXPECT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, third));
   pair.pump(30);
   EXPECT_EQ(pair.runtimeA.diagnostics().readDispatched, 4U);
@@ -2771,6 +3146,10 @@ TEST(SupLanRecovery, BeforeSendCallbackRevokesOrRecreatesReadFailClosed) {
     ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
     pair.runtimeB.iterate();
     EXPECT_TRUE(context.called);
+    // The interrupted READ is never sent; recreated demand waits for the
+    // next pass, which sends it exactly once.
+    EXPECT_EQ(pair.runtimeB.diagnostics().dataTx, sent);
+    pair.runtimeB.iterate();
     EXPECT_EQ(pair.runtimeB.diagnostics().dataTx,
               sent + (variant == 2 ? 1U : 0U));
     pair.pump(30);

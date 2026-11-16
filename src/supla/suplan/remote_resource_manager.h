@@ -158,6 +158,8 @@ class RemoteResourceManager : public RemoteChannelManager,
 // Fixed part includes the 4-byte authorization revision of the last sweep.
 static_assert(sizeof(RemoteResourceManager) <=
                   (sizeof(void *) == 8 ? 108 : 72) +
+                  RemoteChannelManager::kConsumerFilterBytes + 8 +
+                  sizeof(void *) + 3 * sizeof(uint32_t) +
                   64 * RemoteResourceManager::kCapacity +
                   sizeof(ChannelConsumer) *
                       RemoteResourceManager::kConsumerCapacity +

@@ -48,6 +48,7 @@ void ResourceBindingManager::attachRuntime(SupLan::Runtime *runtime) {
   runtime_ = runtime;
 }
 void ResourceBindingManager::invalidateServerScope() {
+  rightsRevision_ = 0;  // Binding sets change: recheck every peer.
   configChanged();
   if (pendingIntent_ >= 0 && port_) port_->cancelShare();
   pendingIntent_ = -1;
@@ -70,6 +71,7 @@ void ResourceBindingManager::invalidateServerScope() {
 }
 void ResourceBindingManager::migrate(const ServerIdentity *identity,
                                      const ServerMigration &migration) {
+  rightsRevision_ = 0;  // Binding sets change: recheck every peer.
   if (!associations_ || associations_->identity() != identity) return;
   configChanged();
   auto removed = [&migration](uint32_t id) {
@@ -107,6 +109,7 @@ void ResourceBindingManager::migrate(const ServerIdentity *identity,
   }
 }
 void ResourceBindingManager::attachAssociations(ServerAssociations *state) {
+  rightsRevision_ = 0;  // Binding sets change: recheck every peer.
   configChanged();
   for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     detach(i);
@@ -136,20 +139,27 @@ int ResourceBindingManager::peerForSet(uint8_t set) const {
   }
   return -1;
 }
-int ResourceBindingManager::targetNumber(uint32_t id) const {
+int ResourceBindingManager::targetNumber(uint32_t id, uint8_t *hint) const {
   const auto identity = associations_ ? associations_->identity() : nullptr;
   if (!identity || !identity->identityAvailable()) return -1;
   // Configuration acceptance is allowed inside the transition barrier, but
   // activation still uses the normal resolver and remains unavailable there.
-  for (int n = 0; n < 255; ++n) {
+  const auto matches = [id](int n) {
     const auto channel = Channel::GetByChannelNumber(n);
-    if (channel && channel->getServerChannelId() == id &&
+    return channel && channel->getServerChannelId() == id &&
         channel->getChannelType() == SUPLA_CHANNELTYPE_RELAY &&
         (channel->getDefaultFunction() == SUPLA_CHANNELFNC_PUMPSWITCH ||
          channel->getDefaultFunction() ==
              SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH) &&
-        Control::RelayHvacAggregator::GetInstance(n))
+        Control::RelayHvacAggregator::GetInstance(n);
+  };
+  // Server Channel ids are unique, so a still matching hint is the answer.
+  if (hint && matches(*hint)) return *hint;
+  for (int n = 0; n < 255; ++n) {
+    if (matches(n)) {
+      if (hint) *hint = static_cast<uint8_t>(n);
       return n;
+    }
   }
   return -1;
 }
@@ -170,6 +180,7 @@ bool ResourceBindingManager::validateBody(uint8_t peer, const uint8_t *body,
   return true;
 }
 void ResourceBindingManager::detach(uint8_t set) {
+  rightsRevision_ = 0;  // Binding sets change: recheck every peer.
   for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS; ++i) {
     auto &entry = contributors_[i];
     if (entry.source && entry.set == set) {
@@ -180,6 +191,7 @@ void ResourceBindingManager::detach(uint8_t set) {
 }
 void ResourceBindingManager::activate(uint8_t set, const uint8_t *body,
                                      size_t size) {
+  rightsRevision_ = 0;  // Binding sets change: recheck every peer.
   (void)size;
   // Preserve genuinely fresh sample history only for retained exact bindings.
   for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS; ++i) {
@@ -242,6 +254,19 @@ uint8_t ResourceBindingManager::accept(uint8_t peer, const uint8_t *body,
     if (entry.source && entry.set == slot) ++previousCount;
   if (bindingCount() - previousCount + body[0] > SUPLAN_MAX_RESOURCE_BINDINGS)
     return kCapacity;
+  // Sources repeat their complete set once a minute. An identical one is
+  // already installed durably, so it is acknowledged without another write.
+  bool installed = slot >= 0 && previousCount == body[0];
+  for (int j = 0; installed && j < body[0]; ++j) {
+    const auto wire = body + 1 + 12 * j;
+    bool found = false;
+    for (const auto &entry : contributors_)
+      found = found || (entry.set == slot &&
+          entry.source == SupLan::getUint32(wire + 2) &&
+          entry.target == SupLan::getUint32(wire + 7));
+    installed = found;
+  }
+  if (installed) return kInstalled;
   if (slot < 0) {
     for (int i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
       if (!sets_[i].used) {
@@ -260,6 +285,7 @@ uint8_t ResourceBindingManager::accept(uint8_t peer, const uint8_t *body,
   return kInstalled;
 }
 bool ResourceBindingManager::loadRecords() {
+  rightsRevision_ = 0;  // Binding sets change: recheck every peer.
   if (!associations_ || !associations_->identity() ||
       associations_->identity()->fullScopeFenced()) return false;
   const auto now = millis();
@@ -289,6 +315,7 @@ bool ResourceBindingManager::loadRecords() {
 void ResourceBindingManager::authorizationReplacing(
     const SupLan::PeerContext &context, const SupLan::AclEntry *expected,
     uint16_t count) {
+  rightsRevision_ = 0;  // Binding sets change: recheck every peer.
   // Persistence already committed. Prune existing RAM only: reconstruction
   // belongs to iterate(), and cannot make this post-commit step fail.
   uint8_t encoded[27];
@@ -486,25 +513,50 @@ void ResourceBindingManager::serverReconnected() {
   }
 }
 
-void ResourceBindingManager::iterate(uint32_t now) {
-  if (!loaded_ && !loadRecords()) return;
-  if (!loaded_) return;
-  const auto identity = associations_->identity();
+void ResourceBindingManager::refreshContributors(uint32_t now) {
+  const auto identity = associations_ ? associations_->identity() : nullptr;
+  const uint32_t identityRevision = identity ? identity->revision() : 0;
+  const uint32_t topology = Channel::registrationGeneration();
+  const uint32_t aggregators = Control::RelayHvacAggregator::topologyRevision();
+  const bool rightsChanged = peers_->revision() != rightsRevision_;
+  const bool reconcile = contributorsDirty_ || rightsChanged ||
+      identityRevision != contributorIdentityRevision_ ||
+      topology != contributorTopologyRevision_ ||
+      aggregators != aggregatorRevision_ ||
+      resources_->admissionGeneration() != admissionGeneration_ ||
+      (retryContributors_ &&
+       static_cast<int32_t>(now - contributorRetryMs_) >= 0);
+  if (!reconcile && !samplesDirty_) return;
+  contributorsDirty_ = samplesDirty_ = false;
+  if (rightsChanged) {
+    rightsRevision_ = peers_->revision();
+    for (auto &entry : contributors_) entry.peer = kPeerUnknown;
+  }
+  if (reconcile) retryContributors_ = false;
   // Restore intents even without Server; binding persistence is not a value.
   for (int i = 0; i < SUPLAN_MAX_RESOURCE_BINDINGS; ++i) {
     auto &entry = contributors_[i];
     if (!entry.source) continue;
-    const auto peer = peerForSet(entry.set);
-    if (peer < 0 || targetNumber(entry.target) < 0 ||
-        !peers_->authorize(peer, {SupLan::kResourceTypeChannel, entry.source},
-                            SupLan::kPermissionRead)) {
+    if (reconcile && entry.peer == kPeerUnknown) {
+      const auto peer = peerForSet(entry.set);
+      entry.peer = peer >= 0 && peers_->authorize(peer,
+          {SupLan::kResourceTypeChannel, entry.source}, SupLan::kPermissionRead)
+          ? static_cast<uint8_t>(peer) : kPeerDenied;
+    }
+    if (reconcile && (entry.peer == kPeerDenied ||
+        targetNumber(entry.target, &entry.number) < 0)) {
       resources_->remove(0x40000 + i);
       entry.active = false;
       continue;
     }
-    if (!resources_->consume({static_cast<uint32_t>(0x40000 + i),
-        {SupLan::kResourceTypeChannel, entry.source}, SupLan::kPermissionRead}))
+    if (reconcile && !resources_->consume({
+        static_cast<uint32_t>(0x40000 + i),
+        {SupLan::kResourceTypeChannel, entry.source},
+        SupLan::kPermissionRead})) {
+      retryContributors_ = true;
       continue;
+    }
+    if (entry.peer == kPeerDenied) continue;
     const auto state =
         resources_->state({SupLan::kResourceTypeChannel, entry.source}, now);
     THVACValue value;
@@ -515,6 +567,20 @@ void ResourceBindingManager::iterate(uint32_t now) {
                                     SUPLA_HVAC_VALUE_FLAG_COOLING);
     }
   }
+  contributorIdentityRevision_ = identityRevision;
+  contributorTopologyRevision_ = topology;
+  aggregatorRevision_ = aggregators;
+  // Admission in this pass changes the generation itself. Retain the final
+  // one; later releases/readiness changes retry previously rejected owners.
+  admissionGeneration_ = resources_->admissionGeneration();
+  if (reconcile) contributorRetryMs_ = now + 1000;
+}
+
+void ResourceBindingManager::iterate(uint32_t now) {
+  if (!loaded_ && !loadRecords()) return;
+  if (!loaded_) return;
+  refreshContributors(now);
+  const auto identity = associations_->identity();
   if (!identity || !identity->serverSyncComplete()) return;
   // Lifecycle revisions also cover direct identity/topology API users.
   // Comparing them is constant-time; canonical HVAC discovery is event-driven.
@@ -600,13 +666,20 @@ bool ResourceBindingManager::relayDemand(uint8_t target, bool *configured) {
   if (configured) *configured = false;
   if (!associations_ || !associations_->identity() ||
       associations_->identity()->identityTransition()) return false;
+  const auto channel = Channel::GetByChannelNumber(target);
+  if (!channel) return false;
+  uint8_t hint = target;
+  const uint32_t id = channel->getServerChannelId();
+  if (targetNumber(id, &hint) != target) return false;
+  refreshContributors(millis());
   for (int index = 0; index < SUPLAN_MAX_RESOURCE_BINDINGS; ++index) {
     const auto &entry = contributors_[index];
-    if (!entry.source || targetNumber(entry.target) != target) continue;
-    const auto peer = peerForSet(entry.set);
-    if (peer < 0 || !peers_->authorize(peer,
-        {SupLan::kResourceTypeChannel, entry.source}, SupLan::kPermissionRead))
-      continue;
+    if (!entry.source || entry.target != id) continue;
+    if (entry.peer == kPeerDenied || entry.peer == kPeerUnknown) continue;
+    // Mutable role/context changes need no PeerTable revision bump.
+    const auto peer = peers_->get(entry.peer);
+    if (!peer || !peer->destination ||
+        memcmp(peer->contextBytes, sets_[entry.set].context, 27)) continue;
     if (configured) *configured = true;
     if (!resources_->hasConsumer(0x40000 + index)) continue;
     const auto state = resources_->state(

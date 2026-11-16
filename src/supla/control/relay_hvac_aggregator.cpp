@@ -17,6 +17,7 @@ using Supla::Control::RelayHvacAggregator;
 
 namespace {
 RelayHvacAggregator *FirstInstance = nullptr;
+uint32_t aggregatorChanges = 0;
 
 // 15 minutes
 constexpr uint32_t IGNORE_OFFLINE_HVAC_TIMEOUT = 15UL * 60 * 1000;
@@ -25,6 +26,7 @@ constexpr uint32_t IGNORE_OFFLINE_HVAC_TIMEOUT = 15UL * 60 * 1000;
 RelayHvacAggregator::RelayHvacAggregator(int relayChannelNumber,
                                          Supla::Control::Relay *relay)
     : relay(relay), relayChannelNumber(relayChannelNumber) {
+  ++aggregatorChanges;
   if (FirstInstance == nullptr) {
     FirstInstance = this;
   } else {
@@ -37,6 +39,7 @@ RelayHvacAggregator::RelayHvacAggregator(int relayChannelNumber,
 }
 
 RelayHvacAggregator::~RelayHvacAggregator() {
+  ++aggregatorChanges;
   if (FirstInstance == this) {
     FirstInstance = nextPtr;
   } else {
@@ -51,6 +54,10 @@ RelayHvacAggregator::~RelayHvacAggregator() {
   while (firstHvacPtr) {
     unregisterHvac(firstHvacPtr->hvac);
   }
+}
+
+uint32_t RelayHvacAggregator::topologyRevision() {
+  return aggregatorChanges;
 }
 
 RelayHvacAggregator *RelayHvacAggregator::Add(int relayChannelNumber,

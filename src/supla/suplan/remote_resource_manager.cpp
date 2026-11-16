@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include <supla/log_wrapper.h>
 #include <supla/suplan/suplan_server_associations.h>
+#include <supla/suplan/resource_binding_manager.h>
 namespace Supla {
 namespace Device {
 namespace {
@@ -115,7 +116,6 @@ void RemoteResourceManager::reconcileResource(
   if (peers_ && peers_->revision() != authorizationRevision_) {
     authorizationChanged();
   } else if (entry->reconciledPermissions != entry->permissions ||
-             entry->access == RemoteAccess::BLOCKED ||
              (entry->peerIndex != 0xff &&
               !(peer && peer->destination &&
                 peer->contextBytes[0] == SupLan::kAuthorityServer))) {
@@ -188,27 +188,21 @@ void RemoteResourceManager::refreshResource(RemoteChannelResource &entry,
                                            uint32_t nowMs) {
   auto &resource = static_cast<Resource &>(entry);
   if (resource.hasSnapshot) (void)fresh(resource, nowMs);
-  if (resource.effective & resource.permissions & SupLan::kPermissionRead) {
-    const uint32_t ttl = resource.snapshot.ValueValidityTimeSec;
-    const uint32_t refreshMs = healthyRefreshMs(resource.id.id,
-        resource.hasSnapshot ? ttl : 0);
-    if (runtime_ && !runtime_->recoveryStatus(resource.peerIndex).sleeping &&
-        (!resource.readAttempted ||
-         (static_cast<int32_t>(nowMs - resource.nextReadMs) >= 0 &&
-          !runtime_->readNeedsRefresh(resource.peerIndex, resource.id)))) {
-      if (runtime_->requestRead(resource.peerIndex, resource.id)) {
-        auto &peer = peerPresence_[resource.peerIndex];
-        const int32_t awakeRemaining = peer.wakeUntilMs - nowMs;
-        if (peer.awake && awakeRemaining > 0) {
-          runtime_->refreshPeer(resource.peerIndex, awakeRemaining, false);
-        } else {
-          peer.awake = false;
-        }
-        resource.nextReadMs = nowMs + refreshMs;
-        resource.readAttempted = true;
-      }
-    }
-  }
+  if (!(resource.effective & resource.permissions & SupLan::kPermissionRead) ||
+      !runtime_ || (resource.readAttempted &&
+      (static_cast<int32_t>(nowMs - resource.nextReadMs) < 0 ||
+       runtime_->readNeedsRefresh(resource.peerIndex, resource.id))) ||
+      runtime_->recoveryStatus(resource.peerIndex).sleeping ||
+      !runtime_->requestRead(resource.peerIndex, resource.id)) return;
+  auto &peer = peerPresence_[resource.peerIndex];
+  const int32_t awakeRemaining = peer.wakeUntilMs - nowMs;
+  if (peer.awake && awakeRemaining > 0)
+    runtime_->refreshPeer(resource.peerIndex, awakeRemaining, false);
+  else
+    peer.awake = false;
+  resource.nextReadMs = nowMs + healthyRefreshMs(resource.id.id,
+      resource.hasSnapshot ? resource.snapshot.ValueValidityTimeSec : 0);
+  resource.readAttempted = true;
 }
 void RemoteResourceManager::releaseResource(RemoteChannelResource &entry) {
   auto &resource = static_cast<Resource &>(entry);
@@ -255,6 +249,7 @@ void RemoteResourceManager::receive(uint8_t peerIndex,
   const bool first = !resource->hasSnapshot;
   acceptSnapshot(resource, payload, length, nowMs);
   if (!resource->hasSnapshot) return;
+  if (bindings) bindings->snapshotChanged();
   const uint32_t refreshMs = healthyRefreshMs(id.id,
       resource->snapshot.ValueValidityTimeSec);
   // A shorter advertised TTL may advance the deadline. Unsolicited updates

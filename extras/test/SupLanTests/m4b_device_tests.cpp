@@ -33,6 +33,9 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>  // NOLINT(build/c++11)
+#include <cinttypes>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -960,12 +963,22 @@ TEST_F(M4bDevice, BindingStatusSurvivesTemporaryAuthorityLoss) {
   auto manager = adapter.resourceBindings();
   auto body = binding();
   ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  manager->iterate(time.value);
+  hvacSample(true);
+  manager->iterate(time.value);
+  bool configured = false;
+  ASSERT_TRUE(manager->relayDemand(3, &configured));
+  ASSERT_TRUE(configured);
+  const auto revision = peers.revision();
   peers.get(0)->destination = false;
+  ASSERT_EQ(peers.revision(), revision);  // Mutable role bypasses revision.
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_FALSE(configured);
   time.advance(2000);
   manager->iterate(time.value);
   EXPECT_EQ(manager->relayBindingStatus(3), RelayBindingStatus::Configured);
   EXPECT_GT(PeerStoreTest::size(storage, "slb_0"), 0);
-  bool configured = true;
+  configured = true;
   EXPECT_FALSE(manager->relayDemand(3, &configured));
   EXPECT_FALSE(configured);
   storage.reboot();
@@ -1394,9 +1407,10 @@ TEST_F(M4bDevice, BindingDurabilityRebootRevocationAndEmpty) {
   storage.failCommit = false;
   ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
   EXPECT_EQ(manager->bindingCount(), 1);
+  // A repeated identical set is already durable: acknowledged, not rewritten.
   const auto events = storage.events.size();
   EXPECT_EQ(manager->accept(0, body.data(), body.size()), 3);
-  EXPECT_EQ(storage.events.size(), events + 2);
+  EXPECT_EQ(storage.events.size(), events);
   manager->iterate(time.value);
   hvacSample(true);
   manager->iterate(time.value);
@@ -1460,6 +1474,63 @@ TEST_F(M4bDevice, BindingCapacityIsAtomicAndIndependentOfRemoteCache) {
   EXPECT_EQ(manager->accept(0, &empty, 1), 3);
   EXPECT_EQ(manager->accept(peer, overflow.data(), overflow.size()), 3);
   EXPECT_GT(storage.events.size(), writes);
+}
+
+TEST_F(M4bDevice, ReorderedDurableBindingSetSkipsStorageEvenWhenWritesFail) {
+  request.AclRevision++;
+  request.ResourceCount = 2;
+  request.Resources[1] = {1, 1002, 1};
+  ASSERT_EQ(associations.accept(request).Result, SUPLA_SUPLAN_RESULT_OK);
+  const auto first = binding();
+  std::vector<uint8_t> body(25, 0);
+  body[0] = 2;
+  std::memcpy(body.data() + 1, first.data() + 1, 12);
+  std::memcpy(body.data() + 13, first.data() + 1, 12);
+  putUint32(body.data() + 15, 1002);
+  auto manager = adapter.resourceBindings();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  storage.reboot();
+  manager->attachAssociations(&associations);
+  manager->iterate(time.value);
+  std::swap_ranges(body.begin() + 1, body.begin() + 13, body.begin() + 13);
+  const auto events = storage.events.size();
+  storage.failWrite = storage.failCommit = true;
+  EXPECT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  EXPECT_EQ(storage.events.size(), events);
+  // A different set still needs a successful durable transaction.
+  EXPECT_NE(manager->accept(0, first.data(), first.size()), 3);
+  EXPECT_EQ(manager->bindingCount(), 2);
+}
+
+TEST_F(M4bDevice, BindingEventsTrackTargetChangesAndSameTickSnapshots) {
+  auto manager = adapter.resourceBindings();
+  const auto body = binding();
+  ASSERT_EQ(manager->accept(0, body.data(), body.size()), 3);
+  manager->iterate(time.value);
+  hvacSample(true);
+  manager->iterate(time.value);
+  bool configured = false;
+  ASSERT_TRUE(manager->relayDemand(3, &configured));
+  hvacSample(false);  // A new sample need not advance millis().
+  manager->iterate(time.value);
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_TRUE(configured);
+  relay->getChannel()->setDefault(SUPLA_CHANNELFNC_POWERSWITCH);
+  manager->iterate(time.value);
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_FALSE(configured);
+  EXPECT_EQ(adapter.remoteResources()->consumerCount(), 0);
+  relay->getChannel()->setDefault(SUPLA_CHANNELFNC_PUMPSWITCH);
+  manager->iterate(time.value);
+  EXPECT_EQ(adapter.remoteResources()->consumerCount(), 1);
+  ASSERT_TRUE(Control::RelayHvacAggregator::Remove(3));
+  manager->iterate(time.value);
+  EXPECT_EQ(adapter.remoteResources()->consumerCount(), 0);
+  ASSERT_NE(Control::RelayHvacAggregator::Add(3, relay), nullptr);
+  manager->iterate(time.value);
+  EXPECT_EQ(adapter.remoteResources()->consumerCount(), 1);
+  hvacSample(true);
+  EXPECT_TRUE(manager->relayDemand(3, &configured));
 }
 
 TEST_F(M4bDevice, ComposedProfileSaturationReclaimAndIndependentLocalOutput) {
@@ -1652,6 +1723,60 @@ TEST_F(M4bDevice, IndependentContributorsUseOrAndReplacementDropsOldDemand) {
   EXPECT_FALSE(manager->relayDemand(3, &configured));
   EXPECT_EQ(manager->bindingCount(), 1);
 }
+
+#if SUPLAN_PROFILE == SUPLAN_PROFILE_LARGE
+// Measures the steady-state cost of one pass with 12 Sources x 15 bindings:
+// nothing changes between passes, so the work should not scale with bindings.
+TEST_F(M4bDevice, BindingIterateSteadyStateCost) {
+  const int sources = 12, channels = 15;
+  auto manager = adapter.resourceBindings();
+  for (int source = 0; source < sources; ++source) {
+    request.PeerContext.SourceNodeId = 301 + source;
+    request.AclRevision = 1;
+    request.ResourceCount = channels;
+    std::vector<uint8_t> body(1 + 12 * channels, 0);
+    body[0] = channels;
+    for (int channel = 0; channel < channels; ++channel) {
+      const uint32_t id = 2000 + source * 100 + channel;
+      request.Resources[channel] = {1, id, 1};
+      auto entry = body.data() + 1 + 12 * channel;
+      entry[0] = entry[1] = entry[6] = 1;
+      putUint32(entry + 2, id);
+      putUint32(entry + 7, 604);
+    }
+    std::vector<bool> known(SUPLAN_MAX_PERSISTENT_PEERS);
+    for (uint8_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
+      known[i] = peers.get(i) != nullptr;
+    ASSERT_EQ(associations.accept(request).Result, SUPLA_SUPLAN_RESULT_OK);
+    uint8_t peer = 0xff;
+    for (uint8_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
+      if (peers.get(i) && !known[i]) peer = i;
+    ASSERT_NE(peer, 0xff);
+    ASSERT_EQ(manager->accept(peer, body.data(), body.size()), 3);
+  }
+  ASSERT_EQ(manager->bindingCount(), sources * channels);
+  manager->iterate(time.value);
+  const int passes = 2000;
+  const auto start = std::chrono::steady_clock::now();
+  for (int i = 0; i < passes; ++i) manager->iterate(time.value);
+  const auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
+      std::chrono::steady_clock::now() - start).count();
+  std::printf("[ BINDCOST ] %d bindings: %" PRId64 " ns per pass\n",
+              sources * channels, static_cast<int64_t>(elapsed / passes));
+  const auto resourcesStart = std::chrono::steady_clock::now();
+  for (int i = 0; i < passes; ++i)
+    adapter.remoteResources()->iterate(time.value);
+  const auto resourcesElapsed =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          std::chrono::steady_clock::now() - resourcesStart).count();
+  std::printf("[ BINDCOST ] %d resources: %" PRId64 " ns per pass\n",
+              sources * channels,
+              static_cast<int64_t>(resourcesElapsed / passes));
+  bool configured = false;
+  EXPECT_FALSE(manager->relayDemand(3, &configured));
+  EXPECT_TRUE(configured);
+}
+#endif  // SUPLAN_PROFILE == SUPLAN_PROFILE_LARGE
 
 TEST_F(M4bDevice, BindingRejectsUnknownRoleTargetAndGenerationReplaces) {
   auto manager = adapter.resourceBindings();

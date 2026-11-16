@@ -66,3 +66,14 @@ deferred events. Standard (the ESP32 default) holds 4 and 8, Large 12 and 16,
 so one Destination reads several Sources in parallel. Measured with host `g++`
 without test hooks: Constrained 4992 B (unchanged), Standard 6784 → 7168 B,
 Large 12672 → 14240 B; `esp32:esp32:esp32wrover` Standard 6800 → 7152 B.
+
+Binding reconciliation keeps fixed revision counters and uses the existing
+padding for peer/channel lookup hints. Remote consumer lookups use a bounded
+filter (four bits per consumer, at least eight bytes) and two slot hints.
+For the ESP32-C3 Box profile (400 bindings, 400 consumers, 200 resources),
+compiler `sizeof` measurements are 16784 → 16816 B for
+`ResourceBindingManager` and 19080 → 19300 B for `RemoteResourceManager`.
+The latter includes 16 B for identity, topology and admission guards on the
+dependency sweep, shared by all HVACs rather than retained per reference.
+Together with the four-byte aggregator revision this adds 256 B of static
+metadata. This excludes optional profiling and is not a runtime heap measure.

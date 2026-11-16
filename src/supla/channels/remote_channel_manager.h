@@ -28,6 +28,7 @@ enum class ChannelAccessStatus : uint8_t {
 const char *channelAccessStatusName(ChannelAccessStatus status);
 
 namespace Device {
+class ServerIdentity;
 enum class RemoteAccess : uint8_t { PENDING, READY, BLOCKED };
 struct ConsumeIntent {
   uint32_t consumerId;
@@ -129,6 +130,9 @@ class RemoteChannelBackend {
 class RemoteChannelManager {
   friend class ServerStreamBackend;
  public:
+  static constexpr uint32_t kConsumerFilterBytes =
+      SUPLAN_MAX_D2D_CONSUMERS * 4 < 64 ? 8
+          : (SUPLAN_MAX_D2D_CONSUMERS * 4 + 7) / 8;
   explicit RemoteChannelManager(RemoteAccessPort *access)
       : access_(access), admissionExhausted_(false), ensurePending_(false),
         approvalRefreshArmed_(false), ensurePermissions_(0) {}
@@ -160,6 +164,9 @@ class RemoteChannelManager {
   void retryDeferredConsumers() {
     if (nextGeneration_ != UINT32_MAX) ++nextGeneration_;
   }
+  // Configuration edits need a dependency pass, without changing admission
+  // generations (duplicate identity/sync notifications remain idempotent).
+  void dependenciesChanged() { dependencyAdmission_ = 0; }
   bool currentGeneration(uint32_t generation) const;
   int consumerCount() const;
   bool hasConsumer(uint32_t consumer) const;
@@ -182,6 +189,28 @@ class RemoteChannelManager {
  private:
   RemoteChannelBackend *backend(RemoteDelivery delivery) const;
   void demand(RemoteChannelResource *resource, RemoteDelivery delivery);
+  // Local and unset dependencies release their token on every pass. The
+  // filter proves most of them absent without scanning every consumer slot:
+  // a clear bit means "not stored"; a set bit only means "maybe".
+  static uint32_t consumerFilterBit(uint32_t consumerId) {
+    return ((consumerId * UINT32_C(2654435761)) >> 12) %
+        (kConsumerFilterBytes * 8);
+  }
+  void noteConsumer(uint32_t consumerId) {
+    const uint32_t bit = consumerFilterBit(consumerId);
+    consumerFilter_[bit / 8] |= static_cast<uint8_t>(1U << (bit % 8));
+  }
+  void rebuildConsumerFilter();
+  uint8_t consumerFilter_[kConsumerFilterBytes] = {};
+  // Slots of the last consumer and resource lookups. Owners walk their
+  // entries in a stable order, so the next lookup usually hits a neighbour.
+  mutable uint16_t consumerHint_ = 0;
+  mutable uint16_t resourceHint_ = 0;
+  // Reinstall dependencies only after identity, topology or admission events.
+  const ServerIdentity *dependencyIdentity_ = nullptr;
+  uint32_t dependencyIdentityRevision_ = 0;
+  uint32_t dependencyTopology_ = 0;
+  uint32_t dependencyAdmission_ = 0;
   RemoteChannelBackend *backends_[2] = {};
   RemoteAccessPort *access_;
   RemoteChannelKey ensureResource_ = {0, RemoteDelivery::SupLanPeer};
@@ -195,8 +224,10 @@ class RemoteChannelManager {
 };
 static_assert(sizeof(RemoteChannelResource) <= 56,
               "Common snapshot state exceeded its extraction baseline");
-static_assert(sizeof(RemoteChannelManager) <= (sizeof(void *) == 8 ? 48 : 32),
-              "Common coordinator must not own an extra resource cache");
+static_assert(sizeof(RemoteChannelManager) <= (sizeof(void *) == 8 ? 48 : 32) +
+                  RemoteChannelManager::kConsumerFilterBytes + 8 +
+                  sizeof(void *) + 3 * sizeof(uint32_t),
+              "Common coordinator exceeded its filter and lookup metadata");
 }  // namespace Device
 }  // namespace Supla
 #endif

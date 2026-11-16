@@ -55,8 +55,13 @@ void releaseChannelConsumer(uint32_t consumer) {
 
 ChannelState consumeChannelState(ChannelReference reference,
                                  uint32_t consumer) {
-  const auto resolved =
-      resolveChannelReference(reference, acceptedReferenceIdentity());
+  return consumeResolvedChannelState(
+      resolveChannelReference(reference, acceptedReferenceIdentity()),
+      consumer);
+}
+
+ChannelState consumeResolvedChannelState(const ChannelResolution &resolved,
+                                         uint32_t consumer) {
 #ifndef ARDUINO_ARCH_AVR
   if (resolved.kind == ChannelResolutionKind::kRemote) {
     for (auto layer = Protocol::ProtocolLayer::first(); layer;

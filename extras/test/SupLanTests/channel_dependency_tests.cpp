@@ -149,6 +149,93 @@ TEST(ChannelDependency, DisabledLegacyReferencesEncodeAsUnsetServerIds) {
   EXPECT_FALSE(config.serverWire(nullptr, &wire));
 }
 
+class DependencyCounter : public Sensor::VirtualThermometer {
+ public:
+  void reconcileChannelDependencies() override {
+    ++passes;
+    if (manager) manager->consume(
+        {0x123400, {kResourceTypeChannel, 9999}, kPermissionRead});
+  }
+  unsigned passes = 0;
+  RemoteChannelManager *manager = nullptr;
+};
+
+TEST(ChannelDependency, IdleSweepTracksTopologyAndAdmissionEvents) {
+  Channel::resetToDefaults();
+  DependencyCounter counter;
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager manager(&peers, nullptr, &port);
+  manager.iterate(0);
+  ASSERT_EQ(counter.passes, 1U);
+  for (uint32_t now = 1; now < 100; ++now) manager.iterate(now);
+  EXPECT_EQ(counter.passes, 1U);
+  manager.retryDeferredConsumers();
+  manager.iterate(100);
+  EXPECT_EQ(counter.passes, 2U);
+  {
+    Sensor::VirtualThermometer added;
+    manager.iterate(101);
+    EXPECT_EQ(counter.passes, 3U);
+  }
+  manager.iterate(102);
+  EXPECT_EQ(counter.passes, 4U);
+  manager.serverReconnected();
+  manager.iterate(103);
+  EXPECT_EQ(counter.passes, 5U);
+  const auto generation = manager.admissionGeneration();
+  manager.dependenciesChanged();
+  manager.iterate(104);
+  EXPECT_EQ(counter.passes, 6U);
+  EXPECT_EQ(manager.admissionGeneration(), generation);
+}
+
+TEST(ChannelDependency, DeferredSweepRetriesUntilCapacityIsAvailable) {
+  Channel::resetToDefaults();
+  PeerTable peers;
+  RemoteResourceManager manager(&peers, nullptr, nullptr);
+  DependencyCounter counter;
+  counter.manager = &manager;
+  for (int i = 0; i < RemoteResourceManager::kCapacity; ++i)
+    ASSERT_TRUE(manager.consume({static_cast<uint32_t>(i + 1),
+        {kResourceTypeChannel, static_cast<uint32_t>(i + 100)},
+        kPermissionRead}));
+  manager.iterate(0);
+  EXPECT_FALSE(manager.hasConsumer(0x123400));
+  manager.iterate(1);
+  EXPECT_EQ(counter.passes, 2U);
+  manager.remove(1);
+  manager.iterate(2);
+  EXPECT_TRUE(manager.hasConsumer(0x123400));
+  manager.iterate(3);  // Settle the new resource generation.
+  const auto settled = counter.passes;
+  manager.iterate(4);
+  EXPECT_EQ(counter.passes, settled);
+}
+
+TEST(ChannelDependency, DeniedDemandBecomesReadyAfterPeerGrant) {
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager manager(&peers, nullptr, &port);
+  const ResourceId id = {kResourceTypeChannel, 501};
+  ASSERT_TRUE(manager.consume({1, id, kPermissionRead}));
+  manager.iterate(0);
+  manager.ensureResult({SUPLA_SUPLAN_RESULT_NOT_AUTHORIZED, 0,
+                        SUPLA_RESOURCE_DELIVERY_SUPLAN_PEER});
+  for (uint32_t now = 1; now < 100; ++now) {
+    manager.iterate(now);
+    EXPECT_EQ(manager.access(id), RemoteAccess::BLOCKED);
+  }
+  PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
+                         {kNodeIdDevice, 202}, 7, 1};
+  uint8_t key[32] = {1};
+  AclEntry acl = {id, kPermissionRead};
+  uint8_t index;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &acl, 1, &index, true));
+  EXPECT_EQ(manager.access(id), RemoteAccess::READY);
+  EXPECT_EQ(port.requests, 1);
+}
+
 TEST(ChannelDependency, SharedDemandIsSeparateFromGrantedAccess) {
   PeerTable peers;
   Access port;
@@ -388,6 +475,26 @@ class ReferenceHvac : public Control::HvacBase {
     return result;
   }
 };
+
+TEST(ChannelDependency, DependencySweepTracksAcceptedIdentityLifecycle) {
+  resetChannels();
+  DurableHvacConfig storage;
+  DependencyCounter counter;
+  PeerTable peers;
+  RemoteResourceManager manager(&peers, nullptr, nullptr);
+  manager.iterate(0);
+  ASSERT_EQ(counter.passes, 1U);
+  {
+    ServerIdentity identity;
+    identity.load(&storage);
+    manager.iterate(1);
+    EXPECT_EQ(counter.passes, 2U);
+    manager.iterate(2);
+    EXPECT_EQ(counter.passes, 2U);
+  }
+  manager.iterate(3);
+  EXPECT_EQ(counter.passes, 3U);
+}
 
 TEST(ChannelDependency, NeverRegisteredChannelZeroPersistsAndRestartsLocal) {
   resetChannels();

@@ -25,7 +25,9 @@ class ResourceBindingManager {
   void attachRuntime(SupLan::Runtime *runtime);
   void attachAssociations(ServerAssociations *associations);
   void iterate(uint32_t now);
-  void configChanged() { configDirty_ = true; }
+  void configChanged() { configDirty_ = contributorsDirty_ = true; }
+  // Snapshot events are distinct even when several arrive in one millis tick.
+  void snapshotChanged() { samplesDirty_ = true; }
   void ensureShareResult(const TSD_SuplaEnsureResourceShareResult &result);
   uint8_t accept(uint8_t peer, const uint8_t *body, size_t size);
   void authorizationReplacing(const SupLan::PeerContext &context,
@@ -55,7 +57,22 @@ class ResourceBindingManager {
     uint32_t freshMs = 0;
     uint8_t set = 0xff;
     bool active = false;
+    // Authorized Source peer at rightsRevision_, kPeerDenied or kPeerUnknown.
+    uint8_t peer = 0xff;
+    // Channel number where the target was last found; verified on every use.
+    uint8_t number = 0;
   } contributors_[SUPLAN_MAX_RESOURCE_BINDINGS];
+  static const uint8_t kPeerUnknown = 0xff, kPeerDenied = 0xfe;
+  // PeerTable::revision() of the cached peers; 0 forces a recheck.
+  uint32_t rightsRevision_ = 0;
+  uint32_t contributorIdentityRevision_ = 0;
+  uint32_t contributorTopologyRevision_ = 0;
+  uint32_t aggregatorRevision_ = 0;
+  uint32_t admissionGeneration_ = 0;
+  bool contributorsDirty_ = true;
+  bool samplesDirty_ = true;
+  bool retryContributors_ = false;
+  uint32_t contributorRetryMs_ = 0;
   struct Intent {
     uint32_t source = 0;
     uint32_t target = 0;
@@ -93,8 +110,9 @@ class ResourceBindingManager {
   void detach(uint8_t set);
   int peerForSet(uint8_t set) const;
   void collectIntents();
+  void refreshContributors(uint32_t now);
   void addIntent(uint32_t source, uint32_t target);
-  int targetNumber(uint32_t id) const;
+  int targetNumber(uint32_t id, uint8_t *hint = nullptr) const;
   bool hasCompleteIntents(uint8_t peer) const;
   void sendDesired(uint32_t now);
 };
@@ -106,7 +124,7 @@ static_assert(sizeof(ResourceBindingManager) <=
                   16 * SUPLAN_MAX_RESOURCE_BINDINGS +
                   20 * SUPLAN_MAX_BINDING_INTENTS +
                   sizeof(SupLan::BindingRetry) +
-                  2 * (29 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER) + 64 +
+                  2 * (29 + 12 * SUPLAN_MAX_BINDINGS_PER_PEER) + 96 +
                   alignof(ResourceBindingManager) - 1) /
                   alignof(ResourceBindingManager)) *
                   alignof(ResourceBindingManager),

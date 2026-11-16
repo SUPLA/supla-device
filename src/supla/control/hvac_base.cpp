@@ -649,7 +649,9 @@ void HvacBase::fillChannelConfig(void *channelConfig,
 }
 
 void HvacBase::iterateAlways() {
+#ifdef ARDUINO_ARCH_AVR
   refreshMainDependency();
+#endif
   if (getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     if (config.Subfunction == SUPLA_HVAC_SUBFUNCTION_NOT_SET) {
       setSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
@@ -2637,6 +2639,7 @@ void HvacBase::setAuxThermometerType(uint8_t type) {
   }
   if (config.AuxThermometerType != type) {
     config.AuxThermometerType = type;
+    refreshMainDependency();
     if (initDone) {
       saveConfig(true);
     }
@@ -4109,8 +4112,8 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally,
     config.MasterThermostat = previous[3];
     config.PumpSwitch = previous[4];
     config.HeatOrColdSourceSwitch = previous[5];
-    refreshMainDependency();
   }
+  refreshMainDependency();
 
   channel.clearHvacState();
 
@@ -6378,7 +6381,7 @@ Supla::ChannelState HvacBase::dependencyState(ChannelReference reference,
     releaseChannelConsumer(consumer);
     return ChannelState();
   }
-  return consumeChannelState(reference, consumer);
+  return consumeResolvedChannelState(resolved, consumer);
 }
 
 void HvacBase::refreshMainDependency() {

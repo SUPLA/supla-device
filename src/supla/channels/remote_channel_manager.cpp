@@ -8,6 +8,7 @@
 #include <inttypes.h>
 #include <supla/log_wrapper.h>
 #include <supla/element.h>
+#include <supla/channels/channel.h>
 
 namespace Supla {
 const char *channelAccessStatusName(ChannelAccessStatus status) {
@@ -51,9 +52,21 @@ bool RemoteChannelManager::registerBackend(RemoteDelivery mode,
     if (kDeliveries[i] != mode) continue;
     if (backends_[i] && backends_[i] != adapter) return false;
     backends_[i] = adapter;
+    rebuildConsumerFilter();
+    retryDeferredConsumers();
     return true;
   }
   return false;
+}
+void RemoteChannelManager::rebuildConsumerFilter() {
+  memset(consumerFilter_, 0, sizeof(consumerFilter_));
+  for (auto adapter : backends_) {
+    if (!adapter) continue;
+    for (int i = 0; i < adapter->consumerCapacity(); ++i) {
+      const auto owner = adapter->intentAt(i).consumerId;
+      if (owner) noteConsumer(owner);
+    }
+  }
 }
 void RemoteChannelManager::unregisterBackend(RemoteDelivery mode) {
   auto adapter = backend(mode);
@@ -65,14 +78,29 @@ void RemoteChannelManager::unregisterBackend(RemoteDelivery mode) {
   for (int i = 0; i < 2; ++i)
     if (kDeliveries[i] == mode) backends_[i] = nullptr;
   adapter->detached();
+  retryDeferredConsumers();
 }
 RemoteChannelResource *RemoteChannelManager::findResource(
     RemoteChannelKey key) const {
   auto adapter = backend(key.delivery);
   if (!adapter || !key.channelId) return nullptr;
-  for (int i = 0; i < adapter->capacity(); ++i) {
+  const int capacity = adapter->capacity();
+  // A Channel has at most one entry per backend; try the likely slots first.
+  for (int probe = -1; probe <= 1; ++probe) {
+    const int i = resourceHint_ + probe;
+    if (i < 0 || i >= capacity) continue;
     auto &entry = adapter->resourceAt(i);
-    if (entry.used() && entry.id.id == key.channelId) return &entry;
+    if (entry.used() && entry.id.id == key.channelId) {
+      resourceHint_ = static_cast<uint16_t>(i);
+      return &entry;
+    }
+  }
+  for (int i = 0; i < capacity; ++i) {
+    auto &entry = adapter->resourceAt(i);
+    if (entry.used() && entry.id.id == key.channelId) {
+      resourceHint_ = static_cast<uint16_t>(i);
+      return &entry;
+    }
   }
   return nullptr;
 }
@@ -90,6 +118,20 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
       access_->prepareBackend(static_cast<uint8_t>(intent.delivery), this))
     adapter = backend(intent.delivery);
   if (!adapter) return false;
+  // Steady state: an owner re-asserts its unchanged intent on every pass. It
+  // holds exactly one contribution, so no other backend needs a scan.
+  for (int probe = -1; probe <= 1; ++probe) {
+    const int i = consumerHint_ + probe;
+    if (i < 0 || i >= adapter->consumerCapacity()) continue;
+    const auto entry = adapter->intentAt(i);
+    if (entry.consumerId == intent.consumerId &&
+        sameResource(entry.resource, intent.resource) &&
+        entry.permissions == intent.permissions &&
+        entry.approvalEligible == intent.approvalEligible) {
+      consumerHint_ = static_cast<uint16_t>(i);
+      return true;
+    }
+  }
   // The owner token denotes exactly one contribution, including its mode.
   for (auto other : backends_) {
     if (!other || other == adapter) continue;
@@ -103,6 +145,7 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
   for (int i = 0; i < adapter->consumerCapacity(); ++i) {
     const auto entry = adapter->intentAt(i);
     if (entry.consumerId == intent.consumerId) {
+      consumerHint_ = static_cast<uint16_t>(i);
       if (sameResource(entry.resource, intent.resource) &&
           entry.permissions == intent.permissions &&
           entry.approvalEligible == intent.approvalEligible) return true;
@@ -111,6 +154,7 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
             !(intent.permissions & SupLan::kPermissionControl))
           adapter->cancelControls(intent.consumerId);
         if (!adapter->storeIntent(i, intent)) return false;
+        noteConsumer(intent.consumerId);
         auto resource = findResource({intent.resource.id, intent.delivery});
         if (!resource) return false;
         const uint8_t previous = resource->manualPermissions;
@@ -164,6 +208,7 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
     admissionExhausted_ = true;
     return false;
   }
+  noteConsumer(intent.consumerId);
   const uint8_t previous = resource->manualPermissions;
   demand(resource, intent.delivery);
   if (previous != resource->manualPermissions)
@@ -174,9 +219,12 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
 void RemoteChannelManager::remove(uint32_t consumerId) {
   if (!consumerId) return;
   bool removed = false;
+  const uint32_t bit = consumerFilterBit(consumerId);
+  const bool stored = consumerFilter_[bit / 8] & (1U << (bit % 8));
   for (auto adapter : backends_) {
     if (!adapter) continue;
     adapter->cancelControls(consumerId);
+    if (!stored) continue;  // Certainly holds no intent in any backend.
     for (int i = 0; i < adapter->consumerCapacity(); ++i) {
       const auto intent = adapter->intentAt(i);
       if (intent.consumerId == consumerId) {
@@ -190,6 +238,7 @@ void RemoteChannelManager::remove(uint32_t consumerId) {
   // No demand changed when that token was absent; keep control cancellation
   // above, but leave resource authorization to state/access and iterate.
   if (!removed) return;
+  rebuildConsumerFilter();
   for (int mode = 0; mode < 2; ++mode) {
     auto adapter = backends_[mode];
     if (!adapter) continue;
@@ -254,6 +303,9 @@ bool RemoteChannelManager::usable(RemoteChannelKey key,
       resource.generation && adapter->fresh(resource, nowMs);
 }
 void RemoteChannelManager::iterate(uint32_t nowMs) {
+  // Allocation can fail transiently (e.g. a dynamic backend). Keep retrying
+  // unsuccessful demand even if no pool/identity revision changed.
+  const bool retryAdmission = admissionExhausted_;
   admissionExhausted_ = false;
   // Cloud Remove of a PENDING/REJECTED decision is not pushed to the Device.
   // Rarely repeat approval-enabled ENSURE (~15 min plus up to ~1 min jitter)
@@ -266,11 +318,25 @@ void RemoteChannelManager::iterate(uint32_t nowMs) {
     approvalRefreshArmed_ = true;
     approvalRefreshAt_ = tick + kApprovalRefreshTicks + (nowMs & 63);
   }
-  // One list walk; a lookup per ChannelNumber would walk it 255 times.
-  for (auto element = Element::begin(); element; element = element->next()) {
-    if (element->getChannelNumber() >= 0 ||
-        element->getSecondaryChannelNumber() >= 0)
-      element->reconcileChannelDependencies();
+  const auto identity = acceptedReferenceIdentity();
+  const uint32_t identityRevision = identity ? identity->revision() : 0;
+  const uint32_t topology = Channel::registrationGeneration();
+  const uint32_t admission = admissionGeneration();
+  if (identity != dependencyIdentity_ ||
+      identityRevision != dependencyIdentityRevision_ ||
+      topology != dependencyTopology_ || admission != dependencyAdmission_ ||
+      admission == UINT32_MAX || retryAdmission) {
+    // Capture before callbacks: allocation/release can require another pass
+    // for consumers that could not obtain a slot earlier in this sweep.
+    dependencyIdentity_ = identity;
+    dependencyIdentityRevision_ = identityRevision;
+    dependencyTopology_ = topology;
+    dependencyAdmission_ = admission;
+    for (auto element = Element::begin(); element; element = element->next()) {
+      if (element->getChannelNumber() >= 0 ||
+          element->getSecondaryChannelNumber() >= 0)
+        element->reconcileChannelDependencies();
+    }
   }
   if (ensurePending_ && static_cast<int32_t>(nowMs - ensureNextMs_) >= 0) {
     if (access_) access_->cancelEnsure();

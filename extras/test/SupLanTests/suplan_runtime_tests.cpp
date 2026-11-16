@@ -2918,6 +2918,30 @@ TEST(SupLanRecovery, DirectServerRoleMutationCannotDispatchRetainedRead) {
 }
 
 
+TEST(SupLanRecovery, PartialRevocationKeepsOtherReadRecoveryUntilLastRevoke) {
+  using namespace Supla::SupLan;  // NOLINT(build/namespaces)
+  RuntimePair pair;
+  pair.datagramsA.available = false;
+  const ResourceId second = {kResourceTypeChannel, 50002};
+  const AclEntry acl[] = {{pair.resource, kPermissionRead},
+                           {second, kPermissionRead}};
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, acl, 2));
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, second));
+  pair.runtimeB.iterate();
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 3, acl + 1, 1));
+  pair.runtimeB.iterate();
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+  EXPECT_TRUE(pair.runtimeB.readNeedsRefresh(pair.peerB, second));
+  EXPECT_TRUE(pair.runtimeB.recoveryStatus(pair.peerB).active);
+  ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 4, nullptr, 0));
+  pair.runtimeB.iterate();
+  EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, second));
+  EXPECT_FALSE(pair.runtimeB.recoveryStatus(pair.peerB).active);
+  EXPECT_EQ(pair.runtimeB.recoverySummary().scheduled, 0U);
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().pending.used, 0U);
+}
+
 TEST(SupLanRecovery, FairCursorDispatchesAllSlotsAndReusedSlotsOnce) {
   RuntimePair pair;
   const Supla::SupLan::AclEntry wildcard = {

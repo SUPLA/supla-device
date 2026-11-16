@@ -432,7 +432,7 @@ class Runtime {
   void startLocate(uint8_t peerIndex);
   void startHandshake(uint8_t peerIndex);
   void recoverSession(uint8_t peerIndex, uint64_t sessionId);
-  void cancelPeerRecoveryIfIdle(uint8_t peerIndex);
+  void cancelPeerRecoveryIfIdle(uint8_t onlyPeer = 0xff);
   void beginRecovery(uint8_t peerIndex);
   void finishRecovery(uint8_t peerIndex);
   void iterateRecovery(uint32_t now);
@@ -451,7 +451,7 @@ class Runtime {
   }
   // rights=false checks only the peer role, never ACL/ownership.
   void pruneReadDependencies(bool rights = true);
-  bool readRole(uint8_t peerIndex, const ResourceId &resource) const;
+  bool readRole(uint8_t peerIndex) const;
   bool readAuthorized(uint8_t peerIndex, const ResourceId &resource) const;
   void noteReachability(uint8_t peerIndex);
   void completeRead(uint8_t peerIndex, const ResourceId &resource);

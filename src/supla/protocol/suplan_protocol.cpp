@@ -193,6 +193,7 @@ Device::ResourceBindingManager *SupLan::resourceBindings() {
 void SupLan::notifyConfigChange(int channelNumber) {
   (void)channelNumber;
   bindingConfigDirty_ = true;
+  if (resources_) resources_->dependenciesChanged();
   if (resources_ && resources_->bindings)
     resources_->bindings->configChanged();
 }
@@ -326,6 +327,17 @@ bool SupLan::isConfigEmpty() {
   return false;
 }
 
+#if SUPLAN_ITERATE_TIMING_ENABLED
+namespace {
+// Application work done while a received STATE is dispatched: the resource
+// cache with its consumers, then the optional application event handler.
+struct StateCallbackTiming {
+  uint32_t count, sumResources, maxResources, sumHandler, maxHandler;
+  uint32_t slowestMs, slowestChannelId;
+} stateCallbackTiming = {};
+}  // namespace
+#endif  // SUPLAN_ITERATE_TIMING_ENABLED
+
 bool SupLan::iterate(uint32_t nowMs) {
   // Optional wall-clock diagnostics. All paths, including early returns,
   // contribute to the same 5 s window. No logging inside measured stages.
@@ -396,6 +408,15 @@ bool SupLan::iterate(uint32_t nowMs) {
               names[i], sums[i] / calls, maxima[i],
               names[i + 1], sums[i + 1] / calls, maxima[i + 1]);
         }
+        auto &cb = stateCallbackTiming;
+        SUPLA_LOG_INFO(
+            "SupLAN state callback n=%" PRIu32 " ms avg/max resources=%" PRIu32
+            "/%" PRIu32 " handler=%" PRIu32 "/%" PRIu32 " slowest_ms=%" PRIu32
+            " ChannelId=%" PRIu32,
+            cb.count, cb.count ? cb.sumResources / cb.count : 0,
+            cb.maxResources, cb.count ? cb.sumHandler / cb.count : 0,
+            cb.maxHandler, cb.slowestMs, cb.slowestChannelId);
+        cb = StateCallbackTiming();
         calls = periods = sumPeriod = maxPeriod = 0;
         sumOutside = maxOutside = sumRun = maxRun = 0;
         for (unsigned i = 0; i < kStageCount; ++i) {
@@ -762,15 +783,35 @@ void SupLan::receiveState(uint8_t peerIndex,
                           const Supla::SupLan::ResourceId &resource,
                           uint32_t messageType, const uint8_t *payload,
                           size_t payloadLength) {
+#if SUPLAN_ITERATE_TIMING_ENABLED
+  const uint32_t timingStart = millis();
+#endif
   if (resources_ && messageType == 6) {
     resources_->receive(peerIndex, resource, payload, payloadLength,
                          runtime_->nowMs());
   }
+#if SUPLAN_ITERATE_TIMING_ENABLED
+  const uint32_t timingResources = millis();
+#endif
   if (eventHandler_ != nullptr) {
     eventHandler_(eventContext_, kSupLanRemoteState, peerIndex, resource,
                   messageType,
                   payload, payloadLength);
   }
+#if SUPLAN_ITERATE_TIMING_ENABLED
+  auto &cb = stateCallbackTiming;
+  const uint32_t resourcesMs = timingResources - timingStart;
+  const uint32_t handlerMs = millis() - timingResources;
+  ++cb.count;
+  cb.sumResources += resourcesMs;
+  cb.sumHandler += handlerMs;
+  if (resourcesMs > cb.maxResources) cb.maxResources = resourcesMs;
+  if (handlerMs > cb.maxHandler) cb.maxHandler = handlerMs;
+  if (resourcesMs + handlerMs > cb.slowestMs) {
+    cb.slowestMs = resourcesMs + handlerMs;
+    cb.slowestChannelId = resource.id;
+  }
+#endif
 }
 
 void SupLan::receiveAction(uint8_t peerIndex,

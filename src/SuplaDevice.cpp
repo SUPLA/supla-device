@@ -32,6 +32,7 @@
 #include <supla/events.h>
 #include <supla/io.h>
 #include <supla/log_wrapper.h>
+#include <supla/loop_profiler.h>
 #include <supla/mutex.h>
 #include <supla/network/network.h>
 #include <supla/network/web_server.h>
@@ -571,6 +572,9 @@ void SuplaDeviceClass::iterate(void) {
     return;
   }
 
+#if SUPLA_LOOP_PROFILING_ENABLED
+  Supla::LoopProfiler::Scope loopProfile;
+#endif
   uint32_t _millis = millis();
 
   auto cfg = Supla::Storage::ConfigInstance();
@@ -582,6 +586,7 @@ void SuplaDeviceClass::iterate(void) {
   handleLocalActionTriggers();
   handleSupletRuntimeRefresh();
   iterateAlwaysElements(_millis);
+  SUPLA_LOOP_STAGE(kNetwork);
 
   if (forceRestartTimeMs) {
     return;
@@ -615,12 +620,23 @@ void SuplaDeviceClass::iterate(void) {
     default: {
       // When network is ready iterate over protocol layers
       bool iterateConnected = false;
+      SUPLA_LOOP_STAGE(kProtocols);
+#if SUPLA_LOOP_PROFILING_ENABLED
+      uint16_t protocolIndex = 0;
+#endif
       for (auto proto = Supla::Protocol::ProtocolLayer::first();
            proto != nullptr;
            proto = proto->next()) {
+#if SUPLA_LOOP_PROFILING_ENABLED
+        const uint32_t protocolStart = Supla::LoopProfiler::nowUs();
+#endif
         if (proto->iterate(_millis)) {
           iterateConnected = true;
         }
+#if SUPLA_LOOP_PROFILING_ENABLED
+        Supla::LoopProfiler::item(Supla::LoopProfiler::kItemProtocol,
+                                  protocolIndex++, -1, protocolStart);
+#endif
         if (proto->isNetworkRestartRequested()) {
           bool independentTransportActive = false;
           for (auto peer = Supla::Protocol::ProtocolLayer::first();
@@ -649,17 +665,33 @@ void SuplaDeviceClass::iterate(void) {
           iterateConnectedPtr = nullptr;
           Supla::Element::ClearInvalidPtr();
         }
+        SUPLA_LOOP_STAGE(kElementsConnected);
+#if SUPLA_LOOP_PROFILING_ENABLED
+        // Position of iterateConnectedPtr on the element list.
+        static uint16_t connectedIndex = 0;
+        if (iterateConnectedPtr == nullptr) connectedIndex = 0;
+#endif
         if (iterateConnectedPtr == nullptr) {
           iterateConnectedPtr = Supla::Element::begin();
         }
         for (; iterateConnectedPtr != nullptr;
              iterateConnectedPtr = iterateConnectedPtr->next()) {
+#if SUPLA_LOOP_PROFILING_ENABLED
+          const uint32_t connectedStart = Supla::LoopProfiler::nowUs();
+          const bool proceed = iterateConnectedPtr->iterateConnected();
+          Supla::LoopProfiler::item(
+              Supla::LoopProfiler::kItemConnected, connectedIndex++,
+              iterateConnectedPtr->getChannelNumber(), connectedStart);
+          if (!proceed) {
+#else
           if (!iterateConnectedPtr->iterateConnected()) {
+#endif
             iterateConnectedPtr = iterateConnectedPtr->next();
             break;
           }
           delay(0);
         }
+        SUPLA_LOOP_STAGE(kSwUpdate);
         // check SW update availability
         if (swUpdate == nullptr && isAutomaticFirmwareUpdateEnabled()) {
           if (millis() - lastSwUpdateCheckTimestamp >
@@ -1039,15 +1071,28 @@ void SuplaDeviceClass::iterateAlwaysElements(uint32_t _millis) {
   uptime.iterate(_millis);
 
   // Iterate all elements
+  SUPLA_LOOP_STAGE(kElementsAlways);
+#if SUPLA_LOOP_PROFILING_ENABLED
+  uint16_t elementIndex = 0;
+#endif
   for (auto element = Supla::Element::begin(); element != nullptr;
        element = element->next()) {
+#if SUPLA_LOOP_PROFILING_ENABLED
+    const uint32_t elementStart = Supla::LoopProfiler::nowUs();
+#endif
     element->iterateAlways();
+#if SUPLA_LOOP_PROFILING_ENABLED
+    Supla::LoopProfiler::item(Supla::LoopProfiler::kItemAlways, elementIndex++,
+                              element->getChannelNumber(), elementStart);
+#endif
     delay(0);
   }
 
+  SUPLA_LOOP_STAGE(kChannelHandles);
 #ifndef ARDUINO_ARCH_AVR
   Supla::ChannelHandle::iterateAll();
 #endif
+  SUPLA_LOOP_STAGE(kStateStorage);
   // Iterate all elements and saves state
   if (Supla::Storage::SaveStateAllowed(_millis)) {
     saveStateToStorage();

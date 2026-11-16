@@ -68,6 +68,9 @@ static_assert(sizeof(StoredChannelReference) == 5,
 
 const Device::ServerIdentity *acceptedReferenceIdentity();
 ChannelState consumeChannelState(ChannelReference reference, uint32_t consumer);
+// Reuse a resolution already checked by the caller (e.g. self-reference).
+ChannelState consumeResolvedChannelState(const ChannelResolution &resolved,
+                                         uint32_t consumer);
 void releaseChannelConsumer(uint32_t consumer);
 int localReferenceNumber(ChannelReference reference);
 bool referenceWireId(ChannelReference reference, uint32_t *id);

@@ -30,6 +30,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/at_channel.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/action_handler.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/time.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/loop_profiler.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/timer.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/input_noise_guard.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/mutex.cpp

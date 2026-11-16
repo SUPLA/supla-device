@@ -197,18 +197,30 @@ void Runtime::profileIterationEnd(uint32_t start) {
   auto &profile = readProfile_;
   auto &window = profile.window;
   window.run.add(nowMs() - start);
-  bool ready = false;
-  for (const auto &entry : dependencies_)
-    ready = ready || (entry.used && entry.needsRefresh && !entry.pending &&
-        recovery_[entry.peerIndex].active && hasSession(entry.peerIndex));
-  for (const auto &entry : deferred_)
-    ready = ready || (entry.used && entry.data[0] == kMessageClassNative &&
-        getUint32(entry.data + 1) == kNativeReadResource &&
-        hasSession(entry.peerIndex));
   unsigned used = 0;
   for (const auto &retry : retries_) used += retry.isUsed();
   window.slotUsedTicks += used;
-  profile.readyFree = ready && used < SUPLAN_MAX_RETRY_SLOTS;
+  bool ready = false;
+  if (used < SUPLAN_MAX_RETRY_SLOTS) {
+    bool recovering = false;
+    for (const auto &peer : recovery_) recovering = recovering || peer.active;
+    if (recovering) {
+      for (const auto &entry : dependencies_) {
+        if (entry.used && entry.needsRefresh && !entry.pending &&
+            recovery_[entry.peerIndex].active && hasSession(entry.peerIndex)) {
+          ready = true;
+          break;
+        }
+      }
+    }
+    for (const auto &entry : deferred_) {
+      if (ready) break;
+      ready = entry.used && entry.data[0] == kMessageClassNative &&
+          getUint32(entry.data + 1) == kNativeReadResource &&
+          hasSession(entry.peerIndex);
+    }
+  }
+  profile.readyFree = ready;
   window.readyFreeTicks += profile.readyFree;
   profile.lastEndMs = nowMs();
 }
@@ -821,53 +833,25 @@ void Runtime::noteReachability(uint8_t peerIndex) {
 }
 
 void Runtime::pruneReadDependencies(bool rights) {
-  for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
-    ReadDependency &entry = dependencies_[i];
-    if (!entry.used) {
-      continue;
-    }
-    const uint8_t peerIndex = entry.peerIndex;
+  enum { kReadable = 1, kRefresh = 2, kRemoved = 4 };
+  uint8_t state[SUPLAN_MAX_PERSISTENT_PEERS] = {};
+  for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
+    state[i] = readRole(i) ? kReadable : 0;
+  for (const auto &entry : dependencies_) {
+    if (!entry.used) continue;
+    const uint8_t peer = entry.peerIndex;
     const ResourceId resource = {entry.resourceType, entry.resourceId};
-    if (rights ? readAuthorized(peerIndex, resource)
-               : readRole(peerIndex, resource)) {
-      continue;
-    }
-    // A revoked dependency must not retain queued or retrying READ work.
-    for (uint8_t d = 0; d < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++d) {
-      DeferredApplication &deferred = deferred_[d];
-      ApplicationDataView application = {};
-      ResourceDataView body = {};
-      if (deferred.used && deferred.peerIndex == peerIndex &&
-          decodeApplicationData(deferred.data, deferred.length, &application) &&
-          application.messageClass == kMessageClassNative &&
-          application.messageType == kNativeReadResource &&
-          decodeResourceData(&application, &body) &&
-          body.resource.type == resource.type &&
-          body.resource.id == resource.id) {
-        deferred.used = false;
-      }
-    }
-    for (uint8_t r = 0; r < SUPLAN_MAX_RETRY_SLOTS; ++r) {
-      RetryEntry &retry = retries_[r];
-      if (retry.isUsed() && retry.peerIndex == peerIndex &&
-          (retry.flags & kRetryReadRequest) != 0 &&
-          retry.resource.type == resource.type &&
-          retry.resource.id == resource.id) {
-        clearRetryEntry(&retry);
-      }
-    }
-    entry = ReadDependency();
-    cancelPeerRecoveryIfIdle(peerIndex);
-    bool refresh = false;
-    for (uint16_t d = 0; d < SUPLAN_MAX_READ_DEPENDENCIES; ++d) {
-      refresh = refresh || (dependencies_[d].used &&
-          dependencies_[d].peerIndex == peerIndex &&
-          dependencies_[d].needsRefresh);
-    }
-    if (!refresh) {
-      recovery_[peerIndex].scheduled = false;
+    if ((state[peer] & kReadable) && resource.type == kResourceTypeChannel &&
+        (!rights || readAuthorized(peer, resource))) {
+      if (entry.needsRefresh) state[peer] |= kRefresh;
+    } else {
+      removeReadDependency(peer, resource);
+      state[peer] |= kRemoved;
     }
   }
+  for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
+    if ((state[i] & kRemoved) && !(state[i] & kRefresh))
+      recovery_[i].scheduled = false;
 }
 
 void Runtime::iterateRecovery(uint32_t now) {
@@ -878,6 +862,8 @@ void Runtime::iterateRecovery(uint32_t now) {
         static_cast<int32_t>(now - peer.nextRefreshMs) >= 0) {
       peer.sleeping = false;
     }
+    if (!peer.active && (!peer.scheduled || peer.sleeping ||
+        static_cast<int32_t>(now - peer.nextRefreshMs) < 0)) continue;
     bool handshake = false;
     for (uint8_t i = 0; i < SUPLAN_MAX_PENDING_HANDSHAKES; ++i) {
       handshake = handshake || (pending_[i].used && pending_[i].initiator &&
@@ -1147,60 +1133,51 @@ void Runtime::recoverSession(uint8_t peerIndex, uint64_t sessionId) {
   updatePoolHighWater();
 }
 
-void Runtime::cancelPeerRecoveryIfIdle(uint8_t peerIndex) {
-  // Source grants require a session, not a response after each publication.
-  if ((recovery_[peerIndex].active || recovery_[peerIndex].scheduled) &&
-      !hasSession(peerIndex) && application_ &&
-      application_->bindingSessionNeeded(peerIndex)) return;
-  for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
-    if (deferred_[i].used && deferred_[i].peerIndex == peerIndex) {
-      return;
-    }
-  }
-  for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
-    if (retries_[i].isUsed() && retries_[i].peerIndex == peerIndex) {
-      return;
-    }
-  }
-  if (recovery_[peerIndex].active || recovery_[peerIndex].scheduled) {
-    for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
-      if (dependencies_[i].used && dependencies_[i].peerIndex == peerIndex &&
-          dependencies_[i].needsRefresh) {
-        return;
+void Runtime::cancelPeerRecoveryIfIdle(uint8_t onlyPeer) {
+  // One queue walk for all peers, also used by single-peer cancellations.
+  bool busy[SUPLAN_MAX_PERSISTENT_PEERS] = {};
+  for (const auto &entry : deferred_)
+    if (entry.used) busy[entry.peerIndex] = true;
+  for (const auto &entry : retries_)
+    if (entry.isUsed()) busy[entry.peerIndex] = true;
+  for (const auto &entry : dependencies_)
+    if (entry.used && entry.needsRefresh &&
+        (recovery_[entry.peerIndex].active ||
+         recovery_[entry.peerIndex].scheduled)) busy[entry.peerIndex] = true;
+  const uint16_t first = onlyPeer == 0xff ? 0 : onlyPeer;
+  const uint16_t end = onlyPeer == 0xff
+      ? SUPLAN_MAX_PERSISTENT_PEERS : first + 1;
+  for (uint16_t peerIndex = first; peerIndex < end; ++peerIndex) {
+    auto &peer = recovery_[peerIndex];
+    if (busy[peerIndex]) continue;
+    // Source grants require a session, not a response after each publication.
+    if ((peer.active || peer.scheduled) && !hasSession(peerIndex) &&
+        application_ && application_->bindingSessionNeeded(peerIndex)) continue;
+    for (auto &locate : locates_) {
+      if (locate.used && locate.peerIndex == peerIndex) {
+        emit(DiagnosticEvent::LocateTimeout, peerIndex);
+        locate.used = false;
       }
     }
+    for (auto &pending : pending_)
+      if (pending.used && pending.initiator && pending.peerIndex == peerIndex)
+        clearPendingHandshake(&pending);
+    if (peer.active && (peer.locateAttempts || peer.backgroundStage))
+      emit(DiagnosticEvent::RecoveryComplete, peerIndex);
+    peer.active = peer.scheduled = false;
   }
-  for (uint8_t i = 0; i < SUPLAN_MAX_OUTSTANDING_LOCATES; ++i) {
-    if (locates_[i].used && locates_[i].peerIndex == peerIndex) {
-      emit(DiagnosticEvent::LocateTimeout, locates_[i].peerIndex);
-      locates_[i].used = false;
-    }
-  }
-  for (uint8_t i = 0; i < SUPLAN_MAX_PENDING_HANDSHAKES; ++i) {
-    if (pending_[i].used && pending_[i].initiator &&
-        pending_[i].peerIndex == peerIndex) {
-      clearPendingHandshake(&pending_[i]);
-    }
-  }
-  if (recovery_[peerIndex].active &&
-      (recovery_[peerIndex].locateAttempts ||
-       recovery_[peerIndex].backgroundStage))
-    emit(DiagnosticEvent::RecoveryComplete, peerIndex);
-  recovery_[peerIndex].active = false;
-  recovery_[peerIndex].scheduled = false;
-  updatePoolHighWater();
 }
 
-bool Runtime::readRole(uint8_t peerIndex, const ResourceId &resource) const {
+bool Runtime::readRole(uint8_t peerIndex) const {
   const PeerRecord *peer = peers_->get(peerIndex);
-  return resource.type == kResourceTypeChannel && peer &&
+  return peer &&
       (peer->contextBytes[0] != kAuthorityServer || peer->destination) &&
       isLocalDestination(peer);
 }
 
 bool Runtime::readAuthorized(uint8_t peerIndex,
                              const ResourceId &resource) const {
-  return readRole(peerIndex, resource) &&
+  return resource.type == kResourceTypeChannel && readRole(peerIndex) &&
       (peers_->effectivePermissions(peerIndex, resource) &
        (kPermissionRead | kPermissionActionTrigger));
 }
@@ -3812,9 +3789,7 @@ void Runtime::iterate() {
 
   drainDeferred();
   dispatchReads();
-  for (uint8_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
-    cancelPeerRecoveryIfIdle(i);
-  }
+  cancelPeerRecoveryIfIdle();
   updatePoolHighWater();
 #if SUPLAN_READ_PROFILING_ENABLED
   profileIterationEnd(profileStart);

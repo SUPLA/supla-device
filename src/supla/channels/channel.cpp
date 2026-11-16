@@ -409,6 +409,7 @@ void Channel::setType(uint32_t type) {
   const auto replacement = protoTypeToChannelType(type);
   if (channelType == replacement) return;
   channelType = replacement;
+  ++registrationChanges;
   for (auto p = Protocol::ProtocolLayer::first(); p; p = p->next())
     p->sendChannelMetadataChanged(channelNumber);
 }
@@ -427,6 +428,7 @@ void Channel::setDefault(uint32_t value) {
   }
 
   defaultFunction = value;
+  ++registrationChanges;
   runAction(ON_CHANNEL_FUNCTION_CHANGE);
   for (auto p = Protocol::ProtocolLayer::first(); p; p = p->next())
     p->sendChannelMetadataChanged(channelNumber);

@@ -547,6 +547,8 @@ void ResourceBindingManager::refreshContributors(uint32_t now) {
         targetNumber(entry.target, &entry.number) < 0)) {
       resources_->remove(0x40000 + i);
       entry.active = false;
+      // Not a Channel number: sample-only passes skip this entry as well.
+      if (entry.peer != kPeerDenied) entry.number = kNoTarget;
       continue;
     }
     if (reconcile && !resources_->consume({
@@ -556,7 +558,7 @@ void ResourceBindingManager::refreshContributors(uint32_t now) {
       retryContributors_ = true;
       continue;
     }
-    if (entry.peer == kPeerDenied) continue;
+    if (entry.peer == kPeerDenied || entry.number == kNoTarget) continue;
     const auto state =
         resources_->state({SupLan::kResourceTypeChannel, entry.source}, now);
     THVACValue value;

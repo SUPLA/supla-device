@@ -178,6 +178,16 @@ class Runtime {
     }
     uint32_t average() const { return count ? total / count : 0; }
   };
+  struct WorkTiming {
+    uint64_t total = 0;
+    uint32_t count = 0, maximum = 0;
+    void add(uint32_t ms) {
+      total += ms;
+      ++count;
+      if (ms > maximum) maximum = ms;
+    }
+    uint32_t average() const { return count ? total / count : 0; }
+  };
   struct ReadProfile {
     ReadTiming period, outside, run, queue, ack, state, hold, rxDispatch, send;
     uint32_t elapsedMs = 0;
@@ -186,6 +196,8 @@ class Runtime {
     uint32_t readyFreeTicks = 0, readyFreeMs = 0, slotUsedTicks = 0;
     uint32_t ackTimeout = 0, stateTimeout = 0, sendFailed = 0;
     uint32_t backoff = 0, cycleYield = 0, deadlineReadExpired = 0;
+    WorkTiming peerMaterial, sessionKeys, sessionInit, sessionAccept;
+    uint32_t handshakeFull = 0, retryPeak = 0;
     uint32_t workspaceBytes = 0;
   };
   bool readProfileDue() const;
@@ -427,10 +439,16 @@ class Runtime {
                 uint32_t sequence) const;
   int findFreeRetry() const;
   int findFreeInterest() const;
-  void pruneInterests(uint32_t now);
+  void pruneInterests(uint32_t now, bool rights = false);
+  void synchronizeAuthorization();
+  void revalidateAuthorization();
+  bool readAdmitted(uint8_t peerIndex, const ResourceId &resource);
   void updatePoolHighWater();
   void startLocate(uint8_t peerIndex);
   void startHandshake(uint8_t peerIndex);
+  bool materialFor(uint8_t peerIndex, PeerMaterial *material);
+  bool deriveKeys(const PeerMaterial &material, const SessionInit &init,
+                  const SessionAccept &accept, PendingHandshake *attempt);
   void recoverSession(uint8_t peerIndex, uint64_t sessionId);
   void cancelPeerRecoveryIfIdle(uint8_t onlyPeer = 0xff);
   void beginRecovery(uint8_t peerIndex);
@@ -500,7 +518,8 @@ class Runtime {
   void sendAck(uint8_t peerIndex, SessionEntry *session, uint32_t sequence,
                uint8_t result);
   void noteReadState(uint8_t peerIndex, const ResourceId &resource);
-  bool addInterest(uint8_t peerIndex, const ResourceId &resource);
+  bool addInterest(uint8_t peerIndex, const ResourceId &resource,
+                    uint8_t permissions);
   bool interested(uint8_t peerIndex, const ResourceId &resource) const;
   bool resourceFromApplication(const ApplicationDataView &application,
                                ResourceId *resource,

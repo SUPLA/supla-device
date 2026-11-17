@@ -113,7 +113,7 @@
 #define SUPLAN_RX_MAX_REASSEMBLED_FRAME 1024
 #endif
 // ACK_REQUIRED operations in flight. Each peer waits for its own reply, so a
-// Destination reading many Sources needs about one slot per concurrent peer.
+// Destination may pipeline multiple READs per Source during initial recovery.
 #ifndef SUPLAN_MAX_RETRY_SLOTS
 #if SUPLAN_PROFILE == SUPLAN_PROFILE_LARGE
 #define SUPLAN_MAX_RETRY_SLOTS 12

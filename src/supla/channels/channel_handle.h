@@ -66,7 +66,9 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   bool remoteOnly_ = false;
 
  private:
-  void reconcile();
+  Channel *reconcile();
+  bool hasPermission(uint8_t permission, Channel **local = nullptr);
+  class Cursor;
   void observe();
   void baselineConditions();
   Device::RemoteChannelManager *manager() const;
@@ -77,6 +79,7 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   static ChannelHandle *after(uint32_t token, uint32_t limit);
   static ChannelHandle *first_;
   static uint32_t nextToken_;
+  static uint32_t registryRevision_;
   ChannelHandle *next_ = nullptr;
   uint32_t token_ = 0;
   uint32_t id_ = 0;

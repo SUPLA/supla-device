@@ -556,6 +556,18 @@ bool SupLan::iterate(uint32_t nowMs) {
         p.ack.count, p.ack.average(), p.ack.maximum,
         p.state.count, p.state.average(), p.state.maximum,
         p.hold.count, p.hold.average(), p.hold.maximum);
+    SUPLAN_DIAG_INFO("SupLAN crypto ms n/avg/max material=%" PRIu32
+        "/%" PRIu32 "/%" PRIu32 " keys=%" PRIu32 "/%" PRIu32 "/%" PRIu32,
+        p.peerMaterial.count, p.peerMaterial.average(), p.peerMaterial.maximum,
+        p.sessionKeys.count, p.sessionKeys.average(), p.sessionKeys.maximum);
+    // Handler wall times include nested material/key derivation and sends.
+    SUPLAN_DIAG_INFO("SupLAN handshake ms n/avg/max init=%" PRIu32
+        "/%" PRIu32 "/%" PRIu32 " accept=%" PRIu32 "/%" PRIu32 "/%" PRIu32
+        " full=%" PRIu32 " retry_peak=%" PRIu32 " retry_capacity=%u",
+        p.sessionInit.count, p.sessionInit.average(), p.sessionInit.maximum,
+        p.sessionAccept.count, p.sessionAccept.average(),
+        p.sessionAccept.maximum,
+        p.handshakeFull, p.retryPeak, SUPLAN_MAX_RETRY_SLOTS);
     SUPLAN_DIAG_INFO("SupLAN perf stalls queue=%" PRIu32 " retry=%" PRIu32
         " fairness=%" PRIu32 " ready_free_ticks=%" PRIu32
         " ready_free_ms=%" PRIu32 " slot_used_ticks=%" PRIu32

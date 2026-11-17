@@ -1996,6 +1996,49 @@ struct HandleLifecycleEnvironment {
   }
 };
 
+TEST(ChannelHandle, IterationSurvivesDeletingNextAndDefersNewHandles) {
+  HandleLifecycleEnvironment env;
+  class CountingHandle : public ChannelHandle {
+   public:
+    explicit CountingHandle(int *calls) : ChannelHandle(1001, kPermissionRead),
+        calls(calls) {}
+    ChannelState state() override {
+      ++*calls;
+      return ChannelHandle::state();
+    }
+    int *calls;
+  };
+  int firstCalls = 0, removedCalls = 0, lastCalls = 0, newCalls = 0;
+  CountingHandle first(&firstCalls);
+  auto removed = new CountingHandle(&removedCalls);
+  CountingHandle last(&lastCalls);
+  CountingHandle *created = nullptr;
+  class Mutate : public ActionHandler {
+   public:
+    Mutate(CountingHandle **removed, CountingHandle **created, int *calls)
+        : removed(removed), created(created), calls(calls) {}
+    void handleAction(int, int) override {
+      delete *removed;
+      *removed = nullptr;
+      *created = new CountingHandle(calls);
+    }
+    CountingHandle **removed, **created;
+    int *calls;
+  } mutate(&removed, &created, &newCalls);
+  first.addAction(1, mutate, ON_CHANGE);
+  ChannelHandle::iterateAll();
+  env.publish(1001, 20);
+  firstCalls = removedCalls = lastCalls = newCalls = 0;
+  env.publish(1001, 21);
+  EXPECT_EQ(firstCalls, 1);
+  EXPECT_EQ(removedCalls, 0);
+  EXPECT_EQ(lastCalls, 1);
+  EXPECT_EQ(newCalls, 0);
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(newCalls, 1);
+  delete created;
+}
+
 TEST(ChannelHandle, CallbackDroppingReadStopsRemainingValueEvents) {
   HandleLifecycleEnvironment env;
   ChannelHandle handle(1001, kPermissionRead);

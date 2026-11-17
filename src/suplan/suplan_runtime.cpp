@@ -15,6 +15,20 @@ namespace Supla {
 namespace SupLan {
 
 namespace {
+#if SUPLAN_READ_PROFILING_ENABLED
+class WorkTimer {
+ public:
+  WorkTimer(Runtime::WorkTiming *timing, DatagramPort *clock)
+      : timing_(timing), clock_(clock), start_(clock->nowMs()) {}
+  ~WorkTimer() { timing_->add(clock_->nowMs() - start_); }
+
+ private:
+  Runtime::WorkTiming *timing_;
+  DatagramPort *clock_;
+  uint32_t start_;
+};
+#endif
+
 static const uint8_t kResultNotAllowed = 24;
 static const uint8_t kResultChannelNotFound = 25;
 static const uint8_t kResultTrue = 3;
@@ -200,6 +214,7 @@ void Runtime::profileIterationEnd(uint32_t start) {
   unsigned used = 0;
   for (const auto &retry : retries_) used += retry.isUsed();
   window.slotUsedTicks += used;
+  if (used > window.retryPeak) window.retryPeak = used;
   bool ready = false;
   if (used < SUPLAN_MAX_RETRY_SLOTS) {
     bool recovering = false;
@@ -303,6 +318,9 @@ int Runtime::allocatePending(uint8_t peerIndex, bool initiator) {
       initiator ? CapacityOutcome::Deferred : CapacityOutcome::Rejected,
       SUPLAN_MAX_PENDING_HANDSHAKES, SUPLAN_MAX_PENDING_HANDSHAKES, peerIndex);
   ++diagnostics_.poolReject;
+#if SUPLAN_READ_PROFILING_ENABLED
+  ++readProfile_.window.handshakeFull;
+#endif
   return -1;
 }
 
@@ -958,7 +976,7 @@ void Runtime::startLocate(uint8_t peerIndex) {
   recovery.lastLocateMs = now;
   PeerMaterial material = {};
   Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
-  if (!peers_->materialFor(peerIndex, &material)) {
+  if (!materialFor(peerIndex, &material)) {
     return;
   }
   uint8_t nonce[kNonceSize];
@@ -997,6 +1015,25 @@ void Runtime::startLocate(uint8_t peerIndex) {
   updatePoolHighWater();
 }
 
+bool Runtime::materialFor(uint8_t peerIndex, PeerMaterial *material) {
+#if SUPLAN_READ_PROFILING_ENABLED
+  WorkTimer timer(&readProfile_.window.peerMaterial, datagrams_);
+#endif
+  return peers_->materialFor(peerIndex, material);
+}
+
+bool Runtime::deriveKeys(const PeerMaterial &material, const SessionInit &init,
+                         const SessionAccept &accept,
+                         PendingHandshake *attempt) {
+#if SUPLAN_READ_PROFILING_ENABLED
+  WorkTimer timer(&readProfile_.window.sessionKeys, datagrams_);
+#endif
+  return deriveSessionKeys(material.peerKey, material.contextHash, init.ni,
+      accept.nr, attempt->initFrame, sizeof(attempt->initFrame),
+      attempt->acceptFrame, sizeof(attempt->acceptFrame), attempt->sessionId,
+      &attempt->keys, transmitFrame_);
+}
+
 void Runtime::startHandshake(uint8_t peerIndex) {
   PeerRecord *peer = peers_->get(peerIndex);
   if (peer == nullptr || !peers_->hasActiveGrants(peerIndex) ||
@@ -1018,18 +1055,18 @@ void Runtime::startHandshake(uint8_t peerIndex) {
     startLocate(peerIndex);
     return;
   }
+  // Do not derive keys for peers that cannot start a handshake yet.
+  const int slot = allocatePending(peerIndex, true);
+  if (slot < 0) return;
+  PendingHandshake *attempt = &pending_[slot];
   PeerMaterial material = {};
   Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
-  if (!peers_->materialFor(peerIndex, &material)) {
+  if (!materialFor(peerIndex, &material)) {
+    clearPendingHandshake(attempt);
     return;
   }
   const Endpoint endpoint = peer->endpoint;
-  const int slot = allocatePending(peerIndex, true);
-  if (slot < 0) {
-    return;
-  }
   recovery_[peerIndex].probeAttempted = true;
-  PendingHandshake *attempt = &pending_[slot];
   attempt->initiator = true;
   attempt->peerIndex = peerIndex;
   attempt->endpoint = endpoint;
@@ -1140,10 +1177,14 @@ void Runtime::cancelPeerRecoveryIfIdle(uint8_t onlyPeer) {
     if (entry.used) busy[entry.peerIndex] = true;
   for (const auto &entry : retries_)
     if (entry.isUsed()) busy[entry.peerIndex] = true;
-  for (const auto &entry : dependencies_)
-    if (entry.used && entry.needsRefresh &&
-        (recovery_[entry.peerIndex].active ||
-         recovery_[entry.peerIndex].scheduled)) busy[entry.peerIndex] = true;
+  // A single peer without recovery state cannot be kept busy by demand.
+  if (onlyPeer == 0xff || recovery_[onlyPeer].active ||
+      recovery_[onlyPeer].scheduled) {
+    for (const auto &entry : dependencies_)
+      if (entry.used && entry.needsRefresh &&
+          (recovery_[entry.peerIndex].active ||
+           recovery_[entry.peerIndex].scheduled)) busy[entry.peerIndex] = true;
+  }
   const uint16_t first = onlyPeer == 0xff ? 0 : onlyPeer;
   const uint16_t end = onlyPeer == 0xff
       ? SUPLAN_MAX_PERSISTENT_PEERS : first + 1;
@@ -1246,6 +1287,7 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
 }
 
 void Runtime::dispatchReads() {
+  synchronizeAuthorization();
   // This is the sole fresh READ admission point, called once per outer iterate.
   // A direct request or nested drain only records demand; neither calls here.
   // Per peer: READs in flight, kReadDemand when it waits for admission, or
@@ -1302,7 +1344,7 @@ void Runtime::dispatchReads() {
       continue;
     }
     const ResourceId resource = {entry.resourceType, entry.resourceId};
-    if (!readAuthorized(peerIndex, resource)) {
+    if (!readAdmitted(peerIndex, resource)) {
       removeReadDependency(peerIndex, resource);
       continue;
     }
@@ -1600,31 +1642,48 @@ void Runtime::setLocalAddress(const NodeAddress &address) {
   }
 }
 
+void Runtime::synchronizeAuthorization() {
+  // The PeerTable event covers grants, ownership and peer lifecycle changes.
+  // Do not retain a second ACL cache in each retry or interest entry.
+  if (peers_->takeRuntimeSweep()) revalidateAuthorization();
+}
+
+bool Runtime::readAdmitted(uint8_t peerIndex, const ResourceId &resource) {
+  synchronizeAuthorization();
+  return readRole(peerIndex) && findReadDependency(peerIndex, resource) >= 0;
+}
+
 void Runtime::authorizationChanged(uint8_t peerIndex) {
   // A complete binding frame may contain several independently revoked
   // resources. Reconcile current desired topology before transmitting again.
   auto bindingRetry = application_ ? application_->bindingRetry() : nullptr;
   if (bindingRetry && bindingRetry->peerIndex == peerIndex)
     bindingRetry->length = 0;
+  // Explicit notifications also support adapters without a table mutation.
+  (void)peers_->takeRuntimeSweep();
+  revalidateAuthorization();
+}
+
+void Runtime::revalidateAuthorization() {
   pruneReadDependencies();
-  pruneInterests(datagrams_->nowMs());
+  pruneInterests(datagrams_->nowMs(), true);
   for (uint16_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry &retry = retries_[i];
-    if (!retry.isUsed() || retry.peerIndex != peerIndex) {
+    if (!retry.isUsed()) {
       continue;
     }
     uint8_t permission = retry.actionDelivery ? kPermissionActionTrigger :
         retry.controlDelivery ? kPermissionControl : kPermissionRead;
-    if (!peers_->authorize(peerIndex, retry.resource, permission) &&
+    if (!peers_->authorize(retry.peerIndex, retry.resource, permission) &&
         !((retry.flags & kRetryReadRequest) &&
-          peers_->authorize(peerIndex, retry.resource,
+          peers_->authorize(retry.peerIndex, retry.resource,
                             kPermissionActionTrigger))) {
       clearRetryEntry(&retry);
     }
   }
   for (uint16_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
     DeferredApplication &entry = deferred_[i];
-    if (!entry.used || entry.peerIndex != peerIndex) {
+    if (!entry.used) {
       continue;
     }
     ApplicationDataView app = {};
@@ -1637,15 +1696,15 @@ void Runtime::authorizationChanged(uint8_t peerIndex) {
     uint8_t permission = isControlApplication(entry.data, entry.length) ?
         kPermissionControl : app.messageType == kSuplaCallActionTrigger ?
         kPermissionActionTrigger : kPermissionRead;
-    if (!peers_->authorize(peerIndex, body.resource, permission) &&
+    if (!peers_->authorize(entry.peerIndex, body.resource, permission) &&
         !(app.messageClass == kMessageClassNative &&
           app.messageType == kNativeReadResource &&
-          peers_->authorize(peerIndex, body.resource,
+          peers_->authorize(entry.peerIndex, body.resource,
                             kPermissionActionTrigger))) {
       entry = DeferredApplication();
     }
   }
-  cancelPeerRecoveryIfIdle(peerIndex);
+  cancelPeerRecoveryIfIdle();
 }
 
 #ifdef SUPLAN_TESTING
@@ -1682,7 +1741,7 @@ bool Runtime::startFlood(TestFloodKind kind, uint8_t peerIndex,
     PeerMaterial material = {};
     Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
     SessionInit init = {};
-    if (!peers_->materialFor(peerIndex, &material)) {
+    if (!materialFor(peerIndex, &material)) {
       memset(&flood_, 0, sizeof(flood_));
       return false;
     }
@@ -1810,6 +1869,7 @@ void Runtime::drainDeferred() {
   if (processing_) {
     return;
   }
+  synchronizeAuthorization();
   const uint32_t now = datagrams_->nowMs();
   expireControls(now);
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
@@ -1826,8 +1886,7 @@ void Runtime::drainDeferred() {
       continue;
     }
     if ((retry->flags & kRetryReadRequest) != 0 &&
-        (!readAuthorized(retry->peerIndex, retry->resource) ||
-         findReadDependency(retry->peerIndex, retry->resource) < 0)) {
+        !readAdmitted(retry->peerIndex, retry->resource)) {
       const uint8_t peerIndex = retry->peerIndex;
       const ResourceId resource = retry->resource;
       clearRetryEntry(retry);
@@ -1871,7 +1930,7 @@ void Runtime::drainDeferred() {
       if ((readFlags & kRetryReadRequest) != 0) {
         const int slot = findReadDependency(peerIndex, resource);
         if (slot < 0 || !dependencies_[slot].pending ||
-            !readAuthorized(peerIndex, resource)) continue;
+            !readAdmitted(peerIndex, resource)) continue;
       }
       retry->peerIndex = peerIndex;
       retry->resource = resource;
@@ -1893,6 +1952,9 @@ void Runtime::drainDeferred() {
     }
   }
   for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
+    // Sending an earlier entry runs application code (snapshot construction).
+    // A grant revoked there must also drop the entries still queued here.
+    synchronizeAuthorization();
     DeferredApplication *queued = &deferred_[i];
     if (!queued->used) {
       continue;
@@ -1903,8 +1965,7 @@ void Runtime::drainDeferred() {
       const ResourceId resource = {
           queued->data[kApplicationHeaderSize],
           getUint32(queued->data + kApplicationHeaderSize + 1)};
-      if (!readAuthorized(queued->peerIndex, resource) ||
-          findReadDependency(queued->peerIndex, resource) < 0) {
+      if (!readAdmitted(queued->peerIndex, resource)) {
         const uint8_t peerIndex = queued->peerIndex;
         queued->used = false;
         removeReadDependency(peerIndex, resource);
@@ -1921,9 +1982,7 @@ void Runtime::drainDeferred() {
       const ResourceId stateResource = {
           queued->data[kApplicationHeaderSize],
           getUint32(queued->data + kApplicationHeaderSize + 1)};
-      if (!interested(queued->peerIndex, stateResource) ||
-          !peers_->authorize(queued->peerIndex, stateResource,
-                             kPermissionRead)) {
+      if (!interested(queued->peerIndex, stateResource)) {
         queued->used = false;
         cancelPeerRecoveryIfIdle(queued->peerIndex);
         continue;
@@ -2181,8 +2240,7 @@ bool Runtime::sendProtectedToEndpoint(
   if (ackRequired && applicationLength >= kApplicationHeaderSize &&
       applicationData[0] == kMessageClassNative &&
       getUint32(applicationData + 1) == kNativeReadResource &&
-      (!readAuthorized(peerIndex, resource) ||
-       findReadDependency(peerIndex, resource) < 0)) {
+      !readAdmitted(peerIndex, resource)) {
     return false;
   }
   // PROTO-014: admission applies before encryption, sequence consumption or TX.
@@ -2307,7 +2365,7 @@ bool Runtime::sendProtectedToEndpoint(
   if ((retryFlags & kRetryReadRequest) != 0) {
     const int slot = findReadDependency(peerIndex, resource);
     if (slot < 0 || !dependencies_[slot].pending ||
-        !readAuthorized(peerIndex, resource) ||
+        !readAdmitted(peerIndex, resource) ||
         findSession(sessionId, endpoint) < 0) return false;
   }
 #ifdef SUPLAN_TESTING
@@ -2470,7 +2528,7 @@ void Runtime::processDatagram(const Endpoint &source, const uint8_t *data,
     Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
     uint8_t mac[32];
     Supla::Crypto::ScopedWipe<decltype(mac)> wipeMac(mac);
-    if (!peers_->materialFor(index, &material) ||
+    if (!materialFor(index, &material) ||
         !Supla::Crypto::hmacSha256(material.locateMacKey, 32, input,
                                    labelLength + bodyLength, mac) ||
         !equalBytesConstantTime(mac, data + bodyLength, 16)) {
@@ -2571,7 +2629,7 @@ void Runtime::processLocate(const Endpoint &source, const uint8_t *data,
   }
   PeerMaterial material = {};
   Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
-  if (!peers_->materialFor(static_cast<uint8_t>(peerIndex),
+  if (!materialFor(static_cast<uint8_t>(peerIndex),
                            &material)) {
     emit(DiagnosticEvent::RejectLocate);
     ++diagnostics_.invalidLocateDrop;
@@ -2640,7 +2698,7 @@ void Runtime::processLocateReply(const Endpoint &source, const uint8_t *data,
     Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
     uint8_t expected[kPeerLocatorSize];
     if (peer == nullptr ||
-        !peers_->materialFor(locate->peerIndex, &material) ||
+        !materialFor(locate->peerIndex, &material) ||
         !locateReplyMac(&material, kVersion,
                         kFrameLocateReply, nonce, expected) ||
         !equalBytesConstantTime(expected, mac, sizeof(expected))) {
@@ -2667,6 +2725,9 @@ void Runtime::processLocateReply(const Endpoint &source, const uint8_t *data,
 
 void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
                                  size_t length) {
+#if SUPLAN_READ_PROFILING_ENABLED
+  WorkTimer timer(&readProfile_.window.sessionInit, datagrams_);
+#endif
   if (data == nullptr || length != kSessionInitSize) {
     emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.invalidSessionDrop;
@@ -2684,7 +2745,7 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
   Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   SessionInit init = {};
   if (peer == nullptr ||
-      !peers_->materialFor(peerIndex, &material) ||
+      !materialFor(peerIndex, &material) ||
       !decodeSessionInit(material.initMacKey, data, length, &init)) {
     emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.invalidSessionDrop;
@@ -2749,13 +2810,7 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
   if (!encodeSessionAccept(material.acceptMacKey,
                            response->initFrame, &accept,
                            response->acceptFrame) ||
-      !deriveSessionKeys(material.peerKey,
-                         material.contextHash, init.ni,
-                         accept.nr, response->initFrame,
-                         sizeof(response->initFrame), response->acceptFrame,
-                         sizeof(response->acceptFrame), response->sessionId,
-                         &response->keys,
-                         transmitFrame_)) {
+      !deriveKeys(material, init, accept, response)) {
     clearPendingHandshake(response);
     return;
   }
@@ -2769,6 +2824,9 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
 
 void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
                                    size_t length) {
+#if SUPLAN_READ_PROFILING_ENABLED
+  WorkTimer timer(&readProfile_.window.sessionAccept, datagrams_);
+#endif
 #ifdef SUPLAN_TESTING
   if (hooks_.dropNextSessionAcceptRx != 0) {
     --hooks_.dropNextSessionAcceptRx;
@@ -2805,7 +2863,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   SessionInit init = {};
   SessionAccept accept = {};
   if (peer == nullptr ||
-      !peers_->materialFor(attempt->peerIndex, &material) ||
+      !materialFor(attempt->peerIndex, &material) ||
       !decodeSessionInit(material.initMacKey, attempt->initFrame,
                          sizeof(attempt->initFrame), &init) ||
       !decodeSessionAccept(material.acceptMacKey,
@@ -2818,13 +2876,7 @@ void Runtime::processSessionAccept(const Endpoint &source, const uint8_t *data,
   memcpy(attempt->acceptFrame, data, sizeof(attempt->acceptFrame));
   attempt->sessionId = accept.sessionId;
   attempt->peerRxMaxReassembledFrame = accept.responderRxMaxReassembledFrame;
-  if (!deriveSessionKeys(material.peerKey,
-                         material.contextHash, init.ni,
-                         accept.nr, attempt->initFrame,
-                         sizeof(attempt->initFrame), attempt->acceptFrame,
-                         sizeof(attempt->acceptFrame), attempt->sessionId,
-                         &attempt->keys,
-                         transmitFrame_)) {
+  if (!deriveKeys(material, init, accept, attempt)) {
     emit(DiagnosticEvent::RejectSession);
     ++diagnostics_.invalidSessionDrop;
     clearPendingHandshake(attempt);
@@ -3015,15 +3067,15 @@ void Runtime::processApplication(SessionEntry *session, uint32_t sequence,
   }
 }
 
-void Runtime::pruneInterests(uint32_t now) {
+void Runtime::pruneInterests(uint32_t now, bool rights) {
   for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     RuntimeInterest &interest = interests_[i];
     if (interest.used &&
         (static_cast<uint32_t>(now - interest.lastRefreshMs) >=
              kRuntimeInterestTimeoutMs ||
          !isLocalSource(peers_->get(interest.peerIndex)) ||
-         (!peers_->authorize(interest.peerIndex, interest.resource,
-                             kPermissionRead) &&
+         (rights && !peers_->authorize(interest.peerIndex, interest.resource,
+                                       kPermissionRead) &&
           !peers_->authorize(interest.peerIndex, interest.resource,
                              kPermissionActionTrigger)))) {
       memset(&interest, 0, sizeof(interest));
@@ -3031,8 +3083,14 @@ void Runtime::pruneInterests(uint32_t now) {
   }
 }
 
-bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource) {
-  pruneInterests(datagrams_->nowMs());
+bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource,
+                           uint8_t permissions) {
+  synchronizeAuthorization();
+  // Snapshot construction invokes application code. Recheck only this new
+  // admission afterwards; a callback may have revoked its grant.
+  if (!isLocalSource(peers_->get(peerIndex)) ||
+      !(peers_->effectivePermissions(peerIndex, resource) & permissions))
+    return false;
   for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     RuntimeInterest *interest = &interests_[i];
     if (interest->used && interest->peerIndex == peerIndex &&
@@ -3043,7 +3101,13 @@ bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource) {
       return true;
     }
   }
-  const int slot = findFreeInterest();
+  int slot = findFreeInterest();
+  if (slot < 0) {
+    // An existing interest only refreshes its own timestamp. Reclaim expired
+    // entries here solely when admitting a new interest into a full pool.
+    pruneInterests(datagrams_->nowMs());
+    slot = findFreeInterest();
+  }
   if (slot < 0) {
     capacityLimited(CapacityPool::Interests, CapacityOperation::Read,
         CapacityOutcome::Rejected, SUPLAN_MAX_RUNTIME_INTERESTS,
@@ -3260,10 +3324,9 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
   resource.type = application.body[0];
   resource.id = getUint32(application.body + 1);
   const PeerRecord *peer = peers_->get(peerIndex);
-  const bool readAuthorized = peers_->authorize(peerIndex, resource,
-                                                 kPermissionRead);
-  const bool actionAuthorized = peers_->authorize(peerIndex, resource,
-                                                   kPermissionActionTrigger);
+  const uint8_t permissions = peers_->effectivePermissions(peerIndex, resource);
+  const bool readAuthorized = permissions & kPermissionRead;
+  const bool actionAuthorized = permissions & kPermissionActionTrigger;
   if (duplicate) {
     const uint8_t cacheIndex = static_cast<uint8_t>(sequence & 63U);
     const uint8_t result = session->ackResults[cacheIndex];
@@ -3287,7 +3350,8 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
       sizeof(applicationBuffer_) - payloadOffset, &payloadLength);
   if (eventOnly) {
     if ((readAuthorized || actionAuthorized) &&
-        addInterest(peerIndex, resource)) {
+        addInterest(peerIndex, resource,
+                    kPermissionRead | kPermissionActionTrigger)) {
       ++diagnostics_.readDispatched;
       if (application_ != nullptr) {
         application_->readInterestRefreshed(peerIndex, resource, true);
@@ -3307,7 +3371,7 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
     ++diagnostics_.resourceNotFound;
     return;
   }
-  if (!addInterest(peerIndex, resource)) {
+  if (!addInterest(peerIndex, resource, kPermissionRead)) {
     return;
   }
   emit(DiagnosticEvent::StateTransmit, peerIndex, resource);
@@ -3567,7 +3631,8 @@ void Runtime::iterate() {
   // Dependencies are authorized when admitted. Recheck their peer role every
   // iteration, but ACL/ownership rights only after a PeerTable change; a
   // change during this sweep makes the next iteration sweep again.
-  pruneReadDependencies(peers_->takeRuntimeSweep());
+  synchronizeAuthorization();
+  pruneReadDependencies(false);
   for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
     if (peers_->get(i) && !peers_->runtimeEligible(i)) clearPeer(i);
   }
@@ -3646,28 +3711,17 @@ void Runtime::iterate() {
     }
   }
   iterateRecovery(now);
+  synchronizeAuthorization();
   pruneInterests(now);
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
     if (retry->isUsed() && (retry->flags & kRetryReadRequest) != 0 &&
-        (!readAuthorized(retry->peerIndex, retry->resource) ||
-         findReadDependency(retry->peerIndex, retry->resource) < 0)) {
+        !readAdmitted(retry->peerIndex, retry->resource)) {
       const uint8_t peerIndex = retry->peerIndex;
       const ResourceId resource = retry->resource;
       clearRetryEntry(retry);
       removeReadDependency(peerIndex, resource);
       continue;
-    }
-    if (retry->isUsed()) {
-      uint8_t permission = retry->actionDelivery ? kPermissionActionTrigger :
-          retry->controlDelivery ? kPermissionControl : kPermissionRead;
-      if (!peers_->authorize(retry->peerIndex, retry->resource, permission) &&
-          !((retry->flags & kRetryReadRequest) &&
-            peers_->authorize(retry->peerIndex, retry->resource,
-                              kPermissionActionTrigger))) {
-        clearRetryEntry(retry);
-        continue;
-      }
     }
     const bool actionDelivery =
         retry->actionDelivery;
@@ -3760,8 +3814,7 @@ void Runtime::iterate() {
       if (readRequest &&
           (!retry->isUsed() || retry->sequence != sequence ||
            (retry->flags & kRetryReadRequest) == 0 ||
-           !readAuthorized(retry->peerIndex, retry->resource) ||
-           findReadDependency(retry->peerIndex, retry->resource) < 0 ||
+           !readAdmitted(retry->peerIndex, retry->resource) ||
            findSession(retry->sessionId, peer->endpoint) < 0)) continue;
 #ifdef SUPLAN_TESTING
       if (hooks_.failNextDataTx != 0) {
@@ -3834,7 +3887,7 @@ bool Runtime::announcePresence(uint8_t peerIndex, uint16_t window,
   PeerMaterial material = {};
   Supla::Crypto::ScopedWipe<PeerMaterial> wipeMaterial(material);
   uint8_t frame[52] = {kVersion, static_cast<uint8_t>(reset ? 6 : 7)};
-  if (!peers_->materialFor(peerIndex, &material)) {
+  if (!materialFor(peerIndex, &material)) {
     if (reset)
       emit(DiagnosticEvent::ResetSendFailed, peerIndex, ResourceId(), 1);
     return false;

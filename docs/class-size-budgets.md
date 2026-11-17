@@ -77,3 +77,17 @@ The latter includes 16 B for identity, topology and admission guards on the
 dependency sweep, shared by all HVACs rather than retained per reference.
 Together with the four-byte aggregator revision this adds 256 B of static
 metadata. This excludes optional profiling and is not a runtime heap measure.
+
+With `SUPLAN_READ_PROFILING_ENABLED=1`, `SupLAN crypto` reports call counts and
+average/maximum wall time in milliseconds for peer material and session key
+derivation. `SupLAN handshake` reports INIT/ACCEPT handler times, failed pending
+slot admissions, and the peak retry occupancy sampled at iteration end. Handler
+times include nested key derivation and sends; do not add them to crypto times.
+The counters reset with each existing ten-second READ profiling window and
+add 72 B to `Runtime` only when READ profiling is enabled.
+
+Channel handles traverse the stable registry linearly, falling back to an
+owner-token lookup only after callback-driven registry mutation. The registry
+revision adds one shared 4-byte static counter. ESP32-C3 compiler probes show
+no per-object growth: `ChannelHandle` remains 56 B. ACL revalidation uses the existing
+PeerTable change event; retries and interests do not add permission caches.

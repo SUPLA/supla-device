@@ -16,6 +16,26 @@
 namespace Supla {
 ChannelHandle *ChannelHandle::first_ = nullptr;
 uint32_t ChannelHandle::nextToken_ = 0x80000000U;
+uint32_t ChannelHandle::registryRevision_ = 0;
+// Keep a linear cursor while the registry is stable. Callback-driven deletion
+// invalidates borrowed pointers; resume by token only after such a mutation.
+class ChannelHandle::Cursor {
+ public:
+  Cursor() : next_(first_), limit_(nextToken_), revision_(registryRevision_) {}
+  ChannelHandle *next() {
+    if (revision_ != registryRevision_) next_ = after(token_, limit_);
+    revision_ = registryRevision_;
+    auto handle = next_;
+    if (!handle || !handle->token_ || handle->token_ > limit_) return nullptr;
+    token_ = handle->token_;
+    next_ = handle->next_;
+    return handle;
+  }
+
+ private:
+  ChannelHandle *next_;
+  uint32_t limit_, revision_, token_ = 0;
+};
 ChannelHandle::ChannelHandle(uint32_t channelId, uint8_t permissions,
                              RemoteDelivery delivery)
     : location_(static_cast<uint8_t>(ChannelResolutionKind::kUnresolved)),
@@ -27,10 +47,15 @@ ChannelHandle::ChannelHandle(uint32_t channelId, uint8_t permissions,
   // Never recycle a token, including after storage/address reuse.
   if (nextToken_ != UINT32_MAX) token_ = ++nextToken_;
   configure(channelId, permissions);
-  next_ = first_;
-  first_ = this;
+  // Token order makes the steady-state cursor linear and preserves callback
+  // order. Construction is infrequent; no per-handle reverse link is needed.
+  auto link = &first_;
+  while (*link) link = &(*link)->next_;
+  *link = this;
+  ++registryRevision_;
 }
 ChannelHandle::~ChannelHandle() {
+  ++registryRevision_;
   deactivate();
   auto link = &first_;
   while (*link && *link != this) link = &(*link)->next_;
@@ -61,10 +86,9 @@ bool ChannelHandle::configure(uint32_t id, uint8_t permissions) {
 void ChannelHandle::invalidateServerScope() {
   // Keep caller-owned demand, but discard all old-scope runtime and baseline.
   // Reconciliation waits for accepted identity/sync and obtains fresh access.
-  const uint32_t limit = nextToken_;
-  uint32_t token = 0;
-  while (auto handle = after(token, limit)) {
-    token = handle->token_;
+  Cursor cursor;
+  while (auto handle = cursor.next()) {
+    const uint32_t token = handle->token_;
     CancelDispatch(handle);
     DeleteActionsHandledBy(handle);
     handle->admitted_ = false;
@@ -96,14 +120,10 @@ Device::RemoteChannelManager *ChannelHandle::manager() const {
   return nullptr;
 }
 Channel *ChannelHandle::localChannel() {
-  if (!active_ || delivery() != RemoteDelivery::SupLanPeer) return nullptr;
-  const auto resolved = resolveChannelReference(
-      ChannelReference::server(id_), acceptedReferenceIdentity());
-  return !remoteOnly_ && resolved.kind == ChannelResolutionKind::kLocal
-             ? resolved.channel : nullptr;
+  return reconcile();
 }
-void ChannelHandle::reconcile() {
-  if (!active_) return;
+Channel *ChannelHandle::reconcile() {
+  if (!active_) return nullptr;
   const auto resolved = resolveChannelReference(
       ChannelReference::server(id_), acceptedReferenceIdentity());
   const auto location = delivery() == RemoteDelivery::ServerStream &&
@@ -134,50 +154,46 @@ void ChannelHandle::reconcile() {
     // Deferred demand stays on the intrusive live-handle list. Retry only
     // after a pool/authorization change, rather than polling a full pool.
     if (!admitted_ && resources &&
-        continuity_ == resources->admissionGeneration()) return;
+        continuity_ == resources->admissionGeneration()) return nullptr;
     admitted_ = resources && resources->consume(
         {token_, {SupLan::kResourceTypeChannel, id_}, permissions_, true,
          delivery()});
     if (!admitted_ && resources)
       continuity_ = resources->admissionGeneration();
   }
+  return location == ChannelResolutionKind::kLocal ? resolved.channel : nullptr;
+}
+bool ChannelHandle::hasPermission(uint8_t permission, Channel **local) {
+  auto channel = reconcile();
+  if (local) *local = channel;
+  const uint8_t requested = permission == SupLan::kPermissionRead
+      ? SupLan::kPermissionRead | SupLan::kPermissionControl : permission;
+  if (!active_ || !(permissions_ & requested)) return false;
+  if (channel) return true;
+  auto resources = manager();
+  return admitted_ && resources &&
+      (resources->effectivePermissions(key()) & permission);
 }
 bool ChannelHandle::hasReadPermission() {
-  reconcile();
-  if (!active_ || !(permissions_ & (SupLan::kPermissionRead |
-                                   SupLan::kPermissionControl))) return false;
-  if (localChannel()) return true;
-  auto resources = manager();
-  return admitted_ && resources && (resources->effectivePermissions(key()) &
-                                    SupLan::kPermissionRead);
+  return hasPermission(SupLan::kPermissionRead);
 }
 bool ChannelHandle::hasControlPermission() {
-  reconcile();
-  if (!active_ || !(permissions_ & SupLan::kPermissionControl)) return false;
-  if (localChannel()) return true;
-  auto resources = manager();
-  return admitted_ && resources && (resources->effectivePermissions(key()) &
-                                    SupLan::kPermissionControl);
+  return hasPermission(SupLan::kPermissionControl);
 }
 bool ChannelHandle::hasActionTriggerPermission() {
-  reconcile();
-  if (!active_ || !(permissions_ & SupLan::kPermissionActionTrigger))
-    return false;
-  if (localChannel()) return true;
-  auto resources = manager();
-  return admitted_ && resources && (resources->effectivePermissions(key()) &
-                                    SupLan::kPermissionActionTrigger);
+  return hasPermission(SupLan::kPermissionActionTrigger);
 }
 ChannelState ChannelHandle::state() {
-  if (!hasReadPermission()) return ChannelState();
-  if (auto channel = localChannel()) return ChannelState(channel);
+  Channel *channel = nullptr;
+  if (!hasPermission(SupLan::kPermissionRead, &channel)) return ChannelState();
+  if (channel) return ChannelState(channel);
   auto resources = manager();
   return resources ? resources->state(key(), millis()) : ChannelState();
 }
 ChannelAccessStatus ChannelHandle::accessStatus() {
-  reconcile();
+  auto channel = reconcile();
   if (!active_ || !id_) return ChannelAccessStatus::INVALID;
-  if (localChannel()) return ChannelAccessStatus::LOCAL_CHANNEL;
+  if (channel) return ChannelAccessStatus::LOCAL_CHANNEL;
   if (resolutionKind() == ChannelResolutionKind::kUnresolved) {
     const auto resolved = resolveChannelReference(
         ChannelReference::server(id_), acceptedReferenceIdentity());
@@ -193,11 +209,13 @@ ChannelAccessStatus ChannelHandle::accessStatus() {
                    : ChannelAccessStatus::RESOURCE_LIMIT;
 }
 bool ChannelHandle::setValue(const uint8_t value[8], uint32_t durationMs) {
-  if (!value || !hasControlPermission()) return false;
+  Channel *channel = nullptr;
+  if (!value || !hasPermission(SupLan::kPermissionControl, &channel))
+    return false;
   TSD_SuplaChannelNewValue command = {};
   command.DurationMS = durationMs;
   memcpy(command.value, value, 8);
-  if (auto channel = localChannel()) {
+  if (channel) {
     command.ChannelNumber = channel->getChannelNumber();
     auto element = Element::getElementByChannelNumber(command.ChannelNumber);
     return element && element->handleRemoteNewValue(&command) > 0;
@@ -212,9 +230,10 @@ bool ChannelHandle::setValue(const uint8_t value[8], uint32_t durationMs) {
 }
 bool ChannelHandle::executeAction(uint32_t actionId, const uint8_t *params,
                                    size_t length) {
+  Channel *channel = nullptr;
   if (length > SupLan::kControlActionMaxParams || (length && !params) ||
-      !hasControlPermission()) return false;
-  if (auto channel = localChannel()) {
+      !hasPermission(SupLan::kPermissionControl, &channel)) return false;
+  if (channel) {
     auto element = Element::getElementByChannelNumber(
         channel->getChannelNumber());
     return element && element->handleRemoteAction(actionId, params, length) ==
@@ -376,9 +395,12 @@ void ChannelHandle::observe() {
   baselineExpires_ = baselineTimed_ ? view.receivedMs() + ttl * 1000U : 0;
   const uint32_t token = token_;
   const uint32_t sourceId = id_;
+  uint32_t registry = registryRevision_;
+  ChannelHandle *handle = this;
   if (!continuous) baselineConditions();
   for (uint8_t i = 0; i < count; ++i) {
-    auto handle = after(token - 1, token);
+    if (registry != registryRevision_) handle = after(token - 1, token);
+    registry = registryRevision_;
     if (!handle || !handle->active_ || handle->id_ != sourceId ||
         handle->continuity_ != continuity ||
         !handle->hasReadPermission()) break;
@@ -386,11 +408,8 @@ void ChannelHandle::observe() {
   }
 }
 void ChannelHandle::iterateAll() {
-  const uint32_t limit = nextToken_;
-  uint32_t token = 0;
-  while (auto handle = after(token, limit)) {
-    token = handle->token_;
-    handle->reconcile();
+  Cursor cursor;
+  while (auto handle = cursor.next()) {
     if (handle->active_) handle->observe();
   }
 }
@@ -398,10 +417,8 @@ void ChannelHandle::receiveAction(uint32_t channelId, uint32_t capability) {
   const int event = Control::ActionTrigger::actionTriggerCapToButtonEvent(
       capability);
   if (event < 0) return;
-  const uint32_t limit = nextToken_;
-  uint32_t token = 0;
-  while (auto handle = after(token, limit)) {
-    token = handle->token_;
+  Cursor cursor;
+  while (auto handle = cursor.next()) {
     handle->reconcile();
     if (handle->delivery() != RemoteDelivery::SupLanPeer ||
         handle->id_ != channelId || !handle->active_ || !handle->admitted_ ||

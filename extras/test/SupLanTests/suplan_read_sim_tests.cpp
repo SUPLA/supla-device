@@ -355,6 +355,8 @@ void report(const ReadScenario &scenario, const char *phase,
 // scenario says otherwise. Change the rows to explore other topologies.
 constexpr uint32_t kSimTimeoutMs = 180000;
 const ReadScenario kScenarios[] = {
+    {"12x15 dst=5 src=80", 12, 15, 5, 80, 2000, 2000, 0, 0, 0},
+    {"12x15 dst=5 lat=25", 12, 15, 5, 20, 2000, 2000, 0, 0, 25},
     {"12x15 dst=10", 12, 15, 10, 20, 0, 0, 0, 0, 0},
     {"12x15 dst=50", 12, 15, 50, 20, 1500, 1000, 0, 0, 0},
     {"12x15 dst=200", 12, 15, 200, 20, 5000, 0, 0, 0, 0},

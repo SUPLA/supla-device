@@ -63,6 +63,8 @@ class ResourceBindingManager {
     uint8_t number = 0;
   } contributors_[SUPLAN_MAX_RESOURCE_BINDINGS];
   static const uint8_t kPeerUnknown = 0xff, kPeerDenied = 0xfe;
+  // Contributor::number of a binding whose target is currently not valid.
+  static const uint8_t kNoTarget = 0xff;
   // PeerTable::revision() of the cached peers; 0 forces a recheck.
   uint32_t rightsRevision_ = 0;
   uint32_t contributorIdentityRevision_ = 0;

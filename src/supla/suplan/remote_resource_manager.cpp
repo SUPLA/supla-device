@@ -108,7 +108,8 @@ void RemoteResourceManager::reconcileResource(
     RemoteChannelResource &resource) {
   // ACL and ownership are reevaluated after a PeerTable revision change.
   // The bound peer's role is rechecked every time; it costs no ACL scan.
-  // A ready peer also overrides an ENSURE BLOCKED outcome, as before.
+  // A BLOCKED outcome is reconsidered with the next revision change, which
+  // covers the peer becoming ready.
   auto entry = static_cast<Resource *>(&resource);
   if (associations) associations->refreshOwnership();
   const auto peer = entry->peerIndex != 0xff && peers_

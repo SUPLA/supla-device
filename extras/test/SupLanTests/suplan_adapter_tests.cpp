@@ -695,11 +695,11 @@ TEST(SupLanAdapter, RecoveryReportIsAggregatedAndCompletesOnce) {
   pair.network.now = start + 10000;
   pair.protocolA.iterate(start + 10000);
 #if SUPLAN_READ_PROFILING_ENABLED
-  EXPECT_EQ(supla_test_log_calls(), calls + 7);  // Five aggregate lines.
+  EXPECT_EQ(supla_test_log_calls(), calls + 9);  // Seven aggregate lines.
   EXPECT_NE(std::string(supla_test_get_last_log()).find("SupLAN perf state_ms"),
             std::string::npos);
   pair.protocolA.iterate(start + 10000);
-  EXPECT_EQ(supla_test_log_calls(), calls + 7);  // No same-time repeat.
+  EXPECT_EQ(supla_test_log_calls(), calls + 9);  // No same-time repeat.
 #else
   EXPECT_EQ(supla_test_log_calls(), calls + 2);
 #endif

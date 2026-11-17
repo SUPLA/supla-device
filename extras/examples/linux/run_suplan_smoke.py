@@ -79,7 +79,7 @@ def main():
             and args.port_a != args.port_b):
         parser.error("ports must be different and within 1..65535")
     binary = args.binary.resolve(strict=True)
-    run = pathlib.Path(tempfile.mkdtemp(prefix="poc2-smoke-", dir="/tmp/codex"))
+    run = pathlib.Path(tempfile.mkdtemp(prefix="poc2-smoke-"))
     print("Artifacts:", run, flush=True)
     processes = []
     logs = []

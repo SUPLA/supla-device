@@ -56,9 +56,8 @@ def main():
     processes = {}
     logs = {"A": [], "B": []}
     partial = {"A": b"", "B": b""}
-    os.makedirs("/tmp/codex", exist_ok=True)
     config_dir = tempfile.TemporaryDirectory(
-        prefix="suplan-poc1-acceptance-", dir="/tmp/codex")
+        prefix="suplan-poc1-acceptance-")
     config_a = os.path.join(config_dir.name, "a.yaml")
     config_b = os.path.join(config_dir.name, "b.yaml")
     with open(config_a, "w", encoding="utf-8") as config_file:

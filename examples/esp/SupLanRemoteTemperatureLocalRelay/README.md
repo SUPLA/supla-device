@@ -39,7 +39,7 @@ needs approval/provisioning. These sketches are not product E2E evidence.
 From the SDK repository root:
 
 ```sh
-example_build=$(mktemp -d /tmp/codex/suplan-example-XXXXXXXX)
-TMPDIR=/tmp/codex arduino-cli compile --fqbn esp8266:esp8266:generic --library . --build-path "$example_build/esp8266" examples/esp/SupLanRemoteTemperatureLocalRelay
-TMPDIR=/tmp/codex arduino-cli compile --fqbn esp32:esp32:esp32wrover:PartitionScheme=huge_app --library . --build-path "$example_build/esp32" examples/esp/SupLanRemoteTemperatureLocalRelay
+example_build=$(mktemp -d "${TMPDIR:-/tmp}/suplan-example-XXXXXXXX")
+arduino-cli compile --fqbn esp8266:esp8266:generic --library . --build-path "$example_build/esp8266" examples/esp/SupLanRemoteTemperatureLocalRelay
+arduino-cli compile --fqbn esp32:esp32:esp32wrover:PartitionScheme=huge_app --library . --build-path "$example_build/esp32" examples/esp/SupLanRemoteTemperatureLocalRelay
 ```

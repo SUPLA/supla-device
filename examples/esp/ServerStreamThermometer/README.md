@@ -68,7 +68,7 @@ Supla::ServerRemoteChannel thermometer(ID);
 Use unique build/cache directories and at most three compiler jobs:
 
 ```sh
-example_build=$(mktemp -d /tmp/codex/server-stream-thermometer-XXXXXXXX)
+example_build=$(mktemp -d "${TMPDIR:-/tmp}/server-stream-thermometer-XXXXXXXX")
 export TMPDIR="$example_build"
 export ARDUINO_BUILD_CACHE_PATH="$example_build/cache"
 arduino-cli compile --jobs 3 --fqbn esp8266:esp8266:generic \

@@ -44,9 +44,9 @@ particle, container, temperature-drop, virtual, and multi-DS sensors.
 Individual third-party driver wrappers are intentionally not all listed
 separately; their common sensor base is guarded here.
 
-All generated sketches and target build directories are placed below
-`/tmp/codex` and removed when the check finishes. A budget is an upper bound
-for the complete `sizeof(T)` on that architecture; it includes padding and
+All generated sketches and target build directories are placed in the
+system temporary directory (respecting `TMPDIR`) and removed when the check
+finishes. A budget is an upper bound for the complete `sizeof(T)` on that architecture; it includes padding and
 virtual bases, not just the fields added by a change.
 
 This guard measures object/RAM layout only. It does not claim a limit for

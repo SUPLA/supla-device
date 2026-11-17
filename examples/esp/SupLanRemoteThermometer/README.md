@@ -56,12 +56,12 @@ established on demand and does not by itself mean the peer is offline.
 
 ## Compile checks
 
-From the SDK repository root, using unique build directories under `/tmp/codex`:
+From the SDK repository root, using unique build directories in the system temporary directory:
 
 ```sh
-example_build=$(mktemp -d /tmp/codex/suplan-thermometer-XXXXXXXX)
-TMPDIR=/tmp/codex arduino-cli compile --fqbn esp8266:esp8266:generic --library . --build-path "$example_build/esp8266" examples/esp/SupLanRemoteThermometer
-TMPDIR=/tmp/codex arduino-cli compile --fqbn esp32:esp32:esp32wrover:PartitionScheme=huge_app --library . --build-path "$example_build/esp32" examples/esp/SupLanRemoteThermometer
+example_build=$(mktemp -d "${TMPDIR:-/tmp}/suplan-thermometer-XXXXXXXX")
+arduino-cli compile --fqbn esp8266:esp8266:generic --library . --build-path "$example_build/esp8266" examples/esp/SupLanRemoteThermometer
+arduino-cli compile --fqbn esp32:esp32:esp32wrover:PartitionScheme=huge_app --library . --build-path "$example_build/esp32" examples/esp/SupLanRemoteThermometer
 ```
 
 ## Cache freshness and troubleshooting

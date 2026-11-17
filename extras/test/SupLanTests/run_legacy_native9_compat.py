@@ -5,7 +5,7 @@
 
 Requires a locally available legacy git revision and C++/OpenSSL toolchain.
 No network, Server, fixture files in the SDK or Docker services are required.
-Builds live exclusively under a unique /tmp/codex directory. This optional
+Builds use a unique directory in the system temporary directory. This optional
 cross-version harness is separate from ordinary current-version CTest.
 """
 import argparse
@@ -25,7 +25,7 @@ def main():
     revision = subprocess.check_output(
         ['git', 'rev-parse', '--verify', args.legacy_ref + '^{commit}'],
         cwd=checkout, text=True).strip()
-    work = Path(tempfile.mkdtemp(prefix='suplan-native9-compat-', dir='/tmp/codex'))
+    work = Path(tempfile.mkdtemp(prefix='suplan-native9-compat-'))
     print(f'Legacy Source: {revision}\nArtifacts: {work}', flush=True)
     archive = subprocess.check_output(
         ['git', 'archive', revision, 'src', 'extras/porting/linux'], cwd=checkout)

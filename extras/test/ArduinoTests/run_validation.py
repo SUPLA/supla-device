@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Build the SERVER bootstrap hardware fixture on both Arduino ESP targets."""
+"""Build Arduino validation fixtures on both ESP targets."""
 
 import argparse
 import json
@@ -51,6 +51,10 @@ def main():
                    "--build-path", str(root / ("build-" + platform)),
                    "--output-dir", str(root / ("out-" + platform)),
                    "--library", str(repo), str(sketch)]
+        if args.sketch == "SupLanD2D":
+            # The legacy fixture and SDK must expose the same test-only API.
+            command += ["--build-property",
+                        "compiler.cpp.extra_flags=-DSUPLAN_TESTING"]
         log = root / (platform + ".log")
         with log.open("w") as output:
             completed = subprocess.run(command, cwd=repo, env=env,
@@ -60,6 +64,9 @@ def main():
                              "command": command, "log": str(log)}
         print(platform + ": " + ("PASS" if completed.returncode == 0 else
                                   "FAIL") + " (" + str(log) + ")", flush=True)
+        if completed.returncode:
+            print(log.read_text(encoding="utf-8", errors="replace"),
+                  flush=True)
     (root / "results.json").write_text(
         json.dumps({"cli": version, "results": results}, indent=2) + "\n",
         encoding="utf-8")

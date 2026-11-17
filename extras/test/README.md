@@ -26,7 +26,7 @@ For dependencies already present in `extras/test/build/_deps`, at the versions
 declared in `CMakeLists.txt`:
 
 ```bash
-sd_test_build=$(mktemp -d /tmp/codex/supla-host-tests-XXXXXX)
+sd_test_build=$(mktemp -d "${TMPDIR:-/tmp}/supla-host-tests-XXXXXX")
 CCACHE_DISABLE=1 cmake -S extras/test -B "$sd_test_build" \
   -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
   -DFETCHCONTENT_UPDATES_DISCONNECTED=ON \
@@ -35,7 +35,7 @@ CCACHE_DISABLE=1 cmake -S extras/test -B "$sd_test_build" \
   -DFETCHCONTENT_SOURCE_DIR_CJSON="$PWD/extras/test/build/_deps/cjson-src" \
   -DFETCHCONTENT_SOURCE_DIR_MQTTC="$PWD/extras/test/build/_deps/mqttc-src"
 CCACHE_DISABLE=1 cmake --build "$sd_test_build" -j 4
-TMPDIR=/tmp/codex ctest --test-dir "$sd_test_build" --output-on-failure
+ctest --test-dir "$sd_test_build" --output-on-failure
 ```
 
 Adjust the source paths if the existing dependency checkouts are elsewhere.
@@ -56,7 +56,7 @@ CCACHE_DISABLE=1 cmake -S extras/test -B "$sd_test_build" \
   -DSUPLA_TEST_ENABLE_HTTP_INTEGRATION=ON
 CCACHE_DISABLE=1 cmake --build "$sd_test_build" \
   --target sd4linux_http_integration_tests -j 4
-TMPDIR=/tmp/codex ctest --test-dir "$sd_test_build" \
+ctest --test-dir "$sd_test_build" \
   -R '^sd4linux_http_integration_tests$' --output-on-failure
 ```
 

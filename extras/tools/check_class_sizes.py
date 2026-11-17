@@ -357,10 +357,8 @@ def main() -> int:
             raise SystemExit(f"--fqbn platform must be one of: {', '.join(DEFAULT_FQBN)}")
         fqbn[platform] = value
 
-    temporary_root = Path("/tmp/codex")
-    temporary_root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(
-        prefix="supla-class-size-", dir=temporary_root
+        prefix="supla-class-size-"
     ) as directory:
         temp_root = Path(directory)
         for platform in platforms:

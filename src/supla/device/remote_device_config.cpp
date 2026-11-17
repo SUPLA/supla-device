@@ -1288,6 +1288,27 @@ void RemoteDeviceConfig::processModbusConfig(uint64_t fieldBit,
       changed = true;
     }
 
+    if (config->NetworkConfig.Mode > MODBUS_NETWORK_MODE_UDP) {
+      SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid modbus network mode %d",
+                        config->NetworkConfig.Mode);
+      valid = false;
+    } else if (static_cast<unsigned char>(modbusConfig.network.mode) !=
+               config->NetworkConfig.Mode) {
+      modbusConfig.network.mode =
+          static_cast<Supla::Modbus::ModeNetwork>(config->NetworkConfig.Mode);
+      changed = true;
+    }
+
+    if (config->NetworkConfig.Port < 1 || config->NetworkConfig.Port > 65535) {
+      SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid modbus network port %u",
+                        config->NetworkConfig.Port);
+      valid = false;
+    } else if (modbusConfig.network.port !=
+               static_cast<int>(config->NetworkConfig.Port)) {
+      modbusConfig.network.port = config->NetworkConfig.Port;
+      changed = true;
+    }
+
     if (modbusConfig.validateAndFix(modbusProperties)) {
       SUPLA_LOG_WARNING("RemoteDeviceConfig: modbus validation problem");
       valid = false;

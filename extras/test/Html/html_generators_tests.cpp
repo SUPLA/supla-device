@@ -1545,7 +1545,7 @@ TEST_F(HtmlCaptureTest, EmPhaseLedParametersRendersSupportedOptions) {
   EXPECT_THAT(sendHtml, HasSubstr("em_phase_power"));
 }
 
-TEST_F(HtmlCaptureTest, ModbusParametersRendersSerialAndNetworkSelectors) {
+TEST_F(HtmlCaptureTest, ModbusParametersRendersSerialAndHidesNetworkSelectors) {
   SenderMock sender;
   sendHtml.clear();
 
@@ -1591,7 +1591,7 @@ TEST_F(HtmlCaptureTest, ModbusParametersRendersSerialAndNetworkSelectors) {
   EXPECT_THAT(sendHtml, HasSubstr("Modbus serial mode"));
   EXPECT_THAT(sendHtml, HasSubstr("Baudrate"));
   EXPECT_THAT(sendHtml, HasSubstr("Stop bits"));
-  EXPECT_THAT(sendHtml, HasSubstr("Modbus network mode"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("Modbus network mode")));
   EXPECT_THAT(
       sendHtml,
       HasSubstr("<option value=\"1\" selected>Master (client)</option>"));
@@ -1602,7 +1602,9 @@ TEST_F(HtmlCaptureTest, ModbusParametersRendersSerialAndNetworkSelectors) {
   EXPECT_THAT(sendHtml,
               HasSubstr("<option value=\"57600\" selected>57600</option>"));
   EXPECT_THAT(sendHtml, HasSubstr("<option value=\"2\" selected>2</option>"));
-  EXPECT_THAT(sendHtml, HasSubstr("<option value=\"1\" selected>TCP</option>"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("mb_network_mode")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("TCP")));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("UDP")));
 }
 
 TEST_F(HtmlCaptureTest,

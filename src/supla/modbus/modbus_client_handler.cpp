@@ -287,7 +287,8 @@ bool ModbusClientHandler::holdingRespondsToAddress(uint16_t address,
 
 bool ModbusClientHandler::inputRespondsToAddress(uint16_t address,
                                                  uint16_t nRegs) {
-  return holdingRespondsToAddress(address, nRegs);
+  return isInputSupported() && address >= modbusAddressOffset &&
+         address + nRegs <= modbusAddressOffset + usedRegistersCount;
 }
 
 ModbusClientHandler *ModbusClientHandler::first = nullptr;

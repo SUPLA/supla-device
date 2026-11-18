@@ -1,0 +1,4 @@
+dependencies:
+  espressif/esp-modbus:
+    version: "2.1.4"
+    require: private

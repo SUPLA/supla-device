@@ -655,25 +655,27 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
     return;
   }
 
-  bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
+  using State = Supla::ChannelConfigState;
+  const auto state = getChannelConfigState();
+  const bool awaitingReply = state == State::SetChannelConfigSend ||
+                             state == State::LocalChangeSent;
+  const bool success = result->Result == SUPLA_CONFIG_RESULT_TRUE;
+  const auto configType = result->ConfigType;
 
   if (!success) {
     SUPLA_LOG_WARNING(
         "Channel[%d] setChannelConfig failed (%d) for type %s (%d)",
         getChannelNumber(), result->Result,
-        configTypeToString(result->ConfigType), result->ConfigType);
+        configTypeToString(configType), configType);
   }
 
-  const bool weeklyReply = sentWeeklyConfigType != 0 &&
-      sentWeeklyConfigType == result->ConfigType &&
-      (getChannelConfigState() ==
-           Supla::ChannelConfigState::SetChannelConfigSend ||
-       getChannelConfigState() == Supla::ChannelConfigState::LocalChangeSent);
+  const bool weeklyReply = awaitingReply && sentWeeklyConfigType != 0 &&
+                           sentWeeklyConfigType == configType;
   if (weeklyReply) {
     sentWeeklyConfigType = 0;
     if (success) {
-      resetWeeklyConfigFailures(result->ConfigType);
-    } else if (result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
+      resetWeeklyConfigFailures(configType);
+    } else if (configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
       if (weeklyConfigFailures < 3) {
         weeklyConfigFailures++;
       }
@@ -682,47 +684,35 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
     }
   }
 
-  receivedConfigTypes.set(result->ConfigType);
-  bool sentLocalConfig =
-      getChannelConfigState() ==
-          Supla::ChannelConfigState::LocalChangeSent &&
-      isLocalChannelConfigChangePending(result->ConfigType);
-  if (sentLocalConfig) {
-    setLocalConfigChange(result->ConfigType, false);
+  const bool retryWeekly = !success && weeklyReply &&
+                           getWeeklyConfigFailures(configType) < 3;
+  receivedConfigTypes.set(configType, !retryWeekly);
+  if (state == State::LocalChangeSent &&
+      isLocalChannelConfigChangePending(configType)) {
+    setLocalConfigChange(configType, false);
     saveConfigChangeFlag();
   }
 
-  if (getChannelConfigState() ==
-          Supla::ChannelConfigState::SetChannelConfigSend ||
-      getChannelConfigState() ==
-          Supla::ChannelConfigState::LocalChangeSent) {
-    if (receivedConfigTypes != usedConfigTypes) {
-      setChannelConfigAttempts = 0;
-      setChannelConfigState(locallyChangedConfigTypes.getAll()
-          ? Supla::ChannelConfigState::LocalChangePending
-          : Supla::ChannelConfigState::ResendConfig);
-    } else {
-      if (success) {
-        setChannelConfigAttempts = 0;
-      }
-      setChannelConfigState(Supla::ChannelConfigState::None);
-    }
+  if (success && !awaitingReply) {
+    return;
   }
 
-  if (!success && weeklyReply &&
-      getWeeklyConfigFailures(result->ConfigType) < 3) {
-    receivedConfigTypes.clear(result->ConfigType);
+  const bool missingConfigs = receivedConfigTypes != usedConfigTypes;
+  if (awaitingReply && (success || missingConfigs || retryWeekly)) {
     setChannelConfigAttempts = 0;
-    setChannelConfigState(locallyChangedConfigTypes.getAll()
-        ? Supla::ChannelConfigState::LocalChangePending
-        : Supla::ChannelConfigState::ResendConfig);
-  } else if (!success) {
+  }
+
+  auto nextState = State::None;
+  if (!success || missingConfigs) {
     if (locallyChangedConfigTypes.getAll() != 0) {
-      setChannelConfigState(Supla::ChannelConfigState::LocalChangePending);
+      nextState = State::LocalChangePending;
+    } else if (success || retryWeekly) {
+      nextState = State::ResendConfig;
     } else {
-      setChannelConfigState(Supla::ChannelConfigState::SetChannelConfigFailed);
+      nextState = State::SetChannelConfigFailed;
     }
   }
+  setChannelConfigState(nextState);
 }
 
 void Supla::ElementWithChannelActions::purgeConfig() {

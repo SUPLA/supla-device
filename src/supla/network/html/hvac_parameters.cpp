@@ -65,11 +65,10 @@ void emitSwitchField(Supla::WebSender* sender,
       "form-field right-checkbox");
 }
 
-template <typename ValueGetter>
 void emitNumberField(Supla::WebSender* sender,
                      const char* key,
                      const char* label,
-                     ValueGetter&& valueGetter,
+                     int16_t value,
                      bool readonly = false) {
   sender->labeledField(key, label, [&]() {
     auto input = sender->voidTag("input");
@@ -78,7 +77,6 @@ void emitNumberField(Supla::WebSender* sender,
     input.attrIf("readonly", readonly);
     input.attr("name", key);
     input.attr("id", key);
-    auto value = valueGetter();
     if (value != INT16_MIN) {
       char buf[32] = {};
       snprintf(buf, sizeof(buf), "%.1f", static_cast<double>(value) / 100.0);
@@ -88,11 +86,10 @@ void emitNumberField(Supla::WebSender* sender,
   });
 }
 
-template <typename ValueGetter>
 void emitIntField(Supla::WebSender* sender,
                   const char* key,
                   const char* label,
-                  ValueGetter&& valueGetter,
+                  uint16_t value,
                   bool readonly = false) {
   sender->labeledField(key, label, [&]() {
     auto input = sender->voidTag("input");
@@ -100,9 +97,33 @@ void emitIntField(Supla::WebSender* sender,
     input.attrIf("readonly", readonly);
     input.attr("name", key);
     input.attr("id", key);
-    input.attr("value", valueGetter());
+    input.attr("value", value);
     input.finish();
   });
+}
+
+void emitToggleScript(Supla::WebSender* sender,
+                      const char* functionName,
+                      const char* key,
+                      const char* settingsKey) {
+  static const char kScriptStart[] SUPLA_WEB_PROGMEM = "<script>function ";
+  static const char kToggleLookup[] SUPLA_WEB_PROGMEM =
+      "(){var e=document.getElementById(\"";
+  static const char kSettingsLookup[] SUPLA_WEB_PROGMEM =
+      "\"),c=document.getElementById(\"";
+  static const char kScriptEnd[] SUPLA_WEB_PROGMEM =
+      "\"),"
+      "l=e.checked?\"block\":\"none\";"
+      "c.style.display=l;}"
+      "</script>";
+
+  sender->sendStatic(kScriptStart, sizeof(kScriptStart) - 1);
+  sender->send(functionName);
+  sender->sendStatic(kToggleLookup, sizeof(kToggleLookup) - 1);
+  sender->send(key);
+  sender->sendStatic(kSettingsLookup, sizeof(kSettingsLookup) - 1);
+  sender->send(settingsKey);
+  sender->sendStatic(kScriptEnd, sizeof(kScriptEnd) - 1);
 }
 
 }  // namespace
@@ -269,16 +290,18 @@ void HvacParameters::send(Supla::WebSender* sender) {
 
   if (hvac->isModeSupported(SUPLA_HVAC_MODE_HEAT)) {
     hvac->generateKey(key, "t_min");
-    emitNumberField(sender, key, "Heating temperature setpoint [°C]", [&]() {
-      return hvac->getTemperatureSetpointHeat();
-    });
+    emitNumberField(sender,
+                    key,
+                    "Heating temperature setpoint [°C]",
+                    hvac->getTemperatureSetpointHeat());
   }
 
   if (hvac->isModeSupported(SUPLA_HVAC_MODE_COOL)) {
     hvac->generateKey(key, "t_max");
-    emitNumberField(sender, key, "Cooling temperature setpoint [°C]", [&]() {
-      return hvac->getTemperatureSetpointCool();
-    });
+    emitNumberField(sender,
+                    key,
+                    "Cooling temperature setpoint [°C]",
+                    hvac->getTemperatureSetpointCool());
   }
 
   sender->tag("h2").body("Thermometers configuration");
@@ -384,11 +407,11 @@ void HvacParameters::send(Supla::WebSender* sender) {
     hvac->generateKey(key, "aux_ctrl");
     char auxChangeFn[48] = {};
     char auxOnChange[52] = {};
-    snprintf(auxChangeFn,
-             sizeof(auxChangeFn),
-             "auxSetpointEnabledChange_%d",
-             hvac->getChannelNumber());
-    snprintf(auxOnChange, sizeof(auxOnChange), "%s()", auxChangeFn);
+    SUPLA_WEB_SNPRINTF(auxChangeFn,
+                       sizeof(auxChangeFn),
+                       "auxSetpointEnabledChange_%d",
+                       hvac->getChannelNumber());
+    SUPLA_WEB_SNPRINTF(auxOnChange, sizeof(auxOnChange), "%s()", auxChangeFn);
     emitSwitchField(sender,
                     key,
                     "Enable auxiliary min. and max. setpoints",
@@ -396,23 +419,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
                     hvac->parameterFlags.AuxMinMaxSetpointEnabledReadonly,
                     auxOnChange);
 
-    sender->send(
-        "<script>"
-        "function ");
-    sender->send(auxChangeFn);
-    sender->send(
-        "(){"
-        "var e=document.getElementById(\"");
-    sender->send(key);
-    sender->send(
-        "\"),"
-        "c=document.getElementById(\"");
-    sender->send(auxSettingsKey);
-    sender->send(
-        "\"),"
-        "l=e.checked?\"block\":\"none\";"
-        "c.style.display=l;}"
-        "</script>");
+    emitToggleScript(sender, auxChangeFn, key, auxSettingsKey);
   }
 
   if (!hvac->parameterFlags.TemperaturesAuxMinSetpointHidden ||
@@ -425,7 +432,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
                 sender,
                 key,
                 "Aux min. temperature setpoint [°C]",
-                [&]() { return hvac->getTemperatureAuxMinSetpoint(); },
+                hvac->getTemperatureAuxMinSetpoint(),
                 hvac->parameterFlags.TemperaturesAuxMinSetpointReadonly);
           }
 
@@ -435,7 +442,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
                 sender,
                 key,
                 "Aux max. temperature setpoint [°C]",
-                [&]() { return hvac->getTemperatureAuxMaxSetpoint(); },
+                hvac->getTemperatureAuxMaxSetpoint(),
                 hvac->parameterFlags.TemperaturesAuxMaxSetpointReadonly);
           }
         });
@@ -446,14 +453,14 @@ void HvacParameters::send(Supla::WebSender* sender) {
     hvac->generateKey(key, "anti_freeze");
     char antiFreezeChangeFn[48] = {};
     char antiFreezeOnChange[52] = {};
-    snprintf(antiFreezeChangeFn,
-             sizeof(antiFreezeChangeFn),
-             "antiFreezeAndHeatProtectionChange_%d",
-             hvac->getChannelNumber());
-    snprintf(antiFreezeOnChange,
-             sizeof(antiFreezeOnChange),
-             "%s()",
-             antiFreezeChangeFn);
+    SUPLA_WEB_SNPRINTF(antiFreezeChangeFn,
+                       sizeof(antiFreezeChangeFn),
+                       "antiFreezeAndHeatProtectionChange_%d",
+                       hvac->getChannelNumber());
+    SUPLA_WEB_SNPRINTF(antiFreezeOnChange,
+                       sizeof(antiFreezeOnChange),
+                       "%s()",
+                       antiFreezeChangeFn);
     emitSwitchField(
         sender,
         key,
@@ -462,23 +469,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
         hvac->parameterFlags.AntiFreezeAndOverheatProtectionEnabledReadonly,
         antiFreezeOnChange);
 
-    sender->send(
-        "<script>"
-        "function ");
-    sender->send(antiFreezeChangeFn);
-    sender->send(
-        "(){"
-        "var e=document.getElementById(\"");
-    sender->send(key);
-    sender->send(
-        "\"),"
-        "c=document.getElementById(\"");
-    sender->send(antiFreezeSettingsKey);
-    sender->send(
-        "\"),"
-        "l=e.checked?\"block\":\"none\";"
-        "c.style.display=l;}"
-        "</script>");
+    emitToggleScript(sender, antiFreezeChangeFn, key, antiFreezeSettingsKey);
   }
 
   if (!hvac->parameterFlags.TemperaturesFreezeProtectionHidden ||
@@ -493,7 +484,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
                 sender,
                 key,
                 "Freeze protection [°C]",
-                [&]() { return hvac->getTemperatureFreezeProtection(); },
+                hvac->getTemperatureFreezeProtection(),
                 hvac->parameterFlags.TemperaturesFreezeProtectionReadonly);
           }
 
@@ -503,7 +494,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
                 sender,
                 key,
                 "Overheat protection [°C]",
-                [&]() { return hvac->getTemperatureHeatProtection(); },
+                hvac->getTemperatureHeatProtection(),
                 hvac->parameterFlags.TemperaturesHeatProtectionReadonly);
           }
         });
@@ -655,7 +646,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
         sender,
         key,
         "Histeresis [°C]",
-        [&]() { return hvac->getTemperatureHisteresis(); },
+        hvac->getTemperatureHisteresis(),
         hvac->parameterFlags.TemperaturesHisteresisReadonly);
   }
 
@@ -665,7 +656,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
         sender,
         key,
         "Minimum ON time before output can be turned off [s]",
-        [&]() { return hvac->getMinOnTimeS(); },
+        hvac->getMinOnTimeS(),
         hvac->parameterFlags.MinOnTimeSReadonly);
   }
 
@@ -675,7 +666,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
         sender,
         key,
         "Minimum OFF time before output can be turned on [s]",
-        [&]() { return hvac->getMinOffTimeS(); },
+        hvac->getMinOffTimeS(),
         hvac->parameterFlags.MinOffTimeSReadonly);
   }
 
@@ -713,23 +704,23 @@ void HvacParameters::send(Supla::WebSender* sender) {
 
   hvac->generateKey(key, "t_eco");
   emitNumberField(sender, key, "Eco [°C]",
-                  [&]() { return hvac->getTemperatureEco(); });
+                  hvac->getTemperatureEco());
 
   hvac->generateKey(key, "t_comfort");
   emitNumberField(sender, key, "Comfort [°C]",
-                  [&]() { return hvac->getTemperatureComfort(); });
+                  hvac->getTemperatureComfort());
 
   hvac->generateKey(key, "t_boost");
   emitNumberField(sender, key, "Boost [°C]",
-                  [&]() { return hvac->getTemperatureBoost(); });
+                  hvac->getTemperatureBoost());
 
   hvac->generateKey(key, "t_below");
   emitNumberField(sender, key, "Below alarm [°C]",
-                  [&]() { return hvac->getTemperatureBelowAlarm(); });
+                  hvac->getTemperatureBelowAlarm());
 
   hvac->generateKey(key, "t_above");
   emitNumberField(sender, key, "Above alarm [°C]",
-                  [&]() { return hvac->getTemperatureAboveAlarm(); });
+                  hvac->getTemperatureAboveAlarm());
   */
 }  // NOLINT(readability/fn_size)
 

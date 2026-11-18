@@ -5097,6 +5097,30 @@ void HvacBase::updateChannelState() {
   }
 }
 
+// Keep field names inside the flash-resident format on ESP8266 and AVR.
+#if defined(SUPLA_DISABLE_LOGS) || \
+    defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266) || \
+    defined(__AVR__) || defined(ARDUINO_ARCH_AVR)
+#define LOG_HVAC_READONLY_CHANGE(channel, field, current, requested) \
+  SUPLA_LOG_DEBUG("HVAC[%d] " field " change from %d to %d not allowed " \
+                  "(readonly)", channel, current, requested)
+#else
+namespace {
+
+void logReadonlyChange(int channelNumber,
+                       const char *field,
+                       int currentValue,
+                       int requestedValue) {
+  SUPLA_LOG_DEBUG("HVAC[%d] %s change from %d to %d not allowed (readonly)",
+                  channelNumber, field, currentValue, requestedValue);
+}
+
+}  // namespace
+
+#define LOG_HVAC_READONLY_CHANGE(channel, field, current, requested) \
+  logReadonlyChange(channel, field, current, requested)
+#endif
+
 // returns true if readonly params were modified and fixed
 bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   if (hvacConfig == nullptr) {
@@ -5112,10 +5136,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   if (parameterFlags.MainThermometerChannelNoReadonly) {
     if (config.MainThermometerChannelNo !=
         hvacConfig->MainThermometerChannelNo) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] MainThermometerChannelNo change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "MainThermometerChannelNo",
           config.MainThermometerChannelNo,
           hvacConfig->MainThermometerChannelNo);
       hvacConfig->MainThermometerChannelNo = config.MainThermometerChannelNo;
@@ -5125,10 +5148,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 
   if (parameterFlags.AuxThermometerChannelNoReadonly) {
     if (config.AuxThermometerChannelNo != hvacConfig->AuxThermometerChannelNo) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] AuxThermometerChannelNo change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "AuxThermometerChannelNo",
           config.AuxThermometerChannelNo,
           hvacConfig->AuxThermometerChannelNo);
       hvacConfig->AuxThermometerChannelNo = config.AuxThermometerChannelNo;
@@ -5138,10 +5160,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 
   if (parameterFlags.BinarySensorChannelNoReadonly) {
     if (config.BinarySensorChannelNo != hvacConfig->BinarySensorChannelNo) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] BinarySensorChannelNo change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "BinarySensorChannelNo",
           config.BinarySensorChannelNo,
           hvacConfig->BinarySensorChannelNo);
       hvacConfig->BinarySensorChannelNo = config.BinarySensorChannelNo;
@@ -5152,9 +5173,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   if (parameterFlags.PumpSwitchReadonly) {
     if (config.PumpSwitchChannelNo != hvacConfig->PumpSwitchChannelNo ||
         config.PumpSwitchIsSet != hvacConfig->PumpSwitchIsSet) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] PumpSwitch change from %d to %d not allowed (readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "PumpSwitch",
           config.PumpSwitchChannelNo,
           hvacConfig->PumpSwitchChannelNo);
       hvacConfig->PumpSwitchChannelNo = config.PumpSwitchChannelNo;
@@ -5168,10 +5189,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
             hvacConfig->HeatOrColdSourceSwitchChannelNo ||
         config.HeatOrColdSourceSwitchIsSet !=
             hvacConfig->HeatOrColdSourceSwitchIsSet) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] HeatOrColdSourceSwitch change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "HeatOrColdSourceSwitch",
           config.HeatOrColdSourceSwitchChannelNo,
           hvacConfig->HeatOrColdSourceSwitchChannelNo);
       hvacConfig->HeatOrColdSourceSwitchChannelNo =
@@ -5186,11 +5206,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
     if (config.MasterThermostatChannelNo !=
             hvacConfig->MasterThermostatChannelNo ||
         config.MasterThermostatIsSet != hvacConfig->MasterThermostatIsSet) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] MasterThermostatChannelNo change from %d to %d not "
-          "allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "MasterThermostatChannelNo",
           config.MasterThermostatChannelNo,
           hvacConfig->MasterThermostatChannelNo);
       hvacConfig->MasterThermostatChannelNo = config.MasterThermostatChannelNo;
@@ -5201,10 +5219,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 
   if (parameterFlags.AuxThermometerTypeReadonly) {
     if (config.AuxThermometerType != hvacConfig->AuxThermometerType) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] AuxThermometerType change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "AuxThermometerType",
           config.AuxThermometerType,
           hvacConfig->AuxThermometerType);
       hvacConfig->AuxThermometerType = config.AuxThermometerType;
@@ -5215,11 +5232,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   if (parameterFlags.AntiFreezeAndOverheatProtectionEnabledReadonly) {
     if (config.AntiFreezeAndOverheatProtectionEnabled !=
         hvacConfig->AntiFreezeAndOverheatProtectionEnabled) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] AntiFreezeAndOverheatProtection change from %d to %d not "
-          "allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "AntiFreezeAndOverheatProtection",
           config.AntiFreezeAndOverheatProtectionEnabled,
           hvacConfig->AntiFreezeAndOverheatProtectionEnabled);
       hvacConfig->AntiFreezeAndOverheatProtectionEnabled =
@@ -5230,10 +5245,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 
   if (parameterFlags.UsedAlgorithmReadonly) {
     if (config.UsedAlgorithm != hvacConfig->UsedAlgorithm) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] UsedAlgorithm change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "UsedAlgorithm",
           config.UsedAlgorithm,
           hvacConfig->UsedAlgorithm);
       hvacConfig->UsedAlgorithm = config.UsedAlgorithm;
@@ -5243,10 +5257,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 
   if (parameterFlags.MinOnTimeSReadonly) {
     if (config.MinOnTimeS != hvacConfig->MinOnTimeS) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] MinOnTimeS change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "MinOnTimeS",
           config.MinOnTimeS,
           hvacConfig->MinOnTimeS);
       hvacConfig->MinOnTimeS = config.MinOnTimeS;
@@ -5256,10 +5269,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 
   if (parameterFlags.MinOffTimeSReadonly) {
     if (config.MinOffTimeS != hvacConfig->MinOffTimeS) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] MinOffTimeS change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "MinOffTimeS",
           config.MinOffTimeS,
           hvacConfig->MinOffTimeS);
       hvacConfig->MinOffTimeS = config.MinOffTimeS;
@@ -5269,10 +5281,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 
   if (parameterFlags.OutputValueOnErrorReadonly) {
     if (config.OutputValueOnError != hvacConfig->OutputValueOnError) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] OutputValueOnError change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "OutputValueOnError",
           config.OutputValueOnError,
           hvacConfig->OutputValueOnError);
       hvacConfig->OutputValueOnError = config.OutputValueOnError;
@@ -5282,10 +5293,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 
   if (parameterFlags.SubfunctionReadonly) {
     if (config.Subfunction != hvacConfig->Subfunction) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] Subfunction change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "Subfunction",
           config.Subfunction,
           hvacConfig->Subfunction);
       hvacConfig->Subfunction = config.Subfunction;
@@ -5296,11 +5306,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   if (parameterFlags.TemperatureSetpointChangeSwitchesToManualModeReadonly) {
     if (config.TemperatureSetpointChangeSwitchesToManualMode !=
         hvacConfig->TemperatureSetpointChangeSwitchesToManualMode) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureSetpointChangeSwitchesToManualMode change from "
-          "%d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "TemperatureSetpointChangeSwitchesToManualMode",
           config.TemperatureSetpointChangeSwitchesToManualMode,
           hvacConfig->TemperatureSetpointChangeSwitchesToManualMode);
       hvacConfig->TemperatureSetpointChangeSwitchesToManualMode =
@@ -5312,10 +5320,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   if (parameterFlags.AuxMinMaxSetpointEnabledReadonly) {
     if (config.AuxMinMaxSetpointEnabled !=
         hvacConfig->AuxMinMaxSetpointEnabled) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] AuxMinMaxSetpointEnabled change from %d to %d not allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "AuxMinMaxSetpointEnabled",
           config.AuxMinMaxSetpointEnabled,
           hvacConfig->AuxMinMaxSetpointEnabled);
       hvacConfig->AuxMinMaxSetpointEnabled = config.AuxMinMaxSetpointEnabled;
@@ -5326,11 +5333,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   if (parameterFlags.UseSeparateHeatCoolOutputsReadonly) {
     if (config.UseSeparateHeatCoolOutputs !=
         hvacConfig->UseSeparateHeatCoolOutputs) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] UseSeparateHeatCoolOutputs change from %d to %d not "
-          "allowed "
-          "(readonly)",
+      LOG_HVAC_READONLY_CHANGE(
           getChannelNumber(),
+          "UseSeparateHeatCoolOutputs",
           config.UseSeparateHeatCoolOutputs,
           hvacConfig->UseSeparateHeatCoolOutputs);
       hvacConfig->UseSeparateHeatCoolOutputs =
@@ -5384,10 +5389,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   }
 
   if (hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
-    SUPLA_LOG_DEBUG(
-        "HVAC[%d] AvailableAlgorithms change from %d to %d not allowed "
-        "(readonly)",
+    LOG_HVAC_READONLY_CHANGE(
         getChannelNumber(),
+        "AvailableAlgorithms",
         config.AvailableAlgorithms,
         hvacConfig->AvailableAlgorithms);
     hvacConfig->AvailableAlgorithms = config.AvailableAlgorithms;
@@ -5410,10 +5414,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
        config.TemperatureControlType > 0) ||
       (config.TemperatureControlType == 0 &&
        hvacConfig->TemperatureControlType > 0)) {
-    SUPLA_LOG_DEBUG(
-        "HVAC[%d] TemperatureControlType change from %d to %d not allowed "
-        "(readonly)",
+    LOG_HVAC_READONLY_CHANGE(
         getChannelNumber(),
+        "TemperatureControlType",
         config.TemperatureControlType,
         hvacConfig->TemperatureControlType);
     hvacConfig->TemperatureControlType = config.TemperatureControlType;
@@ -5452,6 +5455,8 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 
   return readonlyViolation;
 }
+
+#undef LOG_HVAC_READONLY_CHANGE
 
 bool HvacBase::fixReadonlyTemperature(int32_t temperatureIndex,
                                       THVACTemperatureCfg *newTemps) {

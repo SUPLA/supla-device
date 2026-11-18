@@ -739,7 +739,8 @@ void logSetChannelConfigRequest(int callId,
                                 const TSD_ChannelConfig *request,
                                 const char *direction,
                                 const char *callName,
-                                size_t size) {
+                                size_t size,
+                                bool dumpPayload) {
   if (request == nullptr) {
     return;
   }
@@ -752,7 +753,7 @@ void logSetChannelConfigRequest(int callId,
   SUPLA_LOG_DEBUG(
       "SRPC %s %s(%d) size=%zu {Ch=%u, Func=%" PRId32
       ", "
-      "CfgType=%u(%s), CfgSize=%u}",
+      "CfgType=%u(%s), CfgSize=%u%s}",
       direction,
       callName,
       callId,
@@ -761,7 +762,12 @@ void logSetChannelConfigRequest(int callId,
       static_cast<int32_t>(request->Func),
       static_cast<unsigned int>(request->ConfigType),
       configTypeName,
-      static_cast<unsigned int>(request->ConfigSize));
+      static_cast<unsigned int>(request->ConfigSize),
+      dumpPayload ? "" : ", Cfg=<redacted>");
+
+  if (!dumpPayload) {
+    return;
+  }
 
   if (configSize == 0) {
     SUPLA_LOG_DEBUG("SRPC %s %s(%d) {Cfg=<empty>}",
@@ -1154,23 +1160,12 @@ void Supla::Protocol::SuplaSrpc::logSrpcPacket(bool send,
       callId == SUPLA_DS_CALL_SET_CHANNEL_CONFIG) {
     if (size >= offsetof(TSD_ChannelConfig, Config)) {
       auto *request = reinterpret_cast<const TSD_ChannelConfig *>(buf);
-      if (shouldDumpRawChannelConfig(request)) {
-        logSetChannelConfigRequest(callId, request, direction, callName, size);
-      } else {
-        SUPLA_LOG_DEBUG(
-            "SRPC %s %s(%d) size=%zu {Ch=%u, "
-            "Func=%" PRId32
-            ", CfgType=%u(%s), CfgSize=%u, Cfg=<redacted>}",
-            direction,
-            callName,
-            callId,
-            size,
-            static_cast<unsigned int>(request->ChannelNumber),
-            static_cast<int32_t>(request->Func),
-            static_cast<unsigned int>(request->ConfigType),
-            channelConfigTypeName(request->ConfigType),
-            static_cast<unsigned int>(request->ConfigSize));
-      }
+      logSetChannelConfigRequest(callId,
+                                 request,
+                                 direction,
+                                 callName,
+                                 size,
+                                 shouldDumpRawChannelConfig(request));
       return;
     }
   }
@@ -1217,13 +1212,8 @@ void Supla::Protocol::SuplaSrpc::logSrpcPacket(bool send,
     return;
   }
 
-  if (callId == SUPLA_DCS_CALL_PING_SERVER) {
-    SUPLA_LOG_DEBUG("SRPC %s %s(%d) size=%zu", direction, callName, callId,
-                    size);
-    return;
-  }
-
-  if (callId == SUPLA_SDC_CALL_PING_SERVER_RESULT) {
+  if (callId == SUPLA_DCS_CALL_PING_SERVER ||
+      callId == SUPLA_SDC_CALL_PING_SERVER_RESULT) {
     SUPLA_LOG_DEBUG("SRPC %s %s(%d) size=%zu", direction, callName, callId,
                     size);
     return;

@@ -588,6 +588,38 @@ TEST(SupLanAdapter, D2dOnlyMetadataDoesNotDirtyOrdinaryProtocolValue) {
 }
 
 extern "C" unsigned int supla_test_log_calls();
+extern "C" const char *supla_test_get_last_log();
+
+TEST(SupLanAdapter, HealthyReadTraceIsOptionalButFailuresRemainVisible) {
+  AdapterFanoutPair pair;
+  using E = Supla::SupLan::DiagnosticEvent;
+  const int oldLevel = supla_log_get_level();
+  supla_log_set_level(LOG_DEBUG);
+  const auto calls = supla_test_log_calls();
+  for (const auto event : {E::ReadAccepted, E::ReadQueued, E::ReadTransmit,
+                           E::AckWithoutState, E::AckWithState,
+                           E::ReadReceive, E::StateTransmit})
+    pair.protocolA.diagnostic(event, 0, pair.resourceB, 1);
+  EXPECT_EQ(supla_test_log_calls(),
+            calls + (SUPLAN_READ_TRACE_ENABLED ? 7 : 0));
+  pair.protocolA.diagnostic(E::ReadRetry, 0, pair.resourceB, (2U << 1) | 1U);
+  EXPECT_NE(std::string(supla_test_get_last_log()).find(
+      "READ retry attempt=2 result=SENT"), std::string::npos);
+  supla_log_set_level(LOG_INFO);
+  for (const auto event : {E::ReadTransmit, E::ReadRetry,
+                           E::ReadAckTimeout, E::ReadStateTimeout}) {
+    pair.network.now += 5000;
+    const auto before = supla_test_log_calls();
+    pair.protocolA.diagnostic(event, 0, pair.resourceB, 0);
+    EXPECT_EQ(supla_test_log_calls(), before + 1);
+    pair.protocolA.diagnostic(event, 0, pair.resourceB, 0);
+    EXPECT_EQ(supla_test_log_calls(), before + 1);
+  }
+  EXPECT_NE(std::string(supla_test_get_last_log()).find(
+      "READ timeout phase=STATE"), std::string::npos);
+  supla_log_set_level(oldLevel);
+}
+
 TEST(SupLanAdapter, DiagnosticRejectFloodIsRateLimitedAndNeverSends) {
   AdapterFanoutPair pair;
   ASSERT_TRUE(pair.configured);
@@ -618,7 +650,6 @@ TEST(SupLanAdapter, DiagnosticRejectFloodIsRateLimitedAndNeverSends) {
   supla_log_set_level(oldLevel);
 }
 
-extern "C" const char *supla_test_get_last_log();
 TEST(SupLanAdapter, CapacityDetailsAreRateLimitedWithoutInventingContext) {
   AdapterFanoutPair pair;
   using C = Supla::SupLan::CapacityDiagnostic;

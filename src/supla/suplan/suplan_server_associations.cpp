@@ -130,7 +130,7 @@ bool ServerAssociations::owns(void *self, const PeerContext &context,
 
 uint8_t ServerAssociations::validate(const PeerContext &context,
                                      uint32_t revision,
-                                     const TSuplaSuplanAclEntry *entries,
+                                     const AclEntry *entries,
                                      uint16_t count, bool destination) const {
   if (context.authorityType != kAuthorityServer) {
     return SUPLA_SUPLAN_RESULT_UNSUPPORTED;
@@ -156,35 +156,35 @@ uint8_t ServerAssociations::validate(const PeerContext &context,
   if (count > kMaxEntries) return SUPLA_SUPLAN_RESULT_CAPACITY_EXCEEDED;
   for (uint16_t i = 0; i < count; ++i) {
     const auto &entry = entries[i];
-    if (entry.ResourceType != kResourceTypeChannel &&
-        entry.ResourceType != kResourceTypeDevice) {
+    if (entry.resource.type != kResourceTypeChannel &&
+        entry.resource.type != kResourceTypeDevice) {
       return SUPLA_SUPLAN_RESULT_UNSUPPORTED;
     }
-    if (!entry.ResourceId || entry.ResourceId > INT32_MAX ||
-        !entry.Permissions || (entry.Permissions & ~7) ||
-        ((entry.Permissions & kPermissionControl) &&
-         (entry.Permissions & kPermissionRead))) {
+    if (!entry.resource.id || entry.resource.id > INT32_MAX ||
+        !entry.permissions || (entry.permissions & ~7) ||
+        ((entry.permissions & kPermissionControl) &&
+         (entry.permissions & kPermissionRead))) {
       return SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
     }
-    if (i && (entries[i - 1].ResourceType > entry.ResourceType ||
-              (entries[i - 1].ResourceType == entry.ResourceType &&
-               entries[i - 1].ResourceId >= entry.ResourceId))) {
+    if (i && (entries[i - 1].resource.type > entry.resource.type ||
+              (entries[i - 1].resource.type == entry.resource.type &&
+               entries[i - 1].resource.id >= entry.resource.id))) {
       return SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
     }
-    if (entry.ResourceType == kResourceTypeDevice) {
-      if (entry.ResourceId != context.source.nodeId) {
+    if (entry.resource.type == kResourceTypeDevice) {
+      if (entry.resource.id != context.source.nodeId) {
         return SUPLA_SUPLAN_RESULT_NOT_AUTHORIZED;
       }
     } else if (!destination) {
       // Provisioning may run behind a transition barrier using the NEW map.
       bool found = false;
       for (auto ch = Channel::Begin(); ch; ch = ch->next()) {
-        found = found || ch->getServerChannelId() == entry.ResourceId;
+        found = found || ch->getServerChannelId() == entry.resource.id;
       }
       if (!found) return SUPLA_SUPLAN_RESULT_NOT_AUTHORIZED;
     } else {
       for (auto ch = Channel::Begin(); ch; ch = ch->next()) {
-        if (ch->getServerChannelId() == entry.ResourceId) {
+        if (ch->getServerChannelId() == entry.resource.id) {
           return SUPLA_SUPLAN_RESULT_NOT_AUTHORIZED;
         }
       }
@@ -242,14 +242,11 @@ bool ServerAssociations::readRecord(uint8_t slot, PeerContext *context,
   *count = record_[33];
   const int prefix = *destination ? kDestinationPrefix : kSourcePrefix;
   // Decode entries explicitly; never serialize C++ object memory.
-  auto wire = wireEntries_;
   for (uint8_t i = 0; i < *count; ++i) {
     const uint8_t *entry = record_ + prefix + 6 * i;
-    wire[i] = {entry[0], getUint32(entry + 1), entry[5]};
-    entries_[i] = {{wire[i].ResourceType, wire[i].ResourceId},
-                   wire[i].Permissions};
+    entries_[i] = {{entry[0], getUint32(entry + 1)}, entry[5]};
   }
-  return validate(*context, *revision, wire, *count, *destination) ==
+  return validate(*context, *revision, entries_, *count, *destination) ==
          SUPLA_SUPLAN_RESULT_OK;
 }
 
@@ -367,7 +364,6 @@ void ServerAssociations::identityChanged() {
   if (identity_->fullScopeFenced()) {
     memset(record_, 0, sizeof(record_));
     memset(entries_, 0, sizeof(entries_));
-    memset(wireEntries_, 0, sizeof(wireEntries_));
   }
 }
 
@@ -380,7 +376,13 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
   if (!storageReady_) return SUPLA_SUPLAN_RESULT_PERSISTENCE_ERROR;
   if (busy_) return SUPLA_SUPLAN_RESULT_INVALID_ARGUMENT;
   PeerContext context = fromWire(wire);
-  uint8_t result = validate(context, revision, entries, count, destination);
+  // Bound decoding before validation; oversized counts keep their existing
+  // validation result without writing beyond the fixed workspace.
+  for (uint16_t i = 0; i < count && i < kMaxEntries; ++i) {
+    entries_[i] = {{entries[i].ResourceType, entries[i].ResourceId},
+                   entries[i].Permissions};
+  }
+  uint8_t result = validate(context, revision, entries_, count, destination);
   if (result != SUPLA_SUPLAN_RESULT_OK) return result;
   int index = -1;
   bool exact = false;
@@ -403,10 +405,6 @@ uint8_t ServerAssociations::apply(const TSuplaSuplanPeerContext &wire,
   const PeerRecord *old = index < 0 ? nullptr : peers_->get(index);
   if (exact && revision < old->aclRevision) {
     return SUPLA_SUPLAN_RESULT_STALE_REVISION;
-  }
-  for (uint16_t i = 0; i < count; ++i) {
-    entries_[i] = {{entries[i].ResourceType, entries[i].ResourceId},
-                   entries[i].Permissions};
   }
   bool identical = false;
   if (exact && revision == old->aclRevision) {

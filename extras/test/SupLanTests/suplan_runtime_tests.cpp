@@ -160,7 +160,8 @@ class FakeApplication : public Supla::SupLan::ApplicationPort {
   void *beforeReadContext = nullptr;
   uint8_t snapshotOffline = 0;
   uint8_t receivedOffline = 0;
-  uint32_t diagnosticEvents[32] = {};
+  uint32_t diagnosticEvents[static_cast<unsigned>(
+      Supla::SupLan::DiagnosticEvent::RejectReplay) + 1] = {};
   FakeApplication() : value(0), controlCalls(0), stateCalls(0), actionCalls(0),
       acknowledged(0), lastAckResult(0), lastStateType(0), lastStateLength(0),
       runtime(nullptr) {}
@@ -585,6 +586,38 @@ TEST(SupLanRuntime, LocateSessionReadControlRetryAndDuplicateSuppression) {
 
   EXPECT_TRUE(pair.runtimeA.forgetSession(pair.peerA));
   EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
+}
+
+TEST(SupLanRuntime, ReadRetriesAndAckTimeoutEmitResourceDiagnostics) {
+  RuntimePair pair;
+  using E = Supla::SupLan::DiagnosticEvent;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  EXPECT_EQ(pair.appB.diagnosticEvents[
+      static_cast<unsigned>(E::ReadRetry)], 0U);
+  pair.runtimeB.testHooks()->dropNextDataTx = 100;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pumpMs(2000);
+  EXPECT_GT(pair.appB.diagnosticEvents[
+      static_cast<unsigned>(E::ReadRetry)], 0U);
+  EXPECT_GT(pair.appB.diagnosticEvents[
+      static_cast<unsigned>(E::ReadAckTimeout)], 0U);
+  EXPECT_EQ(pair.appB.diagnosticEvents[
+      static_cast<unsigned>(E::ReadStateTimeout)], 0U);
+}
+
+TEST(SupLanRuntime, MissingSnapshotEmitsStateTimeoutAfterAck) {
+  RuntimePair pair;
+  using E = Supla::SupLan::DiagnosticEvent;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  pair.runtimeA.testHooks()->dropNextDataTx = 100;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pumpMs(Supla::SupLan::kReadStateResponseTimeoutMs + 100);
+  EXPECT_GT(pair.appB.diagnosticEvents[
+      static_cast<unsigned>(E::ReadStateTimeout)], 0U);
+  EXPECT_EQ(pair.appB.diagnosticEvents[
+      static_cast<unsigned>(E::ReadAckTimeout)], 0U);
 }
 
 TEST(SupLanRuntime,

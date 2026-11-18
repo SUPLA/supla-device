@@ -985,7 +985,10 @@ void SupLan::diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
                         const Supla::SupLan::ResourceId &resource,
                         uint32_t detail) {
   using E = Supla::SupLan::DiagnosticEvent;
-  const bool warning = event == E::RecoveryFailed;
+  const bool warning = event == E::RecoveryFailed ||
+      event == E::ReadAckTimeout || event == E::ReadStateTimeout ||
+      (event == E::ReadTransmit && !detail) ||
+      (event == E::ReadRetry && !(detail & 1));
   const bool rejection = event >= E::RejectAuthority;
   // Disabled DEBUG rejects must not spend the WARNING rate-limit window.
   if (((rejection && !warning) || event == E::ResetSendFailed) &&
@@ -996,6 +999,11 @@ void SupLan::diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
   if ((warning || rejection || event == E::ResetSendFailed) &&
       !admitDiagnostic(runtime_ ? runtime_->nowMs() : millis(), &count)) return;
   (void)count;  // Log arguments are compiled out with SUPLA_DISABLE_LOGS.
+  if (!SUPLAN_READ_TRACE_ENABLED &&
+      (event == E::ReadAccepted || event == E::ReadQueued ||
+       (event == E::ReadTransmit && detail) || event == E::ReadReceive ||
+       event == E::StateTransmit || event == E::AckWithoutState ||
+       event == E::AckWithState)) return;
   // Literal formats use the SDK's flash-string logging on Arduino.
   switch (event) {
     case E::RecoveryBegin:
@@ -1029,9 +1037,34 @@ void SupLan::diagnostic(Supla::SupLan::DiagnosticEvent event, uint8_t peer,
                       peer, resource.id, detail);
       break;
     case E::ReadTransmit:
+      if (!detail) {
+        SUPLAN_DIAG_WARNING("SupLAN peer=%u ChannelId=%" PRIu32
+            " READ transmit failed suppressed=%" PRIu32,
+            peer, resource.id, count);
+        break;
+      }
       SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
                       " READ transmit result=%s awaiting snapshot",
                       peer, resource.id, detail ? "SENT" : "TRANSPORT_FAILED");
+      break;
+    case E::ReadRetry:
+      if (detail & 1) {
+        SUPLAN_DIAG_DEBUG("SupLAN peer=%u ChannelId=%" PRIu32
+            " READ retry attempt=%" PRIu32 " result=SENT",
+            peer, resource.id, detail >> 1);
+      } else {
+        SUPLAN_DIAG_WARNING("SupLAN peer=%u ChannelId=%" PRIu32
+            " READ retry attempt=%" PRIu32
+            " result=TRANSPORT_FAILED suppressed=%" PRIu32,
+            peer, resource.id, detail >> 1, count);
+      }
+      break;
+    case E::ReadAckTimeout:
+    case E::ReadStateTimeout:
+      SUPLAN_DIAG_WARNING("SupLAN peer=%u ChannelId=%" PRIu32
+          " READ timeout phase=%s suppressed=%" PRIu32,
+          peer, resource.id, event == E::ReadAckTimeout ? "ACK" : "STATE",
+          count);
       break;
     case E::ReadReceive:
       SUPLAN_DIAG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32

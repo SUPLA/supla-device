@@ -16,6 +16,8 @@ class RemoteResourceManager : public RemoteChannelManager,
  public:
   static const int kCapacity = SUPLAN_MAX_READ_DEPENDENCIES;
   static const int kConsumerCapacity = SUPLAN_MAX_D2D_CONSUMERS;
+  static_assert(kCapacity <= UINT16_MAX,
+                "Consumer resource slot must fit uint16");
   struct Presence {
     uint32_t awakeUntilMs_ = 0;
     uint32_t nextPresenceMs_ = 0;
@@ -108,7 +110,7 @@ class RemoteResourceManager : public RemoteChannelManager,
     uint8_t hasHintNonce : 1;
     uint8_t awake : 1;
   };
-  static_assert(sizeof(Resource) == 64, "D2D slot gained retained state");
+  static_assert(sizeof(Resource) == 60, "D2D slot gained retained state");
   static_assert(sizeof(PeerPresence) == 44, "Peer presence gained state");
   PeerPresence *peerPresence(uint8_t index);
   PeerPresence *reconcilePeer(uint8_t index,
@@ -118,15 +120,18 @@ class RemoteResourceManager : public RemoteChannelManager,
   void reconcile(Resource *resource);
   bool usable(const Resource &resource, uint32_t nowMs) const {
     return RemoteChannelManager::usable(
-        {resource.id.id, RemoteDelivery::SupLanPeer}, resource, nowMs);
+        {resource.channelId, RemoteDelivery::SupLanPeer}, resource, nowMs);
   }
   int capacity() const override { return kCapacity; }
   int consumerCapacity() const override { return kConsumerCapacity; }
   ConsumeIntent intentAt(int index) override {
-    return intents_[index].intent(RemoteDelivery::SupLanPeer);
+    const auto &consumer = intents_[index];
+    return consumer.intent(RemoteDelivery::SupLanPeer,
+                           resources_[consumer.resourceSlot].channelId);
   }
-  bool storeIntent(int index, const ConsumeIntent &intent) override {
-    intents_[index].assign(intent);
+  bool storeIntent(int index, const ConsumeIntent &intent,
+                   uint16_t resourceSlot) override {
+    intents_[index].assign(intent, resourceSlot);
     return true;
   }
   RemoteChannelResource &resourceAt(int index) override {
@@ -160,7 +165,7 @@ static_assert(sizeof(RemoteResourceManager) <=
                   (sizeof(void *) == 8 ? 108 : 72) +
                   RemoteChannelManager::kConsumerFilterBytes + 8 +
                   sizeof(void *) + 3 * sizeof(uint32_t) +
-                  64 * RemoteResourceManager::kCapacity +
+                  60 * RemoteResourceManager::kCapacity +
                   sizeof(ChannelConsumer) *
                       RemoteResourceManager::kConsumerCapacity +
                   44 * SUPLAN_MAX_PERSISTENT_PEERS +

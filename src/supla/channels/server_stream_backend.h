@@ -34,7 +34,8 @@ class ServerStreamBackend : public RemoteChannelBackend {
   RemoteChannelResource &resourceAt(int index) override;
   bool allocateResource(int index) override;
   void clearResource(int index) override;
-  bool storeIntent(int index, const ConsumeIntent &intent) override;
+  bool storeIntent(int index, const ConsumeIntent &intent,
+                   uint16_t resourceSlot) override;
   void detached() override { manager_ = nullptr; }
   void reconcileResource(RemoteChannelResource &resource) override;
   void releaseResource(RemoteChannelResource &) override {}

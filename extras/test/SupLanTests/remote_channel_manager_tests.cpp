@@ -72,10 +72,12 @@ class Backend : public RemoteChannelBackend {
   int consumerCapacity() const override { return 4; }
   ConsumeIntent intentAt(int i) override {
     return intents[i].intent(localTtl_ ? RemoteDelivery::SupLanPeer
-                                     : RemoteDelivery::ServerStream);
+                                     : RemoteDelivery::ServerStream,
+                             resources[intents[i].resourceSlot].channelId);
   }
-  bool storeIntent(int i, const ConsumeIntent &intent) override {
-    intents[i].assign(intent);
+  bool storeIntent(int i, const ConsumeIntent &intent,
+                   uint16_t resourceSlot) override {
+    intents[i].assign(intent, resourceSlot);
     return true;
   }
   RemoteChannelResource &resourceAt(int i) override { return resources[i]; }
@@ -406,6 +408,41 @@ TEST_F(RemoteChannelManagement, FullOwnerAndChannelDomainsSurviveModeReentry) {
   EXPECT_EQ(manager.consumerCount(), 0);
   EXPECT_EQ(manager.resourceCount(), 0);
   EXPECT_TRUE(manager.consume(demand(UINT32_MAX, largest, 4, false)));
+}
+TEST_F(RemoteChannelManagement, ReconfiguredConsumerCannotAliasReusedResource) {
+  attach();
+  for (auto mode : {RemoteDelivery::SupLanPeer, RemoteDelivery::ServerStream}) {
+    const RemoteChannelKey first = {1001, mode};
+    const RemoteChannelKey other = {1002, mode};
+    const RemoteChannelKey replacement = {INT32_MAX, mode};
+    ASSERT_TRUE(manager.consume(demand(1, first)));
+    ASSERT_TRUE(manager.consume(demand(2, first)));
+    ASSERT_TRUE(manager.consume(demand(UINT32_MAX, other)));
+    manager.publish(first, 21, 0);
+    manager.publish(other, 12, 0);
+    auto old = manager.state(first, 0);
+    auto unaffected = manager.state(other, 0);
+    manager.remove(1);
+    EXPECT_TRUE(old.available());  // The second consumer still owns it.
+
+    // The last consumer moves while the other resource remains occupied.
+    ASSERT_TRUE(manager.consume(demand(2, replacement)));
+    EXPECT_FALSE(old.available());
+    EXPECT_FALSE(manager.state(replacement, 0).available());
+    EXPECT_DOUBLE_EQ(unaffected.temperature(), 12);
+    manager.publish(replacement, 99, 0);
+    EXPECT_DOUBLE_EQ(manager.state(replacement, 0).temperature(), 99);
+    EXPECT_DOUBLE_EQ(manager.state(other, 0).temperature(), 12);
+
+    ASSERT_TRUE(manager.consume(demand(2, other)));
+    EXPECT_EQ(manager.resourceCount(), 1);
+    manager.remove(UINT32_MAX);
+    EXPECT_DOUBLE_EQ(manager.state(other, 0).temperature(), 12);
+    manager.remove(2);
+    EXPECT_FALSE(unaffected.available());
+    EXPECT_EQ(manager.resourceCount(), 0);
+    EXPECT_EQ(manager.consumerCount(), 0);
+  }
 }
 TEST_F(RemoteChannelManagement, ExhaustedGenerationNeverReusesFreedResource) {
   attach();

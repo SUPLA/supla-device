@@ -19,6 +19,11 @@
 #define SUPLAN_READ_PROFILING_ENABLED 0
 #endif
 
+// Verbose per-operation READ/ACK/snapshot successes; independent of profiling.
+#ifndef SUPLAN_READ_TRACE_ENABLED
+#define SUPLAN_READ_TRACE_ENABLED 0
+#endif
+
 // Fault injection and legacy fixture adapters are absent from normal builds.
 // Native SDK tests opt in through SUPLA_TEST; dedicated hardware harnesses
 // must define SUPLAN_TESTING consistently for every SDK translation unit.

@@ -40,29 +40,31 @@ struct ConsumeIntent {
 
 // Only validated Channel demand is retained. Type and delivery belong to the
 // admitting manager/backend; the public request still validates both in full.
-// No owner/index indirection: tokens and canonical IDs retain all 32 bits.
+// Tokens retain all 32 bits. Each consumer owns a stable resource slot; the
+// manager clears that resource only after removing its last consumer.
 struct ChannelConsumer {
   uint32_t consumerId = 0;
-  uint32_t channelId = 0;
+  uint16_t resourceSlot = 0;
   uint8_t permissions = 0;
   bool approvalEligible = false;
-  ConsumeIntent intent(RemoteDelivery delivery) const {
+  ConsumeIntent intent(RemoteDelivery delivery, uint32_t channelId) const {
+    if (!consumerId) return {};
     return {consumerId, {SupLan::kResourceTypeChannel, channelId},
             permissions, approvalEligible, delivery};
   }
-  void assign(const ConsumeIntent &request) {
+  void assign(const ConsumeIntent &request, uint16_t slot) {
     consumerId = request.consumerId;
-    channelId = request.resource.id;
+    resourceSlot = slot;
     permissions = request.permissions;
     approvalEligible = request.approvalEligible;
   }
 };
-static_assert(sizeof(ChannelConsumer) == 12,
+static_assert(sizeof(ChannelConsumer) == 8,
               "Channel consumer storage must retain its measured saving");
 
 // Shared cache/lifetime state. No peer, session, transport timer or credential.
 struct RemoteChannelResource {
-  SupLan::ResourceId id = {};
+  uint32_t channelId = 0;
   uint32_t receivedMs = 0;
   TDS_SuplaDeviceChannel_E snapshot = {};
   uint32_t generation = 0;
@@ -85,7 +87,10 @@ struct RemoteChannelResource {
   uint8_t continuityPending : 1;
   // Expiry latch and one diagnostic per lease, no second cache.
   mutable uint8_t leaseExpired : 1;
-  bool used() const { return id.id != 0; }
+  SupLan::ResourceId resource() const {
+    return {SupLan::kResourceTypeChannel, channelId};
+  }
+  bool used() const { return channelId != 0; }
 };
 
 // One adapter per transport, never a vtable/allocation per resource.
@@ -106,7 +111,8 @@ class RemoteChannelBackend {
     clearResource(index);
     return true;
   }
-  virtual bool storeIntent(int index, const ConsumeIntent &intent) = 0;
+  virtual bool storeIntent(int index, const ConsumeIntent &intent,
+                           uint16_t resourceSlot) = 0;
   virtual void detached() {}
   virtual void ensureStarted(RemoteChannelResource &) {}
   virtual void ensureCompleted(RemoteChannelResource &,
@@ -177,7 +183,8 @@ class RemoteChannelManager {
   }
 
  protected:
-  RemoteChannelResource *findResource(RemoteChannelKey key) const;
+  RemoteChannelResource *findResource(
+      RemoteChannelKey key, uint16_t *slot = nullptr) const;
   void invalidate(RemoteChannelResource *resource);
   bool usable(RemoteChannelKey key, const RemoteChannelResource &resource,
                uint32_t nowMs) const;
@@ -222,7 +229,7 @@ class RemoteChannelManager {
   uint8_t approvalRefreshArmed_ : 1;
   uint8_t ensurePermissions_ : 3;
 };
-static_assert(sizeof(RemoteChannelResource) <= 56,
+static_assert(sizeof(RemoteChannelResource) <= 52,
               "Common snapshot state exceeded its extraction baseline");
 static_assert(sizeof(RemoteChannelManager) <= (sizeof(void *) == 8 ? 48 : 32) +
                   RemoteChannelManager::kConsumerFilterBytes + 8 +

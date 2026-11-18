@@ -55,7 +55,8 @@ int RemoteResourceManager::readyPeer(const Resource &resource,
         peer->contextBytes[0] != SupLan::kAuthorityServer) continue;
     // One ACL evaluation yields every right; per-bit authorize() is
     // equivalent.
-    *effective = peers_->effectivePermissions(i, resource.id) & kResourceRights;
+    *effective =
+        peers_->effectivePermissions(i, resource.resource()) & kResourceRights;
     if (*effective && peers_->runtimeEligible(i)) return i;
   }
   return -1;
@@ -85,7 +86,7 @@ RemoteResourceManager::PeerPresence *RemoteResourceManager::reconcilePeer(
     // bindingSessionNeeded hook; it cannot reenter resource admission.
     for (auto &resource : resources_) {
       if (!resource.used() || resource.peerIndex != index) continue;
-      if (runtime_) runtime_->removeReadDependency(index, resource.id);
+      if (runtime_) runtime_->removeReadDependency(index, resource.resource());
       invalidate(&resource);
       grantLost(&resource, 0);
       resource.peerIndex = 0xff;
@@ -133,7 +134,8 @@ void RemoteResourceManager::reconcile(Resource *resource) {
   if (peerIndex < 0) {
     if (resource->effective || resource->peerIndex != 0xff) {
       if (runtime_ && resource->peerIndex != 0xff)
-        runtime_->removeReadDependency(resource->peerIndex, resource->id);
+        runtime_->removeReadDependency(resource->peerIndex,
+                                       resource->resource());
       invalidate(resource);
       grantLost(resource, 0);
       resource->readAttempted = false;
@@ -148,7 +150,7 @@ void RemoteResourceManager::reconcile(Resource *resource) {
   reconcilePeer(peerIndex, peers_->get(peerIndex));
   if (resource->peerIndex != peerIndex) {
     if (runtime_ && resource->peerIndex != 0xff)
-      runtime_->removeReadDependency(resource->peerIndex, resource->id);
+      runtime_->removeReadDependency(resource->peerIndex, resource->resource());
     invalidate(resource);
     resource->readAttempted = false;
   }
@@ -160,7 +162,8 @@ void RemoteResourceManager::reconcile(Resource *resource) {
         SupLan::kPermissionRead)) {
     invalidate(resource);
     resource->readAttempted = false;
-    if (runtime_) runtime_->removeReadDependency(peerIndex, resource->id);
+    if (runtime_)
+      runtime_->removeReadDependency(peerIndex, resource->resource());
   }
   resource->peerIndex = peerIndex;
   resource->access = (resource->effective & resource->permissions) ==
@@ -181,7 +184,7 @@ bool RemoteResourceManager::fresh(const RemoteChannelResource &resource,
     resource.leaseExpired = true;
     SUPLA_LOG_WARNING("SupLAN SUPLAN_PEER ChannelId=%" PRIu32
         " cache expired age_ms=%" PRIu32 " ttl_s=%" PRIu32,
-        resource.id.id, nowMs - resource.receivedMs, ttl);
+        resource.channelId, nowMs - resource.receivedMs, ttl);
   }
   return valid;
 }
@@ -192,23 +195,23 @@ void RemoteResourceManager::refreshResource(RemoteChannelResource &entry,
   if (!(resource.effective & resource.permissions & SupLan::kPermissionRead) ||
       !runtime_ || (resource.readAttempted &&
       (static_cast<int32_t>(nowMs - resource.nextReadMs) < 0 ||
-       runtime_->readNeedsRefresh(resource.peerIndex, resource.id))) ||
+       runtime_->readNeedsRefresh(resource.peerIndex, resource.resource()))) ||
       runtime_->recoveryStatus(resource.peerIndex).sleeping ||
-      !runtime_->requestRead(resource.peerIndex, resource.id)) return;
+      !runtime_->requestRead(resource.peerIndex, resource.resource())) return;
   auto &peer = peerPresence_[resource.peerIndex];
   const int32_t awakeRemaining = peer.wakeUntilMs - nowMs;
   if (peer.awake && awakeRemaining > 0)
     runtime_->refreshPeer(resource.peerIndex, awakeRemaining, false);
   else
     peer.awake = false;
-  resource.nextReadMs = nowMs + healthyRefreshMs(resource.id.id,
+  resource.nextReadMs = nowMs + healthyRefreshMs(resource.channelId,
       resource.hasSnapshot ? resource.snapshot.ValueValidityTimeSec : 0);
   resource.readAttempted = true;
 }
 void RemoteResourceManager::releaseResource(RemoteChannelResource &entry) {
   auto &resource = static_cast<Resource &>(entry);
   if (runtime_ && resource.peerIndex != 0xff)
-    runtime_->removeReadDependency(resource.peerIndex, resource.id);
+    runtime_->removeReadDependency(resource.peerIndex, resource.resource());
 }
 void RemoteResourceManager::cancelControls(uint32_t owner) {
   if (runtime_) runtime_->cancelOwnedControls(owner);
@@ -223,14 +226,15 @@ bool RemoteResourceManager::reachable(
 bool RemoteResourceManager::controlResource(RemoteChannelResource &entry,
     const uint8_t *value, size_t length, uint32_t owner) {
   const auto &resource = static_cast<Resource &>(entry);
-  return runtime_ && runtime_->sendControl(resource.peerIndex, resource.id,
+  return runtime_ && runtime_->sendControl(resource.peerIndex,
+                                           resource.resource(),
                                            value, length, owner);
 }
 bool RemoteResourceManager::actionResource(RemoteChannelResource &entry,
     uint32_t actionId, const uint8_t *params, size_t length, uint32_t owner) {
   const auto &resource = static_cast<Resource &>(entry);
   return runtime_ && runtime_->sendControlAction(
-      resource.peerIndex, resource.id, actionId, params, length, owner);
+      resource.peerIndex, resource.resource(), actionId, params, length, owner);
 }
 void RemoteResourceManager::receive(uint8_t peerIndex,
                                     const SupLan::ResourceId &id,
@@ -248,6 +252,8 @@ void RemoteResourceManager::receive(uint8_t peerIndex,
   // Break observer continuity even when no poll occurred during the gap.
   if (resource->hasSnapshot && !fresh(*resource, nowMs)) invalidate(resource);
   const bool first = !resource->hasSnapshot;
+  const auto previousOffline = resource->snapshot.Offline;
+  const auto previousTtl = resource->snapshot.ValueValidityTimeSec;
   acceptSnapshot(resource, payload, length, nowMs);
   if (!resource->hasSnapshot) return;
   if (bindings) bindings->snapshotChanged();
@@ -259,16 +265,18 @@ void RemoteResourceManager::receive(uint8_t peerIndex,
                    static_cast<int32_t>(refreshMs))
     resource->nextReadMs = nowMs + refreshMs;
   resource->leaseExpired = false;
-  SUPLA_LOG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
-      " snapshot state=%s Offline=%u ttl_s=%" PRIu32 " lease renewed",
-      peerIndex, id.id,
-      resource->snapshot.Offline == 0 ? "ONLINE" : "UNAVAILABLE",
-      resource->snapshot.Offline,
-      resource->snapshot.ValueValidityTimeSec);
-  if (!wasAvailable && usable(*resource, nowMs) &&
-      resource->snapshot.Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE)
+  const bool available = usable(*resource, nowMs) &&
+      resource->snapshot.Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
+  if (SUPLAN_READ_TRACE_ENABLED || first || wasAvailable != available ||
+      previousOffline != resource->snapshot.Offline ||
+      previousTtl != resource->snapshot.ValueValidityTimeSec) {
     SUPLA_LOG_DEBUG("SupLAN SUPLAN_PEER peer=%u ChannelId=%" PRIu32
-        " cache available after snapshot", peerIndex, id.id);
+        " snapshot state=%s Offline=%u ttl_s=%" PRIu32 " lease renewed",
+        peerIndex, id.id,
+        available ? "ONLINE" : "UNAVAILABLE",
+        resource->snapshot.Offline,
+        resource->snapshot.ValueValidityTimeSec);
+  }
 }
 RemoteResourceManager::SnapshotSummary
 RemoteResourceManager::snapshotSummary(uint32_t nowMs) const {
@@ -283,7 +291,7 @@ RemoteResourceManager::snapshotSummary(uint32_t nowMs) const {
     const bool admitted = resource.peerIndex != 0xff &&
         (resource.effective & SupLan::kPermissionRead);
     const bool waiting = admitted && runtime_ &&
-        runtime_->readNeedsRefresh(resource.peerIndex, resource.id);
+        runtime_->readNeedsRefresh(resource.peerIndex, resource.resource());
     result.sessionReady += admitted && runtime_ &&
         runtime_->hasSession(resource.peerIndex);
     result.awaitingFirst += admitted && !resource.hasSnapshot;

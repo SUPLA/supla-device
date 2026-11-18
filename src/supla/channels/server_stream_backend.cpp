@@ -29,7 +29,8 @@ void ServerStreamBackend::trimSlots() {
 }
 ConsumeIntent ServerStreamBackend::intentAt(int index) {
   return slots_ && slots_->intents[index]
-      ? slots_->intents[index]->intent(RemoteDelivery::ServerStream)
+      ? slots_->intents[index]->intent(RemoteDelivery::ServerStream,
+          resourceAt(slots_->intents[index]->resourceSlot).channelId)
       : ConsumeIntent{};
 }
 RemoteChannelResource &ServerStreamBackend::resourceAt(int index) {
@@ -49,7 +50,8 @@ void ServerStreamBackend::clearResource(int index) {
   slots_->resources[index] = nullptr;
   trimSlots();
 }
-bool ServerStreamBackend::storeIntent(int index, const ConsumeIntent &intent) {
+bool ServerStreamBackend::storeIntent(int index, const ConsumeIntent &intent,
+                                      uint16_t resourceSlot) {
   if (!intent.consumerId) {
     if (slots_) {
       delete slots_->intents[index];
@@ -62,7 +64,7 @@ bool ServerStreamBackend::storeIntent(int index, const ConsumeIntent &intent) {
   if (!slots_->intents[index])
     slots_->intents[index] = new (std::nothrow) ChannelConsumer;
   if (!slots_->intents[index]) return false;
-  slots_->intents[index]->assign(intent);
+  slots_->intents[index]->assign(intent, resourceSlot);
   return true;
 }
 void ServerStreamBackend::invalidate(Resource *resource) {
@@ -124,7 +126,7 @@ bool ServerStreamBackend::receive(const TSD_SuplaRemoteChannelState &state,
       state.Channel.Type == 0 ||
       state.Channel.Offline > SUPLA_CHANNEL_OFFLINE_FLAG_MAX) return false;
   for (auto resource : slots_->resources) {
-    if (!resource || resource->id.id !=
+    if (!resource || resource->channelId !=
           static_cast<uint32_t>(state.ChannelId)) continue;
     if (resource->interest == Interest::None ||
         resource->interest == Interest::Rejected) return false;

@@ -53,7 +53,7 @@ class ServerAssociations {
                 const TSuplaSuplanAclEntry *entries, uint16_t count,
                 bool destination, const uint8_t *key);
   uint8_t validate(const SupLan::PeerContext &context, uint32_t revision,
-                   const TSuplaSuplanAclEntry *entries, uint16_t count,
+                   const SupLan::AclEntry *entries, uint16_t count,
                    bool destination) const;
   bool persist(int &slot, const uint8_t *record, int size);
   bool readRecord(uint8_t slot, SupLan::PeerContext *context,
@@ -77,7 +77,6 @@ class ServerAssociations {
   bool loadAttempted_ = false;
   uint32_t loadRetryMs_ = 0;
   uint8_t record_[kMaxRecordSize] = {};
-  TSuplaSuplanAclEntry wireEntries_[kMaxEntries] = {};
   SupLan::AclEntry entries_[kMaxEntries] = {};
 };
 }  // namespace Device

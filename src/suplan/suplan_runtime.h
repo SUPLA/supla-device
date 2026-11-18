@@ -41,6 +41,8 @@ enum class DiagnosticEvent : uint8_t {
   LocateTx, LocateRx, LocateReplyTx, LocateReplyRx, LocateTimeout,
   HandshakeTx, HandshakeTimeout, SessionEstablished, SessionLost,
   ResetTx, ResetSkipped, ResetSendFailed, ResetRx, ReadRefresh,
+  // ReadRetry detail: attempt number shifted left one, low bit = send success.
+  ReadRetry, ReadAckTimeout, ReadStateTimeout,
   RejectAuthority, RejectPacket, RejectSession, RejectLocate, RejectReplay
 };
 
@@ -363,11 +365,15 @@ class Runtime {
   };
 
   struct RuntimeInterest {
-    bool used;
-    uint8_t peerIndex;
-    ResourceId resource;
+    uint32_t resourceId;
     uint32_t lastRefreshMs;
+    uint8_t peerIndex;
+    uint8_t resourceType;
+    bool used;
+    ResourceId resource() const { return {resourceType, resourceId}; }
   };
+  static_assert(sizeof(RuntimeInterest) == 12,
+                "Interest fields must fit without ResourceId padding");
 
   struct RetryEntry {
     uint8_t peerIndex;

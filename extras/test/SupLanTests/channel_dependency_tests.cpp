@@ -13,6 +13,7 @@
 #include <supla/channels/channel_handle.h>
 #include <supla/condition.h>
 #include <supla/events.h>
+#include <supla/log_wrapper.h>
 #include <supla/control/relay.h>
 #include <supla/control/action_trigger.h>
 #include <supla/channels/channel_state.h>
@@ -1883,6 +1884,64 @@ TEST(ChannelHandle, GlobalDeclarationIsResolvedAfterIdentityBootstrap) {
   EXPECT_TRUE(globalDiyHandle.hasReadPermission());
   globalDiyHandle.deactivate();
 }
+extern "C" unsigned int supla_test_log_calls();
+TEST(ChannelHandle, HealthySnapshotsAreQuietButAvailabilityChangesAreLogged) {
+  resetChannels();
+  SimpleTime time;
+  DurableHvacConfig storage;
+  Sensor::VirtualThermometer first, second;
+  SuplaDeviceClass device;
+  DependencySrpc protocol(&device);
+  bootstrapIdentity(&protocol.serverIdentity(), &storage);
+  PeerTable peers;
+  Access port;
+  RemoteResourceManager resources(&peers, nullptr, &port);
+  protocol.resources = &resources;
+  const ResourceId id = {kResourceTypeChannel, 1001};
+  PeerContext context = {kAuthorityServer, 0, {kNodeIdDevice, 101},
+                         {kNodeIdDevice, 202}, 7, 1};
+  uint8_t key[32] = {1};
+  AclEntry acl = {id, kPermissionRead};
+  uint8_t index;
+  ASSERT_TRUE(peers.addPeer(&context, key, 1, &acl, 1, &index, true));
+  ChannelHandle handle(1001, kPermissionRead);
+  ChannelHandle::iterateAll();
+  TDS_SuplaDeviceChannel_E snapshot = {};
+  snapshot.Number = 0xff;
+  snapshot.Type = SUPLA_CHANNELTYPE_THERMOMETER;
+  snapshot.Default = SUPLA_CHANNELFNC_THERMOMETER;
+  snapshot.ValueValidityTimeSec = 60;
+  const int oldLevel = supla_log_get_level();
+  supla_log_set_level(LOG_DEBUG);
+  auto receive = [&]() {
+    resources.receive(index, id, reinterpret_cast<uint8_t *>(&snapshot),
+                       sizeof(snapshot), time.value);
+  };
+  auto before = supla_test_log_calls();
+  receive();
+  EXPECT_EQ(supla_test_log_calls(), before + 1);
+  before = supla_test_log_calls();
+  snapshot.value[0] = 1;  // A changed value still uses the normal value API.
+  receive();
+  EXPECT_EQ(supla_test_log_calls(),
+            before + (SUPLAN_READ_TRACE_ENABLED ? 1 : 0));
+  for (const auto offline : {1, 2, 0}) {
+    before = supla_test_log_calls();
+    snapshot.Offline = offline;
+    receive();
+    EXPECT_EQ(supla_test_log_calls(), before + 1);
+  }
+  before = supla_test_log_calls();
+  snapshot.ValueValidityTimeSec = 30;
+  receive();
+  EXPECT_EQ(supla_test_log_calls(), before + 1);
+  time.value += 31000;
+  before = supla_test_log_calls();
+  receive();  // Expiry and the subsequent restoration are separate events.
+  EXPECT_EQ(supla_test_log_calls(), before + 2);
+  supla_log_set_level(oldLevel);
+}
+
 TEST(ChannelHandle, SessionLossKeepsValidCacheButRecoveryRebuildsBaseline) {
   resetChannels();
   SimpleTime time;

@@ -91,3 +91,18 @@ owner-token lookup only after callback-driven registry mutation. The registry
 revision adds one shared 4-byte static counter. ESP32-C3 compiler probes show
 no per-object growth: `ChannelHandle` remains 56 B. ACL revalidation uses the existing
 PeerTable change event; retries and interests do not add permission caches.
+
+The RAM representation follow-up preserves those capacities and the wire and
+storage formats. For the Box definitions above (32 peers, 200 resources,
+400 consumers, 400 bindings, 40 bindings per peer and 64 runtime interests),
+ESP32-C3 compiler probes measure `RemoteResourceManager` 19300 -> 16900 B,
+`ServerAssociations` 2268 -> 1736 B and `Runtime` 11216 -> 10960 B without
+profiling (12592 -> 12336 B with READ profiling). The combined reduction is
+3188 B. Consumers now own stable resource slots instead of duplicate ChannelIds
+(12 -> 8 B); a resource is freed only after its last consumer is removed.
+Channel cache slots omit the constant CHANNEL type (64 -> 60 B), runtime
+interests retain their resource type in a reordered 12 B record instead of
+16 B, and association validation uses the existing normalized ACL without a
+second wire-entry array. No new allocation, generation table or reference
+counter is introduced. These are object sizes, not measured firmware heap or
+stack peaks.

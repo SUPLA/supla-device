@@ -81,7 +81,7 @@ void RemoteChannelManager::unregisterBackend(RemoteDelivery mode) {
   retryDeferredConsumers();
 }
 RemoteChannelResource *RemoteChannelManager::findResource(
-    RemoteChannelKey key) const {
+    RemoteChannelKey key, uint16_t *slot) const {
   auto adapter = backend(key.delivery);
   if (!adapter || !key.channelId) return nullptr;
   const int capacity = adapter->capacity();
@@ -90,15 +90,17 @@ RemoteChannelResource *RemoteChannelManager::findResource(
     const int i = resourceHint_ + probe;
     if (i < 0 || i >= capacity) continue;
     auto &entry = adapter->resourceAt(i);
-    if (entry.used() && entry.id.id == key.channelId) {
+    if (entry.used() && entry.channelId == key.channelId) {
       resourceHint_ = static_cast<uint16_t>(i);
+      if (slot) *slot = static_cast<uint16_t>(i);
       return &entry;
     }
   }
   for (int i = 0; i < capacity; ++i) {
     auto &entry = adapter->resourceAt(i);
-    if (entry.used() && entry.id.id == key.channelId) {
+    if (entry.used() && entry.channelId == key.channelId) {
       resourceHint_ = static_cast<uint16_t>(i);
+      if (slot) *slot = static_cast<uint16_t>(i);
       return &entry;
     }
   }
@@ -153,10 +155,12 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
         if ((entry.permissions & SupLan::kPermissionControl) &&
             !(intent.permissions & SupLan::kPermissionControl))
           adapter->cancelControls(intent.consumerId);
-        if (!adapter->storeIntent(i, intent)) return false;
+        uint16_t resourceSlot = 0;
+        auto resource = findResource({intent.resource.id, intent.delivery},
+                                     &resourceSlot);
+        if (!resource || !adapter->storeIntent(i, intent, resourceSlot))
+          return false;
         noteConsumer(intent.consumerId);
-        auto resource = findResource({intent.resource.id, intent.delivery});
-        if (!resource) return false;
         const uint8_t previous = resource->manualPermissions;
         demand(resource, intent.delivery);
         if (previous != resource->manualPermissions) {
@@ -176,7 +180,9 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
     admissionExhausted_ = true;
     return false;
   }
-  auto resource = findResource({intent.resource.id, intent.delivery});
+  uint16_t resourceSlot = 0;
+  auto resource = findResource({intent.resource.id, intent.delivery},
+                               &resourceSlot);
   if (!resource) {
     for (int i = 0; i < adapter->capacity(); ++i) {
       if (!adapter->resourceAt(i).used()) {
@@ -186,8 +192,9 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
           return false;
         }
         resource = &adapter->resourceAt(i);
+        resourceSlot = static_cast<uint16_t>(i);
         resource->generation = ++nextGeneration_;
-        resource->id = intent.resource;
+        resource->channelId = intent.resource.id;
         break;
       }
     }
@@ -196,7 +203,7 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
     admissionExhausted_ = true;
     return false;
   }
-  if (!adapter->storeIntent(slot, intent)) {
+  if (!adapter->storeIntent(slot, intent, resourceSlot)) {
     // No consumer owns a freshly allocated entry yet.
     if (!resource->permissions) {
       for (int i = 0; i < adapter->capacity(); ++i)
@@ -229,7 +236,7 @@ void RemoteChannelManager::remove(uint32_t consumerId) {
       const auto intent = adapter->intentAt(i);
       if (intent.consumerId == consumerId) {
         removed = true;
-        adapter->storeIntent(i, {});
+        adapter->storeIntent(i, {}, 0);
         if (nextGeneration_ != UINT32_MAX) ++nextGeneration_;
       }
     }
@@ -248,7 +255,7 @@ void RemoteChannelManager::remove(uint32_t consumerId) {
       demand(&resource, kDeliveries[mode]);
       if (!resource.permissions) {
         if (ensurePending_ &&
-            ensureResource_ == RemoteChannelKey{resource.id.id,
+            ensureResource_ == RemoteChannelKey{resource.channelId,
                                                 kDeliveries[mode]}) {
           if (access_) access_->cancelEnsure();
           ensurePending_ = false;
@@ -282,7 +289,8 @@ void RemoteChannelManager::demand(RemoteChannelResource *resource,
   auto adapter = backend(delivery);
   for (int i = 0; i < adapter->consumerCapacity(); ++i) {
     const auto intent = adapter->intentAt(i);
-    if (!intent.consumerId || !sameResource(intent.resource, resource->id))
+    if (!intent.consumerId ||
+        !sameResource(intent.resource, resource->resource()))
       continue;
     uint8_t rights = intent.permissions;
     if (rights & SupLan::kPermissionControl) rights |= SupLan::kPermissionRead;
@@ -355,7 +363,7 @@ void RemoteChannelManager::iterate(uint32_t nowMs) {
     int start = 0;
     if (ensureResource_.delivery == kDeliveries[mode]) {
       for (int i = 0; i < adapter->capacity(); ++i)
-        if (adapter->resourceAt(i).id.id == ensureResource_.channelId &&
+        if (adapter->resourceAt(i).channelId == ensureResource_.channelId &&
             ensureResource_.channelId)
           start = (i + 1) % adapter->capacity();
     }
@@ -376,8 +384,8 @@ void RemoteChannelManager::iterate(uint32_t nowMs) {
           !access_ || (ensureNextMs_ &&
           static_cast<int32_t>(nowMs - ensureNextMs_) < 0)) continue;
       TDS_SuplaEnsureResourceAccess request = {};
-      request.Resource.ResourceType = resource.id.type;
-      request.Resource.ResourceId = resource.id.id;
+      request.Resource.ResourceType = SupLan::kResourceTypeChannel;
+      request.Resource.ResourceId = resource.channelId;
       request.Permissions =
           manual ? resource.manualPermissions : resource.permissions;
       if (manual)
@@ -386,7 +394,7 @@ void RemoteChannelManager::iterate(uint32_t nowMs) {
       if (access_->ensure(request)) {
         ensurePending_ = true;
         ensureNextMs_ = nowMs + 10000;
-        ensureResource_ = {resource.id.id, kDeliveries[mode]};
+        ensureResource_ = {resource.channelId, kDeliveries[mode]};
         ensurePermissions_ = request.Permissions;
         adapter->ensureStarted(resource);
         if (manual) resource.manualAttempted = true;
@@ -517,7 +525,8 @@ void RemoteChannelManager::ensureResult(
   (void)mode;  // Log arguments are compiled out with SUPLA_DISABLE_LOGS.
   (void)approval;
   SUPLA_LOG_DEBUG("SupLAN %s ChannelId=%" PRIu32
-      " ENSURE access=%s result=%s code=%u", mode, resource->id.id, approval,
+      " ENSURE access=%s result=%s code=%u", mode, resource->channelId,
+      approval,
       result.Result == SUPLA_SUPLAN_RESULT_OK ? "OK" :
       result.Result == SUPLA_SUPLAN_RESULT_NOT_AUTHORIZED ? "NOT_AUTHORIZED" :
       "FAILED", result.Result);

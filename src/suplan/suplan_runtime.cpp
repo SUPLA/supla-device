@@ -3074,9 +3074,9 @@ void Runtime::pruneInterests(uint32_t now, bool rights) {
         (static_cast<uint32_t>(now - interest.lastRefreshMs) >=
              kRuntimeInterestTimeoutMs ||
          !isLocalSource(peers_->get(interest.peerIndex)) ||
-         (rights && !peers_->authorize(interest.peerIndex, interest.resource,
+         (rights && !peers_->authorize(interest.peerIndex, interest.resource(),
                                        kPermissionRead) &&
-          !peers_->authorize(interest.peerIndex, interest.resource,
+          !peers_->authorize(interest.peerIndex, interest.resource(),
                              kPermissionActionTrigger)))) {
       memset(&interest, 0, sizeof(interest));
     }
@@ -3094,8 +3094,8 @@ bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource,
   for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     RuntimeInterest *interest = &interests_[i];
     if (interest->used && interest->peerIndex == peerIndex &&
-        interest->resource.type == resource.type &&
-        interest->resource.id == resource.id) {
+        interest->resourceType == resource.type &&
+        interest->resourceId == resource.id) {
       interest->lastRefreshMs = datagrams_->nowMs();
       updatePoolHighWater();
       return true;
@@ -3117,7 +3117,8 @@ bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource,
   }
   interests_[slot].used = true;
   interests_[slot].peerIndex = peerIndex;
-  interests_[slot].resource = resource;
+  interests_[slot].resourceType = resource.type;
+  interests_[slot].resourceId = resource.id;
   interests_[slot].lastRefreshMs = datagrams_->nowMs();
   updatePoolHighWater();
   return true;
@@ -3127,8 +3128,8 @@ bool Runtime::interested(uint8_t peerIndex, const ResourceId &resource) const {
   for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     const RuntimeInterest &interest = interests_[i];
     if (interest.used && interest.peerIndex == peerIndex &&
-        interest.resource.type == resource.type &&
-        interest.resource.id == resource.id) {
+        interest.resourceType == resource.type &&
+        interest.resourceId == resource.id) {
       return true;
     }
   }
@@ -3742,6 +3743,7 @@ void Runtime::iterate() {
           kReadStateResponseTimeoutMs) {
         const uint8_t peerIndex = retry->peerIndex;
         const ResourceId resource = retry->resource;
+        emit(DiagnosticEvent::ReadStateTimeout, peerIndex, resource);
 #if SUPLAN_READ_PROFILING_ENABLED
         ++profile.window.stateTimeout;
 #endif
@@ -3781,6 +3783,8 @@ void Runtime::iterate() {
       } else {
         const uint8_t peerIndex = retry->peerIndex;
         const uint64_t sessionId = retry->sessionId;
+        if (retry->flags & kRetryReadRequest)
+          emit(DiagnosticEvent::ReadAckTimeout, peerIndex, retry->resource);
 #if SUPLAN_READ_PROFILING_ENABLED
         if (retry->flags & kRetryReadRequest) ++profile.window.ackTimeout;
 #endif
@@ -3816,16 +3820,18 @@ void Runtime::iterate() {
            (retry->flags & kRetryReadRequest) == 0 ||
            !readAdmitted(retry->peerIndex, retry->resource) ||
            findSession(retry->sessionId, peer->endpoint) < 0)) continue;
+      bool sent = false;
 #ifdef SUPLAN_TESTING
       if (hooks_.failNextDataTx != 0) {
         --hooks_.failNextDataTx;
       } else {  // Fault injection suppresses only this transmit attempt.
 #endif  // SUPLAN_TESTING
-        if (fragmentSender_.send(
+        sent = fragmentSender_.send(
                      retry->frame, retry->frameLength, maxPayload,
                      UINT32_C(0xC3000000) |
                          (nextFrameId_++ & UINT32_C(0x00FFFFFF)),
-                     fragmentDatagram, this)) {
+                     fragmentDatagram, this);
+        if (sent) {
           ++diagnostics_.dataTx;
         }
 #ifdef SUPLAN_TESTING
@@ -3834,6 +3840,9 @@ void Runtime::iterate() {
       ++retry->attempts;
       retry->lastTransmitMs = now;
       ++diagnostics_.retryTx;
+      if (readRequest)
+        emit(DiagnosticEvent::ReadRetry, retry->peerIndex, retry->resource,
+             (static_cast<uint32_t>(retry->attempts) << 1) | sent);
 #if SUPLAN_READ_PROFILING_ENABLED
       if (readRequest) ++profile.window.retryTx;
 #endif
@@ -3979,7 +3988,7 @@ void Runtime::resumeRetainedInterests() {
   for (auto &interest : interests_) {
     if (!interest.used) continue;
     if (isLocalSource(peers_->get(interest.peerIndex)) &&
-        peers_->authorize(interest.peerIndex, interest.resource,
+        peers_->authorize(interest.peerIndex, interest.resource(),
                           kPermissionRead)) {
       interest.lastRefreshMs = now;
     } else {
@@ -3993,14 +4002,14 @@ void Runtime::publishCurrentInterests(uint8_t peerIndex) {
     if (!interest.used ||
         (peerIndex != 0xff && interest.peerIndex != peerIndex) ||
         !isLocalSource(peers_->get(interest.peerIndex)) ||
-        !peers_->authorize(interest.peerIndex, interest.resource,
+        !peers_->authorize(interest.peerIndex, interest.resource(),
                             kPermissionRead)) continue;
     uint8_t snapshot[36];
     size_t size = 0;
     bool eventOnly = false;
-    if (application_->readResource(interest.resource, &eventOnly, snapshot,
+    if (application_->readResource(interest.resource(), &eventOnly, snapshot,
                                    sizeof(snapshot), &size) && !eventOnly) {
-      publishStateParts(interest.peerIndex, interest.resource, 6, nullptr, 0,
+      publishStateParts(interest.peerIndex, interest.resource(), 6, nullptr, 0,
                          snapshot, size, true);
     }
   }

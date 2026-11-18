@@ -9,6 +9,8 @@
 
 using Supla::Notification;
 
+static_assert(SUPLA_NOTIF_MAX < 256, "Notification count must fit in uint8_t");
+
 Notification* Notification::instance = nullptr;
 
 Notification::Notification() {
@@ -75,12 +77,6 @@ bool Notification::registerNotification(int16_t context,
                                         bool titleSetByDevice,
                                         bool messageSetByDevice,
                                         bool soundSetByDevice) {
-  if (blockNewRegistration) {
-    SUPLA_LOG_WARNING(
-        "Notification: can't register anymore - blockNewRegistration is set");
-    return false;
-  }
-
   int i = 0;
   for (; i < notificationCount; i++) {
     if (notifications[i].Context == context) {
@@ -124,7 +120,8 @@ bool Notification::send(int16_t context,
 
   if (config == nullptr) {
     SUPLA_LOG_WARNING(
-      "Notification: can't send - context %d not registered", context);
+        "Notification: can't send - context %d not submitted in registration",
+        context);
     return false;
   }
 
@@ -143,7 +140,7 @@ bool Notification::send(int16_t context,
 }
 
 TDS_RegisterPushNotification* Notification::getContextConfig(int16_t context) {
-  for (int i = 0; i < notificationCount; i++) {
+  for (int i = 0; i < registeredNotificationCount; i++) {
     if (notifications[i].Context == context) {
       return &notifications[i];
     }
@@ -156,12 +153,13 @@ void Notification::setSrpc(Supla::Protocol::SuplaSrpc *srpc) {
 }
 
 void Notification::onRegistered(Supla::Protocol::SuplaSrpc *srpc) {
-  blockNewRegistration = true;
   setSrpc(srpc);
 
-  for (int i = 0; i < notificationCount; i++) {
+  const uint8_t count = notificationCount;
+  for (int i = 0; i < count; i++) {
     SUPLA_LOG_DEBUG("Notification: sending registration for context %d",
                     notifications[i].Context);
     srpc->sendRegisterNotification(&notifications[i]);
   }
+  registeredNotificationCount = count;
 }

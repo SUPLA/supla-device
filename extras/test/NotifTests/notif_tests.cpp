@@ -8,7 +8,11 @@
 
 using Supla::Notification;
 using ::testing::_;
+using ::testing::AllOf;
+using ::testing::Field;
+using ::testing::Pointee;
 using ::testing::Return;
+using ::testing::StrictMock;
 
 TEST(Notification, IsNotificationUsed) {
   EXPECT_FALSE(Notification::IsNotificationUsed());
@@ -40,6 +44,56 @@ TEST(Notification, RegisterNotification) {
 
   EXPECT_TRUE(Notification::RegisterNotification(4, false, false, false));
   EXPECT_FALSE(Notification::RegisterNotification(4, false, false, false));
+}
+
+TEST(Notification, LateRegistrationIsSentOnReconnect) {
+  Notification notif;
+  StrictMock<SuplaSrpcLayerMock> srpcMock;
+
+  const auto deviceConfig = Pointee(AllOf(
+      Field(&TDS_RegisterPushNotification::Context, -1),
+      Field(&TDS_RegisterPushNotification::ServerManagedFields,
+            PN_SERVER_MANAGED_SOUND)));
+  const auto channelConfig = Pointee(AllOf(
+      Field(&TDS_RegisterPushNotification::Context, 7),
+      Field(&TDS_RegisterPushNotification::ServerManagedFields,
+            PN_SERVER_MANAGED_TITLE | PN_SERVER_MANAGED_BODY)));
+
+  ASSERT_TRUE(Notification::RegisterNotification(-1));
+  EXPECT_CALL(srpcMock, sendRegisterNotification(deviceConfig));
+  notif.onRegistered(&srpcMock);
+  ASSERT_TRUE(::testing::Mock::VerifyAndClearExpectations(&srpcMock));
+
+  ASSERT_TRUE(Notification::RegisterNotification(7, false, false, true));
+  EXPECT_FALSE(Notification::RegisterNotification(7));
+  EXPECT_FALSE(Notification::Send(7));
+  EXPECT_FALSE(Notification::SendF(7, "Title", "%s", "Body"));
+
+  EXPECT_CALL(srpcMock, sendNotification(-1, _, _, _)).WillOnce(Return(true));
+  EXPECT_TRUE(Notification::Send(-1));
+
+  EXPECT_CALL(srpcMock, sendRegisterNotification(deviceConfig));
+  EXPECT_CALL(srpcMock, sendRegisterNotification(channelConfig));
+  notif.onRegistered(&srpcMock);
+  EXPECT_CALL(srpcMock, sendNotification(7, nullptr, nullptr, 0))
+      .WillOnce(Return(true));
+  EXPECT_TRUE(Notification::Send(7));
+  ASSERT_TRUE(::testing::Mock::VerifyAndClearExpectations(&srpcMock));
+
+  EXPECT_CALL(srpcMock, sendRegisterNotification(deviceConfig));
+  EXPECT_CALL(srpcMock, sendRegisterNotification(channelConfig));
+  notif.onRegistered(&srpcMock);
+}
+
+TEST(Notification, RegistrationLimitStillAppliesAfterRegistration) {
+  Notification notif;
+  StrictMock<SuplaSrpcLayerMock> srpcMock;
+
+  notif.onRegistered(&srpcMock);
+  for (int context = 0; context < SUPLA_NOTIF_MAX; context++) {
+    ASSERT_TRUE(Notification::RegisterNotification(context));
+  }
+  EXPECT_FALSE(Notification::RegisterNotification(SUPLA_NOTIF_MAX));
 }
 
 TEST(Notification, Send) {

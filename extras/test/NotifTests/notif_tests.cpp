@@ -61,6 +61,7 @@ TEST(Notification, LateRegistrationIsSentOnReconnect) {
 
   ASSERT_TRUE(Notification::RegisterNotification(-1));
   EXPECT_CALL(srpcMock, sendRegisterNotification(deviceConfig));
+  Notification::OnRegistrationStarted();
   notif.onRegistered(&srpcMock);
   ASSERT_TRUE(::testing::Mock::VerifyAndClearExpectations(&srpcMock));
 
@@ -72,9 +73,13 @@ TEST(Notification, LateRegistrationIsSentOnReconnect) {
   EXPECT_CALL(srpcMock, sendNotification(-1, _, _, _)).WillOnce(Return(true));
   EXPECT_TRUE(Notification::Send(-1));
 
+  Notification::OnRegistrationStarted();
+  ASSERT_TRUE(Notification::RegisterNotification(8));
+  EXPECT_FALSE(Notification::Send(7));
   EXPECT_CALL(srpcMock, sendRegisterNotification(deviceConfig));
   EXPECT_CALL(srpcMock, sendRegisterNotification(channelConfig));
   notif.onRegistered(&srpcMock);
+  EXPECT_FALSE(Notification::Send(8));
   EXPECT_CALL(srpcMock, sendNotification(7, nullptr, nullptr, 0))
       .WillOnce(Return(true));
   EXPECT_TRUE(Notification::Send(7));
@@ -82,7 +87,12 @@ TEST(Notification, LateRegistrationIsSentOnReconnect) {
 
   EXPECT_CALL(srpcMock, sendRegisterNotification(deviceConfig));
   EXPECT_CALL(srpcMock, sendRegisterNotification(channelConfig));
+  EXPECT_CALL(srpcMock, sendRegisterNotification(
+      Pointee(Field(&TDS_RegisterPushNotification::Context, 8))));
+  Notification::OnRegistrationStarted();
   notif.onRegistered(&srpcMock);
+  EXPECT_CALL(srpcMock, sendNotification(8, _, _, _)).WillOnce(Return(true));
+  EXPECT_TRUE(Notification::Send(8));
 }
 
 TEST(Notification, RegistrationLimitStillAppliesAfterRegistration) {
@@ -115,6 +125,9 @@ TEST(Notification, Send) {
   EXPECT_FALSE(Notification::Send(2));
   EXPECT_FALSE(Notification::Send(3));
 
+  Notification::OnRegistrationStarted();
+  notif.onRegistered(nullptr);
+  EXPECT_FALSE(Notification::Send(0));
   notif.onRegistered(&srpcMock);
 
   EXPECT_CALL(srpcMock, sendNotification(0, _, _, _))

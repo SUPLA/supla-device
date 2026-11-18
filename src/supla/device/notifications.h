@@ -18,8 +18,9 @@ class Notification : public Element {
   virtual ~Notification();
 
   // Register a notification locally at any time.
-  // All configurations are sent on each successful SUPLA device
-  // registration. Configurations added later wait for the next one.
+  // Configurations present when SUPLA device registration starts are sent
+  // once it succeeds. Configurations added during or after it wait for the
+  // next registration. Create the channel before registering its notification.
   // context - -1 device, 0..255 channel number
   // titleSetByDevice - true if title is set by device, false if managed by
   // server
@@ -52,6 +53,8 @@ class Notification : public Element {
 
   static bool IsNotificationUsed();
 
+  // Called by SRPC just before sending the device registration request.
+  static void OnRegistrationStarted();
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr) override;
 
  private:
@@ -70,6 +73,7 @@ class Notification : public Element {
 
   TDS_RegisterPushNotification notifications[SUPLA_NOTIF_MAX] = {};
   uint8_t notificationCount = 0;
+  // Count captured for this registration. Send is enabled once it succeeds.
   uint8_t registeredNotificationCount = 0;
   Supla::Protocol::SuplaSrpc *srpc = nullptr;
 };

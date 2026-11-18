@@ -36,6 +36,13 @@ bool Notification::IsNotificationUsed() {
   return instance != nullptr;
 }
 
+void Notification::OnRegistrationStarted() {
+  if (instance != nullptr) {
+    instance->setSrpc(nullptr);
+    instance->registeredNotificationCount = instance->notificationCount;
+  }
+}
+
 bool Notification::RegisterNotification(int16_t context,
                                         bool titleSetByDevice,
                                         bool messageSetByDevice,
@@ -153,13 +160,14 @@ void Notification::setSrpc(Supla::Protocol::SuplaSrpc *srpc) {
 }
 
 void Notification::onRegistered(Supla::Protocol::SuplaSrpc *srpc) {
-  setSrpc(srpc);
+  if (srpc == nullptr) {
+    return;
+  }
 
-  const uint8_t count = notificationCount;
-  for (int i = 0; i < count; i++) {
+  for (int i = 0; i < registeredNotificationCount; i++) {
     SUPLA_LOG_DEBUG("Notification: sending registration for context %d",
                     notifications[i].Context);
     srpc->sendRegisterNotification(&notifications[i]);
   }
-  registeredNotificationCount = count;
+  setSrpc(srpc);
 }

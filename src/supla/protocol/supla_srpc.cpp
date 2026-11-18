@@ -16,6 +16,7 @@
 #include <supla/channels/channel.h>
 #include <supla/clock/clock.h>
 #include <supla/device/channel_conflict_resolver.h>
+#include <supla/device/notifications.h>
 #include <supla/device/register_device.h>
 #include <supla/device/remote_device_config.h>
 #include <supla/device/supla_ca_cert.h>
@@ -2330,6 +2331,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
         static_cast<unsigned int>(registerHeader->channel_count));
     Supla::LogIndent registrationIndent;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
+    Supla::Notification::OnRegistrationStarted();
     if (version <= 24) {
       if (!srpc_ds_async_registerdevice_in_chunks(
               srpc,

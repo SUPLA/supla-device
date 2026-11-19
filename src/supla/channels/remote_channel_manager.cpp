@@ -4,6 +4,7 @@
 #include <supla/channels/channel_reference.h>
 #include <supla/suplan/suplan_server_identity.h>
 #ifndef ARDUINO_ARCH_AVR
+#include <supla/channels/channel_handle.h>
 #include <string.h>
 #include <inttypes.h>
 #include <supla/log_wrapper.h>
@@ -51,6 +52,7 @@ bool RemoteChannelManager::registerBackend(RemoteDelivery mode,
   for (int i = 0; i < 2; ++i) {
     if (kDeliveries[i] != mode) continue;
     if (backends_[i] && backends_[i] != adapter) return false;
+    ChannelHandle::observationsChanged();
     backends_[i] = adapter;
     rebuildConsumerFilter();
     retryDeferredConsumers();
@@ -106,7 +108,8 @@ RemoteChannelResource *RemoteChannelManager::findResource(
   }
   return nullptr;
 }
-bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
+bool RemoteChannelManager::consume(const ConsumeIntent &intent,
+                                   uint16_t *slotHint) {
   const auto scope = acceptedReferenceIdentity();
   if (scope && scope->scopeFenced()) return false;
   if (!intent.consumerId ||
@@ -122,15 +125,16 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
   if (!adapter) return false;
   // Steady state: an owner re-asserts its unchanged intent on every pass. It
   // holds exactly one contribution, so no other backend needs a scan.
-  for (int probe = -1; probe <= 1; ++probe) {
-    const int i = consumerHint_ + probe;
+  auto &hint = slotHint ? *slotHint : consumerHint_;
+  for (int probe = slotHint ? 0 : -1; probe <= 1; ++probe) {
+    const int i = static_cast<int>(hint) + probe;
     if (i < 0 || i >= adapter->consumerCapacity()) continue;
     const auto entry = adapter->intentAt(i);
     if (entry.consumerId == intent.consumerId &&
         sameResource(entry.resource, intent.resource) &&
         entry.permissions == intent.permissions &&
         entry.approvalEligible == intent.approvalEligible) {
-      consumerHint_ = static_cast<uint16_t>(i);
+      hint = static_cast<uint16_t>(i);
       return true;
     }
   }
@@ -147,7 +151,7 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
   for (int i = 0; i < adapter->consumerCapacity(); ++i) {
     const auto entry = adapter->intentAt(i);
     if (entry.consumerId == intent.consumerId) {
-      consumerHint_ = static_cast<uint16_t>(i);
+      hint = static_cast<uint16_t>(i);
       if (sameResource(entry.resource, intent.resource) &&
           entry.permissions == intent.permissions &&
           entry.approvalEligible == intent.approvalEligible) return true;
@@ -205,16 +209,11 @@ bool RemoteChannelManager::consume(const ConsumeIntent &intent) {
   }
   if (!adapter->storeIntent(slot, intent, resourceSlot)) {
     // No consumer owns a freshly allocated entry yet.
-    if (!resource->permissions) {
-      for (int i = 0; i < adapter->capacity(); ++i)
-        if (&adapter->resourceAt(i) == resource) {
-          adapter->clearResource(i);
-          break;
-        }
-    }
+    if (!resource->permissions) adapter->clearResource(resourceSlot);
     admissionExhausted_ = true;
     return false;
   }
+  hint = static_cast<uint16_t>(slot);
   noteConsumer(intent.consumerId);
   const uint8_t previous = resource->manualPermissions;
   demand(resource, intent.delivery);
@@ -245,6 +244,7 @@ void RemoteChannelManager::remove(uint32_t consumerId) {
   // No demand changed when that token was absent; keep control cancellation
   // above, but leave resource authorization to state/access and iterate.
   if (!removed) return;
+  ChannelHandle::observationsChanged();
   rebuildConsumerFilter();
   for (int mode = 0; mode < 2; ++mode) {
     auto adapter = backends_[mode];
@@ -299,6 +299,7 @@ void RemoteChannelManager::demand(RemoteChannelResource *resource,
   }
 }
 void RemoteChannelManager::invalidate(RemoteChannelResource *resource) {
+  ChannelHandle::observationsChanged();
   resource->hasSnapshot = false;
   resource->generation = nextGeneration_ == UINT32_MAX ? 0 : ++nextGeneration_;
 }
@@ -336,6 +337,7 @@ void RemoteChannelManager::iterate(uint32_t nowMs) {
       admission == UINT32_MAX || retryAdmission) {
     // Capture before callbacks: allocation/release can require another pass
     // for consumers that could not obtain a slot earlier in this sweep.
+    ChannelHandle::observationsChanged();
     dependencyIdentity_ = identity;
     dependencyIdentityRevision_ = identityRevision;
     dependencyTopology_ = topology;
@@ -497,6 +499,7 @@ void RemoteChannelManager::acceptSnapshot(RemoteChannelResource *resource,
   if ((snapshot.Offline != SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE ||
        snapshot.Default == SUPLA_CHANNELFNC_NONE) && resource->hasSnapshot)
     invalidate(resource);
+  ChannelHandle::observationsChanged();
   resource->snapshot = snapshot;
   resource->receivedMs = nowMs;
   resource->continuityPending = false;

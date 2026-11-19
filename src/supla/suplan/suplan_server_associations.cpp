@@ -90,10 +90,7 @@ void ServerAssociations::clear(uint8_t index) {
 
 void ServerAssociations::refreshOwnership() {
   const uint32_t seen = identity_ ? identity_->revision() : 0;
-  if (peers_ && seen != ownershipSeen_) {
-    ownershipSeen_ = seen;
-    peers_->ownershipChanged();
-  }
+  if (seen != ownershipSeen_) identityChanged();
 }
 
 bool ServerAssociations::owns(void *self, const PeerContext &context,
@@ -334,6 +331,11 @@ bool ServerAssociations::reloadSourceRights(ServerIdentity *identity) {
 
 void ServerAssociations::identityChanged() {
   if (!available()) return;
+  const auto revision = identity_->revision();
+  if (ownershipSeen_ != revision) {
+    ownershipSeen_ = revision;
+    peers_->ownershipChanged();
+  }
   runtime_->setLocalAddress(
       {kNodeIdDevice, static_cast<uint32_t>(identity_->serverDeviceId())});
   for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {

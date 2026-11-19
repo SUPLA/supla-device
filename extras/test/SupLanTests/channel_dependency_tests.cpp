@@ -2055,6 +2055,56 @@ struct HandleLifecycleEnvironment {
   }
 };
 
+TEST(ChannelHandle, ReusedConsumerSlotCannotAdmitAnotherOwnersIntent) {
+  HandleLifecycleEnvironment env;
+  const ConsumeIntent first = {101, {kResourceTypeChannel, 1001},
+                               kPermissionRead, true};
+  const ConsumeIntent second = {102, {kResourceTypeChannel, 1002},
+                                kPermissionRead, true};
+  uint16_t slot = UINT16_MAX;
+  ASSERT_TRUE(env.resources.consume(first, &slot));
+  env.resources.remove(first.consumerId);
+  ASSERT_TRUE(env.resources.consume(second, &slot));
+  ASSERT_TRUE(env.resources.consume(first, &slot));
+  EXPECT_EQ(env.resources.consumerCount(), 2);
+  env.resources.remove(second.consumerId);
+  EXPECT_EQ(env.resources.consumerCount(), 1);
+}
+
+TEST(ChannelHandle, RemoteObserversSleepUntilSnapshotOrLeaseChange) {
+  HandleLifecycleEnvironment env;
+  struct Counter : ChannelHandle {
+    Counter() : ChannelHandle(1001, READ) {}
+    ChannelState state() override {
+      ++observations;
+      return ChannelHandle::state();
+    }
+    unsigned observations = 0;
+  } first, second;
+  ChannelHandle::iterateAll();
+  env.publish(1001, 21);
+  const auto baseline = first.observations;
+  for (int i = 0; i < 10000; ++i) ChannelHandle::iterateAll();
+  EXPECT_EQ(first.observations, baseline);
+  EXPECT_EQ(second.observations, baseline);
+
+  TDS_SuplaDeviceChannel_E snapshot = {};
+  snapshot.Number = 0xff;
+  snapshot.Type = SUPLA_CHANNELTYPE_THERMOMETER;
+  snapshot.Default = SUPLA_CHANNELFNC_THERMOMETER;
+  snapshot.ValueValidityTimeSec = 1;
+  for (int i = 0; i < 2; ++i)
+    env.resources.receive(env.peer, {kResourceTypeChannel, 1001},
+        reinterpret_cast<uint8_t *>(&snapshot), sizeof(snapshot), 0);
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(first.observations, baseline + 1);
+  env.time.advance(1001);
+  env.resources.iterate(env.time.value);
+  ChannelHandle::iterateAll();
+  EXPECT_EQ(first.observations, baseline + 2);
+  EXPECT_FALSE(first.state().available());
+}
+
 TEST(ChannelHandle, IterationSurvivesDeletingNextAndDefersNewHandles) {
   HandleLifecycleEnvironment env;
   class CountingHandle : public ChannelHandle {

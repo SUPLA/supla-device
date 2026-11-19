@@ -211,7 +211,7 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
       bool eventOnly) override;
 
  private:
-  bool localChannel(uint32_t id, uint8_t *number, bool *eventOnly) const;
+  Channel *localChannel(uint32_t id, bool *eventOnly = nullptr) const;
 #ifdef SUPLAN_TESTING
   const SupLanResourceMapping *findResource(uint32_t resourceId) const;
 #endif  // SUPLAN_TESTING

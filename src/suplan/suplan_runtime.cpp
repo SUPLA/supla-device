@@ -115,7 +115,7 @@ Runtime::Runtime(CryptoPort *crypto, DatagramPort *datagrams,
       application_(application), peers_(peers), localAddress_(localAddress),
       nextFrameId_(UINT32_C(0xC3000000)),
       suplaProtoVersion_(suplaProtoVersion), processing_(false),
-      iterating_(false), sessions_(),
+      iterating_(false), retryDeferredForRx_(false), sessions_(),
       pending_(), locates_(),
       interests_(), retries_(), deferred_(), recovery_(), dependencies_(),
       fragmentSender_(),
@@ -850,17 +850,14 @@ void Runtime::noteReachability(uint8_t peerIndex) {
   }
 }
 
-void Runtime::pruneReadDependencies(bool rights) {
-  enum { kReadable = 1, kRefresh = 2, kRemoved = 4 };
+void Runtime::pruneReadDependencies() {
+  enum { kRefresh = 1, kRemoved = 2 };
   uint8_t state[SUPLAN_MAX_PERSISTENT_PEERS] = {};
-  for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i)
-    state[i] = readRole(i) ? kReadable : 0;
   for (const auto &entry : dependencies_) {
     if (!entry.used) continue;
     const uint8_t peer = entry.peerIndex;
     const ResourceId resource = {entry.resourceType, entry.resourceId};
-    if ((state[peer] & kReadable) && resource.type == kResourceTypeChannel &&
-        (!rights || readAuthorized(peer, resource))) {
+    if (readAuthorized(peer, resource)) {
       if (entry.needsRefresh) state[peer] |= kRefresh;
     } else {
       removeReadDependency(peer, resource);
@@ -894,6 +891,12 @@ void Runtime::iterateRecovery(uint32_t now) {
     }
     const PeerRecord *record = peers_->get(peerIndex);
     if (!record) {
+      continue;
+    }
+    // A SERVER peer cannot recover under a role contradicting its context.
+    if (record->contextBytes[0] == kAuthorityServer &&
+        record->destination != isLocalDestination(record)) {
+      clearPeer(peerIndex);
       continue;
     }
     if (peer.active &&
@@ -1665,6 +1668,9 @@ void Runtime::authorizationChanged(uint8_t peerIndex) {
 }
 
 void Runtime::revalidateAuthorization() {
+  for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+    if (peers_->get(i) && !peers_->runtimeEligible(i)) clearPeer(i);
+  }
   pruneReadDependencies();
   pruneInterests(datagrams_->nowMs(), true);
   for (uint16_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
@@ -1954,8 +1960,8 @@ void Runtime::drainDeferred() {
   for (uint8_t i = 0; i < SUPLAN_MAX_DEFERRED_APP_EVENTS; ++i) {
     // Sending an earlier entry runs application code (snapshot construction).
     // A grant revoked there must also drop the entries still queued here.
-    synchronizeAuthorization();
     DeferredApplication *queued = &deferred_[i];
+    if (queued->used) synchronizeAuthorization();
     if (!queued->used) {
       continue;
     }
@@ -3070,14 +3076,14 @@ void Runtime::processApplication(SessionEntry *session, uint32_t sequence,
 void Runtime::pruneInterests(uint32_t now, bool rights) {
   for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     RuntimeInterest &interest = interests_[i];
-    if (interest.used &&
-        (static_cast<uint32_t>(now - interest.lastRefreshMs) >=
-             kRuntimeInterestTimeoutMs ||
-         !isLocalSource(peers_->get(interest.peerIndex)) ||
-         (rights && !peers_->authorize(interest.peerIndex, interest.resource(),
-                                       kPermissionRead) &&
-          !peers_->authorize(interest.peerIndex, interest.resource(),
-                             kPermissionActionTrigger)))) {
+    if (!interest.used) continue;
+    const bool expired =
+        now - interest.lastRefreshMs >= kRuntimeInterestTimeoutMs;
+    if (expired || (rights &&
+        (!isLocalSource(peers_->get(interest.peerIndex)) ||
+         !(peers_->effectivePermissions(interest.peerIndex,
+                                        interest.resource()) &
+           (kPermissionRead | kPermissionActionTrigger))))) {
       memset(&interest, 0, sizeof(interest));
     }
   }
@@ -3629,17 +3635,11 @@ void Runtime::iterate() {
   ++profile.window.calls;
   uint8_t profileRx = 0;
 #endif
-  // Dependencies are authorized when admitted. Recheck their peer role every
-  // iteration, but ACL/ownership rights only after a PeerTable change; a
-  // change during this sweep makes the next iteration sweep again.
   synchronizeAuthorization();
-  pruneReadDependencies(false);
-  for (uint16_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
-    if (peers_->get(i) && !peers_->runtimeEligible(i)) clearPeer(i);
-  }
   // Process queued replies before timing out their operations. RX remains
   // bounded; sample time afterwards because receive callbacks can take time.
   const uint32_t receiveStart = datagrams_->nowMs();
+  bool receiveBudgetExhausted = true;
   for (uint8_t i = 0; i < kMaxDatagramsPerIterate; ++i) {
     if (i >= kMinDatagramsPerIterate &&
         datagrams_->nowMs() - receiveStart >= kReceiveBudgetMs) break;
@@ -3647,6 +3647,7 @@ void Runtime::iterate() {
     const int length = datagrams_->pollReceive(transmitFrame_,
                                                sizeof(transmitFrame_), &source);
     if (length <= 0) {
+      receiveBudgetExhausted = false;
       break;
     }
 #if SUPLAN_READ_PROFILING_ENABLED
@@ -3714,6 +3715,10 @@ void Runtime::iterate() {
   iterateRecovery(now);
   synchronizeAuthorization();
   pruneInterests(now);
+  // Give a queued ACK one more RX pass. Continuous traffic must still let
+  // the next pass send due retries.
+  const bool deferRetryForRx = receiveBudgetExhausted && !retryDeferredForRx_;
+  retryDeferredForRx_ = false;
   for (uint8_t i = 0; i < SUPLAN_MAX_RETRY_SLOTS; ++i) {
     RetryEntry *retry = &retries_[i];
     if (retry->isUsed() && (retry->flags & kRetryReadRequest) != 0 &&
@@ -3796,6 +3801,10 @@ void Runtime::iterate() {
     PeerRecord *peer = peers_->get(retry->peerIndex);
     if (peer != nullptr &&
         peer->endpointState == kPeerEndpointAuthenticated) {
+      if (deferRetryForRx) {
+        retryDeferredForRx_ = true;
+        continue;
+      }
       fragmentEndpoint_ = peer->endpoint;
       const size_t portLimit = datagrams_->maxDatagramPayload();
 #ifdef SUPLAN_TESTING

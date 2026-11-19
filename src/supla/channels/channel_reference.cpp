@@ -148,7 +148,7 @@ ChannelResolution resolveChannelReference(
   if (reference.kind == ChannelReferenceKind::SERVER_CHANNEL && identity) {
     const auto resolved = identity->resolve(reference.id);
     if (resolved.location == Device::ServerChannelLocation::kLocal) {
-      result.channel = Channel::GetByChannelNumber(resolved.channelNumber);
+      result.channel = resolved.channel;
       if (result.channel) result.kind = ChannelResolutionKind::kLocal;
     } else if (resolved.location == Device::ServerChannelLocation::kRemote) {
       result.kind = ChannelResolutionKind::kRemote;

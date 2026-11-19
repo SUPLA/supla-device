@@ -34,6 +34,9 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   ChannelHandle &operator=(const ChannelHandle &) = delete;
   bool configure(uint32_t channelId, uint8_t permissions);
   void deactivate();
+  // If an override uses data that changes outside the SDK's channel updates,
+  // call observationsChanged() in the SDK loop context when that data changes.
+  // Active handles will be observed on the next iterateAll() pass.
   ChannelState state() override;
   ChannelState channelState() { return state(); }
   Channel *localChannel() override;
@@ -59,6 +62,7 @@ class ChannelHandle : public LocalAction, public ActionHandler,
     return static_cast<RemoteDelivery>(delivery_);
   }
   static void iterateAll();
+  static void observationsChanged() { observationDirty_ = true; }
   static void invalidateServerScope();
   static void receiveAction(uint32_t channelId, uint32_t capability);
 
@@ -80,6 +84,8 @@ class ChannelHandle : public LocalAction, public ActionHandler,
   static ChannelHandle *first_;
   static uint32_t nextToken_;
   static uint32_t registryRevision_;
+  static bool observationDirty_;
+  uint16_t consumerSlot_ = 0;  // Verified against the live intent.
   ChannelHandle *next_ = nullptr;
   uint32_t token_ = 0;
   uint32_t id_ = 0;

@@ -435,9 +435,6 @@ bool SupLan::iterate(uint32_t nowMs) {
 
   // Resource orchestration, especially SRPC STREAM, is independent of the
   // UDP transport being open. D2D refresh remains in its own backend.
-  // Full-scope invalidation runs synchronously at migration notifications.
-  // While fenced no SERVER peer can be admitted; repeating teardown here
-  // cannot add safety. Keep ordinary live identity reconciliation otherwise.
 #if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kLoad);
 #endif
@@ -446,8 +443,7 @@ bool SupLan::iterate(uint32_t nowMs) {
   timing.next(IterateTiming::kIdentity);
 #endif
   const auto identity = associations() ? associations()->identity() : nullptr;
-  if (associations() && (!identity || !identity->fullScopeFenced()))
-    associations()->identityChanged();
+  if (associations()) associations()->refreshOwnership();
 #if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kRestore);
 #endif
@@ -526,7 +522,7 @@ bool SupLan::iterate(uint32_t nowMs) {
 #if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kOwnership);
 #endif
-  // Runtime revalidates authorization only after a PeerTable revision change.
+  // Recheck after callbacks in the preceding SDK stages.
   if (associations()) associations()->refreshOwnership();
 #if SUPLAN_ITERATE_TIMING_ENABLED
   timing.next(IterateTiming::kRuntime);
@@ -644,28 +640,21 @@ bool SupLan::mapIsValid() const {
 #endif
 }
 
-bool SupLan::localChannel(uint32_t id, uint8_t *number,
-                           bool *eventOnly) const {
+Channel *SupLan::localChannel(uint32_t id, bool *eventOnly) const {
   if (associations() && associations()->identity()) {
-    auto resolved = associations()->identity()->resolve(id);
-    if (resolved.location != Supla::Device::ServerChannelLocation::kLocal) {
-      return false;
-    }
-    *number = resolved.channelNumber;
-    auto channel = Supla::Channel::GetByChannelNumber(*number);
-    *eventOnly = channel && channel->getChannelType() ==
-        SUPLA_CHANNELTYPE_ACTIONTRIGGER;
-    return channel != nullptr;
+    auto channel = associations()->identity()->resolve(id).channel;
+    if (eventOnly)
+      *eventOnly = channel &&
+          channel->getChannelType() == SUPLA_CHANNELTYPE_ACTIONTRIGGER;
+    return channel;
   }
 #ifdef SUPLAN_TESTING
-  auto mapping = findResource(id);
-  if (!mapping) return false;
-  *number = mapping->channelNumber;
-  *eventOnly = mapping->eventOnly;
-  return true;
-#else
-  return false;
+  if (auto mapping = findResource(id)) {
+    if (eventOnly) *eventOnly = mapping->eventOnly;
+    return Channel::GetByChannelNumber(mapping->channelNumber);
+  }
 #endif  // SUPLAN_TESTING
+  return nullptr;
 }
 
 void SupLan::putSuplaUint32(uint8_t output[4], uint32_t value) {
@@ -705,16 +694,13 @@ bool SupLan::readResource(const Supla::SupLan::ResourceId &resource,
       resource.type != Supla::SupLan::kResourceTypeChannel) {
     return false;
   }
-  uint8_t number = 0;
   bool onlyEvents = false;
-  if (!localChannel(resource.id, &number, &onlyEvents)) return false;
+  auto channel = localChannel(resource.id, &onlyEvents);
   if (onlyEvents) {
     *eventOnly = true;
     *payloadLength = 0;
     return false;
   }
-  Supla::Channel *channel =
-      Supla::Channel::GetByChannelNumber(number);
   if (channel == nullptr || capacity < 14) {
     return false;
   }
@@ -744,12 +730,12 @@ bool SupLan::readResource(const Supla::SupLan::ResourceId &resource,
 uint8_t SupLan::dispatchControlAction(
     const Supla::SupLan::ResourceId &resource, uint32_t actionId,
     const uint8_t *params, size_t length) {
-  uint8_t number = 0;
-  bool eventOnly = false;
-  if (resource.type != Supla::SupLan::kResourceTypeChannel ||
-      !localChannel(resource.id, &number, &eventOnly))
+  auto channel = resource.type == Supla::SupLan::kResourceTypeChannel
+      ? localChannel(resource.id) : nullptr;
+  if (!channel)
     return SUPLA_RESULTCODE_CHANNELNOTFOUND;
-  auto element = Supla::Element::getElementByChannelNumber(number);
+  auto element =
+      Supla::Element::getElementByChannelNumber(channel->getChannelNumber());
   if (element && !sourceControlAvailable(element))
     return SUPLA_RESULTCODE_ACTION_UNSUPPORTED;
   return element ? element->handleRemoteAction(actionId, params, length)
@@ -766,11 +752,11 @@ uint8_t SupLan::dispatchControl(const Supla::SupLan::ResourceId &resource,
       payload[4] != Supla::SupLan::kChannelNumberUnresolved) {
     return SUPLA_RESULTCODE_UNSUPORTED;
   }
-  uint8_t number = 0;
-  bool eventOnly = false;
-  if (!localChannel(resource.id, &number, &eventOnly)) {
+  auto channel = localChannel(resource.id);
+  if (!channel) {
     return SUPLA_RESULTCODE_CHANNELNOTFOUND;
   }
+  const auto number = channel->getChannelNumber();
   Supla::Element *element =
       Supla::Element::getElementByChannelNumber(number);
   if (element == nullptr) {

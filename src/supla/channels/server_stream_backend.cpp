@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "server_stream_backend.h"
 #ifndef ARDUINO_ARCH_AVR
+#include <supla/channels/channel_handle.h>
 #include <supla/protocol/supla_srpc.h>
 #include <new>
 namespace Supla {
@@ -68,6 +69,7 @@ bool ServerStreamBackend::storeIntent(int index, const ConsumeIntent &intent,
   return true;
 }
 void ServerStreamBackend::invalidate(Resource *resource) {
+  if (resource->hasSnapshot) ChannelHandle::observationsChanged();
   resource->effective = 0;
   resource->hasSnapshot = false;
   // Generation 0 fences borrowed views immediately. A later admitted snapshot
@@ -98,7 +100,10 @@ void ServerStreamBackend::ensureCompleted(RemoteChannelResource &entry,
   if (result.Result == SUPLA_SUPLAN_RESULT_OK &&
       result.AccessStatus == SUPLA_SUPLAN_ACCESS_STATUS_GRANTED) {
     resource.interest = Interest::Granted;
-    if (resource.hasSnapshot) resource.effective = SupLan::kPermissionRead;
+    if (resource.hasSnapshot) {
+      resource.effective = SupLan::kPermissionRead;
+      ChannelHandle::observationsChanged();
+    }
   } else if (result.Result == SUPLA_SUPLAN_RESULT_OK &&
              result.AccessStatus ==
                  SUPLA_SUPLAN_ACCESS_STATUS_PENDING_APPROVAL) {

@@ -1858,6 +1858,10 @@ void Supla::EspIdfWebServer::start() {
         configHttps.httpd.max_resp_headers = WEB_RESPONSE_HEADER_COUNT;
         configHttps.httpd.lru_purge_enable = true;
         configHttps.httpd.max_open_sockets = 5;
+#ifdef CONFIG_ESP_TLS_SERVER_SESSION_TICKETS
+        // Resumed sessions skip the RSA and ECDHE work of a full handshake.
+        configHttps.session_tickets = true;
+#endif
         configHttps.httpd.max_uri_handlers = static_cast<uint16_t>(
             HTTPS_STANDARD_URI_HANDLER_COUNT + customPageHandlerCount());
 

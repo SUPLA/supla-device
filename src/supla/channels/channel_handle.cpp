@@ -14,6 +14,11 @@
 #include <suplan/suplan_data.h>
 
 namespace Supla {
+namespace {
+bool pollLocal = false;
+}  // namespace
+
+bool ChannelHandle::observationDirty_ = false;
 ChannelHandle *ChannelHandle::first_ = nullptr;
 uint32_t ChannelHandle::nextToken_ = 0x80000000U;
 uint32_t ChannelHandle::registryRevision_ = 0;
@@ -77,6 +82,7 @@ bool ChannelHandle::configure(uint32_t id, uint8_t permissions) {
     continuity_ = 0;
     location_ = static_cast<uint8_t>(ChannelResolutionKind::kUnresolved);
   }
+  observationsChanged();
   id_ = id;
   permissions_ = permissions;
   active_ = true;
@@ -105,6 +111,7 @@ void ChannelHandle::invalidateServerScope() {
   }
 }
 void ChannelHandle::deactivate() {
+  observationsChanged();
   CancelDispatch(this);
   active_ = false;
   admitted_ = false;
@@ -157,7 +164,7 @@ Channel *ChannelHandle::reconcile() {
         continuity_ == resources->admissionGeneration()) return nullptr;
     admitted_ = resources && resources->consume(
         {token_, {SupLan::kResourceTypeChannel, id_}, permissions_, true,
-         delivery()});
+         delivery()}, &consumerSlot_);
     if (!admitted_ && resources)
       continuity_ = resources->admissionGeneration();
   }
@@ -279,6 +286,9 @@ ChannelHandle *ChannelHandle::after(uint32_t token, uint32_t limit) {
 }
 void ChannelHandle::observe() {
   const auto view = state();
+  // Local channels deliver actions synchronously and allow new actions to be
+  // attached through LocalAction. Keep their observation at loop boundaries.
+  if (resolutionKind() == ChannelResolutionKind::kLocal) pollLocal = true;
   uint8_t bytes[8];
   if (!view.value(bytes)) {
     baselineValid_ = false;
@@ -408,9 +418,16 @@ void ChannelHandle::observe() {
   }
 }
 void ChannelHandle::iterateAll() {
+  if (!first_) return;
+  const bool all = observationDirty_;
+  if (!all && !pollLocal) return;
+  observationDirty_ = false;
+  pollLocal = false;
   Cursor cursor;
   while (auto handle = cursor.next()) {
-    if (handle->active_) handle->observe();
+    if (handle->active_ &&
+        (all || handle->resolutionKind() == ChannelResolutionKind::kLocal))
+      handle->observe();
   }
 }
 void ChannelHandle::receiveAction(uint32_t channelId, uint32_t capability) {

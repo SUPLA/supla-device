@@ -595,7 +595,9 @@ TEST(SupLanRuntime, ReadRetriesAndAckTimeoutEmitResourceDiagnostics) {
   pair.pump(20);
   EXPECT_EQ(pair.appB.diagnosticEvents[
       static_cast<unsigned>(E::ReadRetry)], 0U);
-  pair.runtimeB.testHooks()->dropNextDataTx = 100;
+  // Lose the ACK and the snapshot independently for every READ attempt.
+  pair.runtimeA.testHooks()->dropNextAckTx = 100;
+  pair.runtimeA.testHooks()->dropNextDataTx = 100;
   ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
   pair.pumpMs(2000);
   EXPECT_GT(pair.appB.diagnosticEvents[
@@ -761,6 +763,53 @@ TEST(SupLanRuntime, QueuedSnapshotIsReceivedBeforeReadStateTimeout) {
   EXPECT_EQ(pair.runtimeB.diagnostics().dataTx, reads);
   EXPECT_EQ(pair.runtimeB.poolDiagnostics().retries.used, 0U);
   EXPECT_FALSE(pair.runtimeB.readNeedsRefresh(pair.peerB, pair.resource));
+}
+
+TEST(SupLanRuntime, ReceiveBudgetGivesQueuedAckOneMorePass) {
+  using Supla::SupLan::kMaxDatagramsPerIterate;
+  using Supla::SupLan::kReceiveBudgetMs;
+  using Supla::SupLan::kMinDatagramsPerIterate;
+  for (bool timeBudget : {false, true}) {
+    RuntimePair pair;
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.pump(20);
+    ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+    pair.runtimeB.iterate();
+    pair.runtimeA.iterate();
+    ASSERT_FALSE(pair.network.packets.empty());
+    // Put one receive budget of unrelated traffic ahead of the ACK.
+    const Packet unrelated = {pair.endpointA, pair.endpointB, false, {0}};
+    pair.network.packets.insert(pair.network.packets.begin(),
+        timeBudget ? kMinDatagramsPerIterate : kMaxDatagramsPerIterate,
+        unrelated);
+    if (timeBudget) pair.datagramsB.receiveElapsedMs = kReceiveBudgetMs;
+    pair.network.now += 1000;
+    const auto retries = pair.runtimeB.diagnostics().retryTx;
+    const auto acknowledgments = pair.runtimeB.diagnostics().ackRx;
+    pair.runtimeB.iterate();
+    EXPECT_EQ(pair.runtimeB.diagnostics().ackRx, acknowledgments);
+    EXPECT_EQ(pair.runtimeB.diagnostics().retryTx, retries);
+    pair.runtimeB.iterate();
+    EXPECT_EQ(pair.runtimeB.diagnostics().ackRx, acknowledgments + 1);
+    EXPECT_EQ(pair.runtimeB.diagnostics().retryTx, retries);
+  }
+}
+
+TEST(SupLanRuntime, ContinuousReceiveBudgetExhaustionCannotStarveRetry) {
+  RuntimePair pair;
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.runtimeB.iterate();
+  const Packet unrelated = {pair.endpointA, pair.endpointB, false, {0}};
+  pair.network.packets.insert(pair.network.packets.end(),
+      2 * Supla::SupLan::kMaxDatagramsPerIterate + 1, unrelated);
+  pair.network.now += 1000;
+  const auto retries = pair.runtimeB.diagnostics().retryTx;
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().retryTx, retries);
+  pair.runtimeB.iterate();
+  EXPECT_EQ(pair.runtimeB.diagnostics().retryTx, retries + 1);
 }
 
 TEST(SupLanRuntime, SnapshotBeforeAckCompletesDemandButRetainsAckRetry) {
@@ -3394,6 +3443,30 @@ TEST(SupLanRecovery, ReadRightsAreRecheckedOnlyAfterPeerTableChange) {
   pair.peersB.ownershipChanged();
   pair.runtimeB.iterate();
   EXPECT_GT(checks, settled);
+  EXPECT_FALSE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+}
+
+TEST(SupLanRecovery, IdleSessionRechecksPeerEligibilityOnlyOnChange) {
+  using Supla::SupLan::PeerContext;
+  RuntimePair pair;
+  unsigned checks = 0;
+  pair.peersB.setOwnershipCheck([](void *p, const PeerContext &,
+                                   const ResourceId &resource) {
+    if (resource.type == Supla::SupLan::kResourceTypeDevice)
+      ++*static_cast<unsigned *>(p);
+    return true;
+  }, &checks);
+  ASSERT_TRUE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
+  pair.pump(20);
+  ASSERT_TRUE(pair.runtimeB.hasSession(pair.peerB));
+  checks = 0;
+  for (int i = 0; i < 10000; ++i) pair.runtimeB.iterate();
+  EXPECT_EQ(checks, 0U);
+  pair.peersB.setOwnershipCheck([](void *, const PeerContext &,
+                                   const ResourceId &) { return false; },
+                                nullptr);
+  pair.runtimeB.iterate();
+  EXPECT_FALSE(pair.runtimeB.hasSession(pair.peerB));
   EXPECT_FALSE(pair.runtimeB.requestRead(pair.peerB, pair.resource));
 }
 

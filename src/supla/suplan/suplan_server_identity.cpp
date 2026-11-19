@@ -61,7 +61,10 @@ bool valid(const uint8_t *data, int size) {
 // observes a different value once the update completes.
 struct ChangeScope {
   explicit ChangeScope(uint32_t *counter) : counter(counter) { ++*counter; }
-  ~ChangeScope() { ++*counter; }
+  ~ChangeScope() {
+    ++*counter;
+    Supla::ChannelHandle::observationsChanged();
+  }
   uint32_t *counter;
 };
 
@@ -134,6 +137,7 @@ Supla::Device::ServerIdentity::~ServerIdentity() {
   abandonRegistration();
   if (active == this) {
     active = nullptr;
+    Supla::ChannelHandle::observationsChanged();
   }
   memset(root, 0, sizeof(root));
 }
@@ -689,15 +693,15 @@ Supla::Device::ServerChannelResolution Supla::Device::ServerIdentity::resolve(
     uint32_t channelId) const {
   if (!channelId || channelId > INT32_MAX ||
       !identityAvailable() || identityTransition()) {
-    return {ServerChannelLocation::kUnresolved, 0};
+    return {ServerChannelLocation::kUnresolved, 0, nullptr};
   }
   for (auto ch = Supla::Channel::Begin(); ch; ch = ch->next()) {
-    if (channelId && ch->serverChannelId == channelId) {
+    if (ch->serverChannelId == channelId) {
       return {ServerChannelLocation::kLocal,
-              static_cast<uint8_t>(ch->getChannelNumber())};
+              static_cast<uint8_t>(ch->getChannelNumber()), ch};
     }
   }
-  return {ServerChannelLocation::kRemote, 0};
+  return {ServerChannelLocation::kRemote, 0, nullptr};
 }
 bool Supla::Device::ServerIdentity::reverse(uint8_t channelNumber,
                                             uint32_t *channelId) const {

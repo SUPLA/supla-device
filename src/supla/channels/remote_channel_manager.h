@@ -148,7 +148,7 @@ class RemoteChannelManager {
   bool registerBackend(RemoteDelivery delivery, RemoteChannelBackend *backend);
   void unregisterBackend(RemoteDelivery delivery);
   bool supports(RemoteDelivery delivery) const;
-  bool consume(const ConsumeIntent &intent);
+  bool consume(const ConsumeIntent &intent, uint16_t *slotHint = nullptr);
   void remove(uint32_t consumerId);
   void iterate(uint32_t nowMs);
   ChannelState state(RemoteChannelKey key, uint32_t nowMs);

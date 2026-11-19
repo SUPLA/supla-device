@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "remote_resource_manager.h"
 #ifndef ARDUINO_ARCH_AVR
+#include <supla/channels/channel_handle.h>
 #include <string.h>
 #include <inttypes.h>
 #include <supla/log_wrapper.h>
@@ -182,6 +183,7 @@ bool RemoteResourceManager::fresh(const RemoteChannelResource &resource,
       resource.snapshot.Default != SUPLA_CHANNELFNC_NONE &&
       resource.snapshot.Offline == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE) {
     resource.leaseExpired = true;
+    ChannelHandle::observationsChanged();
     SUPLA_LOG_WARNING("SupLAN SUPLAN_PEER ChannelId=%" PRIu32
         " cache expired age_ms=%" PRIu32 " ttl_s=%" PRIu32,
         resource.channelId, nowMs - resource.receivedMs, ttl);
@@ -309,6 +311,7 @@ RemoteResourceManager::snapshotSummary(uint32_t nowMs) const {
 }
 
 void RemoteResourceManager::sessionChanged(uint8_t peerIndex) {
+  ChannelHandle::observationsChanged();
   for (auto &resource : resources_) {
     if (resource.used() && resource.peerIndex == peerIndex &&
         resource.hasSnapshot) {

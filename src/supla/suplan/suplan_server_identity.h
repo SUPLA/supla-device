@@ -11,6 +11,7 @@
 
 namespace Supla {
 class Config;
+class Channel;
 namespace Device {
 
 enum class ServerChannelLocation : uint8_t { kLocal, kRemote, kUnresolved };
@@ -18,6 +19,7 @@ enum class ServerChannelLocation : uint8_t { kLocal, kRemote, kUnresolved };
 struct ServerChannelResolution {
   ServerChannelLocation location;
   uint8_t channelNumber;
+  Channel *channel;
 };
 
 // Production SERVER state, independent of PoC mappings and peer/session state.

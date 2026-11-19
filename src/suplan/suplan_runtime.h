@@ -473,8 +473,8 @@ class Runtime {
       application_->capacityLimited(
           {pool, operation, outcome, used, limit, peer, resource});
   }
-  // rights=false checks only the peer role, never ACL/ownership.
-  void pruneReadDependencies(bool rights = true);
+  // Drop READ dependencies that no longer have a valid role or grant.
+  void pruneReadDependencies();
   bool readRole(uint8_t peerIndex) const;
   bool readAuthorized(uint8_t peerIndex, const ResourceId &resource) const;
   void noteReachability(uint8_t peerIndex);
@@ -568,6 +568,7 @@ class Runtime {
   uint8_t suplaProtoVersion_;
   bool processing_ : 1;
   bool iterating_ : 1;
+  bool retryDeferredForRx_ : 1;
   uint16_t nextReadDependency_ = 0;
   SessionEntry sessions_[SUPLAN_MAX_ACTIVE_SESSIONS];
   PendingHandshake pending_[SUPLAN_MAX_PENDING_HANDSHAKES];

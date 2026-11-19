@@ -546,7 +546,7 @@ esp_err_t rootHandler(httpd_req_t *req) {
       } else {
         Supla::EspIdfSender sender(req,
                                    srvInst->getSendBufPtr(),
-                                   Supla::SUPLA_HTML_OUTPUT_BUFFER_SIZE);
+                                   Supla::EspIdfSender::kBufferSize);
         srvInst->htmlGenerator->sendPage(
             &sender, srvInst->dataSaved, srvInst->isHttpsEnalbled());
       }
@@ -615,7 +615,7 @@ esp_err_t loginHandler(httpd_req_t *req) {
       }
       SUPLA_LOG_DEBUG("SERVER: not authorized, send login page");
       Supla::EspIdfSender sender(
-          req, srvInst->getSendBufPtr(), Supla::SUPLA_HTML_OUTPUT_BUFFER_SIZE);
+          req, srvInst->getSendBufPtr(), Supla::EspIdfSender::kBufferSize);
       srvInst->htmlGenerator->sendLoginPage(&sender);
     }
     return ESP_OK;
@@ -637,7 +637,7 @@ esp_err_t loginHandler(httpd_req_t *req) {
         SUPLA_LOG_DEBUG("SERVER: login failed, send login page");
         Supla::EspIdfSender sender(req,
                                    srvInst->getSendBufPtr(),
-                                   Supla::SUPLA_HTML_OUTPUT_BUFFER_SIZE);
+                                   Supla::EspIdfSender::kBufferSize);
         if (loginBlocked) {
           srvInst->htmlGenerator->sendLoginBlockedPage(&sender);
         } else {
@@ -701,7 +701,7 @@ esp_err_t setupHandler(httpd_req_t *req) {
     SUPLA_LOG_DEBUG("SERVER: GET setup request");
     if (srvInst->htmlGenerator) {
       Supla::EspIdfSender sender(
-          req, srvInst->getSendBufPtr(), Supla::SUPLA_HTML_OUTPUT_BUFFER_SIZE);
+          req, srvInst->getSendBufPtr(), Supla::EspIdfSender::kBufferSize);
       if (!srvInst->isPasswordConfigured()) {
         srvInst->htmlGenerator->sendSetupPage(&sender, false);
       } else if (srvInst->ensureAuthorized(
@@ -723,7 +723,7 @@ esp_err_t setupHandler(httpd_req_t *req) {
         if (setupResult != Supla::SetupRequestResult::OK) {
           Supla::EspIdfSender sender(req,
                                      srvInst->getSendBufPtr(),
-                                     Supla::SUPLA_HTML_OUTPUT_BUFFER_SIZE);
+                                     Supla::EspIdfSender::kBufferSize);
           srvInst->htmlGenerator->sendSetupPage(
               &sender, srvInst->isPasswordConfigured(), setupResult);
         } else {
@@ -755,7 +755,7 @@ esp_err_t logsHandler(httpd_req_t *req) {
       } else {
         Supla::EspIdfSender sender(req,
                                    srvInst->getSendBufPtr(),
-                                   Supla::SUPLA_HTML_OUTPUT_BUFFER_SIZE);
+                                   Supla::EspIdfSender::kBufferSize);
         srvInst->htmlGenerator->sendLogsPage(&sender,
                                              srvInst->isHttpsEnalbled());
       }
@@ -786,7 +786,7 @@ esp_err_t betaHandler(httpd_req_t *req) {
       } else {
         Supla::EspIdfSender sender(req,
                                    srvInst->getSendBufPtr(),
-                                   Supla::SUPLA_HTML_OUTPUT_BUFFER_SIZE);
+                                   Supla::EspIdfSender::kBufferSize);
         srvInst->htmlGenerator->sendBetaPage(
             &sender, srvInst->dataSaved, srvInst->isHttpsEnalbled());
       }
@@ -1910,7 +1910,7 @@ void Supla::EspIdfWebServer::start() {
   }
 
   if (!sendBuf) {
-    sendBuf = new char[Supla::SUPLA_HTML_OUTPUT_BUFFER_SIZE];
+    sendBuf = new char[Supla::EspIdfSender::kBufferSize];
   }
 }
 
@@ -1933,7 +1933,13 @@ void Supla::EspIdfWebServer::stop() {
 Supla::EspIdfSender::EspIdfSender(httpd_req_t *req,
                                   char *sendBuf,
                                   int sendBufLen)
-    : reqHandler(req), outputBuffer(sendBuf, sendBufLen) {
+    : reqHandler(req) {
+  if (sendBuf != nullptr &&
+      sendBufLen > kChunkHeadRoom + kChunkTailRoom + 1) {
+    payload = sendBuf + kChunkHeadRoom;
+    outputBuffer.setBuffer(payload,
+                           sendBufLen - kChunkHeadRoom - kChunkTailRoom);
+  }
 }
 
 bool Supla::EspIdfWebServer::isHttpsEnalbled() const {
@@ -1941,9 +1947,13 @@ bool Supla::EspIdfWebServer::isHttpsEnalbled() const {
 }
 
 Supla::EspIdfSender::~EspIdfSender() {
-  if (reqHandler && !outputBuffer.error()) {
-    outputBuffer.flush(reqHandler, &EspIdfSender::flushChunk);
-    httpd_resp_send_chunk(reqHandler, nullptr, 0);
+  if (reqHandler == nullptr || outputBuffer.error()) {
+    return;
+  }
+  // The last buffered chunk carries the terminating zero chunk.
+  finishing = true;
+  if (outputBuffer.flush(this, &EspIdfSender::flushChunk) && !finished) {
+    finish();
   }
 }
 
@@ -1951,15 +1961,71 @@ bool Supla::EspIdfSender::flushChunk(void *context, const char *buf, int size) {
   if (context == nullptr || buf == nullptr || size < 0) {
     return false;
   }
-  auto *req = reinterpret_cast<httpd_req_t *>(context);
-  return httpd_resp_send_chunk(req, buf, size) == ESP_OK;
+  return static_cast<EspIdfSender *>(context)->sendChunk(buf, size);
+}
+
+bool Supla::EspIdfSender::sendRaw(const char *buf, int size) {
+  while (size > 0) {
+    const int sent = httpd_send(reqHandler, buf, size);
+    if (sent <= 0) {
+      return false;
+    }
+    buf += sent;
+    size -= sent;
+  }
+  return true;
+}
+
+bool Supla::EspIdfSender::finish() {
+  finished = true;
+  if (!headersSent) {
+    headersSent = true;
+    return httpd_resp_send(reqHandler, "", 0) == ESP_OK;
+  }
+  return sendRaw("0\r\n\r\n", 5);
+}
+
+bool Supla::EspIdfSender::sendChunk(const char *buf, int size) {
+  if (size == 0) {
+    return true;
+  }
+  const bool last = finishing;
+  if (!headersSent) {
+    // httpd builds the status line and headers; it needs its own API once.
+    headersSent = true;
+    if (last) {
+      // The whole response fits the buffer: send it with Content-Length.
+      finished = true;
+      return httpd_resp_send(reqHandler, buf, size) == ESP_OK;
+    }
+    return httpd_resp_send_chunk(reqHandler, buf, size) == ESP_OK;
+  }
+
+  char sizeLine[12] = {};
+  const int sizeLen = snprintf(sizeLine, sizeof(sizeLine), "%x\r\n",
+                               static_cast<unsigned>(size));
+  static const char kTail[] = "\r\n0\r\n\r\n";
+  const int tailLen = last ? kChunkTailRoom : 2;
+  if (last) {
+    finished = true;
+  }
+  if (buf == payload && sizeLen <= kChunkHeadRoom) {
+    // Frame the buffered data in place and send the chunk in one write.
+    char *frame = payload - sizeLen;
+    memcpy(frame, sizeLine, sizeLen);
+    memcpy(payload + size, kTail, tailLen);
+    return sendRaw(frame, sizeLen + size + tailLen);
+  }
+  // Data larger than the buffer is passed through without copying.
+  return sendRaw(sizeLine, sizeLen) && sendRaw(buf, size) &&
+         sendRaw(kTail, tailLen);
 }
 
 void Supla::EspIdfSender::send(const char *buf, int size) {
   if (!buf || !reqHandler) {
     return;
   }
-  outputBuffer.send(reqHandler, &EspIdfSender::flushChunk, buf, size);
+  outputBuffer.send(this, &EspIdfSender::flushChunk, buf, size);
 }
 
 void Supla::EspIdfWebServer::cleanupCerts() {

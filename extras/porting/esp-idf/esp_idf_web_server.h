@@ -16,15 +16,39 @@
 
 namespace Supla {
 
+// Size of the shared buffer passed to EspIdfSender. A full chunk (size line,
+// data, CRLF and the final zero chunk) fits one TLS record of
+// CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN (2048 by default).
+#ifndef SUPLA_ESP_IDF_HTML_SEND_BUFFER_SIZE
+#define SUPLA_ESP_IDF_HTML_SEND_BUFFER_SIZE 2048
+#endif
+
 class EspIdfSender : public Supla::WebSender {
  public:
+  static constexpr int kBufferSize = SUPLA_ESP_IDF_HTML_SEND_BUFFER_SIZE;
+
   explicit EspIdfSender(httpd_req_t *req, char *sendBuf, int sendBufLen);
   ~EspIdfSender();
   void send(const char *, int) override;
 
  protected:
+  // Room around the buffered data for the chunk framing, so that a chunk goes
+  // out as one write (one TLS record) instead of three.
+  static constexpr int kChunkHeadRoom = 5;  // "7ff\r\n"
+  static constexpr int kChunkTailRoom = 7;  // "\r\n" + "0\r\n\r\n"
+  static_assert(kBufferSize - kChunkHeadRoom - kChunkTailRoom <= 0xFFF,
+                "Chunk size line must fit in kChunkHeadRoom");
+
   static bool flushChunk(void *context, const char *buf, int size);
+  bool sendChunk(const char *buf, int size);
+  bool sendRaw(const char *buf, int size);
+  bool finish();
+
   httpd_req_t *reqHandler;
+  char *payload = nullptr;
+  bool headersSent = false;
+  bool finishing = false;
+  bool finished = false;
   HtmlOutputBuffer outputBuffer;
 };
 

@@ -23,11 +23,10 @@ static bool equalBytes(const uint8_t *left, const uint8_t *right,
   return different == 0;
 }
 
-static bool validNegotiation(const uint8_t maximumVersion,
-                             uint16_t receiveLimit,
-                             uint32_t features) {
+static bool validNegotiation(uint8_t maximumVersion,
+                             uint16_t receiveLimit) {
   return maximumVersion >= kMinimumSuplaProtoVersion &&
-      receiveLimit >= kMinimumRxMaxReassembledFrame && features == 0;
+      receiveLimit >= kMinimumRxMaxReassembledFrame;
 }
 
 bool encodeSessionInit(const uint8_t initMacKey[32],
@@ -35,7 +34,7 @@ bool encodeSessionInit(const uint8_t initMacKey[32],
   if (initMacKey == nullptr || init == nullptr ||
       output == nullptr ||
       !validNegotiation(init->suplaProtoVersionMax,
-                        init->rxMaxReassembledFrame, init->featureBits)) {
+                        init->rxMaxReassembledFrame)) {
     return false;
   }
   output[0] = kVersion;
@@ -64,7 +63,7 @@ bool decodeSessionInit(const uint8_t initMacKey[32],
   }
   const uint16_t rxLimit = getUint16(input + 35);
   const uint32_t features = getUint32(input + 37);
-  if (!validNegotiation(input[34], rxLimit, features)) {
+  if (!validNegotiation(input[34], rxLimit)) {
     return false;
   }
   uint8_t fullMac[32];
@@ -94,7 +93,7 @@ bool encodeSessionAccept(const uint8_t acceptMacKey[32],
       accept->selectedSuplaProtoVersion < kMinimumSuplaProtoVersion ||
       accept->responderRxMaxReassembledFrame <
           kMinimumRxMaxReassembledFrame ||
-      accept->selectedFeatureBits != 0 ||
+      (accept->selectedFeatureBits & ~getUint32(encodedInit + 37)) != 0 ||
       accept->selectedSuplaProtoVersion > encodedInit[34]) {
     return false;
   }
@@ -105,7 +104,7 @@ bool encodeSessionAccept(const uint8_t acceptMacKey[32],
   putUint64(output + 34, accept->sessionId);
   output[42] = accept->selectedSuplaProtoVersion;
   putUint16(output + 43, accept->responderRxMaxReassembledFrame);
-  putUint32(output + 45, accept->selectedFeatureBits);
+  putUint32(output + kSessionAcceptFeatureOffset, accept->selectedFeatureBits);
   uint8_t transcriptPrefix[57 + 49];
   memcpy(transcriptPrefix, encodedInit, 57);
   memcpy(transcriptPrefix + 57, output, 49);
@@ -135,7 +134,8 @@ bool decodeSessionAccept(const uint8_t acceptMacKey[32],
       input[42] > init->suplaProtoVersionMax ||
       input[42] < kMinimumSuplaProtoVersion ||
       getUint16(input + 43) < kMinimumRxMaxReassembledFrame ||
-      getUint32(input + 45) != 0) {
+      (getUint32(input + kSessionAcceptFeatureOffset) &
+       ~getUint32(encodedInit + 37)) != 0) {
     return false;
   }
   uint8_t transcriptPrefix[57 + 49];
@@ -159,7 +159,7 @@ bool decodeSessionAccept(const uint8_t acceptMacKey[32],
   accept->sessionId = getUint64(input + 34);
   accept->selectedSuplaProtoVersion = input[42];
   accept->responderRxMaxReassembledFrame = getUint16(input + 43);
-  accept->selectedFeatureBits = getUint32(input + 45);
+  accept->selectedFeatureBits = getUint32(input + kSessionAcceptFeatureOffset);
   return true;
 }
 

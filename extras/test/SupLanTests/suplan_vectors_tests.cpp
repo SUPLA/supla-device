@@ -425,6 +425,51 @@ TEST(SupLanCrypto, LocateMacsAndFramesMatchFixedVectors) {
       reply, sizeof(reply) - 1, decodedNonce, decodedMac));
 }
 
+TEST(SupLanSession, UnknownOfferedFeaturesNegotiateOnlyOfferedSubset) {
+  // Rejecting unknown offered bits would block every later optional extension.
+  const auto initKey = fromHex(
+      "57fbbf237a5fd6b9cb6e71fb0cdab1d189b5cd13"
+          "fa4b90030c491acd2efc307d");
+  const auto acceptKey = fromHex(
+      "d325c7928d0cd97df26912f4e98f9bafe932c7ea"
+          "ffef7b0490661b4804bcfe00");
+  Supla::SupLan::SessionInit init = {};
+  init.suplaProtoVersionMax = 29;
+  init.rxMaxReassembledFrame = SUPLAN_RX_MAX_REASSEMBLED_FRAME;
+  init.featureBits = 0x80000005U;
+  uint8_t encodedInit[Supla::SupLan::kSessionInitSize];
+  ASSERT_TRUE(Supla::SupLan::encodeSessionInit(
+      initKey.data(), &init, encodedInit));
+  Supla::SupLan::SessionInit decodedInit = {};
+  ASSERT_TRUE(Supla::SupLan::decodeSessionInit(
+      initKey.data(), encodedInit, sizeof(encodedInit), &decodedInit));
+  EXPECT_EQ(decodedInit.featureBits, 0x80000005U);
+
+  Supla::SupLan::SessionAccept accept = {};
+  accept.sessionId = 1;
+  accept.selectedSuplaProtoVersion = 29;
+  accept.responderRxMaxReassembledFrame = SUPLAN_RX_MAX_REASSEMBLED_FRAME;
+  uint8_t encodedAccept[Supla::SupLan::kSessionAcceptSize];
+  accept.selectedFeatureBits = 2;  // Not offered.
+  EXPECT_FALSE(Supla::SupLan::encodeSessionAccept(
+      acceptKey.data(), encodedInit, &accept, encodedAccept));
+  accept.selectedFeatureBits = 4;
+  ASSERT_TRUE(Supla::SupLan::encodeSessionAccept(
+      acceptKey.data(), encodedInit, &accept, encodedAccept));
+  Supla::SupLan::SessionAccept decodedAccept = {};
+  ASSERT_TRUE(Supla::SupLan::decodeSessionAccept(
+      acceptKey.data(), encodedInit, &decodedInit, encodedAccept,
+      sizeof(encodedAccept), &decodedAccept));
+  EXPECT_EQ(decodedAccept.selectedFeatureBits, 4U);
+
+  // The initiator rejects a selection outside its offer before the MAC check.
+  Supla::SupLan::putUint32(
+      encodedAccept + Supla::SupLan::kSessionAcceptFeatureOffset, 2);
+  EXPECT_FALSE(Supla::SupLan::decodeSessionAccept(
+      acceptKey.data(), encodedInit, &decodedInit, encodedAccept,
+      sizeof(encodedAccept), &decodedAccept));
+}
+
 TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
   const auto peerKey = fromHex(
       "615620310e8a6abbf50536fdcb665e96341e8881"
@@ -466,6 +511,10 @@ TEST(SupLanSession, HandshakeFramesAndDirectionalKeysMatchFixedVector) {
   accept.responderRxMaxReassembledFrame =
       SUPLAN_RX_MAX_REASSEMBLED_FRAME;
   uint8_t encodedAccept[Supla::SupLan::kSessionAcceptSize];
+  accept.selectedFeatureBits = 1;
+  EXPECT_FALSE(Supla::SupLan::encodeSessionAccept(
+      acceptKey.data(), encodedInit, &accept, encodedAccept));
+  accept.selectedFeatureBits = 0;
   ASSERT_TRUE(Supla::SupLan::encodeSessionAccept(
       acceptKey.data(), encodedInit, &accept, encodedAccept));
   EXPECT_EQ(std::vector<uint8_t>(encodedAccept,

@@ -123,6 +123,10 @@ class SimApplication : public Supla::SupLan::ApplicationPort {
     ++(event.outcome == Supla::SupLan::CapacityDiagnostic::Outcome::Rejected
            ? capacityRejected : capacityDeferred);
   }
+  uint32_t nextDeviceReadChannel(const Supla::SupLan::PeerContext &,
+                                 uint16_t &cursor) override {
+    return cursor < sourceChannels ? firstResource + cursor++ : 0;
+  }
   bool readResource(const ResourceId &, bool *eventOnly, uint8_t *payload,
                     size_t capacity, size_t *payloadLength) override {
     *eventOnly = false;
@@ -152,6 +156,7 @@ class SimApplication : public Supla::SupLan::ApplicationPort {
   uint32_t capacityRejected = 0;
   uint32_t capacityDeferred = 0;
   uint32_t firstResource = 0;
+  uint16_t sourceChannels = 0;
   std::vector<uint32_t> states;
 };
 
@@ -209,6 +214,8 @@ class ReadSimulation {
         acl[channel].resource = resource(source, channel);
         acl[channel].permissions = Supla::SupLan::kPermissionRead;
       }
+      nodes_.back()->application.firstResource = resource(source, 0).id;
+      nodes_.back()->application.sourceChannels = channels;
       Supla::SupLan::PeerMaterial material = {};
       uint8_t sourcePeer = 0;
       EXPECT_TRUE(Supla::SupLan::derivePeerMaterial(

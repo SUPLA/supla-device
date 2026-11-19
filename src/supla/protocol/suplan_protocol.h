@@ -179,6 +179,8 @@ class SupLan : public ProtocolLayer, public Supla::SupLan::ApplicationPort {
   void sendExtendedChannelValueChanged(
       uint8_t channelNumber, TSuplaChannelExtendedValue *value) override;
 
+  uint32_t nextDeviceReadChannel(const Supla::SupLan::PeerContext &context,
+                                 uint16_t &cursor) override;
   bool readResource(const Supla::SupLan::ResourceId &resource,
                     bool *eventOnly, uint8_t *payload, size_t capacity,
                     size_t *payloadLength) override;

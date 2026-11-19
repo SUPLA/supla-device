@@ -530,11 +530,11 @@
       "name": "Supla::SupLan::Runtime",
       "header": "suplan/suplan_runtime.h",
       "limits": {
-        "host": 5096,
+        "host": 5104,
         "esp8266": 5008,
         "esp32": 7152
       },
-      "reason": "Standard profile: 4 retry slots and 8 deferred events (was 2 and 4) so READs to several peers run in parallel; ESP32 +352 B. Constrained profile (host, ESP8266) unchanged."
+      "reason": "Standard profile: 4 retry slots and 8 deferred events (was 2 and 4) so READs to several peers run in parallel; ESP32 +352 B. Host +8 B for DEVICE READ wait/fan-out state per session (sequence, send time, cursor and flags); ESP8266 and ESP32 stay within their limits."
     },
     {
       "name": "Supla::Protocol::SupLan",

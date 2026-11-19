@@ -142,6 +142,7 @@ Runtime::Runtime(CryptoPort *crypto, DatagramPort *datagrams,
 
 void Runtime::clearSessionEntry(SessionEntry *session) {
   if (session == nullptr) return;
+  finishDeviceRead(*session);
   session->used = false;
   session->peerIndex = 0;
   session->sessionId = 0;
@@ -151,6 +152,7 @@ void Runtime::clearSessionEntry(SessionEntry *session) {
   session->nextTransmitSequence = 0;
   session->receiveReplay.reset();
   session->lastActivityMs = 0;
+  session->deviceReadPublishing = false;
   session->lastBindingSequence = 0;
   session->bindingSeen = false;
   memset(session->ackResults, 0, sizeof(session->ackResults));
@@ -760,6 +762,10 @@ void Runtime::finishRecovery(uint8_t peerIndex) {
   // cycle unreachable. Its next cycle starts at once and is judged afresh.
   failed = failed && !(peer.progress && hasSession(peerIndex));
   peer.active = false;
+  for (auto &session : sessions_) {
+    if (session.used && session.peerIndex == peerIndex)
+      finishDeviceRead(session);
+  }
   bool refresh = !hasSession(peerIndex) && application_ &&
       application_->bindingSessionNeeded(peerIndex);
   for (uint16_t i = 0; i < SUPLAN_MAX_READ_DEPENDENCIES; ++i) {
@@ -825,6 +831,8 @@ void Runtime::completeRead(uint8_t peerIndex, const ResourceId &resource) {
   if (slot >= 0) {
     dependencies_[slot].pending = false;
     dependencies_[slot].needsRefresh = false;
+    dependencies_[slot].batchWaiting = false;
+    dependencies_[slot].batchAttempted = false;
   }
   recovery_[peerIndex].progress = true;
   if (recovery_[peerIndex].backgroundStage &&
@@ -1076,7 +1084,7 @@ void Runtime::startHandshake(uint8_t peerIndex) {
   SessionInit init = {};
   init.suplaProtoVersionMax = suplaProtoVersion_;
   init.rxMaxReassembledFrame = SUPLAN_RX_MAX_REASSEMBLED_FRAME;
-  init.featureBits = 0;
+  init.featureBits = 0;  // SupLAN v1 defines no optional features.
   if (!Supla::Crypto::fillRandom(init.ni, sizeof(init.ni))) {
     attempt->used = false;
     return;
@@ -1271,9 +1279,11 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
     ++diagnostics_.poolReject;
     return false;
   }
-  if (dependencies_[slot].pending) {
+  if (dependencies_[slot].pending || dependencies_[slot].batchWaiting) {
     return true;
   }
+  if (!dependencies_[slot].needsRefresh)
+    dependencies_[slot].batchAttempted = false;
   // Accept bounded logical demand independently of deferred frame capacity.
   // Runtime owns queue admission and recovery until completion or removal.
   emit(DiagnosticEvent::ReadAccepted, peerIndex, resource,
@@ -1289,6 +1299,61 @@ bool Runtime::requestRead(uint8_t peerIndex, const ResourceId &resource) {
   return true;
 }
 
+void Runtime::finishDeviceRead(SessionEntry &session) {
+  if (!session.deviceReadWaiting) return;
+  session.deviceReadWaiting = false;
+  session.deviceReadAckPending = false;
+  for (auto &entry : dependencies_)
+    if (entry.used && entry.peerIndex == session.peerIndex)
+      entry.batchWaiting = false;
+}
+
+bool Runtime::startDeviceRead(SessionEntry &session, uint32_t now) {
+  const uint8_t peerIndex = session.peerIndex;
+  PeerContext context = {};
+  const auto *peer = peers_->get(peerIndex);
+  if (!readRole(peerIndex) ||
+      !decodePeerContext(peer->contextBytes, &context)) return false;
+  unsigned count = 0;
+  for (const auto &entry : dependencies_) {
+    if (entry.used && entry.peerIndex == peerIndex && entry.needsRefresh &&
+        !entry.pending && !entry.batchAttempted &&
+        peers_->authorize(peerIndex, {entry.resourceType, entry.resourceId},
+                          kPermissionRead) && ++count == 2) break;
+  }
+  if (count < 2) return false;
+  applicationBuffer_[0] = kMessageClassNative;
+  putUint32(applicationBuffer_ + 1, kNativeReadResource);
+  applicationBuffer_[5] = kAckRequired;
+  applicationBuffer_[kApplicationHeaderSize] = kResourceTypeDevice;
+  putUint32(applicationBuffer_ + kApplicationHeaderSize + 1,
+            context.source.nodeId);
+  // Scope ACK has a session-local sequence. A missing ACK or state falls
+  // back to exact READs, using their normal retry slots.
+  const auto sequence = session.nextTransmitSequence;
+  if (!sendProtected(peerIndex, &session.transmit, session.sessionId,
+                     &session.nextTransmitSequence, &session.lastActivityMs,
+                     applicationBuffer_,
+                     kApplicationHeaderSize + kResourceHeaderSize,
+                     false, ResourceId{})) return false;
+  session.deviceReadSentMs = now;
+  session.deviceReadSequence = sequence;
+  session.deviceReadWaiting = session.deviceReadAckPending = true;
+#if SUPLAN_READ_PROFILING_ENABLED
+  ++readProfile_.window.deviceReadTx;
+#endif
+  for (auto &entry : dependencies_) {
+    if (entry.used && entry.peerIndex == peerIndex && entry.needsRefresh &&
+        !entry.pending && !entry.batchAttempted &&
+        peers_->authorize(peerIndex, {entry.resourceType, entry.resourceId},
+                          kPermissionRead)) {
+      entry.batchAttempted = true;
+      entry.batchWaiting = true;
+    }
+  }
+  return true;
+}
+
 void Runtime::dispatchReads() {
   synchronizeAuthorization();
   // This is the sole fresh READ admission point, called once per outer iterate.
@@ -1299,8 +1364,18 @@ void Runtime::dispatchReads() {
   uint8_t state[SUPLAN_MAX_PERSISTENT_PEERS];
   memset(state, kReadBlocked, sizeof(state));
   bool any = false;
-  for (const auto &session : sessions_) {
+  unsigned batchBudget = kMinDatagramsPerIterate;
+  const uint32_t now = datagrams_->nowMs();
+  for (auto &session : sessions_) {
     if (session.used && recovery_[session.peerIndex].active) {
+      if (session.deviceReadWaiting &&
+          now - session.deviceReadSentMs >= kReadStateResponseTimeoutMs) {
+#if SUPLAN_READ_PROFILING_ENABLED
+        if (session.deviceReadAckPending)
+          ++readProfile_.window.deviceReadAckTimeout;
+#endif
+        finishDeviceRead(session);
+      }
       state[session.peerIndex] = 0;
       any = true;
     }
@@ -1318,7 +1393,7 @@ void Runtime::dispatchReads() {
   uint8_t waiting = 0;
   for (const auto &entry : dependencies_) {
     if (entry.used && entry.needsRefresh && !entry.pending &&
-        state[entry.peerIndex] < kReadDemand) {
+        !entry.batchWaiting && state[entry.peerIndex] < kReadDemand) {
       state[entry.peerIndex] |= kReadDemand;
       ++waiting;
     }
@@ -1338,8 +1413,21 @@ void Runtime::dispatchReads() {
     const auto &entry = dependencies_[slot];
     const uint8_t peerIndex = entry.peerIndex;
     if (!entry.used || !entry.needsRefresh || entry.pending ||
-        state[peerIndex] == kReadBlocked)
+        entry.batchWaiting || state[peerIndex] == kReadBlocked)
       continue;
+    if (state[peerIndex] & kReadDemand) {
+      state[peerIndex] &= kReadDemand - 1;
+      if (batchBudget && !entry.batchAttempted) {
+        for (auto &session : sessions_) {
+          if (session.used && session.peerIndex == peerIndex &&
+              !session.deviceReadWaiting && startDeviceRead(session, now)) {
+            --batchBudget;
+            break;
+          }
+        }
+        if (entry.batchWaiting) continue;
+      }
+    }
     if ((state[peerIndex] & (kReadDemand - 1)) >= limit) {
 #if SUPLAN_READ_PROFILING_ENABLED
       ++readProfile_.window.fairnessSkips;
@@ -1466,6 +1554,7 @@ bool Runtime::publishStateParts(uint8_t peerIndex, const ResourceId &resource,
                                 uint32_t messageType, const uint8_t *prefix,
                                 size_t prefixLength, const uint8_t *payload,
                                 size_t payloadLength, bool nativeSnapshot) {
+  synchronizeAuthorization();
   const PeerRecord *peer = peers_->get(peerIndex);
   if (!isLocalSource(peer) || !interested(peerIndex, resource) ||
       !peers_->authorize(peerIndex, resource, kPermissionRead)) {
@@ -1775,8 +1864,9 @@ bool Runtime::enqueueApplication(uint8_t peerIndex, const uint8_t *data,
                                  bool actionDelivery, uint32_t owner) {
   // Native current-state updates retain only their resource identity. Build
   // the side-effect-free current snapshot when draining, keeping M1 RAM bounds.
-  const bool snapshot = data && length ==
-      kApplicationHeaderSize + kResourceHeaderSize + 36 &&
+  const bool snapshot = data &&
+      (length == kApplicationHeaderSize + kResourceHeaderSize ||
+       length == kApplicationHeaderSize + kResourceHeaderSize + 36) &&
       data[0] == kMessageClassNative && getUint32(data + 1) == 6 &&
       data[5] == 0 && application_ && application_->fullChannelSnapshots();
   if (snapshot) length = kApplicationHeaderSize + kResourceHeaderSize;
@@ -1988,7 +2078,10 @@ void Runtime::drainDeferred() {
       const ResourceId stateResource = {
           queued->data[kApplicationHeaderSize],
           getUint32(queued->data + kApplicationHeaderSize + 1)};
-      if (!interested(queued->peerIndex, stateResource)) {
+      if (!isLocalSource(peers_->get(queued->peerIndex)) ||
+          !interested(queued->peerIndex, stateResource) ||
+          !peers_->authorize(queued->peerIndex, stateResource,
+                             kPermissionRead)) {
         queued->used = false;
         cancelPeerRecoveryIfIdle(queued->peerIndex);
         continue;
@@ -2087,8 +2180,11 @@ void Runtime::drainDeferred() {
     }
     const uint8_t *sendData = queued->data;
     size_t sendLength = queued->length;
-    if (parsed && app.messageClass == kMessageClassNative &&
-        app.messageType == 6 && app.bodyLength == kResourceHeaderSize) {
+    const bool nativeState = parsed && app.messageClass == kMessageClassNative
+        && app.messageType == 6 && app.bodyLength == kResourceHeaderSize;
+    if (nativeState) {
+      const auto sessionId = session->sessionId;
+      const auto peerIndex = queued->peerIndex;
       const size_t offset = kApplicationHeaderSize + kResourceHeaderSize;
       size_t snapshotLength = 0;
       bool eventOnly = false;
@@ -2099,6 +2195,14 @@ void Runtime::drainDeferred() {
               &snapshotLength) || eventOnly || snapshotLength != 36) {
         queued->used = false;
         cancelPeerRecoveryIfIdle(queued->peerIndex);
+        continue;
+      }
+      synchronizeAuthorization();
+      if (!queued->used || !session->used || session->sessionId != sessionId ||
+          !isLocalSource(peers_->get(peerIndex)) ||
+          !interested(peerIndex, resource) ||
+          !peers_->authorize(peerIndex, resource, kPermissionRead)) {
+        queued->used = false;
         continue;
       }
       sendData = applicationBuffer_;
@@ -2801,6 +2905,8 @@ void Runtime::processSessionInit(const Endpoint &source, const uint8_t *data,
       ? init.suplaProtoVersionMax : suplaProtoVersion_;
   accept.responderRxMaxReassembledFrame =
       SUPLAN_RX_MAX_REASSEMBLED_FRAME;
+  // Unknown offered features are not an error: the intersection with the
+  // local set, empty in SupLAN v1, keeps later optional extensions possible.
   accept.selectedFeatureBits = 0;
   uint8_t sessionIdBytes[8];
   if (!Supla::Crypto::fillRandom(accept.nr, sizeof(accept.nr)) ||
@@ -3073,6 +3179,80 @@ void Runtime::processApplication(SessionEntry *session, uint32_t sequence,
   }
 }
 
+bool Runtime::deviceReadScope(uint8_t peerIndex, const ResourceId &scope,
+                              PeerContext &context) const {
+  const auto *peer = peers_->get(peerIndex);
+  return scope.type == kResourceTypeDevice && isLocalSource(peer) &&
+      decodePeerContext(peer->contextBytes, &context) &&
+      scope.id == context.source.nodeId;
+}
+
+bool Runtime::hasDeviceReadChannel(uint8_t peerIndex, const ResourceId &scope) {
+  PeerContext context = {};
+  if (!application_ || !deviceReadScope(peerIndex, scope, context))
+    return false;
+  uint16_t cursor = 0;
+  while (const uint32_t id = application_->nextDeviceReadChannel(context,
+                                                                cursor)) {
+    if (peers_->authorize(peerIndex, {kResourceTypeChannel, id},
+                          kPermissionRead)) return true;
+  }
+  return false;
+}
+
+void Runtime::publishDeviceReads() {
+  if (nextDeviceReadSession_ == 0xff) return;
+  unsigned budget = kMinDatagramsPerIterate;
+  for (uint16_t visited = 0; visited < SUPLAN_MAX_ACTIVE_SESSIONS && budget;
+       ++visited) {
+    auto &session = sessions_[nextDeviceReadSession_];
+    if (++nextDeviceReadSession_ == SUPLAN_MAX_ACTIVE_SESSIONS)
+      nextDeviceReadSession_ = 0;
+    if (!session.used || !session.deviceReadPublishing) continue;
+    PeerContext context = {};
+    const auto peerIndex = session.peerIndex;
+    const auto *peer = peers_->get(peerIndex);
+    if (!isLocalSource(peer) ||
+        !decodePeerContext(peer->contextBytes, &context)) {
+      session.deviceReadPublishing = false;
+      continue;
+    }
+    const ResourceId scope = {kResourceTypeDevice, context.source.nodeId};
+    if (!interested(peerIndex, scope)) {
+      session.deviceReadPublishing = false;
+      continue;
+    }
+    const auto sessionId = session.sessionId;
+    while (budget) {
+      const auto id = application_->nextDeviceReadChannel(
+          context, session.deviceReadCursor);
+      if (!id) {
+        session.deviceReadPublishing = false;
+        break;
+      }
+      const ResourceId resource = {kResourceTypeChannel, id};
+      if (!peers_->authorize(peerIndex, resource, kPermissionRead)) continue;
+      --budget;
+      if (application_->fullChannelSnapshots()) {
+        publishStateParts(peerIndex, resource, 6, nullptr, 0, nullptr, 0, true);
+        if (!session.used || session.sessionId != sessionId) break;
+        continue;
+      }
+      uint8_t snapshot[14];
+      size_t length = 0;
+      bool eventOnly = false;
+      if (application_->readResource(resource, &eventOnly, snapshot,
+                                     sizeof(snapshot), &length) && !eventOnly &&
+          session.used && session.sessionId == sessionId) {
+        publishState(peerIndex, resource, kSuplaCallDeviceChannelValueChangedC,
+                     snapshot, length);
+      }
+      if (!session.used || session.sessionId != sessionId) break;
+    }
+  }
+  if (budget) nextDeviceReadSession_ = 0xff;
+}
+
 void Runtime::pruneInterests(uint32_t now, bool rights) {
   for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     RuntimeInterest &interest = interests_[i];
@@ -3080,10 +3260,12 @@ void Runtime::pruneInterests(uint32_t now, bool rights) {
     const bool expired =
         now - interest.lastRefreshMs >= kRuntimeInterestTimeoutMs;
     if (expired || (rights &&
-        (!isLocalSource(peers_->get(interest.peerIndex)) ||
-         !(peers_->effectivePermissions(interest.peerIndex,
-                                        interest.resource()) &
-           (kPermissionRead | kPermissionActionTrigger))))) {
+        (interest.resourceType == kResourceTypeDevice
+             ? !hasDeviceReadChannel(interest.peerIndex, interest.resource())
+             : !isLocalSource(peers_->get(interest.peerIndex)) ||
+                 !(peers_->effectivePermissions(interest.peerIndex,
+                                                interest.resource()) &
+                   (kPermissionRead | kPermissionActionTrigger))))) {
       memset(&interest, 0, sizeof(interest));
     }
   }
@@ -3097,6 +3279,10 @@ bool Runtime::addInterest(uint8_t peerIndex, const ResourceId &resource,
   if (!isLocalSource(peers_->get(peerIndex)) ||
       !(peers_->effectivePermissions(peerIndex, resource) & permissions))
     return false;
+  return rememberInterest(peerIndex, resource);
+}
+
+bool Runtime::rememberInterest(uint8_t peerIndex, const ResourceId &resource) {
   for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     RuntimeInterest *interest = &interests_[i];
     if (interest->used && interest->peerIndex == peerIndex &&
@@ -3134,8 +3320,10 @@ bool Runtime::interested(uint8_t peerIndex, const ResourceId &resource) const {
   for (uint16_t i = 0; i < SUPLAN_MAX_RUNTIME_INTERESTS; ++i) {
     const RuntimeInterest &interest = interests_[i];
     if (interest.used && interest.peerIndex == peerIndex &&
-        interest.resourceType == resource.type &&
-        interest.resourceId == resource.id) {
+        ((interest.resourceType == resource.type &&
+          interest.resourceId == resource.id) ||
+         (interest.resourceType == kResourceTypeDevice &&
+          resource.type == kResourceTypeChannel))) {
       return true;
     }
   }
@@ -3259,6 +3447,22 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
                                            ackedSequence, result);
       return;
     }
+    if (session->deviceReadAckPending &&
+        session->deviceReadSequence == ackedSequence) {
+      session->deviceReadAckPending = false;
+      ++diagnostics_.ackRx;
+#if SUPLAN_READ_PROFILING_ENABLED
+      if (result == kResultTrue)
+        ++readProfile_.window.deviceReadAckOk;
+      else
+        ++readProfile_.window.deviceReadAckDenied;
+#endif
+      if (result == kResultTrue)
+        session->deviceReadSentMs = datagrams_->nowMs();
+      else
+        finishDeviceRead(*session);
+      return;
+    }
     const int retryIndex = findRetry(peerIndex, session->sessionId,
                                      ackedSequence);
     if (retryIndex >= 0) {
@@ -3330,6 +3534,31 @@ void Runtime::handleNative(uint8_t peerIndex, SessionEntry *session,
   ResourceId resource = {};
   resource.type = application.body[0];
   resource.id = getUint32(application.body + 1);
+  if (resource.type == kResourceTypeDevice) {
+    PeerContext context = {};
+    if (!deviceReadScope(peerIndex, resource, context)) return;
+    const auto slot = static_cast<uint8_t>(sequence & 63U);
+    const auto sessionId = session->sessionId;
+    synchronizeAuthorization();
+    if (!session->used || session->sessionId != sessionId) return;
+    if (duplicate) {
+      if (session->ackResults[slot] == kResultTrue &&
+          !interested(peerIndex, resource)) return;
+    } else {
+      const bool accepted = hasDeviceReadChannel(peerIndex, resource) &&
+          rememberInterest(peerIndex, resource);
+      session->ackResults[slot] = accepted ? kResultTrue : kResultNotAllowed;
+      if (accepted) {
+        ++diagnostics_.readDispatched;
+        session->deviceReadCursor = 0;
+        session->deviceReadPublishing = true;
+        if (nextDeviceReadSession_ == 0xff) nextDeviceReadSession_ = 0;
+      }
+    }
+    if (session->ackResults[slot])
+      sendAck(peerIndex, session, sequence, session->ackResults[slot]);
+    return;
+  }
   const PeerRecord *peer = peers_->get(peerIndex);
   const uint8_t permissions = peers_->effectivePermissions(peerIndex, resource);
   const bool readAuthorized = permissions & kPermissionRead;
@@ -3858,6 +4087,7 @@ void Runtime::iterate() {
     }
   }
 
+  publishDeviceReads();
   drainDeferred();
   dispatchReads();
   cancelPeerRecoveryIfIdle();
@@ -3996,9 +4226,11 @@ void Runtime::resumeRetainedInterests() {
   const uint32_t now = datagrams_->nowMs();
   for (auto &interest : interests_) {
     if (!interest.used) continue;
-    if (isLocalSource(peers_->get(interest.peerIndex)) &&
-        peers_->authorize(interest.peerIndex, interest.resource(),
-                          kPermissionRead)) {
+    if (interest.resourceType == kResourceTypeDevice
+            ? hasDeviceReadChannel(interest.peerIndex, interest.resource())
+            : isLocalSource(peers_->get(interest.peerIndex)) &&
+                peers_->authorize(interest.peerIndex, interest.resource(),
+                                  kPermissionRead)) {
       interest.lastRefreshMs = now;
     } else {
       interest = {};
@@ -4009,8 +4241,18 @@ void Runtime::publishCurrentInterests(uint8_t peerIndex) {
   if (!application_ || !application_->fullChannelSnapshots()) return;
   for (const auto &interest : interests_) {
     if (!interest.used ||
-        (peerIndex != 0xff && interest.peerIndex != peerIndex) ||
-        !isLocalSource(peers_->get(interest.peerIndex)) ||
+        (peerIndex != 0xff && interest.peerIndex != peerIndex)) continue;
+    if (interest.resourceType == kResourceTypeDevice) {
+      for (auto &session : sessions_) {
+        if (session.used && session.peerIndex == interest.peerIndex) {
+          session.deviceReadCursor = 0;
+          session.deviceReadPublishing = true;
+          if (nextDeviceReadSession_ == 0xff) nextDeviceReadSession_ = 0;
+        }
+      }
+      continue;
+    }
+    if (!isLocalSource(peers_->get(interest.peerIndex)) ||
         !peers_->authorize(interest.peerIndex, interest.resource(),
                             kPermissionRead)) continue;
     uint8_t snapshot[36];

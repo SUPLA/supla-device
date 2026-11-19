@@ -185,6 +185,18 @@ class ServerAssociationTests : public ::testing::Test {
   TSDS_SuplaSetSuplanDestinationAssociation destination = {};
 };
 
+TEST_F(ServerAssociationTests, DeviceReadEnumeratesCurrentServerChannels) {
+  Supla::Protocol::SupLan adapter(nullptr, &peers);
+  adapter.attachServerAssociations(&associations);
+  PeerContext context = {1, 0, {1, 101}, {1, 202}, identity.rootEpoch(), 1};
+  uint16_t cursor = 0;
+  EXPECT_EQ(adapter.nextDeviceReadChannel(context, cursor), 501U);
+  EXPECT_EQ(adapter.nextDeviceReadChannel(context, cursor), 0U);
+  cursor = 0;
+  context.source.nodeId = 102;
+  EXPECT_EQ(adapter.nextDeviceReadChannel(context, cursor), 0U);
+}
+
 TEST_F(ServerAssociationTests, SourceInitialReplayAndDerivedKeyNotPersisted) {
   source.Flags = SUPLA_SUPLAN_SOURCE_FLAG_RETURN_PEER_KEY;
   auto result = associations.accept(source);

@@ -79,6 +79,10 @@ class ApplicationPort {
     return 24;
   }
   virtual bool fullChannelSnapshots() const { return false; }
+  // Advance an opaque cursor over locally supported Channels.
+  virtual uint32_t nextDeviceReadChannel(const PeerContext &, uint16_t &) {
+    return 0;
+  }
   virtual bool allowPresence(uint8_t, uint32_t) { return false; }
   virtual void peerAwake(uint8_t, uint16_t, bool, const uint8_t *) {}
   // Returns false and sets eventOnly for resources without readable state.
@@ -194,6 +198,8 @@ class Runtime {
     ReadTiming period, outside, run, queue, ack, state, hold, rxDispatch, send;
     uint32_t elapsedMs = 0;
     uint32_t calls = 0, rx = 0, rxBudgetHits = 0, readTx = 0, retryTx = 0;
+    uint32_t deviceReadTx = 0, deviceReadAckOk = 0, deviceReadAckDenied = 0;
+    uint32_t deviceReadAckTimeout = 0;
     uint32_t queueFull = 0, retryFull = 0, fairnessSkips = 0;
     uint32_t readyFreeTicks = 0, readyFreeMs = 0, slotUsedTicks = 0;
     uint32_t ackTimeout = 0, stateTimeout = 0, sendFailed = 0;
@@ -312,6 +318,8 @@ class Runtime {
     bool used : 1;
     bool needsRefresh : 1;
     bool pending : 1;
+    bool batchAttempted : 1;
+    bool batchWaiting : 1;
 #if SUPLAN_READ_PROFILING_ENABLED
     bool profileWaiting : 1;
 #endif
@@ -327,10 +335,16 @@ class Runtime {
     // Transport ordering for complete snapshots, independent of other DATA.
     // Both zero and UINT32_MAX are valid, so use an explicit discriminator.
     uint32_t lastBindingSequence;
+    uint32_t deviceReadSentMs;
+    uint32_t deviceReadSequence;
+    uint16_t deviceReadCursor;
     uint16_t peerRxMaxReassembledFrame;
     uint8_t peerIndex;
     bool used;
     bool bindingSeen;
+    bool deviceReadWaiting : 1;
+    bool deviceReadAckPending : 1;
+    bool deviceReadPublishing : 1;
     // ReplayWindow accepts duplicates only inside its 64-packet window. The
     // sequence modulo 64 therefore uniquely selects the cached result while
     // the duplicate remains admissible.
@@ -426,7 +440,7 @@ class Runtime {
   };
 #endif  // SUPLAN_TESTING
 
-  static void clearSessionEntry(SessionEntry *session);
+  void clearSessionEntry(SessionEntry *session);
   static void clearPendingHandshake(PendingHandshake *pending);
   void clearRetryEntry(RetryEntry *retry);
 
@@ -480,6 +494,13 @@ class Runtime {
   void noteReachability(uint8_t peerIndex);
   void completeRead(uint8_t peerIndex, const ResourceId &resource);
   void dispatchReads();
+  bool startDeviceRead(SessionEntry &session, uint32_t now);
+  void finishDeviceRead(SessionEntry &session);
+  void publishDeviceReads();
+  bool deviceReadScope(uint8_t peerIndex, const ResourceId &scope,
+                       PeerContext &context) const;
+  bool hasDeviceReadChannel(uint8_t peerIndex, const ResourceId &scope);
+  bool rememberInterest(uint8_t peerIndex, const ResourceId &resource);
   bool queueRead(uint8_t peerIndex, const ResourceId &resource);
   int findReadDependency(uint8_t peerIndex, const ResourceId &resource) const;
   bool sendRaw(const Endpoint &endpoint, const uint8_t *data, size_t length,
@@ -570,6 +591,7 @@ class Runtime {
   bool iterating_ : 1;
   bool retryDeferredForRx_ : 1;
   uint16_t nextReadDependency_ = 0;
+  uint8_t nextDeviceReadSession_ = 0xff;  // No state fan-out scheduled.
   SessionEntry sessions_[SUPLAN_MAX_ACTIVE_SESSIONS];
   PendingHandshake pending_[SUPLAN_MAX_PENDING_HANDSHAKES];
   OutstandingLocate locates_[SUPLAN_MAX_OUTSTANDING_LOCATES];

@@ -537,6 +537,13 @@ bool SupLan::iterate(uint32_t nowMs) {
         " retry_tx=%" PRIu32 " bytes=%" PRIu32,
         p.elapsedMs, p.calls, p.rx, p.rxBudgetHits, p.readTx, p.retryTx,
         p.workspaceBytes);
+    if (p.deviceReadTx || p.deviceReadAckOk || p.deviceReadAckDenied ||
+        p.deviceReadAckTimeout) {
+      SUPLAN_DIAG_INFO("SupLAN DEVICE READ tx=%" PRIu32 " ack_ok=%" PRIu32
+          " ack_denied=%" PRIu32 " ack_timeout=%" PRIu32,
+          p.deviceReadTx, p.deviceReadAckOk, p.deviceReadAckDenied,
+          p.deviceReadAckTimeout);
+    }
     SUPLAN_DIAG_INFO("SupLAN perf ms avg/max period=%" PRIu32 "/%" PRIu32
         " outside=%" PRIu32 "/%" PRIu32 " run=%" PRIu32 "/%" PRIu32
         " rx_dispatch=%" PRIu32 "/%" PRIu32 " send=%" PRIu32 "/%" PRIu32,
@@ -685,6 +692,37 @@ uint8_t SupLan::channelOfflineState(const Supla::Channel *channel) {
     return SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE;
   }
   return SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
+}
+
+uint32_t SupLan::nextDeviceReadChannel(
+    const Supla::SupLan::PeerContext &context, uint16_t &cursor) {
+  using Supla::SupLan::kAuthorityServer;
+  auto identity = associations() ? associations()->identity() : nullptr;
+  if (context.authorityType == kAuthorityServer && identity) {
+    if (!identity->identityAvailable() || identity->identityTransition() ||
+        static_cast<uint32_t>(identity->serverDeviceId()) !=
+            context.source.nodeId) return 0;
+    int number = 255;
+    uint32_t id = 0;
+    for (auto ch = Channel::Begin(); ch; ch = ch->next()) {
+      const int candidate = ch->getChannelNumber();
+      if (candidate >= cursor && candidate < number &&
+          ch->getServerChannelId()) {
+        number = candidate;
+        id = ch->getServerChannelId();
+      }
+    }
+    if (id) cursor = number + 1;
+    return id;
+  }
+#ifdef SUPLAN_TESTING
+  while (cursor < mappingCount_) {
+    const auto &mapping = mappings_[cursor++];
+    if (mapping.eventOnly || Channel::GetByChannelNumber(mapping.channelNumber))
+      return mapping.resourceId;
+  }
+#endif
+  return 0;
 }
 
 bool SupLan::readResource(const Supla::SupLan::ResourceId &resource,

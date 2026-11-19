@@ -16,6 +16,7 @@ namespace SupLan {
 
 static const size_t kSessionInitSize = 57;
 static const size_t kSessionAcceptSize = 65;
+static const size_t kSessionAcceptFeatureOffset = 45;
 
 struct SessionInit {
   uint8_t peerLocator[16];

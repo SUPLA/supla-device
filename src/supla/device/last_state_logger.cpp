@@ -17,9 +17,7 @@ LastStateLogger::LastStateLogger() {
 }
 
 LastStateLogger::~LastStateLogger() {
-  if (mutex) {
-    delete mutex;
-  }
+  delete mutex;
 }
 
 bool LastStateLogger::prepareLastStateLog() {

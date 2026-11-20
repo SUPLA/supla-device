@@ -17,9 +17,7 @@ namespace Supla {
 namespace Html {
 
 SelectValueMapElement::~SelectValueMapElement() {
-  if (name) {
-    delete[] name;
-  }
+  delete[] name;
   name = nullptr;
 }
 

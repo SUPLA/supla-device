@@ -19,10 +19,8 @@ Supla::Condition::Condition(double threshold, Supla::ConditionGetter *getter)
   }
 
 Supla::Condition::~Condition() {
-  if (getter) {
-    delete getter;
-    getter = nullptr;
-  }
+  delete getter;
+  getter = nullptr;
 }
 
 void Supla::Condition::handleAction(int event, int action) {

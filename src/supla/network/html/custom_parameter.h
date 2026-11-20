@@ -106,14 +106,10 @@ decimalPlaces(sanitizeDecimalPlaces(decimalPlaces)) {
 
 template <typename T>
 CustomParameterTemplate<T>::~CustomParameterTemplate() {
-  if (tag != nullptr) {
-    delete[] tag;
-    tag = nullptr;
-  }
-  if (label != nullptr) {
-    delete[] label;
-    label = nullptr;
-  }
+  delete[] tag;
+  tag = nullptr;
+  delete[] label;
+  label = nullptr;
 }
 
 template <typename T>

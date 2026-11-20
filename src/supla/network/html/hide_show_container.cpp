@@ -24,10 +24,8 @@ HideShowContainerBegin::HideShowContainerBegin(const char* displayName)
 }
 
 HideShowContainerBegin::~HideShowContainerBegin() {
-  if (name) {
-    delete[] name;
-    name = nullptr;
-  }
+  delete[] name;
+  name = nullptr;
 }
 
 void HideShowContainerBegin::send(Supla::WebSender* sender) {

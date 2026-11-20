@@ -50,10 +50,8 @@ void CustomTextParameter::send(Supla::WebSender* sender) {
       sender->textInput(tag, tag, value, maxSize);
     });
 
-    if (value) {
-      delete[] value;
-      value = nullptr;
-    }
+    delete[] value;
+    value = nullptr;
   }
 }
 bool CustomTextParameter::handleResponse(const char* key, const char* value) {

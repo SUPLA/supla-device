@@ -200,10 +200,8 @@ Storage::~Storage() {
     delete ptr;
     ptr = nextPtr;
   }
-  if (stateStorage != nullptr) {
-    delete stateStorage;
-    stateStorage = nullptr;
-  }
+  delete stateStorage;
+  stateStorage = nullptr;
 }
 
 bool Storage::init() {

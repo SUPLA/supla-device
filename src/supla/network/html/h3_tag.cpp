@@ -20,10 +20,8 @@ H3Tag::H3Tag(const char *text) {
 }
 
 H3Tag::~H3Tag() {
-  if (text) {
-    delete[] text;
-    text = nullptr;
-  }
+  delete[] text;
+  text = nullptr;
 }
 
 void H3Tag::send(Supla::WebSender* sender) {

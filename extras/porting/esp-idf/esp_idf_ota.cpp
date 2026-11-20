@@ -108,14 +108,10 @@ Supla::EspIdfOta::~EspIdfOta() {
     esp_http_client_cleanup(client);
     client = 0;
   }
-  if (otaBuffer) {
-    delete[] otaBuffer;
-    otaBuffer = nullptr;
-  }
-  if (httpAgent) {
-    delete[] httpAgent;
-    httpAgent = nullptr;
-  }
+  delete[] otaBuffer;
+  otaBuffer = nullptr;
+  delete[] httpAgent;
+  httpAgent = nullptr;
 }
 
 void Supla::EspIdfOta::iterate() {
@@ -332,10 +328,8 @@ void Supla::EspIdfOta::iterate() {
 
   SUPLA_LOG_DEBUG("Starting OTA");
 
-  if (otaBuffer) {
-    delete[] otaBuffer;
-    otaBuffer = nullptr;
-  }
+  delete[] otaBuffer;
+  otaBuffer = nullptr;
   otaBuffer = new uint8_t[BUFFER_SIZE + 1];
   if (otaBuffer == nullptr) {
     fail("SW udpate: failed to allocate memory");
@@ -415,9 +409,7 @@ void Supla::EspIdfOta::iterate() {
       log(buf);
 
       // copy to newVersion
-      if (newVersion) {
-        delete[] newVersion;
-      }
+      delete[] newVersion;
       int versionLen = strlen(version->valuestring) + 1;
       newVersion = new char[versionLen];
       if (newVersion) {
@@ -425,9 +417,7 @@ void Supla::EspIdfOta::iterate() {
       }
 
       // copy to updateUrl
-      if (updateUrl) {
-        delete[] updateUrl;
-      }
+      delete[] updateUrl;
       int urlLen = strlen(effectiveUrl) + 1;
       updateUrl = new char[urlLen];
       if (updateUrl == nullptr) {
@@ -447,9 +437,7 @@ void Supla::EspIdfOta::iterate() {
             rewriteUpdateHost(changelogUrlJson->valuestring,
                               rewrittenChangelogUrl,
                               sizeof(rewrittenChangelogUrl));
-        if (changelogUrl) {
-          delete[] changelogUrl;
-        }
+        delete[] changelogUrl;
 
         int urlLen = strlen(effectiveChangelogUrl) + 1;
         if (urlLen < SUPLA_URL_PATH_MAXSIZE) {
@@ -748,10 +736,8 @@ bool Supla::EspIdfOta::verifyRsaSignature(
 }
 
 void Supla::EspIdfOta::fail(const char *reason) {
-  if (otaBuffer) {
-    delete[] otaBuffer;
-    otaBuffer = nullptr;
-  }
+  delete[] otaBuffer;
+  otaBuffer = nullptr;
 
   if (client) {
     esp_http_client_cleanup(client);

@@ -20,10 +20,8 @@ H2Tag::H2Tag(const char *text) {
 }
 
 H2Tag::~H2Tag() {
-  if (text) {
-    delete[] text;
-    text = nullptr;
-  }
+  delete[] text;
+  text = nullptr;
 }
 
 void H2Tag::send(Supla::WebSender* sender) {

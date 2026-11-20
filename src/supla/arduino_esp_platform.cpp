@@ -296,10 +296,8 @@ class ArduinoEspClient : public Client {
       clearSecureAuthentication();
 #endif
       if (clientSec == nullptr) {
-        if (wifiClient != nullptr) {
-          delete wifiClient;
-          wifiClient = nullptr;
-        }
+        delete wifiClient;
+        wifiClient = nullptr;
 #ifdef ARDUINO_ARCH_ESP32
         clientSec = new AbortableNetworkClientSecure();
 #else
@@ -449,10 +447,8 @@ class ArduinoEspClient : public Client {
   }
 
   void releaseCACert() {
-    if (caCert) {
-      delete caCert;
-      caCert = nullptr;
-    }
+    delete caCert;
+    caCert = nullptr;
     caCertIsStatic = false;
   }
 #endif

@@ -20,18 +20,12 @@ Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(
 #endif  // !SUPLA_TEST
 
 Supla::Device::SwUpdate::~SwUpdate() {
-  if (newVersion) {
-    delete[] newVersion;
-    newVersion = nullptr;
-  }
-  if (updateUrl) {
-    delete[] updateUrl;
-    updateUrl = nullptr;
-  }
-  if (changelogUrl) {
-    delete[] changelogUrl;
-    changelogUrl = nullptr;
-  }
+  delete[] newVersion;
+  newVersion = nullptr;
+  delete[] updateUrl;
+  updateUrl = nullptr;
+  delete[] changelogUrl;
+  changelogUrl = nullptr;
 }
 
 Supla::Device::SwUpdate::SwUpdate(SuplaDeviceClass *sdc,

@@ -32,10 +32,8 @@ ButtonActionTriggerConfig::ButtonActionTriggerConfig(int channelNumber,
 }
 
 ButtonActionTriggerConfig::~ButtonActionTriggerConfig() {
-  if (labelPrefix) {
-    delete[] labelPrefix;
-    labelPrefix = nullptr;
-  }
+  delete[] labelPrefix;
+  labelPrefix = nullptr;
 }
 
 void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {

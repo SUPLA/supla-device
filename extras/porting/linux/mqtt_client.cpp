@@ -360,10 +360,8 @@ void mqtt_client_free() {
     mq_client->socketfd = nullptr;
   }
 
-  if (reconnect_state != nullptr) {
-    delete reconnect_state;
-    reconnect_state = nullptr;
-  }
+  delete reconnect_state;
+  reconnect_state = nullptr;
 
   delete mq_client;
   mq_client = nullptr;

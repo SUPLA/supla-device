@@ -143,10 +143,8 @@ bool InstanceRecord::setConfig(const uint8_t *data, uint16_t size) {
 }
 
 void InstanceRecord::clearConfig() {
-  if (config != nullptr) {
-    delete[] config;
-    config = nullptr;
-  }
+  delete[] config;
+  config = nullptr;
   configSize = 0;
 }
 
@@ -162,10 +160,8 @@ uint8_t InstanceTable::getCount() const {
 }
 
 void InstanceTable::clear() {
-  if (records != nullptr) {
-    delete[] records;
-    records = nullptr;
-  }
+  delete[] records;
+  records = nullptr;
   count = 0;
 }
 

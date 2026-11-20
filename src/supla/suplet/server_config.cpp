@@ -305,10 +305,8 @@ struct Command {
   }
 
   void clear() {
-    if (definitionJson != nullptr) {
-      delete[] definitionJson;
-      definitionJson = nullptr;
-    }
+    delete[] definitionJson;
+    definitionJson = nullptr;
     operation[0] = '\0';
     instanceId = 0;
     definitionId = 0;

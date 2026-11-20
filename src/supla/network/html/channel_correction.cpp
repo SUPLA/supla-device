@@ -30,10 +30,8 @@ ChannelCorrection::ChannelCorrection(int channelNumber, const char *displayName,
 }
 
 ChannelCorrection::~ChannelCorrection() {
-  if (displayName) {
-    delete[] displayName;
-    displayName = nullptr;
-  }
+  delete[] displayName;
+  displayName = nullptr;
 }
 
 void ChannelCorrection::send(Supla::WebSender* sender) {

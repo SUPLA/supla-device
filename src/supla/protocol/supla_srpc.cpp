@@ -1299,9 +1299,7 @@ void Supla::Protocol::SuplaSrpc::releaseOwnedCertificate() {
 }
 
 void Supla::Protocol::SuplaSrpc::setNetworkClient(Supla::Client *newClient) {
-  if (client) {
-    delete client;
-  }
+  delete client;
   client = newClient;
   initClient();
 }

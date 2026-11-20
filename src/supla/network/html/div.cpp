@@ -33,14 +33,10 @@ DivBegin::DivBegin(const char *className, const char *idName) :
 }
 
 DivBegin::~DivBegin() {
-  if (className) {
-    delete[] className;
-    className = nullptr;
-  }
-  if (idName) {
-    delete[] idName;
-    idName = nullptr;
-  }
+  delete[] className;
+  className = nullptr;
+  delete[] idName;
+  idName = nullptr;
 }
 
 void DivBegin::send(Supla::WebSender* sender) {

@@ -468,10 +468,8 @@ bool StateWearLevelingSector::writeSectionPreamble() {
                    reinterpret_cast<unsigned char *>(&preamble),
                    sizeof(preamble));
     }
-    if (dataFromSector) {
-      delete[] dataFromSector;
-      dataFromSector = nullptr;
-    }
+    delete[] dataFromSector;
+    dataFromSector = nullptr;
   }
   if (!initDone) {
     // erase first data sector, so it'll be ready for write

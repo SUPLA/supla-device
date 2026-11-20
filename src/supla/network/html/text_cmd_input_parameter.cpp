@@ -18,9 +18,7 @@ namespace Supla {
 namespace Html {
 
 RegisteredCmdActionMap::~RegisteredCmdActionMap() {
-  if (cmd) {
-    delete[] cmd;
-  }
+  delete[] cmd;
   cmd = nullptr;
 }
 

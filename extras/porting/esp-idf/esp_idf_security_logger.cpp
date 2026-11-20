@@ -160,10 +160,8 @@ void ESPIdfSecurityLogger::init() {
 }
 
 ESPIdfSecurityLogger::~ESPIdfSecurityLogger() {
-  if (htmlLog != nullptr) {
-    delete htmlLog;
-    htmlLog = nullptr;
-  }
+  delete htmlLog;
+  htmlLog = nullptr;
 }
 
 void ESPIdfSecurityLogger::deleteAll() {

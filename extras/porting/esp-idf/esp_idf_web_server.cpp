@@ -1920,10 +1920,8 @@ void Supla::EspIdfWebServer::stop() {
     httpd_stop(serverHttps);
     serverHttps = nullptr;
   }
-  if (sendBuf) {
-    delete[] sendBuf;
-    sendBuf = nullptr;
-  }
+  delete[] sendBuf;
+  sendBuf = nullptr;
 }
 
 Supla::EspIdfSender::EspIdfSender(httpd_req_t *req,
@@ -1959,12 +1957,8 @@ void Supla::EspIdfSender::send(const char *buf, int size) {
 }
 
 void Supla::EspIdfWebServer::cleanupCerts() {
-  if (this->serverCert) {
-    delete[] this->serverCert;
-  }
-  if (this->prvtKey) {
-    delete[] this->prvtKey;
-  }
+  delete[] this->serverCert;
+  delete[] this->prvtKey;
   serverCert = nullptr;
   prvtKey = nullptr;
   serverCertLen = 0;

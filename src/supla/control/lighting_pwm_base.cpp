@@ -100,17 +100,13 @@ LightingPwmBase::LightingPwmBase(LightingPwmBase *parent) : parent(parent) {
 }
 
 LightingPwmBase::~LightingPwmBase() {
-  if (brightnessAdjuster) {
-    delete brightnessAdjuster;
-    brightnessAdjuster = nullptr;
-  }
+  delete brightnessAdjuster;
+  brightnessAdjuster = nullptr;
   delete mutex;
 }
 
 void LightingPwmBase::setBrightnessAdjuster(BrightnessAdjuster *adjuster) {
-  if (brightnessAdjuster) {
-    delete brightnessAdjuster;
-  }
+  delete brightnessAdjuster;
   brightnessAdjuster = adjuster;
   brightnessAdjuster->setMaxHwValue(maxHwValue);
 }

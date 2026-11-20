@@ -23,10 +23,8 @@ LinuxFileStorage::LinuxFileStorage(const std::string &path,
 }
 
 LinuxFileStorage::~LinuxFileStorage() {
-  if (data) {
-    delete[] data;
-    data = nullptr;
-  }
+  delete[] data;
+  data = nullptr;
 }
 
 bool LinuxFileStorage::init() {

@@ -157,10 +157,8 @@ Supla::EspWebServer::EspWebServer(Supla::HtmlGenerator *generator)
 
 Supla::EspWebServer::~EspWebServer() {
   serverInstance = nullptr;
-  if (sendBuf) {
-    delete[] sendBuf;
-    sendBuf = nullptr;
-  }
+  delete[] sendBuf;
+  sendBuf = nullptr;
 }
 
 bool Supla::EspWebServer::handlePost(bool beta) {

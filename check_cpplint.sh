@@ -7,7 +7,6 @@ EXIT_STATUS=0
 echo "🔍 Checking for CRLF line endings..."
 CRLF_FILES=$(git grep -Il $'\r' -- \
   . \
-  ':!extras/esp-idf/esp-modbus/**' \
   ':!extras/examples/freertos_linux/FreeRTOSConfig.h' || true)
 
 if [ -n "$CRLF_FILES" ]; then

@@ -296,6 +296,7 @@ TEST(ButtonTests, ConfigCapabilityDoesNotPermitAnotherAtToUnlock) {
   Supla::Control::ActionTrigger otherAt;
   lockedAt.setKeepConfigButtonTriggerAlwaysAvailable(true);
   lockedAt.attach(button);
+  otherAt.setButtonModeSupported();
   otherAt.setLocalUnlockAllowed(true);
   otherAt.handleAction(Supla::ON_HOLD, Supla::LOCK);
   lockedAt.handleAction(Supla::ON_HOLD, Supla::LOCK);

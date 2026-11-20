@@ -92,6 +92,8 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   const Supla::Channel *getChannel() const override;
   void onInit() override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr) override;
+  bool iterateConnected() override;
+  using ElementWithChannelActions::iterateConnected;
   void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onSaveState() override;
@@ -141,6 +143,22 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   void enable();
   void disable();
 
+  // Button modes: lock, temporary unlock and weekly schedule. By default they
+  // are unsupported for a standalone AT, and attaching a Button enables them
+  // permanently (attach() may be called any time before onInit(); a later
+  // detach keeps them). An explicit call overrides the default regardless of
+  // attach() order. When unsupported, mode commands and lock actions are
+  // rejected and the current/restored mode is dropped (state storage format
+  // is unchanged).
+  ActionTrigger &setButtonModeSupported(bool supported = true);
+  bool isButtonModeSupported() const;
+  // Temporary unlock (mode 6) follows button mode support by default and can
+  // be disabled separately. It can't be enabled without button modes. When
+  // disabled, commands 6/7 and weekly schedules with mode 6 are rejected, and
+  // a current/restored manual mode 6 becomes LOCKED.
+  ActionTrigger &setTemporaryUnlockSupported(bool supported = true);
+  bool isTemporaryUnlockSupported() const;
+
   bool isWeeklyScheduleSupported() const;
   ActionTrigger &setWeeklyScheduleAvailable(bool available = true);
   bool setWeeklyScheduleController(
@@ -157,6 +175,7 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   virtual bool isWeeklyScheduleProgramModeSupported(uint8_t mode) const;
   bool ensureNativeWeeklyScheduleController();
   void updateWeeklyScheduleCapabilities();
+  void updateButtonModeCapabilities();
   void scheduleStateSave(uint32_t delayMsMax = 5000,
                          uint32_t delayMsMin = 2000);
   void applyButtonMode(uint8_t mode);
@@ -167,7 +186,7 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   bool requiresClickMode() const;
   static void synchronizeDirectionalButtonModes();
 
-  bool startTemporaryUnlock(uint32_t seconds);
+  bool startTemporaryUnlock(uint32_t seconds, int32_t senderId = 0);
   void updateTemporaryUnlock();
   void updateUnlockSensor();
   void syncEffectiveButtonLock();
@@ -182,7 +201,11 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
     bool baselineKnown = false;
     bool baseline = false;
     bool manualModeTransition = false;
+    // Weekly switch passes through mode 0; keep the timer until it settles.
+    bool keepTimerOnModeChange = false;
     bool hasStoredActiveActions = false;
+    // Reported to the server with the remaining time (0 for local starts).
+    int32_t senderId = 0;
   };
   bool ensureTemporaryUnlockState();
   bool persistTemporaryUnlockConfig(const TemporaryUnlockConfig &config,
@@ -191,6 +214,13 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
   bool prepareTemporaryUnlockState();
   TemporaryUnlockConfig currentTemporaryUnlockConfig() const;
   TemporaryUnlockState *temporaryUnlock = nullptr;
+  // Remaining temporary unlock time is reported as a timer extended value.
+  // Returns true and the remaining time if the timer is active.
+  // Requires timerAccessMutex.
+  bool getTemporaryUnlockRemainingMs(uint32_t *remainingMs) const;
+  void sendTimerValue(uint32_t remainingMs,
+                      uint8_t *targetValue,
+                      int32_t senderId);
 
   Supla::Control::Button *attachedButton = nullptr;
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;
@@ -226,21 +256,42 @@ class ActionTrigger : public ElementWithChannelActions, public ActionHandler {
           channelConfigReceived(false),
           weeklyScheduleAvailable(false),
           localUnlockAllowed(false),
-          keepConfigButtonTriggerAlwaysAvailable(false) {}
+          keepConfigButtonTriggerAlwaysAvailable(false),
+          buttonModeExplicit(false),
+          buttonModeEnabled(false),
+          temporaryUnlockDisabled(false),
+          timerReportForced(false),
+          timerReportPending(false),
+          timerReportedActive(false) {}
 
-    uint8_t storageEnabled : 1;
-    uint8_t alwaysUseOnClick1 : 1;
-    uint8_t enabled : 1;
-    uint8_t localHandlerSwitchConfigured : 1;
-    uint8_t channelConfigReceived : 1;
+    uint16_t storageEnabled : 1;
+    uint16_t alwaysUseOnClick1 : 1;
+    uint16_t enabled : 1;
+    uint16_t localHandlerSwitchConfigured : 1;
+    uint16_t channelConfigReceived : 1;
     // Native weekly schedule remains opt-in.
-    uint8_t weeklyScheduleAvailable : 1;
-    uint8_t localUnlockAllowed : 1;
-    uint8_t keepConfigButtonTriggerAlwaysAvailable : 1;
+    uint16_t weeklyScheduleAvailable : 1;
+    uint16_t localUnlockAllowed : 1;
+    uint16_t keepConfigButtonTriggerAlwaysAvailable : 1;
+    // Button mode support: set by setButtonModeSupported() (explicit), or
+    // enabled by attaching a Button.
+    uint16_t buttonModeExplicit : 1;
+    uint16_t buttonModeEnabled : 1;
+    uint16_t temporaryUnlockDisabled : 1;
+    // Report timer state after registration, also when it is not running,
+    // so a timer stored by the server before a restart is cleared.
+    uint16_t timerReportForced : 1;
+    // Set on every timer (re)start, so a restart with the same end time
+    // (e.g. different sender) is reported too.
+    uint16_t timerReportPending : 1;
+    // Server was told that the timer is running. Kept outside of
+    // temporaryUnlock, because that state may be released while the server
+    // still shows a running timer.
+    uint16_t timerReportedActive : 1;
   };
 
-  static_assert(sizeof(RuntimeFlags) == sizeof(uint8_t),
-                "ActionTrigger runtime flags must fit in uint8_t");
+  static_assert(sizeof(RuntimeFlags) == sizeof(uint16_t),
+                "ActionTrigger runtime flags must fit in uint16_t");
 
   RuntimeFlags runtimeFlags;
   WeeklyScheduleComponents weeklyScheduleComponents;

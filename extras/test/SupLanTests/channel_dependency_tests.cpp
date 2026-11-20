@@ -2740,6 +2740,7 @@ TEST(ChannelDependency, TemporaryUnlockServerUnionAndLocalZeroAreDistinct) {
   DurableHvacConfig storage;
   Sensor::VirtualBinary sensor;
   Control::ActionTrigger at;
+  at.setButtonModeSupported();
   ServerIdentity identity;
   bootstrapIdentity(&identity, &storage);
   ASSERT_TRUE(usesServerReferences());
@@ -2803,6 +2804,7 @@ TEST(ChannelDependency, TemporaryUnlockUsesReadAclAndRecoveryBaseline) {
   ASSERT_TRUE(peers.addPeer(&context, key, 1, &acl, 1, &peer, true));
   {
     Control::ActionTrigger at;
+    at.setButtonModeSupported();
     bootstrapIdentity(&identity, &storage);
     TChannelConfig_ActionTrigger wire = {};
     wire.TemporaryUnlockDurationSec = 5;

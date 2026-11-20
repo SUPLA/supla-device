@@ -63,7 +63,7 @@ TEST_F(ChannelTestsFixture, ShadingValuesDoNotProduceRelayDiagnostics) {
   }
 }
 
-TEST_F(ChannelTestsFixture, PlainRelayKeepsValueAndUpdateDiagnostics) {
+TEST_F(ChannelTestsFixture, PlainRelayLogsValueOnceOnUpdate) {
   Supla::Channel channel;
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
   channel.setFuncList(SUPLA_BIT_FUNC_POWERSWITCH);
@@ -74,12 +74,10 @@ TEST_F(ChannelTestsFixture, PlainRelayKeepsValueAndUpdateDiagnostics) {
   relay->flags = SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED;
   supla_test_clear_last_log();
   ASSERT_TRUE(channel.setNewValue(rawValue));
-  EXPECT_THAT(supla_test_get_last_log(), testing::HasSubstr(
-      "relay value changed: value=1 mode=3"));
-  supla_test_clear_last_log();
+  EXPECT_STREQ(supla_test_get_last_log(), "");
   channel.sendUpdate();
   EXPECT_THAT(supla_test_get_last_log(), testing::HasSubstr(
-      "relay sending update: value=1 mode=3"));
+      "relay update: value=1 mode=3"));
 }
 
 TEST_F(ChannelTestsFixture, ClearValueClearsPayloadAndValidity) {
@@ -670,17 +668,17 @@ TEST_F(ChannelTestsFixture, DoubleValueLogPreservesNegativeFractionSign) {
   supla_test_clear_last_log();
   channel.setNewValue(-0.23);
   EXPECT_STREQ(supla_test_get_last_log(),
-               "Channel(0) value changed to -0.23");
+               "Channel[0] value changed to -0.23");
 
   supla_test_clear_last_log();
   channel.setNewValue(0.23);
   EXPECT_STREQ(supla_test_get_last_log(),
-               "Channel(0) value changed to 0.23");
+               "Channel[0] value changed to 0.23");
 
   supla_test_clear_last_log();
   channel.setNewValue(-12.34);
   EXPECT_STREQ(supla_test_get_last_log(),
-               "Channel(0) value changed to -12.34");
+               "Channel[0] value changed to -12.34");
 
   supla_log_set_level(oldLogLevel);
 }

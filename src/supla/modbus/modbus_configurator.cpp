@@ -97,39 +97,54 @@ bool Supla::Modbus::ConfigProperties::operator!=(
 
 bool Supla::Modbus::Config::validateAndFix(const ConfigProperties &properties) {
   bool changed = false;
-  if (role == Role::Slave && !properties.protocol.slave) {
+  if ((role != Role::NotSet && role != Role::Slave && role != Role::Master) ||
+      (role == Role::Slave && !properties.protocol.slave) ||
+      (role == Role::Master && !properties.protocol.master)) {
     SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid modbus role %d", role);
     role = Role::NotSet;
     changed = true;
   }
-  if (role == Role::Master && !properties.protocol.master) {
-    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid modbus role %d", role);
-    role = Role::NotSet;
-    changed = true;
-  }
-  if (serial.mode == ModeSerial::Rtu && !properties.protocol.rtu) {
+  if ((serial.mode != ModeSerial::Disabled && serial.mode != ModeSerial::Rtu &&
+       serial.mode != ModeSerial::Ascii) ||
+      (serial.mode == ModeSerial::Rtu && !properties.protocol.rtu) ||
+      (serial.mode == ModeSerial::Ascii && !properties.protocol.ascii)) {
     SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid serial mode %d",
                       serial.mode);
     serial.mode = ModeSerial::Disabled;
     changed = true;
   }
-  if (serial.mode == ModeSerial::Ascii && !properties.protocol.ascii) {
-    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid serial mode %d",
-                      serial.mode);
-    serial.mode = ModeSerial::Disabled;
-    changed = true;
-  }
-  if (network.mode == ModeNetwork::Tcp && !properties.protocol.tcp) {
-    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid network mode %d",
+  if ((network.mode != ModeNetwork::Disabled &&
+       network.mode != ModeNetwork::Tcp &&
+       network.mode != ModeNetwork::Udp) ||
+      (network.mode == ModeNetwork::Tcp && !properties.protocol.tcp) ||
+      (network.mode == ModeNetwork::Udp && !properties.protocol.udp)) {
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: unsupported network mode %d",
                       network.mode);
     network.mode = ModeNetwork::Disabled;
     changed = true;
   }
-  if (network.mode == ModeNetwork::Udp && !properties.protocol.udp) {
-    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid network mode %d",
-                      network.mode);
-    network.mode = ModeNetwork::Disabled;
-    changed = true;
+
+  bool stopBitsSupported =
+      (serial.stopBits == SerialStopBits::One && properties.stopBits.one) ||
+      (serial.stopBits == SerialStopBits::OneAndHalf &&
+       properties.stopBits.oneAndHalf) ||
+      (serial.stopBits == SerialStopBits::Two && properties.stopBits.two);
+  if (!stopBitsSupported) {
+    auto fallback = SerialStopBits::One;
+    if (properties.stopBits.one) {
+      fallback = SerialStopBits::One;
+    } else if (properties.stopBits.oneAndHalf) {
+      fallback = SerialStopBits::OneAndHalf;
+    } else if (properties.stopBits.two) {
+      fallback = SerialStopBits::Two;
+    } else if (serial.mode != ModeSerial::Disabled) {
+      serial.mode = ModeSerial::Disabled;
+      changed = true;
+    }
+    if (serial.stopBits != fallback) {
+      serial.stopBits = fallback;
+      changed = true;
+    }
   }
 
   if (modbusAddress < 1 || modbusAddress > 247) {
@@ -226,25 +241,18 @@ void Configurator::onDeviceConfigChange(uint64_t fieldBit) {
 }
 
 bool Configurator::isNetworkModeEnabled() const {
-  if (config.role != Supla::Modbus::Role::NotSet) {
-    return (config.network.mode != Supla::Modbus::ModeNetwork::Disabled);
-  }
-  return false;
+  return (isSlave() || isMaster()) &&
+         ((config.network.mode == ModeNetwork::Tcp &&
+           properties.protocol.tcp) ||
+          (config.network.mode == ModeNetwork::Udp && properties.protocol.udp));
 }
 
 bool Configurator::isSerialModeEnabled() const {
-  if (config.role != Supla::Modbus::Role::NotSet) {
-    return (config.serial.mode != Supla::Modbus::ModeSerial::Disabled);
-  }
-  return false;
+  return (isSlave() || isMaster()) && (isRtuMode() || isAsciiMode());
 }
 
 bool Configurator::isModbusDisabled() const {
-  if (config.role != Supla::Modbus::Role::NotSet) {
-    return (config.serial.mode == Supla::Modbus::ModeSerial::Disabled &&
-            config.network.mode == Supla::Modbus::ModeNetwork::Disabled);
-  }
-  return true;
+  return !isSerialModeEnabled() && !isNetworkModeEnabled();
 }
 
 bool Configurator::isMaster() const {
@@ -299,6 +307,9 @@ const Supla::Modbus::ConfigProperties &Configurator::getProperties() const {
 void Configurator::setProperties(
     const Supla::Modbus::ConfigProperties &newProperties) {
   properties = newProperties;
+  // Temporarily block TCP/UDP capabilities until esp-modbus support is ready.
+  properties.protocol.tcp = 0;
+  properties.protocol.udp = 0;
 }
 
 void Configurator::printConfig() const {

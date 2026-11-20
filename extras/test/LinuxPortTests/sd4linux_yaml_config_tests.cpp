@@ -15,19 +15,23 @@
 #include <unistd.h>
 
 #include <array>
+#include <atomic>
 #include <cstring>
 #include <fstream>
 #include <filesystem>  // NOLINT(build/c++17)
 #include <iterator>
 #include <string>
+#include <thread>
 #include <variant>
 #include <vector>
 
 #include "linux_yaml_config.h"
 #include "supla/control/action_trigger_parsed.h"
+#include "supla/control/button_parsed.h"
 #include "supla/control/custom_hvac.h"
 #include "supla/control/custom_relay.h"
 #include "supla/control/rgbcct_parsed.h"
+#include "supla/control/roller_shutter_interface.h"
 #include "supla/control/virtual_relay.h"
 #include "supla/control/valve_base.h"
 
@@ -113,6 +117,7 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   TestLinuxYamlConfig() : Supla::LinuxYamlConfig("") {
   }
 
+  using Supla::KeyValue::getBlobSize;
   using Supla::LinuxYamlConfig::addActionTriggerParsed;
   using Supla::LinuxYamlConfig::addRgbCctParsed;
   using Supla::LinuxYamlConfig::addCustomHvac;
@@ -346,6 +351,168 @@ TEST_F(Sd4linuxYamlCredentialTests,
   EXPECT_EQ(content, "unchanged");
 }
 
+TEST_F(Sd4linuxYamlCredentialTests, LoadsSavedEmptyConfigStorage) {
+  {
+    TestLinuxYamlConfig config;
+    config.config["state_files_path"] = tempDirectory.string();
+    ASSERT_TRUE(config.commitWithResult());
+  }
+  ASSERT_EQ(std::filesystem::file_size(tempDirectory / "config_storage.bin"),
+            0U);
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  EXPECT_TRUE(config.init());
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, LogsInvalidConfigStorageData) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  {
+    std::ofstream file(storagePath, std::ios::binary);
+    file.put('x');
+    ASSERT_TRUE(file.good());
+  }
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  supla_test_clear_last_log();
+
+  EXPECT_FALSE(config.init());
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("invalid storage data"), std::string::npos);
+  EXPECT_NE(log.find(storagePath.string()), std::string::npos);
+  EXPECT_NE(log.find("(1 bytes)"), std::string::npos);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, RejectsUnreadableConfigStorage) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  ASSERT_TRUE(std::filesystem::create_directory(storagePath));
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  supla_test_clear_last_log();
+
+  // Depending on the standard library, opening a directory fails either at
+  // open or at read - both must be reported as an error with the path.
+  EXPECT_FALSE(config.init());
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find(storagePath.string()), std::string::npos);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, LoadsConfigStorageOfMaximumSize) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  {
+    std::ofstream file(storagePath, std::ios::binary);
+    file << std::string(1024 * 1024, 'x');
+    ASSERT_TRUE(file.good());
+  }
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  supla_test_clear_last_log();
+
+  // Garbage content is rejected, but not as an oversized file.
+  EXPECT_FALSE(config.init());
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("invalid storage data"), std::string::npos);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, RejectsOversizedConfigStorage) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  {
+    std::ofstream file(storagePath, std::ios::binary);
+    file << std::string(1024 * 1024 + 1, 'x');
+    ASSERT_TRUE(file.good());
+  }
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  supla_test_clear_last_log();
+
+  EXPECT_FALSE(config.init());
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("file is too big"), std::string::npos);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, InitReportsInaccessibleStateDirectory) {
+  if (::geteuid() == 0) {
+    GTEST_SKIP() << "root ignores directory permissions";
+  }
+  const auto stateDir = tempDirectory / "state";
+  ASSERT_TRUE(std::filesystem::create_directory(stateDir));
+  ASSERT_EQ(::chmod(stateDir.c_str(), 0), 0);
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = stateDir.string();
+  supla_test_clear_last_log();
+
+  EXPECT_FALSE(config.init());
+  ASSERT_EQ(::chmod(stateDir.c_str(), 0700), 0);
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("failed to access"), std::string::npos);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, CommitReplacesStorageAtomically) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(config.setString("test_key", "test_value"));
+  ASSERT_TRUE(config.commitWithResult());
+  ASSERT_TRUE(config.commitWithResult());
+
+  // Temp files are renamed into place, none are left behind.
+  for (const auto& entry : std::filesystem::directory_iterator(tempDirectory)) {
+    EXPECT_EQ(entry.path().filename().string().find("config_storage.bin.tmp"),
+              std::string::npos)
+        << entry.path();
+  }
+  EXPECT_GT(std::filesystem::file_size(storagePath), 0U);
+
+  TestLinuxYamlConfig restored;
+  restored.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(restored.init());
+  char value[32] = {};
+  ASSERT_TRUE(restored.getString("test_key", value, sizeof(value)));
+  EXPECT_STREQ(value, "test_value");
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, ConcurrentCommitsPublishCompleteFiles) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  // Close to the per-value format limit, so a write takes a while.
+  const std::string payload(60 * 1024, 'a');
+  ASSERT_TRUE(config.setBlob("payload", payload.c_str(), payload.size()));
+
+  std::atomic<bool> allSucceeded{true};
+  std::vector<std::thread> writers;
+  for (int i = 0; i < 4; i++) {
+    writers.emplace_back([&]() {
+      for (int j = 0; j < 10; j++) {
+        if (!config.commitWithResult()) {
+          allSucceeded = false;
+        }
+      }
+    });
+  }
+  for (auto& writer : writers) {
+    writer.join();
+  }
+
+  EXPECT_TRUE(allSucceeded);
+  EXPECT_TRUE(std::filesystem::is_regular_file(storagePath));
+
+  // Verify through the real loader, not by comparing serializer output.
+  TestLinuxYamlConfig restored;
+  restored.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(restored.init());
+  std::string loaded(payload.size(), '\0');
+  ASSERT_EQ(restored.getBlobSize("payload"), static_cast<int>(payload.size()));
+  ASSERT_TRUE(restored.getBlob("payload", loaded.data(), loaded.size()));
+  EXPECT_EQ(loaded, payload);
+}
+
 TEST_F(Sd4linuxYamlCredentialTests, LogsConfigStorageWriteFailure) {
   TestLinuxYamlConfig config;
   config.config["state_files_path"] = (tempDirectory / "missing").string();
@@ -551,6 +718,176 @@ TEST_F(Sd4linuxAtDurationTests, FailedPersistenceKeepsAcceptedRuntimeDuration) {
   time.advance(5001);
   config.saveIfNeeded();
   EXPECT_EQ(read(at).TemporaryUnlockDurationSec, 30U);
+}
+
+TEST_F(Sd4linuxAtDurationTests,
+       SensorNamesResolveInBothDirectionsAndChannelZero) {
+  for (bool forward : {false, true}) {
+    const std::string sensor =
+        "- {type: CustomChannel, name: contact, channel_type: 1000, "
+        "channel_number: 0}\n";
+    const std::string trigger =
+        "- {type: ActionTriggerParsed, name: button, channel_number: 7, "
+        "temporary_unlock_sensor: contact, "
+        "temporary_unlock_sensor_edge: rising}\n";
+    config.config = YAML::Load("channels:\n" +
+        (forward ? trigger + sensor : sensor + trigger));
+    ASSERT_TRUE(config.loadChannels());
+    auto at = dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+        Supla::Element::getElementByChannelNumber(7));
+    ASSERT_NE(at, nullptr);
+    seed(at);
+    at->onLoadConfig(nullptr);
+    const auto value = read(at);
+    EXPECT_EQ(value.TemporaryUnlockSensorIsSet, 1);
+    EXPECT_EQ(value.TemporaryUnlockSensorChannelNo, 0);
+    EXPECT_EQ(value.TemporaryUnlockSensorEdge, SUPLA_AT_SENSOR_EDGE_RISING);
+    EXPECT_EQ(value.TemporaryUnlockDurationSec, 7U);
+    EXPECT_EQ(value.ActiveActions, SUPLA_ACTION_CAP_HOLD);
+    while (auto element = Supla::Element::last()) delete element;
+    Supla::Channel::resetToDefaults();
+  }
+}
+
+TEST_F(Sd4linuxAtDurationTests, SensorEdgesTriggerUnlockWithoutExtendingTimer) {
+  for (const auto* edge : {"rising", "falling", "both"}) {
+    SCOPED_TRACE(edge);
+    SimpleTime time;
+    time.advance(1);
+    config.config = YAML::Load(std::string(R"(
+channels:
+- {type: ActionTriggerParsed, name: button, temporary_unlock_duration_sec: 3,
+   temporary_unlock_sensor: contact, temporary_unlock_sensor_edge: )") +
+        edge + R"(}
+- {type: CustomChannel, name: contact, channel_type: 1000}
+)");
+    ASSERT_TRUE(config.loadChannels());
+    auto at = dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+        Supla::Element::getElementByChannelNumber(0));
+    ASSERT_NE(at, nullptr);
+    at->onLoadConfig(nullptr);
+    at->onInit();
+    TSD_SuplaChannelNewValue command = {};
+    reinterpret_cast<TActionTriggerProperties*>(command.value)->ButtonMode =
+        SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED;
+    ASSERT_EQ(at->handleNewValueFromServer(&command), 1);
+    auto sensor = Supla::Channel::GetByChannelNumber(1);
+    ASSERT_NE(sensor, nullptr);
+    const bool initial = std::string(edge) == "falling";
+    sensor->setNewValue(initial);
+    at->iterateAlways();
+    EXPECT_FALSE(at->isTemporaryUnlockActive());
+    sensor->setNewValue(!initial);
+    at->iterateAlways();
+    ASSERT_TRUE(at->isTemporaryUnlockActive());
+    time.advance(1000);
+    sensor->setNewValue(initial);
+    at->iterateAlways();
+    sensor->setNewValue(!initial);
+    at->iterateAlways();
+    time.advance(2000);
+    at->iterateAlways();
+    EXPECT_FALSE(at->isTemporaryUnlockActive());
+    EXPECT_TRUE(at->isEffectivelyLocked());
+    while (auto element = Supla::Element::last()) delete element;
+    Supla::Channel::resetToDefaults();
+  }
+}
+
+TEST_F(Sd4linuxAtDurationTests, NoneClearsStoredSensorWithoutChangingDuration) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: ActionTriggerParsed, name: button, temporary_unlock_sensor_edge: none}
+)");
+  ASSERT_TRUE(config.loadChannels());
+  auto at = dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+      Supla::Element::getElementByChannelNumber(0));
+  ASSERT_NE(at, nullptr);
+  seed(at);
+  at->onLoadConfig(nullptr);
+  const auto value = read(at);
+  EXPECT_EQ(value.TemporaryUnlockSensorIsSet, 0);
+  EXPECT_EQ(value.TemporaryUnlockSensorEdge, SUPLA_AT_SENSOR_EDGE_NONE);
+  EXPECT_EQ(value.TemporaryUnlockDurationSec, 7U);
+}
+
+TEST_F(Sd4linuxAtDurationTests,
+       InvalidSensorSettingsAreRejectedBeforeCreation) {
+  for (const auto* extra : {
+           "temporary_unlock_sensor: contact",
+           "temporary_unlock_sensor_edge: rising",
+           "temporary_unlock_sensor_edge: invalid",
+           "temporary_unlock_sensor_edge: []",
+           "temporary_unlock_sensor_edge: null",
+           "temporary_unlock_sensor: []\ntemporary_unlock_sensor_edge: both",
+           "temporary_unlock_sensor: ''\ntemporary_unlock_sensor_edge: both",
+           "temporary_unlock_sensor: contact\n"
+           "temporary_unlock_sensor_edge: none"}) {
+    SCOPED_TRACE(extra);
+    EXPECT_EQ(create(extra), nullptr);
+    EXPECT_EQ(Supla::Element::begin(), nullptr);
+  }
+}
+
+TEST_F(Sd4linuxAtDurationTests, BadReferencesDoNotApplyEarlierSensorOverrides) {
+  for (const auto* target : {"missing", "wrong_type", "button"}) {
+    config.config = YAML::Load(std::string(R"(
+channels:
+- {type: CustomChannel, name: contact, channel_type: 1000}
+- {type: VirtualRelay, name: wrong_type}
+- {type: ActionTriggerParsed, name: good, temporary_unlock_sensor: contact,
+   temporary_unlock_sensor_edge: both}
+- {type: ActionTriggerParsed, name: button, temporary_unlock_sensor: )") +
+        target + ", temporary_unlock_sensor_edge: both}\n");
+    EXPECT_FALSE(config.loadChannels());
+    auto at = dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+        Supla::Element::getElementByChannelNumber(2));
+    ASSERT_NE(at, nullptr);
+    at->onLoadConfig(nullptr);
+    EXPECT_EQ(read(at).TemporaryUnlockSensorIsSet, 0);
+    while (auto element = Supla::Element::last()) delete element;
+    Supla::Channel::resetToDefaults();
+  }
+}
+
+TEST_F(Sd4linuxAtDurationTests, FailedSaveKeepsAcceptedRuntimeSensorSettings) {
+  config.config = YAML::Load(R"(
+channels:
+- {type: CustomChannel, name: contact, channel_type: 1000}
+- {type: ActionTriggerParsed, name: button, temporary_unlock_duration_sec: 30,
+   temporary_unlock_sensor: contact, temporary_unlock_sensor_edge: rising}
+)");
+  ASSERT_TRUE(config.loadChannels());
+  auto at = dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+      Supla::Element::getElementByChannelNumber(1));
+  ASSERT_NE(at, nullptr);
+  seed(at);
+  config.commitAllowed = false;
+  at->onLoadConfig(nullptr);
+  time.advance(5001);
+  config.saveIfNeeded();
+  const auto value = read(at);
+  EXPECT_EQ(value.TemporaryUnlockDurationSec, 30U);
+  EXPECT_EQ(value.TemporaryUnlockSensorIsSet, 1);
+  EXPECT_EQ(value.TemporaryUnlockSensorChannelNo, 0);
+  EXPECT_EQ(value.TemporaryUnlockSensorEdge, SUPLA_AT_SENSOR_EDGE_RISING);
+}
+
+TEST_F(Sd4linuxAtDurationTests, FileSensorExampleLoadsWithExpectedSettings) {
+  const auto example = std::filesystem::path(__FILE__).parent_path()
+      .parent_path().parent_path() /
+      "examples/linux/at_temporary_unlock.yaml";
+  config.config = YAML::LoadFile(example.string());
+  ASSERT_TRUE(config.loadChannels());
+  auto at = dynamic_cast<Supla::Control::ActionTriggerParsed*>(
+      Supla::Element::getElementByChannelNumber(0));
+  ASSERT_NE(at, nullptr);
+  at->onLoadConfig(nullptr);
+  const auto value = read(at);
+  EXPECT_EQ(value.TemporaryUnlockDurationSec, 30U);
+  EXPECT_EQ(value.TemporaryUnlockSensorIsSet, 1);
+  EXPECT_EQ(value.TemporaryUnlockSensorChannelNo, 1);
+  EXPECT_EQ(value.TemporaryUnlockSensorEdge, SUPLA_AT_SENSOR_EDGE_RISING);
 }
 
 class Sd4linuxAtRelatedChannelTests : public ::testing::Test {
@@ -1644,4 +1981,183 @@ TEST(LinuxYamlConfigIterationTests, RestoredPersistentKeysRemainEnumerable) {
             Supla::ConfigIterationResult::COMPLETED);
   EXPECT_EQ(found.visits, 1);
   EXPECT_EQ(found.keys.at("12_hvac_cfg2"), Supla::ConfigValueType::BLOB);
+}
+
+class Sd4linuxButtonTests : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    ASSERT_EQ(Supla::Element::begin(), nullptr);
+    Supla::Channel::resetToDefaults();
+    inputPath = std::filesystem::temp_directory_path() /
+                ("supla_button_parsed_tests_" + std::to_string(getpid()));
+    writeInput("0");
+  }
+  void TearDown() override {
+    while (auto element = Supla::Element::last()) delete element;
+    Supla::Channel::resetToDefaults();
+    std::filesystem::remove(inputPath);
+  }
+  void writeInput(const char* value) {
+    std::ofstream(inputPath) << value << "\n";
+  }
+  bool load(const std::string& buttons) {
+    config.config = YAML::Load(R"(
+channels:
+- {type: VirtualRelay, name: light}
+- {type: CmdRollerShutter, name: blind, cmd_up_on: "true",
+   cmd_up_off: "true", cmd_down_on: "true", cmd_down_off: "true"}
+buttons:
+)" + buttons);
+    return config.loadChannels();
+  }
+  std::string button(const std::string& extra) {
+    return "- {source: {type: File, file: \"" + inputPath.string() +
+           "\", expiration_time_sec: 0}, parser: {type: Simple}, state: 0, " +
+           extra + "}\n";
+  }
+  Supla::Control::ButtonParsed* firstButton() {
+    for (auto e = Supla::Element::begin(); e; e = e->next()) {
+      if (auto btn = dynamic_cast<Supla::Control::ButtonParsed*>(e)) {
+        return btn;
+      }
+    }
+    return nullptr;
+  }
+  void initAll() {
+    for (auto e = Supla::Element::begin(); e; e = e->next()) {
+      e->onInit();
+    }
+  }
+  void click(Supla::Control::ButtonParsed* btn) {
+    writeInput("1");
+    run(btn, 100);
+    writeInput("0");
+    run(btn, 500);
+  }
+  void run(Supla::Control::ButtonParsed* btn, int ms) {
+    for (int i = 0; i < ms / 10; i++) {
+      time.advance(10);
+      btn->iterateAlways();
+      btn->onTimer();
+    }
+  }
+
+  SimpleTime time;
+  std::filesystem::path inputPath;
+  TestLinuxYamlConfig config;
+};
+
+TEST_F(Sd4linuxButtonTests, MonostableButtonMovesAttachedRollerShutter) {
+  time.advance(1);
+  ASSERT_TRUE(load(button(
+      "name: up, type: monostable, attach: {channel: blind, direction: up}")));
+  auto btn = firstButton();
+  ASSERT_NE(btn, nullptr);
+  EXPECT_TRUE(btn->isMonostable());
+  auto rs = dynamic_cast<Supla::Control::RollerShutterInterface*>(
+      Supla::Element::getElementByChannelNumber(1));
+  ASSERT_NE(rs, nullptr);
+  initAll();
+  run(btn, 200);
+  EXPECT_NE(rs->getTargetPosition(), MOVE_UP_POSITION);
+
+  // CmdRollerShutter supports tilt, so a monostable button acts on click.
+  click(btn);
+  EXPECT_EQ(rs->getTargetPosition(), MOVE_UP_POSITION);
+}
+
+TEST_F(Sd4linuxButtonTests, InternalDownButtonFollowsUpsideDownSetting) {
+  time.advance(1);
+  ASSERT_TRUE(load(button("attach: [{channel: blind, direction: down}]")));
+  auto btn = firstButton();
+  ASSERT_NE(btn, nullptr);
+  auto rs = dynamic_cast<Supla::Control::RollerShutterInterface*>(
+      Supla::Element::getElementByChannelNumber(1));
+  ASSERT_NE(rs, nullptr);
+  initAll();
+  click(btn);
+  EXPECT_EQ(rs->getTargetPosition(), MOVE_DOWN_POSITION);
+}
+
+TEST_F(Sd4linuxButtonTests, InvertedButtonTogglesAttachedRelay) {
+  time.advance(1);
+  writeInput("1");  // inverted: released
+  ASSERT_TRUE(load(button("invert_logic: true, attach: {channel: light}")));
+  auto btn = firstButton();
+  ASSERT_NE(btn, nullptr);
+  auto relay = dynamic_cast<Supla::Control::Relay*>(
+      Supla::Element::getElementByChannelNumber(0));
+  ASSERT_NE(relay, nullptr);
+  initAll();
+  run(btn, 200);
+  EXPECT_FALSE(relay->isOn());
+
+  writeInput("0");
+  run(btn, 200);
+  EXPECT_TRUE(relay->isOn());
+}
+
+TEST_F(Sd4linuxButtonTests, LostSourceReleasesButton) {
+  time.advance(1);
+  ASSERT_TRUE(load(button("type: bistable, attach: {channel: light}")));
+  auto btn = firstButton();
+  ASSERT_NE(btn, nullptr);
+  auto relay = dynamic_cast<Supla::Control::Relay*>(
+      Supla::Element::getElementByChannelNumber(0));
+  ASSERT_NE(relay, nullptr);
+  initAll();
+  writeInput("1");
+  run(btn, 200);
+  EXPECT_EQ(btn->getLastState(), Supla::Control::PRESSED);
+
+  std::filesystem::remove(inputPath);
+  run(btn, 200);
+  EXPECT_EQ(btn->getLastState(), Supla::Control::RELEASED);
+}
+
+TEST_F(Sd4linuxButtonTests, RejectsInvalidButtonConfig) {
+  const std::vector<std::string> invalid = {
+      "attach: {channel: missing}",
+      "attach: {channel: blind}",
+      "attach: {channel: blind, direction: left}",
+      "attach: {channel: light, direction: up}",
+      "attach: {channel: blind, direction: up, extra: 1}",
+      "type: toggle",
+      "unknown_parameter: 1",
+      "hold_time_ms: -1",
+  };
+  for (const auto& extra : invalid) {
+    SCOPED_TRACE(extra);
+    EXPECT_FALSE(load(button(extra)));
+    while (auto element = Supla::Element::last()) delete element;
+    Supla::Channel::resetToDefaults();
+  }
+
+  EXPECT_FALSE(load("- {name: no_parser, attach: {channel: light}}\n"));
+}
+
+TEST_F(Sd4linuxButtonTests, CmdSourceKeepsDefaultParserRefreshTime) {
+  time.advance(1);
+  const auto counterPath = inputPath.string() + "_cmd_count";
+  std::filesystem::remove(counterPath);
+  config.config = YAML::Load(R"(
+channels:
+- {type: VirtualRelay, name: light}
+buttons:
+- {source: {type: Cmd, command: "echo x >> )" + counterPath +
+                             R"(; echo 0"}, parser: {type: Simple}, state: 0,
+   attach: {channel: light}}
+)");
+  ASSERT_TRUE(config.loadChannels());
+  auto btn = firstButton();
+  ASSERT_NE(btn, nullptr);
+  initAll();
+  run(btn, 1000);
+
+  std::ifstream counter(counterPath);
+  const auto lines = std::count(std::istreambuf_iterator<char>(counter),
+                                std::istreambuf_iterator<char>(), '\n');
+  EXPECT_GE(lines, 1);
+  EXPECT_LE(lines, 2);
+  std::filesystem::remove(counterPath);
 }

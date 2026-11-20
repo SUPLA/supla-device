@@ -423,6 +423,21 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   uint32_t getCfgModeInactivityTimeLeftMs() const;
   void setSwUpdateObserver(Supla::Device::SwUpdateObserver *observer);
 
+  using SwUpdateFactory = Supla::Device::SwUpdate *(*)(
+      SuplaDeviceClass *device, const char *url, Supla::SwUpdateMode mode);
+
+  /**
+   * Registers a factory for subsequent OTA attempts. Call before begin().
+   * The factory returns a new updater owned by the device, or nullptr to
+   * decline the attempt. Pass nullptr as the factory to restore the platform
+   * default. See supla/device/sw_update.h for the updater contract.
+   *
+   * The factory is a plain function pointer, so a lambda passed here must not
+   * capture anything. Keep any state the updater needs in globals or pass it
+   * through the updater's constructor from such state.
+   */
+  void setSwUpdateFactory(SwUpdateFactory factory);
+
   /**
    * Checks if leave configuration mode after inactivity is enabled.
    * It requires leaveCfgModeAfterInactivityMin > 0 and
@@ -503,7 +518,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   /**
    * Initializes SW update instance
    *
-   * @param performUpdate true to perform SW update, false to check for update
+   * @param mode whether to check, install or retry an update
    * @param securityOnly 0 to check for all updates, 1 to check for security
    *                       updates, -1 will use value from device config
    *
@@ -558,6 +573,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   uint8_t macLengthInHostname = 6;
   int8_t currentStatus = STATUS_UNKNOWN;
   uint8_t swUpdateAttempts = 0;
+  // Mode requested for the current attempt, after retry mapping.
+  Supla::SwUpdateMode swUpdateMode = Supla::SwUpdateMode::NotSet;
 
   Supla::InitialMode initialMode = Supla::InitialMode::StartInNotConfiguredMode;
   Supla::CfgModeState cfgModeState = Supla::CfgModeState::NotSet;
@@ -565,6 +582,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
+  SwUpdateFactory swUpdateFactory = nullptr;
   Supla::Device::SwUpdateObserver *swUpdateObserver = nullptr;
   Supla::Device::ChannelConflictResolverList *channelConflictResolvers =
       nullptr;

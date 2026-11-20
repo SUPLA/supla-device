@@ -1176,6 +1176,7 @@ TEST_P(NativeWeeklyCorrectionTests, RelayReturnsCurrentScheduleOrDefaults) {
 
 TEST_P(NativeWeeklyCorrectionTests, ActionTriggerReturnsScheduleOrDefaults) {
   WeeklyCorrectionElement<Supla::Control::ActionTrigger> at;
+  at.setButtonModeSupported();
   at.setWeeklyScheduleAvailable();
   at.onLoadConfig(nullptr);
   checkNativeWeeklyCorrection(&at, GetParam());

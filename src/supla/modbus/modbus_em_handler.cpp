@@ -61,7 +61,11 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
 
   if (access == Supla::Modbus::Access::READ) {
     memset(regBuffer, 0, nRegs * 2);
+    auto *const responseBuffer = regBuffer;
     for (uint16_t reg = 0; reg < nRegs; reg++) {
+      // Each address owns its response slot, including unused registers and
+      // unavailable measurements. Field writers may consume multiple slots.
+      regBuffer = responseBuffer + reg * 2;
       // block 0 -> common
       // block 1 -> phase 1
       // block 2 -> phase 2
@@ -120,7 +124,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
           case EM_COMMON_REG_FORWARD_ACTIVE_ENERGY_VECTOR_BALANCE + 2:
           case EM_COMMON_REG_FORWARD_ACTIVE_ENERGY_VECTOR_BALANCE + 3: {
             auto value = em->getFwdBalancedActEnergy();
-            value = 0x0123456789ABCDEF;
             // store in big endian format
             int regOffset = addressInsideBlock -
                             EM_COMMON_REG_FORWARD_ACTIVE_ENERGY_VECTOR_BALANCE;
@@ -130,7 +133,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
             }
             storeBigEndian(value, regBuffer, regOffset, size);
             reg += size - 1;
-            regBuffer += size * 2;
             break;
           }
           case EM_COMMON_REG_REVERSE_ACTIVE_ENERGY_VECTOR_BALANCE:
@@ -147,7 +149,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
             }
             storeBigEndian(value, regBuffer, regOffset, size);
             reg += size - 1;
-            regBuffer += size * 2;
             break;
           }
         }
@@ -186,7 +187,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
             }
             storeBigEndian(current, regBuffer, regOffset, size);
             reg += size - 1;
-            regBuffer += size * 2;
             break;
           }
           case EM_PHASE_REG_POWER_ACTIVE:
@@ -203,7 +203,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
             }
             storeBigEndian(value, regBuffer, regOffset, size);
             reg += size - 1;
-            regBuffer += size * 2;
             break;
           }
           case EM_PHASE_REG_POWER_REACTIVE:
@@ -221,7 +220,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
             }
             storeBigEndian(value, regBuffer, regOffset, size);
             reg += size - 1;
-            regBuffer += size * 2;
             break;
           }
           case EM_PHASE_REG_POWER_APPARENT:
@@ -239,7 +237,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
             }
             storeBigEndian(value, regBuffer, regOffset, size);
             reg += size - 1;
-            regBuffer += size * 2;
             break;
           }
           case EM_PHASE_REG_FWD_ENERGY_ACTIVE:
@@ -255,7 +252,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
             }
             storeBigEndian(energy, regBuffer, regOffset, size);
             reg += size - 1;
-            regBuffer += size * 2;
             break;
           }
           case EM_PHASE_REG_RVR_ENERGY_ACTIVE:
@@ -271,7 +267,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
             }
             storeBigEndian(energy, regBuffer, regOffset, size);
             reg += size - 1;
-            regBuffer += size * 2;
             break;
           }
           case EM_PHASE_REG_FWD_ENERGY_REACTIVE:
@@ -288,7 +283,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
             }
             storeBigEndian(energy, regBuffer, regOffset, size);
             reg += size - 1;
-            regBuffer += size * 2;
             break;
           }
           case EM_PHASE_REG_RVR_ENERGY_REACTIVE:
@@ -305,7 +299,6 @@ Supla::Modbus::Result ModbusEMHandler::holdingProcessRequest(uint16_t address,
             }
             storeBigEndian(energy, regBuffer, regOffset, size);
             reg += size - 1;
-            regBuffer += size * 2;
             break;
           }
         }

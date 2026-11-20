@@ -10,6 +10,8 @@
 #include "config.h"
 
 #define SUPLA_STORAGE_KEY_SIZE 15
+// Blob/string length is stored as uint16_t in the serialized format.
+#define SUPLA_STORAGE_MAX_VALUE_SIZE 0xFFFFu
 
 namespace Supla {
 class KeyValueElement;
@@ -20,8 +22,11 @@ class KeyValue : public Config {
       ConfigKeyCallback callback, void *context) override;
   ~KeyValue();
   bool initFromMemory(uint8_t* input, size_t inputSize);
-  // Returns size of written structure, or SIZE_MAX if any element does not fit.
-  size_t serializeToMemory(uint8_t* output, size_t outputMaxSize);
+  // Returns the bytes written. With no success pointer, incomplete output
+  // returns SIZE_MAX. With a pointer, incomplete output sets it to false.
+  size_t serializeToMemory(uint8_t* output,
+                           size_t outputMaxSize,
+                           bool* success = nullptr);
   void removeAllMemory();
 
   bool generateGuidAndAuthkey() override;
@@ -76,6 +81,8 @@ class KeyValueElement {
   void add(KeyValueElement* toBeAdded);
 
   size_t serialize(uint8_t* destination, size_t maxSize);
+  // false for elements created by a failed set* call - they are not stored
+  bool hasValue() const;
 
   bool setString(const char* value);
   bool getString(char* value, size_t maxSize);

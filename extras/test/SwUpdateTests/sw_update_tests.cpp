@@ -25,6 +25,146 @@ using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Return;
 
+namespace {
+
+class SwUpdateFactoryTestDevice : public SuplaDeviceClass {
+ public:
+  using SuplaDeviceClass::initSwUpdateInstance;
+  using SuplaDeviceClass::iterateSwUpdate;
+
+  bool hasSwUpdate() const {
+    return swUpdate != nullptr;
+  }
+};
+
+class FailingSwUpdate : public Supla::Device::SwUpdate {
+ public:
+  static int created;
+
+  FailingSwUpdate(SuplaDeviceClass *device,
+                  const char *url,
+                  Supla::SwUpdateMode mode)
+      : SwUpdate(device, url, mode) {
+    created++;
+  }
+
+  void iterate() override {
+    constexpr char version[] = "1.2.3";
+    newVersion = new char[sizeof(version)];
+    memcpy(newVersion, version, sizeof(version));
+    abort = true;
+    retryAllowed = true;
+    notifyFinished(Supla::Device::SwUpdateResult::FAILED);
+  }
+};
+
+int FailingSwUpdate::created = 0;
+
+class CustomSwUpdateMock : public Supla::Device::SwUpdate {
+ public:
+  CustomSwUpdateMock(SuplaDeviceClass *device,
+                     const char *url,
+                     Supla::SwUpdateMode mode)
+      : SwUpdate(device, url, mode) {}
+
+  MOCK_METHOD(void, iterate, (), (override));
+};
+
+class SwUpdateFactoryTests : public ::testing::Test {
+ protected:
+  SimpleTime time;
+  ::testing::NiceMock<ConfigMock> cfg;
+  SwUpdateFactoryTestDevice sd;
+};
+
+TEST_F(SwUpdateFactoryTests, CreatesCustomUpdaterWithConfiguredUrlAndMode) {
+  EXPECT_CALL(cfg, getSwUpdateServer(_)).WillOnce([](char *url) {
+    constexpr char server[] = "https://example.org/updates";
+    memcpy(url, server, sizeof(server));
+    return true;
+  });
+
+  sd.setSwUpdateFactory([](SuplaDeviceClass *device,
+                           const char *url,
+                           Supla::SwUpdateMode mode)
+                            -> Supla::Device::SwUpdate * {
+    EXPECT_NE(device, nullptr);
+    EXPECT_STREQ(url, "https://example.org/updates");
+    EXPECT_EQ(mode, Supla::SwUpdateMode::OnlyCheck);
+    auto updater = new CustomSwUpdateMock(device, url, mode);
+    EXPECT_CALL(*updater, iterate());
+    return updater;
+  });
+
+  ASSERT_TRUE(sd.initSwUpdateInstance(Supla::SwUpdateMode::OnlyCheck, 0));
+  sd.iterateSwUpdate();
+  sd.iterateSwUpdate();
+}
+
+TEST_F(SwUpdateFactoryTests, NullResultDeclinesWithoutFallingBack) {
+  SwUpdateMock defaultUpdater;
+  sd.setSwUpdateFactory([](SuplaDeviceClass *,
+                           const char *url,
+                           Supla::SwUpdateMode)
+                            -> Supla::Device::SwUpdate * {
+    EXPECT_STREQ(url, "https://iot.updates.supla.org/check-updates");
+    return nullptr;
+  });
+
+  EXPECT_FALSE(sd.initSwUpdateInstance(Supla::SwUpdateMode::OnlyCheck, 0));
+}
+
+TEST_F(SwUpdateFactoryTests, ClearingFactoryRestoresPlatformDefault) {
+  SwUpdateMock updater;
+  sd.setSwUpdateFactory([](SuplaDeviceClass *,
+                           const char *,
+                           Supla::SwUpdateMode) -> Supla::Device::SwUpdate * {
+    ADD_FAILURE() << "Cleared factory was called";
+    return nullptr;
+  });
+  sd.setSwUpdateFactory(nullptr);
+
+  ASSERT_TRUE(sd.initSwUpdateInstance(Supla::SwUpdateMode::OnlyCheck, 0));
+  EXPECT_CALL(updater, iterate());
+  sd.iterateSwUpdate();
+  sd.iterateSwUpdate();
+}
+
+TEST_F(SwUpdateFactoryTests, FailedOnlyCheckIsNotRetried) {
+  FailingSwUpdate::created = 0;
+  sd.setSwUpdateFactory([](SuplaDeviceClass *device,
+                           const char *url,
+                           Supla::SwUpdateMode mode)
+                            -> Supla::Device::SwUpdate * {
+    return new FailingSwUpdate(device, url, mode);
+  });
+
+  ASSERT_TRUE(sd.initSwUpdateInstance(Supla::SwUpdateMode::OnlyCheck, 0));
+  sd.iterateSwUpdate();  // start
+  sd.iterateSwUpdate();  // iterate -> abort with retryAllowed
+
+  EXPECT_EQ(FailingSwUpdate::created, 1);
+  EXPECT_FALSE(sd.hasSwUpdate());
+}
+
+TEST(SwUpdateNoConfigTests, PeriodicUpdateWithoutConfigIsDeclined) {
+  SimpleTime time;
+  SwUpdateFactoryTestDevice sd;
+  sd.setAutomaticFirmwareUpdateSupported(true);
+  sd.setSwUpdateFactory([](SuplaDeviceClass *,
+                           const char *,
+                           Supla::SwUpdateMode) -> Supla::Device::SwUpdate * {
+    ADD_FAILURE() << "Factory called without OTA policy";
+    return nullptr;
+  });
+
+  EXPECT_FALSE(
+      sd.initSwUpdateInstance(Supla::SwUpdateMode::PeriodicCheckAndUpdate, -1));
+  sd.setAutomaticFirmwareUpdateSupported(false);
+}
+
+}  // namespace
+
 class SwUpdateTests : public ::testing::Test {
  protected:
   SrpcMock srpc;
@@ -316,6 +456,41 @@ TEST_F(SwUpdateTests, FirmwareCheckAndRetriesAreBounded) {
   });
   Supla::messageReceived(nullptr, 0, 0, srpcLayer, 28);
   moveTime(10);
+
+  // An error after discovering a version must still be reported as an error.
+  sd.setSwUpdateFactory([](SuplaDeviceClass *device,
+                           const char *url,
+                           Supla::SwUpdateMode mode)
+                            -> Supla::Device::SwUpdate * {
+    return new FailingSwUpdate(device, url, mode);
+  });
+  EXPECT_CALL(srpc, srpc_getdata(_, _, _))
+      .WillOnce([&calcfgRequest](void *, TsrpcReceivedData *rd, unsigned int) {
+        *rd = {};
+        rd->data.sd_device_calcfg_request = &calcfgRequest;
+        rd->call_id = SUPLA_SD_CALL_DEVICE_CALCFG_REQUEST;
+        return SUPLA_RESULT_TRUE;
+      });
+  EXPECT_CALL(srpc, srpc_ds_async_device_calcfg_result(_, _))
+      .WillOnce([](void *, TDS_DeviceCalCfgResult *result) {
+        EXPECT_EQ(result->Command, SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE);
+        EXPECT_EQ(result->Result, SUPLA_CALCFG_RESULT_TRUE);
+        EXPECT_EQ(result->DataSize, 0);
+        return 0;
+      })
+      .WillOnce([](void *, TDS_DeviceCalCfgResult *result) {
+        EXPECT_EQ(result->Command, SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE);
+        EXPECT_EQ(result->Result, SUPLA_CALCFG_RESULT_TRUE);
+        TCalCfg_FirmwareCheckResult checkResult = {};
+        EXPECT_EQ(result->DataSize, sizeof(checkResult));
+        memcpy(&checkResult, result->Data, sizeof(checkResult));
+        EXPECT_EQ(checkResult.Result, SUPLA_FIRMWARE_CHECK_RESULT_ERROR);
+        EXPECT_STREQ(checkResult.SoftVer, "");
+        return 0;
+      });
+  Supla::messageReceived(nullptr, 0, 0, srpcLayer, 28);
+  moveTime(10);
+  sd.setSwUpdateFactory(nullptr);
 
   // A stale recovery-mode flag must not disable certificate validation for
   // cloud-triggered firmware updates.

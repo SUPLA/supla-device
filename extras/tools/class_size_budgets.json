@@ -56,11 +56,11 @@
       "header": "supla/control/action_trigger.h",
       "limits": {
         "host": 200,
-        "avr": 100,
-        "esp8266": 144,
-        "esp32": 144
+        "avr": 101,
+        "esp8266": 152,
+        "esp32": 152
       },
-      "reason": "Temporary unlock adds one lazy-state pointer; target measurements are host 200, AVR 100, ESP8266/ESP32 144 bytes."
+      "reason": "Temporary unlock keeps a pointer to lazily allocated state. Button mode support widens RuntimeFlags, adding one byte on AVR."
     },
     {
       "name": "Supla::Control::Relay",
@@ -511,10 +511,10 @@
       "name": "SuplaDeviceClass",
       "header": "SuplaDevice.h",
       "limits": {
-        "host": 224,
-        "avr": 115,
-        "esp8266": 152,
-        "esp32": 152
+        "host": 232,
+        "avr": 118,
+        "esp8266": 156,
+        "esp32": 156
       }
     },
     {

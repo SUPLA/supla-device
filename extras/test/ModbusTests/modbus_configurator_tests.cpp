@@ -19,7 +19,16 @@ using ::testing::StrEq;
 
 namespace {
 
-class TestConfigurator : public Supla::Modbus::Configurator {};
+class TestConfigurator : public Supla::Modbus::Configurator {
+ public:
+  void loadUnvalidatedConfig(const Supla::Modbus::Config &value) {
+    config = value;
+  }
+
+  void loadPropertiesForTest(const Supla::Modbus::ConfigProperties &value) {
+    properties = value;
+  }
+};
 
 Supla::Modbus::ConfigProperties allProperties() {
   Supla::Modbus::ConfigProperties properties;
@@ -47,7 +56,6 @@ Supla::Modbus::Config enabledRtuConfig() {
   config.serial.mode = Supla::Modbus::ModeSerial::Rtu;
   config.serial.baudrate = 57600;
   config.serial.stopBits = Supla::Modbus::SerialStopBits::Two;
-  config.network.mode = Supla::Modbus::ModeNetwork::Tcp;
   config.network.port = 1502;
   return config;
 }
@@ -136,7 +144,7 @@ TEST(ModbusConfiguratorTests, ExistingSlaveRtuConfigIsLoadedWithoutRewrite) {
   EXPECT_EQ(configurator.getConfig().slaveTimeoutMs, stored.slaveTimeoutMs);
   EXPECT_FALSE(configurator.isModbusDisabled());
   EXPECT_TRUE(configurator.isSerialModeEnabled());
-  EXPECT_TRUE(configurator.isNetworkModeEnabled());
+  EXPECT_FALSE(configurator.isNetworkModeEnabled());
 }
 
 TEST(ModbusConfiguratorTests,
@@ -210,8 +218,8 @@ TEST(ModbusConfiguratorTests, FactoryResetIsFollowedBySafeDefault) {
 TEST(ModbusConfiguratorTests, CloudConfigCanBeAppliedAfterFactoryReset) {
   NiceMock<ConfigMock> storage;
   TestConfigurator configurator;
-  const auto properties = allProperties();
-  configurator.setProperties(properties);
+  configurator.setProperties(allProperties());
+  const auto properties = configurator.getProperties();
   auto cloudConfig = enabledRtuConfig();
   cloudConfig.network.mode = Supla::Modbus::ModeNetwork::Disabled;
   cloudConfig.network.port = 502;
@@ -295,4 +303,294 @@ TEST(ModbusConfiguratorTests, CloudConfigCanBeAppliedAfterFactoryReset) {
   EXPECT_EQ(configurator.getConfig(), cloudConfig);
   EXPECT_FALSE(configurator.isModbusDisabled());
   EXPECT_TRUE(configurator.isSerialModeEnabled());
+}
+
+TEST(ModbusConfiguratorTests, UnsupportedStopBitsFallBackToSupportedValue) {
+  auto properties = allProperties();
+  properties.stopBits.oneAndHalf = 0;
+  properties.stopBits.two = 0;
+  auto config = enabledRtuConfig();
+
+  EXPECT_TRUE(config.validateAndFix(properties));
+  EXPECT_EQ(config.serial.stopBits, Supla::Modbus::SerialStopBits::One);
+}
+
+TEST(ModbusConfiguratorTests, InvalidStopBitsFallBackToSupportedValue) {
+  auto config = enabledRtuConfig();
+  config.serial.stopBits = static_cast<Supla::Modbus::SerialStopBits>(0xFF);
+
+  EXPECT_TRUE(config.validateAndFix(allProperties()));
+  EXPECT_TRUE(config.serial.stopBits == Supla::Modbus::SerialStopBits::One ||
+              config.serial.stopBits ==
+                  Supla::Modbus::SerialStopBits::OneAndHalf ||
+              config.serial.stopBits == Supla::Modbus::SerialStopBits::Two);
+}
+
+TEST(ModbusConfiguratorTests, InvalidStoredRoleDoesNotEnableModbus) {
+  NiceMock<ConfigMock> storage;
+  TestConfigurator configurator;
+  configurator.setProperties(allProperties());
+  auto stored = enabledRtuConfig();
+  stored.role = static_cast<Supla::Modbus::Role>(0xFF);
+  ON_CALL(storage, getBlob(StrEq(Supla::ConfigTag::ModbusCfgTag), _, _))
+      .WillByDefault(Invoke([&stored](const char *, char *blob, size_t size) {
+        copyConfigToBlob(stored, blob, size);
+        return true;
+      }));
+
+  configurator.onLoadConfig(nullptr);
+
+  EXPECT_EQ(configurator.getConfig().role, Supla::Modbus::Role::NotSet);
+  EXPECT_TRUE(configurator.isModbusDisabled());
+  EXPECT_FALSE(configurator.isSerialModeEnabled());
+  EXPECT_FALSE(configurator.isNetworkModeEnabled());
+}
+
+TEST(ModbusConfiguratorTests, InvalidStoredSerialModeDoesNotEnableSerial) {
+  auto config = enabledRtuConfig();
+  config.serial.mode = static_cast<Supla::Modbus::ModeSerial>(0xFF);
+
+  EXPECT_TRUE(config.validateAndFix(allProperties()));
+  EXPECT_EQ(config.serial.mode, Supla::Modbus::ModeSerial::Disabled);
+}
+
+TEST(ModbusConfiguratorTests, InvalidStoredNetworkModeDoesNotEnableNetwork) {
+  auto config = enabledRtuConfig();
+  config.network.mode = static_cast<Supla::Modbus::ModeNetwork>(0xFF);
+
+  EXPECT_TRUE(config.validateAndFix(allProperties()));
+  EXPECT_EQ(config.network.mode, Supla::Modbus::ModeNetwork::Disabled);
+}
+
+TEST(ModbusConfiguratorTests,
+     CloudNetworkModeIsDisabledAndPortRemainsInactive) {
+  NiceMock<ConfigMock> storage;
+  TestConfigurator configurator;
+  Supla::Modbus::ConfigProperties properties;
+  properties.protocol.slave = 1;
+  properties.protocol.tcp = 1;
+  properties.stopBits.one = 1;
+  configurator.setProperties(properties);
+  Supla::Modbus::Config stored;
+  stored.role = Supla::Modbus::Role::Slave;
+  ON_CALL(storage, getBlob(StrEq(Supla::ConfigTag::ModbusCfgTag), _, _))
+      .WillByDefault(Invoke([&stored](const char *, char *blob, size_t size) {
+        copyConfigToBlob(stored, blob, size);
+        return true;
+      }));
+  configurator.onLoadConfig(nullptr);
+
+  EXPECT_CALL(storage, setBlob(StrEq(Supla::ConfigTag::ModbusCfgTag), _, _))
+      .WillOnce(Invoke([&stored](const char *, const char *blob, size_t size) {
+        EXPECT_EQ(size, sizeof(stored));
+        if (size != sizeof(stored)) {
+          return false;
+        }
+        std::memcpy(&stored, blob, sizeof(stored));
+        return true;
+      }));
+
+  TSDS_SetDeviceConfig packet = {};
+  packet.EndOfDataFlag = 1;
+  packet.AvailableFields = SUPLA_DEVICE_CONFIG_FIELD_MODBUS;
+  packet.Fields = SUPLA_DEVICE_CONFIG_FIELD_MODBUS;
+  packet.ConfigSize = sizeof(TDeviceConfig_Modbus);
+  auto *modbus = reinterpret_cast<TDeviceConfig_Modbus *>(packet.Config);
+  modbus->Role = MODBUS_ROLE_SLAVE;
+  modbus->ModbusAddress = 1;
+  modbus->SerialConfig.Mode = MODBUS_SERIAL_MODE_DISABLED;
+  modbus->SerialConfig.Baudrate = 19200;
+  modbus->SerialConfig.StopBits = MODBUS_SERIAL_STOP_BITS_ONE;
+  modbus->NetworkConfig.Mode = MODBUS_NETWORK_MODE_TCP;
+  modbus->NetworkConfig.Port = 1502;
+  modbus->Properties.Protocol.Slave = 1;
+  modbus->Properties.StopBits.One = 1;
+
+  Supla::Device::RemoteDeviceConfig remoteConfig;
+  Supla::Device::RemoteDeviceConfig::ClearResendAttemptsCounter();
+  remoteConfig.processConfig(&packet);
+
+  EXPECT_EQ(remoteConfig.getResultCode(), SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(stored.network.mode, Supla::Modbus::ModeNetwork::Disabled);
+  EXPECT_EQ(stored.network.port, 1502);
+  EXPECT_EQ(configurator.getConfig().network.mode,
+            Supla::Modbus::ModeNetwork::Disabled);
+  EXPECT_EQ(configurator.getConfig().network.port, 1502);
+  EXPECT_FALSE(configurator.isNetworkModeEnabled());
+  EXPECT_TRUE(configurator.isModbusDisabled());
+  EXPECT_TRUE(remoteConfig.isSetDeviceConfigRequired());
+}
+
+TEST(ModbusConfiguratorTests, NetworkProtocolsAreNotAdvertised) {
+  TestConfigurator configurator;
+  configurator.setProperties(allProperties());
+
+  EXPECT_FALSE(configurator.getProperties().protocol.tcp);
+  EXPECT_FALSE(configurator.getProperties().protocol.udp);
+  EXPECT_TRUE(configurator.getProperties().protocol.rtu);
+  EXPECT_TRUE(configurator.getProperties().protocol.ascii);
+}
+
+TEST(ModbusConfiguratorTests, NetworkModeValidationUsesProtocolProperties) {
+  for (auto mode : {Supla::Modbus::ModeNetwork::Tcp,
+                    Supla::Modbus::ModeNetwork::Udp}) {
+    auto config = enabledRtuConfig();
+    config.network.mode = mode;
+
+    EXPECT_FALSE(config.validateAndFix(allProperties()));
+    EXPECT_EQ(config.network.mode, mode);
+
+    auto properties = allProperties();
+    // The other network protocol must not authorize the requested one.
+    properties.protocol.tcp = mode != Supla::Modbus::ModeNetwork::Tcp;
+    properties.protocol.udp = mode != Supla::Modbus::ModeNetwork::Udp;
+    EXPECT_TRUE(config.validateAndFix(properties));
+    EXPECT_EQ(config.network.mode, Supla::Modbus::ModeNetwork::Disabled);
+    EXPECT_EQ(config.serial.mode, Supla::Modbus::ModeSerial::Rtu);
+    EXPECT_FALSE(config.validateAndFix(properties));
+  }
+}
+
+TEST(ModbusConfiguratorTests, NetworkRuntimeUsesProtocolProperties) {
+  TestConfigurator configurator;
+  for (auto mode : {Supla::Modbus::ModeNetwork::Tcp,
+                    Supla::Modbus::ModeNetwork::Udp}) {
+    auto config = enabledRtuConfig();
+    config.serial.mode = Supla::Modbus::ModeSerial::Disabled;
+    config.network.mode = mode;
+    configurator.loadUnvalidatedConfig(config);
+
+    // Bypass the public setter only to verify the prepared network behavior.
+    configurator.loadPropertiesForTest(allProperties());
+    EXPECT_TRUE(configurator.isNetworkModeEnabled());
+    EXPECT_FALSE(configurator.isModbusDisabled());
+
+    configurator.setProperties(allProperties());
+    EXPECT_FALSE(configurator.isNetworkModeEnabled());
+    EXPECT_TRUE(configurator.isModbusDisabled());
+  }
+}
+
+TEST(ModbusConfiguratorTests, NetworkRuntimeFailsafeDoesNotRequireValidation) {
+  TestConfigurator configurator;
+  for (auto mode : {Supla::Modbus::ModeNetwork::Tcp,
+                    Supla::Modbus::ModeNetwork::Udp}) {
+    auto config = enabledRtuConfig();
+    config.serial.mode = Supla::Modbus::ModeSerial::Disabled;
+    config.network.mode = mode;
+    configurator.loadUnvalidatedConfig(config);
+
+    EXPECT_FALSE(configurator.isNetworkModeEnabled());
+    EXPECT_TRUE(configurator.isModbusDisabled());
+  }
+}
+
+TEST(ModbusConfiguratorTests, StopBitsFallbackUsesAnAvailableVariant) {
+  for (auto supported : {Supla::Modbus::SerialStopBits::OneAndHalf,
+                         Supla::Modbus::SerialStopBits::Two}) {
+    auto properties = allProperties();
+    properties.stopBits.one = 0;
+    properties.stopBits.oneAndHalf =
+        supported == Supla::Modbus::SerialStopBits::OneAndHalf;
+    properties.stopBits.two = supported == Supla::Modbus::SerialStopBits::Two;
+    auto config = enabledRtuConfig();
+    config.serial.stopBits = Supla::Modbus::SerialStopBits::One;
+
+    EXPECT_TRUE(config.validateAndFix(properties));
+    EXPECT_EQ(config.serial.stopBits, supported);
+    EXPECT_FALSE(config.validateAndFix(properties));
+  }
+}
+
+TEST(ModbusConfiguratorTests,
+     NoSupportedStopBitsDisablesSerialAndIsIdempotent) {
+  auto properties = allProperties();
+  properties.stopBits.one = 0;
+  properties.stopBits.oneAndHalf = 0;
+  properties.stopBits.two = 0;
+  auto config = enabledRtuConfig();
+
+  EXPECT_TRUE(config.validateAndFix(properties));
+  EXPECT_EQ(config.serial.mode, Supla::Modbus::ModeSerial::Disabled);
+  EXPECT_FALSE(config.validateAndFix(properties));
+}
+
+TEST(ModbusConfiguratorTests, StoredNetworkModeIsDisabledAndCorrectionIsSaved) {
+  for (auto mode : {Supla::Modbus::ModeNetwork::Tcp,
+                    Supla::Modbus::ModeNetwork::Udp}) {
+    NiceMock<ConfigMock> storage;
+    TestConfigurator configurator;
+    configurator.setProperties(allProperties());
+    auto stored = enabledRtuConfig();
+    stored.network.mode = mode;
+    ON_CALL(storage, getBlob(StrEq(Supla::ConfigTag::ModbusCfgTag), _, _))
+        .WillByDefault(Invoke([&stored](const char *, char *blob, size_t size) {
+          copyConfigToBlob(stored, blob, size);
+          return true;
+        }));
+    EXPECT_CALL(storage, setBlob(StrEq(Supla::ConfigTag::ModbusCfgTag), _, _))
+        .WillOnce(Invoke([&stored](const char *,
+                                  const char *blob,
+                                  size_t size) {
+          EXPECT_EQ(size, sizeof(stored));
+          if (size != sizeof(stored)) {
+            return false;
+          }
+          std::memcpy(&stored, blob, sizeof(stored));
+          return true;
+        }));
+    EXPECT_CALL(storage, saveWithDelay(5000)).Times(1);
+
+    configurator.onLoadConfig(nullptr);
+    configurator.onLoadConfig(nullptr);
+
+    EXPECT_EQ(stored.network.mode, Supla::Modbus::ModeNetwork::Disabled);
+    EXPECT_EQ(stored.network.port, 1502);
+    EXPECT_EQ(stored.serial.mode, Supla::Modbus::ModeSerial::Rtu);
+    EXPECT_FALSE(configurator.isNetworkModeEnabled());
+    EXPECT_TRUE(configurator.isSerialModeEnabled());
+  }
+}
+
+TEST(ModbusConfiguratorTests, InvalidCloudPortDoesNotReplaceStoredPort) {
+  for (unsigned int port : {0U, 65536U, 0xFFFFFFFFU}) {
+    SCOPED_TRACE(port);
+    NiceMock<ConfigMock> storage;
+    TestConfigurator configurator;
+    Supla::Modbus::ConfigProperties properties;
+    properties.protocol.slave = 1;
+    properties.stopBits.one = 1;
+    configurator.setProperties(properties);
+    Supla::Modbus::Config stored;
+    stored.role = Supla::Modbus::Role::Slave;
+    stored.network.port = 2502;
+    ON_CALL(storage, getBlob(StrEq(Supla::ConfigTag::ModbusCfgTag), _, _))
+        .WillByDefault(Invoke([&stored](const char *, char *blob, size_t size) {
+          copyConfigToBlob(stored, blob, size);
+          return true;
+        }));
+    expectNoConfigWrite(storage);
+    configurator.onLoadConfig(nullptr);
+
+    TSDS_SetDeviceConfig packet = {};
+    packet.EndOfDataFlag = 1;
+    packet.AvailableFields = SUPLA_DEVICE_CONFIG_FIELD_MODBUS;
+    packet.Fields = SUPLA_DEVICE_CONFIG_FIELD_MODBUS;
+    packet.ConfigSize = sizeof(TDeviceConfig_Modbus);
+    auto *modbus = reinterpret_cast<TDeviceConfig_Modbus *>(packet.Config);
+    modbus->Role = MODBUS_ROLE_SLAVE;
+    modbus->ModbusAddress = 1;
+    modbus->SerialConfig.Baudrate = 19200;
+    modbus->NetworkConfig.Port = port;
+    modbus->Properties.Protocol.Slave = 1;
+    modbus->Properties.StopBits.One = 1;
+
+    Supla::Device::RemoteDeviceConfig remoteConfig;
+    Supla::Device::RemoteDeviceConfig::ClearResendAttemptsCounter();
+    remoteConfig.processConfig(&packet);
+
+    EXPECT_TRUE(remoteConfig.isSetDeviceConfigRequired());
+    EXPECT_EQ(configurator.getConfig().network.port, 2502);
+    EXPECT_FALSE(configurator.isNetworkModeEnabled());
+  }
 }

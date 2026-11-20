@@ -82,6 +82,183 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
         }, "form-field sensitive");
       });
     };
+    const auto sendSuplaFields = [&]() {
+      sender->formField([&]() {
+        sender->labelFor("svr", "Server");
+        auto input = sender->voidTag("input");
+        input.attr("maxlength", 64)
+            .attr("placeholder",
+                  "Custom server (leave empty for official servers)")
+            .attr("name", "svr")
+            .attr("id", "svr");
+        if (cfg->getSuplaServer(buf)) {
+          input.attr("value", buf);
+        }
+        input.finish();
+      });
+
+      sender->formField([&]() {
+        sender->labelFor("eml", "E-mail");
+        auto input = sender->voidTag("input");
+        input.attr("maxlength", 255).attr("name", "eml").attr("id", "eml");
+        if (cfg->getEmail(buf)) {
+          input.attr("value", buf);
+        }
+        input.finish();
+      }, "form-field sensitive");
+
+      sender->sendStatic(kSecurityScript, sizeof(kSecurityScript) - 1);
+
+      uint8_t securityLevel = 0;
+      cfg->getUInt8("security_level", &securityLevel);
+      sender->formField([&]() {
+        sender->labelFor("sec", "Certificate verification");
+        auto select = sender->selectTag("sec", "sec");
+        select.attr("onchange", "securityChange();").body([&]() {
+          sender->selectOption(0, "Supla CA", securityLevel == 0);
+          sender->selectOption(1, "Custom CA", securityLevel == 1);
+          sender->selectOption(2,
+                               "Skip certificate verification (INSECURE)",
+                               securityLevel == 2);
+        });
+      });
+
+      sender->toggleBox("custom_ca_input", securityLevel == 1, [&]() {
+        sender->formField([&]() {
+          sender->labelFor(
+              "custom_ca",
+              "Custom CA (paste here CA certificate in PEM format)");
+          auto textarea = sender->tag("textarea");
+          textarea.attr("name", "custom_ca")
+              .attr("id", "custom_ca")
+              .attr("maxlength", 4000)
+              .close();
+          char* bufCert = new char[4000];
+          memset(bufCert, 0, 4000);
+          if (cfg->getCustomCA(bufCert, 4000)) {
+            textarea.body(bufCert);
+          } else {
+            textarea.body("");
+          }
+          delete[] bufCert;
+        });
+      });
+    };
+
+    const auto sendMqttNumber = [&](const char *key, const char *label,
+                                    const NumericInputSpec &spec) {
+      const auto sendInput = [&]() {
+        sender->numberInput(key, spec);
+      };
+      if (concurrent) {
+        sender->formField([&]() {
+          sender->labelFor(key, label);
+          sendInput();
+        });
+      } else {
+        sendInput();
+      }
+    };
+
+    const auto sendMqttFields = [&]() {
+      sender->formField([&]() {
+        sender->labelFor("mqttserver", "Server");
+        auto input = sender->voidTag("input");
+        input.attr("maxlength", 64)
+            .attr("name", "mqttserver")
+            .attr("id", "mqttserver");
+        if (cfg->getMqttServer(buf)) {
+          input.attr("value", buf);
+        }
+        input.finish();
+      });
+
+      sender->sendStatic(kMqttTlsScript, sizeof(kMqttTlsScript) - 1);
+
+      sender->formField([&]() {
+        sender->labelFor("mqtttls", "TLS");
+        auto select = sender->selectTag("mqtttls", "mqtttls");
+        select.attr("onchange", "mqttTlsChange();").body([&]() {
+          sender->selectOption(
+              0, "NO (INSECURE)", !cfg->isMqttTlsEnabled());
+          sender->selectOption(1, "YES", cfg->isMqttTlsEnabled());
+        });
+      });
+
+      sender->formField([&]() {
+        sender->labelFor("mqttverify", "Broker certificate verification");
+        auto select = sender->selectTag("mqttverify", "mqttverify");
+        select.attr("onchange", "mqttVerificationChange();").body([&]() {
+          bool verify = cfg->isMqttBrokerVerificationEnabled();
+          sender->selectOption(1, "YES", verify);
+          sender->selectOption(
+              0, "NO (INSECURE, LEGACY)", !verify);
+        });
+      });
+
+      sendMqttCA();
+
+      sendMqttNumber("mqttport", "Port", {1, 65535,
+                                           cfg->getMqttServerPort(), 1});
+
+      sender->formField([&]() {
+        sender->labelFor("mqttauth", "Auth");
+        auto select = sender->selectTag("mqttauth", "mqttauth");
+        select.attr("onchange", "mAuthChanged();");
+        select.body([&]() {
+          sender->selectOption(0, "NO", !cfg->isMqttAuthEnabled());
+          sender->selectOption(1, "YES", cfg->isMqttAuthEnabled());
+        });
+      });
+
+      sender->formField([&]() {
+        sender->labelFor("mqttuser", "Username");
+        auto input = sender->voidTag("input");
+        input.attr("maxlength", 255)
+            .attr("name", "mqttuser")
+            .attr("id", "mqttuser");
+        if (cfg->getMqttUser(buf)) {
+          input.attr("value", buf);
+        }
+        input.finish();
+      }, "form-field sensitive");
+
+      sender->formField([&]() {
+        sender->labelFor("mqttpasswd", "Password (required, max 255)");
+        auto input = sender->voidTag("input");
+        input.attr("maxlength", 255);
+        if (concurrent) {
+          input.attr("type", "password");
+        }
+        input.attr("name", "mqttpasswd")
+            .attr("id", "mqttpasswd")
+            .finish();
+      }, "form-field sensitive");
+
+      sender->formField([&]() {
+        sender->labelFor("mqttprefix", "Topic prefix");
+        auto input = sender->voidTag("input");
+        input.attr("maxlength", 48)
+            .attr("name", "mqttprefix")
+            .attr("id", "mqttprefix");
+        if (cfg->getMqttPrefix(buf)) {
+          input.attr("value", buf);
+        }
+        input.finish();
+      });
+
+      sendMqttNumber("mqttqos", "QoS", {0, 2, cfg->getMqttQos(), 1});
+
+      sender->formField([&]() {
+        sender->labelFor("mqttretain", "Retain");
+        auto select = sender->selectTag("mqttretain", "mqttretain");
+        select.body([&]() {
+          sender->selectOption(0, "NO", !cfg->isMqttRetainEnabled());
+          sender->selectOption(1, "YES", cfg->isMqttRetainEnabled());
+        });
+      });
+    };
+
     if (!concurrent && addMqtt) {
       sender->tag("div").attr("class", "box").body([&]() {
         sender->formField([&]() {
@@ -110,66 +287,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
         });
         sender->toggleBox("proto_supla", true, [&]() {
           // Parameters for Supla protocol
-          sender->formField([&]() {
-            sender->labelFor("svr", "Server");
-            auto input = sender->voidTag("input");
-            input.attr("maxlength", 64)
-                .attr("placeholder",
-                      "Custom server (leave empty for official servers)")
-                .attr("name", "svr")
-                .attr("id", "svr");
-            if (cfg->getSuplaServer(buf)) {
-              input.attr("value", buf);
-            }
-            input.finish();
-          });
-
-          sender->formField([&]() {
-            sender->labelFor("eml", "E-mail");
-            auto input = sender->voidTag("input");
-            input.attr("maxlength", 255).attr("name", "eml").attr("id", "eml");
-            if (cfg->getEmail(buf)) {
-              input.attr("value", buf);
-            }
-            input.finish();
-          }, "form-field sensitive");
-
-          sender->sendStatic(kSecurityScript, sizeof(kSecurityScript) - 1);
-
-          uint8_t securityLevel = 0;
-          cfg->getUInt8("security_level", &securityLevel);
-          sender->formField([&]() {
-            sender->labelFor("sec", "Certificate verification");
-            auto select = sender->selectTag("sec", "sec");
-            select.attr("onchange", "securityChange();").body([&]() {
-              sender->selectOption(0, "Supla CA", securityLevel == 0);
-              sender->selectOption(1, "Custom CA", securityLevel == 1);
-              sender->selectOption(2,
-                                   "Skip certificate verification (INSECURE)",
-                                   securityLevel == 2);
-            });
-          });
-
-          sender->toggleBox("custom_ca_input", securityLevel == 1, [&]() {
-            sender->formField([&]() {
-              sender->labelFor(
-                  "custom_ca",
-                  "Custom CA (paste here CA certificate in PEM format)");
-              auto textarea = sender->tag("textarea");
-              textarea.attr("name", "custom_ca")
-                  .attr("id", "custom_ca")
-                  .attr("maxlength", 4000)
-                  .close();
-              char* bufCert = new char[4000];
-              memset(bufCert, 0, 4000);
-              if (cfg->getCustomCA(bufCert, 4000)) {
-                textarea.body(bufCert);
-              } else {
-                textarea.body("");
-              }
-              delete[] bufCert;
-            });
-          });
+          sendSuplaFields();
         });
       });
     } else {
@@ -179,70 +297,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
           .body([&]() {
             sender->tag("h3").body("Supla Settings");
             // Parameters for Supla protocol
-            sender->formField([&]() {
-              sender->labelFor("svr", "Server");
-              auto input = sender->voidTag("input");
-              input.attr("maxlength", 64)
-                  .attr("placeholder",
-                        "Custom server (leave empty for official servers)")
-                  .attr("name", "svr")
-                  .attr("id", "svr");
-              char buf[512];
-              if (cfg->getSuplaServer(buf)) {
-                input.attr("value", buf);
-              }
-              input.finish();
-            });
-
-            sender->formField([&]() {
-              sender->labelFor("eml", "E-mail");
-              auto input = sender->voidTag("input");
-              input.attr("maxlength", 255)
-                  .attr("name", "eml")
-                  .attr("id", "eml");
-              char buf[512];
-              if (cfg->getEmail(buf)) {
-                input.attr("value", buf);
-              }
-              input.finish();
-            }, "form-field sensitive");
-
-            sender->sendStatic(kSecurityScript, sizeof(kSecurityScript) - 1);
-
-            uint8_t securityLevel = 0;
-            cfg->getUInt8("security_level", &securityLevel);
-            sender->formField([&]() {
-              sender->labelFor("sec", "Certificate verification");
-              auto select = sender->selectTag("sec", "sec");
-              select.attr("onchange", "securityChange();").body([&]() {
-                sender->selectOption(0, "Supla CA", securityLevel == 0);
-                sender->selectOption(1, "Custom CA", securityLevel == 1);
-                sender->selectOption(2,
-                                     "Skip certificate verification (INSECURE)",
-                                     securityLevel == 2);
-              });
-            });
-
-            sender->toggleBox("custom_ca_input", securityLevel == 1, [&]() {
-              sender->formField([&]() {
-                sender->labelFor(
-                    "custom_ca",
-                    "Custom CA (paste here CA certificate in PEM format)");
-                auto textarea = sender->tag("textarea");
-                textarea.attr("name", "custom_ca")
-                    .attr("id", "custom_ca")
-                    .attr("maxlength", 4000)
-                    .close();
-                char* bufCert = new char[4000];
-                memset(bufCert, 0, 4000);
-                if (cfg->getCustomCA(bufCert, 4000)) {
-                  textarea.body(bufCert);
-                } else {
-                  textarea.body("");
-                }
-                delete[] bufCert;
-              });
-            });
+            sendSuplaFields();
           });
     }
 
@@ -261,227 +316,13 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
             });
           });
           sender->tag("div").attr("class", "mqtt").body([&]() {
-            // Parameters for MQTT protocol
-            sender->formField([&]() {
-              sender->labelFor("mqttserver", "Server");
-              auto input = sender->voidTag("input");
-              input.attr("maxlength", 64)
-                  .attr("name", "mqttserver")
-                  .attr("id", "mqttserver");
-              if (cfg->getMqttServer(buf)) {
-                input.attr("value", buf);
-              }
-              input.finish();
-            });
-
-            sender->sendStatic(kMqttTlsScript, sizeof(kMqttTlsScript) - 1);
-
-            sender->formField([&]() {
-              sender->labelFor("mqtttls", "TLS");
-              auto select = sender->selectTag("mqtttls", "mqtttls");
-              select.attr("onchange", "mqttTlsChange();").body([&]() {
-                sender->selectOption(
-                    0, "NO (INSECURE)", !cfg->isMqttTlsEnabled());
-                sender->selectOption(1, "YES", cfg->isMqttTlsEnabled());
-              });
-            });
-
-            sender->formField([&]() {
-              sender->labelFor("mqttverify", "Broker certificate verification");
-              auto select = sender->selectTag("mqttverify", "mqttverify");
-              select.attr("onchange", "mqttVerificationChange();").body([&]() {
-                bool verify = cfg->isMqttBrokerVerificationEnabled();
-                sender->selectOption(1, "YES", verify);
-                sender->selectOption(
-                    0, "NO (INSECURE, LEGACY)", !verify);
-              });
-            });
-
-            sendMqttCA();
-
-            sender->formField([&]() {
-              sender->labelFor("mqttport", "Port");
-              sender->numberInput("mqttport",
-                                  {
-                                      .min = 1,
-                                      .max = 65535,
-                                      .value = cfg->getMqttServerPort(),
-                                      .step = 1,
-                                  });
-            });
-
-            sender->formField([&]() {
-              sender->labelFor("mqttauth", "Auth");
-              auto select = sender->selectTag("mqttauth", "mqttauth");
-              select.attr("onchange", "mAuthChanged();");
-              select.body([&]() {
-                sender->selectOption(0, "NO", !cfg->isMqttAuthEnabled());
-                sender->selectOption(1, "YES", cfg->isMqttAuthEnabled());
-              });
-            });
-
-            sender->formField([&]() {
-              sender->labelFor("mqttuser", "Username");
-              auto input = sender->voidTag("input");
-              input.attr("maxlength", 255)
-                  .attr("name", "mqttuser")
-                  .attr("id", "mqttuser");
-              if (cfg->getMqttUser(buf)) {
-                input.attr("value", buf);
-              }
-              input.finish();
-            }, "form-field sensitive");
-
-            sender->formField([&]() {
-              sender->labelFor("mqttpasswd", "Password (required, max 255)");
-              auto input = sender->voidTag("input");
-              input.attr("maxlength", 255)
-                  .attr("type", "password")
-                  .attr("name", "mqttpasswd")
-                  .attr("id", "mqttpasswd")
-                  .finish();
-            }, "form-field sensitive");
-
-            sender->formField([&]() {
-              sender->labelFor("mqttprefix", "Topic prefix");
-              auto input = sender->voidTag("input");
-              input.attr("maxlength", 48)
-                  .attr("name", "mqttprefix")
-                  .attr("id", "mqttprefix");
-              if (cfg->getMqttPrefix(buf)) {
-                input.attr("value", buf);
-              }
-              input.finish();
-            });
-
-            sender->formField([&]() {
-              sender->labelFor("mqttqos", "QoS");
-              sender->numberInput("mqttqos",
-                                  {
-                                      .min = 0,
-                                      .max = 2,
-                                      .value = cfg->getMqttQos(),
-                                      .step = 1,
-                                  });
-            });
-
-            sender->formField([&]() {
-              sender->labelFor("mqttretain", "Retain");
-              auto select = sender->selectTag("mqttretain", "mqttretain");
-              select.body([&]() {
-                sender->selectOption(0, "NO", !cfg->isMqttRetainEnabled());
-                sender->selectOption(1, "YES", cfg->isMqttRetainEnabled());
-              });
-            });
+            sendMqttFields();
           });
         });
       } else {
         sender->tag("div").attr("class", "box mqtt").body([&]() {
           sender->tag("h3").body("MQTT Settings");
-          // Parameters for MQTT protocol
-          sender->formField([&]() {
-            sender->labelFor("mqttserver", "Server");
-            auto input = sender->voidTag("input");
-            input.attr("maxlength", 64)
-                .attr("name", "mqttserver")
-                .attr("id", "mqttserver");
-            if (cfg->getMqttServer(buf)) {
-              input.attr("value", buf);
-            }
-            input.finish();
-          });
-
-          sender->sendStatic(kMqttTlsScript, sizeof(kMqttTlsScript) - 1);
-
-          sender->formField([&]() {
-            sender->labelFor("mqtttls", "TLS");
-            auto select = sender->selectTag("mqtttls", "mqtttls");
-            select.attr("onchange", "mqttTlsChange();").body([&]() {
-              sender->selectOption(
-                  0, "NO (INSECURE)", !cfg->isMqttTlsEnabled());
-              sender->selectOption(1, "YES", cfg->isMqttTlsEnabled());
-            });
-          });
-
-          sender->formField([&]() {
-            sender->labelFor("mqttverify", "Broker certificate verification");
-            auto select = sender->selectTag("mqttverify", "mqttverify");
-            select.attr("onchange", "mqttVerificationChange();").body([&]() {
-              bool verify = cfg->isMqttBrokerVerificationEnabled();
-              sender->selectOption(1, "YES", verify);
-              sender->selectOption(0, "NO (INSECURE, LEGACY)", !verify);
-            });
-          });
-
-          sendMqttCA();
-
-          sender->numberInput("mqttport",
-                              {
-                                  .min = 1,
-                                  .max = 65535,
-                                  .value = cfg->getMqttServerPort(),
-                                  .step = 1,
-                              });
-
-          sender->formField([&]() {
-            sender->labelFor("mqttauth", "Auth");
-            auto select = sender->selectTag("mqttauth", "mqttauth");
-            select.attr("onchange", "mAuthChanged();");
-            select.body([&]() {
-              sender->selectOption(0, "NO", !cfg->isMqttAuthEnabled());
-              sender->selectOption(1, "YES", cfg->isMqttAuthEnabled());
-            });
-          });
-
-          sender->formField([&]() {
-            sender->labelFor("mqttuser", "Username");
-            auto input = sender->voidTag("input");
-            input.attr("maxlength", 255)
-                .attr("name", "mqttuser")
-                .attr("id", "mqttuser");
-            if (cfg->getMqttUser(buf)) {
-              input.attr("value", buf);
-            }
-            input.finish();
-          }, "form-field sensitive");
-
-          sender->formField([&]() {
-            sender->labelFor("mqttpasswd", "Password (required, max 255)");
-            auto input = sender->voidTag("input");
-            input.attr("maxlength", 255)
-                .attr("name", "mqttpasswd")
-                .attr("id", "mqttpasswd")
-                .finish();
-          }, "form-field sensitive");
-
-          sender->formField([&]() {
-            sender->labelFor("mqttprefix", "Topic prefix");
-            auto input = sender->voidTag("input");
-            input.attr("maxlength", 48)
-                .attr("name", "mqttprefix")
-                .attr("id", "mqttprefix");
-            if (cfg->getMqttPrefix(buf)) {
-              input.attr("value", buf);
-            }
-            input.finish();
-          });
-
-          sender->numberInput("mqttqos",
-                              {
-                                  .min = 0,
-                                  .max = 2,
-                                  .value = cfg->getMqttQos(),
-                                  .step = 1,
-                              });
-
-          sender->formField([&]() {
-            sender->labelFor("mqttretain", "Retain");
-            auto select = sender->selectTag("mqttretain", "mqttretain");
-            select.body([&]() {
-              sender->selectOption(0, "NO", !cfg->isMqttRetainEnabled());
-              sender->selectOption(1, "YES", cfg->isMqttRetainEnabled());
-            });
-          });
+          sendMqttFields();
         });
       }
     }

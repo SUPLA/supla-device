@@ -1,5 +1,67 @@
 # CHANGELOG.md
 
+# 26.11 (2026-11-18 weekly schedules, ActionTrigger and platform improvements)
+
+### Breaking changes
+- Linux MQTT sources and outputs require an explicit `mqtt.use_ssl` boolean. TLS connections also require `mqtt.verify_ca`. Port `8883` no longer enables TLS by itself. See [Linux MQTT broker configuration](extras/examples/linux/README.md#mqtt-broker-connection).
+- Remove explicit references to the old `extras/esp-idf/esp-modbus` component directory in ESP-IDF projects. The `supla-modbus` adapter now resolves `espressif/esp-modbus` through Component Manager. See [ESP-IDF dependency migration](docs/quickstart/esp-idf.md#upgrading-to-2611).
+
+### Generic
+- Track unsent channel configuration changes by type and retain them until acknowledgement. Reset retries for new edits, preserve the requested type in SRPC replies, and bound automatic corrections of rejected weekly schedules.
+- Allow `Notification::RegisterNotification()` after startup. Each successful registration submits the configurations present before the device sends its channel list. `Send()` and `SendF()` return `false` for configurations still waiting for submission.
+- Flush pending settings on software restart and Linux shutdown, report save failures, and retry failed delayed configuration writes.
+- Add fixed state-storage factories for simple, byte wear-levelled and sector wear-levelled storage. Rewrite the requested data if `Storage::updateStorage()` gets a short read.
+- Manage custom SRPC CA certificates across reconnects and configuration changes, and encode special characters in autodiscovery email addresses.
+- Streamline startup, networking and SRPC diagnostics with scoped indentation, compact packet summaries and verbose logging for packet and certificate details. Preserve redaction of sensitive data.
+
+### Weekly schedules, Relay & HVAC
+- Add native weekly schedules for supported `Relay` and `ActionTrigger` channels. Enable them with `setWeeklyScheduleAvailable()`, including for `RelayRollerShutterPair` in relay mode. Use protocol 29 for the new relay and button modes.
+- Support custom default schedules and externally provided schedule controllers for `HvacBase`, `Relay` and `ActionTrigger`. Release cached schedules when idle and retain existing schedules when a storage write fails.
+- Add relay start, timed and persistent forced modes, with automatic mode support for relay implementations that opt in. Apply function-specific rules for impulse and staircase relays, including forced-off locking for impulse functions.
+- Preserve relay manual overrides and countdown deadlines across equivalent weekly schedule edits. Report short impulse activations immediately and use the commanded countdown target when output readback is delayed.
+- Reset HVAC schedule defaults when the channel function changes and add hooks for validating, importing and persisting remote HVAC settings.
+
+### ActionTrigger, Button & Roller Shutter
+- Add local `LOCK`, `UNLOCK` and `TOGGLE_LOCK` actions and an option to allow local unlock. While locked, buttons preserve the allowed configuration and lock actions and discard gestures interrupted by a lock change.
+- Add protocol 29 temporary unlock for `ActionTrigger`. Start it by a command or a configured binary sensor edge, optionally use a weekly program's duration, and report remaining time and sender information. Button modes are enabled for an attached `Button` and can be enabled explicitly for a standalone `ActionTrigger`.
+- Reject duplicate `Button` attachments to different `ActionTrigger` instances. Receive ActionTrigger configuration through the server's runtime configuration update mechanism.
+- Keep a restored unknown `RollerShutter` position uncalibrated without requesting calibration. Validate roller shutter and facade blind configuration sizes and apply directional end margins after reaching the position and tilt endpoints.
+
+### Sensors, Lighting & Modbus
+- Wait for a stable filtered `Binary` input before emitting startup turn actions. Clear stale pending `ThermHygroMeter` configuration after applying server corrections.
+- Reject cyclic `BlinkingLed` state-copy targets and persist `LightingPwmBase`'s legacy state migration marker.
+- Validate Fronius and Afore response records and numeric ranges, preserve empty SolarEdge CSV fields, and bound copied inverter credentials.
+- Validate stored and remote `ModbusConfigurator` settings, handle unsupported stop bits, and keep TCP and UDP unavailable. Fix Modbus input-register dispatch and energy-meter response addressing.
+
+### MQTT, Networking & Web UI
+- Publish MQTT discovery and state and subscribe to commands for valid channel numbers even when numbering has gaps. Accept channel numbers from 100 up to the SDK limit in discovery object IDs.
+- Reject invalid or oversized MQTT topics and payloads, including fragmented ESP-MQTT input.
+- Unify Wi-Fi and Ethernet link, IP and startup handling on Arduino ESP and ESP-IDF. Preserve link state on IP loss and improve recovery and diagnostics. Abort ESP32 TCP sockets before client cleanup on Arduino and ESP-IDF.
+- Validate web request `Host` headers on Arduino ESP8266 and ESP-IDF, and link the local configuration logo to the home page. Use consistent formatting for HVAC temperature form fields, including auxiliary setpoints.
+
+### Arduino IDE & PlatformIO
+- Add `EspMqtt` support for Arduino ESP32 core 3.x and `ArduinoMqtt` for ESP8266. On ESP8266, MQTT runs without SRPC, uses QoS 0 or 1, and requires a broker CA for certificate verification. Store Home Assistant discovery templates in flash on ESP8266.
+- Fix the lifetime of ESP8266 BearSSL CA stores during reconnects and security-mode changes.
+- Fix `Clock` and `LocalAction` compatibility with Arduino AVR.
+
+### ESP-IDF
+- Update managed dependencies to ESP-MQTT `1.1.0` and cJSON `1.7.19~2`. `supla-modbus` declares the UART dependency and pulls managed ESP-Modbus `2.1.4` when selected.
+- Throttle failed web password checks per client address and invalidate sessions after logout or a password change. Tighten CSRF and session cookie validation, improve HTTPS redirects and prevent redirect caching.
+- Bound SSID copies by the ESP-IDF destination field size and use the fixed sector wear-levelling backend for state storage.
+- Limit `OcrIc` response size and time and reject incomplete responses.
+
+### Linux / sd4linux
+- Enable relay and `ActionTriggerParsed` weekly schedules with `weekly_schedule: true` and support default channel functions in YAML. Add debug socket commands for inspecting channel values and reading or writing weekly schedules.
+- Add parsed rotation actions and `related_channel` references for `ActionTriggerParsed`. Support configurable temporary unlock duration and binary sensor edge triggers, and add `ButtonParsed` inputs that can control relays or roller shutters.
+- Enable command-driven movement in `CmdRollerShutter` when the complete set of output commands is configured.
+- Add independent MQTT JSON documents with `document-id:/json-pointer` mappings and optional per-topic expiry. Keep incomplete meter data unavailable and handle expiry across millisecond counter rollover.
+- Improve MQTT topic cache synchronization and fix TLS hostname handling. Stop logging credentials and write binary configuration files with owner-only access.
+- Reject oversized or failed `File` reads and invalid `Simple` parser fields. Report `ContainerParsed` values as unavailable during source errors. Restrict `HttpSource` redirects to five HTTP(S) hops and disable redirects when custom headers are present.
+- Build the Linux example with C++17 and handle shutdown signals from worker threads.
+
+### Experimental
+- Limit nesting in skipped JSON values in Suplet definitions, instance configuration and server commands.
+
 # 26.09.02 (2026-09-23 input handling, channel configuration and platform improvements)
 
 ### Generic

@@ -22,6 +22,7 @@
 #include <supla/channels/channel.h>
 #include <supla/clock/clock.h>
 #include <supla/device/channel_conflict_resolver.h>
+#include <supla/device/notifications.h>
 #include <supla/device/register_device.h>
 #include <supla/device/remote_device_config.h>
 #include <supla/device/supla_ca_cert.h>
@@ -50,6 +51,30 @@ bool Supla::Protocol::SuplaSrpc::isSuplaSSLEnabled = true;
 static const char wrongCert[] = "SUPLA";
 
 namespace {
+bool shouldTrackDeviceCalCfgResult(
+    const TDS_DeviceCalCfgResult &result,
+    Supla::Protocol::CalCfgResultPending &pending) {
+  if (result.Result != SUPLA_CALCFG_RESULT_TRUE) {
+    return false;
+  }
+  if (result.Command == SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE) {
+    return true;
+  }
+  if (result.Command != SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING ||
+      result.DataSize < offsetof(TCalCfg_SubdevicePairingResult, Name) ||
+      result.DataSize > sizeof(TCalCfg_SubdevicePairingResult)) {
+    return false;
+  }
+
+  const auto status =
+      result.Data[offsetof(TCalCfg_SubdevicePairingResult, PairingResult)];
+  // Keep the original receiver during pairing. An ONGOING reply can restore
+  // tracking if the pending entry was cleared on disconnect.
+  return status == SUPLA_CALCFG_PAIRINGRESULT_PROCEDURE_STARTED ||
+         (status == SUPLA_CALCFG_PAIRINGRESULT_ONGOING &&
+          pending.get(result.ChannelNumber, result.Command) == nullptr);
+}
+
 Supla::Client *createNetworkClient() {
   auto network = Supla::Network::Instance();
   if (network != nullptr) {
@@ -899,7 +924,8 @@ void logSetChannelConfigRequest(int callId,
                                 const TSD_ChannelConfig *request,
                                 const char *direction,
                                 const char *callName,
-                                size_t size) {
+                                size_t size,
+                                bool dumpPayload) {
   if (request == nullptr) {
     return;
   }
@@ -912,7 +938,7 @@ void logSetChannelConfigRequest(int callId,
   SUPLA_LOG_DEBUG(
       "SRPC %s %s(%d) size=%zu {Ch=%u, Func=%" PRId32
       ", "
-      "CfgType=%u(%s), CfgSize=%u}",
+      "CfgType=%u(%s), CfgSize=%u%s}",
       direction,
       callName,
       callId,
@@ -921,7 +947,12 @@ void logSetChannelConfigRequest(int callId,
       static_cast<int32_t>(request->Func),
       static_cast<unsigned int>(request->ConfigType),
       configTypeName,
-      static_cast<unsigned int>(request->ConfigSize));
+      static_cast<unsigned int>(request->ConfigSize),
+      dumpPayload ? "" : ", Cfg=<redacted>");
+
+  if (!dumpPayload) {
+    return;
+  }
 
   if (configSize == 0) {
     SUPLA_LOG_DEBUG("SRPC %s %s(%d) {Cfg=<empty>}",
@@ -1320,23 +1351,12 @@ void Supla::Protocol::SuplaSrpc::logSrpcPacket(bool send,
       callId == SUPLA_DS_CALL_SET_CHANNEL_CONFIG) {
     if (size >= offsetof(TSD_ChannelConfig, Config)) {
       auto *request = reinterpret_cast<const TSD_ChannelConfig *>(buf);
-      if (shouldDumpRawChannelConfig(request)) {
-        logSetChannelConfigRequest(callId, request, direction, callName, size);
-      } else {
-        SUPLA_LOG_DEBUG(
-            "SRPC %s %s(%d) size=%zu {Ch=%u, "
-            "Func=%" PRId32
-            ", CfgType=%u(%s), CfgSize=%u, Cfg=<redacted>}",
-            direction,
-            callName,
-            callId,
-            size,
-            static_cast<unsigned int>(request->ChannelNumber),
-            static_cast<int32_t>(request->Func),
-            static_cast<unsigned int>(request->ConfigType),
-            channelConfigTypeName(request->ConfigType),
-            static_cast<unsigned int>(request->ConfigSize));
-      }
+      logSetChannelConfigRequest(callId,
+                                 request,
+                                 direction,
+                                 callName,
+                                 size,
+                                 shouldDumpRawChannelConfig(request));
       return;
     }
   }
@@ -1383,13 +1403,8 @@ void Supla::Protocol::SuplaSrpc::logSrpcPacket(bool send,
     return;
   }
 
-  if (callId == SUPLA_DCS_CALL_PING_SERVER) {
-    SUPLA_LOG_DEBUG("SRPC %s %s(%d) size=%zu", direction, callName, callId,
-                    size);
-    return;
-  }
-
-  if (callId == SUPLA_SDC_CALL_PING_SERVER_RESULT) {
+  if (callId == SUPLA_DCS_CALL_PING_SERVER ||
+      callId == SUPLA_SDC_CALL_PING_SERVER_RESULT) {
     SUPLA_LOG_DEBUG("SRPC %s %s(%d) size=%zu", direction, callName, callId,
                     size);
     return;
@@ -1844,9 +1859,8 @@ void Supla::messageReceived(void *srpc,
           // it to SuplaDeviceClass instance
           result.Result = suplaSrpc->getSdc()->handleCalcfgFromServer(
               rd.data.sd_device_calcfg_request, &result);
-          if ((result.Command == SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING ||
-               result.Command == SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE) &&
-              result.Result == SUPLA_CALCFG_RESULT_TRUE) {
+          if (shouldTrackDeviceCalCfgResult(result,
+                                           suplaSrpc->calCfgResultPending)) {
             suplaSrpc->calCfgResultPending.set(
                 result.ChannelNumber, result.ReceiverID, result.Command, 0);
           }
@@ -2826,6 +2840,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
 #endif  // !ARDUINO_ARCH_AVR
     Supla::LogIndent registrationIndent;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
+    Supla::Notification::OnRegistrationStarted();
     if (version <= 24) {
       if (!srpc_ds_async_registerdevice_in_chunks(
               srpc,

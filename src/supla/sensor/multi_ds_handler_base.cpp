@@ -360,6 +360,11 @@ bool MultiDsHandlerBase::startPairing(Supla::Protocol::SuplaSrpc *srpc,
       }
 
       result->PairingResult = SUPLA_CALCFG_PAIRINGRESULT_ONGOING;
+      // Pairing may have been started locally without SRPC. The protocol
+      // layer tracks this request, so keep SRPC to send the final result.
+      if (srpc != nullptr) {
+        this->srpc = srpc;
+      }
       return false;
     }
 
@@ -482,9 +487,13 @@ void MultiDsHandlerBase::notifySrpcAboutParingEnd(
   notifySubdevicePairingFinished(result);
 
   if (srpc) {
-    srpc->sendPendingCalCfgResult(-1, SUPLA_CALCFG_RESULT_TRUE, -1,
-        sizeof(result), &result);
-    srpc->clearPendingCalCfgResult(-1);
+    srpc->sendPendingCalCfgResult(-1,
+                                 SUPLA_CALCFG_RESULT_TRUE,
+                                 SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING,
+                                 sizeof(result),
+                                 &result);
+    srpc->clearPendingCalCfgResult(-1,
+                                  SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING);
     pairingStartTimeMs = 0;
   }
 }

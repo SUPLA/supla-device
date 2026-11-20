@@ -4,12 +4,14 @@
 #include "action_trigger.h"
 
 #include <inttypes.h>
+#include <string.h>
 #include <SuplaDevice.h>
 #include <supla/auto_lock.h>
 #include <supla/log_wrapper.h>
 #include <supla/local_action.h>
 #include <supla/storage/storage.h>
 #include <supla/storage/config.h>
+#include <supla/protocol/protocol_layer.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/control/button.h>
 #include <supla/events.h>
@@ -154,20 +156,26 @@ class ActionTriggerWeeklySchedule : public NativeWeeklyScheduleController {
   bool applyResolvedWeeklyScheduleProgram(
       const TWeeklyScheduleProgram &program, int programId,
       bool programChanged) override {
-    if (programId > 0 &&
-        program.Mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
-        !owner_->prepareTemporaryUnlockState()) {
+    uint8_t mode = programId > 0 ? program.Mode : SUPLA_BUTTON_MODE_NOT_SET;
+    if (mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
+        !owner_->isTemporaryUnlockSupported()) {
+      // Only after the option was disabled at runtime (validation rejects
+      // such schedules otherwise): run it fail closed as plain lock.
+      mode = SUPLA_BUTTON_MODE_LOCKED;
+    }
+    const bool temporaryMode =
+        mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED;
+    if (temporaryMode && !owner_->prepareTemporaryUnlockState()) {
       // Fail closed if the runtime allocation fails.
       owner_->applyButtonMode(
           SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED);
       return false;
     }
     if (owner_->temporaryUnlock) {
-      owner_->temporaryUnlock->weeklyDurationS = programId > 0 &&
-          program.Mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED
-              ? program.ButtonTemporaryUnlockDurationS : 0;
+      owner_->temporaryUnlock->weeklyDurationS =
+          temporaryMode ? program.ButtonTemporaryUnlockDurationS : 0;
     }
-    syncWeeklyScheduleMode(programId > 0 ? program.Mode : 0);
+    syncWeeklyScheduleMode(mode);
     if (programChanged) {
       SUPLA_LOG_INFO("AT[%d] weekly schedule active program=%d, mode=%s(%u)",
           owner_->getChannelNumber(), programId,
@@ -252,9 +260,7 @@ Supla::Control::ActionTrigger::ActionTrigger() {
   destroying = false;
 #endif
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
-  channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_TEMPORARY_UNLOCK_SUPPORTED);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_ACTIONTRIGGER);
-  channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
@@ -315,6 +321,11 @@ void Supla::Control::ActionTrigger::attach(Supla::Control::Button *button) {
     attachedButton->setActionTriggerModeLocked(false, false, false);
   }
   attachedButton = button;
+  if (attachedButton != nullptr && !runtimeFlags.buttonModeExplicit) {
+    // Attaching a Button enables button modes permanently (also after a later
+    // detach), unless they were explicitly disabled.
+    runtimeFlags.buttonModeEnabled = true;
+  }
   if (attachedButton != nullptr) {
     attachedButton->setTemporaryUnlockDeadline(
         temporaryUnlock ? temporaryUnlock->startMs : 0,
@@ -325,6 +336,7 @@ void Supla::Control::ActionTrigger::attach(Supla::Control::Button *button) {
         runtimeFlags.keepConfigButtonTriggerAlwaysAvailable);
     if (changed && buttonBindingsInitialized) rebuildForAttachedButton();
   }
+  updateButtonModeCapabilities();
 }
 
 void Supla::Control::ActionTrigger::attach(Supla::Control::Button &button) {
@@ -333,6 +345,12 @@ void Supla::Control::ActionTrigger::attach(Supla::Control::Button &button) {
 
 void Supla::Control::ActionTrigger::handleAction(int, int action) {
   if (!runtimeFlags.enabled) {
+    return;
+  }
+
+  if ((action == Supla::LOCK || action == Supla::UNLOCK ||
+       action == Supla::TOGGLE_LOCK) &&
+      !isButtonModeSupported()) {
     return;
   }
 
@@ -525,6 +543,82 @@ void Supla::Control::ActionTrigger::onRegistered(
   }
 
   channel.enableValueUpdates();
+  {
+    // RuntimeFlags share one word with flags changed from the timer thread.
+    Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
+    runtimeFlags.timerReportForced = true;
+  }
+}
+
+bool Supla::Control::ActionTrigger::iterateConnected() {
+  if (!Supla::ElementWithChannelActions::iterateConnected()) {
+    return false;
+  }
+
+  uint32_t remainingMs = 0;
+  int32_t senderId = 0;
+  uint8_t targetValue[SUPLA_CHANNELVALUE_SIZE] = {};
+  {
+    // Temporary unlock state is also changed by Button actions from the timer
+    // thread. Take a consistent snapshot, but send it without the lock.
+    Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
+    const bool forced = runtimeFlags.timerReportForced;
+    const bool pending = runtimeFlags.timerReportPending;
+    runtimeFlags.timerReportForced = false;
+    runtimeFlags.timerReportPending = false;
+    const bool active = getTemporaryUnlockRemainingMs(&remainingMs);
+    // Pending covers every (re)start; a reported timer which is no longer
+    // active covers expiry and all cancel paths.
+    const bool stopped = runtimeFlags.timerReportedActive && !active;
+    if (!pending && !stopped && !(forced && isTemporaryUnlockSupported())) {
+      return true;
+    }
+    runtimeFlags.timerReportedActive = active;
+
+    if (active) {
+      senderId = temporaryUnlock->senderId;
+    }
+    // Target value: channel properties after the timer ends (still in the
+    // same mode, but without the temporary unlock flag).
+    TActionTriggerProperties target = channel.getActionTriggerProperties();
+    target.Flags &= static_cast<uint8_t>(
+        ~SUPLA_ACTION_TRIGGER_FLAG_TEMPORARY_UNLOCK_ACTIVE);
+    memcpy(targetValue, &target, sizeof(target));
+  }
+
+  sendTimerValue(remainingMs, targetValue, senderId);
+  return false;
+}
+
+bool Supla::Control::ActionTrigger::getTemporaryUnlockRemainingMs(
+    uint32_t *remainingMs) const {
+  *remainingMs = 0;
+  if (!temporaryUnlock || temporaryUnlock->durationMs == 0) {
+    return false;
+  }
+  // Single time read: activity check and remaining time must agree, even
+  // if the timer expires meanwhile (same condition as
+  // isTemporaryUnlockActive()).
+  const uint32_t elapsedMs = millis() - temporaryUnlock->startMs;
+  if (elapsedMs >= temporaryUnlock->durationMs) {
+    return false;
+  }
+  *remainingMs = temporaryUnlock->durationMs - elapsedMs;
+  return true;
+}
+
+void Supla::Control::ActionTrigger::sendTimerValue(uint32_t remainingMs,
+                                                   uint8_t *targetValue,
+                                                   int32_t senderId) {
+  SUPLA_LOG_DEBUG("AT[%d] temporary unlock timer=%" PRIu32 " ms",
+                  getChannelNumber(),
+                  remainingMs);
+
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+       proto = proto->next()) {
+    proto->sendRemainingTimeValue(
+        getChannelNumber(), remainingMs, targetValue, senderId, false);
+  }
 }
 
 void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
@@ -746,7 +840,7 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
     return Supla::ApplyConfigResult::DataError;
   }
   if (result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
-    if (!runtimeFlags.weeklyScheduleAvailable) {
+    if (!isWeeklyScheduleSupported()) {
       return Supla::ApplyConfigResult::NotSupported;
     }
     ensureNativeWeeklyScheduleController();
@@ -769,7 +863,9 @@ Supla::ApplyConfigResult Supla::Control::ActionTrigger::applyChannelConfig(
   uint32_t activeActions = 0;
   memcpy(&activeActions, result->Config, sizeof(activeActions));
   auto candidate = currentTemporaryUnlockConfig();
-  if (result->ConfigSize == sizeof(TChannelConfig_ActionTrigger)) {
+  // Without temporary unlock support its settings are not used: ignore them.
+  if (result->ConfigSize == sizeof(TChannelConfig_ActionTrigger) &&
+      isTemporaryUnlockSupported()) {
     TChannelConfig_ActionTrigger wire = {};
     memcpy(&wire, result->Config, sizeof(wire));
     if (wire.TemporaryUnlockDurationSec > kMaximumTemporaryUnlockDurationS ||
@@ -883,6 +979,9 @@ void Supla::Control::ActionTrigger::setRelatedChannel(Channel &relatedChannel) {
 }
 
 void Supla::Control::ActionTrigger::onInit() {
+  // Final decision: Button may be attached after construction, before init.
+  // Also normalizes a mode restored from state.
+  updateButtonModeCapabilities();
   rebuildForAttachedButton();
 }
 
@@ -1328,8 +1427,9 @@ void Supla::Control::ActionTrigger::onLoadState() {
         activeActionsFromServer);
   }
 
+  // Button mode support is resolved in onInit(), so restore as stored here.
   auto *weeklySchedule = weeklyScheduleComponents.getController();
-  if (weeklySchedule != nullptr && isWeeklyScheduleSupported()) {
+  if (weeklySchedule != nullptr && runtimeFlags.weeklyScheduleAvailable) {
     weeklySchedule->restoreWeeklyScheduleMode(flags.flags.weeklySchedule);
     if (weeklySchedule->isExternallyManaged()) {
       channel.setWeeklyScheduleEnabled(weeklySchedule->isActive());
@@ -1434,11 +1534,10 @@ bool Supla::Control::ActionTrigger::ensureNativeWeeklyScheduleController() {
 }
 
 void Supla::Control::ActionTrigger::updateWeeklyScheduleCapabilities() {
-  channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
   auto *controller = weeklyScheduleComponents.getController();
   auto *configHandler = weeklyScheduleComponents.getConfigHandler();
   bool configurable =
-      runtimeFlags.weeklyScheduleAvailable && configHandler != nullptr &&
+      isWeeklyScheduleSupported() && configHandler != nullptr &&
       configHandler->supportsConfigType(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   if (configurable) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
@@ -1447,13 +1546,64 @@ void Supla::Control::ActionTrigger::updateWeeklyScheduleCapabilities() {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
     usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   }
-  if (!runtimeFlags.weeklyScheduleAvailable && controller != nullptr) {
+  if (!isWeeklyScheduleSupported() && controller != nullptr &&
+      controller->isActive()) {
     controller->switchToManualMode();
   }
 }
 
+void Supla::Control::ActionTrigger::updateButtonModeCapabilities() {
+  if (isButtonModeSupported()) {
+    channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
+  } else {
+    channel.unsetFlag(SUPLA_CHANNEL_FLAG_BUTTON_MODE_SUPPORTED);
+  }
+  if (isTemporaryUnlockSupported()) {
+    channel.setFlag(SUPLA_CHANNEL_FLAG_BUTTON_TEMPORARY_UNLOCK_SUPPORTED);
+  } else {
+    channel.unsetFlag(SUPLA_CHANNEL_FLAG_BUTTON_TEMPORARY_UNLOCK_SUPPORTED);
+  }
+  updateWeeklyScheduleCapabilities();
+  // Keep the current mode consistent with the supported ones (the storage
+  // format stays unchanged), so a disabled option can't leave AT locked.
+  if (!isButtonModeSupported()) {
+    channel.setWeeklyScheduleEnabled(false);
+    if (channel.getButtonMode() != SUPLA_BUTTON_MODE_NOT_SET) {
+      applyButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
+    }
+  } else if (!isTemporaryUnlockSupported() &&
+             channel.getButtonMode() ==
+                 SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED) {
+    // Fail closed: mode 6 without temporary unlock is plain lock.
+    applyButtonMode(SUPLA_BUTTON_MODE_LOCKED);
+  }
+}
+
+Supla::Control::ActionTrigger &
+Supla::Control::ActionTrigger::setTemporaryUnlockSupported(bool supported) {
+  runtimeFlags.temporaryUnlockDisabled = !supported;
+  updateButtonModeCapabilities();
+  return *this;
+}
+
+bool Supla::Control::ActionTrigger::isTemporaryUnlockSupported() const {
+  return isButtonModeSupported() && !runtimeFlags.temporaryUnlockDisabled;
+}
+
+Supla::Control::ActionTrigger &
+Supla::Control::ActionTrigger::setButtonModeSupported(bool supported) {
+  runtimeFlags.buttonModeExplicit = true;
+  runtimeFlags.buttonModeEnabled = supported;
+  updateButtonModeCapabilities();
+  return *this;
+}
+
+bool Supla::Control::ActionTrigger::isButtonModeSupported() const {
+  return runtimeFlags.buttonModeEnabled;
+}
+
 bool Supla::Control::ActionTrigger::isWeeklyScheduleSupported() const {
-  return runtimeFlags.weeklyScheduleAvailable;
+  return runtimeFlags.weeklyScheduleAvailable && isButtonModeSupported();
 }
 
 Supla::Control::ActionTrigger &
@@ -1478,9 +1628,13 @@ void Supla::Control::ActionTrigger::fillDefaultWeeklySchedule(
 
 bool Supla::Control::ActionTrigger::isWeeklyScheduleProgramModeSupported(
     uint8_t mode) const {
+  // Mode 6 requires temporary unlock support. A stored schedule with mode 6
+  // is then rejected on load, which (as for any invalid schedule) disables
+  // the schedule and leaves mode 0.
   return mode == SUPLA_BUTTON_MODE_NOT_SET ||
          mode == SUPLA_BUTTON_MODE_LOCKED ||
-         mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED;
+         (mode == SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
+          isTemporaryUnlockSupported());
 }
 
 void Supla::Control::ActionTrigger::refreshSupLanRecognition() {
@@ -1514,37 +1668,87 @@ int32_t Supla::Control::ActionTrigger::handleNewValueFromServer(
   if (newValue == nullptr) {
     return -1;
   }
-  Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
   auto *properties =
       reinterpret_cast<TActionTriggerProperties *>(newValue->value);
+  if (properties->ButtonMode > SUPLA_BUTTON_MODE_CMD_TEMPORARY_UNLOCK ||
+      properties->ButtonMode == 2 || properties->ButtonMode == 3) {
+    // Unknown (or no longer used) mode: invalid regardless of support.
+    return -1;
+  }
+  if (!isButtonModeSupported()) {
+    SUPLA_LOG_DEBUG("AT[%d] button mode not supported, command rejected",
+                    getChannelNumber());
+    return 0;
+  }
+  Supla::AutoLock lock(SuplaDevice.getTimerAccessMutex());
   auto *weeklySchedule = weeklyScheduleComponents.getController();
+  if (!isTemporaryUnlockSupported() &&
+      (properties->ButtonMode == SUPLA_BUTTON_MODE_CMD_TEMPORARY_UNLOCK ||
+       properties->ButtonMode ==
+           SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED)) {
+    return 0;
+  }
   switch (properties->ButtonMode) {
     case SUPLA_BUTTON_MODE_CMD_TEMPORARY_UNLOCK:
-      return startTemporaryUnlock(newValue->DurationSec) ? 1 : 0;
-    case SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED:
+      return startTemporaryUnlock(newValue->DurationSec, newValue->SenderID)
+                 ? 1
+                 : 0;
+    case SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED: {
+      // Weekly -> manual keeps a running timer. Mode 6 sent while already
+      // in manual mode 6 is an explicit "lock now" and ends the timer.
+      const bool explicitRelock = !channel.isWeeklyScheduleEnabled() &&
+          channel.getButtonMode() ==
+              SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED;
       if (!prepareTemporaryUnlockState()) return 0;
+      if (explicitRelock && isTemporaryUnlockActive()) {
+        temporaryUnlock->durationMs = 0;
+        // As on expiry: an edge from the unlock period that was not sampled
+        // yet must not restart the timer right after "lock now".
+        temporaryUnlock->baselineKnown = false;
+        SUPLA_LOG_INFO("AT[%d] temporary unlock cancelled by mode command",
+            getChannelNumber());
+      }
       applyManualButtonMode(properties->ButtonMode);
       return 1;
+    }
     case SUPLA_BUTTON_MODE_LOCKED:
     case SUPLA_BUTTON_MODE_NOT_SET: {
       applyManualButtonMode(properties->ButtonMode);
       return 1;
     }
     case SUPLA_BUTTON_MODE_CMD_SWITCH_TO_MANUAL: {
-      applyManualButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
+      // Only leave the weekly schedule: keep the mode resolved from the
+      // current program and a running temporary unlock (as Relay does).
+      applyManualButtonMode(channel.getButtonMode());
       return 1;
     }
     case SUPLA_BUTTON_MODE_CMD_WEEKLY_SCHEDULE: {
-      if (weeklySchedule != nullptr && isWeeklyScheduleSupported() &&
-          weeklySchedule->switchToWeeklySchedule()) {
-        if (weeklySchedule->isExternallyManaged()) {
-          channel.setWeeklyScheduleEnabled(weeklySchedule->isActive());
-          applyButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
-        }
-        scheduleStateSave();
-        return 1;
+      if (weeklySchedule == nullptr || !isWeeklyScheduleSupported()) {
+        return 0;
       }
-      return 0;
+      // The controller passes through mode 0 while switching. Keep a running
+      // timer during the switch, so the effective lock (and an attached
+      // Button's press handling) doesn't flip when the program is mode 6.
+      const bool keepUnlock = isTemporaryUnlockActive();
+      if (keepUnlock) temporaryUnlock->keepTimerOnModeChange = true;
+      const bool switched = weeklySchedule->switchToWeeklySchedule();
+      if (switched && weeklySchedule->isExternallyManaged()) {
+        channel.setWeeklyScheduleEnabled(weeklySchedule->isActive());
+        applyButtonMode(SUPLA_BUTTON_MODE_NOT_SET);
+      }
+      if (keepUnlock) {
+        temporaryUnlock->keepTimerOnModeChange = false;
+        if (channel.getButtonMode() !=
+            SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED) {
+          temporaryUnlock->durationMs = 0;
+        }
+        syncEffectiveButtonLock();
+      }
+      if (!switched) {
+        return 0;
+      }
+      scheduleStateSave();
+      return 1;
     }
     default: {
       return -1;
@@ -1586,7 +1790,8 @@ void Supla::Control::ActionTrigger::fillChannelConfig(
     wire.ActiveActions = (runtimeFlags.channelConfigReceived ||
         (temporaryUnlock && temporaryUnlock->hasStoredActiveActions))
         ? lastReceivedActiveActions : activeActionsFromServer;
-    const auto config = currentTemporaryUnlockConfig();
+    const auto config = isTemporaryUnlockSupported()
+        ? currentTemporaryUnlockConfig() : TemporaryUnlockConfig{};
     wire.TemporaryUnlockDurationSec = config.duration;
     wire.TemporaryUnlockSensorEdge = config.edge;
     const auto ref = config.sensor.reference();
@@ -1637,7 +1842,8 @@ void Supla::Control::ActionTrigger::applyButtonMode(uint8_t mode) {
   [[maybe_unused]] const uint8_t previousMode = channel.getButtonMode();
   if (temporaryUnlock) {
     if (mode != channel.getButtonMode()) temporaryUnlock->baselineKnown = false;
-    if (mode != SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED) {
+    if (mode != SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED &&
+        !temporaryUnlock->keepTimerOnModeChange) {
       temporaryUnlock->durationMs = 0;
     }
   }
@@ -1788,7 +1994,8 @@ void Supla::Control::ActionTrigger::syncEffectiveButtonLock() {
   }
 }
 
-bool Supla::Control::ActionTrigger::startTemporaryUnlock(uint32_t seconds) {
+bool Supla::Control::ActionTrigger::startTemporaryUnlock(uint32_t seconds,
+                                                         int32_t senderId) {
   if (channel.getButtonMode() !=
       SUPLA_BUTTON_MODE_LOCKED_TEMPORARY_UNLOCK_ALLOWED ||
       seconds > kMaximumTemporaryUnlockDurationS ||
@@ -1799,6 +2006,8 @@ bool Supla::Control::ActionTrigger::startTemporaryUnlock(uint32_t seconds) {
   [[maybe_unused]] const bool restart = isTemporaryUnlockActive();
   temporaryUnlock->startMs = millis();
   temporaryUnlock->durationMs = seconds * 1000;
+  temporaryUnlock->senderId = senderId;
+  runtimeFlags.timerReportPending = true;
   syncEffectiveButtonLock();
   SUPLA_LOG_INFO("AT[%d] temporary unlock %s, duration=%" PRIu32 " s",
       getChannelNumber(), restart ? "restarted" : "started", seconds);
@@ -1818,7 +2027,7 @@ void Supla::Control::ActionTrigger::updateTemporaryUnlock() {
 }
 
 void Supla::Control::ActionTrigger::updateUnlockSensor() {
-  if (!temporaryUnlock ||
+  if (!temporaryUnlock || !isTemporaryUnlockSupported() ||
       temporaryUnlock->config.edge == SUPLA_AT_SENSOR_EDGE_NONE) return;
   const auto state = consumeChannelState(
       temporaryUnlock->config.sensor.reference(), unlockSensorConsumer());

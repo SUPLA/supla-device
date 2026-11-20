@@ -10,6 +10,8 @@
 #include <supla-common/proto.h>
 #include <stdio.h>
 #include <array>
+#include <string>
+#include <vector>
 #include <cstring>
 
 #include "supla/storage/config.h"
@@ -465,6 +467,66 @@ TEST(KeyValueTests, initFromMemoryRollsBackAfterPartialParseAndCanBeRetried) {
   EXPECT_EQ(resultU8, 11);
   EXPECT_TRUE(storage.getUInt32("rollback_second", &resultU32));
   EXPECT_EQ(resultU32, 22);
+}
+
+TEST(KeyValueTests, blobAndStringAreLimitedByFormatSizeField) {
+  KeyValueTest source;
+  std::vector<char> blob(SUPLA_STORAGE_MAX_VALUE_SIZE + 1, 'b');
+  EXPECT_FALSE(source.setBlob("too_big", blob.data(), blob.size()));
+  std::string longString(SUPLA_STORAGE_MAX_VALUE_SIZE, 's');
+  EXPECT_FALSE(source.setString("too_long", longString.c_str()));
+
+  ASSERT_TRUE(source.setBlob("max_blob", blob.data(), blob.size() - 1));
+  longString.pop_back();
+  ASSERT_TRUE(source.setString("max_string", longString.c_str()));
+
+  // Rejected keys must not break serialization of the rest.
+  std::vector<uint8_t> buffer(256 * 1024);
+  bool success = false;
+  const size_t dataSize =
+      source.serializeToMemory(buffer.data(), buffer.size(), &success);
+  ASSERT_TRUE(success);
+
+  KeyValueTest restored;
+  ASSERT_TRUE(restored.initFromMemory(buffer.data(), dataSize));
+  EXPECT_EQ(restored.getBlobSizeForTest("max_blob"),
+            static_cast<int>(SUPLA_STORAGE_MAX_VALUE_SIZE));
+  EXPECT_EQ(restored.getStringSize("max_string"),
+            static_cast<int>(SUPLA_STORAGE_MAX_VALUE_SIZE));
+  EXPECT_EQ(restored.getBlobSizeForTest("too_big"), -1);
+  EXPECT_EQ(restored.getStringSize("too_long"), -1);
+}
+
+TEST(KeyValueTests, serializeToMemorySkipsElementsWithoutValue) {
+  KeyValueTest source;
+  ASSERT_TRUE(source.setUInt8("valid", 7));
+  EXPECT_FALSE(source.setString("unset", nullptr));
+
+  std::array<uint8_t, 128> buffer = {};
+  bool success = false;
+  const size_t dataSize =
+      source.serializeToMemory(buffer.data(), buffer.size(), &success);
+  EXPECT_TRUE(success);
+  EXPECT_EQ(dataSize, SUPLA_STORAGE_KEY_SIZE + 1 + 2 + 1);
+}
+
+TEST(KeyValueTests, serializeToMemoryReportsIncompleteOutput) {
+  KeyValueTest source;
+  ASSERT_TRUE(source.setUInt8("first", 1));
+  ASSERT_TRUE(source.setUInt8("second", 2));
+
+  constexpr size_t recordSize = SUPLA_STORAGE_KEY_SIZE + 1 + 2 + 1;
+  std::array<uint8_t, 128> buffer = {};
+
+  bool success = false;
+  EXPECT_EQ(source.serializeToMemory(buffer.data(), buffer.size(), &success),
+            2 * recordSize);
+  EXPECT_TRUE(success);
+
+  success = true;
+  EXPECT_EQ(source.serializeToMemory(buffer.data(), recordSize, &success),
+            recordSize);
+  EXPECT_FALSE(success);
 }
 
 TEST(KeyValueTests, initFromMemoryRejectsNonEmptyStorageWithoutClearingIt) {

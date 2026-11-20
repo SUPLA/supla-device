@@ -254,14 +254,14 @@ void Channel::setNewValue(double dbl) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
     if (isnan(dbl)) {
-      SUPLA_LOG_DEBUG("Channel(%d) value changed to NaN", channelNumber);
+      SUPLA_LOG_DEBUG("Channel[%d] value changed to NaN", channelNumber);
     } else {
       int integerPart = static_cast<int>(dbl);
       int fractionalPart = abs(static_cast<int>(dbl * 100) % 100);
       const char *sign = dbl < 0 && integerPart == 0 ? "-" : "";
       (void)(fractionalPart);
       (void)(sign);
-      SUPLA_LOG_DEBUG("Channel(%d) value changed to %s%d.%02d", channelNumber,
+      SUPLA_LOG_DEBUG("Channel[%d] value changed to %s%d.%02d", channelNumber,
           sign, integerPart, fractionalPart);
     }
   }
@@ -303,7 +303,7 @@ void Channel::setNewValue(double temp, double humi) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
     SUPLA_LOG_DEBUG(
-        "Channel(%d) value changed to temp(%.2f), humi(%.2f)",
+        "Channel[%d] value changed to temp(%.2f), humi(%.2f)",
         channelNumber,
         temp,
         humi);
@@ -317,7 +317,7 @@ void Channel::setNewValue(uint64_t value) {
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d", channelNumber,
+    SUPLA_LOG_DEBUG("Channel[%d] value changed to %d", channelNumber,
         static_cast<int>(value));
   }
 }
@@ -329,7 +329,7 @@ void Channel::setNewValue(int32_t value) {
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d", channelNumber, value);
+    SUPLA_LOG_DEBUG("Channel[%d] value changed to %d", channelNumber, value);
   }
 }
 
@@ -350,7 +350,7 @@ void Channel::setNewValue(bool newValueState) {
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
 
     SUPLA_LOG_DEBUG(
-        "Channel(%d) value changed to %d", channelNumber, newValueState);
+        "Channel[%d] value changed to %d", channelNumber, newValueState);
   }
 }
 
@@ -395,10 +395,6 @@ void Channel::setNewValue(
 bool Channel::setNewValue(const char *newValue) {
   if (memcmp(value, newValue, SUPLA_CHANNELVALUE_SIZE) != 0) {
     memcpy(value, newValue, SUPLA_CHANNELVALUE_SIZE);
-    if (channelType == ChannelType::RELAY && !isRollerShutterRelayType()) {
-      logRelayChannelValue(channelNumber, "value changed",
-          reinterpret_cast<const TRelayChannel_Value *>(value));
-    }
     setSendValue();
     return true;
   }
@@ -534,7 +530,7 @@ bool Channel::isStateInfoUpdateReady() const {
 void Channel::sendUpdate() {
   if (isValueUpdateReady()) {
     if (channelType == ChannelType::RELAY && !isRollerShutterRelayType()) {
-      logRelayChannelValue(channelNumber, "sending update",
+      logRelayChannelValue(channelNumber, "update",
           reinterpret_cast<const TRelayChannel_Value *>(value));
     }
     clearSendValue();
@@ -611,7 +607,7 @@ void Channel::setNewValue(const TDSC_RollerShutterValue &value) {
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d", channelNumber,
+    SUPLA_LOG_DEBUG("Channel[%d] value changed to %d", channelNumber,
         value.position);
   }
 }
@@ -623,7 +619,7 @@ void Channel::setNewValue(const TDSC_FacadeBlindValue &value) {
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d, tilt %d", channelNumber,
+    SUPLA_LOG_DEBUG("Channel[%d] value changed to %d, tilt %d", channelNumber,
         value.position, value.tilt);
   }
 }
@@ -744,7 +740,7 @@ void Channel::setNewValue(uint8_t red,
     }
 
     SUPLA_LOG_DEBUG(
-        "Channel(%d) value changed to RGB(%d, %d, %d), colBr(%d), bright(%d), "
+        "Channel[%d] value changed to RGB(%d, %d, %d), colBr(%d), bright(%d), "
         "whiteTemp(%d)",
         channelNumber,
         red,

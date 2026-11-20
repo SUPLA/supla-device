@@ -52,6 +52,26 @@ If you encounter build issues:
 
 ---
 
+## Upgrading to 26.11
+
+The `supla-device` component uses managed ESP-MQTT `1.1.0` and cJSON
+`1.7.19~2`. ESP-MQTT requires ESP-IDF 5.3 or newer.
+[ESP-MQTT component manifest](https://github.com/espressif/esp-mqtt/blob/v1.1.0/idf_component.yml)
+
+For projects using Modbus through the SDK:
+
+1. Remove the old `$SUPLA_DEVICE_PATH/extras/esp-idf/esp-modbus` path from
+   `EXTRA_COMPONENT_DIRS`. Keep the `supla-modbus` component, which declares
+   ESP-Modbus `2.1.4` as a managed dependency.
+2. If the application only uses `supla-modbus`, remove any redundant direct
+   ESP-Modbus dependency from the application manifest. Applications that
+   include ESP-Modbus headers directly should declare their own compatible
+   dependency.
+3. Run `idf.py reconfigure` and build the firmware. Let Component Manager
+   regenerate `dependencies.lock` and review the resolved versions.
+
+---
+
 ## Runtime model
 
 Devices built with ESP-IDF follow the same core model as Arduino-based devices:

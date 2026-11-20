@@ -102,6 +102,34 @@ void emitIntField(Supla::WebSender* sender,
   });
 }
 
+void emitRelaySelect(Supla::WebSender* sender,
+                     const char* key,
+                     const char* label,
+                     uint32_t function,
+                     int selectedChannel,
+                     bool readonly) {
+  emitSelectField(
+      sender,
+      key,
+      label,
+      [&]() {
+        sender->selectOption(-1, "Not set", selectedChannel == -1);
+        for (auto* ch = Supla::Channel::Begin(); ch != nullptr;
+             ch = ch->next()) {
+          if (ch->getChannelType() == SUPLA_CHANNELTYPE_RELAY &&
+              ch->getDefaultFunction() == function) {
+            const int channelNumber = ch->getChannelNumber();
+            char buf[100] = {};
+            SUPLA_WEB_SNPRINTF(buf, sizeof(buf), "%s #%d", label,
+                               channelNumber);
+            sender->selectOption(channelNumber, buf,
+                                 selectedChannel == channelNumber);
+          }
+        }
+      },
+      readonly);
+}
+
 void emitToggleScript(Supla::WebSender* sender,
                       const char* functionName,
                       const char* key,
@@ -548,63 +576,22 @@ void HvacParameters::send(Supla::WebSender* sender) {
 
   if (pumpCount > 0 && !hvac->parameterFlags.PumpSwitchHidden) {
     hvac->generateKey(key, "pump");
-    emitSelectField(
-        sender,
-        key,
-        "Pump switch",
-        [&]() {
-          sender->selectOption(-1, "Not set", !hvac->isPumpSwitchSet());
-          for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
-               ch = ch->next()) {
-            int channelNumber = ch->getChannelNumber();
-            auto channelType = ch->getChannelType();
-            if (channelType == SUPLA_CHANNELTYPE_RELAY) {
-              auto relayFunction = ch->getDefaultFunction();
-              if (relayFunction == SUPLA_CHANNELFNC_PUMPSWITCH) {
-                char buf[100] = {};
-                snprintf(buf, sizeof(buf), "Pump switch #%d", channelNumber);
-                sender->selectOption(
-                    channelNumber,
-                    buf,
-                    hvac->getPumpSwitchChannelNo() == channelNumber);
-              }
-            }
-          }
-        },
-        hvac->parameterFlags.PumpSwitchReadonly);
+    emitRelaySelect(sender,
+                    key,
+                    "Pump switch",
+                    SUPLA_CHANNELFNC_PUMPSWITCH,
+                    hvac->getPumpSwitchChannelNo(),
+                    hvac->parameterFlags.PumpSwitchReadonly);
   }
 
   if (hocsCount > 0 && !hvac->parameterFlags.HeatOrColdSourceSwitchHidden) {
     hvac->generateKey(key, "hocs");
-    emitSelectField(
-        sender,
-        key,
-        "Heat or cold source switch",
-        [&]() {
-          sender->selectOption(
-              -1, "Not set", !hvac->isHeatOrColdSourceSwitchSet());
-          for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
-               ch = ch->next()) {
-            int channelNumber = ch->getChannelNumber();
-            auto channelType = ch->getChannelType();
-            if (channelType == SUPLA_CHANNELTYPE_RELAY) {
-              auto relayFunction = ch->getDefaultFunction();
-              if (relayFunction == SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH) {
-                char buf[100] = {};
-                snprintf(buf,
-                         sizeof(buf),
-                         "Heat or cold source switch #%d",
-                         channelNumber);
-                sender->selectOption(
-                    channelNumber,
-                    buf,
-                    hvac->getHeatOrColdSourceSwitchChannelNo() ==
-                        channelNumber);
-              }
-            }
-          }
-        },
-        hvac->parameterFlags.HeatOrColdSourceSwitchReadonly);
+    emitRelaySelect(sender,
+                    key,
+                    "Heat or cold source switch",
+                    SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH,
+                    hvac->getHeatOrColdSourceSwitchChannelNo(),
+                    hvac->parameterFlags.HeatOrColdSourceSwitchReadonly);
   }
 
   if (!hvac->parameterFlags.UsedAlgorithmHidden) {

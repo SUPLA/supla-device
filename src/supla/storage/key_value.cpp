@@ -164,9 +164,17 @@ bool KeyValue::initFromMemory(uint8_t* input, size_t inputSize) {
   return true;
 }
 
-size_t KeyValue::serializeToMemory(uint8_t* output, size_t outputMaxSize) {
+size_t KeyValue::serializeToMemory(uint8_t* output,
+                                   size_t outputMaxSize,
+                                   bool* success) {
+  if (success) {
+    *success = true;
+  }
   size_t sizeCount = 0;
   for (auto element = first; element; element = element->getNext()) {
+    if (!element->hasValue()) {
+      continue;
+    }
     size_t bytesWritten = element->serialize(output, outputMaxSize - sizeCount);
     if (bytesWritten == 0) {
       SUPLA_LOG_ERROR(
@@ -174,6 +182,9 @@ size_t KeyValue::serializeToMemory(uint8_t* output, size_t outputMaxSize) {
           "sizeCount: %d",
           outputMaxSize,
           sizeCount);
+      if (success) {
+        *success = false;
+      }
     }
     output += bytesWritten;
     sizeCount += bytesWritten;
@@ -355,7 +366,14 @@ bool KeyValueElement::setString(const char* value) {
   if (value == nullptr) {
     return false;
   }
-  unsigned int newSize = strlen(value) + 1;
+  const size_t newLength = strlen(value) + 1;
+  if (newLength > SUPLA_STORAGE_MAX_VALUE_SIZE) {
+    SUPLA_LOG_ERROR("KeyValue: string for key %s is too long (%u bytes)",
+                    key,
+                    static_cast<unsigned int>(newLength));
+    return false;
+  }
+  unsigned int newSize = static_cast<unsigned int>(newLength);
   if (dataType == DATA_TYPE_NOT_SET) {
     dataType = DATA_TYPE_STRING;
     size = newSize;
@@ -399,6 +417,12 @@ int KeyValueElement::getStringSize() {
 
 bool KeyValueElement::setBlob(const char* value, size_t blobSize) {
   if (value == nullptr && blobSize > 0) {
+    return false;
+  }
+  if (blobSize > SUPLA_STORAGE_MAX_VALUE_SIZE) {
+    SUPLA_LOG_ERROR("KeyValue: blob for key %s is too big (%u bytes)",
+                    key,
+                    static_cast<unsigned int>(blobSize));
     return false;
   }
   if (dataType == DATA_TYPE_NOT_SET) {
@@ -528,7 +552,15 @@ bool KeyValueElement::setUInt32(const uint32_t value) {
   return false;
 }
 
+bool KeyValueElement::hasValue() const {
+  return dataType != DATA_TYPE_NOT_SET;
+}
+
 size_t KeyValueElement::serialize(uint8_t* destination, size_t maxSize) {
+  if (size > SUPLA_STORAGE_MAX_VALUE_SIZE) {
+    SUPLA_LOG_ERROR("KeyValue: value for key %s exceeds format limit", key);
+    return 0;
+  }
   size_t blockSize = SUPLA_STORAGE_KEY_SIZE + 1 /* dataType */ + 2 /* size */
                      + size;
   switch (dataType) {

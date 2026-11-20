@@ -110,6 +110,9 @@ extern const char *SUPLA_TAG;
 #endif
 
 #ifndef SUPLA_LOG_DEBUG
+// Marks that SUPLA_LOG_DEBUG was not overridden by the user, so code that
+// calls supla_logf(LOG_DEBUG, ...) directly behaves the same way.
+#define SUPLA_LOG_DEBUG_IS_DEFAULT 1
 #define SUPLA_LOG_DEBUG(arg_format, ...) \
             do { \
               if (SUPLA_LOG_IS_ENABLED(LOG_DEBUG)) { \

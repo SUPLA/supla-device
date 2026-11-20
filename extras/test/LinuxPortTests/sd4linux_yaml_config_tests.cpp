@@ -13,11 +13,13 @@
 #include <unistd.h>
 
 #include <array>
+#include <atomic>
 #include <cstring>
 #include <fstream>
 #include <filesystem>  // NOLINT(build/c++17)
 #include <iterator>
 #include <string>
+#include <thread>
 #include <variant>
 #include <vector>
 
@@ -112,6 +114,7 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   TestLinuxYamlConfig() : Supla::LinuxYamlConfig("") {
   }
 
+  using Supla::KeyValue::getBlobSize;
   using Supla::LinuxYamlConfig::addActionTriggerParsed;
   using Supla::LinuxYamlConfig::addRgbCctParsed;
   using Supla::LinuxYamlConfig::addCustomHvac;
@@ -343,6 +346,168 @@ TEST_F(Sd4linuxYamlCredentialTests,
   std::string content;
   std::getline(target, content);
   EXPECT_EQ(content, "unchanged");
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, LoadsSavedEmptyConfigStorage) {
+  {
+    TestLinuxYamlConfig config;
+    config.config["state_files_path"] = tempDirectory.string();
+    ASSERT_TRUE(config.commitWithResult());
+  }
+  ASSERT_EQ(std::filesystem::file_size(tempDirectory / "config_storage.bin"),
+            0U);
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  EXPECT_TRUE(config.init());
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, LogsInvalidConfigStorageData) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  {
+    std::ofstream file(storagePath, std::ios::binary);
+    file.put('x');
+    ASSERT_TRUE(file.good());
+  }
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  supla_test_clear_last_log();
+
+  EXPECT_FALSE(config.init());
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("invalid storage data"), std::string::npos);
+  EXPECT_NE(log.find(storagePath.string()), std::string::npos);
+  EXPECT_NE(log.find("(1 bytes)"), std::string::npos);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, RejectsUnreadableConfigStorage) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  ASSERT_TRUE(std::filesystem::create_directory(storagePath));
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  supla_test_clear_last_log();
+
+  // Depending on the standard library, opening a directory fails either at
+  // open or at read - both must be reported as an error with the path.
+  EXPECT_FALSE(config.init());
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find(storagePath.string()), std::string::npos);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, LoadsConfigStorageOfMaximumSize) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  {
+    std::ofstream file(storagePath, std::ios::binary);
+    file << std::string(1024 * 1024, 'x');
+    ASSERT_TRUE(file.good());
+  }
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  supla_test_clear_last_log();
+
+  // Garbage content is rejected, but not as an oversized file.
+  EXPECT_FALSE(config.init());
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("invalid storage data"), std::string::npos);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, RejectsOversizedConfigStorage) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  {
+    std::ofstream file(storagePath, std::ios::binary);
+    file << std::string(1024 * 1024 + 1, 'x');
+    ASSERT_TRUE(file.good());
+  }
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  supla_test_clear_last_log();
+
+  EXPECT_FALSE(config.init());
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("file is too big"), std::string::npos);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, InitReportsInaccessibleStateDirectory) {
+  if (::geteuid() == 0) {
+    GTEST_SKIP() << "root ignores directory permissions";
+  }
+  const auto stateDir = tempDirectory / "state";
+  ASSERT_TRUE(std::filesystem::create_directory(stateDir));
+  ASSERT_EQ(::chmod(stateDir.c_str(), 0), 0);
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = stateDir.string();
+  supla_test_clear_last_log();
+
+  EXPECT_FALSE(config.init());
+  ASSERT_EQ(::chmod(stateDir.c_str(), 0700), 0);
+  const std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("failed to access"), std::string::npos);
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, CommitReplacesStorageAtomically) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(config.setString("test_key", "test_value"));
+  ASSERT_TRUE(config.commitWithResult());
+  ASSERT_TRUE(config.commitWithResult());
+
+  // Temp files are renamed into place, none are left behind.
+  for (const auto& entry : std::filesystem::directory_iterator(tempDirectory)) {
+    EXPECT_EQ(entry.path().filename().string().find("config_storage.bin.tmp"),
+              std::string::npos)
+        << entry.path();
+  }
+  EXPECT_GT(std::filesystem::file_size(storagePath), 0U);
+
+  TestLinuxYamlConfig restored;
+  restored.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(restored.init());
+  char value[32] = {};
+  ASSERT_TRUE(restored.getString("test_key", value, sizeof(value)));
+  EXPECT_STREQ(value, "test_value");
+}
+
+TEST_F(Sd4linuxYamlCredentialTests, ConcurrentCommitsPublishCompleteFiles) {
+  const auto storagePath = tempDirectory / "config_storage.bin";
+  TestLinuxYamlConfig config;
+  config.config["state_files_path"] = tempDirectory.string();
+  // Close to the per-value format limit, so a write takes a while.
+  const std::string payload(60 * 1024, 'a');
+  ASSERT_TRUE(config.setBlob("payload", payload.c_str(), payload.size()));
+
+  std::atomic<bool> allSucceeded{true};
+  std::vector<std::thread> writers;
+  for (int i = 0; i < 4; i++) {
+    writers.emplace_back([&]() {
+      for (int j = 0; j < 10; j++) {
+        if (!config.commitWithResult()) {
+          allSucceeded = false;
+        }
+      }
+    });
+  }
+  for (auto& writer : writers) {
+    writer.join();
+  }
+
+  EXPECT_TRUE(allSucceeded);
+  EXPECT_TRUE(std::filesystem::is_regular_file(storagePath));
+
+  // Verify through the real loader, not by comparing serializer output.
+  TestLinuxYamlConfig restored;
+  restored.config["state_files_path"] = tempDirectory.string();
+  ASSERT_TRUE(restored.init());
+  std::string loaded(payload.size(), '\0');
+  ASSERT_EQ(restored.getBlobSize("payload"), static_cast<int>(payload.size()));
+  ASSERT_TRUE(restored.getBlob("payload", loaded.data(), loaded.size()));
+  EXPECT_EQ(loaded, payload);
 }
 
 TEST_F(Sd4linuxYamlCredentialTests, LogsConfigStorageWriteFailure) {

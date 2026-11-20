@@ -67,6 +67,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -232,32 +233,58 @@ bool Supla::LinuxYamlConfig::init() {
   std::string readWriteConfigFilePath =
       getStateFilesPath() + Supla::ReadWriteConfigStorage;
 
-  uint8_t buf[SUPLA_LINUX_CONFIG_BUF_SIZE] = {};
-  if (std::filesystem::exists(readWriteConfigFilePath)) {
+  std::error_code existsError;
+  const bool rwConfigExists =
+      std::filesystem::exists(readWriteConfigFilePath, existsError);
+  if (existsError) {
+    SUPLA_LOG_ERROR("Read write config: failed to access '%s': %s",
+                    readWriteConfigFilePath.c_str(),
+                    existsError.message().c_str());
+    return false;
+  }
+  if (rwConfigExists) {
     SUPLA_LOG_INFO("Read write config storage file: %s",
                    readWriteConfigFilePath.c_str());
 
     std::ifstream rwConfigFile(readWriteConfigFilePath,
                                std::ifstream::in | std::ios::binary);
 
-    unsigned char c = rwConfigFile.get();
-
-    int bytesRead = 0;
-    for (; rwConfigFile.good() && bytesRead < SUPLA_LINUX_CONFIG_BUF_SIZE;
-         bytesRead++) {
-      buf[bytesRead] = c;
-      c = rwConfigFile.get();
+    if (!rwConfigFile.is_open()) {
+      SUPLA_LOG_ERROR("Read write config: failed to open '%s'",
+                      readWriteConfigFilePath.c_str());
+      return false;
     }
 
-    rwConfigFile.close();
-
-    if (bytesRead >= SUPLA_LINUX_CONFIG_BUF_SIZE) {
+    // One extra byte lets us tell a file of exactly the maximum size from
+    // an oversized one.
+    std::vector<uint8_t> buf(SUPLA_LINUX_CONFIG_BUF_SIZE + 1);
+    rwConfigFile.read(reinterpret_cast<char*>(buf.data()),
+                      static_cast<std::streamsize>(buf.size()));
+    const auto bytesRead = static_cast<size_t>(rwConfigFile.gcount());
+    if (rwConfigFile.bad()) {
+      SUPLA_LOG_ERROR("Read write config: failed to read '%s'",
+                      readWriteConfigFilePath.c_str());
+      return false;
+    }
+    if (bytesRead > SUPLA_LINUX_CONFIG_BUF_SIZE) {
       SUPLA_LOG_ERROR("Read write config: buffer overflow - file is too big");
       return false;
     }
 
+    if (bytesRead == 0) {
+      SUPLA_LOG_INFO(
+          "Read write config: config file empty, starting with empty database");
+      return true;
+    }
+
     SUPLA_LOG_INFO("Read write config: initializing storage from file...");
-    return initFromMemory(buf, bytesRead);
+    if (!initFromMemory(buf.data(), bytesRead)) {
+      SUPLA_LOG_ERROR("Read write config: invalid storage data in '%s' "
+                      "(%zu bytes)",
+                      readWriteConfigFilePath.c_str(),
+                      bytesRead);
+      return false;
+    }
   } else {
     SUPLA_LOG_INFO(
         "Read write config: config file missing, starting with empty database");
@@ -378,15 +405,22 @@ void Supla::LinuxYamlConfig::commit() {
 }
 
 bool Supla::LinuxYamlConfig::commitWithResult() {
-  uint8_t buf[SUPLA_LINUX_CONFIG_BUF_SIZE] = {};
+  std::vector<uint8_t> buf(SUPLA_LINUX_CONFIG_BUF_SIZE);
 
-  size_t dataSize = serializeToMemory(buf, SUPLA_LINUX_CONFIG_BUF_SIZE);
+  bool serialized = false;
+  const size_t dataSize =
+      serializeToMemory(buf.data(), buf.size(), &serialized);
+  if (!serialized) {
+    SUPLA_LOG_ERROR(
+        "Config: failed to serialize read/write config storage, keeping the "
+        "previous file");
+    return false;
+  }
 
-  if (!Supla::Linux::writeSecureFile(
+  if (!Supla::Linux::writeSecureFileAtomic(
           getStateFilesPath() + Supla::ReadWriteConfigStorage,
-          buf,
-          dataSize,
-          false)) {
+          buf.data(),
+          dataSize)) {
     SUPLA_LOG_ERROR("Config: failed to write read/write config storage file");
     return false;
   }

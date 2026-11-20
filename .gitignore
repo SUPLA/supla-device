@@ -20,3 +20,4 @@ aes_key.bin
 prvtkey.pem
 aes_key_devdata.bin
 .clangd
+.idea

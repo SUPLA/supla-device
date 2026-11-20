@@ -409,7 +409,8 @@
         "avr": 64,
         "esp8266": 112,
         "esp32": 112
-      }
+      },
+      "reason": "MultiDS caches the latest reading for each of up to 15 sensors so channel updates can reuse it without repeating 1-Wire reads between conversions."
     },
     {
       "name": "Supla::Sensor::Container",

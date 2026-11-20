@@ -22,7 +22,7 @@ void MultiDsSensor::iterateAlways() {
 }
 
 double MultiDsSensor::getValue() {
-  double value = handler->getTemperature(address);
+  double value = handler->getCachedTemperature(address);
   // DallasTemperature uses -127 C for a disconnected device. Keep this
   // platform-neutral so the common sensor implementation does not depend on
   // Arduino headers.

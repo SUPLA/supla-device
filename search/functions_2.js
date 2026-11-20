@@ -10,5 +10,6 @@ var searchData=
   ['close_7',['close',['../classSupla_1_1HtmlTag.html#a4723e2d57fa1a70b7cad6092c6368032',1,'Supla::HtmlTag']]],
   ['closevalve_8',['closeValve',['../classSupla_1_1Control_1_1ValveBase.html#a016316e194423fd6566466e99ce2c5a6',1,'Supla::Control::ValveBase']]],
   ['convertstoragefromlegacychannel_9',['convertStorageFromLegacyChannel',['../classSupla_1_1Control_1_1LightingPwmBase.html#a61e8b252f9d73a5b0ed35e3068cc2985',1,'Supla::Control::LightingPwmBase']]],
-  ['customtextparameter_10',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html#af91fc4f710d12371213d779804cd2928',1,'Supla::Html::CustomTextParameter']]]
+  ['create_10',['Create',['../classSupla_1_1Device_1_1SwUpdate.html#a338686a390417eea157269d097ad5898',1,'Supla::Device::SwUpdate']]],
+  ['customtextparameter_11',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html#af91fc4f710d12371213d779804cd2928',1,'Supla::Html::CustomTextParameter']]]
 ];

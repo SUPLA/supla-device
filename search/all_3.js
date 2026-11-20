@@ -45,9 +45,10 @@ var searchData=
   ['convertstoragefromlegacychannel_42',['convertStorageFromLegacyChannel',['../classSupla_1_1Control_1_1LightingPwmBase.html#a61e8b252f9d73a5b0ed35e3068cc2985',1,'Supla::Control::LightingPwmBase']]],
   ['correction_43',['Correction',['../classSupla_1_1Correction.html',1,'Supla']]],
   ['countdowntimerremainingsecgetter_44',['CountdownTimerRemainingSecGetter',['../classSupla_1_1CountdownTimerRemainingSecGetter.html',1,'Supla']]],
-  ['currentgetter_45',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
-  ['customcheckboxparameter_46',['CustomCheckboxParameter',['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html']]],
-  ['customparametertemplate_47',['CustomParameterTemplate',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
-  ['customswupdate_48',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
-  ['customtextparameter_49',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html::CustomTextParameter'],['../classSupla_1_1Html_1_1CustomTextParameter.html#af91fc4f710d12371213d779804cd2928',1,'Supla::Html::CustomTextParameter::CustomTextParameter()']]]
+  ['create_45',['Create',['../classSupla_1_1Device_1_1SwUpdate.html#a338686a390417eea157269d097ad5898',1,'Supla::Device::SwUpdate']]],
+  ['currentgetter_46',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
+  ['customcheckboxparameter_47',['CustomCheckboxParameter',['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html']]],
+  ['customparametertemplate_48',['CustomParameterTemplate',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
+  ['customswupdate_49',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
+  ['customtextparameter_50',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html::CustomTextParameter'],['../classSupla_1_1Html_1_1CustomTextParameter.html#af91fc4f710d12371213d779804cd2928',1,'Supla::Html::CustomTextParameter::CustomTextParameter()']]]
 ];

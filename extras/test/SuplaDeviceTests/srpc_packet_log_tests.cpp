@@ -52,8 +52,8 @@ TEST_F(SrpcPacketLogTests, SupLanIdentityReceiveLogsCallName) {
 
   EXPECT_NE(log.find("SRPC RX SUPLAN_DEVICE_IDENTITIES(1280) size=20"),
             std::string::npos);
-  EXPECT_NE(log.find("raw=[06 00 00 00 03 00 00 00 0C 00 00 00"),
-            std::string::npos);
+  EXPECT_NE(log.find("{DeviceId=6, Channels=3}"), std::string::npos);
+  EXPECT_EQ(log.find("raw=["), std::string::npos);
   EXPECT_EQ(log.find("UNKNOWN"), std::string::npos);
 }
 
@@ -66,7 +66,8 @@ TEST_F(SrpcPacketLogTests, SupLanIdentityResultSendLogsCallName) {
   EXPECT_NE(log.find("SRPC TX SUPLAN_DEVICE_IDENTITIES_RESULT(1290) "
                      "size=5"),
             std::string::npos);
-  EXPECT_NE(log.find("raw=[00 65 93 35 07 "), std::string::npos);
+  EXPECT_NE(log.find("{Result=0, RootEpoch=120951653}"), std::string::npos);
+  EXPECT_EQ(log.find("raw=["), std::string::npos);
   EXPECT_EQ(log.find("UNKNOWN"), std::string::npos);
 }
 
@@ -312,6 +313,53 @@ TEST_F(SrpcPacketLogTests, ProvisioningKeysAreSensitive) {
     EXPECT_EQ(log.find("raw=["), std::string::npos);
   }
 }
+
+TEST_F(SrpcPacketLogTests, SupLanAssociationLogsMetadataAndNeverKeys) {
+  TSDS_SuplaSetSuplanSourceAssociation source = {};
+  source.PeerContext.SourceNodeId = 61;
+  source.PeerContext.DestinationNodeId = 1;
+  source.AclRevision = 15;
+  source.AclEntryCount = 1;
+  srpc->logSrpcPacket(false, SUPLA_SD_CALL_SET_SUPLAN_SOURCE_ASSOCIATION,
+      reinterpret_cast<const uint8_t *>(&source),
+      offsetof(TSDS_SuplaSetSuplanSourceAssociation, Acl) +
+          sizeof(source.Acl[0]));
+  std::string log = supla_test_get_last_log();
+  EXPECT_NE(log.find("AclRevision=15, Entries=1"), std::string::npos);
+  EXPECT_EQ(log.find("raw=["), std::string::npos);
+
+  TDS_SuplaSetSuplanSourceAssociationResult sourceResult = {};
+  TSDS_SuplaSetSuplanDestinationAssociation destination = {};
+  memset(sourceResult.PeerKey, 0xDB, sizeof(sourceResult.PeerKey));
+  memset(destination.PeerKey, 0xDB, sizeof(destination.PeerKey));
+  srpc->logSrpcPacket(true, SUPLA_DS_CALL_SET_SUPLAN_SOURCE_ASSOCIATION_RESULT,
+      reinterpret_cast<const uint8_t *>(&sourceResult), sizeof(sourceResult));
+  log = supla_test_get_last_log();
+  EXPECT_NE(log.find("Result=0, PeerKey=<redacted>"), std::string::npos);
+  EXPECT_EQ(log.find("Entries="), std::string::npos);
+  EXPECT_EQ(log.find("DB"), std::string::npos);
+
+  TDS_SuplaSetSuplanDestinationAssociationResult destinationResult = {};
+  srpc->logSrpcPacket(true,
+      SUPLA_DS_CALL_SET_SUPLAN_DESTINATION_ASSOCIATION_RESULT,
+      reinterpret_cast<const uint8_t *>(&destinationResult),
+      sizeof(destinationResult));
+  log = supla_test_get_last_log();
+  EXPECT_NE(log.find("Result=0"), std::string::npos);
+  EXPECT_EQ(log.find("Entries="), std::string::npos);
+
+  const size_t size =
+      offsetof(TSDS_SuplaSetSuplanDestinationAssociation, Resources);
+  for (size_t length : {size, size - 1}) {
+    srpc->logSrpcPacket(false, SUPLA_SD_CALL_SET_SUPLAN_DESTINATION_ASSOCIATION,
+        reinterpret_cast<const uint8_t *>(&destination), length);
+    log = supla_test_get_last_log();
+    EXPECT_NE(log.find("PeerKey=<redacted>"), std::string::npos);
+    EXPECT_EQ(log.find("raw=["), std::string::npos);
+    EXPECT_EQ(log.find("DB"), std::string::npos);
+  }
+}
+
 TEST_F(SrpcPacketLogTests, LowLevelDebugCannotBypassCredentialRedaction) {
   auto client = new NetworkClientMock;
   EXPECT_CALL(*client, stop()).Times(1);

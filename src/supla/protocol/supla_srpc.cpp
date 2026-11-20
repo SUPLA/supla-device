@@ -78,6 +78,127 @@ uint8_t effectiveSrpcVersion(int requestedVersion) {
 }
 
 #if SUPLA_SRPC_PACKET_LOG_ENABLED && !defined(SUPLA_DISABLE_LOGS)
+template <typename T>
+const T *supLanPacket(const uint8_t *buf, size_t size,
+                      size_t minimum = sizeof(T)) {
+  return buf && size >= minimum && size <= sizeof(T)
+      ? reinterpret_cast<const T *>(buf) : nullptr;
+}
+
+bool logSupLanPacket(const char *direction, int callId, const char *callName,
+                      const uint8_t *buf, size_t size) {
+  const TSuplaSuplanPeerContext *context = nullptr;
+  uint32_t revision = 0;
+  const char *field = "Result";
+  unsigned detail = 0;
+  const char *key = "";
+  switch (callId) {
+    case SUPLA_SD_CALL_SET_SUPLAN_SOURCE_ASSOCIATION: {
+      using Packet = TSDS_SuplaSetSuplanSourceAssociation;
+      constexpr size_t header = offsetof(Packet, Acl);
+      const auto *data = supLanPacket<Packet>(buf, size, header);
+      if (data && data->AclEntryCount <= SUPLA_SUPLAN_MAX_ACL_ENTRIES &&
+          size == header + data->AclEntryCount * sizeof(data->Acl[0])) {
+        context = &data->PeerContext;
+        revision = data->AclRevision;
+        field = "Entries";
+        detail = data->AclEntryCount;
+      }
+      break;
+    }
+    case SUPLA_SD_CALL_SET_SUPLAN_DESTINATION_ASSOCIATION: {
+      using Packet = TSDS_SuplaSetSuplanDestinationAssociation;
+      constexpr size_t header = offsetof(Packet, Resources);
+      const auto *data = supLanPacket<Packet>(buf, size, header);
+      key = ", PeerKey=<redacted>";
+      if (data && data->ResourceCount <= SUPLA_SUPLAN_MAX_ACL_ENTRIES &&
+          size == header + data->ResourceCount * sizeof(data->Resources[0])) {
+        context = &data->PeerContext;
+        revision = data->AclRevision;
+        field = "Entries";
+        detail = data->ResourceCount;
+      }
+      break;
+    }
+    case SUPLA_DS_CALL_SET_SUPLAN_SOURCE_ASSOCIATION_RESULT: {
+      key = ", PeerKey=<redacted>";
+      const auto *data =
+          supLanPacket<TDS_SuplaSetSuplanSourceAssociationResult>(buf, size);
+      if (data) {
+        context = &data->PeerContext;
+        revision = data->AclRevision;
+        detail = data->Result;
+      }
+      break;
+    }
+    case SUPLA_DS_CALL_SET_SUPLAN_DESTINATION_ASSOCIATION_RESULT: {
+      const auto *data =
+          supLanPacket<TDS_SuplaSetSuplanDestinationAssociationResult>(
+              buf, size);
+      if (data) {
+        context = &data->PeerContext;
+        revision = data->AclRevision;
+        detail = data->Result;
+      }
+      break;
+    }
+    case SUPLA_SD_CALL_SUPLAN_DEVICE_IDENTITIES: {
+      using Packet = TSD_SuplaDeviceIdentities;
+      constexpr size_t header = offsetof(Packet, ChannelId);
+      const auto *data = supLanPacket<Packet>(buf, size, header);
+      if (data && data->ChannelCount >= 0 &&
+          data->ChannelCount <= SUPLA_CHANNELMAXCOUNT &&
+          size == header + data->ChannelCount * sizeof(data->ChannelId[0])) {
+        SUPLA_LOG_DEBUG("SRPC %s %s(%d) size=%zu {DeviceId=%" PRId32
+            ", Channels=%" PRId32 "}", direction, callName, callId, size,
+            static_cast<int32_t>(data->DeviceId),
+            static_cast<int32_t>(data->ChannelCount));
+        return true;
+      }
+      break;
+    }
+    case SUPLA_DS_CALL_SUPLAN_DEVICE_IDENTITIES_RESULT: {
+      const auto *data =
+          supLanPacket<TDS_SuplaDeviceIdentitiesResult>(buf, size);
+      if (data) {
+        SUPLA_LOG_DEBUG("SRPC %s %s(%d) size=%zu {Result=%u, RootEpoch=%"
+            PRIu32 "}", direction, callName, callId, size,
+            static_cast<unsigned>(data->Result),
+            static_cast<uint32_t>(data->RootEpoch));
+        return true;
+      }
+      break;
+    }
+    case SUPLA_DS_CALL_ENSURE_SUPLAN_RESOURCE_ACCESS:
+    case SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_ACCESS_RESULT:
+    case SUPLA_DS_CALL_ENSURE_SUPLAN_RESOURCE_SHARE:
+    case SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_SHARE_RESULT:
+    case SUPLA_SD_CALL_REMOTE_CHANNEL_STATE:
+      SUPLA_LOG_DEBUG("SRPC %s %s(%d) size=%zu", direction, callName, callId,
+                      size);
+      return true;
+    default:
+      return false;
+  }
+  if (context) {
+    SUPLA_LOG_DEBUG("SRPC %s %s(%d) size=%zu {Src=%u:%" PRIu32
+        ", Dst=%u:%" PRIu32 ", RootEpoch=%" PRIu32 ", Generation=%" PRIu32
+        ", AclRevision=%" PRIu32 ", %s=%u%s}", direction,
+        callName, callId, size,
+        static_cast<unsigned>(context->SourceNodeIdNamespace),
+        static_cast<uint32_t>(context->SourceNodeId),
+        static_cast<unsigned>(context->DestinationNodeIdNamespace),
+        static_cast<uint32_t>(context->DestinationNodeId),
+        static_cast<uint32_t>(context->RootEpoch),
+        static_cast<uint32_t>(context->PeerGeneration),
+        revision, field, detail, key);
+  } else {
+    SUPLA_LOG_DEBUG("SRPC %s %s(%d) size=%zu {InvalidSize%s}", direction,
+                    callName, callId, size, key);
+  }
+  return true;
+}
+
 void logRawHexDump(const char *direction,
                    int callId,
                    const char *callName,
@@ -153,6 +274,8 @@ const char *safeCallName(int callId) {
       return "ENSURE_SUPLAN_RESOURCE_SHARE";
     case SUPLA_SD_CALL_ENSURE_SUPLAN_RESOURCE_SHARE_RESULT:
       return "ENSURE_SUPLAN_RESOURCE_SHARE_RESULT";
+    case SUPLA_SD_CALL_REMOTE_CHANNEL_STATE:
+      return "REMOTE_CHANNEL_STATE";
     case SUPLA_DS_CALL_SET_DEVICE_CONFIG:
       return "SET_DEV_CFG";
     case SUPLA_SD_CALL_SET_DEVICE_CONFIG:
@@ -1118,6 +1241,7 @@ void Supla::Protocol::SuplaSrpc::logSrpcPacket(bool send,
 
   const char *direction = send ? "TX" : "RX";
   const char *callName = callIdToName(callId);
+  if (logSupLanPacket(direction, callId, callName, buf, size)) return;
 
   if ((callId == SUPLA_SD_CALL_SET_CHANNEL_CONFIG_RESULT ||
        callId == SUPLA_DS_CALL_SET_CHANNEL_CONFIG_RESULT) &&

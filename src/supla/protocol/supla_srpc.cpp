@@ -44,6 +44,30 @@ bool Supla::Protocol::SuplaSrpc::isSuplaSSLEnabled = true;
 static const char wrongCert[] = "SUPLA";
 
 namespace {
+bool shouldTrackDeviceCalCfgResult(
+    const TDS_DeviceCalCfgResult &result,
+    Supla::Protocol::CalCfgResultPending &pending) {
+  if (result.Result != SUPLA_CALCFG_RESULT_TRUE) {
+    return false;
+  }
+  if (result.Command == SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE) {
+    return true;
+  }
+  if (result.Command != SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING ||
+      result.DataSize < offsetof(TCalCfg_SubdevicePairingResult, Name) ||
+      result.DataSize > sizeof(TCalCfg_SubdevicePairingResult)) {
+    return false;
+  }
+
+  const auto status =
+      result.Data[offsetof(TCalCfg_SubdevicePairingResult, PairingResult)];
+  // Keep the original receiver during pairing. An ONGOING reply can restore
+  // tracking if the pending entry was cleared on disconnect.
+  return status == SUPLA_CALCFG_PAIRINGRESULT_PROCEDURE_STARTED ||
+         (status == SUPLA_CALCFG_PAIRINGRESULT_ONGOING &&
+          pending.get(result.ChannelNumber, result.Command) == nullptr);
+}
+
 Supla::Client *createNetworkClient() {
   auto network = Supla::Network::Instance();
   if (network != nullptr) {
@@ -1576,9 +1600,8 @@ void Supla::messageReceived(void *srpc,
           // it to SuplaDeviceClass instance
           result.Result = suplaSrpc->getSdc()->handleCalcfgFromServer(
               rd.data.sd_device_calcfg_request, &result);
-          if ((result.Command == SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING ||
-               result.Command == SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE) &&
-              result.Result == SUPLA_CALCFG_RESULT_TRUE) {
+          if (shouldTrackDeviceCalCfgResult(result,
+                                           suplaSrpc->calCfgResultPending)) {
             suplaSrpc->calCfgResultPending.set(
                 result.ChannelNumber, result.ReceiverID, result.Command, 0);
           }

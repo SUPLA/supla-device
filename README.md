@@ -178,6 +178,20 @@ See the `docs/` directory for a quick orientation.
 SUPLA platform overview:  
 https://www.supla.org/
 
+### Custom firmware updates (OTA)
+
+Register your updater with `SuplaDevice.setSwUpdateFactory(...)` before
+`begin()` and call `setAutomaticFirmwareUpdateSupported(true)` to advertise
+OTA support. Cloud commands and periodic OTA require a device configuration
+object and a policy that allows the operation. `Disabled` allows Cloud
+commands and skips periodic OTA. `ForcedOff` blocks both.
+
+With the `SecurityOnly` policy, `SuplaDevice` sets a flag on the updater.
+Your updater reads `isSecurityOnly()` in `iterate()` and only selects releases
+that your project identifies as security updates. If no eligible release is
+available, it ends the attempt without installing anything. See the
+[updater contract and examples](src/supla/device/sw_update.h).
+
 ---
 
 ## Code orientation

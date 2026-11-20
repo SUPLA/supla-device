@@ -110,26 +110,18 @@ SuplaDeviceClass::SuplaDeviceClass() {
 }
 
 SuplaDeviceClass::~SuplaDeviceClass() {
-  if (srpcLayer) {
-    delete srpcLayer;
-    srpcLayer = nullptr;
-  }
-  if (customHostnamePrefix) {
-    delete[] customHostnamePrefix;
-    customHostnamePrefix = nullptr;
-  }
-  if (lastStateLogger) {
-    delete lastStateLogger;
-    lastStateLogger = nullptr;
-  }
-  if (channelConflictResolvers) {
-    delete channelConflictResolvers;
-    channelConflictResolvers = nullptr;
-  }
-  if (timerAccessMutex) {
-    delete timerAccessMutex;
-    timerAccessMutex = nullptr;
-  }
+  delete swUpdate;
+  swUpdate = nullptr;
+  delete srpcLayer;
+  srpcLayer = nullptr;
+  delete[] customHostnamePrefix;
+  customHostnamePrefix = nullptr;
+  delete lastStateLogger;
+  lastStateLogger = nullptr;
+  delete channelConflictResolvers;
+  channelConflictResolvers = nullptr;
+  delete timerAccessMutex;
+  timerAccessMutex = nullptr;
 }
 
 void SuplaDeviceClass::setStatusFuncImpl(
@@ -684,6 +676,12 @@ bool SuplaDeviceClass::initSwUpdateInstance(Supla::SwUpdateMode mode,
 
   char url[SUPLA_MAX_URL_LENGTH] = {};
   auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg == nullptr && securityOnly == -1) {
+    // Without config the OTA policy is unknown. Treat it as ForcedOff, the
+    // same way Cloud update commands do.
+    SUPLA_LOG_INFO("Firmware update policy unavailable");
+    return false;
+  }
   if (cfg) {
     if (securityOnly == -1) {
       switch (cfg->getAutoUpdatePolicy()) {
@@ -711,12 +709,11 @@ bool SuplaDeviceClass::initSwUpdateInstance(Supla::SwUpdateMode mode,
     cfg->getSwUpdateServer(url);
   }
 
-  if (strlen(url) == 0) {
-    swUpdate = Supla::Device::SwUpdate::Create(
-        this, "https://iot.updates.supla.org/check-updates", mode);
-  } else {
-    swUpdate = Supla::Device::SwUpdate::Create(this, url, mode);
-  }
+  const char *updateServer =
+      url[0] ? url : "https://iot.updates.supla.org/check-updates";
+  auto factory = swUpdateFactory ? swUpdateFactory
+                                 : Supla::Device::SwUpdate::Create;
+  swUpdate = factory(this, updateServer, mode);
   if (swUpdate == nullptr) {
     SUPLA_LOG_WARNING("Failed to create SW update instance");
     return false;
@@ -738,6 +735,7 @@ bool SuplaDeviceClass::initSwUpdateInstance(Supla::SwUpdateMode mode,
   if (securityOnly == 1) {
     swUpdate->setSecurityOnly();
   }
+  swUpdateMode = mode;
   if (mode == Supla::SwUpdateMode::CheckAndUpdate) {
     deviceMode = Supla::DEVICE_MODE_SW_UPDATE;
   }
@@ -761,13 +759,16 @@ void SuplaDeviceClass::iterateSwUpdate() {
     if (swUpdate->isAborted()) {
       SUPLA_LOG_INFO("SW update aborted");
 
-      bool retryAllowed = swUpdate->isRetryAllowed();
+      // A failed check must never turn into an installation attempt.
+      bool retryAllowed = swUpdate->isRetryAllowed() &&
+                          swUpdateMode != Supla::SwUpdateMode::OnlyCheck;
       int securityPolicy = swUpdate->isSecurityOnly() ? 1 : 0;
 
       //      int swUpdatePolicy = swUpdate->isSecurityOnly() ? 1 : 0;
       TCalCfg_FirmwareCheckResult result = {};
       result.Result = SUPLA_FIRMWARE_CHECK_RESULT_ERROR;
-      if (swUpdate->getNewVersion()) {
+      const bool failed = swUpdate->isFailed();
+      if (!failed && swUpdate->getNewVersion()) {
         SUPLA_LOG_INFO("New version available: %s", swUpdate->getNewVersion());
         strncpy(result.SoftVer,
                 swUpdate->getNewVersion(),
@@ -778,14 +779,20 @@ void SuplaDeviceClass::iterateSwUpdate() {
                   swUpdate->getChangelogUrl(),
                   SUPLA_URL_PATH_MAXSIZE - 1);
         }
-      } else if (!swUpdate->isRetryAllowed()) {
+      } else if (!failed && !swUpdate->isRetryAllowed()) {
         result.Result = SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_NOT_AVAILABLE;
         //        triggerSwUpdateIfAvailableAttempts = 0;
       }
-      srpcLayer->sendPendingCalCfgResult(
-          -1, SUPLA_CALCFG_RESULT_TRUE, -1, sizeof(result), &result);
-      srpcLayer->clearPendingCalCfgResult(
-          -1, SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE);
+      if (srpcLayer) {
+        srpcLayer->sendPendingCalCfgResult(
+            -1,
+            SUPLA_CALCFG_RESULT_TRUE,
+            SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE,
+            sizeof(result),
+            &result);
+        srpcLayer->clearPendingCalCfgResult(
+            -1, SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE);
+      }
       delete swUpdate;
       swUpdate = nullptr;
       if (retryAllowed) {
@@ -1785,10 +1792,8 @@ Supla::Protocol::SuplaSrpc *SuplaDeviceClass::getSrpcLayer() {
 }
 
 void SuplaDeviceClass::setCustomHostnamePrefix(const char *prefix) {
-  if (customHostnamePrefix != nullptr) {
-    delete[] customHostnamePrefix;
-    customHostnamePrefix = nullptr;
-  }
+  delete[] customHostnamePrefix;
+  customHostnamePrefix = nullptr;
   if (prefix == nullptr) {
     return;
   }
@@ -2183,6 +2188,10 @@ void SuplaDeviceClass::setSwUpdateObserver(
   if (swUpdate) {
     swUpdate->setObserver(observer);
   }
+}
+
+void SuplaDeviceClass::setSwUpdateFactory(SwUpdateFactory factory) {
+  swUpdateFactory = factory;
 }
 
 bool SuplaDeviceClass::isAutomaticFirmwareUpdateEnabled() const {

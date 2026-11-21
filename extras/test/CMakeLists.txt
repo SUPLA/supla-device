@@ -188,6 +188,7 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/sensor/electricity_meter_parsed.cpp
   ../porting/linux/supla/sensor/general_purpose_measurement_parsed.cpp
   ../porting/linux/supla/sensor/general_purpose_meter_parsed.cpp
+  ../porting/linux/supla/sensor/general_purpose_text_parsed.cpp
   ../porting/linux/supla/sensor/humidity_parsed.cpp
   ../porting/linux/supla/sensor/impulse_counter_parsed.cpp
   ../porting/linux/supla/sensor/pressure_parsed.cpp

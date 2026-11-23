@@ -39,6 +39,7 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <thread>
 #include <vector>
 
 #include "peer_store_test_helpers.h"
@@ -870,7 +871,7 @@ ProvisionedDeadline provisionedDeadline() {
 int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
                            ProvisionedDeadline deadline,
                            bool hvacConsumer = false,
-                           unsigned completionDelayMs = 0) {
+                           bool delayCompletionPastDeadline = false) {
   Supla::Channel::resetToDefaults();
   Supla::RegisterDevice::resetToDefaults();
   SimpleTime clock;
@@ -993,9 +994,11 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
   bool requestedMetadataRestore = false;
   bool publishedMetadata = false;
   bool publishedMetadataRestore = false;
-  // Both children share the parent's absolute wall deadline. Iteration count
-  // and simulated time are not a bound on how much CPU the other child got.
-  while (std::chrono::steady_clock::now() < deadline) {
+  const auto completionDeadline = deadline + std::chrono::seconds(2);
+  auto stopAt = deadline;
+  // Keep the shared deadline for the exchange. Once the Source has answered
+  // the final request, give Destination time to send its completion marker.
+  while (std::chrono::steady_clock::now() < stopAt) {
     usleep(1000);
     datagrams.now += 5;
     clock.advance(5);
@@ -1025,6 +1028,10 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
         !publishedMetadataRestore) {
       channel->setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
       publishedMetadataRestore = true;
+    }
+    if (isSource && (hvacConsumer ? publishedMetadataRestore :
+                                    runtime.diagnostics().readDispatched)) {
+      stopAt = completionDeadline;
     }
     if (!isSource && states && runtime.poolDiagnostics().sessions.used) {
       if (hvac) {
@@ -1087,7 +1094,10 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
           return 21;
       }
       uint8_t complete = 0xfe;
-      if (completionDelayMs) usleep(completionDelayMs * 1000);
+      if (delayCompletionPastDeadline) {
+        std::this_thread::sleep_until(deadline +
+                                      std::chrono::milliseconds(100));
+      }
       if (send(socket, &complete, sizeof(complete), 0) != sizeof(complete))
         return 14;
       return 0;
@@ -1224,7 +1234,8 @@ TEST(SupLanProvisionedRead, DelayedCompletionAfterSuccessfulHvacChecks) {
     ASSERT_EQ(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
                          sizeof(timeout)), 0);
   }
-  const auto deadline = provisionedDeadline();
+  const auto deadline = std::chrono::steady_clock::now() +
+                        std::chrono::seconds(2);
   const auto source = fork();
   ASSERT_GE(source, 0);
   if (source == 0) {
@@ -1238,7 +1249,7 @@ TEST(SupLanProvisionedRead, DelayedCompletionAfterSuccessfulHvacChecks) {
     // Emulate descheduling after the real HVAC assertions, not packet loss
     // or fabricated state. The Source must still receive the final barrier.
     _exit(runProvisionedEndpoint(sockets[1], false, true, deadline,
-                                  true, 1200));
+                                  true, true));
   }
   close(sockets[0]);
   close(sockets[1]);

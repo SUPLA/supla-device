@@ -39,6 +39,7 @@
 #include <supla/io.h>
 #include <supla/local_action.h>
 #include <supla/parser/simple.h>
+#include <supla/protocol/supla_srpc.h>
 #include <supla/pv/afore.h>
 #include <supla/pv/fronius.h>
 #include <supla/rsa_verificator.h>
@@ -100,15 +101,23 @@ int main(int argc, char *argv[]) {
         "debug-log-port",
         "Stream SUPLA logs over insecure TCP port, 0 disables",
         cxxopts::value<uint16_t>()->default_value("0"))(
-        "sleepy-cycle", "One cold-boot thermometer cycle (positive ID)",
+        "sleepy-cycle",
+        "One cold-boot thermometer cycle (positive ID)",
         cxxopts::value<uint64_t>())(
-        "sleepy-ready-ms", "Maximum wait for UDP and Source READ grant",
+        "sleepy-validity-sec",
+        "SERVER validity for a sleeping thermometer",
+        cxxopts::value<uint32_t>()->default_value("75"))(
+        "sleepy-ready-ms",
+        "Maximum wait for UDP and Source READ grant",
         cxxopts::value<uint32_t>()->default_value("15000"))(
-        "sleepy-awake-ms", "Advertised wake window in milliseconds",
+        "sleepy-awake-ms",
+        "Advertised wake window in milliseconds",
         cxxopts::value<uint16_t>()->default_value("10000"))(
-        "sleepy-tail-ms", "Sleep announcement processing time in milliseconds",
+        "sleepy-tail-ms",
+        "Sleep announcement processing time in milliseconds",
         cxxopts::value<uint32_t>()->default_value("1000"))(
-        "sleepy-next-ms", "Next planned start (CLOCK_BOOTTIME milliseconds)",
+        "sleepy-next-ms",
+        "Next planned start (CLOCK_BOOTTIME milliseconds)",
         cxxopts::value<uint64_t>()->default_value("0"))(
         "d,daemon", "Run in daemon mode (run in background and log to syslog)")(
         "s,service", "Run as a service (log to syslog but don't fork)")(
@@ -223,9 +232,31 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
-    if (sleepy && (!suplanConfig.enabled || !suplanConfig.serverProvisioning)) {
+    const bool sleepyRegistration =
+        sleepy || result.count("sleepy-validity-sec");
+    if (sleepyRegistration &&
+        (!suplanConfig.enabled || !suplanConfig.serverProvisioning)) {
       SUPLA_LOG_ERROR("Sleepy thermometer requires SupLAN SERVER mode");
       return 1;
+    }
+    Supla::Channel *sleepyChannel = nullptr;
+    uint32_t refreshValidityMs = 0;
+    if (sleepyRegistration) {
+      const auto validity = result["sleepy-validity-sec"].as<uint32_t>();
+      sleepyChannel = Supla::Channel::Begin();
+      if (!validity || validity > INT32_MAX / 1000 || !sleepyChannel ||
+          sleepyChannel->next() ||
+          sleepyChannel->getChannelType() != SUPLA_CHANNELTYPE_THERMOMETER) {
+        SUPLA_LOG_ERROR(
+            "Sleep registration requires one thermometer and a "
+            "positive SERVER validity");
+        return 1;
+      }
+      SuplaDevice.addFlags(SUPLA_DEVICE_FLAG_SLEEP_MODE_ENABLED);
+      sleepyChannel->setValidityTimeSec(validity);
+      refreshValidityMs = validity * 500;
+      SUPLA_LOG_INFO("Sleepy thermometer: SERVER sleep enabled, validity=%u s",
+                     static_cast<unsigned>(validity));
     }
 
     Supla::LinuxFileStorage storage(config->getStateFilesPath());
@@ -247,7 +278,8 @@ int main(int argc, char *argv[]) {
 #ifdef SUPLAN_TESTING
       } else {
         SUPLA_LOG_INFO("SupLAN PoC fixture enabled role=%c port=%u",
-                       suplanConfig.role, suplanConfig.unicastPort);
+                       suplanConfig.role,
+                       suplanConfig.unicastPort);
 #endif  // SUPLAN_TESTING
       }
     }
@@ -296,9 +328,20 @@ int main(int argc, char *argv[]) {
     }
     SUPLA_LOG_INFO("Startup: sd4linux ready");
 
+    uint32_t lastValidityRefreshMs = millis();
     while (st_app_terminate == 0) {
       iterateLinuxDebugSocket();
       debugLogServer.iterate();
+      if (sleepyChannel && !sleepy) {
+        const uint32_t now = millis();
+        if (now - lastValidityRefreshMs >= refreshValidityMs &&
+            SuplaDevice.getSrpcLayer()->isRegisteredAndReady()) {
+          // Reuse the sleeping channel's initial publication in continuous
+          // provisioning while the user configures the Box.
+          sleepyChannel->onRegistered();
+          lastValidityRefreshMs = now;
+        }
+      }
       SuplaDevice.iterate();
       if (sleepy && !sleepy->iterate(*suplanRuntime)) break;
       delay(10);

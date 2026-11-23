@@ -28,7 +28,8 @@ nadzorcy na katalog i osobnego katalogu stanu dla każdego urządzenia.
 
 1. W Cloud włącz rejestrację urządzeń. Zarejestruj Box, jeśli jeszcze go tam nie ma.
 2. Uruchom `./scripts/run.sh provision` na Linuxie. Ten tryb utrzymuje Source
-   online z wartością 20,0°C. Nadzorca wypisze ścieżkę logu.
+   online z wartością 20,0°C i zgłasza do SERVER obsługę uśpienia.
+   Nadzorca wypisze ścieżkę logu.
 3. W Cloud znajdź urządzenie **SupLAN Sleepy Thermometer**. Sprawdź, że jego
    kanał ma funkcję **Termometr**. Zapisz ID kanału. Oba urządzenia powinny
    zgłaszać obsługę SupLAN i należeć do tego samego konta.
@@ -69,6 +70,10 @@ startowym oznacza, że ten start nie nadaje się do testu.
 na końcowe retransmisje oraz sloty testu awarii. Sloty liczą się od startu
 nadzorcy. Temperatura przesuwa się tylko po uruchomieniu procesu, również
 po cyklu zakończonym SIGKILL. `runtime/cycle` należy do aplikacji testowej.
+SERVER utrzymuje ważność temperatury przez okres cyklu plus budżet
+gotowości (domyślnie 75 s). W trybie `provision` Source okresowo odświeża
+tę ważność. Po rozłączeniu TCP wskazanie połączenia w Cloud może się
+zmienić, a ostatni pomiar pozostaje ważny do końca tego czasu.
 `runtime/sdk/` należy do SDK i przechowuje m.in. `guid_auth.yaml`,
 `config_storage.bin` i trwałe odpowiedzi SERVER. Trzymaj ten katalog przy
 wszystkich ponownych uruchomieniach. Ponowny provisioning jest potrzebny

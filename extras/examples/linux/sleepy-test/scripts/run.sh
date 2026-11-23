@@ -34,6 +34,7 @@ if [[ $mode != provision ]]; then
     }
 fi
 [[ $mode != kill ]] || (( kill_after_ms < awake_ms )) || usage
+validity_sec=$(((period_ms + ready_ms + 999) / 1000))
 
 mkdir -p "$runtime/sdk" "$runtime/logs"
 exec 9>"$runtime/supervisor.lock"
@@ -92,7 +93,8 @@ write_runtime() {
 
 if [[ $mode == provision ]]; then
     write_runtime temperature.txt 20.0
-    "$binary" -c config/supla-device.yaml >>"$logfile" 2>&1 9>&- &
+    "$binary" -c config/supla-device.yaml --sleepy-validity-sec "$validity_sec" \
+        >>"$logfile" 2>&1 9>&- &
     child=$!
     stop_if_requested
     event APP_STARTED "pid=$child mode=provision"
@@ -146,6 +148,7 @@ while (( limit == 0 || slot < limit )); do
         boot_ms
         launch_before_ms=$now_ms
         "$binary" -c config/supla-device.yaml --sleepy-cycle "$cycle" \
+            --sleepy-validity-sec "$validity_sec" \
             --sleepy-ready-ms "$ready_ms" --sleepy-awake-ms "$awake_ms" \
             --sleepy-tail-ms "$tail_ms" --sleepy-next-ms "$next" \
             >>"$logfile" 2>&1 9>&- &

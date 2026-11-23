@@ -737,6 +737,83 @@ bool LinuxSupLanRuntime::isTransportOpen() const {
   return transport_ != nullptr && transport_->isOpen();
 }
 
+const char* LinuxSupLanRuntime::sleepySourceBlocker(
+    uint8_t channelNumber) const {
+  if (!associations_ || !associations_->storageReady()) {
+    return "association_store";
+  }
+  const auto* identity = associations_->identity();
+  uint32_t id = 0;
+  if (!identity || !identity->configurationReady() ||
+      !identity->reverse(channelNumber, &id)) {
+    return "server_channel_identity";
+  }
+  const SupLan::ResourceId resource = {SupLan::kResourceTypeChannel, id};
+  for (uint8_t i = 0; i < SUPLAN_MAX_PERSISTENT_PEERS; ++i) {
+    const auto* peer = peers_.get(i);
+    if (peer && !peer->destination && peers_.runtimeEligible(i) &&
+        peers_.authorize(i, resource, SupLan::kPermissionRead)) {
+      return nullptr;
+    }
+  }
+  return "source_read_grant";
+}
+
+const SupLan::Diagnostics& LinuxSupLanRuntime::diagnostics() const {
+  return runtime_->diagnostics();
+}
+
+uint32_t LinuxSupLanRuntime::awakeHintsSent() const {
+  return datagrams_.awakeHints;
+}
+
+uint32_t LinuxSupLanRuntime::resetsSent() const {
+  return datagrams_.resets;
+}
+
+void LinuxSupLanRuntime::announceSleep(uint32_t durationSec) {
+  datagrams_.announcingSleep = true;
+  protocol_->announceSleep(durationSec);
+  datagrams_.announcingSleep = false;
+}
+
+bool LinuxSupLanRuntime::sleepAnnouncementSent() const {
+  return datagrams_.sleepSent;
+}
+
+bool LinuxSupLanRuntime::DiagnosticUdpPort::sendUnicast(
+    const SupLan::Endpoint& endpoint, const uint8_t* data, size_t length) {
+  const bool sent = LinuxUdpPort::sendUnicast(endpoint, data, length);
+  if (sleepSent) return sent;
+  if (announcingSleep) {
+    // Sleep fits in one datagram. The SDK sends at most one per peer here.
+    if (!sent) pendingSleepFrames_.emplace_back(data, data + length);
+    sleepSent = sent;
+  } else if (sent) {
+    // SupLAN retransmits the identical protected frame. Match bytes so
+    // unrelated sends during the tail cannot satisfy the sleep check.
+    for (const auto& frame : pendingSleepFrames_) {
+      if (frame.size() == length && memcmp(frame.data(), data, length) == 0) {
+        sleepSent = true;
+        break;
+      }
+    }
+  }
+  if (sleepSent) pendingSleepFrames_.clear();
+  return sent;
+}
+
+bool LinuxSupLanRuntime::DiagnosticUdpPort::sendLocateMulticast(
+    const uint8_t* data, size_t length) {
+  const bool sent = LinuxUdpPort::sendLocateMulticast(data, length);
+  // Observe the two existing native presence frames at the UDP boundary.
+  if (sent && data && length >= 2 && data[0] == SupLan::kVersion) {
+    if (data[1] == 6 && length == 50) ++resets;       // SOURCE_INTEREST_RESET
+    if (data[1] == 7 && length == 52) ++awakeHints;  // PEER_AWAKE_HINT
+  }
+  return sent;
+}
+
 #ifdef SUPLAN_TESTING
 bool LinuxSupLanRuntime::setTransportEnabled(bool enabled) {
   if (transport_ == nullptr) {

@@ -1,0 +1,27 @@
+# Tylko do testu Linux → Linux. Box konfiguruje się w SUPLA Cloud.
+name: SupLAN Sleepy Linux Destination
+state_files_path: "destination-sdk"
+log_level: debug
+security_level: 0
+supla:
+  server: SERVER_HOSTNAME
+  mail: ACCOUNT_EMAIL
+  proto: 29
+suplan:
+  enabled: true
+  unicast_port: 2016
+channels:
+  - type: ThermometerParsed
+    temperature: 0
+    parser:
+      type: Simple
+      refresh_time_ms: 200
+    source:
+      type: File
+      file: local-temperature.txt
+      expiration_time_sec: 0
+  - type: Hvac
+    default_function: heat
+    main_thermometer_channel_no: 0
+    cmd_on: "printf 1 > heating-output.txt"
+    cmd_off: "printf 0 > heating-output.txt"

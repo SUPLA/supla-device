@@ -4044,6 +4044,100 @@ TEST(SupLanSleepySource, AuthenticatedSleepWakeAndActualInterestLoss) {
   EXPECT_EQ(pair.appB.stateCalls, 2u);
 }
 
+TEST(SupLanSleepySource, ColdSourcesRepairOneContinuousConsumer) {
+  RuntimePair pair;
+  const auto sourceAuthorization = pair.peersA;
+  pair.appB.runtime = &pair.runtimeB;
+  Supla::Device::RemoteResourceManager manager(&pair.peersB, &pair.runtimeB,
+                                               nullptr);
+  pair.appB.remoteResources = &manager;
+  ASSERT_TRUE(manager.consume({1, pair.resource,
+                               Supla::SupLan::kPermissionRead}));
+
+  for (unsigned cycle = 1; cycle <= 22; ++cycle) {
+    SCOPED_TRACE(cycle);
+    {
+      // Keep only the SERVER authorization fixture. Reconstruct the Source
+      // adapter and Runtime, including all sessions, interests and endpoints.
+      auto sourcePeers = sourceAuthorization;
+      FakeApplication sensor;
+      sensor.fullSnapshots = true;
+      sensor.value = cycle;
+      Supla::SupLan::Runtime cold(&pair.crypto, &pair.datagramsA, &sensor,
+          &sourcePeers, RuntimePair::nodeAddress(1001), 29);
+      Supla::Device::ServerAssociations associations(&sourcePeers, &cold);
+      Supla::Protocol::SupLan source(nullptr, &sourcePeers);
+      source.attachRuntime(&cold);
+      source.attachServerAssociations(&associations);
+      const auto* peer = sourcePeers.get(pair.peerA);
+      ASSERT_NE(peer, nullptr);
+      EXPECT_EQ(peer->endpointState, Supla::SupLan::kPeerEndpointNone);
+      EXPECT_EQ(peer->endpoint.port, 0);
+      EXPECT_FALSE(peer->hasLocateReplied);
+      EXPECT_EQ(cold.poolDiagnostics().sessions.used, 0u);
+      EXPECT_EQ(cold.poolDiagnostics().interests.used, 0u);
+      source.beginWake(4000, false);
+
+      bool droppedAwake = false;
+      for (unsigned tick = 0; tick < 400; ++tick) {
+        pair.network.now += 10;
+        source.iterate(pair.network.now);
+        if (cycle == 3) {
+          auto &packets = pair.network.packets;
+          const auto first = std::remove_if(packets.begin(), packets.end(),
+              [&](const Packet &packet) {
+                return packet.source.address == pair.endpointA.address &&
+                    packet.bytes.size() == 52 &&
+                    packet.bytes[0] == Supla::SupLan::kVersion &&
+                    packet.bytes[1] == 7;
+              });
+          droppedAwake = droppedAwake || first != packets.end();
+          packets.erase(first, packets.end());
+        }
+        manager.iterate(pair.network.now);
+        pair.runtimeB.iterate();
+      }
+      if (cycle == 3) {
+        EXPECT_TRUE(droppedAwake);
+      }
+      EXPECT_EQ(pair.appB.value, cycle);
+      EXPECT_TRUE(manager.state(pair.resource, pair.network.now).available());
+      EXPECT_EQ(cold.poolDiagnostics().interests.used, 1u);
+      EXPECT_EQ(pair.runtimeB.poolDiagnostics().sessions.used, 1u);
+
+      // Cycle 20 models abrupt termination with no final application frame.
+      if (cycle != 20) {
+        source.announceSleep(10);
+        pair.runtimeB.iterate();
+        source.iterate(pair.network.now);
+        EXPECT_TRUE(pair.runtimeB.recoveryStatus(pair.peerB).sleeping);
+      } else {
+        EXPECT_FALSE(pair.runtimeB.recoveryStatus(pair.peerB).sleeping);
+      }
+    }
+
+    // No Source runtime executes at all during sleep. At cycle 20 miss
+    // multiple planned wakes, let the D2D cache expire, and recover in 21.
+    const unsigned offlineTicks = cycle == 20 ? 240 : 9;
+    for (unsigned tick = 0; tick < offlineTicks; ++tick) {
+      pair.network.now += 1000;
+      pair.network.history.clear();
+      manager.iterate(pair.network.now);
+      pair.runtimeB.iterate();
+      if (cycle != 20) {
+        EXPECT_TRUE(pair.network.history.empty());
+      }
+      pair.network.packets.clear();
+    }
+    if (cycle == 20) {
+      EXPECT_FALSE(manager.state(pair.resource, pair.network.now).available());
+    }
+  }
+  EXPECT_EQ(pair.runtimeB.poolDiagnostics().sessions.highWater, 1u);
+  EXPECT_EQ(manager.consumerCount(), 1);
+  EXPECT_EQ(manager.resourceCount(), 1);
+}
+
 TEST(SupLanSleepySource, ForgedAwakeHintCannotStartRepair) {
   RuntimePair pair;
   pair.appB.presenceAllowed = true;
@@ -4184,6 +4278,7 @@ TEST(SupLanSleepySource, LostResetHealthyReadRepairRevocationAndLocalActuator) {
   ASSERT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
   const auto sessions = pair.runtimeB.diagnostics().sessionEstablished;
   pair.runtimeA.clearInterests();
+  pair.appA.value = 42;
   ASSERT_TRUE(pair.runtimeA.announcePresence(pair.peerA, 0, true));
   pair.network.packets.clear();  // Lose only RESET, with a healthy transport.
   pair.network.now = 59999;
@@ -4196,6 +4291,7 @@ TEST(SupLanSleepySource, LostResetHealthyReadRepairRevocationAndLocalActuator) {
   pair.pump(30);
   EXPECT_EQ(pair.runtimeA.poolDiagnostics().interests.used, 1U);
   EXPECT_TRUE(manager.state(pair.resource, pair.network.now).available());
+  EXPECT_EQ(pair.appB.value, 42);
   EXPECT_EQ(pair.runtimeB.diagnostics().sessionEstablished, sessions);
   ASSERT_TRUE(pair.peersB.replaceAcl(pair.peerB, 2, nullptr, 0));
   manager.authorizationChanged();

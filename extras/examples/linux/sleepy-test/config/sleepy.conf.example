@@ -1,0 +1,9 @@
+# Bash assignments read by scripts/run.sh.
+period_ms=60000
+ready_ms=15000
+awake_ms=10000
+tail_ms=1000
+# The fault is applied once in each invocation of kill or skip.
+fault_slot=2
+kill_after_ms=5000
+skip_slots=3

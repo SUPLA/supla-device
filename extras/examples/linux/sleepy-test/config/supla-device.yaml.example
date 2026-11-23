@@ -1,0 +1,22 @@
+name: SupLAN Sleepy Thermometer
+state_files_path: "runtime/sdk"
+log_level: info
+security_level: 0
+supla:
+  server: SERVER_HOSTNAME
+  mail: ACCOUNT_EMAIL
+  proto: 29
+suplan:
+  enabled: true
+  unicast_port: 2016
+  # bind_address: 192.168.1.42
+channels:
+  - type: ThermometerParsed
+    temperature: 0
+    parser:
+      type: Simple
+      refresh_time_ms: 200
+    source:
+      type: File
+      file: runtime/temperature.txt
+      expiration_time_sec: 0

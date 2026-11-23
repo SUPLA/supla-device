@@ -30,6 +30,7 @@ add_executable(supla-device-linux
   main.cpp
   debug_socket.cpp
   suplan_runtime_linux.cpp
+  sleepy_thermometer.cpp
 )
 
 supla_device(supladevicelib)

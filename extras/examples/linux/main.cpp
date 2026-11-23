@@ -75,6 +75,7 @@
 #include <string>
 
 #include "debug_socket.h"
+#include "sleepy_thermometer.h"
 #include "suplan_runtime_linux.h"
 
 // reguired by linux_log.c
@@ -99,6 +100,16 @@ int main(int argc, char *argv[]) {
         "debug-log-port",
         "Stream SUPLA logs over insecure TCP port, 0 disables",
         cxxopts::value<uint16_t>()->default_value("0"))(
+        "sleepy-cycle", "One cold-boot thermometer cycle (positive ID)",
+        cxxopts::value<uint64_t>())(
+        "sleepy-ready-ms", "Maximum wait for UDP and Source READ grant",
+        cxxopts::value<uint32_t>()->default_value("15000"))(
+        "sleepy-awake-ms", "Advertised wake window in milliseconds",
+        cxxopts::value<uint16_t>()->default_value("10000"))(
+        "sleepy-tail-ms", "Sleep announcement processing time in milliseconds",
+        cxxopts::value<uint32_t>()->default_value("1000"))(
+        "sleepy-next-ms", "Next planned start (CLOCK_BOOTTIME milliseconds)",
+        cxxopts::value<uint64_t>()->default_value("0"))(
         "d,daemon", "Run in daemon mode (run in background and log to syslog)")(
         "s,service", "Run as a service (log to syslog but don't fork)")(
         "h,help", "Show this help")("v,version", "Show version");
@@ -113,6 +124,23 @@ int main(int argc, char *argv[]) {
     if (result.count("version")) {
       std::cout << argv[0] << " version: " << SUPLA_SHORT_VERSION << std::endl;
       exit(0);
+    }
+
+    std::unique_ptr<Supla::SleepyThermometer> sleepy;
+    if (result.count("sleepy-cycle")) {
+      const auto cycle = result["sleepy-cycle"].as<uint64_t>();
+      const auto ready = result["sleepy-ready-ms"].as<uint32_t>();
+      const auto awake = result["sleepy-awake-ms"].as<uint16_t>();
+      const auto tail = result["sleepy-tail-ms"].as<uint32_t>();
+      const auto next = result["sleepy-next-ms"].as<uint64_t>();
+      if (!cycle || !ready || ready > 3600000 || !awake || !tail ||
+          tail > 30000 || !next || result.count("daemon") ||
+          result.count("service")) {
+        SUPLA_LOG_ERROR("Invalid foreground sleepy cycle options");
+        return 1;
+      }
+      sleepy = std::make_unique<Supla::SleepyThermometer>(
+          cycle, ready, awake, tail, next);
     }
 
     if (result.count("daemon")) {
@@ -195,6 +223,11 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
+    if (sleepy && (!suplanConfig.enabled || !suplanConfig.serverProvisioning)) {
+      SUPLA_LOG_ERROR("Sleepy thermometer requires SupLAN SERVER mode");
+      return 1;
+    }
+
     Supla::LinuxFileStorage storage(config->getStateFilesPath());
 
     SuplaDevice.setLastStateLogger(
@@ -236,6 +269,10 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
+    if (sleepy && !sleepy->initialize()) {
+      return sleepy->finish(SuplaDevice.prepareForShutdown(), false);
+    }
+
     SUPLA_LOG_INFO("Startup: debug interfaces");
     {
       Supla::LogIndent debugIndent;
@@ -263,6 +300,7 @@ int main(int argc, char *argv[]) {
       iterateLinuxDebugSocket();
       debugLogServer.iterate();
       SuplaDevice.iterate();
+      if (sleepy && !sleepy->iterate(*suplanRuntime)) break;
       delay(10);
     }
     SUPLA_LOG_INFO("Exit");
@@ -270,6 +308,7 @@ int main(int argc, char *argv[]) {
     if (!saved) {
       SUPLA_LOG_ERROR("Configuration save failed during shutdown");
     }
+    if (sleepy) exit(sleepy->finish(saved, st_app_terminate != 0));
     exit(saved ? 0 : 1);
   } catch (const cxxopts::exceptions::exception &e) {
     std::cout << "error parsing options: " << e.what() << std::endl;

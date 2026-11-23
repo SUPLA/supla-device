@@ -804,7 +804,8 @@ class ProcessDatagrams : public DatagramPort {
   explicit ProcessDatagrams(int socket) : socket_(socket) {}
   bool sendUnicast(const Endpoint &, const uint8_t *data,
                    size_t size) override {
-    return send(socket_, data, size, 0) == static_cast<ssize_t>(size);
+    return send(socket_, data, size, MSG_NOSIGNAL) ==
+           static_cast<ssize_t>(size);
   }
   bool sendLocateMulticast(const uint8_t *data, size_t size) override {
     return sendUnicast({}, data, size);
@@ -867,6 +868,10 @@ using ProvisionedDeadline = std::chrono::steady_clock::time_point;
 ProvisionedDeadline provisionedDeadline() {
   return std::chrono::steady_clock::now() + std::chrono::seconds(5);
 }
+
+// Preserve packet boundaries and keep queued packets readable after peer exit,
+// even if the other endpoint attempts a send before receiving them.
+constexpr int kProvisionedSocketType = SOCK_SEQPACKET;
 
 int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
                            ProvisionedDeadline deadline,
@@ -1041,7 +1046,8 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
           if (!adapter.remoteResources()->consume({1000, {1, 501}, 1}))
             return 17;
           uint8_t publish = 0xfd;
-          if (send(socket, &publish, sizeof(publish), 0) != sizeof(publish))
+          if (send(socket, &publish, sizeof(publish), MSG_NOSIGNAL) !=
+              sizeof(publish))
             return 18;
           requestedNotification = true;
           continue;
@@ -1049,21 +1055,22 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
         if (!requestedWake) {
           if (hvac->getPrimaryTemp() != 2250) continue;
           uint8_t wake = 0xfc;
-          if (send(socket, &wake, sizeof(wake), 0) != sizeof(wake)) return 24;
+          if (send(socket, &wake, sizeof(wake), MSG_NOSIGNAL) != sizeof(wake))
+            return 24;
           requestedWake = true;
           continue;
         }
         if (!requestedMetadata) {
           if (hvac->getPrimaryTemp() != 2400) continue;
           uint8_t metadata = 0xfb;
-          if (send(socket, &metadata, 1, 0) != 1) return 25;
+          if (send(socket, &metadata, 1, MSG_NOSIGNAL) != 1) return 25;
           requestedMetadata = true;
           continue;
         }
         if (!requestedMetadataRestore) {
           if (hvac->getPrimaryTemp() != INT16_MIN) continue;
           uint8_t metadata = 0xfa;
-          if (send(socket, &metadata, 1, 0) != 1) return 26;
+          if (send(socket, &metadata, 1, MSG_NOSIGNAL) != 1) return 26;
           requestedMetadataRestore = true;
           continue;
         }
@@ -1098,7 +1105,8 @@ int runProvisionedEndpoint(int socket, bool isSource, bool rebootEndpoint,
         std::this_thread::sleep_until(deadline +
                                       std::chrono::milliseconds(100));
       }
-      if (send(socket, &complete, sizeof(complete), 0) != sizeof(complete))
+      if (send(socket, &complete, sizeof(complete), MSG_NOSIGNAL) !=
+          sizeof(complete))
         return 14;
       return 0;
     }
@@ -1151,7 +1159,7 @@ TEST(SupLanProvisionedRead,
      ProductionAssociationFeedsSessionAndRealChannelRead) {
   for (int rebootMode = 0; rebootMode < 3; ++rebootMode) {
     int sockets[2];
-    ASSERT_EQ(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets), 0);
+    ASSERT_EQ(socketpair(AF_UNIX, kProvisionedSocketType, 0, sockets), 0);
     timeval timeout = {2, 0};
     for (int socket : sockets) {
       ASSERT_EQ(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
@@ -1190,7 +1198,7 @@ TEST(SupLanProvisionedRead,
      RemoteMainThermometerFeedsHvacAndReconstructsAfterRestart) {
   for (int rebootMode = 0; rebootMode < 3; ++rebootMode) {
     int sockets[2];
-    ASSERT_EQ(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets), 0);
+    ASSERT_EQ(socketpair(AF_UNIX, kProvisionedSocketType, 0, sockets), 0);
     timeval timeout = {2, 0};
     for (int socket : sockets) {
       ASSERT_EQ(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
@@ -1228,7 +1236,7 @@ TEST(SupLanProvisionedRead,
 
 TEST(SupLanProvisionedRead, DelayedCompletionAfterSuccessfulHvacChecks) {
   int sockets[2];
-  ASSERT_EQ(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets), 0);
+  ASSERT_EQ(socketpair(AF_UNIX, kProvisionedSocketType, 0, sockets), 0);
   timeval timeout = {2, 0};
   for (int socket : sockets) {
     ASSERT_EQ(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
@@ -1260,6 +1268,23 @@ TEST(SupLanProvisionedRead, DelayedCompletionAfterSuccessfulHvacChecks) {
   ASSERT_TRUE(WIFEXITED(b));
   EXPECT_EQ(WEXITSTATUS(a), 0);
   EXPECT_EQ(WEXITSTATUS(b), 0);
+}
+
+TEST(SupLanProvisionedRead, CompletionSurvivesSendAfterDestinationCloses) {
+  int sockets[2];
+  ASSERT_EQ(socketpair(AF_UNIX, kProvisionedSocketType, 0, sockets), 0);
+  ProcessDatagrams source(sockets[0]);
+  const uint8_t complete = 0xfe;
+  EXPECT_EQ(send(sockets[1], &complete, sizeof(complete), MSG_NOSIGNAL), 1);
+  close(sockets[1]);
+
+  const uint8_t retry = 0;
+  EXPECT_FALSE(source.sendUnicast({}, &retry, sizeof(retry)));
+  Endpoint ignored = {};
+  uint8_t buffer[8] = {};
+  source.pollReceive(buffer, sizeof(buffer), &ignored);
+  EXPECT_TRUE(source.readReceived);
+  close(sockets[0]);
 }
 
 // Automatic SDK bootstrap uses the same isolated process transport; all

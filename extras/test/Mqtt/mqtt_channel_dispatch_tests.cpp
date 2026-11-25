@@ -21,6 +21,7 @@
 #include <supla/sensor/thermometer.h>
 #include <supla/tools.h>
 
+#include <array>
 #include <cstring>
 #include <limits>
 #include <optional>
@@ -101,6 +102,40 @@ void initMqtt(SuplaDeviceClass &sd, Supla::Protocol::Mqtt &mqtt) {
 std::string expectedChannelTopic(int channel, const char *suffix) {
   return std::string(kExpectedPrefix) + "/channels/" + std::to_string(channel) +
          "/" + suffix;
+}
+
+constexpr std::array<int, 3> kDimmerActionCodes = {
+    RGBW_COMMAND_TURN_ON_DIMMER,
+    RGBW_COMMAND_TURN_OFF_DIMMER,
+    RGBW_COMMAND_TOGGLE_DIMMER,
+};
+constexpr std::array<int, 3> kRgbActionCodes = {
+    RGBW_COMMAND_TURN_ON_RGB,
+    RGBW_COMMAND_TURN_OFF_RGB,
+    RGBW_COMMAND_TOGGLE_RGB,
+};
+
+void expectLightActions(MqttTestMock &mqtt,
+                        ChannelElementMock &light,
+                        const char *topicSuffix,
+                        const std::array<int, 3> &commandCodes) {
+  const int channel = light.getChannelNumber();
+  const std::string topic = expectedChannelTopic(channel, topicSuffix);
+  constexpr std::array<const char *, 3> actions = {
+      "TURN_ON", "TURN_OFF", "TOGGLE"};
+
+  for (size_t i = 0; i < actions.size(); ++i) {
+    SCOPED_TRACE(actions[i]);
+    const int expectedCode = commandCodes[i];
+    EXPECT_CALL(light, handleNewValueFromServer(_))
+        .WillOnce([channel, expectedCode](TSD_SuplaChannelNewValue *value) {
+          EXPECT_EQ(channel, value->ChannelNumber);
+          EXPECT_EQ(expectedCode, value->value[6]);
+          return 0;
+        });
+    EXPECT_TRUE(mqtt.processData(topic.c_str(), actions[i]));
+    EXPECT_TRUE(testing::Mock::VerifyAndClearExpectations(&light));
+  }
 }
 
 std::string expectedDiscoveryTopic(const char *type,
@@ -3609,6 +3644,45 @@ TEST_F(MqttChannelDispatchTests, processDataCoversControlTypes) {
                                              "set/temperature_setpoint_cool"))
                            .c_str(),
                        "22.5"));
+}
+
+TEST_F(MqttChannelDispatchTests, processDataDispatchesDimmerActionsOnce) {
+  SuplaDeviceClass sd;
+  StrictMock<MqttTestMock> mqtt(&sd);
+  initMqtt(sd, mqtt);
+
+  ChannelElementMock dimmer;
+  dimmer.getChannel()->setType(SUPLA_CHANNELTYPE_DIMMER);
+  mqtt.test_setChannelsCount(255);
+
+  expectLightActions(mqtt, dimmer, "execute_action", kDimmerActionCodes);
+}
+
+TEST_F(MqttChannelDispatchTests, processDataDispatchesRgbActionsOnce) {
+  SuplaDeviceClass sd;
+  StrictMock<MqttTestMock> mqtt(&sd);
+  initMqtt(sd, mqtt);
+
+  ChannelElementMock rgb;
+  rgb.getChannel()->setType(SUPLA_CHANNELTYPE_RGBLEDCONTROLLER);
+  mqtt.test_setChannelsCount(255);
+
+  expectLightActions(mqtt, rgb, "execute_action", kRgbActionCodes);
+}
+
+TEST_F(MqttChannelDispatchTests,
+       processDataDispatchesCombinedLightActionsOnce) {
+  SuplaDeviceClass sd;
+  StrictMock<MqttTestMock> mqtt(&sd);
+  initMqtt(sd, mqtt);
+
+  ChannelElementMock dimmerAndRgb;
+  dimmerAndRgb.getChannel()->setType(SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
+  mqtt.test_setChannelsCount(255);
+
+  expectLightActions(mqtt, dimmerAndRgb, "execute_action/rgb", kRgbActionCodes);
+  expectLightActions(
+      mqtt, dimmerAndRgb, "execute_action/dimmer", kDimmerActionCodes);
 }
 
 TEST_F(MqttChannelDispatchTests, processDataCoversHvacActionsAndBoundaries) {

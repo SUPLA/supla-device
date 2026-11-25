@@ -1208,7 +1208,7 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
       break;
     }
     case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER: {
-      processRGBWRequest(part, payload, element, channel);
+      processRGBRequest(part, payload, element, channel);
       break;
     }
     case SUPLA_CHANNELTYPE_DIMMERANDRGBLED: {
@@ -3144,10 +3144,8 @@ void Mqtt::processDimmerRequest(const char *part,
   } else if (strcmp(part, "execute_action") == 0) {
     if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
       newValue.value[6] = RGBW_COMMAND_TURN_ON_DIMMER;
-      element->handleNewValueFromServer(&newValue);
     } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
       newValue.value[6] = RGBW_COMMAND_TURN_OFF_DIMMER;
-      element->handleNewValueFromServer(&newValue);
     } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
       newValue.value[6] = RGBW_COMMAND_TOGGLE_DIMMER;
     } else {

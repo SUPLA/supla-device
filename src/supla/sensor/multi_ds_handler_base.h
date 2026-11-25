@@ -14,7 +14,7 @@
 #include "multi_ds_sensor.h"
 
 #define MUTLI_DS_DEFAULT_PAIRING_DURATION_SEC 5
-#define MULTI_DS_MAX_DEVICES_COUNT 10
+#define MULTI_DS_MAX_DEVICES_COUNT 15
 #define MULTI_DS_MAX_ACTIONS 10
 
 namespace Supla {
@@ -51,10 +51,12 @@ class MultiDsHandlerBase : public Element,
 
   virtual double getTemperature(const uint8_t *address) = 0;
 
+  double getCachedTemperature(const uint8_t *address) const;
+
   /**
    * Sets the maximum number of DS18B20 devices handled by this instance.
    *
-   * The default and absolute maximum is 10 devices. The value can only
+   * The default and absolute maximum is 15 devices. The value can only
    * be reduced from the default; setting a higher value has no effect.
    *
    * If the limit is exceeded, pairing of additional devices will fail.
@@ -146,6 +148,8 @@ class MultiDsHandlerBase : public Element,
 
  private:
   void notifySrpcAboutParingEnd(int pairingResult, const char *name = nullptr);
+  void startTemperatureConversion();
+  void refreshTemperatureCache();
   void addressToString(char *buffor, uint8_t bufforLength, uint8_t *address);
   void initialSensorSearch();
 
@@ -156,7 +160,12 @@ class MultiDsHandlerBase : public Element,
   uint32_t pairingStartTimeMs = 0;
   uint32_t helperTimeMs = 0;
   uint32_t lastBusReadTime = 0;
+  uint32_t conversionStartedAtMs = 0;
   uint32_t refreshIntervalMs = 10000;
+  // Maximum DS18B20 conversion time at 12-bit resolution.
+  static constexpr uint32_t kMaxConversionTimeMs = 750;
+  double cachedValues[MULTI_DS_MAX_DEVICES_COUNT] = {};
+  bool conversionPending = false;
 
   uint8_t maxDeviceCount = MULTI_DS_MAX_DEVICES_COUNT;
   uint8_t pairingTimeout = MUTLI_DS_DEFAULT_PAIRING_DURATION_SEC;

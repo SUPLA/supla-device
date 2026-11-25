@@ -53,6 +53,8 @@ uint32_t Supla::channelTypeToProtoType(ChannelType type) {
       return SUPLA_CHANNELTYPE_ACTIONTRIGGER;
     case ChannelType::CONTAINER:
       return SUPLA_CHANNELTYPE_CONTAINER;
+    case ChannelType::GENERAL_PURPOSE_TEXT:
+      return SUPLA_CHANNELTYPE_GENERAL_PURPOSE_TEXT;
     case ChannelType::NOT_SET:
     default:
       return 0;
@@ -105,6 +107,8 @@ ChannelType Supla::protoTypeToChannelType(uint32_t type) {
       return ChannelType::ACTIONTRIGGER;
     case SUPLA_CHANNELTYPE_CONTAINER:
       return ChannelType::CONTAINER;
+    case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_TEXT:
+      return ChannelType::GENERAL_PURPOSE_TEXT;
     default:
       return ChannelType::NOT_SET;
   }

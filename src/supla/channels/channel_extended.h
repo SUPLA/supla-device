@@ -13,6 +13,8 @@ class ChannelExtended : public Channel {
  public:
   bool isExtended() const override;
   TSuplaChannelExtendedValue *getExtValue() override;
+  bool setNewTextValue(const char *text);
+  bool refreshTextValue();
 
  protected:
   TSuplaChannelExtendedValue extValue = {};

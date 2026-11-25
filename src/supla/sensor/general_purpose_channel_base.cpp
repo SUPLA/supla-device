@@ -20,10 +20,22 @@ using Supla::Sensor::GeneralPurposeChannelBase;
 GeneralPurposeChannelBase::GeneralPurposeChannelBase(
     MeasurementDriver *driver, bool addMemoryVariableDriver)
     : driver(driver) {
+  initialize(addMemoryVariableDriver);
+}
+
+GeneralPurposeChannelBase::GeneralPurposeChannelBase(
+    Channel &externalChannel, MeasurementDriver *driver,
+    bool addMemoryVariableDriver)
+    : ChannelElement(externalChannel, ElementMode::Registered),
+      driver(driver) {
+  initialize(addMemoryVariableDriver);
+}
+
+void GeneralPurposeChannelBase::initialize(bool addMemoryVariableDriver) {
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 
-  if (this->driver == nullptr && addMemoryVariableDriver) {
+  if (driver == nullptr && addMemoryVariableDriver) {
     this->driver = new MemoryVariableDriver;
     deleteDriver = true;
   }

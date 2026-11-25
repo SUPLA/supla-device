@@ -105,6 +105,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   ${SUPLA_LINUX_PORT_DIR}/supla/sensor/therm_hygro_meter_parsed.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/sensor/general_purpose_measurement_parsed.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/sensor/general_purpose_meter_parsed.cpp
+  ${SUPLA_LINUX_PORT_DIR}/supla/sensor/general_purpose_text_parsed.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/sensor/container_parsed.cpp
 
   ${SUPLA_LINUX_PORT_DIR}/supla/control/cmd_relay.cpp

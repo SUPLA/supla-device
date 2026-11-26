@@ -84,7 +84,7 @@ void MultiDsHandlerBase::onInit() {
   if (sdc) {
     // SuplaDevice may still be in static construction when a handler is
     // created. Register runtime callbacks only during normal element init.
-    sdc->setChannelConflictResolver(this);
+    sdc->addChannelConflictResolver(this);
     sdc->addFlags(SUPLA_DEVICE_FLAG_CALCFG_SUBDEVICE_PAIRING);
     sdc->addFlags(SUPLA_DEVICE_FLAG_BLOCK_ADDING_CHANNELS_AFTER_DELETION);
     sdc->setSubdevicePairingHandler(this);

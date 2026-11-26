@@ -457,13 +457,14 @@ TEST_F(MultiDsHandlerTests, RegistrationConflictReachesSensorOwner) {
   result.result_code = SUPLA_RESULTCODE_CHANNEL_CONFLICT;
   result.channel_report_size = 45;
   result.channel_report[43] = CHANNEL_REPORT_CHANNEL_REGISTERED;
+  EXPECT_CALL(config, eraseKey(_)).WillRepeatedly(Return(true));
   EXPECT_CALL(config, eraseKey(::testing::StrEq(configKey(2))))
       .WillOnce(Return(true));
 
   sdc.getSrpcLayer()->onRegisterResultB(&result);
 
-  EXPECT_NE(Supla::Channel::getByChannelNumber(43), nullptr);
-  EXPECT_EQ(Supla::Channel::getByChannelNumber(44), nullptr);
+  EXPECT_NE(Supla::Channel::GetByChannelNumber(43), nullptr);
+  EXPECT_EQ(Supla::Channel::GetByChannelNumber(44), nullptr);
 }
 
 }  // namespace

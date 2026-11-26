@@ -285,20 +285,20 @@
       "name": "Supla::Sensor::VirtualImpulseCounter",
       "header": "supla/sensor/virtual_impulse_counter.h",
       "limits": {
-        "host": 160,
-        "avr": 78,
-        "esp8266": 120,
-        "esp32": 120
+        "host": 200,
+        "avr": 139,
+        "esp8266": 168,
+        "esp32": 168
       }
     },
     {
       "name": "Supla::Sensor::ImpulseCounter",
       "header": "supla/sensor/impulse_counter.h",
       "limits": {
-        "host": 192,
-        "avr": 98,
-        "esp8266": 144,
-        "esp32": 144
+        "host": 232,
+        "avr": 159,
+        "esp8266": 192,
+        "esp32": 192
       }
     },
     {

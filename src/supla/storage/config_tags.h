@@ -10,6 +10,7 @@ namespace ConfigTag {
 const char DeviceConfigChangeCfgTag[] = "devcfg_chng";
 
 const char ChannelFunctionTag[] = "fnc";
+const char ImpulseCounterConfigTag[] = "ic_cfg";
 const char ChannelConfigChangedFlagTag[] = "cfg_chng";
 const char ChannelConfigChangedTypesTag[] = "cfg_chng_t";
 

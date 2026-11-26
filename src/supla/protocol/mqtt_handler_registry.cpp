@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <supla/protocol/mqtt_handler_registry.h>
 
 namespace Supla {
@@ -52,3 +54,5 @@ size_t MqttHandlerRegistry::sizeForTests() const {
 
 }  // namespace Protocol
 }  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

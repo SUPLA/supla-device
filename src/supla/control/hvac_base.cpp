@@ -53,7 +53,9 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
   setTemperatureAuxMax(7500);             // 75 degrees
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST);
+#ifndef ARDUINO_ARCH_AVR
   Supla::Protocol::RegisterHvacMqttHandler();
+#endif
 
   // default function is set in onInit based on supported modes or loaded from
   // config

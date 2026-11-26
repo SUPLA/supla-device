@@ -156,6 +156,9 @@ class Channel : public LocalAction {
   int32_t getValueInt32();
   uint64_t getValueInt64();
   virtual bool getValueBool();
+  // Either output may be omitted. A unit-only query identifies the
+  // capability even when the counter has no configured conversion rate.
+  virtual bool getImpulseCounterValue(double *value, const char **unit);
   uint8_t getValueRed() const;
   uint8_t getValueGreen() const;
   uint8_t getValueBlue() const;

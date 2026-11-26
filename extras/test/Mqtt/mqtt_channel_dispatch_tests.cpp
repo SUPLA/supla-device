@@ -19,6 +19,7 @@
 #include <supla/sensor/electricity_meter.h>
 #include <supla/sensor/therm_hygro_meter.h>
 #include <supla/sensor/thermometer.h>
+#include <supla/sensor/virtual_impulse_counter.h>
 #include <supla/tools.h>
 
 #include <array>
@@ -81,14 +82,16 @@ class MqttTestMock : public MqttMock {
   }
 };
 
-void initMqtt(SuplaDeviceClass &sd, Supla::Protocol::Mqtt &mqtt) {
+void initMqtt(SuplaDeviceClass &sd,
+              Supla::Protocol::Mqtt &mqtt,
+              const char *cfgPrefix = kCfgPrefix) {
   ConfigMock config;
   EXPECT_CALL(config, init());
 
   NetworkMockWithMac net;
   EXPECT_CALL(config, getMqttPrefix(_))
       .WillOnce(DoAll(
-          SetArrayArgument<0>(kCfgPrefix, kCfgPrefix + strlen(kCfgPrefix) + 1),
+          SetArrayArgument<0>(cfgPrefix, cfgPrefix + strlen(cfgPrefix) + 1),
           Return(true)));
   EXPECT_CALL(net, getMacAddr(_))
       .WillRepeatedly(DoAll(SetArrayArgument<0>(kMac, kMac + 6), Return(true)));
@@ -311,6 +314,87 @@ void configureRollerRelay(Supla::Channel *ch, uint32_t defaultFunction) {
 }
 
 }  // namespace
+
+TEST_F(MqttChannelDispatchTests, PublishesImpulseCounterStateAndDiscovery) {
+  SuplaDeviceClass sd;
+  StrictMock<MqttTestMock> mqtt(&sd);
+  initMqtt(sd, mqtt);
+  Supla::Sensor::VirtualImpulseCounter counter;
+  mqtt.test_setChannelsCount(255);
+  const int channel = counter.getChannelNumber();
+  counter.setCounter(1);
+  ASSERT_TRUE(counter.setImpulsesPerUnit(600));
+
+  const auto valueTopic = expectedChannelTopic(channel, "state/value");
+  const auto discoveryTopic = expectedDiscoveryTopic("sensor", channel, 0);
+  EXPECT_CALL(mqtt, publishTest(StrEq(valueTopic), StrEq("0.001"), 0, true));
+  mqtt.publishChannelState(channel);
+
+  EXPECT_CALL(mqtt,
+              publishTest(StrEq(discoveryTopic),
+                          AllOf(HasSubstr("\"dev\":{"),
+                                HasSubstr("\"dev_cla\":\"water\""),
+                                HasSubstr("\"unit_of_meas\":\"m³\""),
+                                HasSubstr("\"stat_cla\":\"total_increasing\"")),
+                          0,
+                          true));
+  mqtt.publishHADiscovery(channel);
+
+  ASSERT_TRUE(counter.setCustomUnit("gal"));
+  EXPECT_CALL(mqtt,
+              publishTest(StrEq(discoveryTopic),
+                          AllOf(HasSubstr("\"unit_of_meas\":\"gal\""),
+                                Not(HasSubstr("\"dev_cla\""))),
+                          0,
+                          true));
+  mqtt.publishHADiscovery(channel);
+
+  counter.getChannel()->setValidityTimeSec(123);
+  EXPECT_CALL(mqtt, publishTest(StrEq(valueTopic), StrEq("0.001"), 0, false));
+  mqtt.publishChannelState(channel);
+  EXPECT_CALL(mqtt, publishTest(StrEq(discoveryTopic),
+                                HasSubstr("\"expire_after\":123"), 0, true));
+  mqtt.publishHADiscovery(channel);
+
+  counter.getChannel()->setStateOnlineAndNotAvailable();
+  EXPECT_CALL(mqtt, publishTest(StrEq(valueTopic), StrEq(""), 0, true));
+  EXPECT_CALL(mqtt, publishTest(StrEq(discoveryTopic), StrEq(""), 0, true));
+  mqtt.publishChannelState(channel);
+  mqtt.publishHADiscovery(channel);
+}
+
+TEST_F(MqttChannelDispatchTests, ImpulseCounterDiscoveryEncodesJsonStrings) {
+  SuplaDeviceClass sd;
+  StrictMock<MqttTestMock> mqtt(&sd);
+  initMqtt(sd, mqtt, "site\"\\");
+  const char name[] = "Licznik \"garaż\"\\\t";
+  const char version[] = "1\"\\\n";
+  sd.setName(name);
+  sd.setSwVersion(version);
+
+  Supla::Sensor::VirtualImpulseCounter counter;
+  ASSERT_TRUE(counter.setCustomUnit("\"\\m³"));
+  mqtt.test_setChannelsCount(255);
+  const int channel = counter.getChannelNumber();
+  const std::string prefix = mqtt.getPrefix();
+  const auto topic = expectedDiscoveryTopic("sensor", channel, 0);
+  EXPECT_CALL(mqtt, publishTest(StrEq(topic), _, 0, true))
+      .WillOnce([&](const std::string &,
+                    const std::string &payload, int, bool) {
+        auto config = nlohmann::json::parse(payload, nullptr, false);
+        ASSERT_FALSE(config.is_discarded());
+        EXPECT_EQ(config["dev"]["name"], name);
+        EXPECT_EQ(config["dev"]["sw"], version);
+        EXPECT_EQ(config["unit_of_meas"], "\"\\m³");
+        const auto channelTopic = prefix + "/channels/" +
+                                  std::to_string(channel);
+        EXPECT_EQ(config["~"], channelTopic);
+        ASSERT_EQ(config["avty"].size(), 2);
+        EXPECT_EQ(config["avty"][0]["t"], prefix + "/state/connected");
+        EXPECT_EQ(config["avty"][1]["t"], channelTopic + "/state/available");
+      });
+  mqtt.publishHADiscovery(channel);
+}
 
 TEST_F(MqttChannelDispatchTests, publishDeviceStatusCoversDeviceStateTopics) {
   SuplaDeviceClass sd;

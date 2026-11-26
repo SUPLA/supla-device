@@ -216,6 +216,7 @@ class Mqtt : public ProtocolLayer {
   MqttChannelHandler *findChannelHandler(int channelType) const;
 
   friend class HvacMqttHandler;
+  friend class ImpulseCounterMqttHandler;
 
   char server[SUPLA_SERVER_NAME_MAXSIZE] = {};
   int32_t port = -1;

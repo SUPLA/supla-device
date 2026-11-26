@@ -37,6 +37,7 @@ void SecondsCounter::iterateAlways() {
       }
     }
   }
+  Supla::Sensor::VirtualImpulseCounter::iterateAlways();
 }
 
 void SecondsCounter::enable() {

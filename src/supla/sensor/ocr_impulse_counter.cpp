@@ -48,7 +48,7 @@ void OcrImpulseCounter::clearOcrConfig() {
 }
 
 void OcrImpulseCounter::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
-  Supla::ElementWithChannelActions::onRegistered(suplaSrpc);
+  VirtualImpulseCounter::onRegistered(suplaSrpc);
   clearOcrConfig();
 }
 
@@ -84,6 +84,9 @@ Supla::ApplyConfigResult OcrImpulseCounter::applyChannelConfig(
 
   switch (result->ConfigType) {
     case SUPLA_CONFIG_TYPE_OCR: {
+      if (result->ConfigSize == 0) {
+        return Supla::ApplyConfigResult::SetChannelConfigNeeded;
+      }
       lastPhotoTakeTimestamp = 0;
       if (result->ConfigSize < sizeof(ocrConfig)) {
         return Supla::ApplyConfigResult::DataError;
@@ -502,6 +505,7 @@ void OcrImpulseCounter::stopResultCheck() {
 
 
 void OcrImpulseCounter::onLoadConfig(SuplaDeviceClass *sdc) {
+  VirtualImpulseCounter::onLoadConfig(sdc);
   this->sdc = sdc;
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {

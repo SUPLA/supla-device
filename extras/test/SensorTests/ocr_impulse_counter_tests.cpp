@@ -50,6 +50,18 @@ class OcrImpulseCounterTests : public ::testing::Test {
   }
 };
 
+TEST_F(OcrImpulseCounterTests, EmptyOcrConfigRequestsDeviceDefaults) {
+  TestOcrImpulseCounter counter;
+  TSD_ChannelConfig config = {};
+  config.Func = SUPLA_CHANNELFNC_IC_WATER_METER;
+  config.ConfigType = SUPLA_CONFIG_TYPE_OCR;
+  EXPECT_EQ(counter.handleChannelConfig(&config), SUPLA_CONFIG_RESULT_TRUE);
+
+  config.ConfigSize = 1;
+  EXPECT_EQ(counter.handleChannelConfig(&config),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+}
+
 TEST_F(OcrImpulseCounterTests, Accepts99ByteResultMeasurement) {
   TestOcrImpulseCounter counter;
 

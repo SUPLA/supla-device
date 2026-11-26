@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "mqtt.h"
 
 #include <SuplaDevice.h>
@@ -21,6 +23,14 @@
 #include <supla/storage/config.h>
 #include <supla/time.h>
 #include <supla/tools.h>
+
+namespace Supla {
+namespace Protocol {
+
+void RegisterImpulseCounterMqttIfLinked() __attribute__((weak));
+
+}  // namespace Protocol
+}  // namespace Supla
 
 using Supla::Protocol::Mqtt;
 
@@ -230,6 +240,10 @@ void Supla::Protocol::Mqtt::generateClientId(
 void Supla::Protocol::Mqtt::onInit() {
   if (!enabled) {
     return;
+  }
+
+  if (RegisterImpulseCounterMqttIfLinked) {
+    RegisterImpulseCounterMqttIfLinked();
   }
 
   auto cfg = Supla::Storage::ConfigInstance();
@@ -652,6 +666,12 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
       }
       break;
     }
+    case SUPLA_CHANNELTYPE_IMPULSE_COUNTER: {
+      if (auto handler = findChannelHandler(ch->getChannelType())) {
+        handler->mqttPublishChannelState(this, element);
+      }
+      break;
+    }
     case SUPLA_CHANNELTYPE_ELECTRICITY_METER: {
       // Data for EM is published by publishExtendedChannelState method
       break;
@@ -1057,6 +1077,7 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
     case SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR:
     case SUPLA_CHANNELTYPE_ACTIONTRIGGER:
     case SUPLA_CHANNELTYPE_ELECTRICITY_METER:
+    case SUPLA_CHANNELTYPE_IMPULSE_COUNTER:
     case SUPLA_CHANNELTYPE_BINARYSENSOR: {
       // no subscriptions
       break;
@@ -1297,6 +1318,12 @@ void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
     }
     case SUPLA_CHANNELTYPE_ACTIONTRIGGER: {
       publishHADiscoveryActionTrigger(element);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_IMPULSE_COUNTER: {
+      if (auto handler = findChannelHandler(ch->getChannelType())) {
+        handler->mqttPublishHADiscovery(this, element);
+      }
       break;
     }
     case SUPLA_CHANNELTYPE_ELECTRICITY_METER: {
@@ -1855,6 +1882,12 @@ void Supla::Protocol::Mqtt::clearHADiscoveryForChannel(
       }
       break;
     }
+    case SUPLA_CHANNELTYPE_IMPULSE_COUNTER: {
+      if (auto handler = findChannelHandler(channel->getChannelType())) {
+        handler->mqttClearHADiscovery(this, channel);
+      }
+      break;
+    }
     case SUPLA_CHANNELTYPE_THERMOMETER: {
       auto topic = getHADiscoveryTopic("sensor", objectId);
       publish(topic.c_str(), "", -1, 1, true);
@@ -1943,6 +1976,12 @@ void Supla::Protocol::Mqtt::clearStateForChannel(Supla::Channel *channel) {
       publish((topic / "tilt").c_str(), "", -1, 1);
       publish((topic / "is_calibrating").c_str(), "", -1, 1);
       publish((topic / "shut").c_str(), "", -1, 1);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_IMPULSE_COUNTER: {
+      if (auto handler = findChannelHandler(channel->getChannelType())) {
+        handler->mqttClearChannelState(this, channel);
+      }
       break;
     }
     default:
@@ -3202,3 +3241,5 @@ void Mqtt::processConfigChanges() {
     }
   }
 }
+
+#endif  // ARDUINO_ARCH_AVR

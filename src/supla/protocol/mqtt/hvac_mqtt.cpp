@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "hvac_mqtt.h"
 
 #include <supla/action_handler.h>
@@ -362,3 +364,5 @@ void RegisterHvacMqttHandler() {
 
 }  // namespace Protocol
 }  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

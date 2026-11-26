@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 namespace Supla {
+class Channel;
 class Element;
 namespace Protocol {
 
@@ -26,6 +27,8 @@ class MqttChannelHandler {
                                const char *payload,
                                Supla::Element *element) = 0;
   virtual void mqttPublishHADiscovery(Mqtt *mqtt, Supla::Element *element) = 0;
+  virtual void mqttClearChannelState(Mqtt *, Supla::Channel *) {}
+  virtual void mqttClearHADiscovery(Mqtt *, Supla::Channel *) {}
 };
 
 }  // namespace Protocol

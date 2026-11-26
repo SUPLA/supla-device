@@ -2143,10 +2143,13 @@ bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
   if (auto impulsesParameter =
           getAndMarkChannelParameter(ch, "default_impulses_per_unit")) {
     auto impulsesPerUnit = impulsesParameter.as<uint32_t>();
-    if (impulsesPerUnit == 0) {
+    if (impulsesPerUnit == 0 ||
+        impulsesPerUnit > Supla::Sensor::VirtualImpulseCounter::
+                              MaxImpulsesPerUnit) {
       SUPLA_LOG_ERROR(
-          "Channel[%d] config: default_impulses_per_unit has to be > 0",
-          channelNumber);
+          "Channel[%d] config: default_impulses_per_unit has to be 1..%d",
+          channelNumber, Supla::Sensor::VirtualImpulseCounter::
+                             MaxImpulsesPerUnit);
       return false;
     }
     ic->setDefaultImpulsesPerUnit(impulsesPerUnit);

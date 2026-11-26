@@ -10,6 +10,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel_types.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/binary_sensor_channel.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/channels/impulse_counter_channel.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/channels/channel_extended.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/io.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/io/io_pin.cpp
@@ -122,6 +123,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/button_action_trigger_config.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/channel_function_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/rgbw_button_parameters.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/impulse_counter_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/relay_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/time_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/volume_parameters.cpp
@@ -160,6 +162,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt_handler_registry.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt/hvac_mqtt.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt/impulse_counter_mqtt.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/protocol/mqtt_topic.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/action_trigger.cpp

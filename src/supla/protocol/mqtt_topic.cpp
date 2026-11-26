@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "mqtt_topic.h"
 
 #include <string.h>
@@ -60,3 +62,5 @@ Supla::Protocol::MqttTopic& Supla::Protocol::MqttTopic::operator+=(
 const char *Supla::Protocol::MqttTopic::c_str() {
   return data;
 }
+
+#endif  // ARDUINO_ARCH_AVR

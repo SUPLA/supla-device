@@ -497,6 +497,10 @@ void Channel::sendUpdate() {
   }
 }
 
+bool Channel::getImpulseCounterValue(double *, const char **) {
+  return false;
+}
+
 TSuplaChannelExtendedValue *Channel::getExtValue() {
   return nullptr;
 }

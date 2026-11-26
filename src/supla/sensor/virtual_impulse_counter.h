@@ -6,16 +6,25 @@
 
 #include <supla-common/proto.h>
 #include <supla/action_handler.h>
-#include <supla/channel_element.h>
+#include <supla/channels/impulse_counter_channel.h>
+#include <supla/element_with_channel_actions.h>
 
 namespace Supla {
 
 namespace Sensor {
-class VirtualImpulseCounter : public ChannelElement, public ActionHandler {
+class VirtualImpulseCounter : public ElementWithChannelActions,
+                              public ActionHandler {
  public:
   VirtualImpulseCounter();
 
+  Channel *getChannel() override;
+  const Channel *getChannel() const override;
   void onInit() override;
+  void onLoadConfig(SuplaDeviceClass *sdc) override;
+  void purgeConfig() override;
+  void onRegistered(Supla::Protocol::SuplaSrpc *srpc) override;
+  void handleSetChannelConfigResult(TSDS_SetChannelConfigResult *result)
+      override;
   void onLoadState() override;
   void onSaveState() override;
   void iterateAlways() override;
@@ -35,18 +44,32 @@ class VirtualImpulseCounter : public ChannelElement, public ActionHandler {
 
   void setForceStateSaveOnChange(bool value);
   void setDefaultImpulsesPerUnit(uint32_t impulsesPerUnit);
+  static constexpr int32_t MaxImpulsesPerUnit = 1000000;
+  int32_t getImpulsesPerUnit() const;
+  bool setImpulsesPerUnit(int32_t impulsesPerUnit);
+  void setLocalFunction(uint32_t function);
+  const char *getCustomUnit() const;
+  bool setCustomUnit(const char *unit);
+  double getCalculatedValue(uint64_t count) const;
 
  protected:
+  bool setAndSaveFunction(uint32_t function) override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
                                               bool local) override;
-  void fillChannelConfig(void *channelConfig,
-                         int *size,
-                         uint8_t configType) override;
+  void fillChannelConfig(void *channelConfig, int *size, uint8_t type) override;
 
+  ImpulseCounterChannel channel;
   uint64_t counter = 0;  // Actual count of impulses
   uint32_t lastReadTime = 0;
   uint32_t defaultImpulsesPerUnit = 1000;
   bool forceStateSaveOnChange = false;
+
+ private:
+  bool storeConfig(const TChannelConfig_ImpulseCounter &config, bool local);
+
+  bool hasCounterConfig = false;
+  bool awaitingConfigForFunction = false;
+  bool ignorePreviousDefaultReply = false;
 };
 
 }  // namespace Sensor

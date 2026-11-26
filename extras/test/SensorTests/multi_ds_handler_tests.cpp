@@ -441,4 +441,29 @@ TEST_F(MultiDsHandlerTests, ConflictObserverReportsRemovedSensor) {
   EXPECT_TRUE(observer.lastHandled);
 }
 
+TEST_F(MultiDsHandlerTests, RegistrationConflictReachesSensorOwner) {
+  NiceMock<ConfigMock> config;
+  Supla::Storage::SetConfigInstance(&config);
+
+  SuplaDeviceClass sdc;
+  TestMultiDsHandler populatedHandler(&sdc);
+  TestMultiDsHandler emptyHandler(&sdc);
+  ASSERT_NE(populatedHandler.add(1, 43, 1), nullptr);
+  ASSERT_NE(populatedHandler.add(2, 44, 2), nullptr);
+  populatedHandler.onInit();
+  emptyHandler.onInit();
+
+  TSD_SuplaRegisterDeviceResult_B result = {};
+  result.result_code = SUPLA_RESULTCODE_CHANNEL_CONFLICT;
+  result.channel_report_size = 45;
+  result.channel_report[43] = CHANNEL_REPORT_CHANNEL_REGISTERED;
+  EXPECT_CALL(config, eraseKey(::testing::StrEq(configKey(2))))
+      .WillOnce(Return(true));
+
+  sdc.getSrpcLayer()->onRegisterResultB(&result);
+
+  EXPECT_NE(Supla::Channel::getByChannelNumber(43), nullptr);
+  EXPECT_EQ(Supla::Channel::getByChannelNumber(44), nullptr);
+}
+
 }  // namespace

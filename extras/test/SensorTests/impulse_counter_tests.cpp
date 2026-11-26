@@ -7,7 +7,6 @@
 
 #include <protocol_layer_mock.h>
 #include <simple_time.h>
-#include <supla/events.h>
 #include <supla/network/html/impulse_counter_parameters.h>
 #include <supla/sensor/impulse_counter.h>
 #include <supla/storage/config.h>
@@ -232,10 +231,6 @@ TEST(ImpulseCounterTests, WebFieldsApplyOnlyToTheirChannel) {
   second.iterateAlways();
   EXPECT_EQ(second.getCounter(), 34);
 
-  auto *resetAction =
-      secondForm.getHandlerForClient(&second, Supla::ON_EVENT_1);
-  ASSERT_NE(resetAction, nullptr);
-  resetAction->disableForConfigMode();
   EXPECT_TRUE(secondForm.handleResponse(key, "RESET"));
   EXPECT_EQ(second.getCounter(), 34);
   first.iterateAlways();

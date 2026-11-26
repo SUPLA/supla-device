@@ -29,6 +29,9 @@ class TextCmdInputParameter : public HtmlElement, public LocalAction {
   void registerCmd(const char *cmdStr, int eventId);
 
  protected:
+  TextCmdInputParameter();
+  bool handleCommand(const char *value);
+
   char *tag = nullptr;
   char *label = nullptr;
   RegisteredCmdActionMap *firstCmd = nullptr;

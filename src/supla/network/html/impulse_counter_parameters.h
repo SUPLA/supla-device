@@ -4,7 +4,7 @@
 #ifndef SRC_SUPLA_NETWORK_HTML_IMPULSE_COUNTER_PARAMETERS_H_
 #define SRC_SUPLA_NETWORK_HTML_IMPULSE_COUNTER_PARAMETERS_H_
 
-#include <supla/network/html_element.h>
+#include <supla/network/html/text_cmd_input_parameter.h>
 
 namespace Supla {
 namespace Sensor {
@@ -13,7 +13,7 @@ class VirtualImpulseCounter;
 
 namespace Html {
 
-class ImpulseCounterParameters : public HtmlElement {
+class ImpulseCounterParameters : public TextCmdInputParameter {
  public:
   explicit ImpulseCounterParameters(Sensor::VirtualImpulseCounter *counter,
                                     const char *label = nullptr);

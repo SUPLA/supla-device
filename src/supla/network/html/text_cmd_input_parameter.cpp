@@ -22,9 +22,13 @@ RegisteredCmdActionMap::~RegisteredCmdActionMap() {
   cmd = nullptr;
 }
 
+TextCmdInputParameter::TextCmdInputParameter()
+    : HtmlElement(HTML_SECTION_FORM) {
+}
+
 TextCmdInputParameter::TextCmdInputParameter(const char *paramTag,
                                              const char *paramLabel)
-    : HtmlElement(HTML_SECTION_FORM) {
+    : TextCmdInputParameter() {
   int size = strlen(paramTag);
   if (size < 500) {
     tag = new char[size + 1];
@@ -62,14 +66,14 @@ void TextCmdInputParameter::send(Supla::WebSender* sender) {
 }
 
 bool TextCmdInputParameter::handleResponse(const char* key, const char* value) {
-  if (tag != nullptr && strcmp(key, tag) == 0) {
-    auto ptr = firstCmd;
-    while (ptr) {
-      if (strncmp(ptr->cmd, value, strlen(ptr->cmd) + 1) == 0) {
-        runAction(ptr->eventId);
-        return true;
-      }
-      ptr = ptr->next;
+  return tag != nullptr && strcmp(key, tag) == 0 && handleCommand(value);
+}
+
+bool TextCmdInputParameter::handleCommand(const char *value) {
+  for (auto ptr = firstCmd; ptr; ptr = ptr->next) {
+    if (strcmp(ptr->cmd, value) == 0) {
+      runAction(ptr->eventId);
+      return true;
     }
   }
   return false;

@@ -8,7 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <supla/actions.h>
 #include <supla/channels/channel.h>
+#include <supla/events.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/web_sender.h>
 #include <supla/sensor/virtual_impulse_counter.h>
@@ -34,7 +36,12 @@ constexpr struct {
 
 ImpulseCounterParameters::ImpulseCounterParameters(
     Sensor::VirtualImpulseCounter *counter, const char *label)
-    : HtmlElement(HTML_SECTION_FORM), counter(counter), label(label) {}
+    : counter(counter), label(label) {
+  if (counter) {
+    registerCmd("RESET", Supla::ON_EVENT_1);
+    addAction(Supla::RESET, *counter, Supla::ON_EVENT_1, true);
+  }
+}
 
 void ImpulseCounterParameters::send(WebSender *sender) {
   if (!sender || !counter || counter->getChannelNumber() < 0) {
@@ -141,9 +148,7 @@ bool ImpulseCounterParameters::handleResponse(const char *key,
   if (strcmp(key, expectedKey) != 0) {
     return false;
   }
-  if (strcmp(value, "RESET") == 0) {
-    counter->resetCounter();
-  }
+  handleCommand(value);
   return true;
 }
 

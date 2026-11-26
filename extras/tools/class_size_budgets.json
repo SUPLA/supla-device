@@ -286,7 +286,7 @@
       "header": "supla/sensor/virtual_impulse_counter.h",
       "limits": {
         "host": 200,
-        "avr": 139,
+        "avr": 140,
         "esp8266": 168,
         "esp32": 168
       }
@@ -296,7 +296,7 @@
       "header": "supla/sensor/impulse_counter.h",
       "limits": {
         "host": 232,
-        "avr": 159,
+        "avr": 160,
         "esp8266": 192,
         "esp32": 192
       }

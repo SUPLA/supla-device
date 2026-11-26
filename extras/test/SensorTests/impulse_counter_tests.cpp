@@ -7,6 +7,7 @@
 
 #include <protocol_layer_mock.h>
 #include <simple_time.h>
+#include <supla/events.h>
 #include <supla/network/html/impulse_counter_parameters.h>
 #include <supla/sensor/impulse_counter.h>
 #include <supla/storage/config.h>
@@ -210,6 +211,7 @@ TEST(ImpulseCounterTests, TruncatesInitialOffsetToWholeImpulses) {
 
 TEST(ImpulseCounterTests, WebFieldsApplyOnlyToTheirChannel) {
   Supla::Channel::resetToDefaults();
+  SimpleTime time;
   Supla::Sensor::VirtualImpulseCounter first;
   Supla::Sensor::VirtualImpulseCounter second;
   Supla::Html::ImpulseCounterParameters firstForm(&first, "IN1");
@@ -226,7 +228,22 @@ TEST(ImpulseCounterTests, WebFieldsApplyOnlyToTheirChannel) {
 
   second.generateKey(key, "ic_reset");
   EXPECT_FALSE(firstForm.handleResponse(key, "RESET"));
+  EXPECT_TRUE(secondForm.handleResponse(key, "RESET2"));
+  second.iterateAlways();
+  EXPECT_EQ(second.getCounter(), 34);
+
+  auto *resetAction =
+      secondForm.getHandlerForClient(&second, Supla::ON_EVENT_1);
+  ASSERT_NE(resetAction, nullptr);
+  resetAction->disableForConfigMode();
   EXPECT_TRUE(secondForm.handleResponse(key, "RESET"));
+  EXPECT_EQ(second.getCounter(), 34);
+  first.iterateAlways();
+  second.iterateAlways();
   EXPECT_EQ(first.getCounter(), 12);
   EXPECT_EQ(second.getCounter(), 0);
+
+  second.incCounter();
+  second.iterateAlways();
+  EXPECT_EQ(second.getCounter(), 1);
 }

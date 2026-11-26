@@ -134,6 +134,11 @@ void VirtualImpulseCounter::incCounter() {
 }
 
 void VirtualImpulseCounter::iterateAlways() {
+  if (__atomic_load_n(&counterResetRequested, __ATOMIC_RELAXED)) {
+    // Requests arriving before the flag is cleared share the upcoming reset.
+    __atomic_store_n(&counterResetRequested, false, __ATOMIC_RELAXED);
+    resetCounter();
+  }
   if (millis() - lastReadTime > 500) {
     lastReadTime = millis();
     if (forceStateSaveOnChange && channel.getValueInt64() != counter) {
@@ -147,7 +152,7 @@ void VirtualImpulseCounter::handleAction(int event, int action) {
   (void)(event);
   switch (action) {
     case RESET: {
-      resetCounter();
+      __atomic_store_n(&counterResetRequested, true, __ATOMIC_RELAXED);
       break;
     }
     case INCREMENT: {

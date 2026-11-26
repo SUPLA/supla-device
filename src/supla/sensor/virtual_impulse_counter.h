@@ -70,6 +70,7 @@ class VirtualImpulseCounter : public ElementWithChannelActions,
   bool hasCounterConfig = false;
   bool awaitingConfigForFunction = false;
   bool ignorePreviousDefaultReply = false;
+  bool counterResetRequested = false;
 };
 
 }  // namespace Sensor

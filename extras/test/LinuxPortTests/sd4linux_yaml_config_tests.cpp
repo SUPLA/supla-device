@@ -6,6 +6,7 @@
 #include <supla-common/proto.h>
 #include <supla/element.h>
 #include <supla/parser/parser.h>
+#include <supla/sensor/electricity_meter_parsed.h>
 #include <supla/output/mqtt.h>
 #include <supla/source/mqtt_src.h>
 #include <supla/source/source.h>
@@ -30,6 +31,7 @@
 #include "supla/control/custom_hvac.h"
 #include "supla/control/custom_relay.h"
 #include "supla/control/rgbcct_parsed.h"
+#include "supla/control/rgbcct_remote.h"
 #include "supla/control/roller_shutter_interface.h"
 #include "supla/control/virtual_relay.h"
 
@@ -599,6 +601,174 @@ channels:
     EXPECT_EQ(channel->getFuncList(), masks[i]);
   }
   while (auto *element = Supla::Element::last()) delete element;
+}
+
+TEST(Sd4linuxYamlConfigTests, MeterPhasesAreExplicitAndValidated) {
+  const uint64_t flags[] = {SUPLA_CHANNEL_FLAG_PHASE1_UNSUPPORTED,
+                            SUPLA_CHANNEL_FLAG_PHASE2_UNSUPPORTED,
+                            SUPLA_CHANNEL_FLAG_PHASE3_UNSUPPORTED};
+  for (int mask = 0; mask < 8; ++mask) {
+    Supla::Channel::resetToDefaults();
+    TestLinuxYamlConfig config;
+    ASSERT_TRUE(config.addStatusSource(new FakeYamlSource));
+    auto meter = YAML::Load(R"(
+type: ElectricityMeterParsed
+parser: status
+)");
+    for (int i = 0; i < 3; ++i) {
+      if (mask & (1 << i)) {
+        meter["supported_phases"].push_back(i + 1);
+      }
+    }
+    ASSERT_TRUE(config.parseChannel(meter, 0));
+    std::unique_ptr<Supla::Element> element(Supla::Element::last());
+    for (int i = 0; i < 3; ++i) {
+      EXPECT_EQ((element->getChannel()->getFlags() & flags[i]) != 0,
+                mask != 0 && !(mask & (1 << i)));
+    }
+  }
+
+  for (const auto *invalid : {"supported_phases: []", "supported_phases: 1",
+                              "supported_phases: null", "supported_phases: [4]",
+                              "supported_phases: [1, 1]",
+                              "supported_phases: [one]",
+                              "offline_on_invalid_measurements: []",
+                              "supported_phases: [1]\nphase_2: [{voltage: v}]"
+                             }) {
+    SCOPED_TRACE(invalid);
+    TestLinuxYamlConfig config;
+    ASSERT_TRUE(config.addStatusSource(new FakeYamlSource));
+    const auto prefix = "type: ElectricityMeterParsed\nparser: status\n";
+    EXPECT_FALSE(config.parseChannel(YAML::Load(prefix + std::string(invalid)),
+                                      0));
+  }
+}
+
+TEST_F(Sd4linuxYamlCredentialTests,
+       MeterValidityAndAvailabilityWithFileExpiry) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  TestLinuxYamlConfig config;
+  auto *availability = new FakeYamlSource;
+  ASSERT_TRUE(config.addStatusSource(availability));
+  auto meterPath = tempDirectory / "meter.json";
+  auto yaml = YAML::Load(R"(
+type: ElectricityMeterParsed
+source: {type: File, expiration_time_sec: 1}
+parser: {type: Json, refresh_time_ms: 10}
+supported_phases: [1]
+offline_on_invalid_measurements: true
+phase_1: [{voltage: v}, {current: i}]
+availability: {parser: status, field: status}
+)");
+  yaml["source"]["file"] = meterPath.string();
+  ASSERT_TRUE(config.parseChannel(yaml, 0));
+  std::unique_ptr<Supla::Element> element(Supla::Element::last());
+  auto *meter = dynamic_cast<Supla::Sensor::ElectricityMeterParsed*>(
+      element.get());
+  ASSERT_NE(meter, nullptr);
+  auto *channel = meter->getChannel();
+  meter->onInit();
+  EXPECT_FALSE(channel->isStateOnline());
+
+  auto iterate = [&]() {
+    time.advance(20);
+    config.iterateChannelAvailability();
+    meter->readValuesFromDevice();
+  };
+  auto sample = [&](const char *data) {
+    std::ofstream(meterPath) << data;
+    iterate();
+  };
+  sample(R"({"v":"230.5","i":2})");
+  EXPECT_TRUE(channel->isStateOnline());
+  EXPECT_EQ(meter->getVoltage(0), 23050);
+  // An empty read within the File grace period keeps the previous sample.
+  sample("");
+  EXPECT_TRUE(channel->isStateOnline());
+  EXPECT_EQ(meter->getVoltage(0), 23050);
+  for (const auto *invalid : {"broken", R"({"v":230})",
+                              R"({"v":"230V","i":2})", R"({"v":1000,"i":2})",
+                              R"({"v":230,"i":-1})"}) {
+    sample(invalid);
+    EXPECT_FALSE(channel->isStateOnline()) << invalid;
+  }
+  availability->content = R"({"status":"firmware_update_ongoing"})";
+  sample(R"({"v":229,"i":2})");
+  EXPECT_TRUE(channel->isStateFirmwareUpdateOngoing());
+  std::filesystem::last_write_time(
+      meterPath, std::filesystem::file_time_type::clock::now() -
+                     std::chrono::seconds(10));
+  iterate();
+  EXPECT_TRUE(channel->isStateFirmwareUpdateOngoing());
+  availability->content = "{}";
+  iterate();
+  EXPECT_FALSE(channel->isStateOnline());
+  sample(R"({"v":229,"i":2})");
+  EXPECT_TRUE(channel->isStateOnline());
+}
+
+TEST(Sd4linuxYamlConfigTests, MeterKeepsLegacyOnlineBehaviorByDefault) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  TestLinuxYamlConfig config;
+  auto *source = new FakeYamlSource;
+  source->content = R"({"v":230})";
+  ASSERT_TRUE(config.addStatusSource(source));
+  ASSERT_TRUE(config.parseChannel(YAML::Load(R"(
+type: ElectricityMeterParsed
+parser: status
+phase_1: [{voltage: v}, {current: i}]
+)"), 0));
+  std::unique_ptr<Supla::Element> element(Supla::Element::last());
+  time.advance(20);
+  element->onInit();
+  EXPECT_TRUE(element->getChannel()->isStateOnline());
+}
+
+TEST(Sd4linuxYamlConfigTests, RemoteLightValidationAndAvailability) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  TestLinuxYamlConfig config;
+  auto *source = new FakeYamlSource;
+  ASSERT_TRUE(config.addStatusSource(source, "Simple"));
+  auto yaml = YAML::Load(R"(
+type: RgbCctRemote
+layout: rgbcct
+parser: status
+white_brightness: 0
+availability: 1
+)");
+  EXPECT_FALSE(config.parseChannel(yaml, 0));
+  yaml["output"] = YAML::Load("{type: File, file: /dev/null}");
+  yaml["white_brightness"] = "bad-index";
+  EXPECT_FALSE(config.parseChannel(yaml, 0));
+  yaml["white_brightness"] = 0;
+  yaml["sync_timeout_ms"] = 20;
+  EXPECT_FALSE(config.parseChannel(yaml, 0));
+  yaml["sync_timeout_ms"] = 1000;
+  ASSERT_TRUE(config.parseChannel(yaml, 0));
+  std::unique_ptr<Supla::Element> element(Supla::Element::last());
+  element->onInit();
+  auto *light = dynamic_cast<Supla::Control::RgbCctRemote *>(element.get());
+  ASSERT_NE(light, nullptr);
+  EXPECT_FALSE(light->getChannel()->isStateOnline());
+  source->content = "invalid\nfirmware_update_ongoing\n";
+  time.advance(20);
+  config.iterateChannelAvailability();
+  light->iterateAlways();
+  EXPECT_TRUE(light->getChannel()->isStateFirmwareUpdateOngoing());
+  source->content = "invalid\n";
+  time.advance(20);
+  config.iterateChannelAvailability();
+  light->iterateAlways();
+  EXPECT_FALSE(light->getChannel()->isStateOnline());
+  source->content = "42\n";
+  time.advance(20);
+  config.iterateChannelAvailability();
+  light->iterateAlways();
+  EXPECT_TRUE(light->getChannel()->isStateOnline());
+  EXPECT_EQ(light->getCurrentDimmerBrightness(), 42);
 }
 
 TEST(Sd4linuxYamlConfigTests, RejectsInvalidPwmAndShutterOutputSettings) {
@@ -1922,6 +2092,8 @@ channels:
 - {type: CmdRollerShutter, name: blind, cmd_up_on: "true",
    cmd_up_off: "true", cmd_down_on: "true", cmd_down_off: "true"}
 - {type: RgbCctParsed, name: pwm, layout: rgbw}
+- {type: RgbCctRemote, name: remote, layout: dimmer,
+   output: {type: File, file: /dev/null}}
 buttons:
 )" + buttons);
     return config.loadChannels();
@@ -2017,6 +2189,26 @@ TEST_F(Sd4linuxButtonTests, LightingButtonUsesNativeWhiteToggleAndHold) {
   light->onFastTimer();
   EXPECT_NE(light->getCurrentDimmerBrightness(), 50);
   EXPECT_EQ(light->getCurrentRGBBrightness(), 0);
+}
+
+TEST_F(Sd4linuxButtonTests, RemoteLightingUsesNativeButtonClickAndHold) {
+  time.advance(1);
+  ASSERT_TRUE(load(button(
+      "attach: {channel: remote, button_control: white}")));
+  auto *btn = firstButton();
+  ASSERT_NE(btn, nullptr);
+  auto *light = dynamic_cast<Supla::Control::RgbCctRemote*>(
+      Supla::Element::getElementByChannelNumber(3));
+  ASSERT_NE(light, nullptr);
+  initAll();
+  run(btn, 200);
+  click(btn);
+  EXPECT_EQ(light->getCurrentDimmerBrightness(), 100);
+  light->setRGBW(0, 0, 0, 0, 50);
+  writeInput("1");
+  run(btn, 1000);
+  light->iterateAlways();
+  EXPECT_NE(light->getCurrentDimmerBrightness(), 50);
 }
 
 TEST_F(Sd4linuxButtonTests, InvertedButtonTogglesAttachedRelay) {

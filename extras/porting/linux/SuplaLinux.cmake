@@ -111,6 +111,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   ${SUPLA_LINUX_PORT_DIR}/supla/control/cmd_relay.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/cmd_roller_shutter.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/rgbcct_parsed.cpp
+  ${SUPLA_LINUX_PORT_DIR}/supla/control/rgbcct_remote.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/cmd_valve.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/action_trigger_parsed.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/button_parsed.cpp

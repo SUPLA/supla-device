@@ -80,6 +80,9 @@ Supla::Parser::Simple::getNumberOrText(const std::string &key) const {
   if (const auto *number = std::get_if<double>(&value)) {
     return *number;
   }
+  if (const auto *boolean = std::get_if<bool>(&value)) {
+    return *boolean;
+  }
   if (const auto *text = std::get_if<std::string>(&value)) {
     const auto first = text->find_first_not_of(" \t\r");
     if (first == std::string::npos) {

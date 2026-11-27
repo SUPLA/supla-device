@@ -71,6 +71,7 @@ namespace Supla {
 namespace Control {
 class ActionTrigger;
 class Button;
+class LinuxLighting;
 class Relay;
 }
 
@@ -179,6 +180,10 @@ class LinuxYamlConfig : public KeyValue {
                            int channelNumber,
                            Supla::Parser::Parser*,
                            Supla::Payload::Payload* payload = nullptr);
+  bool configureLighting(const YAML::Node &ch, int channelNumber,
+                         Control::LinuxLighting *lighting);
+  bool addRgbCctRemote(const YAML::Node &ch, int channelNumber,
+                       Parser::Parser *parser, Payload::Payload *payload);
   bool addRgbCctParsed(const YAML::Node& ch,
                        int channelNumber,
                        Supla::Parser::Parser*,

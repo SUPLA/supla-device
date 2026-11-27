@@ -791,6 +791,27 @@ bool LightingPwmBase::calculateAndUpdate(int targetValue,
   return true;
 }
 
+int LightingPwmBase::getAutoIterateAction(uint32_t now) {
+  if (autoIterateMode == AutoIterateMode::OFF ||
+      now - timing.lastAutoIterateStartTimestamp >= 10000) {
+    autoIterateMode = AutoIterateMode::OFF;
+    return 0;
+  }
+  if (now - timing.lastIterateDimmerTimestamp < 35) {
+    return 0;
+  }
+  switch (autoIterateMode) {
+    case AutoIterateMode::DIMMER:
+      return Supla::ITERATE_DIM_W;
+    case AutoIterateMode::RGB:
+      return Supla::ITERATE_DIM_RGB;
+    case AutoIterateMode::ALL:
+      return Supla::ITERATE_DIM_ALL;
+    default:
+      return 0;
+  }
+}
+
 void LightingPwmBase::onFastTimer() {
   if (!enabled) {
     return;
@@ -817,29 +838,7 @@ void LightingPwmBase::onFastTimer() {
     return;
   }
 
-  if (autoIterateMode != AutoIterateMode::OFF &&
-      now - timing.lastAutoIterateStartTimestamp < 10000) {
-    if (now - timing.lastIterateDimmerTimestamp >= 35) {
-      switch (autoIterateMode) {
-        case AutoIterateMode::DIMMER: {
-          autoIterateAction = Supla::ITERATE_DIM_W;
-          break;
-        }
-        case AutoIterateMode::RGB: {
-          autoIterateAction = Supla::ITERATE_DIM_RGB;
-          break;
-        }
-        case AutoIterateMode::ALL: {
-          autoIterateAction = Supla::ITERATE_DIM_ALL;
-          break;
-        }
-        default:
-          break;
-      }
-    }
-  } else {
-    autoIterateMode = AutoIterateMode::OFF;
-  }
+  autoIterateAction = getAutoIterateAction(now);
 
   timing.lastTick = now;
   bool valueChanged = false;

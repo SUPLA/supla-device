@@ -20,6 +20,7 @@ class File : public Source {
   virtual ~File();
   std::string getContent() override;
   bool isConnected() override;
+  bool lastReadUsedFallback() const override { return usedFallback; }
 
   void setExpirationTime(int timeSec);
 
@@ -30,6 +31,7 @@ class File : public Source {
   bool fileIsTooLargeLog = false;
   std::string prevResult;
   int readFailures = 0;
+  bool usedFallback = false;
 };
 };  // namespace Source
 };  // namespace Supla

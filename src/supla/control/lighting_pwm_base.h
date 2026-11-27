@@ -290,6 +290,8 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   void enableChannel();
   void disableChannel();
   void updateEnabledState();
+  // Returns the pending held-button dimming action, or 0. Caller holds mutex.
+  int getAutoIterateAction(uint32_t now);
 
   uint8_t addWithLimit(int value, int addition, int limit = 255);
   virtual void iterateDimmerRGBW(int rgbStep, int wStep);

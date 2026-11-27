@@ -51,6 +51,7 @@
 - Limit `OcrIc` response size and time and reject incomplete responses.
 
 ### Linux / sd4linux
+- Add explicit phase support and optional measurement-based offline status for `ElectricityMeterParsed`. Add `RgbCctRemote` for logical lighting commands and feedback over the existing Linux transports.
 - Enable relay and `ActionTriggerParsed` weekly schedules with `weekly_schedule: true` and support default channel functions in YAML. Add debug socket commands for inspecting channel values and reading or writing weekly schedules.
 - Add parsed rotation actions and `related_channel` references for `ActionTriggerParsed`. Support configurable temporary unlock duration and binary sensor edge triggers, and add `ButtonParsed` inputs that can control relays or roller shutters.
 - Enable command-driven movement in `CmdRollerShutter` when the complete set of output commands is configured.

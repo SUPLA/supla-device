@@ -14,9 +14,11 @@
 #include <supla/control/custom_relay.h>
 #include <supla/control/relay.h>
 #include <supla/control/rgbcct_parsed.h>
+#include <supla/control/rgbcct_remote.h>
 #include <supla/control/roller_shutter_interface.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/custom_channel.h>
+#include <supla/element.h>
 #include <supla/device/register_device.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/ip_address.h>
@@ -56,6 +58,7 @@
 #include <supla/tools.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <climits>
 #include <optional>
@@ -104,6 +107,19 @@ const char AuthKeyKey[] = "authkey";
 #define SUPLA_LINUX_CONFIG_BUF_SIZE (1024 * 1024)
 
 namespace {
+
+// Added after all channels, so availability is applied after their
+// iterateAlways() and before the SDK sends their state in the same loop.
+class ChannelAvailabilityElement : public Supla::Element {
+ public:
+  explicit ChannelAvailabilityElement(Supla::LinuxYamlConfig *config)
+      : config(config) {}
+  void iterateAlways() override { config->iterateChannelAvailability(); }
+
+ private:
+  Supla::LinuxYamlConfig *config;
+};
+
 bool readBoundedInteger(const YAML::Node &node,
                         const char *parameter,
                         int minimum,
@@ -164,7 +180,10 @@ int availabilityCode(const Supla::Parser::NumberOrText &value) {
     }
     return -1;
   }
-  const auto &text = std::get<std::string>(value);
+  const auto *text = std::get_if<std::string>(&value);
+  if (!text) {
+    return -1;
+  }
   const char *const names[] = {
       "online",
       "offline",
@@ -173,7 +192,8 @@ int availabilityCode(const Supla::Parser::NumberOrText &value) {
       "firmware_update_ongoing",
   };
   for (int code = 0; code < static_cast<int>(std::size(names)); ++code) {
-    if (text == names[code] || (text.size() == 1 && text[0] == '0' + code)) {
+    if (*text == names[code] ||
+        (text->size() == 1 && (*text)[0] == '0' + code)) {
       return code;
     }
   }
@@ -837,7 +857,13 @@ bool Supla::LinuxYamlConfig::loadChannels() {
       if (!resolveActionTriggerRelatedChannels()) {
         return false;
       }
-      return loadButtons(config["buttons"]);
+      if (!loadButtons(config["buttons"])) {
+        return false;
+      }
+      if (!channelAvailability.empty()) {
+        new ChannelAvailabilityElement(this);
+      }
+      return true;
     } else {
       SUPLA_LOG_ERROR("Config: \"channels\" section missing in file");
       return false;
@@ -1070,9 +1096,9 @@ bool Supla::LinuxYamlConfig::attachButton(const YAML::Node& attachNode,
   auto element = Supla::Element::getElementByChannelNumber(target->second);
   auto light = dynamic_cast<Supla::Control::LightingPwmBase*>(element);
   const auto buttonControl = attachNode["button_control"];
-  auto rgb = dynamic_cast<Supla::Control::RgbCctParsed*>(light);
+  auto rgb = dynamic_cast<Supla::Control::LinuxLighting*>(light);
   if (buttonControl && !rgb) {
-    SUPLA_LOG_ERROR("Button[%d] config: button_control requires RgbCctParsed",
+    SUPLA_LOG_ERROR("Button[%d] config: button_control requires a Linux light",
                     buttonIndex);
     return false;
   }
@@ -1273,7 +1299,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
         return false;
       }
       payloadCount++;
-    } else if (output && (type == "RgbCctParsed" ||
+    } else if (output && (type == "RgbCctParsed" || type == "RgbCctRemote" ||
                          type == "CmdRollerShutter")) {
       payload = new Supla::Payload::Json(output);
       payloads[payloadCount++] = payload;
@@ -1316,6 +1342,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addCmdRollerShutter(ch, channelNumber, parser, payload);
     } else if (type == "RgbCctParsed") {
       return addRgbCctParsed(ch, channelNumber, parser, payload);
+    } else if (type == "RgbCctRemote") {
+      return addRgbCctRemote(ch, channelNumber, parser, payload);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "SolarEdge") {
@@ -1562,12 +1590,8 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
   return addCommonParametersParsed(ch, cv, parser);
 }
 
-bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
-                                             int channelNumber,
-                                             Supla::Parser::Parser* parser,
-                                             Payload::Payload* payload) {
-  SUPLA_LOG_INFO("Channel[%d] config: adding RgbCctParsed", channelNumber);
-  auto rgb = std::make_unique<Supla::Control::RgbCctParsed>(parser);
+bool Supla::LinuxYamlConfig::configureLighting(
+    const YAML::Node &ch, int channelNumber, Control::LinuxLighting *lighting) {
   if (auto layout = getAndMarkChannelParameter(ch, "layout")) {
     static constexpr struct {
       const char *name;
@@ -1583,21 +1607,86 @@ bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
     const auto found = std::find_if(std::begin(layouts), std::end(layouts),
         [&name](const auto &entry) { return entry.name == name; });
     if (found == std::end(layouts)) {
-      SUPLA_LOG_ERROR("RgbCctParsed[%d] layout must be dimmer, rgb, rgbw, cct "
+      SUPLA_LOG_ERROR("Lighting[%d] layout must be dimmer, rgb, rgbw, cct "
                       "or rgbcct. Use two cct channels for 2xCCT.",
                       channelNumber);
       return false;
     }
-    rgb->setLayout(found->function);
+    lighting->setLayout(found->function);
     if (auto function = ch[DefaultFunctionNumber]) {
       const auto number = function.as<int>(-1);
-      if (number < 0 || !rgb->supportsFunction(number)) {
-        SUPLA_LOG_ERROR("RgbCctParsed[%d] default_function_number is "
+      if (number < 0 || !lighting->supportsFunction(number)) {
+        SUPLA_LOG_ERROR("Lighting[%d] default_function_number is "
                         "incompatible with layout %s",
                         channelNumber, name.c_str());
         return false;
       }
     }
+  }
+
+  if (auto initial = getAndMarkChannelParameter(ch, "initial_state")) {
+    const auto state = initial.as<std::string>("");
+    if (state == "on") {
+      lighting->setDefaultStateOn();
+    } else if (state == "off") {
+      lighting->setDefaultStateOff();
+    } else if (state != "restore") {
+      SUPLA_LOG_ERROR("Lighting[%d] initial_state must be on, off "
+                      "or restore",
+                      channelNumber);
+      return false;
+    }
+  }
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addRgbCctRemote(
+    const YAML::Node &ch, int channelNumber, Parser::Parser *parser,
+    Payload::Payload *payload) {
+  if (!payload) {
+    SUPLA_LOG_ERROR("RgbCctRemote[%d] requires output", channelNumber);
+    return false;
+  }
+
+  int interval = 100;
+  if (!readBoundedInteger(getAndMarkChannelParameter(ch, "output_interval_ms"),
+                          "output_interval_ms", 10, 10000, &interval)) {
+    return false;
+  }
+  int syncTimeout = std::max(2000, interval);
+  if (!readBoundedInteger(getAndMarkChannelParameter(ch, "sync_timeout_ms"),
+                          "sync_timeout_ms", interval, 60000, &syncTimeout)) {
+    return false;
+  }
+
+  Control::RgbCctRemote::Fields fields;
+  for (size_t i = 0; i < fields.size(); ++i) {
+    const auto name = Control::RgbCctRemote::fieldNames[i];
+    if (auto field = getAndMarkChannelParameter(ch, name)) {
+      if (!addParserField(parser, field, name, &fields[i])) {
+        return false;
+      }
+    }
+  }
+
+  auto light = std::make_unique<Control::RgbCctRemote>(
+      parser, *payload, std::move(fields), interval, syncTimeout);
+  if (!configureLighting(ch, channelNumber, light.get()) ||
+      !addCommonParametersParsed(ch, light.get(), parser)) {
+    return false;
+  }
+  light.release();
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
+                                             int channelNumber,
+                                             Supla::Parser::Parser* parser,
+                                             Payload::Payload* payload) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding RgbCctParsed", channelNumber);
+  auto rgb = std::make_unique<Supla::Control::RgbCctParsed>(parser);
+  if (!configureLighting(ch, channelNumber, rgb.get())) {
+    return false;
   }
 
   int resolution = 10;
@@ -1618,19 +1707,6 @@ bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
   rgb->setPwmResolutionBits(resolution);
   rgb->setPwmOutput(payload, interval);
 
-  if (auto initial = getAndMarkChannelParameter(ch, "initial_state")) {
-    const auto state = initial.as<std::string>("");
-    if (state == "on") {
-      rgb->setDefaultStateOn();
-    } else if (state == "off") {
-      rgb->setDefaultStateOff();
-    } else if (state != "restore") {
-      SUPLA_LOG_ERROR("RgbCctParsed[%d] initial_state must be on, off "
-                      "or restore",
-                      channelNumber);
-      return false;
-    }
-  }
   if (auto offlineParameter =
           getAndMarkChannelParameter(ch, "offline_on_invalid_state")) {
     auto useOfflineOnInvalidState = offlineParameter.as<bool>();
@@ -2551,7 +2627,36 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
     const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding ElectricityMeterParsed",
                  channelNumber);
-  auto em = new Supla::Sensor::ElectricityMeterParsed(parser);
+  auto em = std::make_unique<Supla::Sensor::ElectricityMeterParsed>(parser);
+  std::array<bool, 3> supported = {true, true, true};
+  if (const auto phases = getAndMarkChannelParameter(ch, "supported_phases")) {
+    if (!phases.IsSequence() || phases.size() == 0) {
+      SUPLA_LOG_ERROR("ElectricityMeterParsed[%d] supported_phases "
+                      "requires a nonempty list", channelNumber);
+      return false;
+    }
+    supported.fill(false);
+    for (const auto &phase : phases) {
+      const int number = phase.as<int>(0);
+      if (number < 1 || number > 3 || supported[number - 1]) {
+        SUPLA_LOG_ERROR("ElectricityMeterParsed[%d] supported_phases "
+                        "requires distinct phase numbers 1..3", channelNumber);
+        return false;
+      }
+      supported[number - 1] = true;
+    }
+  }
+  if (const auto offline = getAndMarkChannelParameter(
+          ch, "offline_on_invalid_measurements")) {
+    bool enabled = false;
+    if (!YAML::convert<bool>::decode(offline, enabled)) {
+      SUPLA_LOG_ERROR("ElectricityMeterParsed[%d] "
+                      "offline_on_invalid_measurements must be a boolean",
+                      channelNumber);
+      return false;
+    }
+    em->setOfflineOnInvalidMeasurements(enabled);
+  }
 
   // set not phase releated parameters (currently only frequency)
   if (auto frequencyParameter =
@@ -2593,6 +2698,12 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
                                  "phase_angle",
                                  "power_factor"}) {
           if (param[name]) {
+            if (!supported[phaseId - 1]) {
+              SUPLA_LOG_ERROR("ElectricityMeterParsed[%d] measurement %s "
+                              "configured for unsupported phase %d",
+                              channelNumber, name, phaseId);
+              return false;
+            }
             paramName = std::string{name} + "_" +  // NOLINT(whitespace/braces)
                         std::to_string(phaseId);
             if (parser->isBasedOnIndex()) {
@@ -2612,7 +2723,21 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
     }
   }
 
-  return addCommonParametersParsed(ch, em, parser);
+  const uint64_t unsupportedFlags[] = {
+      SUPLA_CHANNEL_FLAG_PHASE1_UNSUPPORTED,
+      SUPLA_CHANNEL_FLAG_PHASE2_UNSUPPORTED,
+      SUPLA_CHANNEL_FLAG_PHASE3_UNSUPPORTED,
+  };
+  for (size_t i = 0; i < supported.size(); ++i) {
+    if (!supported[i]) {
+      em->getChannel()->setFlag(unsupportedFlags[i]);
+    }
+  }
+  if (!addCommonParametersParsed(ch, em.get(), parser)) {
+    return false;
+  }
+  em.release();
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,

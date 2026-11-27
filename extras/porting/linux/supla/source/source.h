@@ -32,6 +32,8 @@ class Source {
     return {"default"};
   }
   virtual bool isConnected() { return true; }
+  // True if the last read returned a fallback after a failed source read.
+  virtual bool lastReadUsedFallback() const { return false; }
 };
 };  // namespace Source
 };  // namespace Supla

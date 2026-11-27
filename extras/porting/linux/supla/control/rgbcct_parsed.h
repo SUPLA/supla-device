@@ -16,21 +16,33 @@ namespace Payload {
 class Payload;
 }
 namespace Control {
-class RgbCctParsed : public Sensor::SensorParsed<LightingPwmBase> {
+class LinuxLighting : public Sensor::SensorParsed<LightingPwmBase> {
  public:
-  explicit RgbCctParsed(Supla::Parser::Parser *parser);
+  explicit LinuxLighting(Parser::Parser *parser);
 
-  void iterateAlways() override;
-  void onFastTimer() override;
   void onInit() override;
   void onLoadConfig(SuplaDeviceClass *sdc) override;
-
-  void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) override;
   void setLayout(uint32_t function);
   bool supportsFunction(uint32_t function) const;
   bool setRuntimeFunction(uint32_t function) override;
-  void setPwmOutput(Payload::Payload *payload, uint32_t intervalMs);
   void setButtonControl(ButtonControlType control);
+
+ protected:
+  static int outputCount(uint32_t function);
+
+ private:
+  std::optional<ButtonControlType> configuredButtonControl;
+  bool layoutConfigured = false;
+};
+
+class RgbCctParsed : public LinuxLighting {
+ public:
+  explicit RgbCctParsed(Parser::Parser *parser);
+
+  void iterateAlways() override;
+  void onFastTimer() override;
+  void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) override;
+  void setPwmOutput(Payload::Payload *payload, uint32_t intervalMs);
 
  protected:
   uint32_t lastReadTime = 0;
@@ -54,8 +66,6 @@ class RgbCctParsed : public Sensor::SensorParsed<LightingPwmBase> {
   PwmState latestPwm;
   std::optional<PwmState> publishedPwm;
   std::optional<uint32_t> lastPublishAttempt;
-  std::optional<ButtonControlType> configuredButtonControl;
-  bool layoutConfigured = false;
 };
 
 };  // namespace Control

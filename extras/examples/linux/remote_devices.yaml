@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# Run from a writable directory. Set the SUPLA server and email first.
+# Example inputs:
+# meter.json: {"voltage":230.3,"current":1.2,"power":276,"energy":12.3}
+# cct-state.txt: three lines containing 1, 80 and 35, respectively.
+# rgb-state.json: {"state":true,"brightness":65,"r":255,"g":60,"b":0}
+name: External meter and lights
+state_files_path: ./remote_device_state
+supla:
+  server: svr123.supla.org
+  mail: user@example.com
+
+channels:
+  - type: ElectricityMeterParsed
+    name: single_phase_meter
+    supported_phases: [1]
+    offline_on_invalid_measurements: true
+    source: {type: File, file: meter.json, expiration_time_sec: 120}
+    parser: {type: Json, refresh_time_ms: 1000}
+    phase_1:
+      - voltage: voltage
+      - current: current
+      - power_active: power
+      - fwd_act_energy: energy
+
+  # Without source and parser, the light only sends commands and reports
+  # the last commanded state.
+  - type: RgbCctRemote
+    name: remote_dimmer
+    layout: dimmer
+    output: {type: File, file: dimmer-command.json}
+
+  - type: RgbCctRemote
+    name: remote_cct
+    layout: cct
+    source: {type: File, file: cct-state.txt, expiration_time_sec: 0}
+    parser: {type: Simple, refresh_time_ms: 100}
+    state: 0
+    white_brightness: 1
+    white_temperature: 2
+    output: {type: File, file: cct-command.txt}
+    payload: {type: Simple}
+
+  - type: RgbCctRemote
+    name: remote_rgb
+    layout: rgb
+    source: {type: File, file: rgb-state.json, expiration_time_sec: 0}
+    parser: {type: Json, refresh_time_ms: 100}
+    state: state
+    rgb_brightness: brightness
+    red: r
+    green: g
+    blue: b
+    availability: availability
+    output: {type: File, file: rgb-command.json}
+
+  - type: RgbCctRemote
+    name: remote_rgbw
+    layout: rgbw
+    output: {type: File, file: rgbw-command.json}
+
+  - type: RgbCctRemote
+    name: remote_rgbcct
+    layout: rgbcct
+    output: {type: File, file: rgbcct-command.json}

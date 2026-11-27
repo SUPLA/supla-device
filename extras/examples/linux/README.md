@@ -458,6 +458,7 @@ Supported channel types:
 * `Hvac`, `HvacRemote`, `CustomHvac` - related class `Supla::Control::HvacBase`
 * `CustomChannel` - supports arbitrary channel type
 * `RgbCctParsed` - native PWM lighting (`LightingPwmBase`), with optional duty-cycle output and local buttons.
+* `RgbCctRemote` - logical commands and feedback for external lighting controllers.
 
 Example channels configuration (details are explained later):
 
@@ -1238,6 +1239,92 @@ and replace the channel's `output` with:
 output: {type: MQTT, control_topic: lights/dimmer/pwm, qos: 1}
 ```
 
+### RgbCctRemote
+
+Use `RgbCctRemote` when the external controller handles its own dimming,
+color mixing and transitions. `RgbCctParsed` publishes native PWM duty
+cycles. `RgbCctRemote` sends a complete logical command for the current
+function. Both use the same native channel type, layout selection, local
+actions and button attachment.
+
+| Parameter | Meaning |
+| --- | --- |
+| `layout` | `dimmer`, `cct`, `rgb`, `rgbw`, or `rgbcct` (default). As with `RgbCctParsed`, the channel supports functions that use fewer outputs. |
+| `default_function_number` | Optional native function within the layout's capabilities. |
+| `initial_state` | `restore` (default), `on`, or `off`. With feedback, startup adopts valid external settings. In output-only mode, explicit `on` or `off` is sent at startup, and `restore` waits for a new local command. |
+| `output` | Required. Use `File`, `Cmd`, or `MQTT`. |
+| `payload` | `{type: Json}` (default) or `{type: Simple}`. A `Cmd` output receives the full payload as one argument. |
+| `source`, `parser` | Optional feedback. Map each desired field with a JSON key, JSON Pointer, or zero-based Simple line index. |
+| `output_interval_ms` | Minimum interval between publication attempts, default `100`, range `10`–`10000`. Fast changes coalesce to the latest request. |
+| `sync_timeout_ms` | Retry and feedback window starting at the first output attempt, default `2000` or `output_interval_ms` if larger. Set it between `output_interval_ms` and `60000`. Use a window longer than the external controller's transition and parser refresh interval. |
+| `availability` | Optional [generic override](#channel-availability). Applies to both feedback and output-only operation. |
+
+The table gives the exact output names and Simple line order. Fields for inactive
+parts of the layout are omitted and consume no lines. Feedback mappings are
+optional and may use different input names. Every mapped field applicable to
+the active function must be valid in the same sample.
+
+| Field | Range | Applicable layout |
+| --- | --- | --- |
+| `state` | JSON boolean or Simple `0`/`1`. Feedback also accepts `on`/`off`, `true`/`false`, and `0`/`1` as text. | All |
+| `white_brightness` | Integer `0`–`100` percent | Dimmer, CCT, RGBW, RGB+CCT |
+| `white_temperature` | Integer `0`–`100`. `0` is warm and `100` is cold. | CCT, RGB+CCT |
+| `rgb_brightness` | Integer `0`–`100` percent | RGB, RGBW, RGB+CCT |
+| `red`, `green`, `blue` | Integers `0`–`255`, in that order | RGB, RGBW, RGB+CCT |
+
+Zero brightness switches that part off. Feedback with `state: false`
+reports both parts off while remembering supplied nonzero brightness,
+color and temperature. A later native ON restores the remembered brightness.
+Without a state mapping, the mapped brightness fields determine whether
+their part is on. Feedback that says ON with all applicable brightness
+fields explicitly zero is invalid. PWM resolution and fade duration are
+configured on the external controller.
+
+The channel waits for valid feedback at startup and adopts it without echo.
+An explicit local command may be sent before feedback arrives. During
+synchronization, the latest local request wins until a newer sample agrees
+on the mapped fields or the window expires. Intermediate transition samples
+can update availability during this window. The command stays in effect
+in the SUPLA channel until synchronization ends. After timeout the latest
+valid sample wins, if available. Otherwise the channel keeps its last
+logical value and waits for valid feedback. A successful output call
+confirms submission only. Failed output attempts retry the latest command
+within the window. There is no command replay from restored state. Losing
+the source connection drops the pending command. New explicit commands can
+still use the output while feedback is unavailable. After reconnection the
+next valid sample is used, subject to any new bounded command window.
+A runtime function change discards commands for the old function.
+
+An invalid, missing, disconnected or expired sample makes a feedback-enabled
+channel offline until valid data returns, subject to the generic availability
+override. With no feedback mappings, the channel is available by default and
+follows its internal state. A parser may still be used for availability.
+An empty or unreadable File sample is invalid for feedback even during the
+File source's legacy cache grace period.
+
+See [remote_devices.yaml](remote_devices.yaml) for a meter and all five light
+layouts with File sources and outputs. To use MQTT with CCT, add the broker
+settings described in [MQTT broker connection](#mqtt-broker-connection) and
+use this entry under `channels`:
+
+```yaml
+- type: RgbCctRemote
+  name: kitchen
+  layout: cct
+  source: {type: MQTT, state_topic: lights/kitchen/state, expiration_time_sec: 120}
+  parser: {type: Json, refresh_time_ms: 100}
+  state: state
+  white_brightness: brightness
+  white_temperature: temperature
+  availability: availability
+  output: {type: MQTT, control_topic: lights/kitchen/set}
+```
+
+For feedback, the controller can publish
+`{"state":true,"brightness":80,"temperature":35,"availability":"online"}`.
+A command to the controller uses
+`{"state":true,"white_brightness":50,"white_temperature":70}`.
+
 ## Parsed channel `source` parameter
 
 `source` defines from where supla-device will get data for `parser` to parsed
@@ -1558,6 +1645,24 @@ sensor. Allowed values: `opening_door`, `opening_window`, `opening_roller_shutte
 `binary`, `motion`.
 
 ### `ElectricityMeterParsed`
+
+* `supported_phases` is an optional non-empty list of distinct phase numbers
+  `1`, `2`, and `3`. Omit it to advertise all three phases, regardless of
+  the supplied mappings. A mapped measurement on an explicitly unsupported
+  phase is a configuration error.
+* `offline_on_invalid_measurements` defaults to `false`. Set it to `true`
+  to report offline when there is no valid sample, the source is disconnected
+  or expired, or any configured measurement is missing or invalid. All mapped
+  measurements must pass before the channel reports online. A value is
+  invalid if it does not fit the SDK field after unit conversion (for
+  example a negative or above 655.35 V voltage). With a `Simple` parser, a
+  line must contain only the number (`21.5C` is invalid). While a `File`
+  source serves its cached content after a failed read, the previous values
+  and status are kept. An explicit `availability` value takes precedence. Measurement reset and counter
+  retention follow the existing meter behavior.
+
+For a single-phase meter, see [remote_devices.yaml](remote_devices.yaml).
+
 
 Add 3-phase electricity meter channel.
 
@@ -1893,7 +1998,7 @@ Optional top-level `buttons` section adds local buttons
 input from `source`/`parser` instead of a GPIO). Buttons are not channels and
 are not visible in Supla Cloud. They can be attached to roller shutters
 (`CmdRollerShutter`), relays (`VirtualRelay`, `CmdRelay`, `CustomRelay`),
-and PWM lights (`RgbCctParsed`)
+and lights (`RgbCctParsed`, `RgbCctRemote`)
 and behave as physical buttons attached in firmware, which is useful for
 testing local button logic.
 
@@ -1921,7 +2026,7 @@ Parameters:
   * `direction` - `up` or `down`, mandatory for roller shutters only,
   * `internal` - roller shutters only, default `true`. Internal buttons follow
     the "buttons upside down" setting from Supla Cloud.
-  * `button_control` - `RgbCctParsed` only. Select `all`, `rgb`, `white` or
+  * `button_control` - `RgbCctParsed` and `RgbCctRemote`. Select `all`, `rgb`, `white` or
     `disabled`. Omit to use the native setting (normally `all`). Attach one
     button per lighting channel. Monostable buttons toggle on click and
     adjust brightness on hold. Bistable buttons toggle on a state change.

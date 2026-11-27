@@ -85,9 +85,11 @@ class ElectricityMeterParsed : public SensorParsed<ElectricityMeter> {
 
   void readValuesFromDevice() override;
   void onInit() override;
+  void setOfflineOnInvalidMeasurements(bool enabled);
 
  protected:
   bool isDataErrorLogged = false;
+  bool offlineOnInvalidMeasurements = false;
 };
 };  // namespace Sensor
 };  // namespace Supla

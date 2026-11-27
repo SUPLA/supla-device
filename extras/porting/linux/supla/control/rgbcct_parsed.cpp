@@ -29,7 +29,9 @@ constexpr struct {
      SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB, 5},
 };
 
-int outputCount(uint32_t function) {
+}  // namespace
+
+int LinuxLighting::outputCount(uint32_t function) {
   for (const auto &layout : layouts) {
     if (layout.function == function) {
       return layout.outputs;
@@ -38,13 +40,14 @@ int outputCount(uint32_t function) {
   return 0;
 }
 
-}  // namespace
-
-RgbCctParsed::RgbCctParsed(Parser::Parser *parser)
+LinuxLighting::LinuxLighting(Parser::Parser *parser)
     : Sensor::SensorParsed<LightingPwmBase>(parser) {
 }
 
-void RgbCctParsed::setLayout(uint32_t function) {
+RgbCctParsed::RgbCctParsed(Parser::Parser *parser) : LinuxLighting(parser) {
+}
+
+void LinuxLighting::setLayout(uint32_t function) {
   const int capacity = outputCount(function);
   uint32_t functions = 0;
   for (const auto &layout : layouts) {
@@ -57,7 +60,7 @@ void RgbCctParsed::setLayout(uint32_t function) {
   layoutConfigured = true;
 }
 
-bool RgbCctParsed::supportsFunction(uint32_t function) const {
+bool LinuxLighting::supportsFunction(uint32_t function) const {
   if (function == SUPLA_CHANNELFNC_NONE) {
     return true;
   }
@@ -69,12 +72,12 @@ bool RgbCctParsed::supportsFunction(uint32_t function) const {
   return false;
 }
 
-bool RgbCctParsed::setRuntimeFunction(uint32_t function) {
+bool LinuxLighting::setRuntimeFunction(uint32_t function) {
   return (!layoutConfigured || supportsFunction(function)) &&
          LightingPwmBase::setRuntimeFunction(function);
 }
 
-void RgbCctParsed::onLoadConfig(SuplaDeviceClass *sdc) {
+void LinuxLighting::onLoadConfig(SuplaDeviceClass *sdc) {
   const auto defaultFunction = getChannel()->getDefaultFunction();
   LightingPwmBase::onLoadConfig(sdc);
   if (layoutConfigured &&
@@ -83,11 +86,11 @@ void RgbCctParsed::onLoadConfig(SuplaDeviceClass *sdc) {
   }
 }
 
-void RgbCctParsed::setButtonControl(ButtonControlType control) {
+void LinuxLighting::setButtonControl(ButtonControlType control) {
   configuredButtonControl = control;
 }
 
-void RgbCctParsed::onInit() {
+void LinuxLighting::onInit() {
   if (configuredButtonControl) {
     buttonControlType = *configuredButtonControl;
   }

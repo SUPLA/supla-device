@@ -4,8 +4,12 @@
 #include <gtest/gtest.h>
 #include <simple_time.h>
 #include <storage_mock.h>
+#include <supla/actions.h>
 #include <supla/control/cmd_roller_shutter.h>
 #include <supla/control/rgbcct_parsed.h>
+#include <supla/control/rgbcct_remote.h>
+#include <supla/parser/json.h>
+#include <supla/parser/simple.h>
 #include <supla/payload/json.h>
 #include <supla/payload/simple.h>
 
@@ -55,6 +59,15 @@ class TestShutter : public Supla::Control::CmdRollerShutter {
   void relayDownOff() override {}
 
   std::function<void()> duringDownOn;
+};
+
+class LightFeedbackSource : public Supla::Source::Source {
+ public:
+  std::string getContent() override { return content; }
+  bool isConnected() override { return connected; }
+
+  std::string content;
+  bool connected = true;
 };
 
 class Sd4linuxStateOutputTests : public testing::Test {
@@ -331,6 +344,217 @@ TEST_F(Sd4linuxStateOutputTests, PublishesOnlyAfterMotorCommandReturns) {
   shutter.iterateAlways();
   ASSERT_EQ(output.attempts.size(), 2);
   EXPECT_EQ(output.lastState()["direction"], 1);
+}
+
+TEST_F(Sd4linuxStateOutputTests, RemoteOutputUsesLogicalValuesForEachFunction) {
+  using Supla::Control::RgbCctRemote;
+  const uint32_t functions[] = {
+      SUPLA_CHANNELFNC_DIMMER, SUPLA_CHANNELFNC_DIMMER_CCT,
+      SUPLA_CHANNELFNC_RGBLIGHTING, SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+  };
+  const nlohmann::json expected[] = {
+      {{"state", true}, {"white_brightness", 40}},
+      {{"state", true}, {"white_brightness", 40}, {"white_temperature", 76}},
+      {{"state", true}, {"rgb_brightness", 55},
+       {"red", 250}, {"green", 120}, {"blue", 15}},
+      {{"state", true}, {"white_brightness", 40}, {"rgb_brightness", 55},
+       {"red", 250}, {"green", 120}, {"blue", 15}},
+      {{"state", true}, {"white_brightness", 40}, {"white_temperature", 76},
+       {"rgb_brightness", 55}, {"red", 250}, {"green", 120}, {"blue", 15}},
+  };
+  for (size_t i = 0; i < std::size(functions); ++i) {
+    RgbCctRemote light(nullptr, payload, {}, 20, 200);
+    light.setLayout(functions[i]);
+    light.onInit();
+    output.attempts.clear();
+    light.iterateAlways();
+    EXPECT_TRUE(output.attempts.empty());
+    TSD_SuplaChannelNewValue value = {};
+    value.value[0] = 40;
+    value.value[1] = 55;
+    value.value[2] = 15;
+    value.value[3] = 120;
+    value.value[4] = static_cast<char>(250);
+    value.value[7] = 76;
+    light.handleNewValueFromServer(&value);
+    light.onFastTimer();
+    light.iterateAlways();
+    ASSERT_EQ(output.attempts.size(), 1);
+    EXPECT_EQ(output.lastState(), expected[i]);
+    time.advance(100);
+    light.iterateAlways();
+    EXPECT_EQ(output.attempts.size(), 1);
+  }
+}
+
+TEST_F(Sd4linuxStateOutputTests, RemoteFeedbackTransitionsAndRecovery) {
+  using Supla::Control::RgbCctRemote;
+  LightFeedbackSource source;
+  Supla::Parser::Json parser(&source);
+  parser.setRefreshTime(10);
+  RgbCctRemote light(&parser, payload, {"state", "/light/brightness"},
+                     50, 250);
+  light.setLayout(SUPLA_CHANNELFNC_DIMMER);
+  light.setDefaultStateOn();
+  light.onInit();
+  EXPECT_FALSE(light.getChannel()->isStateOnline());
+
+  auto feedback = [&](const char *json, int delay = 20) {
+    source.content = json;
+    time.advance(delay);
+    light.iterateAlways();
+  };
+  feedback(R"({"state":false,"light":{"brightness":80}})");
+  EXPECT_TRUE(light.getChannel()->isStateOnline());
+  EXPECT_EQ(light.getCurrentDimmerBrightness(), 0);
+  EXPECT_TRUE(output.attempts.empty());
+  light.handleAction(0, Supla::TURN_ON);
+  light.iterateAlways();
+  ASSERT_EQ(output.attempts.size(), 1);
+  EXPECT_EQ(output.lastState()["white_brightness"], 80);
+  feedback(R"({"state":true,"light":{"brightness":25}})");
+  EXPECT_EQ(light.getCurrentDimmerBrightness(), 80);
+  feedback(R"({"state":true,"light":{"brightness":80}})");
+  feedback(R"({"state":true,"light":{"brightness":60}})");
+  EXPECT_EQ(light.getCurrentDimmerBrightness(), 60);
+  EXPECT_EQ(output.attempts.size(), 1);
+
+  feedback(R"({"state":true})");
+  EXPECT_FALSE(light.getChannel()->isStateOnline());
+  EXPECT_EQ(light.getCurrentDimmerBrightness(), 60);
+  feedback("");
+  EXPECT_FALSE(light.getChannel()->isStateOnline());
+  source.connected = false;
+  light.setRGBW(-1, -1, -1, -1, 55);
+  light.iterateAlways();
+  ASSERT_EQ(output.attempts.size(), 2);
+  source.connected = true;
+  feedback(R"({"state":true,"light":{"brightness":32}})", 260);
+  EXPECT_TRUE(light.getChannel()->isStateOnline());
+  EXPECT_EQ(light.getCurrentDimmerBrightness(), 32);
+  EXPECT_EQ(output.attempts.size(), 2);
+}
+
+TEST_F(Sd4linuxStateOutputTests, RemoteToggleWorksAfterBrightnessOnlyOff) {
+  using Supla::Control::RgbCctRemote;
+  LightFeedbackSource source;
+  Supla::Parser::Json parser(&source);
+  parser.setRefreshTime(10);
+  RgbCctRemote light(&parser, payload, {"", "brightness"}, 50, 250);
+  light.setLayout(SUPLA_CHANNELFNC_DIMMER);
+  light.onInit();
+  auto feedback = [&](const std::string &json) {
+    source.content = json;
+    time.advance(20);
+    light.iterateAlways();
+  };
+  feedback(R"({"brightness":0})");
+  light.handleAction(0, Supla::TURN_ON);
+  light.iterateAlways();
+  ASSERT_EQ(output.attempts.size(), 1);
+  const int on = output.lastState()["white_brightness"];
+  feedback(R"({"brightness":)" + std::to_string(on) + "}");
+  feedback(R"({"brightness":0})");
+  EXPECT_EQ(light.getCurrentDimmerBrightness(), 0);
+
+  // The hidden RGB brightness must not make the first toggle turn it off.
+  light.handleAction(0, Supla::TOGGLE);
+  time.advance(60);
+  light.iterateAlways();
+  ASSERT_EQ(output.attempts.size(), 2);
+  EXPECT_EQ(output.lastState()["white_brightness"], on);
+}
+
+TEST_F(Sd4linuxStateOutputTests, RemoteSimpleCoalescesAndRetriesLatestSetting) {
+  using Supla::Control::RgbCctRemote;
+  LightFeedbackSource source;
+  Supla::Parser::Simple parser(&source);
+  parser.setRefreshTime(10);
+  parser.addOptionalKey("switch", 0);
+  parser.addOptionalKey("brightness", 1);
+  parser.addOptionalKey("temperature", 2);
+  Supla::Payload::Simple simple(&output);
+  RgbCctRemote light(&parser, simple, {"switch", "brightness", "temperature"},
+                     50, 220);
+  light.setLayout(SUPLA_CHANNELFNC_DIMMER_CCT);
+  light.onInit();
+  source.content = "1\n30\n45\n";
+  light.iterateAlways();
+  EXPECT_EQ(light.getCurrentDimmerBrightness(), 30);
+
+  light.setRGBCCT(-1, -1, -1, -1, 90, 22);
+  output.succeed = false;
+  light.iterateAlways();
+  ASSERT_EQ(output.attempts.size(), 1);
+  light.setRGBCCT(-1, -1, -1, -1, 58, 75);
+  time.advance(10);
+  light.iterateAlways();
+  EXPECT_EQ(output.attempts.size(), 1);
+  output.succeed = true;
+  time.advance(40);
+  light.iterateAlways();
+  ASSERT_EQ(output.attempts.size(), 2);
+  EXPECT_EQ(output.attempts.back(), "1\n58\n75\n");
+  source.content = "true\n58\n75\n";
+  time.advance(50);
+  light.iterateAlways();
+  EXPECT_EQ(output.attempts.size(), 2);
+
+  EXPECT_TRUE(light.setRuntimeFunction(SUPLA_CHANNELFNC_DIMMER));
+  source.content = "true\n42\n";
+  time.advance(50);
+  light.iterateAlways();
+  EXPECT_TRUE(light.getChannel()->isStateOnline());
+  EXPECT_EQ(light.getCurrentDimmerBrightness(), 42);
+  EXPECT_EQ(output.attempts.size(), 2);
+  light.handleAction(0, Supla::TURN_OFF);
+  light.iterateAlways();
+  ASSERT_EQ(output.attempts.size(), 3);
+  EXPECT_EQ(output.attempts.back(), "0\n0\n");
+}
+
+TEST_F(Sd4linuxStateOutputTests, RemoteDropsUnsentRequestOnDisconnect) {
+  using Supla::Control::RgbCctRemote;
+  LightFeedbackSource source;
+  Supla::Parser::Json parser(&source);
+  parser.setRefreshTime(10);
+  RgbCctRemote light(&parser, payload, {"state", "brightness"}, 30, 120);
+  light.setLayout(SUPLA_CHANNELFNC_DIMMER);
+  light.onInit();
+  source.content = R"({"state":true,"brightness":25})";
+  light.iterateAlways();
+  EXPECT_EQ(light.getCurrentDimmerBrightness(), 25);
+
+  output.succeed = false;
+  light.setRGBW(-1, -1, -1, -1, 80);
+  light.iterateAlways();
+  ASSERT_EQ(output.attempts.size(), 1);
+  source.connected = false;
+  time.advance(40);
+  light.iterateAlways();
+  EXPECT_FALSE(light.getChannel()->isStateOnline());
+  source.connected = true;
+  output.succeed = true;
+  light.iterateAlways();
+  EXPECT_EQ(light.getCurrentDimmerBrightness(), 25);
+  EXPECT_EQ(output.attempts.size(), 1);
+}
+
+TEST_F(Sd4linuxStateOutputTests, RemoteGetsFirstAttemptAfterThrottle) {
+  Supla::Control::RgbCctRemote light(nullptr, payload, {}, 100, 100);
+  light.setLayout(SUPLA_CHANNELFNC_DIMMER);
+  light.onInit();
+  light.setRGBW(-1, -1, -1, -1, 30);
+  light.iterateAlways();
+  ASSERT_EQ(output.attempts.size(), 1);
+  light.setRGBW(-1, -1, -1, -1, 70);
+  light.iterateAlways();
+  EXPECT_EQ(output.attempts.size(), 1);
+  time.advance(150);
+  light.iterateAlways();
+  ASSERT_EQ(output.attempts.size(), 2);
+  EXPECT_EQ(output.lastState()["white_brightness"], 70);
 }
 
 }  // namespace

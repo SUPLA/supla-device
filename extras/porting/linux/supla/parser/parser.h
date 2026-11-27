@@ -15,7 +15,7 @@
 namespace Supla {
 namespace Parser {
 
-using NumberOrText = std::variant<double, std::string>;
+using NumberOrText = std::variant<double, std::string, bool>;
 
 class Parser {
  public:
@@ -25,6 +25,7 @@ class Parser {
   bool refreshParserSource();
   // Advances on each refresh attempt, including a failed read.
   uint64_t getRefreshRevision() const { return refreshRevision; }
+  bool lastReadUsedFallback() const { return usedFallback; }
 
   virtual void addKey(const std::string &key, int index);
   virtual void addOptionalKey(const std::string &key, int index) {
@@ -37,6 +38,7 @@ class Parser {
   // Reads feedback without changing the validity of other fields.
   virtual std::optional<NumberOrText> getNumberOrText(
       const std::string &) const { return std::nullopt; }
+  std::optional<double> readMeasurement(const std::string &key);
 
   virtual bool isValid();
   virtual bool isSourceValid();
@@ -54,6 +56,7 @@ class Parser {
 
  private:
   uint64_t refreshRevision = 0;
+  bool usedFallback = false;
 };
 };  // namespace Parser
 };  // namespace Supla

@@ -49,6 +49,7 @@ std::string Supla::Source::File::getContent() {
   std::ifstream file;
   bool readError = false;
   bool tooLarge = false;
+  usedFallback = false;
   try {
     if (!isConnected()) {
       // file is too old
@@ -103,6 +104,7 @@ std::string Supla::Source::File::getContent() {
     // Retain the valid cache, but stop returning it after the grace period.
     if (readFailures < 3) {
       readFailures++;
+      usedFallback = true;
       return prevResult;
     }
     return result;
@@ -114,6 +116,7 @@ std::string Supla::Source::File::getContent() {
     SUPLA_LOG_DEBUG("File: file \"%s\" reading error or empty",
                     filePath.c_str());
     readFailures++;
+    usedFallback = true;
     return prevResult;
   }
 

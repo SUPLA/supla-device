@@ -226,6 +226,9 @@ Supla::Parser::Json::getNumberOrText(const std::string &key) const {
     if (value.is_string()) {
       return value.get<std::string>();
     }
+    if (value.is_boolean()) {
+      return value.get<bool>();
+    }
   } catch (const nlohmann::json::exception &) {
     return std::nullopt;
   } catch (const std::out_of_range &) {

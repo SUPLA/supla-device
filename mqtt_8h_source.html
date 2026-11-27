@@ -310,56 +310,58 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>  <a class="code hl_class" href="classSupla_1_1Protocol_1_1MqttChannelHandler.html">MqttChannelHandler</a> *findChannelHandler(<span class="keywordtype">int</span> channelType) <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span> </div>
 <div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>  <span class="keyword">friend</span> <span class="keyword">class </span><a class="code hl_class" href="classSupla_1_1Protocol_1_1HvacMqttHandler.html">HvacMqttHandler</a>;</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span> </div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  <span class="keywordtype">char</span> server[SUPLA_SERVER_NAME_MAXSIZE] = {};</div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>  int32_t port = -1;</div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  <span class="keywordtype">char</span> user[MQTT_USERNAME_MAX_SIZE] = {};</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>  <span class="keywordtype">char</span> password[MQTT_PASSWORD_MAX_SIZE] = {};</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>  <span class="keywordtype">char</span> hostname[32] = {};</div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>  uint8_t qosCfg = 0;</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  <span class="keywordtype">bool</span> useTls = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  <span class="keywordtype">bool</span> useAuth = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  <span class="keywordtype">bool</span> retainCfg = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>  <span class="keywordtype">bool</span> enabled = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>  <span class="keywordtype">bool</span> connecting = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>  <span class="keywordtype">bool</span> connected = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>  <span class="keywordtype">bool</span> error = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>  uint16_t prefixLen = 0;</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>  uint16_t channelsCount = 0;</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>  uint16_t buttonNumber = 0;</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>  <span class="keywordtype">char</span> *prefix = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>  <span class="comment">// Button number is incremented on each publishHADiscoveryActionTrigger call</span></div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>  <span class="comment">// and it is reset on publishDeviceStatus. So we publish button numbers</span></div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>  <span class="comment">// starting from 1 and incrementing on each ActionTrigger channel found</span></div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>  <span class="comment">// in current setup.</span></div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>  <span class="comment">// It is important to call publishDeviceStatus first, then to call</span></div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>  <span class="comment">// publishHADiscoveryActionTrigger for each AT channel.</span></div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">size_t</span> CONFIG_CHANGED_BIT_SIZE =</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>      (SUPLA_CHANNELMAXCOUNT + 7) / 8;</div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>  <span class="keyword">static_assert</span>(CONFIG_CHANGED_BIT_SIZE * 8 &gt;= SUPLA_CHANNELMAXCOUNT,</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>                <span class="stringliteral">&quot;MQTT config change bitset is too small&quot;</span>);</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>  uint8_t configChangedBit[CONFIG_CHANGED_BIT_SIZE] = {};</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">size_t</span> CHANNEL_AVAILABILITY_BIT_SIZE =</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>      (SUPLA_CHANNELMAXCOUNT + 7) / 8;</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>  <span class="keyword">static_assert</span>(CHANNEL_AVAILABILITY_BIT_SIZE * 8 &gt;= SUPLA_CHANNELMAXCOUNT,</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>                <span class="stringliteral">&quot;MQTT channel availability bitset is too small&quot;</span>);</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>  uint8_t channelAvailabilityKnownBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>  uint8_t channelAvailabilityValueBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};</div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>  uint8_t channelOnlineButNotAvailableBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};</div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">size_t</span> HA_AVAILABILITY_BUFFER_SIZE = 400;</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  <span class="keywordtype">char</span> haAvailability[HA_AVAILABILITY_BUFFER_SIZE] = {};</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>  <a class="code hl_class" href="classSupla_1_1Uptime.html">Supla::Uptime</a> uptime;</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>};</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>  <span class="keyword">friend</span> <span class="keyword">class </span><a class="code hl_class" href="classSupla_1_1Protocol_1_1ImpulseCounterMqttHandler.html">ImpulseCounterMqttHandler</a>;</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span> </div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>  <span class="keywordtype">char</span> server[SUPLA_SERVER_NAME_MAXSIZE] = {};</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  int32_t port = -1;</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>  <span class="keywordtype">char</span> user[MQTT_USERNAME_MAX_SIZE] = {};</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>  <span class="keywordtype">char</span> password[MQTT_PASSWORD_MAX_SIZE] = {};</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>  <span class="keywordtype">char</span> hostname[32] = {};</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  uint8_t qosCfg = 0;</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  <span class="keywordtype">bool</span> useTls = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  <span class="keywordtype">bool</span> useAuth = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>  <span class="keywordtype">bool</span> retainCfg = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>  <span class="keywordtype">bool</span> enabled = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>  <span class="keywordtype">bool</span> connecting = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>  <span class="keywordtype">bool</span> connected = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>  <span class="keywordtype">bool</span> error = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>  uint16_t prefixLen = 0;</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>  uint16_t channelsCount = 0;</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>  uint16_t buttonNumber = 0;</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>  <span class="keywordtype">char</span> *prefix = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>  <span class="comment">// Button number is incremented on each publishHADiscoveryActionTrigger call</span></div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>  <span class="comment">// and it is reset on publishDeviceStatus. So we publish button numbers</span></div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>  <span class="comment">// starting from 1 and incrementing on each ActionTrigger channel found</span></div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>  <span class="comment">// in current setup.</span></div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>  <span class="comment">// It is important to call publishDeviceStatus first, then to call</span></div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>  <span class="comment">// publishHADiscoveryActionTrigger for each AT channel.</span></div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">size_t</span> CONFIG_CHANGED_BIT_SIZE =</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>      (SUPLA_CHANNELMAXCOUNT + 7) / 8;</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>  <span class="keyword">static_assert</span>(CONFIG_CHANGED_BIT_SIZE * 8 &gt;= SUPLA_CHANNELMAXCOUNT,</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>                <span class="stringliteral">&quot;MQTT config change bitset is too small&quot;</span>);</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>  uint8_t configChangedBit[CONFIG_CHANGED_BIT_SIZE] = {};</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">size_t</span> CHANNEL_AVAILABILITY_BIT_SIZE =</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>      (SUPLA_CHANNELMAXCOUNT + 7) / 8;</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>  <span class="keyword">static_assert</span>(CHANNEL_AVAILABILITY_BIT_SIZE * 8 &gt;= SUPLA_CHANNELMAXCOUNT,</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>                <span class="stringliteral">&quot;MQTT channel availability bitset is too small&quot;</span>);</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>  uint8_t channelAvailabilityKnownBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>  uint8_t channelAvailabilityValueBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>  uint8_t channelOnlineButNotAvailableBit[CHANNEL_AVAILABILITY_BIT_SIZE] = {};</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">size_t</span> HA_AVAILABILITY_BUFFER_SIZE = 400;</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>  <span class="keywordtype">char</span> haAvailability[HA_AVAILABILITY_BUFFER_SIZE] = {};</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>  <a class="code hl_class" href="classSupla_1_1Uptime.html">Supla::Uptime</a> uptime;</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>};</div>
 </div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>}  <span class="comment">// namespace Protocol</span></div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>}  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span> </div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_PROTOCOL_MQTT_H_</span></div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>}  <span class="comment">// namespace Protocol</span></div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>}  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span> </div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_PROTOCOL_MQTT_H_</span></div>
 <div class="ttc" id="aclassSuplaDeviceClass_html"><div class="ttname"><a href="classSuplaDeviceClass.html">SuplaDeviceClass</a></div><div class="ttdef"><b>Definition</b> SuplaDevice.h:167</div></div>
 <div class="ttc" id="aclassSupla_1_1Channel_html"><div class="ttname"><a href="classSupla_1_1Channel.html">Supla::Channel</a></div><div class="ttdef"><b>Definition</b> channel.h:26</div></div>
 <div class="ttc" id="aclassSupla_1_1Element_html"><div class="ttname"><a href="classSupla_1_1Element.html">Supla::Element</a></div><div class="ttdoc">Base class for all elements of SuplaDevice.</div><div class="ttdef"><b>Definition</b> element.h:30</div></div>
-<div class="ttc" id="aclassSupla_1_1Protocol_1_1HvacMqttHandler_html"><div class="ttname"><a href="classSupla_1_1Protocol_1_1HvacMqttHandler.html">Supla::Protocol::HvacMqttHandler</a></div><div class="ttdef"><b>Definition</b> hvac_mqtt.cpp:25</div></div>
-<div class="ttc" id="aclassSupla_1_1Protocol_1_1MqttChannelHandler_html"><div class="ttname"><a href="classSupla_1_1Protocol_1_1MqttChannelHandler.html">Supla::Protocol::MqttChannelHandler</a></div><div class="ttdef"><b>Definition</b> mqtt_channel_handler.h:15</div></div>
+<div class="ttc" id="aclassSupla_1_1Protocol_1_1HvacMqttHandler_html"><div class="ttname"><a href="classSupla_1_1Protocol_1_1HvacMqttHandler.html">Supla::Protocol::HvacMqttHandler</a></div><div class="ttdef"><b>Definition</b> hvac_mqtt.cpp:27</div></div>
+<div class="ttc" id="aclassSupla_1_1Protocol_1_1ImpulseCounterMqttHandler_html"><div class="ttname"><a href="classSupla_1_1Protocol_1_1ImpulseCounterMqttHandler.html">Supla::Protocol::ImpulseCounterMqttHandler</a></div><div class="ttdef"><b>Definition</b> impulse_counter_mqtt.cpp:99</div></div>
+<div class="ttc" id="aclassSupla_1_1Protocol_1_1MqttChannelHandler_html"><div class="ttname"><a href="classSupla_1_1Protocol_1_1MqttChannelHandler.html">Supla::Protocol::MqttChannelHandler</a></div><div class="ttdef"><b>Definition</b> mqtt_channel_handler.h:16</div></div>
 <div class="ttc" id="aclassSupla_1_1Protocol_1_1MqttTopic_html"><div class="ttname"><a href="classSupla_1_1Protocol_1_1MqttTopic.html">Supla::Protocol::MqttTopic</a></div><div class="ttdef"><b>Definition</b> mqtt_topic.h:12</div></div>
 <div class="ttc" id="aclassSupla_1_1Protocol_1_1Mqtt_html"><div class="ttname"><a href="classSupla_1_1Protocol_1_1Mqtt.html">Supla::Protocol::Mqtt</a></div><div class="ttdef"><b>Definition</b> mqtt.h:75</div></div>
 <div class="ttc" id="aclassSupla_1_1Protocol_1_1ProtocolLayer_html"><div class="ttname"><a href="classSupla_1_1Protocol_1_1ProtocolLayer.html">Supla::Protocol::ProtocolLayer</a></div><div class="ttdef"><b>Definition</b> protocol_layer.h:18</div></div>

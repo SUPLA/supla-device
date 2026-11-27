@@ -21,25 +21,37 @@ Supla::Parser::Json::~Json() {
 
 void Supla::Parser::Json::addKey(const std::string& key, int index) {
   if (multiDocument) {
-    const auto separator = key.find(":/");
-    if (separator == std::string::npos || separator == 0) {
-      throw std::invalid_argument("Expected document-id:/json-pointer");
-    }
-    try {
-      nlohmann::json::json_pointer pointer(key.substr(separator + 1));
-    } catch (...) {
-      throw std::invalid_argument("Invalid document JSON Pointer");
-    }
-    if (!source) {
-      throw std::invalid_argument("JSON mapping requires a source");
-    }
-    const auto ids = source->getDocumentIds();
-    if (std::find(ids.begin(), ids.end(), key.substr(0, separator)) ==
-        ids.end()) {
-      throw std::invalid_argument("Unknown document id in JSON mapping");
-    }
+    validateDocumentMapping(key);
   }
   Parser::addKey(key, index);
+}
+
+void Supla::Parser::Json::addOptionalKey(const std::string& key, int) {
+  if (multiDocument) {
+    optionalDocuments.insert(validateDocumentMapping(key));
+  }
+}
+
+std::string Supla::Parser::Json::validateDocumentMapping(
+    const std::string& key) const {
+  const auto separator = key.find(":/");
+  if (separator == std::string::npos || separator == 0) {
+    throw std::invalid_argument("Expected document-id:/json-pointer");
+  }
+  try {
+    nlohmann::json::json_pointer pointer(key.substr(separator + 1));
+  } catch (const nlohmann::json::exception &) {
+    throw std::invalid_argument("Invalid document JSON Pointer");
+  }
+  if (!source) {
+    throw std::invalid_argument("JSON mapping requires a source");
+  }
+  const auto id = key.substr(0, separator);
+  const auto ids = source->getDocumentIds();
+  if (std::find(ids.begin(), ids.end(), id) == ids.end()) {
+    throw std::invalid_argument("Unknown document id in JSON mapping");
+  }
+  return id;
 }
 
 const nlohmann::json& Supla::Parser::Json::valueAt(
@@ -68,25 +80,22 @@ bool Supla::Parser::Json::refreshSource() {
       needed.insert(key.first.substr(0, key.first.find(":/")));
     }
     for (const auto& document : source->getDocuments()) {
-      if (!needed.count(document.id)) {
+      if ((!needed.count(document.id) &&
+           !optionalDocuments.count(document.id)) ||
+          !document.received || !document.fresh) {
         continue;
-      }
-      if (!document.received || !document.fresh) {
-        return false;
       }
       auto parsed = nlohmann::json::parse(document.content, nullptr, false);
       if (parsed.is_discarded()) {
         SUPLA_LOG_ERROR("JSON document parsing error");
-        return false;
+        continue;
       }
       documents.emplace(document.id, std::move(parsed));
     }
-    if (documents.size() != needed.size()) {
-      return false;
-    }
-    sourceValid = true;
-    valid = true;
-    return true;
+    sourceValid = std::all_of(needed.begin(), needed.end(),
+        [&](const std::string &id) { return documents.count(id) != 0; });
+    valid = sourceValid;
+    return valid;
   }
   if (source) {
     std::string sourceContent = source->getContent();
@@ -97,9 +106,12 @@ bool Supla::Parser::Json::refreshSource() {
 
     try {
       json = nlohmann::json::parse(sourceContent);
-    } catch (nlohmann::json::parse_error& ex) {
+    } catch (const nlohmann::json::parse_error &ex) {
       SUPLA_LOG_ERROR("JSON parsing error at byte %d", ex.byte);
-      return valid;
+      return false;
+    } catch (const nlohmann::json::exception &ex) {
+      SUPLA_LOG_ERROR("JSON parsing error (code %d)", ex.id);
+      return false;
     }
 
     sourceValid = true;
@@ -199,6 +211,29 @@ std::variant<int, bool, std::string> Supla::Parser::Json::getStateValue(
   }
   valid = false;
   return 0;
+}
+
+std::optional<Supla::Parser::NumberOrText>
+Supla::Parser::Json::getNumberOrText(const std::string &key) const {
+  if (!multiDocument && !sourceValid) {
+    return std::nullopt;
+  }
+  try {
+    const auto &value = valueAt(key);
+    if (value.is_number()) {
+      return value.get<double>();
+    }
+    if (value.is_string()) {
+      return value.get<std::string>();
+    }
+  } catch (const nlohmann::json::exception &) {
+    return std::nullopt;
+  } catch (const std::out_of_range &) {
+    return std::nullopt;
+  } catch (const std::invalid_argument &) {
+    return std::nullopt;
+  }
+  return std::nullopt;
 }
 
 bool Supla::Parser::Json::isBasedOnIndex() {

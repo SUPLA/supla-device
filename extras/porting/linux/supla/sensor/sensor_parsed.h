@@ -9,6 +9,7 @@
 #include <supla/parser/parser.h>
 
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <variant>
@@ -46,6 +47,8 @@ class SensorParsedBase {
   bool refreshParserSource(bool updateChannelState = true);
   bool setOfflineIfSourceDisconnected();
   void setChannelStateOnline(bool online);
+  // Returns the last automatic state deferred during the override.
+  std::optional<bool> setAvailabilityOverrideActive(bool active);
   bool isSourceStateOffline(bool useOfflineOnInvalidState);
   bool isOffline();
   void setUseOfflineOnInvalidState(bool useOfflineOnInvalidState);
@@ -87,6 +90,7 @@ class SensorParsedBase {
   std::vector<std::variant<int, bool, std::string>> stateOnValues;
   bool useOfflineOnInvalidState = false;
 
+
   // action trigger configuration
   std::string atName;
   int lastState = -1;
@@ -103,6 +107,10 @@ class SensorParsedBase {
       const std::string &parameter);
 
   // TODO(klew): add local action
+
+ private:
+  bool availabilityOverrideActive = false;
+  std::optional<bool> deferredAvailability;
 };
 
 template <typename T>

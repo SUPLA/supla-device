@@ -18,6 +18,7 @@
 #include <fstream>
 #include <filesystem>  // NOLINT(build/c++17)
 #include <iterator>
+#include <memory>
 #include <string>
 #include <thread>
 #include <variant>
@@ -45,8 +46,11 @@ namespace {
 class FakeYamlSource : public Supla::Source::Source {
  public:
   std::string getContent() override {
-    return {};
+    return content;
   }
+  bool isConnected() override { return connected; }
+  std::string content;
+  bool connected = true;
 };
 
 class FakeYamlParser : public Supla::Parser::Parser {
@@ -127,11 +131,22 @@ class TestLinuxYamlConfig : public Supla::LinuxYamlConfig {
   using Supla::LinuxYamlConfig::addOutput;
   using Supla::LinuxYamlConfig::addVirtualRelay;
   using Supla::LinuxYamlConfig::addSource;
+  using Supla::LinuxYamlConfig::findParser;
   using Supla::LinuxYamlConfig::loadTopLevelSources;
   using Supla::LinuxYamlConfig::parseChannel;
   using Supla::LinuxYamlConfig::saveGuidAuth;
   using Supla::LinuxYamlConfig::config;
   bool hasPendingSave() const { return saveDelayMs != 0; }
+
+  bool addStatusSource(FakeYamlSource *source,
+                       const char *type = "Json",
+                       const char *name = "status") {
+    sources[sourceCount++] = source;
+    YAML::Node settings;
+    settings["type"] = type;
+    settings["refresh_time_ms"] = 10;
+    return addParserWithName(settings, name, source) != nullptr;
+  }
 };
 
 class UmaskGuard {
@@ -1965,4 +1980,179 @@ buttons:
   EXPECT_GE(lines, 1);
   EXPECT_LE(lines, 2);
   std::filesystem::remove(counterPath);
+}
+
+TEST(Sd4linuxYamlConfigTests, AvailabilityUsesNamedParserAndOverridesChannel) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  TestLinuxYamlConfig config;
+  auto *source = new FakeYamlSource;
+  ASSERT_TRUE(config.addStatusSource(source));
+  ASSERT_TRUE(config.parseChannel(YAML::Load(R"(
+type: VirtualRelay
+availability:
+  parser: status
+  field: /status
+)"), 0));
+  std::unique_ptr<Supla::Element> element(Supla::Element::last());
+  auto *channel = element->getChannel();
+  ASSERT_NE(channel, nullptr);
+  channel->setStateOffline();
+
+  auto checkStatus = [&](const char *payload, int expected) {
+    source->content = payload;
+    time.advance(20);
+    config.iterateChannelAvailability();
+    TDS_SuplaDeviceChannel_E report = {};
+    channel->fillDeviceChannelStruct(&report);
+    EXPECT_EQ(report.Offline, expected) << payload;
+  };
+
+  checkStatus(R"({"status":0})", SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE);
+  checkStatus(R"({"status":"offline"})", SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE);
+  checkStatus(R"({"status":2})",
+              SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE);
+  checkStatus(R"({"status":"offline_remote_wakeup_not_supported"})",
+              SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED);
+  checkStatus(R"({"status":"firmware_update_ongoing"})",
+              SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING);
+
+  EXPECT_TRUE(channel->isStateFirmwareUpdateOngoing());
+  checkStatus(R"({"status":1.5})", SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE);
+  checkStatus(R"({"status":false})", SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE);
+  checkStatus("{}", SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE);
+  checkStatus(R"({"status":1e400})", SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE);
+  checkStatus(R"({"status":"online"})", SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE);
+  source->connected = false;
+  config.iterateChannelAvailability();
+  EXPECT_FALSE(channel->isStateOnline());
+
+  source->connected = true;
+  config.iterateChannelAvailability();
+  EXPECT_TRUE(channel->isStateOnline());
+
+  // A different user of the shared parser may refresh it first.
+  auto *parser = config.findParser("status");
+  ASSERT_NE(parser, nullptr);
+  source->content = R"({"status":"firmware_update_ongoing"})";
+  time.advance(20);
+  ASSERT_TRUE(parser->refreshParserSource());
+  config.iterateChannelAvailability();
+  EXPECT_TRUE(channel->isStateFirmwareUpdateOngoing());
+  source->content.clear();
+  time.advance(20);
+  EXPECT_FALSE(parser->refreshParserSource());
+  config.iterateChannelAvailability();
+  EXPECT_FALSE(channel->isStateOnline());
+  checkStatus(R"({"status":"online"})", SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE);
+}
+
+TEST(Sd4linuxYamlConfigTests, ParsedValueRefreshPreservesAvailability) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  TestLinuxYamlConfig config;
+  auto *status = new FakeYamlSource;
+  auto *measurements = new FakeYamlSource;
+  status->content = R"({"status":4})";
+  measurements->content = R"({"temperature":20})";
+  ASSERT_TRUE(config.addStatusSource(status));
+  ASSERT_TRUE(config.addStatusSource(measurements, "Json", "measurements"));
+  ASSERT_TRUE(config.parseChannel(YAML::Load(R"(
+type: ThermometerParsed
+parser: measurements
+temperature: /temperature
+availability:
+  parser: status
+  field: /status
+)"), 0));
+  std::unique_ptr<Supla::Element> element(Supla::Element::last());
+  auto *channel = element->getChannel();
+  ASSERT_NE(channel, nullptr);
+  channel->setStateOffline();
+  time.advance(250);
+  config.iterateChannelAvailability();
+  element->iterateAlways();
+  EXPECT_EQ(channel->getValueDouble(), 20);
+  EXPECT_TRUE(channel->isStateFirmwareUpdateOngoing());
+
+  status->content = "{}";
+  time.advance(250);
+  config.iterateChannelAvailability();
+  EXPECT_TRUE(channel->isStateOnline());
+  EXPECT_FALSE(channel->isStateFirmwareUpdateOngoing());
+
+  status->content = R"({"status":2})";
+  time.advance(250);
+  config.iterateChannelAvailability();
+  measurements->connected = false;
+  element->iterateAlways();
+  EXPECT_TRUE(channel->isStateOnlineAndNotAvailable());
+
+  status->content = "{}";
+  time.advance(250);
+  config.iterateChannelAvailability();
+  EXPECT_FALSE(channel->isStateOnline());
+}
+
+TEST(Sd4linuxYamlConfigTests, HvacRemoteReadsOpeningAndAvailabilityFromSimple) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  TestLinuxYamlConfig config;
+  auto *source = new FakeYamlSource;
+  source->content = "35\r\nfirmware_update_ongoing\r\n";
+  ASSERT_TRUE(config.addStatusSource(source, "Simple"));
+  ASSERT_TRUE(config.parseChannel(YAML::Load(R"(
+type: HvacRemote
+main_thermometer_channel_no: 0
+default_function: heat
+output:
+  type: File
+  file: /dev/null
+parser: status
+heating_opening: 0
+availability: 1
+)"), 0));
+  std::unique_ptr<Supla::Element> element(Supla::Element::last());
+  element->getChannel()->setStateOffline();
+  time.advance(20);
+  config.iterateChannelAvailability();
+  element->iterateAlways();
+
+  EXPECT_TRUE(element->getChannel()->isStateFirmwareUpdateOngoing());
+  TDS_SuplaDeviceChannel_E report = {};
+  element->getChannel()->fillDeviceChannelStruct(&report);
+  EXPECT_EQ(report.Offline, SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING);
+  EXPECT_EQ(report.hvacValue.IsOn, 37);
+
+  source->content = "60error\n0broken\n";
+  time.advance(20);
+  config.iterateChannelAvailability();
+  element->iterateAlways();
+  element->getChannel()->fillDeviceChannelStruct(&report);
+  EXPECT_EQ(report.hvacValue.IsOn, 37);
+  EXPECT_EQ(report.Offline, SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE);
+}
+
+TEST(Sd4linuxYamlConfigTests, HvacRemoteRejectsInvalidThermometerAndLineIndex) {
+  TestLinuxYamlConfig config;
+  ASSERT_TRUE(config.addStatusSource(new FakeYamlSource, "Simple"));
+  auto channel = YAML::Load(R"(
+type: HvacRemote
+main_thermometer_channel_no: room
+output: {type: File, file: /dev/null}
+parser: status
+heating_opening: opening
+)");
+  supla_test_clear_last_log();
+  EXPECT_FALSE(config.parseChannel(channel, 0));
+  EXPECT_NE(std::string(supla_test_get_last_log()).find(
+                "main_thermometer_channel_no must be an integer"),
+            std::string::npos);
+
+  channel["main_thermometer_channel_no"] = 0;
+  supla_test_clear_last_log();
+  EXPECT_FALSE(config.parseChannel(channel, 0));
+  EXPECT_NE(std::string(supla_test_get_last_log()).find(
+                "heating_opening requires a nonnegative line index"),
+            std::string::npos);
 }

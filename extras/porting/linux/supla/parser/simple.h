@@ -26,9 +26,13 @@ class Simple : public Parser {
   std::variant<int, bool, std::string> getStateValue(
       const std::string &key) override;
 
+  std::optional<NumberOrText> getNumberOrText(
+      const std::string &key) const override;
+
  protected:
   static constexpr size_t MAX_FIELDS = 4096;
   std::vector<std::variant<int, bool, std::string, double>> values;
+  std::vector<bool> partialNumbers;
 };
 };  // namespace Parser
 };  // namespace Supla

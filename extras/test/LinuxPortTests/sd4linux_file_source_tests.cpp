@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <gtest/gtest.h>
+#include <supla/output/file.h>
 #include <supla/source/file.h>
 #include <unistd.h>
 
@@ -76,6 +77,16 @@ class FileSourceTests : public testing::Test {
 };
 
 }  // namespace
+
+TEST(Sd4linuxFileOutputTests, ReturnsFailureWhenTextCannotBeWritten) {
+  {
+    std::ofstream device("/dev/full");
+    ASSERT_TRUE(device.is_open());
+  }
+  Supla::Output::File file("/dev/full");
+  Supla::Output::Output &output = file;
+  EXPECT_FALSE(output.putContent(std::string(R"({"mode":"off"})")));
+}
 
 TEST_F(FileSourceTests, EmptyFileRetainsExistingFailurePolicy) {
   InspectableFile source(path.c_str(), 0);

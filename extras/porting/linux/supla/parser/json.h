@@ -7,6 +7,7 @@
 #include <supla/source/source.h>
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
@@ -19,6 +20,7 @@ class Json : public Parser {
  public:
   explicit Json(Supla::Source::Source *, bool multiDocument = false);
   void addKey(const std::string &key, int index) override;
+  void addOptionalKey(const std::string &key, int index) override;
   virtual ~Json();
 
   bool refreshSource() override;
@@ -31,8 +33,13 @@ class Json : public Parser {
   bool isValid() override;
   bool isSourceValid() override;
 
+  std::optional<NumberOrText> getNumberOrText(
+      const std::string &key) const override;
+
  protected:
   const nlohmann::json& valueAt(const std::string& key) const;
+  std::string validateDocumentMapping(const std::string &key) const;
+  std::set<std::string> optionalDocuments;
   bool sourceValid = false;
   bool multiDocument = false;
   std::map<std::string, nlohmann::json> documents;

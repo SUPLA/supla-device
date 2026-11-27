@@ -455,7 +455,7 @@ Supported channel types:
 * `WeightParsed` - related class `Supla::Sensor::Weight`
 * `DistanceParsed` - related class `Supla::Sensor::Distance`
 * `ContainerParsed` - related class `Supla::Sensor::ContainerParsed`
-* `Hvac`, `CustomHvac` - related class `Supla::Control::HvacBase`
+* `Hvac`, `HvacRemote`, `CustomHvac` - related class `Supla::Control::HvacBase`
 * `CustomChannel` - supports arbitrary channel type
 * `RgbCctParsed` - related class `Supla::Control::RgbCctBase` - not a real support for this function. Just a working class to test it.
 
@@ -903,9 +903,42 @@ to send actions. "at1" is a name of `ActionTriggerParsed` instance.
 `CmdRollerShutter` is a "Parsed" channel, so it allows to use `parser` and
 `source` configuration with `battery` settings.
 
+### Channel availability
+
+`availability` reads the channel's SUPLA status from a parser. A scalar uses
+the channel's parser. Use a JSON field name or JSON Pointer for `Json`, or a
+zero-based index for `Simple`. To read availability from a separate named
+parser, specify both `parser` and `field`:
+
+```yaml
+  - type: VirtualRelay
+    availability:
+      parser: boiler_status
+      field: /status
+```
+
+The parser can report an integer, a string containing its single-digit code,
+or one of the following names:
+
+| Code | Name |
+| --- | --- |
+| 0 | `online` |
+| 1 | `offline` |
+| 2 | `online_but_not_available` |
+| 3 | `offline_remote_wakeup_not_supported` |
+| 4 | `firmware_update_ongoing` |
+
+When the availability source disconnects, the channel reports `offline`.
+If the source is connected and the field is missing or invalid, the channel
+reports its normal status. On a two-channel element the setting applies to both
+channels. The setting changes the channel state used by SUPLA reports, the
+MQTT bridge, and local automation. A valid availability reading takes
+precedence over automatic online/offline updates from the value parser.
+
 ### Hvac
 
-`Hvac` is a thermostat channel.
+`Hvac` is a local thermostat. It calculates heating or cooling demand and
+switches its outputs on and off.
 
 Required parameters:
 
@@ -1009,6 +1042,55 @@ It supports the following payload options:\
 optional for `Simple`, which publishes the raw value.\
 `turn_on_payload` - value to be published on turn on,\
 `turn_off_payload` - value to be published on turn off.
+
+### HvacRemote
+
+`HvacRemote` connects SUPLA to a thermostat that regulates temperature itself.
+Provide a `parser` for device feedback, an `output` for desired settings, and
+`main_thermometer_channel_no` for the thermostat's temperature channel.
+
+Use `default_function: heat` (the default), `cool`, or `heat_cool`. For a
+heating output, choose `heating_opening` for 0–100% feedback or
+`heating_active` for binary feedback. A cooling output uses `cooling_active`.
+Binary feedback uses 0 and 1. A malformed field leaves the last valid output
+reading in place. Use a JSON key or pointer for `Json`, or a zero-based line
+index for `Simple`.
+When the feedback source disconnects, the channel goes offline and keeps its
+last valid output reading. A valid `availability` reading takes precedence.
+
+The optional fields `mode`, `setpoint_heat`, and `setpoint_cool` map the
+settings read back from the thermostat. Modes are `off`, `heat`, `cool`,
+and `heat_cool`. Temperatures are in degrees Celsius. The first complete
+readback and subsequent device-side changes update the SUPLA channel without
+sending the same settings back. With no settings feedback configured,
+sd4linux sends settings when the SUPLA mode or setpoint changes.
+
+The output receives one JSON object per change, for example
+`{"mode":"heat","setpoint_heat":21.5}`. The object includes the setpoints
+relevant to the mode when they are set.
+
+For app or server testing, use a file as the source and a separate file for
+outgoing settings. In this example, channel 0 is an existing thermometer.
+
+```yaml
+  - type: HvacRemote
+    main_thermometer_channel_no: 0
+    source:
+      type: File
+      file: hvac-test.txt
+    parser:
+      type: Simple
+      refresh_time_ms: 250
+    output:
+      type: File
+      file: hvac-command.json
+    heating_opening: 0
+    availability: 1
+```
+
+Write `35` on the first line of `hvac-test.txt` and `online` on the second.
+Edit either line while sd4linux is running. Changes made in the SUPLA app
+appear in `hvac-command.json`.
 
 ### CustomHvac
 

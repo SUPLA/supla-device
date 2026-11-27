@@ -166,6 +166,7 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/control/cmd_roller_shutter.cpp
   ../porting/linux/supla/control/custom_hvac.cpp
   ../porting/linux/supla/control/hvac_parsed.cpp
+  ../porting/linux/supla/control/hvac_remote.cpp
   ../porting/linux/supla/control/rgbcct_parsed.cpp
   ../porting/linux/supla/control/cmd_valve.cpp
   ../porting/linux/supla/control/action_trigger_parsed.cpp

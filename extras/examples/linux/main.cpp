@@ -236,6 +236,7 @@ int main(int argc, char *argv[]) {
     while (st_app_terminate == 0) {
       iterateLinuxDebugSocket();
       debugLogServer.iterate();
+      config->iterateChannelAvailability();
       SuplaDevice.iterate();
       delay(10);
     }

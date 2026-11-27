@@ -24,6 +24,7 @@ bool Supla::Parser::Parser::isSourceValid() {
 bool Supla::Parser::Parser::refreshParserSource() {
   if (!lastRefreshTime || millis() - lastRefreshTime > refreshTimeMs) {
     lastRefreshTime = millis();
+    ++refreshRevision;
     return refreshSource();
   }
   return true;

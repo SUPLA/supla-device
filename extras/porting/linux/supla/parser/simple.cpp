@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <cerrno>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <limits>
@@ -62,9 +63,37 @@ std::variant<int, bool, std::string> Supla::Parser::Simple::getStateValue(
   return 0;
 }
 
+std::optional<Supla::Parser::NumberOrText>
+Supla::Parser::Simple::getNumberOrText(const std::string &key) const {
+  const auto mapping = keys.find(key);
+  if (mapping == keys.end() || mapping->second < 0 ||
+      static_cast<size_t>(mapping->second) >= values.size()) {
+    return std::nullopt;
+  }
+  if (partialNumbers[mapping->second]) {
+    return std::nullopt;
+  }
+  const auto &value = values[mapping->second];
+  if (const auto *integer = std::get_if<int>(&value)) {
+    return static_cast<double>(*integer);
+  }
+  if (const auto *number = std::get_if<double>(&value)) {
+    return *number;
+  }
+  if (const auto *text = std::get_if<std::string>(&value)) {
+    const auto first = text->find_first_not_of(" \t\r");
+    if (first == std::string::npos) {
+      return std::nullopt;
+    }
+    return text->substr(first, text->find_last_not_of(" \t\r") - first + 1);
+  }
+  return std::nullopt;
+}
+
 bool Supla::Parser::Simple::refreshSource() {
   valid = false;
   values.clear();
+  partialNumbers.clear();
   if (source == nullptr) {
     return false;
   }
@@ -89,6 +118,7 @@ bool Supla::Parser::Simple::refreshSource() {
   std::stringstream ss(sourceContent);
   std::string strVal;
   while (std::getline(ss, strVal, '\n')) {
+    partialNumbers.push_back(false);
     if (strVal == "true" || strVal == "false") {
       values.emplace_back(strVal == "true");
       continue;
@@ -96,6 +126,12 @@ bool Supla::Parser::Simple::refreshSource() {
     char *end = nullptr;
     errno = 0;
     const double number = std::strtod(strVal.c_str(), &end);
+    if (end != strVal.c_str()) {
+      while (std::isspace(static_cast<unsigned char>(*end))) {
+        ++end;
+      }
+      partialNumbers.back() = end != strVal.c_str() + strVal.size();
+    }
     if (end == strVal.c_str() || errno == ERANGE) {
       values.emplace_back(strVal);
     } else if (std::isfinite(number) &&

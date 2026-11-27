@@ -98,12 +98,7 @@ std::variant<int, bool, std::string> SensorParsedBase::getStateParameterValue(
 bool SensorParsedBase::refreshParserSource(bool updateChannelState) {
   if (parser) {
     if (!parser->isSourceConnected()) {
-      if (auto channel = getChannel()) {
-        channel->setStateOffline();
-      }
-      if (auto secondaryChannel = getSecondaryChannel()) {
-        secondaryChannel->setStateOffline();
-      }
+      setChannelStateOnline(false);
       return false;
     }
     if (parser->refreshParserSource()) {
@@ -111,12 +106,7 @@ bool SensorParsedBase::refreshParserSource(bool updateChannelState) {
         return false;
       }
       if (updateChannelState) {
-        if (auto channel = getChannel()) {
-          channel->setStateOnline();
-        }
-        if (auto secondaryChannel = getSecondaryChannel()) {
-          secondaryChannel->setStateOnline();
-        }
+        setChannelStateOnline(true);
       }
       updateBatteryInfoFlags();
       return true;
@@ -134,7 +124,17 @@ bool SensorParsedBase::setOfflineIfSourceDisconnected() {
   return true;
 }
 
+std::optional<bool> SensorParsedBase::setAvailabilityOverrideActive(
+    bool active) {
+  availabilityOverrideActive = active;
+  return std::exchange(deferredAvailability, std::nullopt);
+}
+
 void SensorParsedBase::setChannelStateOnline(bool online) {
+  if (availabilityOverrideActive) {
+    deferredAvailability = online;
+    return;
+  }
   if (auto channel = getChannel()) {
     if (online) {
       channel->setStateOnline();

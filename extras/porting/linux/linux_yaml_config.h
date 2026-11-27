@@ -60,9 +60,11 @@ channels:
 #include <yaml-cpp/exceptions.h>
 #include <yaml-cpp/yaml.h>
 
+#include <cstdint>
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 namespace Supla {
 
@@ -133,6 +135,7 @@ class LinuxYamlConfig : public KeyValue {
   bool getMqttClientVerifyCA() const;
   bool getMqttClientFileCA(char* result) const;
 
+  void iterateChannelAvailability();
   void markChannelParameterUsed();
   YAML::Node getAndMarkChannelParameter(const YAML::Node& channel,
                                          const char* parameter);
@@ -189,6 +192,11 @@ class LinuxYamlConfig : public KeyValue {
   bool addSolarEdge(const YAML::Node& ch, int channelNumber);
   bool addAfore(const YAML::Node& ch, int channelNumber);
   bool addHvac(const YAML::Node& ch, int channelNumber);
+  bool addHvacRemote(const YAML::Node& ch,
+                     int channelNumber,
+                     Supla::Parser::Parser *parser,
+                     Supla::Output::Output *output);
+  bool addAvailability(const YAML::Node& ch, Supla::Element *element);
   bool addCustomHvac(const YAML::Node& ch,
                      int channelNumber,
                      Payload::Payload* payload);
@@ -282,6 +290,20 @@ class LinuxYamlConfig : public KeyValue {
   std::map<int, Supla::Source::Source*> sources;
   std::map<int, Supla::Payload::Payload*> payloads;
   std::map<int, Supla::Output::Output*> outputs;
+
+  struct ChannelAvailability {
+    Supla::Element *element;
+    Supla::Parser::Parser *parser;
+    std::string key;
+    Supla::Sensor::SensorParsedBase *sensor;
+    uint64_t readRevision = 0;
+    int parsedCode = -1;
+    bool overridden = false;
+    int primaryState = SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
+    int secondaryState = SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
+  };
+  std::vector<ChannelAvailability> channelAvailability;
+  Supla::Parser::Parser *currentChannelParser = nullptr;
 
   std::set<std::string> usedChannelParameters;
   std::size_t untrackedChannelParameterCount = 0;

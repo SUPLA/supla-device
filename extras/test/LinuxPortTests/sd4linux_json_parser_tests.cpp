@@ -92,6 +92,46 @@ TEST_F(Sd4linuxJsonParserTests, RejectsNanStringValue) {
   EXPECT_FALSE(parser.isValid());
 }
 
+TEST_F(Sd4linuxJsonParserTests, OptionalDocumentDoesNotBlockRequiredValues) {
+  class MultiDocumentSource : public FakeJsonSource {
+   public:
+    std::vector<Supla::Source::Document> getDocuments() override {
+      return documents;
+    }
+    std::vector<std::string> getDocumentIds() const override {
+      return {"telemetry", "status"};
+    }
+    std::vector<Supla::Source::Document> documents;
+  } input;
+  SimpleTime time;
+  Supla::Parser::Json parser(&input, true);
+  parser.setRefreshTime(10);
+  parser.addKey("telemetry:/temperature", 0);
+  parser.addOptionalKey("status:/status", 0);
+
+  input.documents = {{"telemetry", R"({"temperature":20})", true, true},
+                     {"status", "", false, true}};
+  time.advance(20);
+  ASSERT_TRUE(parser.refreshParserSource());
+  EXPECT_EQ(parser.getValue("telemetry:/temperature"), 20);
+  EXPECT_FALSE(parser.getNumberOrText("status:/status"));
+
+  input.documents[0].fresh = false;
+  input.documents[1] = {"status", R"({"status":4})", true, true};
+  time.advance(20);
+  EXPECT_FALSE(parser.refreshParserSource());
+  auto status = parser.getNumberOrText("status:/status");
+  ASSERT_TRUE(status);
+  EXPECT_EQ(std::get<double>(*status), 4);
+
+  input.documents[0].fresh = true;
+  input.documents[1].content = R"({"status":1e400})";
+  time.advance(20);
+  ASSERT_TRUE(parser.refreshParserSource());
+  EXPECT_EQ(parser.getValue("telemetry:/temperature"), 20);
+  EXPECT_FALSE(parser.getNumberOrText("status:/status"));
+}
+
 TEST_F(Sd4linuxJsonParserTests, RejectsInfStringValue) {
   SimpleTime time;
   source.content = R"({"counter":"inf"})";

@@ -54,6 +54,10 @@ bool File::putContent(const std::string &payload) {
   }
   outputFile << payload;
   outputFile.close();
+  if (!outputFile) {
+    SUPLA_LOG_WARNING("File %s cannot be written", fileName.c_str());
+    return false;
+  }
   SUPLA_LOG_DEBUG("%s saved to file %s", payload.c_str(), fileName.c_str());
   return true;
 }

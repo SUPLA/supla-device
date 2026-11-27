@@ -63,8 +63,10 @@
 #include <cstring>
 #include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
+#include <iterator>
 #include <limits>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <system_error>
@@ -76,6 +78,7 @@
 #include "linux_secure_file.h"
 #include "supla/control/custom_hvac.h"
 #include "supla/control/hvac_parsed.h"
+#include "supla/control/hvac_remote.h"
 #include "supla/sensor/sensor_parsed.h"
 #include "supla/sensor/therm_hygro_meter_parsed.h"
 #include "supla/storage/key_value.h"
@@ -111,6 +114,90 @@ bool parseUnlockSensorEdge(const YAML::Node& node, uint8_t* edge) {
   else return false;
   return true;
 }
+bool addParserField(Supla::Parser::Parser *parser,
+                    const YAML::Node &field,
+                    const char *parameter,
+                    std::string *key) {
+  if (!parser || !field.IsScalar()) {
+    SUPLA_LOG_ERROR("Config: %s requires a parser and a scalar field",
+                    parameter);
+    return false;
+  }
+  *key = field.as<std::string>();
+  const int index = parser->isBasedOnIndex() ? field.as<int>(-1) : 0;
+  if (index < 0) {
+    SUPLA_LOG_ERROR("Config: %s requires a nonnegative line index", parameter);
+    return false;
+  }
+  if (key->empty()) {
+    SUPLA_LOG_ERROR("Config: invalid %s parser field", parameter);
+    return false;
+  }
+  parser->addOptionalKey(*key, index);
+  return true;
+}
+
+int availabilityCode(const Supla::Parser::NumberOrText &value) {
+  if (const auto *number = std::get_if<double>(&value)) {
+    if (*number >= 0 && *number <= SUPLA_CHANNEL_OFFLINE_FLAG_MAX &&
+        std::trunc(*number) == *number) {
+      return static_cast<int>(*number);
+    }
+    return -1;
+  }
+  const auto &text = std::get<std::string>(value);
+  const char *const names[] = {
+      "online",
+      "offline",
+      "online_but_not_available",
+      "offline_remote_wakeup_not_supported",
+      "firmware_update_ongoing",
+  };
+  for (int code = 0; code < static_cast<int>(std::size(names)); ++code) {
+    if (text == names[code] || (text.size() == 1 && text[0] == '0' + code)) {
+      return code;
+    }
+  }
+  return -1;
+}
+
+int readAvailability(const Supla::Channel *channel) {
+  if (channel->isStateOfflineRemoteWakeupNotSupported()) {
+    return SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED;
+  }
+  if (channel->isStateOnlineAndNotAvailable()) {
+    return SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE;
+  }
+  if (channel->isStateFirmwareUpdateOngoing()) {
+    return SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING;
+  }
+  return channel->isStateOnline() ? SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE
+                                  : SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE;
+}
+
+void applyAvailability(Supla::Channel *channel, int code) {
+  if (!channel) {
+    return;
+  }
+  switch (code) {
+    case SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE:
+      channel->setStateOnline();
+      break;
+    case SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE:
+      channel->setStateOffline();
+      break;
+    case SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE:
+      channel->setStateOnlineAndNotAvailable();
+      break;
+    case SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED:
+      channel->setStateOfflineRemoteWakeupNotSupported();
+      break;
+    case SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING:
+      channel->setStateFirmwareUpdateOngoing();
+      break;
+  }
+}
+
 }  // namespace
 
 Supla::LinuxYamlConfig::LinuxYamlConfig(const std::string& file) : file(file) {
@@ -1115,6 +1202,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     if (!addSourceAndParser(ch, &source, &parser)) {
       return false;
     }
+    currentChannelParser = parser;
 
     if (auto outputParameter = getAndMarkChannelParameter(ch, "output")) {
       if (!(output = addOutput(outputParameter))) {
@@ -1176,6 +1264,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addAfore(ch, channelNumber);
     } else if (type == "Hvac") {
       return addHvac(ch, channelNumber);
+    } else if (type == "HvacRemote") {
+      return addHvacRemote(ch, channelNumber, parser, output);
     } else if (type == "CustomHvac") {
       return addCustomHvac(ch, channelNumber, payload);
     } else if (type == "ThermometerParsed") {
@@ -1802,6 +1892,95 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
     }
   }
   return addCommonParameters(ch, hvac);
+}
+
+bool Supla::LinuxYamlConfig::addHvacRemote(const YAML::Node& ch,
+                                          int channelNumber,
+                                          Supla::Parser::Parser *parser,
+                                          Supla::Output::Output *output) {
+  if (!parser || !output) {
+    SUPLA_LOG_ERROR("Channel[%d] HvacRemote requires parser and output",
+                    channelNumber);
+    return false;
+  }
+  const auto thermometer = getAndMarkChannelParameter(
+      ch, "main_thermometer_channel_no");
+  if (!thermometer) {
+    SUPLA_LOG_ERROR("Channel[%d] HvacRemote requires "
+                    "main_thermometer_channel_no",
+                    channelNumber);
+    return false;
+  }
+  int thermometerNumber = 0;
+  if (!YAML::convert<int>::decode(thermometer, thermometerNumber)) {
+    SUPLA_LOG_ERROR("Channel[%d] HvacRemote: main_thermometer_channel_no "
+                    "must be an integer", channelNumber);
+    return false;
+  }
+
+  const auto functionNode = getAndMarkChannelParameter(ch, DefaultFunction);
+  const auto function = functionNode ? functionNode.as<std::string>() : "heat";
+  const bool heatCool = function == "heat_cool";
+  const bool coolingOnly = function == "cool";
+  if (!heatCool && !coolingOnly && function != "heat") {
+    SUPLA_LOG_ERROR("Channel[%d] HvacRemote: invalid default_function",
+                    channelNumber);
+    return false;
+  }
+
+  Supla::Control::HvacRemote::Fields fields;
+  const auto heatingOpening = getAndMarkChannelParameter(ch, "heating_opening");
+  const auto heatingActive = getAndMarkChannelParameter(ch, "heating_active");
+  const auto coolingActive = getAndMarkChannelParameter(ch, "cooling_active");
+  const bool proportionalHeat = static_cast<bool>(heatingOpening);
+  const bool binaryHeat = static_cast<bool>(heatingActive);
+  const bool binaryCool = static_cast<bool>(coolingActive);
+  if ((coolingOnly && (proportionalHeat || binaryHeat)) ||
+      (!coolingOnly && proportionalHeat == binaryHeat) ||
+      (binaryCool != (heatCool || coolingOnly))) {
+    SUPLA_LOG_ERROR("Channel[%d] HvacRemote: output fields do not match "
+                    "default_function", channelNumber);
+    return false;
+  }
+  if (heatingOpening &&
+      !addParserField(parser, heatingOpening, "heating_opening",
+                      &fields.heating)) {
+    return false;
+  }
+  if (heatingActive &&
+      !addParserField(parser, heatingActive, "heating_active",
+                      &fields.heating)) {
+    return false;
+  }
+  if (coolingActive &&
+      !addParserField(parser, coolingActive, "cooling_active",
+                      &fields.cooling)) {
+    return false;
+  }
+  auto readback = [&](const char *name, std::string *key) {
+    auto field = getAndMarkChannelParameter(ch, name);
+    return !field || addParserField(parser, field, name, key);
+  };
+  if (!readback("mode", &fields.mode) ||
+      !readback("setpoint_heat", &fields.setpointHeat) ||
+      !readback("setpoint_cool", &fields.setpointCool)) {
+    return false;
+  }
+
+  auto hvac = std::make_unique<Supla::Control::HvacRemote>(
+      *parser, *output, std::move(fields), binaryHeat, heatCool);
+  hvac->getChannel()->setDefaultFunction(heatCool
+      ? SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL
+      : SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+  hvac->setDefaultSubfunction(coolingOnly
+      ? SUPLA_HVAC_SUBFUNCTION_COOL : SUPLA_HVAC_SUBFUNCTION_HEAT);
+  hvac->parameterFlags.SubfunctionReadonly = 1;
+  hvac->setMainThermometerChannelNo(thermometerNumber);
+  if (!addCommonParameters(ch, hvac.get())) {
+    return false;
+  }
+  hvac.release();
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch,
@@ -3548,7 +3727,7 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     return false;
   }
   registerChannelName(ch, element);
-  return true;
+  return addAvailability(ch, element);
 }
 
 bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
@@ -3601,7 +3780,87 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
     return false;
   }
   registerChannelName(ch, element);
+  return addAvailability(ch, element);
+}
+
+bool Supla::LinuxYamlConfig::addAvailability(const YAML::Node& ch,
+                                             Supla::Element *element) {
+  const auto parameter = getAndMarkChannelParameter(ch, "availability");
+  if (!parameter) {
+    return true;
+  }
+  if (!element || !element->getChannel()) {
+    SUPLA_LOG_ERROR("Config: availability requires an element with a channel");
+    return false;
+  }
+
+  auto *parser = currentChannelParser;
+  std::string key;
+  if (parameter.IsMap()) {
+    const auto parserName = parameter["parser"];
+    if (!parserName.IsScalar() || !parameter["field"] ||
+        parameter.size() != 2) {
+      SUPLA_LOG_ERROR("Config: availability requires parser and field");
+      return false;
+    }
+    parser = findParser(parserName.as<std::string>());
+    if (!addParserField(parser, parameter["field"], "availability", &key)) {
+      return false;
+    }
+  } else if (!addParserField(parser, parameter, "availability", &key)) {
+    return false;
+  }
+
+  channelAvailability.push_back({
+      element, parser, std::move(key),
+      dynamic_cast<Supla::Sensor::SensorParsedBase *>(element)});
   return true;
+}
+
+void Supla::LinuxYamlConfig::iterateChannelAvailability() {
+  for (auto &entry : channelAvailability) {
+    int code = SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE;
+    if (entry.parser->isSourceConnected()) {
+      entry.parser->refreshParserSource();
+      const auto revision = entry.parser->getRefreshRevision();
+      if (entry.readRevision != revision) {
+        const auto raw = entry.parser->getNumberOrText(entry.key);
+        entry.parsedCode = raw ? availabilityCode(*raw) : -1;
+        entry.readRevision = revision;
+      }
+      code = entry.parsedCode;
+    }
+
+    auto *primary = entry.element->getChannel();
+    if (!primary) {
+      continue;
+    }
+    auto *secondary = entry.element->getSecondaryChannel();
+    if (code >= 0) {
+      if (!entry.overridden) {
+        entry.primaryState = readAvailability(primary);
+        if (secondary) {
+          entry.secondaryState = readAvailability(secondary);
+        }
+        if (entry.sensor) {
+          entry.sensor->setAvailabilityOverrideActive(true);
+        }
+        entry.overridden = true;
+      }
+      applyAvailability(primary, code);
+      applyAvailability(secondary, code);
+    } else if (entry.overridden) {
+      entry.overridden = false;
+      const auto deferred = entry.sensor
+          ? entry.sensor->setAvailabilityOverrideActive(false) : std::nullopt;
+      if (deferred) {
+        entry.sensor->setChannelStateOnline(*deferred);
+      } else {
+        applyAvailability(primary, entry.primaryState);
+        applyAvailability(secondary, entry.secondaryState);
+      }
+    }
+  }
 }
 
 void Supla::LinuxYamlConfig::registerChannelName(const YAML::Node& ch,

@@ -7,18 +7,55 @@
 #include <supla/control/lighting_pwm_base.h>
 #include <supla/sensor/sensor_parsed.h>
 
+#include <array>
+#include <mutex>  // NOLINT(build/c++11)
+#include <optional>
+
 namespace Supla {
+namespace Payload {
+class Payload;
+}
 namespace Control {
 class RgbCctParsed : public Sensor::SensorParsed<LightingPwmBase> {
  public:
   explicit RgbCctParsed(Supla::Parser::Parser *parser);
 
   void iterateAlways() override;
+  void onFastTimer() override;
+  void onInit() override;
+  void onLoadConfig(SuplaDeviceClass *sdc) override;
 
   void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) override;
+  void setLayout(uint32_t function);
+  bool supportsFunction(uint32_t function) const;
+  bool setRuntimeFunction(uint32_t function) override;
+  void setPwmOutput(Payload::Payload *payload, uint32_t intervalMs);
+  void setButtonControl(ButtonControlType control);
 
  protected:
   uint32_t lastReadTime = 0;
+
+ private:
+  struct PwmState {
+    std::array<uint32_t, 5> values{};
+    int activeOutputs = 0;
+
+    bool operator==(const PwmState &other) const {
+      return activeOutputs == other.activeOutputs && values == other.values;
+    }
+  };
+
+  void publishPwm();
+
+  Payload::Payload *pwmPayload = nullptr;
+  uint32_t outputIntervalMs = 250;
+  std::mutex layoutMutex;
+  std::mutex pwmMutex;
+  PwmState latestPwm;
+  std::optional<PwmState> publishedPwm;
+  std::optional<uint32_t> lastPublishAttempt;
+  std::optional<ButtonControlType> configuredButtonControl;
+  bool layoutConfigured = false;
 };
 
 };  // namespace Control

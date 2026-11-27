@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# Set your server and mail. Run in a writable working directory.
+# These commands log the native motor commands for demonstration.
+name: Shutter and facade blind state example
+state_files_path: ./shutter_state
+supla:
+  server: svr123.supla.org
+  mail: user@example.com
+
+channels:
+  - type: CmdRollerShutter
+    name: shutter
+    cmd_up_on: "echo up_on >> shutter-motor.log"
+    cmd_up_off: "echo up_off >> shutter-motor.log"
+    cmd_down_on: "echo down_on >> shutter-motor.log"
+    cmd_down_off: "echo down_off >> shutter-motor.log"
+    opening_time_ms: 12000
+    closing_time_ms: 12000
+    output: {type: File, file: shutter.json}
+    output_interval_ms: 250
+
+  - type: CmdRollerShutter
+    name: facade_blind
+    default_function_number: 900
+    cmd_up_on: "echo up_on >> blind-motor.log"
+    cmd_up_off: "echo up_off >> blind-motor.log"
+    cmd_down_on: "echo down_on >> blind-motor.log"
+    cmd_down_off: "echo down_off >> blind-motor.log"
+    opening_time_ms: 15000
+    closing_time_ms: 15000
+    tilting_time_ms: 1200
+    tilt_control_type: 1
+    output: {type: File, file: blind.json}
+    output_interval_ms: 250

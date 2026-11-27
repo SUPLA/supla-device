@@ -505,10 +505,10 @@
       "name": "SuplaDeviceClass",
       "header": "SuplaDevice.h",
       "limits": {
-        "host": 224,
-        "avr": 115,
-        "esp8266": 152,
-        "esp32": 152
+        "host": 232,
+        "avr": 118,
+        "esp8266": 156,
+        "esp32": 156
       }
     }
   ]

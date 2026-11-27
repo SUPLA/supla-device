@@ -5,6 +5,7 @@
 #include <supla/linux_command.h>
 
 #include <cerrno>
+#include <chrono>
 #include <cstring>
 #include <cstdio>
 #include <string>
@@ -82,5 +83,21 @@ TEST(Sd4linuxLinuxCommandTests, PcloseFailureIsLogged) {
   EXPECT_NE(std::string(supla_test_get_last_log()).find("Hvac.cmd_off"),
             std::string::npos);
   EXPECT_NE(std::string(supla_test_get_last_log()).find(std::strerror(ECHILD)),
+            std::string::npos);
+}
+
+TEST(Sd4linuxLinuxCommandTests, TimedCommandChecksExitAndBoundsWaiting) {
+  using std::chrono::milliseconds;
+  using std::chrono::seconds;
+  const char *context = "CmdRollerShutter.cmd_up_off";
+  EXPECT_TRUE(
+      Supla::Linux::executeCommandWithTimeout("exit 0", context, seconds(1)));
+  EXPECT_FALSE(
+      Supla::Linux::executeCommandWithTimeout("exit 7", context, seconds(1)));
+  const auto started = std::chrono::steady_clock::now();
+  EXPECT_FALSE(Supla::Linux::executeCommandWithTimeout(
+      "sleep 5 & wait", context, milliseconds(40)));
+  EXPECT_LT(std::chrono::steady_clock::now() - started, seconds(2));
+  EXPECT_NE(std::string(supla_test_get_last_log()).find("command timed out"),
             std::string::npos);
 }

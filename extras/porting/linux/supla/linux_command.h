@@ -5,6 +5,7 @@
 #define EXTRAS_PORTING_LINUX_SUPLA_LINUX_COMMAND_H_
 
 #include <cstdio>
+#include <chrono>
 #include <string>
 
 namespace Supla {
@@ -29,6 +30,10 @@ int closeCommandPipe(FILE *pipe,
 void executeCommand(const std::string &command,
                     const char *context,
                     CommandPipeFunctions functions = {});
+
+bool executeCommandWithTimeout(const std::string &command,
+                               const char *context,
+                               std::chrono::milliseconds timeout);
 
 }  // namespace Linux
 }  // namespace Supla

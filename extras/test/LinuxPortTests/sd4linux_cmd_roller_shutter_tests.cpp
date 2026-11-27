@@ -4,6 +4,10 @@
 #include <gtest/gtest.h>
 #include <simple_time.h>
 #include <supla/control/cmd_roller_shutter.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <filesystem>  // NOLINT(build/c++17)
 #include <string>
 
 namespace {
@@ -130,6 +134,49 @@ TEST_F(Sd4linuxCmdRollerShutterTests, PlainRollerShutterStillRequiresGpio) {
   rs.onTimer();
   EXPECT_TRUE(rs.isCalibrationRequested());
   EXPECT_FALSE(rs.isCalibrationInProgress());
+}
+
+TEST_F(Sd4linuxCmdRollerShutterTests, FailedOffBlocksReverseAndCancelsTarget) {
+  auto path = (std::filesystem::temp_directory_path() /
+               "sd4linux-motor-command.XXXXXX").string();
+  const int fd = mkstemp(path.data());
+  ASSERT_GE(fd, 0);
+  close(fd);
+  Supla::Control::CmdRollerShutter rs(nullptr);
+  rs.setCmdUpOn("true");
+  rs.setCmdDownOff("true");
+  rs.setCmdUpOff("sleep 5");
+  rs.setMotorCommandTimeoutMs(100);
+  rs.setCmdDownOn("printf started > '" + path + "'");
+  rs.setOpenCloseTime(5000, 5000);
+  rs.onInit();
+  rs.setCurrentPosition(50);
+  rs.moveUp();
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(), 2);
+  rs.moveDown();
+  rs.onTimer();
+  EXPECT_EQ(rs.getCurrentDirection(), 0);
+  EXPECT_EQ(rs.getTargetPosition(), STOP_POSITION);
+  EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);
+  EXPECT_TRUE(rs.isMotorProblem());
+
+  rs.setCmdUpOff("exit 7");
+  time.advance(501);
+  rs.moveDown();
+  rs.onTimer();
+  EXPECT_EQ(std::filesystem::file_size(path), 0u);
+  EXPECT_TRUE(rs.isMotorProblem());
+
+  rs.setCmdUpOff("true");
+  time.advance(501);
+  rs.moveDown();
+  rs.onTimer();
+  EXPECT_GT(std::filesystem::file_size(path), 0u);
+  EXPECT_FALSE(rs.isMotorProblem());
+  rs.stop();
+  rs.onTimer();
+  std::filesystem::remove(path);
 }
 
 }  // namespace

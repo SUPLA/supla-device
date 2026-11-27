@@ -104,6 +104,25 @@ const char AuthKeyKey[] = "authkey";
 #define SUPLA_LINUX_CONFIG_BUF_SIZE (1024 * 1024)
 
 namespace {
+bool readBoundedInteger(const YAML::Node &node,
+                        const char *parameter,
+                        int minimum,
+                        int maximum,
+                        int *value) {
+  if (!node) {
+    return true;
+  }
+  int decoded = 0;
+  if (!YAML::convert<int>::decode(node, decoded) ||
+      decoded < minimum || decoded > maximum) {
+    SUPLA_LOG_ERROR("Config: %s must be an integer in %d..%d",
+                    parameter, minimum, maximum);
+    return false;
+  }
+  *value = decoded;
+  return true;
+}
+
 bool parseUnlockSensorEdge(const YAML::Node& node, uint8_t* edge) {
   if (!node.IsScalar()) return false;
   const auto value = node.as<std::string>();
@@ -786,6 +805,7 @@ bool Supla::LinuxYamlConfig::getMqttClientFileCA(char* result) const {
 
 bool Supla::LinuxYamlConfig::loadChannels() {
   channelNames.clear();
+  lightingButtonChannels.clear();
   try {
     Supla::Linux::initExtensions();
     if (!loadTopLevelSources(config["sources"])) {
@@ -1021,14 +1041,15 @@ bool Supla::LinuxYamlConfig::parseButton(const YAML::Node& btn,
 bool Supla::LinuxYamlConfig::attachButton(const YAML::Node& attachNode,
                                           Supla::Control::Button* button,
                                           int buttonIndex) {
-  if (!attachNode.IsMap() || !attachNode["channel"]) {
+  if (!attachNode.IsMap() || !attachNode["channel"].IsScalar()) {
     SUPLA_LOG_ERROR("Button[%d] config: attach entry requires \"channel\"",
                     buttonIndex);
     return false;
   }
   for (const auto& parameter : attachNode) {
     const auto key = parameter.first.as<std::string>();
-    if (key != "channel" && key != "direction" && key != "internal") {
+    if (key != "channel" && key != "direction" && key != "internal" &&
+        key != "button_control") {
       SUPLA_LOG_ERROR(
           "Button[%d] config: unrecognized attach parameter \"%s\"",
           buttonIndex,
@@ -1047,6 +1068,14 @@ bool Supla::LinuxYamlConfig::attachButton(const YAML::Node& attachNode,
     return false;
   }
   auto element = Supla::Element::getElementByChannelNumber(target->second);
+  auto light = dynamic_cast<Supla::Control::LightingPwmBase*>(element);
+  const auto buttonControl = attachNode["button_control"];
+  auto rgb = dynamic_cast<Supla::Control::RgbCctParsed*>(light);
+  if (buttonControl && !rgb) {
+    SUPLA_LOG_ERROR("Button[%d] config: button_control requires RgbCctParsed",
+                    buttonIndex);
+    return false;
+  }
 
   if (auto rs = dynamic_cast<Supla::Control::RollerShutterInterface*>(
           element)) {
@@ -1086,9 +1115,36 @@ bool Supla::LinuxYamlConfig::attachButton(const YAML::Node& attachNode,
     return true;
   }
 
+  if (light) {
+    using Lighting = Supla::Control::LightingPwmBase;
+    if (lightingButtonChannels.count(target->second)) {
+      SUPLA_LOG_ERROR("Button[%d] config: lighting channel %s already has "
+                      "an attached button", buttonIndex, channelName.c_str());
+      return false;
+    }
+    if (buttonControl) {
+      const auto mode = buttonControl.as<std::string>("");
+      if (mode == "all") {
+        rgb->setButtonControl(Lighting::BUTTON_FOR_RGBW);
+      } else if (mode == "rgb") {
+        rgb->setButtonControl(Lighting::BUTTON_FOR_RGB);
+      } else if (mode == "white") {
+        rgb->setButtonControl(Lighting::BUTTON_FOR_W);
+      } else if (mode == "disabled") {
+        rgb->setButtonControl(Lighting::BUTTON_NOT_USED);
+      } else {
+        SUPLA_LOG_ERROR("Button[%d] config: button_control must be "
+                        "all, rgb, white or disabled", buttonIndex);
+        return false;
+      }
+    }
+    lightingButtonChannels.insert(target->second);
+    light->attach(button);
+    return true;
+  }
+
   SUPLA_LOG_ERROR(
-      "Button[%d] config: channel \"%s\" doesn't support buttons (only roller "
-      "shutters and relays)",
+      "Button[%d] config: channel \"%s\" doesn't support button attachment",
       buttonIndex,
       channelName.c_str());
   return false;
@@ -1217,6 +1273,10 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
         return false;
       }
       payloadCount++;
+    } else if (output && (type == "RgbCctParsed" ||
+                         type == "CmdRollerShutter")) {
+      payload = new Supla::Payload::Json(output);
+      payloads[payloadCount++] = payload;
     }
 
     int channelNumber = -1;
@@ -1253,9 +1313,9 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     } else if (type == "CmdValve") {
       return addCmdValve(ch, channelNumber, parser);
     } else if (type == "CmdRollerShutter") {
-      return addCmdRollerShutter(ch, channelNumber, parser);
+      return addCmdRollerShutter(ch, channelNumber, parser, payload);
     } else if (type == "RgbCctParsed") {
-      return addRgbCctParsed(ch, channelNumber, parser);
+      return addRgbCctParsed(ch, channelNumber, parser, payload);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "SolarEdge") {
@@ -1504,9 +1564,73 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
 
 bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
                                              int channelNumber,
-                                             Supla::Parser::Parser* parser) {
+                                             Supla::Parser::Parser* parser,
+                                             Payload::Payload* payload) {
   SUPLA_LOG_INFO("Channel[%d] config: adding RgbCctParsed", channelNumber);
-  auto rgb = new Supla::Control::RgbCctParsed(parser);
+  auto rgb = std::make_unique<Supla::Control::RgbCctParsed>(parser);
+  if (auto layout = getAndMarkChannelParameter(ch, "layout")) {
+    static constexpr struct {
+      const char *name;
+      uint32_t function;
+    } layouts[] = {
+        {"dimmer", SUPLA_CHANNELFNC_DIMMER},
+        {"rgb", SUPLA_CHANNELFNC_RGBLIGHTING},
+        {"rgbw", SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING},
+        {"cct", SUPLA_CHANNELFNC_DIMMER_CCT},
+        {"rgbcct", SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB},
+    };
+    const auto name = layout.as<std::string>("");
+    const auto found = std::find_if(std::begin(layouts), std::end(layouts),
+        [&name](const auto &entry) { return entry.name == name; });
+    if (found == std::end(layouts)) {
+      SUPLA_LOG_ERROR("RgbCctParsed[%d] layout must be dimmer, rgb, rgbw, cct "
+                      "or rgbcct. Use two cct channels for 2xCCT.",
+                      channelNumber);
+      return false;
+    }
+    rgb->setLayout(found->function);
+    if (auto function = ch[DefaultFunctionNumber]) {
+      const auto number = function.as<int>(-1);
+      if (number < 0 || !rgb->supportsFunction(number)) {
+        SUPLA_LOG_ERROR("RgbCctParsed[%d] default_function_number is "
+                        "incompatible with layout %s",
+                        channelNumber, name.c_str());
+        return false;
+      }
+    }
+  }
+
+  int resolution = 10;
+  int interval = 250;
+  const auto intervalParameter =
+      getAndMarkChannelParameter(ch, "output_interval_ms");
+  if (!readBoundedInteger(getAndMarkChannelParameter(ch, "pwm_resolution_bits"),
+                          "pwm_resolution_bits", 1, 15, &resolution) ||
+      !readBoundedInteger(intervalParameter, "output_interval_ms", 10, 60000,
+                          &interval)) {
+    return false;
+  }
+  if (intervalParameter && !payload) {
+    SUPLA_LOG_ERROR("RgbCctParsed[%d] output_interval_ms requires output",
+                    channelNumber);
+    return false;
+  }
+  rgb->setPwmResolutionBits(resolution);
+  rgb->setPwmOutput(payload, interval);
+
+  if (auto initial = getAndMarkChannelParameter(ch, "initial_state")) {
+    const auto state = initial.as<std::string>("");
+    if (state == "on") {
+      rgb->setDefaultStateOn();
+    } else if (state == "off") {
+      rgb->setDefaultStateOff();
+    } else if (state != "restore") {
+      SUPLA_LOG_ERROR("RgbCctParsed[%d] initial_state must be on, off "
+                      "or restore",
+                      channelNumber);
+      return false;
+    }
+  }
   if (auto offlineParameter =
           getAndMarkChannelParameter(ch, "offline_on_invalid_state")) {
     auto useOfflineOnInvalidState = offlineParameter.as<bool>();
@@ -1517,17 +1641,77 @@ bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
     auto fadeEffectMs = fadeEffectParameter.as<int>();
     rgb->setFadeEffectTime(fadeEffectMs);
   }
-  if (!addStateParser(ch, rgb, parser, false)) {
+  if (!addStateParser(ch, rgb.get(), parser, false) ||
+      !addCommonParametersParsed(ch, rgb.get(), parser)) {
     return false;
   }
 
-  return addCommonParametersParsed(ch, rgb, parser);
+  rgb.release();
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::addCmdRollerShutter(
-    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser,
+    Payload::Payload* payload) {
   SUPLA_LOG_INFO("Channel[%d] config: adding CmdRollerShutter", channelNumber);
-  auto cr = new Supla::Control::CmdRollerShutter(parser);
+  auto cr = std::make_unique<Supla::Control::CmdRollerShutter>(parser);
+  int commandTimeout = 1000;
+  if (!readBoundedInteger(
+          getAndMarkChannelParameter(ch, "motor_command_timeout_ms"),
+          "motor_command_timeout_ms", 10, 10000, &commandTimeout)) {
+    return false;
+  }
+  cr->setMotorCommandTimeoutMs(commandTimeout);
+  int interval = 250;
+  const auto intervalParameter =
+      getAndMarkChannelParameter(ch, "output_interval_ms");
+  if (!readBoundedInteger(intervalParameter, "output_interval_ms", 10, 60000,
+                          &interval)) {
+    return false;
+  }
+  if (intervalParameter && !payload) {
+    SUPLA_LOG_ERROR("CmdRollerShutter[%d] output_interval_ms requires output",
+                    channelNumber);
+    return false;
+  }
+  cr->setStateOutput(payload, interval);
+
+  const auto opening = getAndMarkChannelParameter(ch, "opening_time_ms");
+  const auto closing = getAndMarkChannelParameter(ch, "closing_time_ms");
+  const auto tilting = getAndMarkChannelParameter(ch, "tilting_time_ms");
+  const auto tiltControl = getAndMarkChannelParameter(ch, "tilt_control_type");
+  if (opening || closing || tilting || tiltControl) {
+    int openMs = 0;
+    int closeMs = 0;
+    int tiltMs = 0;
+    int control = 0;
+    if (!opening || !closing) {
+      SUPLA_LOG_ERROR("CmdRollerShutter[%d] timing requires opening_time_ms "
+                      "and closing_time_ms", channelNumber);
+      return false;
+    }
+    if (!readBoundedInteger(opening, "opening_time_ms", 1,
+                            RS_MAX_OPERATION_TIME_MS, &openMs) ||
+        !readBoundedInteger(closing, "closing_time_ms", 1,
+                            RS_MAX_OPERATION_TIME_MS, &closeMs) ||
+        !readBoundedInteger(tilting, "tilting_time_ms", 1,
+                            RS_MAX_OPERATION_TIME_MS, &tiltMs) ||
+        !readBoundedInteger(tiltControl, "tilt_control_type", 1, 3, &control)) {
+      return false;
+    }
+    if (tilting || tiltControl) {
+      if (!tilting || !tiltControl || !addDefaultFunctionNumber(ch, cr.get()) ||
+          !cr->applyFacadeBlindTimingConfig(
+              openMs, closeMs, tiltMs, control, false)) {
+        SUPLA_LOG_ERROR("CmdRollerShutter[%d] tilt timing requires a facade "
+                        "or vertical blind and valid tilting_time_ms and "
+                        "tilt_control_type", channelNumber);
+        return false;
+      }
+    } else {
+      cr->setOpenCloseTime(closeMs, openMs);
+    }
+  }
 
   if (auto offlineParameter =
           getAndMarkChannelParameter(ch, "offline_on_invalid_state")) {
@@ -1574,7 +1758,11 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
     return false;
   }
 
-  return addCommonParametersParsed(ch, cr, parser);
+  if (!addCommonParametersParsed(ch, cr.get(), parser)) {
+    return false;
+  }
+  cr.release();
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,

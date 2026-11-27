@@ -10,6 +10,8 @@
 #include <string>
 #include <variant>
 
+#include <nlohmann/json_fwd.hpp>
+
 namespace Supla {
 namespace Payload {
 
@@ -21,6 +23,8 @@ class Payload {
 
   virtual void addKey(const std::string &key, int index);
   virtual bool isBasedOnIndex() = 0;
+  // Publish an ordered object of scalar fields and flat arrays.
+  bool publishState(const nlohmann::ordered_json &state);
 
   virtual void turnOn(const std::string &key,
                       std::variant<int, bool, std::string> onValue) = 0;

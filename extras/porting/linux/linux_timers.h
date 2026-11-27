@@ -8,6 +8,7 @@ namespace Supla {
 namespace Linux {
 namespace Timers {
 void init();
+void stop();
 };
 };      // namespace Linux
 };      // namespace Supla

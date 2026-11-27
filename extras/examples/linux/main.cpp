@@ -21,6 +21,7 @@
 #include <linux_file_state_logger.h>
 #include <linux_file_storage.h>
 #include <linux_mqtt_client.h>
+#include <linux_timers.h>
 #include <linux_yaml_config.h>
 #include <supla/IEEE754tools.h>
 #include <supla/action_handler.h>
@@ -241,6 +242,7 @@ int main(int argc, char *argv[]) {
       delay(10);
     }
     SUPLA_LOG_INFO("Exit");
+    Supla::Linux::Timers::stop();
     bool saved = SuplaDevice.prepareForShutdown();
     if (!saved) {
       SUPLA_LOG_ERROR("Configuration save failed during shutdown");

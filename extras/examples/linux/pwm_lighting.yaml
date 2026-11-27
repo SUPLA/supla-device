@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: AC SOFTWARE SP. Z O.O.
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# Set your server and mail. Run in a writable working directory.
+# Create light_button.txt with 0. Write 1 to press and 0 to release.
+name: PWM lighting example
+state_files_path: ./pwm_state
+supla:
+  server: svr123.supla.org
+  mail: user@example.com
+
+channels:
+  - type: RgbCctParsed
+    name: dimmer
+    layout: dimmer
+    pwm_resolution_bits: 8
+    fade_effect_ms: 500
+    output_interval_ms: 100
+    output: {type: File, file: dimmer.json}
+
+  - type: RgbCctParsed
+    name: rgb
+    layout: rgb
+    output: {type: File, file: rgb.json}
+
+  - type: RgbCctParsed
+    name: rgbw
+    layout: rgbw
+    output: {type: File, file: rgbw.txt}
+    payload: {type: Simple}
+
+  - type: RgbCctParsed
+    name: cct
+    layout: cct
+    output: {type: File, file: cct.json}
+
+  - type: RgbCctParsed
+    name: rgbcct
+    layout: rgbcct
+    output_interval_ms: 500
+    output:
+      type: Cmd
+      command: "printf '%s\\n' {} > rgbcct.json"
+
+  # 2×CCT uses two independently controlled native CCT channels.
+  - type: RgbCctParsed
+    name: cct_left
+    layout: cct
+    output: {type: File, file: cct_left.json}
+
+  - type: RgbCctParsed
+    name: cct_right
+    layout: cct
+    output: {type: File, file: cct_right.json}
+
+buttons:
+  - name: dimmer_button
+    type: monostable
+    source: {type: File, file: light_button.txt, expiration_time_sec: 0}
+    parser: {type: Simple}
+    state: 0
+    attach: {channel: dimmer, button_control: white}

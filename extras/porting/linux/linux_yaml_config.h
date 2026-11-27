@@ -177,10 +177,12 @@ class LinuxYamlConfig : public KeyValue {
                    Supla::Parser::Parser*);
   bool addCmdRollerShutter(const YAML::Node& ch,
                            int channelNumber,
-                           Supla::Parser::Parser*);
+                           Supla::Parser::Parser*,
+                           Supla::Payload::Payload* payload = nullptr);
   bool addRgbCctParsed(const YAML::Node& ch,
                        int channelNumber,
-                       Supla::Parser::Parser*);
+                       Supla::Parser::Parser*,
+                       Supla::Payload::Payload* payload = nullptr);
   bool addCustomRelay(const YAML::Node& ch,
                       int channelNumber,
                       Parser::Parser* parser,
@@ -282,6 +284,7 @@ class LinuxYamlConfig : public KeyValue {
   std::string guid;
   std::string authkey;
   std::map<std::string, int> channelNames;
+  std::set<int> lightingButtonChannels;
   std::map<std::string, int> parserNames;
   std::map<std::string, int> sourceNames;
   std::map<std::string, int> payloadNames;

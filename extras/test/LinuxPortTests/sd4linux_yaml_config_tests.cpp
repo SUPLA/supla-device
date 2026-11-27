@@ -558,6 +558,101 @@ TEST(Sd4linuxYamlConfigTests, AllowsRgbCctWithoutStateAndRejectsMissingParser) {
   deleteCreatedElement(previousElement);
 }
 
+TEST(Sd4linuxYamlConfigTests, LoadsNativePwmLayoutsIncludingTwoCctChannels) {
+  Supla::Channel::resetToDefaults();
+  TestLinuxYamlConfig config;
+  config.config = YAML::Load(R"(
+channels:
+- {type: RgbCctParsed, layout: dimmer}
+- {type: RgbCctParsed, layout: cct}
+- {type: RgbCctParsed, layout: rgb}
+- {type: RgbCctParsed, layout: rgbw}
+- {type: RgbCctParsed, layout: rgbcct}
+- {type: RgbCctParsed, layout: cct, name: cct_left}
+- {type: RgbCctParsed, layout: cct, name: cct_right}
+)");
+  EXPECT_TRUE(config.loadChannels());
+
+  const uint32_t dimmer = SUPLA_RGBW_BIT_FUNC_DIMMER;
+  const uint32_t cct = dimmer | SUPLA_RGBW_BIT_FUNC_DIMMER_CCT;
+  const uint32_t rgb = cct | SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING;
+  const uint32_t rgbw = rgb | SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING;
+  const uint32_t rgbcct = rgbw | SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB;
+  constexpr std::array<uint32_t, 7> functions = {
+      SUPLA_CHANNELFNC_DIMMER, SUPLA_CHANNELFNC_DIMMER_CCT,
+      SUPLA_CHANNELFNC_RGBLIGHTING, SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB, SUPLA_CHANNELFNC_DIMMER_CCT,
+      SUPLA_CHANNELFNC_DIMMER_CCT,
+  };
+  const std::array<uint32_t, 7> masks = {
+      dimmer, cct, rgb, rgbw, rgbcct, cct, cct,
+  };
+  for (size_t i = 0; i < functions.size(); ++i) {
+    SCOPED_TRACE(i);
+    const auto *channel = Supla::Channel::GetByChannelNumber(i);
+    if (!channel) {
+      ADD_FAILURE() << "Missing lighting channel";
+      continue;
+    }
+    EXPECT_EQ(channel->getChannelType(), SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
+    EXPECT_EQ(channel->getDefaultFunction(), functions[i]);
+    EXPECT_EQ(channel->getFuncList(), masks[i]);
+  }
+  while (auto *element = Supla::Element::last()) delete element;
+}
+
+TEST(Sd4linuxYamlConfigTests, RejectsInvalidPwmAndShutterOutputSettings) {
+  TestLinuxYamlConfig config;
+  for (const char *settings : {"layout: invalid", "pwm_resolution_bits: 16",
+                               "pwm_resolution_bits: high",
+                               "output_interval_ms: 250",
+                               "initial_state: invalid",
+                               "layout: cct\ndefault_function_number: 190"}) {
+    SCOPED_TRACE(settings);
+    EXPECT_FALSE(config.addRgbCctParsed(YAML::Load(settings), 0, nullptr));
+  }
+  for (const char *settings : {"opening_time_ms: 1000",
+                               "motor_command_timeout_ms: 0",
+                               "motor_command_timeout_ms: slow",
+                               "output_interval_ms: fast",
+                               "output_interval_ms: 0",
+                               "tilt_control_type: 4"}) {
+    SCOPED_TRACE(settings);
+    EXPECT_FALSE(config.addCmdRollerShutter(
+        YAML::Load(settings), 0, nullptr));
+  }
+}
+
+TEST(Sd4linuxYamlConfigTests, ConfiguresNativeFacadeBlindTimingAndStateOutput) {
+  Supla::Channel::resetToDefaults();
+  TestLinuxYamlConfig config;
+  ASSERT_TRUE(config.parseChannel(YAML::Load(R"(
+type: CmdRollerShutter
+default_function_number: 900
+cmd_up_on: "true"
+cmd_up_off: "true"
+cmd_down_on: "true"
+cmd_down_off: "true"
+opening_time_ms: 5000
+closing_time_ms: 6000
+tilting_time_ms: 1000
+tilt_control_type: 1
+motor_command_timeout_ms: 450
+output: {type: File, file: /dev/null}
+payload: {type: Simple}
+output_interval_ms: 100
+)"), 0));
+  std::unique_ptr<Supla::Element> element(Supla::Element::last());
+  auto *blind = dynamic_cast<Supla::Control::RollerShutterInterface*>(
+      element.get());
+  ASSERT_NE(blind, nullptr);
+  EXPECT_EQ(blind->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_RELAY);
+  EXPECT_TRUE(blind->isTiltConfigured());
+  EXPECT_EQ(blind->getOpeningTimeMs(), 5000);
+  EXPECT_EQ(blind->getClosingTimeMs(), 6000);
+  EXPECT_EQ(blind->getTiltingTimeMs(), 1000);
+}
+
 TEST(Sd4linuxYamlConfigTests,
      RelayDefaultFunctionKeepsWeeklyScheduleOptIn) {
   TestLinuxYamlConfig config;
@@ -1826,6 +1921,7 @@ channels:
 - {type: VirtualRelay, name: light}
 - {type: CmdRollerShutter, name: blind, cmd_up_on: "true",
    cmd_up_off: "true", cmd_down_on: "true", cmd_down_off: "true"}
+- {type: RgbCctParsed, name: pwm, layout: rgbw}
 buttons:
 )" + buttons);
     return config.loadChannels();
@@ -1899,6 +1995,30 @@ TEST_F(Sd4linuxButtonTests, InternalDownButtonFollowsUpsideDownSetting) {
   EXPECT_EQ(rs->getTargetPosition(), MOVE_DOWN_POSITION);
 }
 
+TEST_F(Sd4linuxButtonTests, LightingButtonUsesNativeWhiteToggleAndHold) {
+  time.advance(1);
+  ASSERT_TRUE(load(button("attach: {channel: pwm, button_control: white}")));
+  auto *btn = firstButton();
+  ASSERT_NE(btn, nullptr);
+  auto *light = dynamic_cast<Supla::Control::LightingPwmBase*>(
+      Supla::Element::getElementByChannelNumber(2));
+  ASSERT_NE(light, nullptr);
+  initAll();
+  run(btn, 200);
+  click(btn);
+  ASSERT_GT(light->getCurrentDimmerBrightness(), 0);
+  EXPECT_EQ(light->getCurrentRGBBrightness(), 0);
+
+  light->setRGBW(0, 0, 0, 0, 50);
+  writeInput("1");
+  run(btn, 1000);
+  light->onFastTimer();
+  time.advance(40);
+  light->onFastTimer();
+  EXPECT_NE(light->getCurrentDimmerBrightness(), 50);
+  EXPECT_EQ(light->getCurrentRGBBrightness(), 0);
+}
+
 TEST_F(Sd4linuxButtonTests, InvertedButtonTogglesAttachedRelay) {
   time.advance(1);
   writeInput("1");  // inverted: released
@@ -1941,6 +2061,10 @@ TEST_F(Sd4linuxButtonTests, RejectsInvalidButtonConfig) {
       "attach: {channel: blind}",
       "attach: {channel: blind, direction: left}",
       "attach: {channel: light, direction: up}",
+      "attach: {channel: pwm, direction: up}",
+      "attach: {channel: pwm, button_control: invalid}",
+      "attach: {channel: light, button_control: rgb}",
+      "attach: [{channel: pwm}, {channel: pwm}]",
       "attach: {channel: blind, direction: up, extra: 1}",
       "type: toggle",
       "unknown_parameter: 1",

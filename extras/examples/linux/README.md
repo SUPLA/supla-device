@@ -436,7 +436,7 @@ Supported channel types:
 * `CmdRelay` - related class `Supla::Control::CmdRelay`
 * `CustomRelay` - related class `Supla::Control::CustomRelay`
 * `CmdValve` - related class `Supla::Control::CmdValve`
-* `CmdRollerShutter` - related class `Supla::Control::CmdRollerShutter`
+* `CmdRollerShutter` - native shutter and blind control via commands, with optional state output.
 * `Fronius` - related class `Supla::PV::Fronius`
 * `SolarEdge` - related class `Supla::PV::SolarEdge`
 * `Afore` - related class `Supla::PV::Afore`
@@ -457,7 +457,7 @@ Supported channel types:
 * `ContainerParsed` - related class `Supla::Sensor::ContainerParsed`
 * `Hvac`, `HvacRemote`, `CustomHvac` - related class `Supla::Control::HvacBase`
 * `CustomChannel` - supports arbitrary channel type
-* `RgbCctParsed` - related class `Supla::Control::RgbCctBase` - not a real support for this function. Just a working class to test it.
+* `RgbCctParsed` - native PWM lighting (`LightingPwmBase`), with optional duty-cycle output and local buttons.
 
 Example channels configuration (details are explained later):
 
@@ -903,6 +903,58 @@ to send actions. "at1" is a name of `ActionTriggerParsed` instance.
 `CmdRollerShutter` is a "Parsed" channel, so it allows to use `parser` and
 `source` configuration with `battery` settings.
 
+`output` optionally publishes actual runtime state through `File`, `Cmd`
+or `MQTT`. `payload` defaults to `{type: Json}`. Specify `{type: Simple}` for one
+value per line in the order below, with booleans encoded as `0` or `1`.
+`Cmd` receives the complete payload as one argument. MQTT publishes it as
+one message.
+
+| Field | Meaning |
+| --- | --- |
+| `position` | `0` open, `100` closed, `-1` unknown. |
+| `tilt` | `0` at the up end of tilting, `100` at the down end, `-1` unknown or unavailable. |
+| `direction` | `0` stopped, `1` down, `2` up. |
+| `target_position` | `0`–`100`, `-1` unknown, `-2` stop, `-3` move up, `-4` move down. |
+| `target_tilt` | `0`–`100`, `-1` unknown or unavailable. |
+| `tilt_enabled` | The active function has tilt. |
+| `calibrated` | The native controller considers its position calibrated. |
+| `calibration_requested` | Calibration is pending and can start with the current settings. |
+| `calibration_in_progress` | Calibration is running. |
+| `calibration_failed` | The native controller reports a calibration failure. |
+| `calibration_lost` | The native controller reports loss of calibration. |
+
+These are positions tracked by the native timing algorithm. A configured
+tilt function can have an unknown tilt. Check the calibration fields even when
+a position is present.
+
+`output_interval_ms` sets the minimum time between output attempts. It
+defaults to `250` and accepts `10`–`60000` when an output is configured.
+The first iteration sends the initial or restored state. Later it sends only
+changes, including movement samples and the final stopped state. A failed
+output is retried with the latest state at the configured interval. The four
+motor commands work independently of the optional state output.
+
+Each motor command runs synchronously with a `motor_command_timeout_ms`
+limit (default `1000`, allowed `10`–`10000`). Use short foreground commands
+that exit with status zero only after completing the operation. A timeout
+terminates the command's process group. A failed motor command cancels the
+target, marks the position unknown and reports a motor fault. A failed
+`OFF` blocks the next `ON` in that operation. A new movement command checks
+the opposite output again before starting. While a motor command runs, it
+can delay the other timer callbacks.
+
+For a new shutter, `opening_time_ms` and `closing_time_ms` can provide both
+initial travel times (`1`–`600000` ms each). With neither set, the native
+defaults apply. To configure tilt timing in YAML, select a tilt function
+with `default_function_number` (`900` for a facade blind) and supply both
+`tilting_time_ms` (`1`–`600000`) and `tilt_control_type` (`1` stays in position
+while tilting, `2` changes position while tilting, `3` tilts only when fully
+closed). For modes `1` and `3` the tilt time must be shorter than both
+travel times. Native saved settings and remotely configured times take
+precedence. Calibrate before using percentage targets on a new device.
+See [shutter_state.yaml](shutter_state.yaml) for a shutter and a facade blind
+that log motor commands and publish their state to separate files.
+
 ### Channel availability
 
 `availability` reads the channel's SUPLA status from a parser. A scalar uses
@@ -1123,10 +1175,68 @@ is disabled.
 
 ### RgbCctParsed
 
-`RgbCctParsed` is a channel which allows to control RGB+CCT light.
+`RgbCctParsed` uses the native PWM lighting channel type
+`SUPLA_CHANNELTYPE_DIMMERANDRGBLED`. `layout` selects the default native
+function and the available physical output count. As on `LightingPwmLeds`,
+the channel also advertises functions in the table that need fewer outputs.
+When the active function changes, the receiver must apply slots in the order
+for that function.
 
-`RgbCctParsed` accepts the following parameters:
-`fade_effect_ms` - fade effect time in milliseconds.
+| YAML `layout` | Active outputs | Slot order |
+| --- | ---: | --- |
+| `dimmer` | 1 | white |
+| `cct` | 2 | warm white, cold white |
+| `rgb` | 3 | red, green, blue |
+| `rgbw` | 4 | red, green, blue, white |
+| `rgbcct` | 5 | red, green, blue, warm white, cold white |
+| 2×CCT | 2 per channel | Two `layout: cct` entries, one per independently controlled pair |
+
+Omitting `layout` keeps the previous RGB+CCT default and full set of native
+functions. With an explicit layout, `default_function_number` can select a
+compatible initial function. Each half of a 2×CCT installation uses a
+distinct output or MQTT topic. There is no single native 2×CCT function.
+
+* `pwm_resolution_bits` defaults to `10` and accepts `1`–`15`. Duty cycles
+  are integers from `0` through `max_pwm` (`2^bits - 1`).
+* `fade_effect_ms` sets the native fade duration in ms (default `500`,
+  `0` for immediate changes).
+* `initial_state` selects `restore` (default), `on` or `off`, using native
+  startup and brightness behavior.
+* `output` is optional. `File`, `Cmd` and `MQTT` support the PWM state
+  payload. `payload: {type: Json}` is the default. `{type: Simple}` sends
+  seven lines with the five PWM slots, active output count, and maximum
+  PWM value in that order. With `Cmd`, the complete payload is one argument.
+* `output_interval_ms` sets the minimum time between output attempts.
+  It defaults to `250` and accepts `10`–`60000` when an output is configured.
+
+Example JSON payload for CCT at 10-bit resolution:
+
+```json
+{"pwm":[612,411,0,0,0],"active_outputs":2,"max_pwm":1023}
+```
+
+Each publication includes all five slots. Slots beyond `active_outputs`
+are always zero so the receiver can turn off outputs left over from a
+previous layout. A disabled channel publishes zeros with `active_outputs: 0`.
+Treat the payload as a complete snapshot and assign all physical slots
+as one update. The native SDK calculates the PWM values using the configured
+brightness, color, white temperature and fade.
+
+The fast timer keeps the latest snapshot. The main loop sends the initial
+frame and any changes, coalescing intermediate fade values. The final changed
+frame remains pending until it can be sent, including after an output failure.
+File and MQTT outputs suit frequent updates. A `Cmd` output runs one command
+per published frame and waits for it in the main loop. Use a short-running
+command and a longer interval for command-based consumers.
+
+See [pwm_lighting.yaml](pwm_lighting.yaml) for all layouts, both payload
+formats, File and Cmd outputs, and a local button. To publish the PWM
+snapshot to a broker, use the existing [MQTT configuration](#mqtt-broker-connection)
+and replace the channel's `output` with:
+
+```yaml
+output: {type: MQTT, control_topic: lights/dimmer/pwm, qos: 1}
+```
 
 ## Parsed channel `source` parameter
 
@@ -1782,7 +1892,8 @@ Optional top-level `buttons` section adds local buttons
 (`Supla::Control::ButtonParsed`, a regular `Supla::Control::Button` reading its
 input from `source`/`parser` instead of a GPIO). Buttons are not channels and
 are not visible in Supla Cloud. They can be attached to roller shutters
-(`CmdRollerShutter`) and relays (`VirtualRelay`, `CmdRelay`, `CustomRelay`)
+(`CmdRollerShutter`), relays (`VirtualRelay`, `CmdRelay`, `CustomRelay`),
+and PWM lights (`RgbCctParsed`)
 and behave as physical buttons attached in firmware, which is useful for
 testing local button logic.
 
@@ -1810,6 +1921,11 @@ Parameters:
   * `direction` - `up` or `down`, mandatory for roller shutters only,
   * `internal` - roller shutters only, default `true`. Internal buttons follow
     the "buttons upside down" setting from Supla Cloud.
+  * `button_control` - `RgbCctParsed` only. Select `all`, `rgb`, `white` or
+    `disabled`. Omit to use the native setting (normally `all`). Attach one
+    button per lighting channel. Monostable buttons toggle on click and
+    adjust brightness on hold. Bistable buttons toggle on a state change.
+    Motion-sensor and central modes follow press and release.
 
 Button actions are set up by the attached channel, the same way as in
 firmware. E.g. a monostable button on a roller shutter with tilt functions

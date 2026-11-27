@@ -54,6 +54,7 @@
 - Enable relay and `ActionTriggerParsed` weekly schedules with `weekly_schedule: true` and support default channel functions in YAML. Add debug socket commands for inspecting channel values and reading or writing weekly schedules.
 - Add parsed rotation actions and `related_channel` references for `ActionTriggerParsed`. Support configurable temporary unlock duration and binary sensor edge triggers, and add `ButtonParsed` inputs that can control relays or roller shutters.
 - Enable command-driven movement in `CmdRollerShutter` when the complete set of output commands is configured.
+- Add native PWM layouts, throttled duty-cycle output and local button attachment for `RgbCctParsed`. Add optional shutter and facade-blind state output to `CmdRollerShutter`.
 - Add independent MQTT JSON documents with `document-id:/json-pointer` mappings and optional per-topic expiry. Keep incomplete meter data unavailable and handle expiry across millisecond counter rollover.
 - Improve MQTT topic cache synchronization and fix TLS hostname handling. Stop logging credentials and write binary configuration files with owner-only access.
 - Reject oversized or failed `File` reads and invalid `Simple` parser fields. Report `ContainerParsed` values as unavailable during source errors. Restrict `HttpSource` redirects to five HTTP(S) hops and disable redirects when custom headers are present.

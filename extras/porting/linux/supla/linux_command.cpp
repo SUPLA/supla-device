@@ -17,6 +17,9 @@
 #include <string>
 #include <thread>  // NOLINT(build/c++11)
 
+// POSIX leaves this declaration to applications; macOS headers omit it.
+extern char **environ;
+
 namespace {
 
 const char *safeContext(const char *context) {
